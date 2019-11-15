@@ -67,7 +67,7 @@ template <typename Point>                    struct BoundingSphere;
 template <typename Vector>                   struct Frame;
 template <typename Value>                    class DiscreteDistribution;
 
-template <typename Value> using StokesVector = enoki::Array<Value, 4, true>;
+template <typename Value> using StokesVector  = enoki::Array<Value, 4, true>;
 template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 
 

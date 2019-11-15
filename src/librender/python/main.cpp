@@ -30,22 +30,22 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
 
     py::module m = py::module::import("mitsuba");
     MTS_PY_DEF_SUBMODULE(render)
-#if 0
-    // // MTS_PY_IMPORT(autodiff);
-    // // MTS_PY_IMPORT(Scene);
-    // // MTS_PY_IMPORT(Shape);
-    // // MTS_PY_IMPORT(ShapeKDTree);
-    // MTS_PY_IMPORT(Interaction);
-    // MTS_PY_IMPORT(SurfaceInteraction);
-    // MTS_PY_IMPORT(Endpoint);
-    // MTS_PY_IMPORT(Emitter);
-    // MTS_PY_IMPORT(Sensor);
-    // MTS_PY_IMPORT(BSDFSample);
-    // MTS_PY_IMPORT(BSDF);
+
+    // MTS_PY_IMPORT(autodiff);
+    MTS_PY_IMPORT(Scene);
+    MTS_PY_IMPORT(Shape);
+    MTS_PY_IMPORT(ShapeKDTree);
+    MTS_PY_IMPORT(Interaction);
+    MTS_PY_IMPORT(SurfaceInteraction);
+    MTS_PY_IMPORT(Endpoint);
+    MTS_PY_IMPORT(Emitter);
+    MTS_PY_IMPORT(Sensor);
+    MTS_PY_IMPORT(BSDFSample);
+    MTS_PY_IMPORT(BSDF);
     MTS_PY_IMPORT(ImageBlock);
     MTS_PY_IMPORT(Film);
     MTS_PY_IMPORT(Spiral);
-    // MTS_PY_IMPORT(Integrator);
+    MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Sampler);
     MTS_PY_IMPORT(ContinuousSpectrum);
     MTS_PY_IMPORT(MicrofacetDistribution);
@@ -54,6 +54,5 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(fresnel);
     MTS_PY_IMPORT(srgb);
     MTS_PY_IMPORT(mueller);
-    // // MTS_PY_IMPORT(Texture3D);
-#endif
+    // MTS_PY_IMPORT(Texture3D);
 }

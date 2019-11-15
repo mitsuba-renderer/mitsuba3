@@ -27,7 +27,7 @@ MTS_PY_EXPORT_STRUCT(Interaction) {
 MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(SurfaceInteraction3f, m) {
-        py::class_<SurfaceInteraction3f, Interaction>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
+        py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
             // Members
             .def_field(SurfaceInteraction3f, shape)
             .def_field(SurfaceInteraction3f, uv)
@@ -40,7 +40,7 @@ MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
             .def_field(SurfaceInteraction3f, wi)
             .def_field(SurfaceInteraction3f, prim_index)
             .def_field(SurfaceInteraction3f, instance)
-            // Methods
+            // // Methods
             .def(py::init<>(), D(SurfaceInteraction3f, SurfaceInteraction3f))
             .def(py::init<const PositionSample3f &, const Wavelength &>(),
                 "ps"_a, "wavelengths"_a, D(SurfaceInteraction3f, SurfaceInteraction3f))
@@ -61,7 +61,7 @@ MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
                 "ray"_a, D(SurfaceInteraction3f, bsdf))
             .def("bsdf", py::overload_cast<>(&SurfaceInteraction3f::bsdf, py::const_),
                 D(SurfaceInteraction3f, bsdf, 2))
-            .def_method(SurfaceInteraction3f, normal_derivative)
+            // .def_method(SurfaceInteraction3f, normal_derivative)
             .def_method(SurfaceInteraction3f, compute_partials)
             .def_method(SurfaceInteraction3f, has_uv_partials)
             .def_repr(SurfaceInteraction3f);

@@ -160,12 +160,12 @@ template <typename T> struct underlying {
     using type = expr_t<T>;
 };
 
-template <typename T> struct underlying<enoki::DynamicArray<T>> {
-    using type = typename underlying<T>::type;
-};
-
 template <> struct underlying<void> {
     using type = void;
+};
+
+template <typename T> struct underlying<enoki::DynamicArray<T>> {
+    using type = typename underlying<T>::type;
 };
 
 template <typename T> struct underlying<enoki::DynamicArrayReference<T>> {

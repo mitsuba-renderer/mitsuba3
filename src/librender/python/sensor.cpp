@@ -2,7 +2,7 @@
 #include <mitsuba/render/sensor.h>
 
 MTS_PY_EXPORT(Sensor) {
-    MTS_IMPORT_TYPES(Sensor, ProjectiveCamera)
+    MTS_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     MTS_PY_CHECK_ALIAS(Sensor, m) {
         MTS_PY_CLASS(Sensor, Endpoint)
             .def_method(Sensor, sample_ray_differential,

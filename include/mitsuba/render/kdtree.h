@@ -2018,6 +2018,7 @@ public:
     using Base::set_min_max_bins;
     using Base::set_retract_bad_splits;
     using Base::set_stop_primitives;
+    using Base::bbox;
     using Base::m_bbox;
     using Base::m_nodes;
     using Base::m_indices;

@@ -29,9 +29,9 @@ MTS_PY_EXPORT(Shape) {
             .def_method(Shape, fill_surface_interaction, "ray"_a, "cache"_a, "si"_a, "active"_a = true)
             .def("bbox", py::overload_cast<>(
                 &Shape::bbox, py::const_), D(Shape, bbox))
-            .def("bbox", py::overload_cast<UInt32>(
+            .def("bbox", py::overload_cast<ScalarUInt32>(
                 &Shape::bbox, py::const_), D(Shape, bbox, 2), "index"_a)
-            .def("bbox", py::overload_cast<UInt32, const BoundingBox3f &>(
+            .def("bbox", py::overload_cast<ScalarUInt32, const ScalarBoundingBox3f &>(
                 &Shape::bbox, py::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
             .def_method(Shape, surface_area)
             .def_method(Shape, id)
@@ -41,8 +41,8 @@ MTS_PY_EXPORT(Shape) {
             .def_method(Shape, exterior_medium)
             .def_method(Shape, is_emitter)
             .def_method(Shape, is_sensor)
-            .def("emitter", py::overload_cast<bool>(&Shape::emitter, py::const_), "active"_a = true)
-            .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
+            // .def("emitter", py::overload_cast<Mask>(&Shape::emitter, py::const_))
+            // .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
             .def_method(Shape, primitive_count)
             .def_method(Shape, effective_primitive_count);
     }

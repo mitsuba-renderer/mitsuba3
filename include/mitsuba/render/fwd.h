@@ -62,6 +62,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Sampler                = mitsuba::Sampler<FloatU, SpectrumU>;
     using MicrofacetDistribution = mitsuba::MicrofacetDistribution<FloatU, SpectrumU>;
     using Shape                  = mitsuba::Shape<FloatU, SpectrumU>;
+    using ShapeKDTree            = mitsuba::ShapeKDTree<FloatU, SpectrumU>;
     using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
     using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;
     using SamplingIntegrator     = mitsuba::SamplingIntegrator<FloatU, SpectrumU>;
@@ -109,6 +110,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Sampler                = typename RenderAliases::Sampler;                                \
     using MicrofacetDistribution = typename RenderAliases::MicrofacetDistribution;                 \
     using Shape                  = typename RenderAliases::Shape;                                  \
+    using ShapeKDTree            = typename RenderAliases::ShapeKDTree;                            \
     using Mesh                   = typename RenderAliases::Mesh;                                   \
     using Integrator             = typename RenderAliases::Integrator;                             \
     using SamplingIntegrator     = typename RenderAliases::SamplingIntegrator;                     \

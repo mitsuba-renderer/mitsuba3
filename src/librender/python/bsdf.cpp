@@ -1,7 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/bsdf.h>
 
-MTS_PY_EXPORT_STRUCT(BSDFContext) {
+MTS_PY_EXPORT_STRUCT(BSDFSample) {
     MTS_IMPORT_TYPES()
 
     MTS_PY_CHECK_ALIAS(TransportMode, m) {
@@ -66,7 +66,7 @@ MTS_PY_EXPORT_STRUCT(BSDFContext) {
 }
 
 MTS_PY_EXPORT(BSDF) {
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(BSDF)
     MTS_PY_CHECK_ALIAS(BSDF, m) {
         MTS_PY_CLASS(BSDF, Object)
             .def("sample", vectorize<Float>(&BSDF::sample),
