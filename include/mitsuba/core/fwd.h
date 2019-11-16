@@ -153,20 +153,25 @@ template <typename Float_> struct CoreAliases {
 
     using DiscreteDistribution = DiscreteDistribution<Float>;
 
-    using Color1f          = Color<Float, 1>;
-    using Color3f          = Color<Float, 3>;
-    using StokesVector4f   = StokesVector<Float>;
-    using MuellerMatrix4f  = MuellerMatrix<Float>;
-
-    template <typename T> using managed_allocator = std::conditional_t<
-        is_cuda_array_v<Float>, cuda_managed_allocator<T>, std::allocator<T>>;
-
-    template <typename T> using host_allocator = std::conditional_t<
-        is_cuda_array_v<Float>, cuda_host_allocator<T>, std::allocator<T>>;
-
-    template <typename T> using host_vector    = std::vector<T, host_allocator<T>>;
-    template <typename T> using managed_vector = std::vector<T, managed_allocator<T>>;
+    using Color1f             = Color<Float, 1>;
+    using Color3f             = Color<Float, 3>;
+    using StokesVector4f      = StokesVector<Float>;
+    using MuellerMatrix4f     = MuellerMatrix<Float>;
 };
+
+template <typename T>
+using host_vector =
+    std::vector<scalar_t<T>,
+                std::conditional_t<is_cuda_array_v<T>, cuda_host_allocator<scalar_t<T>>,
+                                   std::allocator<scalar_t<T>>>>;
+
+template <typename T>
+using managed_vector =
+    std::vector<scalar_t<T>,
+                std::conditional_t<is_cuda_array_v<T>, cuda_managed_allocator<scalar_t<T>>,
+                                   std::allocator<scalar_t<T>>>>;
+
+#define MTS_VARIANT template <typename Float, typename Spectrum>
 
 #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \

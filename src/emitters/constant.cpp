@@ -13,7 +13,6 @@ template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
-    MTS_USING_BASE(Emitter)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
@@ -47,10 +46,9 @@ public:
         // 3. Sample directional component
         Vector3f v1 = warp::square_to_cosine_hemisphere(sample3);
 
-        Float r2 = m_bsphere.radius * m_bsphere.radius;
         return std::make_pair(Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
                                     Frame3f(-v0).to_world(v1), time, wavelengths),
-                              (4 * math::Pi<Float> * math::Pi<Float> * r2) * weight);
+                              weight * (4.f * sqr(math::Pi<Float> * m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -103,5 +101,5 @@ protected:
     ScalarBoundingSphere3f m_bsphere;
 };
 
-MTS_IMPLEMENT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
+MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
 NAMESPACE_END(mitsuba)

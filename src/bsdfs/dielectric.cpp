@@ -12,7 +12,7 @@ template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothDielectric, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     SmoothDielectric(const Properties &props) : Base(props) {
@@ -126,5 +126,5 @@ private:
     ref<ContinuousSpectrum> m_specular_transmittance;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothDielectric, "Smooth dielectric")
+MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
 NAMESPACE_END(mitsuba)

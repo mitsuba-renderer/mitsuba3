@@ -14,8 +14,9 @@ template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
-    MTS_USING_BASE(Emitter, m_world_transform)
+    MTS_IMPORT_BASE(Emitter, m_world_transform)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+
     using Warp = warp::Marginal2D<Float, 0>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
@@ -245,6 +246,6 @@ protected:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter");
+MTS_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter");
 NAMESPACE_END(mitsuba)
 

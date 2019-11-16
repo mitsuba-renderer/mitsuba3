@@ -12,9 +12,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Mesh, Object)
-    MTS_IMPORT_TYPES();
-    MTS_USING_BASE(Shape, m_mesh)
+    MTS_DECLARE_CLASS_VARIANT(Mesh, Shape)
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_BASE(Shape, m_mesh)
+
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
 

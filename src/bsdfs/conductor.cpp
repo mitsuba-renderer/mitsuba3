@@ -10,7 +10,7 @@ template <typename Float, typename Spectrum>
 class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothConductor, BSDF)
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     SmoothConductor(const Properties &props) : Base(props) {
@@ -26,7 +26,7 @@ public:
     std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si, Float /*sample1*/,
            const Point2f & /*sample2*/, Mask active) const override {
-        using UnpolarizedSpectrum = depolarized_t<Spectrum>;
+        using UnpolarizedSpectrum = depolarize_t<Spectrum>;
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
@@ -80,6 +80,6 @@ private:
     ref<ContinuousSpectrum> m_eta, m_k;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothConductor, "Smooth conductor")
+MTS_EXPORT_PLUGIN(SmoothConductor, "Smooth conductor")
 
 NAMESPACE_END(mitsuba)

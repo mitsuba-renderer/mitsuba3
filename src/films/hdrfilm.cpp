@@ -13,8 +13,8 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(HDRFilm, Film)
-    MTS_USING_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges, m_filter,
-                   check_valid_crop_window);
+    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges,
+                    m_filter, check_valid_crop_window)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -262,5 +262,5 @@ protected:
     ref<ImageBlock> m_storage;
 };
 
-MTS_IMPLEMENT_PLUGIN(HDRFilm, "HDR Film");
+MTS_EXPORT_PLUGIN(HDRFilm, "HDR Film");
 NAMESPACE_END(mitsuba)

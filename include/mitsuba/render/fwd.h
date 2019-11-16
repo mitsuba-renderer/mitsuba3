@@ -41,7 +41,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float    = Float_;
     using Spectrum = Spectrum_;
 
-    using Wavelength = wavelength_t<Spectrum>;
+    using Wavelength             = wavelength_t<Spectrum>;
+    using UnpolarizedSpectrum    = depolarize_t<Spectrum>;
 
     using Ray3f                  = Ray<Point<Float, 3>, Spectrum>;
     using RayDifferential3f      = RayDifferential<Point<Float, 3>, Spectrum>;
@@ -85,12 +86,11 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using EmitterPtr             = replace_scalar_t<Float, const Emitter *>;
 };
 
-#define MTS_VARIANT template <typename Float, typename Spectrum>
-
 #define MTS_IMPORT_RENDER_BASIC_TYPES()                                                            \
     MTS_IMPORT_CORE_TYPES()                                                                        \
     using RenderAliases        = mitsuba::RenderAliases<Float, Spectrum>;                          \
     using Wavelength           = typename RenderAliases::Wavelength;                               \
+    using UnpolarizedSpectrum  = typename RenderAliases::UnpolarizedSpectrum;                      \
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 

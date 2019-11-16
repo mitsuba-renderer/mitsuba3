@@ -28,7 +28,6 @@ template <typename Float, typename Spectrum>
 class D65Spectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(D65Spectrum, ContinuousSpectrum)
-    MTS_USING_BASE(ContinuousSpectrum)
 
     D65Spectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))
@@ -71,5 +70,5 @@ private:
     Float m_scale;
 };
 
-MTS_IMPLEMENT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
+MTS_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
 NAMESPACE_END(mitsuba)

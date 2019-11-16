@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(ThinDielectric, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_DECLARE_CLASS_VARIANT(ThinDielectric, BSDF)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     ThinDielectric(const Properties &props) : Base(props) {
@@ -110,5 +110,5 @@ private:
     ref<ContinuousSpectrum> m_specular_reflectance;
 };
 
-MTS_IMPLEMENT_PLUGIN(ThinDielectric, "Thin dielectric")
+MTS_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
 NAMESPACE_END(mitsuba)

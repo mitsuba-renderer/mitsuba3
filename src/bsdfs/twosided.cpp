@@ -9,8 +9,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(TwoSidedBRDF, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_DECLARE_CLASS_VARIANT(TwoSidedBRDF, BSDF)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(BSDF)
 
     TwoSidedBRDF(const Properties &props) : Base(props) {
@@ -52,8 +52,8 @@ public:
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
 
-        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active;
-        Mask back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         Result result = zero<Result>();
         if (any_or<true>(front_side))
@@ -80,8 +80,8 @@ public:
         Vector3f wo(wo_);
         Spectrum result = 0.f;
 
-        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active;
-        Mask back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         if (any_or<true>(front_side))
             result = m_nested_brdf[0]->eval(ctx, si, wo, front_side);
@@ -106,8 +106,8 @@ public:
         Vector3f wo(wo_);
         Float result = 0.f;
 
-        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active;
-        Mask back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         if (any_or<true>(front_side))
             result = m_nested_brdf[0]->pdf(ctx, si, wo, front_side);
@@ -138,5 +138,5 @@ protected:
     ref<BSDF> m_nested_brdf[2];
 };
 
-MTS_IMPLEMENT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");
+MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");
 NAMESPACE_END(mitsuba)

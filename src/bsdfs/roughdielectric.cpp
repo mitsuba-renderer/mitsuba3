@@ -15,7 +15,7 @@ template <typename Float, typename Spectrum>
 class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughDielectric, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
 
     RoughDielectric(const Properties &props) : Base(props) {
@@ -300,5 +300,5 @@ private:
     bool m_sample_visible;
 };
 
-MTS_IMPLEMENT_PLUGIN(RoughDielectric, "Rough dielectric");
+MTS_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric");
 NAMESPACE_END(mitsuba)

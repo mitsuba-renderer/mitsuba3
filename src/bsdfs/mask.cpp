@@ -10,7 +10,7 @@ template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(MaskBSDF, BSDF)
-    MTS_USING_BASE(BSDF, component_count, m_components, m_flags)
+    MTS_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
     MTS_IMPORT_TYPES(BSDF, ContinuousSpectrum)
 
     MaskBSDF(const Properties &props) : Base(props) {
@@ -115,5 +115,5 @@ protected:
     ref<BSDF> m_nested_bsdf;
 };
 
-MTS_IMPLEMENT_PLUGIN(MaskBSDF, "Mask material")
+MTS_EXPORT_PLUGIN(MaskBSDF, "Mask material")
 NAMESPACE_END(mitsuba)

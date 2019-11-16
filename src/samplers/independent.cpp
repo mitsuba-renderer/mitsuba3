@@ -9,8 +9,9 @@ template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(IndependentSampler, Sampler)
-    MTS_USING_BASE(Sampler, m_sample_count)
+    MTS_IMPORT_BASE(Sampler, m_sample_count)
     MTS_IMPORT_TYPES()
+
     using PCG32 = mitsuba::PCG32<UInt32>;
 
     IndependentSampler(const Properties &props = Properties()) : Base(props) {
@@ -72,5 +73,5 @@ protected:
     std::unique_ptr<PCG32> m_rng;
 };
 
-MTS_IMPLEMENT_PLUGIN(IndependentSampler, "Independent Sampler");
+MTS_EXPORT_PLUGIN(IndependentSampler, "Independent Sampler");
 NAMESPACE_END(mitsuba)

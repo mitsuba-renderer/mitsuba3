@@ -117,7 +117,7 @@ Float Texture3D<Float, Spectrum>::max() const { NotImplementedError("max"); }
 //! @}
 // =======================================================================
 
-MTS_INSTANTIATE_OBJECT(ContinuousSpectrum)
-MTS_INSTANTIATE_OBJECT(Texture)
-MTS_INSTANTIATE_OBJECT(Texture3D)
+MTS_INSTANTIATE_CLASS(ContinuousSpectrum)
+MTS_INSTANTIATE_CLASS(Texture)
+MTS_INSTANTIATE_CLASS(Texture3D)
 NAMESPACE_END(mitsuba)

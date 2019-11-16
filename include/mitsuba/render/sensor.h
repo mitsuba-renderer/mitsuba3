@@ -16,8 +16,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Sensor, Endpoint, "sensor")
-    MTS_USING_BASE(Endpoint, sample_ray, m_needs_sample_3)
     MTS_IMPORT_TYPES(Film, Sampler)
+    MTS_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -59,8 +59,8 @@ public:
      *    sensor profile and the actual used sampling density function.
      */
     virtual std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time,
-                            Float sample1, const Point2f &sample2, const Point2f &sample3,
+    sample_ray_differential(Float time, Float sample1,
+                            const Point2f &sample2, const Point2f &sample3,
                             Mask active = true) const;
 
     //! @}
@@ -148,7 +148,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ProjectiveCamera : public Sensor<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ProjectiveCamera, Sensor)
-    MTS_USING_BASE(Sensor)
+    MTS_IMPORT_BASE(Sensor)
     MTS_IMPORT_TYPES()
 
     /// Return the near clip plane distance

@@ -8,8 +8,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief Generic surface interaction data structure
- */
+/// Generic surface interaction data structure
 template <typename Float_, typename Spectrum_>
 struct Interaction {
     // =============================================================
@@ -77,9 +76,7 @@ struct Interaction {
     ENOKI_STRUCT(Interaction, t, time, wavelengths, p);
 };
 
-/** \brief Container for all information related to a scattering
- * event on a surface
- */
+/// Stores information related to a surface scattering interaction
 template <typename Float_, typename Spectrum_>
 struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
@@ -92,8 +89,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     MTS_IMPORT_OBJECT_TYPES()
     using Index            = typename CoreAliases::UInt32;
     using PositionSample3f = typename RenderAliases::PositionSample3f;
-    // Make parent fields visible
-    MTS_USING_BASE(Interaction, t, time, wavelengths, p)
+    // Make parent fields/functions visible
+    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, is_valid)
     //! @}
     // =============================================================
 
@@ -146,8 +143,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                 const Wavelength &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p), uv(ps.uv), n(ps.n),
           sh_frame(Frame3f(ps.n)) { }
-
-    using Base::is_valid;
 
     /// Convert a local shading-space vector into world space
     Vector3f to_world(const Vector3f &v) const {
@@ -219,25 +214,25 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         if (!ray.has_differentials)
             return;
 
-        /* Compute interaction with the two offset rays */
-        auto d   = dot(n, p),
-             t_x = (d - dot(n, ray.o_x)) / dot(n, ray.d_x),
-             t_y = (d - dot(n, ray.o_y)) / dot(n, ray.d_y);
+        // Compute interaction with the two offset rays
+        Float d   = dot(n, p),
+              t_x = (d - dot(n, ray.o_x)) / dot(n, ray.d_x),
+              t_y = (d - dot(n, ray.o_y)) / dot(n, ray.d_y);
 
-        /* Corresponding positions near the surface */
-        auto dp_dx = fmadd(ray.d_x, t_x, ray.o_x) - p,
-             dp_dy = fmadd(ray.d_y, t_y, ray.o_y) - p;
+        // Corresponding positions near the surface
+        Vector3f dp_dx = fmadd(ray.d_x, t_x, ray.o_x) - p,
+                 dp_dy = fmadd(ray.d_y, t_y, ray.o_y) - p;
 
-        /* Solve a least squares problem to turn this into UV coordinates */
-        auto a00 = dot(dp_du, dp_du),
-             a01 = dot(dp_du, dp_dv),
-             a11 = dot(dp_dv, dp_dv),
-             inv_det = rcp(a00*a11 - a01*a01);
+        // Solve a least squares problem to turn this into UV coordinates
+        Float a00 = dot(dp_du, dp_du),
+              a01 = dot(dp_du, dp_dv),
+              a11 = dot(dp_dv, dp_dv),
+              inv_det = rcp(a00*a11 - a01*a01);
 
-        auto b0x = dot(dp_du, dp_dx),
-             b1x = dot(dp_dv, dp_dx),
-             b0y = dot(dp_du, dp_dy),
-             b1y = dot(dp_dv, dp_dy);
+        Float b0x = dot(dp_du, dp_dx),
+              b1x = dot(dp_dv, dp_dx),
+              b0y = dot(dp_du, dp_dy),
+              b1y = dot(dp_dv, dp_dy);
 
         /* Set the UV partials to zero if dpdu and/or dpdv == 0 */
         inv_det = select(enoki::isfinite(inv_det), inv_det, 0.f);
@@ -273,13 +268,13 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     MuellerMatrix4f to_world_mueller(const MuellerMatrix4f &M_local, const Vector3f &wi_local,
                                      const Vector3f &wo_local) const {
         Vector3f wi_world = to_world(wi_local),
-                wo_world = to_world(wo_local);
+                 wo_world = to_world(wo_local);
 
         Vector3f in_basis_current = to_world(mueller::stokes_basis(-wi_local)),
-                in_basis_target  = mueller::stokes_basis(-wi_world);
+                 in_basis_target  = mueller::stokes_basis(-wi_world);
 
         Vector3f out_basis_current = to_world(mueller::stokes_basis(wo_local)),
-                out_basis_target  = mueller::stokes_basis(wo_world);
+                 out_basis_target  = mueller::stokes_basis(wo_world);
 
         return mueller::rotate_mueller_basis(M_local,
                                              -wi_world, in_basis_current, in_basis_target,
@@ -310,25 +305,25 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     MuellerMatrix4f to_local_mueller(const MuellerMatrix4f &M_world, const Vector3f &wi_world,
                                      const Vector3f &wo_world) const {
         Vector3f wi_local = to_local(wi_world),
-                wo_local = to_local(wo_world);
+                 wo_local = to_local(wo_world);
 
         Vector3f in_basis_current = to_local(mueller::stokes_basis(-wi_world)),
-                in_basis_target  = mueller::stokes_basis(-wi_local);
+                 in_basis_target  = mueller::stokes_basis(-wi_local);
 
         Vector3f out_basis_current = to_local(mueller::stokes_basis(wo_world)),
-                out_basis_target  = mueller::stokes_basis(wo_local);
+                 out_basis_target  = mueller::stokes_basis(wo_local);
 
         return mueller::rotate_mueller_basis(M_world,
                                              -wi_local, in_basis_current, in_basis_target,
                                              wo_local, out_basis_current, out_basis_target);
     }
 
-    //! @}
-    // =============================================================
-
     bool has_uv_partials() const {
         return any_nested(neq(duv_dx, 0.f) || neq(duv_dy, 0.f));
     }
+
+    //! @}
+    // =============================================================
 
     ENOKI_DERIVED_STRUCT(SurfaceInteraction, Base,
         ENOKI_BASE_FIELDS(t, time, wavelengths, p),

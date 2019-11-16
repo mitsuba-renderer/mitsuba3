@@ -11,7 +11,7 @@ template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(PointLight, Emitter)
-    MTS_USING_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
+    MTS_IMPORT_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     PointLight(const Properties &props) : Base(props) {
@@ -90,5 +90,5 @@ private:
 };
 
 
-MTS_IMPLEMENT_PLUGIN(PointLight, "Point emitter");
+MTS_EXPORT_PLUGIN(PointLight, "Point emitter");
 NAMESPACE_END(mitsuba)

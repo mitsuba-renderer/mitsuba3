@@ -10,15 +10,18 @@ NAMESPACE_BEGIN(mitsuba)
 // =============================================================
 //! @{ \name Color mode traits
 // =============================================================
-// Forward declaration
+
 template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 
 NAMESPACE_BEGIN(detail)
 
-template <typename Spectrum> struct spectral_traits {};
+template <typename Spectrum> struct spectrum_traits {};
+
 template <typename Float>
-struct spectral_traits<Color<Float, 1>> {
-    using ScalarSpectrumType                 = Color<scalar_t<Float>, 1>;
+struct spectrum_traits<Color<Float, 1>> {
+    using Scalar                             = Color<scalar_t<Float>, 1>;
+    using Unpolarized                        = Color<Float, 1>;
+    using Wavelength                         = Color<Float, 0>; // don't bother storing a wavelength
     static constexpr bool is_monochrome      = true;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = false;
@@ -27,8 +30,10 @@ struct spectral_traits<Color<Float, 1>> {
 };
 
 template <typename Float>
-struct spectral_traits<Color<Float, 3>> {
-    using ScalarSpectrumType                 = Color<scalar_t<Float>, 3>;
+struct spectrum_traits<Color<Float, 3>> {
+    using Scalar                             = Color<scalar_t<Float>, 3>;
+    using Wavelength                         = Color<Float, 0>;
+    using Unpolarized                        = Color<Float, 3>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = true;
     static constexpr bool is_spectral        = false;
@@ -36,9 +41,11 @@ struct spectral_traits<Color<Float, 3>> {
     static constexpr size_t texture_channels = 3;
 };
 
-template <typename Float, int SpectralSamples>
-struct spectral_traits<Spectrum<Float, SpectralSamples>> {
-    using ScalarSpectrumType                 = Spectrum<scalar_t<Float>, SpectralSamples>;
+template <typename Float, size_t Size>
+struct spectrum_traits<Spectrum<Float, Size>> {
+    using Scalar                             = Spectrum<scalar_t<Float>, Size>;
+    using Wavelength                         = Spectrum<Float, Size>;
+    using Unpolarized                        = Spectrum<Float, Size>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = true;
@@ -48,34 +55,32 @@ struct spectral_traits<Spectrum<Float, SpectralSamples>> {
 };
 
 template <typename T>
-struct spectral_traits<MuellerMatrix<T>> {
-    using ScalarSpectrumType                 = typename spectral_traits<T>::ScalarSpectrumType;
-    static constexpr bool is_monochrome      = spectral_traits<T>::is_monochrome;
-    static constexpr bool is_rgb             = spectral_traits<T>::is_rgb;
-    static constexpr bool is_spectral        = spectral_traits<T>::is_spectral;
+struct spectrum_traits<MuellerMatrix<T>> : spectrum_traits<T> {
+    using Scalar                             = MuellerMatrix<typename spectrum_traits<T>::Scalar>;
+    using Unpolarized                        = T;
     static constexpr bool is_polarized       = true;
-    static constexpr size_t texture_channels = spectral_traits<T>::texture_channels;
 };
 
 template <>
-struct spectral_traits<void> {
-    using ScalarSpectrumType = void;
+struct spectrum_traits<void> {
+    using Scalar      = void;
+    using Wavelength  = void;
+    using Unpolarized = void;
 };
+
+template <typename T>
+struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> { };
 
 NAMESPACE_END(detail)
 
-template <typename T>
-constexpr bool is_monochrome_v = detail::spectral_traits<T>::is_monochrome;
-template <typename T>
-constexpr bool is_rgb_v = detail::spectral_traits<T>::is_rgb;
-template <typename T>
-constexpr bool is_spectral_v = detail::spectral_traits<T>::is_spectral;
-template <typename T>
-constexpr bool is_polarized_v = detail::spectral_traits<T>::is_polarized;
-template <typename T>
-constexpr size_t texture_channels_v = detail::spectral_traits<T>::texture_channels;
-template <typename T>
-using scalar_spectrum_t = typename detail::spectral_traits<T>::ScalarSpectrumType;
+template <typename T> constexpr bool is_monochrome_v = detail::spectrum_traits<T>::is_monochrome;
+template <typename T> constexpr bool is_rgb_v = detail::spectrum_traits<T>::is_rgb;
+template <typename T> constexpr bool is_spectral_v = detail::spectrum_traits<T>::is_spectral;
+template <typename T> constexpr bool is_polarized_v = detail::spectrum_traits<T>::is_polarized;
+template <typename T> constexpr size_t texture_channels_v = detail::spectrum_traits<T>::texture_channels;
+template <typename T> using scalar_spectrum_t = typename detail::spectrum_traits<T>::Scalar;
+template <typename T> using wavelength_t = typename detail::spectrum_traits<T>::Wavelength;
+template <typename T> using depolarize_t = typename detail::spectrum_traits<T>::Unpolarized;
 
 //! @}
 // =============================================================
@@ -101,17 +106,6 @@ NAMESPACE_END(detail)
 
 template <typename Value>
 using DynamicBuffer = typename detail::dynamic_buffer_t<Value>::type;
-
-// =============================================================
-//! @{ \name Host vector
-// =============================================================
-
-template <typename T>
-using host_allocator = std::conditional_t<is_cuda_array_v<T>,
-                                          cuda_host_allocator<scalar_t<T>>,
-                                          std::allocator<scalar_t<T>>>;
-
-template <typename T> using host_vector = std::vector<scalar_t<T>, host_allocator<T>>;
 
 //! @}
 // =============================================================
@@ -191,5 +185,8 @@ template <typename T> struct underlying<MuellerMatrix<T>> {
 NAMESPACE_END(detail)
 
 template <typename T> using underlying_t = typename detail::underlying<T>::type;
+
+/// A variable that always evaluates to false (useful for static_assert)
+template <typename... > constexpr bool false_v = false;
 
 NAMESPACE_END(mitsuba)

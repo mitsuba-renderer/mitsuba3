@@ -14,8 +14,6 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This data structure can be used to transform uniformly distributed
  * samples to a stored discrete probability distribution.
- *
- * \ingroup libcore
  */
 template <typename Float_>
 class MTS_EXPORT_CORE DiscreteDistribution {

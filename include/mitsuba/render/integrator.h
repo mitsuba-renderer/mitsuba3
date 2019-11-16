@@ -162,7 +162,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER MonteCarloIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
-    MTS_USING_BASE(SamplingIntegrator)
+    MTS_IMPORT_BASE(SamplingIntegrator)
 
 protected:
     /// Create an integrator

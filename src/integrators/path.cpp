@@ -13,7 +13,7 @@ template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
-    MTS_USING_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MTS_IMPORT_BASE(m_max_depth, m_rr_depth)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
@@ -76,7 +76,7 @@ public:
                 // Determine probability of having sampled that same direction using BSDF sampling.
                 Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
-                Float mis = select(ds.delta, Float(1.f), mis_weight(ds.pdf, bsdf_pdf));
+                Float mis = select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
                 result[active_e] += throughput * emitter_val * bsdf_val * mis;
             }
 
@@ -128,9 +128,9 @@ public:
     Float mis_weight(Float pdf_a, Float pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Float(0.f));
+        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), 0.f);
     };
 };
 
-MTS_IMPLEMENT_PLUGIN(PathIntegrator, "Path Tracer integrator");
+MTS_EXPORT_PLUGIN(PathIntegrator, "Path Tracer integrator");
 NAMESPACE_END(mitsuba)

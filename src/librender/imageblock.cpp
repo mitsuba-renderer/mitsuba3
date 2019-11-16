@@ -284,5 +284,5 @@ std::string ImageBlock<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_INSTANTIATE_OBJECT(ImageBlock)
+MTS_INSTANTIATE_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

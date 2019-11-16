@@ -5,6 +5,7 @@
 #endif
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/python/config.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>

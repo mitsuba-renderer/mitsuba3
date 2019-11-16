@@ -23,8 +23,9 @@ template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Rectangle, Shape)
-    MTS_USING_BASE(Shape, bsdf, emitter, is_emitter)
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
     MTS_IMPORT_TYPES()
+
     using typename Base::ScalarSize;
 
     Rectangle(const Properties &props) : Base(props) {
@@ -192,5 +193,5 @@ private:
     ScalarFloat m_inv_surface_area;
 };
 
-MTS_IMPLEMENT_PLUGIN(Rectangle, "Rectangle intersection primitive");
+MTS_EXPORT_PLUGIN(Rectangle, "Rectangle intersection primitive");
 NAMESPACE_END(mitsuba)

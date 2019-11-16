@@ -11,7 +11,7 @@ template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(AreaLight, Emitter)
-    MTS_USING_BASE(Emitter, m_shape, m_medium)
+    MTS_IMPORT_BASE(Emitter, m_shape, m_medium)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     AreaLight(const Properties &props) : Base(props) {
@@ -93,5 +93,5 @@ private:
 };
 
 
-MTS_IMPLEMENT_PLUGIN(AreaLight, "Point emitter");
+MTS_EXPORT_PLUGIN(AreaLight, "Point emitter");
 NAMESPACE_END(mitsuba)

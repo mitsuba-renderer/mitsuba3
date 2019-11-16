@@ -1,6 +1,22 @@
 #include <mitsuba/core/rfilter.h>
+#include <mitsuba/core/config.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+MTS_VARIANT ReconstructionFilter<Float, Spectrum>::ReconstructionFilter(const Properties &/*props*/) { }
+MTS_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
+
+MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
+    Assert(m_radius > 0);
+
+    // Evaluate and store the filter values
+    for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
+        m_values[i] = hmax(eval((m_radius * i) / MTS_FILTER_RESOLUTION));
+
+    m_values[MTS_FILTER_RESOLUTION] = 0;
+    m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;
+    m_border_size = (uint32_t) std::ceil(m_radius - .5f - 2.f * math::Epsilon<ScalarFloat>);
+}
 
 std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value) {
     switch (value) {
@@ -14,5 +30,5 @@ std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value)
     return os;
 }
 
-MTS_INSTANTIATE_OBJECT(ReconstructionFilter)
+MTS_INSTANTIATE_CLASS(ReconstructionFilter)
 NAMESPACE_END(mitsuba)

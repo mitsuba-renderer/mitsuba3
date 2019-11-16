@@ -1,6 +1,5 @@
 #pragma once
 
-#include <enoki/matrix.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/shape.h>
@@ -37,10 +36,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Endpoint, Object)
-    MTS_IMPORT_TYPES();
-    using Medium = typename RenderAliases::Medium;
-    using Scene  = typename RenderAliases::Scene;
-    using Shape  = typename RenderAliases::Shape;
+    MTS_IMPORT_TYPES(Medium, Scene, Shape)
 
     // =============================================================
     //! @{ \name Sampling interface
@@ -83,9 +79,8 @@ public:
      *    and the actual used sampling density function.
      */
     virtual std::pair<Ray3f, Spectrum>
-    sample_ray(Float time,
-               Float sample1, const Point2f &sample2, const Point2f &sample3,
-               Mask active = true) const;
+    sample_ray(Float time, Float sample1, const Point2f &sample2,
+               const Point2f &sample3, Mask active = true) const;
 
     /**
      * \brief Given a reference point in the scene, sample a direction from the
@@ -214,26 +209,11 @@ public:
     virtual void set_medium(Medium *medium);
 
     /**
-     * \brief Create a special shape that represents the emitter
+     * \brief Inform the emitter about the properties of the scene
      *
-     * Some types of emitters are inherently associated with a surface, yet
-     * this surface is not explicitly needed for many kinds of rendering
-     * algorithms.
-     *
-     * An example would be an environment map, where the associated shape
-     * is a sphere surrounding the scene. Another example would be a
-     * perspective camera with depth of field, where the associated shape
-     * is a disk representing the aperture (remember that this class
-     * represents emitters in a generalized bidirectional sense, which
-     * includes sensors).
-     *
-     * When this shape is in fact needed by the underlying rendering algorithm,
-     * this function can be called to create it. The default implementation
-     * simply returns \c nullptr.
-     *
-     * \param scene
-     *     A pointer to the associated scene (the created shape is
-     *     allowed to depend on it)
+     * Various emitters that surround the scene (e.g. environment emitters)
+     * must be informed about the scene dimensions to operate correctly.
+     * This function is invoked by the \ref Scene constructor.
      */
     virtual void set_scene(const Scene *scene);
 

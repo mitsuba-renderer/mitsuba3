@@ -14,7 +14,7 @@ template <typename Float, typename Spectrum>
 class MitchellNetravaliFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(MitchellNetravaliFilter, ReconstructionFilter)
-    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     MitchellNetravaliFilter(const Properties &props) : Base(props) {
         // Filter radius
@@ -46,8 +46,8 @@ public:
     }
 
 protected:
-    Float m_b, m_c;
+    ScalarFloat m_b, m_c;
 };
 
-MTS_IMPLEMENT_PLUGIN(MitchellNetravaliFilter, "Mitchell-Netravali filter");
+MTS_EXPORT_PLUGIN(MitchellNetravaliFilter, "Mitchell-Netravali filter");
 NAMESPACE_END(mitsuba)

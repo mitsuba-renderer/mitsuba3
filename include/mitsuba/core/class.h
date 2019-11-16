@@ -50,8 +50,8 @@ public:
     Class(const std::string &name,
           const std::string &parent,
           const std::string &variant = "",
-          ConstructFunctor constr = nullptr,
-          UnserializeFunctor unser = nullptr,
+          ConstructFunctor construct = nullptr,
+          UnserializeFunctor unserialize = nullptr,
           const std::string &alias = "");
 
     /// Return the name of the class
@@ -64,7 +64,7 @@ public:
     const std::string &alias() const { return m_alias; }
 
     /// Does the class support instantiation over RTTI?
-    bool is_constructible() const { return m_constructor != nullptr; }
+    bool is_constructible() const { return m_construct != nullptr; }
 
     /// Does the class support serialization?
     bool is_serializable() const { return m_unserialize != nullptr; }
@@ -116,7 +116,7 @@ private:
 private:
     std::string m_name, m_parent_name, m_variant, m_alias;
     Class *m_parent;
-    ConstructFunctor m_constructor;
+    ConstructFunctor m_construct;
     UnserializeFunctor m_unserialize;
     static bool m_is_initialized;
 };
@@ -129,25 +129,31 @@ private:
 #define MTS_CLASS(x) x::m_class
 
 /**
- * \brief This macro must be used in the initial definition in
- * classes that derive from \ref Object.
+ * \brief This macro should be used in the class declaration of (non-templated)
+ * classes that directly or indirectly derive from \ref Object.
  *
- * This is needed for the basic RTTI support provided by Mitsuba objects.
- * For instance, a class definition might look like the following:
+ * This is needed for the basic RTTI support provided by Mitsuba objects (see
+ * \ref Class for details). A basic class definition might look as follows:
  *
  * \code
  * class MyObject : public Object {
  * public:
+ *     /// Declare RTTI data structures
+ *     MTS_DECLARE_CLASS(MyObject, Object)
+ *
  *     MyObject();
  *
- *     /// Important: declare RTTI data structures
- *     MTS_DECLARE_CLASS()
  * protected:
- *     /// Important: needs to declare a protected virtual destructor
+ *     /// Important: declare a protected virtual destructor
  *     virtual ~MyObject();
  *
  * };
  * \endcode
+ *
+ * The virtual protected destructure ensures that instances can only be
+ * deallocated using the reference counting wrapper \ref ref.
+ *
+ * \sa MTS_DECLARE_VARIANT
  */
 #define MTS_DECLARE_CLASS(Name, Parent, ...)                                                       \
     inline static const Class *m_class = new Class(                                                \
@@ -157,6 +163,34 @@ private:
          ## __VA_ARGS__);                                                                          \
     const Class *class_() const override { return m_class; }
 
+/*
+ * \brief This macro should be used in the class declaration of templated
+ * classes that directly or indirectly derive from \ref Object.
+ *
+ * This is needed for the basic RTTI support provided by Mitsuba objects (see
+ * \ref Class for details). A basic class definition might look as follows:
+ *
+ * \code
+ * template <typename Float, typename Spectrum>
+ * class MyEmitter : public Emitter<Float, Spectrum> {
+ * public:
+ *     /// Declare RTTI data structures
+ *     MTS_DECLARE_CLASS_VARIANT(MyEmitter, Emitter)
+ *
+ *     MyEmitter();
+ *
+ * protected:
+ *     /// Important: declare a protected virtual destructor
+ *     virtual ~MyEmitter();
+ *
+ * };
+ * \endcode
+ *
+ * The virtual protected destructure ensures that instances can only be
+ * deallocated using the reference counting wrapper \ref ref.
+ *
+ * \sa MTS_DECLARE_CLASS
+ */
 #define MTS_DECLARE_CLASS_VARIANT(Name, Parent, ...)                                               \
     inline static const Class *m_class = new Class(                                                \
         #Name, #Parent,                                                                            \
@@ -166,6 +200,37 @@ private:
          ## __VA_ARGS__);                                                                          \
     const Class *class_() const override { return m_class; }
 
+
+/// Instantiate and export a Mitsuba plugin
+#define MTS_EXPORT_PLUGIN(Name, Descr)                                                             \
+    extern "C" {                                                                                   \
+        MTS_EXPORT const char *plugin_name() { return #Name; }                                     \
+        MTS_EXPORT const char *plugin_descr() { return Descr; }                                    \
+    }                                                                                              \
+    MTS_INSTANTIATE_CLASS(Name)
+
+/**
+ * \brief Imports the desired methods and fields by generating a sequence of
+ * `using` declarations. This is useful when inheriting from template parents,
+ * since methods and fields must be explicitly made visible.
+ *
+ * For example,
+ *
+ * \code
+ *     MTS_IMPORT_BASE(m_flags, m_components)
+ * \endcode
+ *
+ * expands to
+ *
+ * \code
+ *     using Base = Name<Float, Spectrum>;
+ *     using Base::m_flags;
+ *     using Base::m_components;
+ * \endcode
+ */
+#define MTS_IMPORT_BASE(Name, ...)                                                                 \
+    using Base = Name<Float, Spectrum>;                                                            \
+    ENOKI_MAP_IMPORT(Base, ##__VA_ARGS__)
 
 NAMESPACE_BEGIN(detail)
 /// Replacement for std::is_constructible which also works when the destructor is not accessible
@@ -181,40 +246,15 @@ public:
 template <typename T, typename... Args>
 constexpr bool is_constructible_v = is_constructible<T, Args...>::value;
 
-template <typename T, typename std::enable_if_t<is_constructible_v<T, const Properties &>, int> = 0>
+template <typename T, std::enable_if_t<is_constructible_v<T, const Properties &>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return [](const Properties &p) -> Object * { return new T(p); }; }
-template <typename T, typename std::enable_if_t<!is_constructible_v<T, const Properties &>, int> = 0>
+template <typename T, std::enable_if_t<!is_constructible_v<T, const Properties &>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return nullptr; }
-template <typename T, typename std::enable_if_t<is_constructible_v<T, Stream *>, int> = 0>
+template <typename T, std::enable_if_t<is_constructible_v<T, Stream *>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) -> Object * { return new T(s); }; }
-template <typename T, typename std::enable_if_t<!is_constructible_v<T, Stream *>, int> = 0>
+template <typename T, std::enable_if_t<!is_constructible_v<T, Stream *>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
-
-/**
- * \brief Declares an alias Base for the parent template class and
- * imports the desired methods and fields with `using` declarations.
- * This is useful when inheriting from template parents, since methods
- * and fields must be explicitly made visible.
- * Note that the parent class must be templated over <Float, Spectrum>.
- *
- * For example,
- *     MTS_USING_BASE(BSDF, m_flags, m_components)
- * expands to:
- *     using Base = BSDF<Float, Spectrum>;
- *     using Base::m_flags;
- *     using Base::m_components;
- */
-#define MTS_USING_BASE(class_, ...) \
-    using Base = class_<Float, Spectrum>; \
-    ENOKI_MAP_IMPORT(Base, ##__VA_ARGS__)
-
-/**
- * Variant of MTS_USING_BASE for parent classes that are only templated over Float.
- */
-#define MTS_USING_BASE_FLOAT(class_, ...) \
-    using Base = class_<Float>; \
-    ENOKI_MAP_IMPORT(Base, ##__VA_ARGS__)
 
 extern MTS_EXPORT_CORE const Class *m_class;
 

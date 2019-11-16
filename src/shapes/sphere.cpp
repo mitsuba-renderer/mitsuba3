@@ -20,8 +20,9 @@ template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Sphere, Shape)
-    MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
     MTS_IMPORT_TYPES()
+
     using typename Base::ScalarSize;
 
     Sphere(const Properties &props) : Base(props) {
@@ -332,10 +333,10 @@ private:
     ScalarTransform4f m_object_to_world;
     ScalarTransform4f m_world_to_object;
     ScalarPoint3f m_center;
-    ScalarFloat   m_radius;
-    ScalarFloat   m_inv_surface_area;
-    bool    m_flip_normals;
+    ScalarFloat m_radius;
+    ScalarFloat m_inv_surface_area;
+    bool m_flip_normals;
 };
 
-MTS_IMPLEMENT_PLUGIN(Sphere, "Sphere intersection primitive");
+MTS_EXPORT_PLUGIN(Sphere, "Sphere intersection primitive");
 NAMESPACE_END(mitsuba)

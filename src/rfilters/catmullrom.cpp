@@ -11,7 +11,7 @@ template <typename Float, typename Spectrum>
 class CatmullRomFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(CatmullRomFilter, ReconstructionFilter)
-    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     CatmullRomFilter(const Properties &props) : Base(props) {
         m_radius = 2.f;
@@ -41,5 +41,5 @@ public:
 
 };
 
-MTS_IMPLEMENT_PLUGIN(CatmullRomFilter, "Catmull-Rom filter");
+MTS_EXPORT_PLUGIN(CatmullRomFilter, "Catmull-Rom filter");
 NAMESPACE_END(mitsuba)

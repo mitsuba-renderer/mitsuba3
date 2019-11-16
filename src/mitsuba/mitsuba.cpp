@@ -33,12 +33,10 @@ Options:
         Rendering mode. Defines a combination of floating point
         and color types.
 
-        Default: )" MTS_DEFAULT_MODE R"(
+        Default: )" MTS_DEFAULT_VARIANT R"(
 
         Available modes:
-)"
-MTS_CONFIGURATIONS_INDENTED
-R"(
+)" << string::indent(MTS_VARIANTS, 14) << R"(
     -v, --verbose
         Be more verbose. (can be specified multiple times)
 
@@ -82,23 +80,6 @@ bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
     else
         Log(Warn, "\U0000274C Rendering failed, result not saved.");
     return success;
-}
-
-template <typename Float, typename Spectrum>
-void log_special_modes() {
-    Log(Info, "%s", util::info_build(__global_thread_count));
-    Log(Info, "%s", util::info_copyright());
-    Log(Info, "%s", util::info_features());
-
-    if constexpr (is_monochrome_v<Spectrum>)
-        Log(Info, "\U0001F39E Monochrome mode enabled.");
-
-    if constexpr (is_double_v<scalar_t<Float>>)
-        Log(Warn, "Double precision mode enabled.");
-
-#if !defined(NDEBUG)
-    Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
-#endif
 }
 
 int main(int argc, char *argv[]) {
@@ -148,7 +129,7 @@ int main(int argc, char *argv[]) {
                                             value.substr(sep+1)));
             arg_define = arg_define->next();
         }
-        std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_MODE);
+        std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
@@ -168,7 +149,13 @@ int main(int argc, char *argv[]) {
         if (!*arg_extra || *arg_help) {
             help(__global_thread_count);
         } else {
-            MTS_ROUTE_MODE(mode, log_special_modes);
+            Log(Info, "%s", util::info_build(__global_thread_count));
+            Log(Info, "%s", util::info_copyright());
+            Log(Info, "%s", util::info_features());
+
+#if !defined(NDEBUG)
+            Log(Warn, "Renderer is compiled in debug mode, performance will be considerably reduced.");
+#endif
         }
 
         while (arg_extra && *arg_extra) {
@@ -190,7 +177,7 @@ int main(int argc, char *argv[]) {
             ref<Object> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
 
-            bool success  = MTS_ROUTE_MODE(mode, render, parsed.get(), sensor_i, filename);
+            bool success  = MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename);
             print_profile = print_profile || success;
             arg_extra = arg_extra->next();
         }

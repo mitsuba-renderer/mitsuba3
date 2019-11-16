@@ -14,7 +14,7 @@ template <typename Float, typename Spectrum>
 class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
-    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
     MTS_IMPORT_TYPES()
 
     GaussianFilter(const Properties &props) : Base(props) {
@@ -42,5 +42,5 @@ protected:
     ScalarFloat m_stddev, m_alpha, m_bias;
 };
 
-MTS_IMPLEMENT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
+MTS_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
 NAMESPACE_END(mitsuba)

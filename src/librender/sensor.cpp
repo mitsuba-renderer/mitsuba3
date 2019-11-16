@@ -93,7 +93,8 @@ MTS_VARIANT void Sensor<Float, Spectrum>::set_crop_window(const ScalarVector2i &
 // ProjectiveCamera interface
 // =============================================================================
 
-MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props) : Base(props) {
+MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props)
+    : Base(props) {
     /* Distance to the near clipping plane */
     m_near_clip = props.float_("near_clip", 1e-2f);
     /* Distance to the far clipping plane */
@@ -110,6 +111,6 @@ MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties
 
 MTS_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
 
-MTS_INSTANTIATE_OBJECT(Sensor)
-MTS_INSTANTIATE_OBJECT(ProjectiveCamera)
+MTS_INSTANTIATE_CLASS(Sensor)
+MTS_INSTANTIATE_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

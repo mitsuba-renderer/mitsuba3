@@ -41,10 +41,10 @@ Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
 
 Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
     using Array3f = Array<float, 3>;
-    using Color3f = Color<float, 3>;
+    using Spectrum = Spectrum<float, 4>;
     using Matrix3f = Matrix<float, 3>;
-    using ContinuousSpectrum = ContinuousSpectrum<float, Color3f>;
-    using Wavelength = wavelength_t<Color3f>;
+    using ContinuousSpectrum = ContinuousSpectrum<float, Spectrum>;
+    using Wavelength = wavelength_t<Spectrum>;
 
     ref<ContinuousSpectrum> d65 =
         PluginManager::instance()->create_object<ContinuousSpectrum>(
@@ -54,7 +54,6 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
         d65 = (ContinuousSpectrum *) expanded[0].get();
 
     const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
-    set_label(coeff, "coeff");
 
     Array3f accum = 0.f;
     float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
@@ -69,18 +68,12 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
         else
             weight *= 3.f;
 
-        Array3f weight_v = weight * d65->eval(Color3f(lambda))[0] * cie1931_xyz(lambda);
-        float lambda_v(lambda);
+        Array3f weight_v = weight * d65->eval(lambda).x() * cie1931_xyz(lambda);
 
         float model_eval =
-            srgb_model_eval<Color3f>(coeff, Wavelength(lambda_v))[0];
+            srgb_model_eval<Spectrum>(coeff, Wavelength(lambda)).x();
 
         accum = fmadd(weight_v, model_eval, accum);
-
-        set_label(lambda_v, ("lambda_" + std::to_string(i)).c_str());
-        set_label(weight_v, ("weight_" + std::to_string(i)).c_str());
-        set_label(accum, ("accum_" + std::to_string(i)).c_str());
-        set_label(model_eval, ("model_eval_" + std::to_string(i)).c_str());
     }
 
     Matrix3f xyz_to_srgb(

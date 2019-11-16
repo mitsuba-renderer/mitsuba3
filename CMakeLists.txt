@@ -181,7 +181,6 @@ if (MTS_ENABLE_AUTODIFF)
   link_directories(${MTS_OPTIX_PATH}/lib64)
   add_definitions(-DMTS_USE_OPTIX=1)
   add_definitions(-DMTS_ENABLE_AUTODIFF=1)
-  add_definitions(-DRGB2SPEC_MAPPING=2)
 endif()
 
 # Compile with compiler warnings turned on
@@ -454,17 +453,20 @@ elseif (UNIX)
   SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
-# Generate the config.h header from the configuration
+# Generate the config.h headers from the configuration
 add_custom_target(
   mitsuba-conf-header ALL
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/python/config.h
 )
 add_custom_command(
   OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
+          ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/python/config.h
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
   COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
 set_source_files_properties(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
   PROPERTIES GENERATED TRUE

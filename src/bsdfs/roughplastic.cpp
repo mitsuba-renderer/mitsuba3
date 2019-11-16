@@ -17,7 +17,7 @@ template <typename Float, typename Spectrum>
 class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughPlastic, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
 
     RoughPlastic(const Properties &props) : Base(props) {
@@ -166,8 +166,6 @@ public:
         }
 
         if (has_diffuse) {
-            using UnpolarizedSpectrum = depolarized_t<Spectrum>;
-
             Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active),
                   t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
@@ -272,6 +270,6 @@ private:
     ScalarFloat m_internal_reflectance;
 };
 
-MTS_IMPLEMENT_PLUGIN(RoughPlastic, "Rough plastic");
+MTS_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
 
 NAMESPACE_END(mitsuba)

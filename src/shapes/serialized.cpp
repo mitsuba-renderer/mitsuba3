@@ -15,27 +15,27 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SerializedMesh, _GLIBCXX_SYNCHRONIZATION_HAPPENS_AFTER)
-    MTS_USING_BASE(Mesh, Base, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
-                m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
-                m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
-                recompute_vertex_normals, is_emitter, emitter, vertex, has_vertex_normals,
-                has_vertex_texcoords, vertex_texcoord, vertex_normal, vertex_position);
+    MTS_DECLARE_CLASS_VARIANT(SerializedMesh, Mesh)
+    MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
+                    m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
+                    m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
+                    recompute_vertex_normals, is_emitter, emitter, vertex, has_vertex_normals,
+                    has_vertex_texcoords, vertex_texcoord, vertex_normal, vertex_position)
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
-    enum ETriMeshFlags {
-        EHasNormals      = 0x0001,
-        EHasTexcoords    = 0x0002,
-        EHasTangents     = 0x0004, // unused
-        EHasColors       = 0x0008,
-        EFaceNormals     = 0x0010,
-        ESinglePrecision = 0x1000,
-        EDoublePrecision = 0x2000
+    enum class ETriMeshFlags {
+        HasNormals      = 0x0001,
+        HasTexcoords    = 0x0002,
+        HasTangents     = 0x0004, // unused
+        HasColors       = 0x0008,
+        FaceNormals     = 0x0010,
+        SinglePrecision = 0x1000,
+        DoublePrecision = 0x2000
     };
 
     SerializedMesh(const Properties &props) : Base(props) {
@@ -140,13 +140,13 @@ public:
             m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
         }
 
-        if (flags & EHasTexcoords) {
+        if (flags & Flags::HasTexcoords) {
             for (auto name : { "u", "v" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
         }
 
-        if (flags & EHasColors) {
+        if (flags & Flags::HasColors) {
             for (auto name : { "r", "g", "b" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_color_offset = (ScalarIndex) m_vertex_struct->offset("r");
@@ -164,10 +164,10 @@ public:
         m_face_count = (ScalarSize) face_count;
         m_faces = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
 
-        bool double_precision = flags & EDoublePrecision;
+        bool double_precision = flags & Flags::DoublePrecision;
         read_helper(stream, double_precision, m_vertex_struct->offset("x"), 3);
 
-        if (flags & EHasNormals) {
+        if (flags & Flags::HasNormals) {
             if (m_disable_vertex_normals)
                 // Skip over vertex normals provided in the file.
                 advance_helper(stream, double_precision, 3);
@@ -176,10 +176,10 @@ public:
                             m_vertex_struct->offset("nx"), 3);
         }
 
-        if (flags & EHasTexcoords)
+        if (flags & Flags::HasTexcoords)
             read_helper(stream, double_precision, m_vertex_struct->offset("u"), 2);
 
-        if (flags & EHasColors)
+        if (flags & Flags::HasColors)
             read_helper(stream, double_precision, m_vertex_struct->offset("r"), 3);
 
         stream->read(m_faces.get(), m_face_count * sizeof(ScalarIndex) * 3);
@@ -208,7 +208,7 @@ public:
             }
         }
 
-        if (!m_disable_vertex_normals && (flags & EHasNormals) == 0)
+        if (!m_disable_vertex_normals && (flags & Flags::HasNormals) == 0)
             recompute_vertex_normals();
 
         if (is_emitter())
@@ -271,5 +271,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(SerializedMesh, "Serialized mesh file")
+MTS_EXPORT_PLUGIN(SerializedMesh, "Serialized mesh file")
 NAMESPACE_END(mitsuba)

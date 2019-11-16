@@ -24,8 +24,9 @@ template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Disk, Shape)
-    MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
     MTS_IMPORT_TYPES()
+
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
@@ -178,5 +179,5 @@ private:
     ScalarFloat m_inv_surface_area;
 };
 
-MTS_IMPLEMENT_PLUGIN(Disk, "Disk intersection primitive");
+MTS_EXPORT_PLUGIN(Disk, "Disk intersection primitive");
 NAMESPACE_END(mitsuba)

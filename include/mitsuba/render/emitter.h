@@ -11,16 +11,13 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Emitter : public Endpoint<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Emitter, Endpoint, "emitter")
-    MTS_USING_BASE(Endpoint)
+    MTS_IMPORT_BASE(Endpoint)
 
     /// Is this an environment map light emitter?
-    virtual bool is_environment() const {
-        return false;
-    }
+    virtual bool is_environment() const;
 
 protected:
-    Emitter(const Properties &props)
-        : Base(props) { }
+    Emitter(const Properties &props);
 
     virtual ~Emitter();
 };

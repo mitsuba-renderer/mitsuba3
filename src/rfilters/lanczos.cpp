@@ -16,7 +16,7 @@ template <typename Float, typename Spectrum>
 class LanczosSincFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(LanczosSincFilter, ReconstructionFilter)
-    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
     MTS_IMPORT_TYPES()
 
     LanczosSincFilter(const Properties &props) : Base(props) {
@@ -41,5 +41,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter");
+MTS_EXPORT_PLUGIN(LanczosSincFilter, "Lanczos Sinc filter");
 NAMESPACE_END(mitsuba)

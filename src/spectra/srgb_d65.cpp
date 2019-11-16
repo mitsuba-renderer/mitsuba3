@@ -9,7 +9,6 @@ template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SRGBEmitterSpectrum, ContinuousSpectrum)
-    MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 
     SRGBEmitterSpectrum(const Properties &props) {
@@ -58,5 +57,5 @@ private:
 #endif
 };
 
-MTS_IMPLEMENT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
+MTS_EXPORT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
 NAMESPACE_END(mitsuba)

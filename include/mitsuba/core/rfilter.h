@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \see Resampler
  */
-enum class FilterBoundaryCondition : uint32_t {
+enum class FilterBoundaryCondition {
     /// Clamp to the outermost sample position (default)
     Clamp = 0,
 
@@ -60,33 +60,20 @@ public:
     virtual Float eval(Float x) const = 0;
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
-    template <typename T>
-    MTS_INLINE T eval_discretized(const T &x, const mask_t<T> &active = true) const {
-        using Int = int32_array_t<T>;
-        Int index = min(Int(abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
-        return gather<T>(m_values, index, active);
+    MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
+        Int32 index = min(Int32(abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
+        return gather<Float>(m_values, index, active);
     }
 
 protected:
     /// Create a new reconstruction filter
-    ReconstructionFilter(const Properties & /*props*/) { };
+    ReconstructionFilter(const Properties &props);
 
     /// Virtual destructor
-    virtual ~ReconstructionFilter() { };
+    virtual ~ReconstructionFilter();
 
     /// Mandatory initialization prior to calls to \ref eval_discretized()
-    void init_discretization() {
-        Assert(m_radius > 0);
-
-        /* Evaluate and store the filter values */
-        for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
-            m_values[i] = hmax(eval((m_radius * i) / MTS_FILTER_RESOLUTION));
-
-        m_values[MTS_FILTER_RESOLUTION] = 0;
-        m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;
-        m_border_size = (uint32_t) std::ceil(m_radius - ScalarFloat(0.5)
-                                             - ScalarFloat(2) * math::Epsilon<ScalarFloat>);
-    }
+    void init_discretization();
 
 protected:
     ScalarFloat m_radius, m_scale_factor;

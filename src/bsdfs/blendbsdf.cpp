@@ -10,9 +10,8 @@ template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(BlendBSDF, BSDF)
-    MTS_USING_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
-    using BSDF = Base;
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
+    MTS_IMPORT_TYPES(ContinuousSpectrum, BSDF)
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
@@ -39,7 +38,6 @@ public:
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float sample1, const Point2f &sample2,
                                              Mask active) const override {
-
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -73,8 +71,8 @@ public:
         return { bs, result };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo, Mask active) const override {
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -126,5 +124,5 @@ protected:
     ref<BSDF> m_nested_bsdf[2];
 };
 
-MTS_IMPLEMENT_PLUGIN(BlendBSDF, "BlendBSDF material")
+MTS_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
 NAMESPACE_END(mitsuba)

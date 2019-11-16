@@ -30,7 +30,7 @@ template <typename Float, typename Spectrum>
 class Grid3D final : public Grid3DBase<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Grid3D, Grid3DBase)
-    MTS_USING_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
+    MTS_IMPORT_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
     MTS_IMPORT_TYPES()
 
     static constexpr int m_channel_count = texture_channels_v<Spectrum>;
@@ -227,5 +227,5 @@ protected:
     bool m_fixed_max = false;
 };
 
-MTS_IMPLEMENT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
+MTS_EXPORT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
 NAMESPACE_END(mitsuba)

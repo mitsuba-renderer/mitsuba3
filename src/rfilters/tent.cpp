@@ -1,4 +1,5 @@
 #include <mitsuba/core/rfilter.h>
+#include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -13,7 +14,8 @@ template <typename Float, typename Spectrum>
 class TentFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(TentFilter, ReconstructionFilter)
-    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_TYPES()
 
     TentFilter(const Properties &props) : Base(props) {
         m_radius = 1.0f;
@@ -30,8 +32,8 @@ public:
     }
 
 private:
-    Float m_inv_radius;
+    ScalarFloat m_inv_radius;
 };
 
-MTS_IMPLEMENT_PLUGIN(TentFilter, "Tent filter");
+MTS_EXPORT_PLUGIN(TentFilter, "Tent filter");
 NAMESPACE_END(mitsuba)

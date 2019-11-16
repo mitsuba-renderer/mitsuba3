@@ -692,5 +692,5 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
 }
 #endif
 
-MTS_INSTANTIATE_OBJECT(Mesh)
+MTS_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

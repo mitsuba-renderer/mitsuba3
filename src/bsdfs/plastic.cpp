@@ -13,9 +13,8 @@ template <typename Float, typename Spectrum>
 class SmoothPlastic final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothPlastic, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
-    using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
     SmoothPlastic(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
@@ -187,5 +186,5 @@ private:
     bool m_nonlinear;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothPlastic, "Smooth plastic");
+MTS_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic");
 NAMESPACE_END(mitsuba)

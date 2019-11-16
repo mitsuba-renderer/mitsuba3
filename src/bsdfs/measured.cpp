@@ -15,9 +15,10 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Measured final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Measured, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_DECLARE_CLASS_VARIANT(Measured, BSDF)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES()
+
     using Warp2D0 = warp::Marginal2D<Float, 0>;
     using Warp2D2 = warp::Marginal2D<Float, 2>;
     using Warp2D3 = warp::Marginal2D<Float, 3>;
@@ -410,5 +411,5 @@ private:
     int m_reduction;
 };
 
-MTS_IMPLEMENT_PLUGIN(Measured, "Measured material")
+MTS_EXPORT_PLUGIN(Measured, "Measured material")
 NAMESPACE_END(mitsuba)

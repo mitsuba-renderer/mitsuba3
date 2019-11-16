@@ -10,7 +10,7 @@ template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothDiffuse, BSDF)
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     SmoothDiffuse(const Properties &props) : Base(props) {
@@ -78,9 +78,10 @@ public:
     }
 
     std::vector<ref<Object>> children() override { return { m_reflectance.get() }; }
+
 private:
     ref<ContinuousSpectrum> m_reflectance;
 };
 
-MTS_IMPLEMENT_PLUGIN(SmoothDiffuse, "Smooth diffuse material");
+MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material");
 NAMESPACE_END(mitsuba)

@@ -65,5 +65,5 @@ MTS_VARIANT void Film<Float, Spectrum>::check_valid_crop_window() const {
     }
 }
 
-MTS_INSTANTIATE_OBJECT(Film)
+MTS_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)

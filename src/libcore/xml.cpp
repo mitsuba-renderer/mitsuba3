@@ -149,7 +149,6 @@ void register_class(const Class *class_) {
 
     // Register the new class as an object tag
     const std::string &alias = class_->alias();
-    std::cout << "Registering type " << alias << " " << class_->variant() << std::endl;
 
     if (tags->find(alias) == tags->end())
         (*tags)[alias] = Tag::Object;
@@ -234,8 +233,8 @@ struct XMLObject {
     tbb::spin_mutex mutex;
 };
 
-enum class ColorMode : uint32_t {
-    Monochrome = 0,
+enum class ColorMode {
+    Monochrome,
     RGB,
     Spectral
 };
@@ -248,29 +247,22 @@ ColorMode variant_to_color_mode() {
         return ColorMode::RGB;
     else if constexpr (is_spectral_v<Spectrum>)
         return ColorMode::Spectral;
-    else {
-        Throw("Should never happen");
-        // static_assert(false);
-    }
+    else
+        static_assert(false_v<Float, Spectrum>, "This should never happen!");
 }
 
-class XMLParseContext {
-public:
+struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
     ColorMode color_mode;
 
-    const std::string &variant() const { return m_variant; }
-    void set_variant(const std::string &variant) {
-        m_variant = variant;
-        color_mode = MTS_ROUTE_MODE(variant, variant_to_color_mode);
+    XMLParseContext(const std::string &variant) : variant(variant) {
+        color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
     }
 
-protected:
-    std::string m_variant;
+    std::string variant;
 };
-
 
 /// Helper function to check if attributes are fully specified
 static void check_attributes(XMLSource &src, const pugi::xml_node &node,
@@ -445,7 +437,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
         Tag tag = it->second;
 
         if (node.attribute("type") && tag != Tag::Object
-            && tag_class->find(class_key(node.name(), ctx.variant())) != tag_class->end())
+            && tag_class->find(class_key(node.name(), ctx.variant)) != tag_class->end())
             tag = Tag::Object;
 
         /* Perform some safety checks to make sure that the XML tree really makes sense */
@@ -530,10 +522,10 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "\"%s\" has duplicate id \"%s\" (previous was at %s)",
                             node_name, id, src.offset(it_inst->second.location));
 
-                    auto it2 = tag_class->find(class_key(node_name, ctx.variant()));
+                    auto it2 = tag_class->find(class_key(node_name, ctx.variant));
                     if (it2 == tag_class->end())
                         src.throw_error(node, "could not retrieve class object for "
-                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant());
+                                       "tag \"%s\" and variant \"%s\"", node_name, ctx.variant);
 
                     size_t arg_counter_nested = 0;
                     for (pugi::xml_node &ch: node.children()) {
@@ -716,7 +708,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
                     if (tokens.size() != 3)
-                        src.throw_error(node, "'color' tag requires three values (got \"%s\")", node.attribute("value").value());
+                        src.throw_error(node, "'color' tag requires three values (got \"%s\")",
+                                        node.attribute("value").value());
 
                     try {
                         Color3f col(detail::stof(tokens[0]),
@@ -728,7 +721,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
 
                         props.set_color(node.attribute("name").value(), col);
                     } catch (...) {
-                        src.throw_error(node, "could not parse color \"%s\"", node.attribute("value").value());
+                        src.throw_error(node, "could not parse color \"%s\"",
+                                        node.attribute("value").value());
                     }
                 }
                 break;
@@ -742,7 +736,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         tokens.push_back(tokens[0]);
                     }
                     if (tokens.size() != 3)
-                        src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")", node.attribute("value").value());
+                        src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")",
+                                        node.attribute("value").value());
 
                     Properties props2(within_emitter ? "srgb_d65" : "srgb");
                     props2.set_bool("within_emitter", within_emitter);
@@ -769,7 +764,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_plugin_name("srgb");
                     }
                     ref<Object> obj = PluginManager::instance()->create_object(
-                        props2, Class::for_name("ContinuousSpectrum", ctx.variant()));
+                        props2, Class::for_name("ContinuousSpectrum", ctx.variant));
                     props.set_object(node.attribute("name").value(), obj);
                 }
                 break;
@@ -794,7 +789,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_float("value", value);
 
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("ContinuousSpectrum", ctx.variant()));
+                            props2, Class::for_name("ContinuousSpectrum", ctx.variant));
                         auto expanded   = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
@@ -841,7 +836,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             if (n <= 1)
                                 continue;
                             Float distance = (wavelengths[n - 1] - wavelengths[n - 2]);
-                            if (distance < 0.0f)
+                            if (distance < 0.f)
                                 src.throw_error(node, "wavelengths must be specified in increasing order");
                             if (n == 2)
                                 interval = distance;
@@ -858,7 +853,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("ContinuousSpectrum", ctx.variant()));
+                            props2, Class::for_name("ContinuousSpectrum", ctx.variant));
 
                         if (ctx.color_mode == ColorMode::Monochrome) {
                             /* Monochrome mode: replace by the equivalent uniform spectrum by
@@ -881,7 +876,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             props2 = Properties("uniform");
                             props2.set_float("value", average);
                             obj = PluginManager::instance()->create_object(
-                                props2, Class::for_name("spectrum", ctx.variant()));
+                                props2, Class::for_name("ContinuousSpectrum", ctx.variant));
 #else
                             Throw("Not implemented yet: interpolated spectrum conversion in "
                                   "Monochrome mode");
@@ -955,7 +950,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             try {
                                 matrix(i, j) = detail::stof(tokens[i * 4 + j]);
                             } catch (...) {
-                                src.throw_error(node, "could not parse floating point value \"%s\"", tokens[i*4 + j]);
+                                src.throw_error(node, "could not parse floating point value \"%s\"",
+                                                tokens[i * 4 + j]);
                             }
                         }
                     }
@@ -1089,8 +1085,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
               src.offset(result.offset), result.description());
 
     pugi::xml_node root = doc.document_element();
-    detail::XMLParseContext ctx;
-    ctx.set_variant(variant);
+    detail::XMLParseContext ctx(variant);
     Properties prop;
     size_t arg_counter; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
@@ -1123,8 +1118,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     pugi::xml_node root = doc.document_element();
 
-    detail::XMLParseContext ctx;
-    ctx.set_variant(variant);
+    detail::XMLParseContext ctx(variant);
     Properties prop;
     size_t arg_counter = 0; /* Unused */
     auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,

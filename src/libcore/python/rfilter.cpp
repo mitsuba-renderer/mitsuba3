@@ -59,7 +59,7 @@ MTS_PY_EXPORT(rfilter) {
                 vectorize<Float>(&ReconstructionFilter::eval),
                 D(ReconstructionFilter, eval), "x"_a)
             .def("eval_discretized",
-                vectorize<Float>(&ReconstructionFilter::template eval_discretized<Float>),
+                vectorize<Float>(&ReconstructionFilter::eval_discretized),
                 D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
             ;
     }

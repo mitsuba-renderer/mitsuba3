@@ -9,8 +9,8 @@ template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, ContinuousSpectrum)
-    MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
+
     static constexpr size_t kChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
 
     SRGBSpectrum(const Properties &props) {
@@ -53,6 +53,6 @@ protected:
     Array<Float, kChannelCount> m_coeff;
 };
 
-MTS_IMPLEMENT_PLUGIN(SRGBSpectrum, "sRGB spectrum")
+MTS_EXPORT_PLUGIN(SRGBSpectrum, "sRGB spectrum")
 
 NAMESPACE_END(mitsuba)

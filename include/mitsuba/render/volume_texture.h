@@ -36,7 +36,7 @@ class Grid3DBase : public Texture3D<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Grid3DBase, Texture3D)
     MTS_IMPORT_TYPES()
-    MTS_USING_BASE(Texture3D, update_bbox, m_world_to_local)
+    MTS_IMPORT_BASE(Texture3D, update_bbox, m_world_to_local)
 
     explicit Grid3DBase(const Properties &props) : Base(props) {}
 

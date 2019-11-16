@@ -14,7 +14,7 @@ template <typename Float, typename Spectrum>
 class BoxFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(BoxFilter, ReconstructionFilter)
-    MTS_USING_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
 
     BoxFilter(const Properties &props) : Base(props) {
         /* Filter radius in pixels. A tiny epsilon is added, since some
@@ -34,5 +34,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(BoxFilter, "Box filter");
+MTS_EXPORT_PLUGIN(BoxFilter, "Box filter");
 NAMESPACE_END(mitsuba)

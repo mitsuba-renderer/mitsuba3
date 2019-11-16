@@ -4,7 +4,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+MTS_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props) : Base(props) { }
 MTS_VARIANT Emitter<Float, Spectrum>::~Emitter() { }
+MTS_VARIANT bool Emitter<Float, Spectrum>::is_environment() const {
+    return false;
+}
 
-MTS_INSTANTIATE_OBJECT(Emitter)
+MTS_INSTANTIATE_CLASS(Emitter)
 NAMESPACE_END(mitsuba)

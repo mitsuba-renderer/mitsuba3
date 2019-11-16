@@ -7,6 +7,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
+#include <mitsuba/core/traits.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -37,7 +38,7 @@ struct Color
     using Base = enoki::StaticArrayImpl<Value_, Size_, Approx, RoundingMode::Default,
                                         false, Color<Value_, Size_>>;
 
-    /// Helper alias used to transition between vector types (used by enoki::vectorize)
+    /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Color<T, Size_>;
 
     using ArrayType = Color;
@@ -76,7 +77,7 @@ struct Spectrum
     using Base = enoki::StaticArrayImpl<Value_, Size_, Approx,
                                         RoundingMode::Default, false, Spectrum<Value_>>;
 
-    /// Helper alias used to transition between vector types (used by enoki::vectorize)
+    /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Spectrum<T, Size_>;
 
     using ArrayType = Spectrum;
@@ -85,42 +86,9 @@ struct Spectrum
     ENOKI_ARRAY_IMPORT(Base, Spectrum)
 };
 
-NAMESPACE_BEGIN(detail)
-template <typename T> struct wavelength {
-    struct type { };
-};
-
-template <typename Value, size_t Size> struct wavelength<Color<Value, Size>> {
-    using type = Color<Value, Size>;
-};
-template <typename Value, size_t Size> struct wavelength<Spectrum<Value, Size>> {
-    using type = Spectrum<Value, Size>;
-};
-template <typename T> struct wavelength<enoki::detail::MaskedArray<T>> {
-    using type = enoki::detail::MaskedArray<typename wavelength<T>::type>;
-};
-template <typename T> struct wavelength<Matrix<T, 4, true>> {
-    using type = typename wavelength<T>::type;
-};
-template <> struct wavelength<void> {
-    using type = void;
-};
-
-// Most spectrum types are unpolarized
-template <typename T> struct depolarized_trait {
-    using type = T;
-};
-template <typename Spectrum> struct depolarized_trait<MuellerMatrix<Spectrum>> {
-    using type = Spectrum;
-};
-NAMESPACE_END(detail)
-
-template <typename T> using wavelength_t = typename detail::wavelength<T>::type;
-template <typename T> using depolarized_t = typename detail::depolarized_trait<T>::type;
-
 template <typename T>
-constexpr depolarized_t<T> depolarize(const T& spectrum) {
-    if constexpr (std::is_same_v<depolarized_t<T>, T>)
+constexpr depolarize_t<T> depolarize(const T& spectrum) {
+    if constexpr (std::is_same_v<depolarize_t<T>, T>)
         return spectrum;
     else
         // First entry of the Mueller matrix is the unpolarized spectrum
@@ -257,6 +225,17 @@ template <typename Value> Value luminance(const Vector<Value, 3> &c) {
     return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
 }
 
+template <typename Value>
+std::pair<Value, Value> sample_uniform_spectrum(const Value &sample) {
+    return { sample * (MTS_CIE_MAX - MTS_CIE_MIN) + MTS_CIE_MIN,
+             MTS_CIE_MAX - MTS_CIE_MIN };
+}
+
+template <typename Value>
+Value pdf_uniform_spectrum(const Value & /* wavelength */) {
+    return Value(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
+}
+
 /**
  * Importance sample a "importance spectrum" that concentrates the computation
  * on wavelengths that are relevant for rendering of RGB data
@@ -289,26 +268,14 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
  * of wavelengths (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all
  * cases, the PDF is returned per wavelength.
  */
-template <typename Spectrum>
-Spectrum pdf_rgb_spectrum(const Spectrum &wavelengths) {
+template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        auto tmp = sech(0.0072f * (wavelengths - 538.f));
+        Value tmp = sech(0.0072f * (wavelengths - 538.f));
         return select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
-                      0.003939804229326285f * tmp * tmp, zero<Spectrum>());
+                      0.003939804229326285f * tmp * tmp, zero<Value>());
     } else {
         return pdf_uniform_spectrum(wavelengths);
     }
-}
-
-template <typename Value>
-std::pair<Value, Value> sample_uniform_spectrum(const Value &sample) {
-    return { sample * (MTS_CIE_MAX - MTS_CIE_MIN) + MTS_CIE_MIN,
-             MTS_CIE_MAX - MTS_CIE_MIN };
-}
-
-template <typename Spectrum>
-Spectrum pdf_uniform_spectrum(const Spectrum &/*wavelengths*/) {
-    return Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN));
 }
 
 NAMESPACE_END(mitsuba)

@@ -170,5 +170,5 @@ Shape<Float, Spectrum>::children() {
     return result;
 }
 
-MTS_INSTANTIATE_OBJECT(Shape)
+MTS_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

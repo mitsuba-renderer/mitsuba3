@@ -141,7 +141,6 @@ class MTS_EXPORT_RENDER Texture : public ContinuousSpectrum<Float, Spectrum> {
 public:
     // TODO: should this define an interface?
     MTS_DECLARE_CLASS_VARIANT(Texture, ContinuousSpectrum, "texture")
-    MTS_IMPORT_TYPES();
 
 protected:
     virtual ~Texture();
@@ -155,8 +154,8 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Texture3D : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Texture3D, ContinuousSpectrum)
+    MTS_IMPORT_BASE(ContinuousSpectrum, eval, eval1, eval3)
     MTS_IMPORT_TYPES()
-    MTS_USING_BASE(ContinuousSpectrum, eval, eval3, eval1)
 
     Texture3D(const Properties &props);
 
@@ -167,11 +166,11 @@ public:
     /// Evaluate the texture at the given surface interaction, with color processing.
     virtual Spectrum eval(const Interaction3f &si, Mask active = true) const = 0;
 
-    /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
-    virtual Vector3f eval3(const Interaction3f &si, Mask active = true) const = 0;
-
     /// Evaluate this texture as a single-channel quantity.
     virtual Float eval1(const Interaction3f &si, Mask active = true) const = 0;
+
+    /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
+    virtual Vector3f eval3(const Interaction3f &si, Mask active = true) const = 0;
 
     /**
      * Evaluate the texture at the given surface interaction,

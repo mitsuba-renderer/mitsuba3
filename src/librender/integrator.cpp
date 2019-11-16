@@ -223,7 +223,7 @@ template <typename Float, typename Spectrum>
 MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
 
 
-MTS_INSTANTIATE_OBJECT(Integrator)
-MTS_INSTANTIATE_OBJECT(SamplingIntegrator)
-MTS_INSTANTIATE_OBJECT(MonteCarloIntegrator)
+MTS_INSTANTIATE_CLASS(Integrator)
+MTS_INSTANTIATE_CLASS(SamplingIntegrator)
+MTS_INSTANTIATE_CLASS(MonteCarloIntegrator)
 NAMESPACE_END(mitsuba)

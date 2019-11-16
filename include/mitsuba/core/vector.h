@@ -20,7 +20,7 @@ struct Vector
     using Base = enoki::StaticArrayImpl<Value_, Size_, Approx, RoundingMode::Default, false,
                                         Vector<Value_, Size_>>;
 
-    /// Helper alias used to transition between vector types (used by enoki::vectorize)
+    /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Vector<T, Size_>;
 
     using ArrayType = Vector;
@@ -42,7 +42,7 @@ struct Point
     using Base = enoki::StaticArrayImpl<Value_, Size_, Approx, RoundingMode::Default,
                                         false, Point<Value_, Size_>>;
 
-    /// Helper alias used to transition between vector types (used by enoki::vectorize)
+    /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Point<T, Size_>;
 
     using ArrayType = Point;
@@ -65,7 +65,7 @@ struct Normal
     using Base = enoki::StaticArrayImpl<Value_, Size_, Approx, RoundingMode::Default,
                                         false, Normal<Value_, Size_>>;
 
-    /// Helper alias used to transition between vector types (used by enoki::vectorize)
+    /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Normal<T, Size_>;
 
     using ArrayType = Normal;
@@ -76,9 +76,6 @@ struct Normal
 
     ENOKI_ARRAY_IMPORT(Base, Normal)
 };
-
-//! @}
-// =======================================================================
 
 /// Subtracting two points should always yield a vector
 template <typename T1, size_t S1, typename T2, size_t S2>
@@ -97,6 +94,9 @@ template <typename T1, size_t S1, typename T2, size_t S2>
 auto operator+(const Point<T1, S1> &p1, const Vector<T2, S2> &v2) {
     return p1 + Point<T2, S2>(v2);
 }
+
+//! @}
+// =======================================================================
 
 // =======================================================================
 //! @{ \name Masking support for vector, point, and normal data types
@@ -129,29 +129,26 @@ struct Normal<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::Masked
 //! @}
 // =======================================================================
 
-//! @}
-// =======================================================================
-
 /// Complete the set {a} to an orthonormal basis {a, b, c}
-template <typename Vector3>
-std::pair<Vector3, Vector3> coordinate_system(const Vector3 &n) {
-    using Value = value_t<Vector3>;
-    using Scalar = scalar_t<Vector3>;
+template <typename Vector3f> std::pair<Vector3f, Vector3f> coordinate_system(const Vector3f &n) {
+    static_assert(Vector3f::Size == 3, "coordinate_system() expects a 3D vector as input!");
+
+    using Float = value_t<Vector3f>;
 
     /* Based on "Building an Orthonormal Basis, Revisited" by
        Tom Duff, James Burgess, Per Christensen,
        Christophe Hery, Andrew Kensler, Max Liani,
        and Ryusuke Villemin (JCGT Vol 6, No 1, 2017) */
 
-    Value sign = enoki::sign(n.z()),
+    Float sign = enoki::sign(n.z()),
           a    = -rcp(sign + n.z()),
           b    = n.x() * n.y() * a;
 
     return {
-        Vector3(mulsign(sqr(n.x()) * a, n.z()) + Scalar(1),
-                mulsign(b, n.z()),
-                mulsign_neg(n.x(), n.z())),
-        Vector3(b, sign + sqr(n.y()) * a, -n.y())
+        Vector3f(mulsign(sqr(n.x()) * a, n.z()) + 1.f,
+                 mulsign(b, n.z()),
+                 mulsign_neg(n.x(), n.z())),
+        Vector3f(b, sign + sqr(n.y()) * a, -n.y())
     };
 }
 

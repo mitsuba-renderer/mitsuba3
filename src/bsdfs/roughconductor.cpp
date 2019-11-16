@@ -12,9 +12,8 @@ template <typename Float, typename Spectrum>
 class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughConductor, BSDF);
-    MTS_USING_BASE(BSDF, Base, m_flags, m_components)
+    MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
-    using UnpolarizedSpectrum = depolarized_t<Spectrum>;
 
     RoughConductor(const Properties &props) : Base(props) {
         m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
@@ -111,6 +110,7 @@ public:
         // TODO: handle polarization rather than discarding it here.
         Complex<UnpolarizedSpectrum> eta_c(depolarize(m_eta->eval(si, active)),
                                            depolarize(m_k->eval(si, active)));
+
         Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
 
         // Evaluate Smith's shadow-masking function
@@ -171,13 +171,12 @@ private:
     ScalarFloat m_alpha_u, m_alpha_v;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
-
     /// Relative refractive index (real component)
     ref<ContinuousSpectrum> m_eta;
     /// Relative refractive index (imaginary component).
     ref<ContinuousSpectrum> m_k;
 };
 
-MTS_IMPLEMENT_PLUGIN(RoughConductor, "Rough conductor");
+MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor");
 
 NAMESPACE_END(mitsuba)

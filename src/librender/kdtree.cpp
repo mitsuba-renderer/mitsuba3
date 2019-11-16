@@ -80,5 +80,5 @@ MTS_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-MTS_INSTANTIATE_OBJECT(ShapeKDTree)
+MTS_INSTANTIATE_CLASS(ShapeKDTree)
 NAMESPACE_END(mitsuba)

@@ -21,7 +21,6 @@ template <typename Float, typename Spectrum>
 class BitmapTexture : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(BitmapTexture, ContinuousSpectrum)
-    MTS_USING_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 
     BitmapTexture(const Properties &props) {
@@ -100,8 +99,9 @@ template <typename Float, typename Spectrum, size_t ChannelCount, bool IsRawData
 class BitmapTextureImpl final : public BitmapTexture<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(BitmapTextureImpl, BitmapTexture)
+    MTS_IMPORT_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
     MTS_IMPORT_TYPES()
-    MTS_USING_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
+
     using StorageType = Vector<ScalarFloat, ChannelCount>;
 
     BitmapTextureImpl(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
@@ -265,5 +265,5 @@ protected:
     Float m_mean;
 };
 
-MTS_IMPLEMENT_PLUGIN(BitmapTexture, "Bitmap texture")
+MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 NAMESPACE_END(mitsuba)

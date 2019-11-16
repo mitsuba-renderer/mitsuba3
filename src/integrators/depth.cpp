@@ -11,7 +11,6 @@ template <typename Float, typename Spectrum>
 class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(DepthIntegrator, SamplingIntegrator)
-    MTS_USING_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler)
 
     DepthIntegrator(const Properties &props) : Base(props) {}
@@ -23,5 +22,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(DepthIntegrator, "Depth integrator");
+MTS_EXPORT_PLUGIN(DepthIntegrator, "Depth integrator");
 NAMESPACE_END(mitsuba)

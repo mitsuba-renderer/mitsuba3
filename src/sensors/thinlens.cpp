@@ -10,9 +10,9 @@ template <typename Float, typename Spectrum>
 class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ThinLensCamera, ProjectiveCamera)
-    MTS_USING_BASE(ProjectiveCamera, m_world_transform, m_needs_sample_3, m_film, m_sampler,
-                   m_resolution, m_shutter_open, m_shutter_open_time, m_aspect, m_near_clip,
-                   m_far_clip, m_focus_distance)
+    MTS_IMPORT_BASE(ProjectiveCamera, m_world_transform, m_needs_sample_3, m_film, m_sampler,
+                    m_resolution, m_shutter_open, m_shutter_open_time, m_aspect, m_near_clip,
+                    m_far_clip, m_focus_distance)
     MTS_IMPORT_TYPES()
 
     // =============================================================
@@ -42,11 +42,13 @@ public:
             if (string::ends_with(f, "mm"))
                 f = f.substr(0, f.length()-2);
 
-            char *end_ptr = nullptr;
-            ScalarFloat value = (ScalarFloat) strtod(f.c_str(), &end_ptr);
-            if (*end_ptr != '\0')
+            ScalarFloat value;
+            try {
+                value = std::stof(f);
+            } catch (...) {
                 Throw("Could not parse the focal length (must be of the form "
                     "<x>mm, where <x> is a positive integer)!");
+            }
 
             fov = 2.f *
                   rad_to_deg(std::atan(std::sqrt(ScalarFloat(36 * 36 + 24 * 24)) / (2.f * value)));
@@ -263,5 +265,5 @@ private:
     ScalarVector3f m_dx, m_dy;
 };
 
-MTS_IMPLEMENT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
+MTS_EXPORT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
 NAMESPACE_END(mitsuba)

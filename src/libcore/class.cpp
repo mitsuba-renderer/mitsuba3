@@ -28,7 +28,7 @@ inline std::string key(const std::string &name, const std::string &variant) {
 Class::Class(const std::string &name, const std::string &parent, const std::string &variant,
              ConstructFunctor constr, UnserializeFunctor unser, const std::string &alias)
     : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias),
-      m_constructor(constr), m_unserialize(unser) {
+      m_construct(constr), m_unserialize(unser) {
 
     if (m_alias.empty())
         m_alias = name;
@@ -88,10 +88,10 @@ void Class::initialize_once(Class *class_) {
 }
 
 ref<Object> Class::construct(const Properties &props) const {
-    if (!m_constructor)
+    if (!m_construct)
         Throw("RTTI error: Attempted to construct a "
               "non-constructible class (%s)!", name());
-    return m_constructor(props);
+    return m_construct(props);
 }
 
 ref<Object> Class::unserialize(Stream *stream) const {

@@ -8,7 +8,7 @@ template <typename Float, typename Spectrum>
 class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Constant3D, Texture3D)
-    MTS_USING_BASE(Texture3D, m_world_to_local)
+    MTS_IMPORT_BASE(Texture3D, m_world_to_local)
     MTS_IMPORT_TYPES(ContinuousSpectrum)
 
     explicit Constant3D(const Properties &props) : Base(props) {
@@ -65,5 +65,5 @@ protected:
     ref<ContinuousSpectrum> m_color;
 };
 
-MTS_IMPLEMENT_PLUGIN(Constant3D, "Constant 3D texture")
+MTS_EXPORT_PLUGIN(Constant3D, "Constant 3D texture")
 NAMESPACE_END(mitsuba)

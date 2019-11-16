@@ -29,12 +29,12 @@ template <typename Float, typename Spectrum>
 class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(OBJMesh, Shape)
-    MTS_USING_BASE(Mesh, Base, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
-                m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
-                m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
-                recompute_vertex_normals, is_emitter, emitter, has_vertex_normals, vertex);
+    MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
+                    m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
+                    m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
+                    recompute_vertex_normals, is_emitter, emitter, has_vertex_normals, vertex)
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
@@ -297,5 +297,5 @@ public:
     }
 };
 
-MTS_IMPLEMENT_PLUGIN(OBJMesh, "OBJ Mesh")
+MTS_EXPORT_PLUGIN(OBJMesh, "OBJ Mesh")
 NAMESPACE_END(mitsuba)

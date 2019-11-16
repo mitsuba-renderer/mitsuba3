@@ -20,8 +20,9 @@ template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(Cylinder, Shape)
-    MTS_USING_BASE(Shape, bsdf, emitter, is_emitter);
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
     MTS_IMPORT_TYPES()
+
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
 
@@ -327,5 +328,5 @@ private:
     bool m_flip_normals;
 };
 
-MTS_IMPLEMENT_PLUGIN(Cylinder, "Cylinder intersection primitive");
+MTS_EXPORT_PLUGIN(Cylinder, "Cylinder intersection primitive");
 NAMESPACE_END(mitsuba)
