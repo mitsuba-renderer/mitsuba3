@@ -75,10 +75,11 @@ def test_tea_float64():
 
 def test_tea_vectorized():
     try:
-        from mitsuba.packet_rgb.core import sample_tea_float32 as sample_tea_float32_p
-        from mitsuba.packet_rgb.core import sample_tea_float64 as sample_tea_float64_p
+        from mitsuba.packet_rgb.core import (
+            sample_tea_float32 as sample_tea_float32_p,
+            sample_tea_float64 as sample_tea_float64_p)
     except ImportError:
-        pytest.mark.skip("packet_rgb mode not enabled")
+        pytest.skip("packet_rgb mode not enabled")
 
     count = 100
 

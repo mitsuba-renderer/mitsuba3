@@ -208,7 +208,7 @@ def test_hierarchical_warp():
     try:
         from mitsuba.scalar_rgb.core.warp import Hierarchical2D0
     except ImportError:
-        pytest.mark.skip("packet_rgb mode not enabled")
+        pytest.skip("packet_rgb mode not enabled")
 
     np.random.seed(0)
     data = np.random.rand(7, 3)

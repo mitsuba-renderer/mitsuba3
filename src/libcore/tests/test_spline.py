@@ -47,7 +47,7 @@ def test_eval_1d_uniform_vec():
     try:
         from mitsuba.packet_rgb.core.spline import eval_1d as eval_1d_p
     except ImportError:
-        pytest.mark.skip("packet_rgb mode not enabled")
+        pytest.skip("packet_rgb mode not enabled")
 
     assert(np.allclose(eval_1d_p(0, 1, values1, input1), input1))
     assert(np.allclose(eval_1d_p(0, 1, values2, input2), input2))
@@ -68,7 +68,7 @@ def test_eval_1d_non_uniform_vec():
     try:
         from mitsuba.packet_rgb.core.spline import eval_1d as eval_1d_p
     except ImportError:
-        pytest.mark.skip("packet_rgb mode not enabled")
+        pytest.skip("packet_rgb mode not enabled")
 
     assert(np.allclose(eval_1d_p(nodes1, values2, input1), input1))
     assert(np.allclose(eval_1d_p(nodes1, values2, input2), input2))

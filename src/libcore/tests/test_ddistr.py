@@ -210,7 +210,7 @@ def test10_vectorized_sample_pdf():
                         ([   2,    3,   5,    2,    5],
                             [0.25, 0.25, 0.5, 0.25, 0.50]))
     else:
-        pytest.mark.skip("packet_rgb mode is not enabled")
+        pytest.skip("packet_rgb mode is not enabled")
 
 def test11_vectorized_sample_reuse_pdf():
     pdf_values = [0.0, 0.0, 0.25, 0.25, 0.0, 0.5, 0.0]
@@ -227,4 +227,4 @@ def test11_vectorized_sample_reuse_pdf():
                             [0.25, 0.25, 0.5, 0.25, 0.50],
                             [0.00, 0.96, 1.0, 0.96, 0.02]))
     else:
-        pytest.mark.skip("packet_rgb mode is not enabled")
+        pytest.skip("packet_rgb mode is not enabled")

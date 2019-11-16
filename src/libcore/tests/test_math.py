@@ -53,7 +53,7 @@ def test04_solve_quadratic():
     try:
         from mitsuba.packet_rgb.core.math import solve_quadratic as solve_quadratic_p
     except ImportError:
-        pytest.mark.skip("packet_rgb mode not enabled")
+        pytest.skip("packet_rgb mode not enabled")
 
     assert np.allclose(solve_quadratic_p([1], [4], [-5]), ([True], [-5], [1]))
     assert np.allclose(solve_quadratic_p([0], [5], [-10]), ([True], [2], [2]))

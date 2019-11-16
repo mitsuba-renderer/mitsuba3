@@ -230,7 +230,7 @@ def test11_atransform_interpolate_scale():
     try:
         from mitsuba.packet_rgb.core import AnimatedTransform as AnimatedTransformP
     except ImportError:
-        pytest.mark.skip("packet_rgb mode not enabled")
+        pytest.skip("packet_rgb mode not enabled")
 
     a = AnimatedTransformP()
     trafo0 = Transform4f.scale([1,2,3])
