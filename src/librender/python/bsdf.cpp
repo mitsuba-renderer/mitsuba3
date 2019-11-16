@@ -11,7 +11,7 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
     }
 
     MTS_PY_CHECK_ALIAS(BSDFFlags, m) {
-        py::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags), py::arithmetic())
+        py::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags))
             .value("None", BSDFFlags::None, D(BSDFFlags, None))
             .value("Null", BSDFFlags::Null, D(BSDFFlags, Null))
             .value("DiffuseReflection", BSDFFlags::DiffuseReflection, D(BSDFFlags, DiffuseReflection))
@@ -32,7 +32,9 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
             .value("Smooth", BSDFFlags::Smooth, D(BSDFFlags, Smooth))
             .value("Delta", BSDFFlags::Delta, D(BSDFFlags, Delta))
             .value("Delta1D", BSDFFlags::Delta1D, D(BSDFFlags, Delta1D))
-            .value("All", BSDFFlags::All, D(BSDFFlags, All));
+            .value("All", BSDFFlags::All, D(BSDFFlags, All))
+            .def(py::self == py::self)
+            ;
     }
 
     MTS_PY_CHECK_ALIAS(BSDFContext, m) {
@@ -50,7 +52,7 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
     }
 
     MTS_PY_CHECK_ALIAS(BSDFSample3f, m) {
-        py::class_<BSDFSample3f>(m, "BSDFSample3ff", D(BSDFSample3f))
+        py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3f))
             .def(py::init<>(), D(BSDFSample3f, BSDFSample3f))
             .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3f, BSDFSample3f, 2))
             .def(py::init<const BSDFSample3f &>(), "bs"_a, "Copy constructor")
