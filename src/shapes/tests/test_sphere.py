@@ -86,7 +86,7 @@ def test03_ray_intersect_transform():
 
 
 def test04_sample_direct():
-    from mitsuba.render import Interaction3f
+    from mitsuba.scalar_rgb.render import Interaction3f
 
     sphere = load_string('<shape type="sphere" version="2.0.0"/>')
 

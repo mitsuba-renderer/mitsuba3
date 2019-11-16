@@ -4,8 +4,8 @@ import pytest
 from mitsuba.scalar_rgb.core.math import Pi
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.core import warp
-from mitsuba.render import EMeasure
-from mitsuba.render import Interaction3f
+from mitsuba.scalar_rgb.render import EMeasure
+from mitsuba.scalar_rgb.render import Interaction3f
 
 def test01_point_construct():
     c = load_string("<emitter version='2.0.0' type='point'></emitter>")

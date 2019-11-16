@@ -5,7 +5,7 @@ import os
 import pytest
 
 import mitsuba
-from mitsuba.scalar_rgb.core import Bitmap, Struct
+from mitsuba.scalar_rgb.core import Bitmap, Struct, PixelFormat, FieldType
 from mitsuba.test.scenes import SCENES, make_integrator
 
 
@@ -36,30 +36,26 @@ def check_scene(int_name, integrator, scene_name, is_empty = False):
         'depth':  'depth',
         # All other integrators: 'full'
     }.get(int_name, 'full')
+    sensor = scene.sensors()[0]
 
     avg = SCENES[scene_name][integrator_type]
-    def check_variant(vectorize):
-        variant_name = 'vector' if vectorize else 'scalar'
+    # TODO: test other variants as well
+    variant_name = 'scalar_rgb'
+    film = sensor.film()
+    film.clear()
 
-        film = scene.film()
-        film.clear()
-        status = integrator.render(scene, vectorize=vectorize)
-        assert status, "Rendering ({}) failed".format(variant_name)
-        # _save(scene.film(), int_name, suffix='_' + variant_name)
+    status = integrator.render(scene, sensor)
+    assert status, "Rendering ({}) failed".format(variant_name)
+    # _save(scene.film(), int_name, suffix='_' + variant_name)
 
-        converted = film.bitmap().convert(PixelFormat.RGBA, FieldType.Float32, False)
-        values    = np.array(converted, copy=False)
-        means     = np.mean(values, axis=(0, 1))
-        # Very noisy images, so we add a tolerance
-        assert np.allclose(means, avg, rtol=5e-2), \
-               "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, variant_name)
+    converted = film.bitmap().convert(PixelFormat.RGBA, FieldType.Float32, False)
+    values    = np.array(converted, copy=False)
+    means     = np.mean(values, axis=(0, 1))
+    # Very noisy images, so we add a tolerance
+    assert np.allclose(means, avg, rtol=5e-2), \
+           "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, variant_name)
 
-        return np.array(film.bitmap(), copy=True)
-
-    array_scalar = check_variant(False)
-    array_vector = check_variant(True)
-
-    return (array_scalar, array_vector)
+    return np.array(film.bitmap(), copy=True)
 
 
 @pytest.mark.parametrize(*integrators)

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from mitsuba.scalar_rgb.core import Bitmap
-from mitsuba.render import (DifferentiableParameters, RadianceSample3fD,
+from mitsuba.scalar_rgb.render import (DifferentiableParameters, RadianceSample3fD,
                             ImageBlock)
 
 from enoki import (UInt32D, BoolD, FloatC, FloatD, Vector2fC, Vector3fC,

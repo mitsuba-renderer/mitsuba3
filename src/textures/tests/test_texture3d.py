@@ -7,7 +7,7 @@ import mitsuba
 from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES, MTS_WAVELENGTH_MIN, \
                          MTS_WAVELENGTH_MAX, Properties, BoundingBox3f
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import Texture3D, Interaction3f, Interaction3fX
+from mitsuba.scalar_rgb.render import Texture3D, Interaction3f, Interaction3fX
 from mitsuba.test.util import tmpfile
 
 def test01_constant_construct():
@@ -219,7 +219,7 @@ def optimize_values(t3d, dp, param_name, loss, batch_size = 5, step_size = 0.1,
                     max_its = 70):
     from enoki import set_requires_gradient, backward, gradient, hsum, detach, \
                       FloatD, Vector3fD, Vector4fD
-    from mitsuba.render import Interaction3fD
+    from mitsuba.scalar_rgb.render import Interaction3fD
 
     # Prepare queries
     it = Interaction3fD(batch_size)
@@ -338,7 +338,7 @@ def test08_autodiff_grid3d_multigrid():
     """Tests the ability of Grid3D to handle data updates with doubled resolution."""
     from enoki import FloatD, Vector4fD, Vector3fD
     from mitsuba.scalar_rgb.core import float_dtype
-    from mitsuba.render import Interaction3fD
+    from mitsuba.scalar_rgb.render import Interaction3fD
     from mitsuba.render.autodiff import get_differentiable_parameters
 
     initial_side = 2

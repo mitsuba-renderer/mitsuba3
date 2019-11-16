@@ -37,7 +37,7 @@ print("TODO: re-enable distr.py")
 # from mitsuba.scalar_rgb.core.chi2 import (
 #     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
 #     InteractiveBSDFAdapter, EnvironmentAdapter)
-# from mitsuba.render import MicrofacetDistribution
+# from mitsuba.scalar_rgb.render import MicrofacetDistribution
 # from mitsuba.scalar_rgb.core import Bitmap, Thread
 # from mitsuba.scalar_rgb.core.warp import Hierarchical2D0, Hierarchical2D2
 # from mitsuba.scalar_rgb.core.warp import Marginal2D0, Marginal2D2

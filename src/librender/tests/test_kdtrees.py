@@ -1,5 +1,5 @@
 from mitsuba.scalar_rgb.core import Properties, Ray3f, Ray3fX, MTS_WAVELENGTH_SAMPLES
-from mitsuba.render import ShapeKDTree, Mesh, SurfaceInteraction3f, Scene
+from mitsuba.scalar_rgb.render import ShapeKDTree, Mesh, SurfaceInteraction3f, Scene
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.render.rtbench import naive_planar_morton_scalar, \
                                    planar_morton_scalar, planar_morton_packet

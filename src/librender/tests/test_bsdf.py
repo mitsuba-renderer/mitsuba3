@@ -1,21 +1,20 @@
-from mitsuba.render import BSDF, BSDFSample3f, BSDFContext
-from mitsuba.render import EImportance, ERadiance
+from mitsuba.scalar_rgb.render import BSDF, BSDFSample3f, BSDFContext, BSDFFlags, TransportMode
 import numpy as np
 
 
 def test01_ctx_construct():
     ctx = BSDFContext()
-    assert ctx.type_mask == BSDF.EAll
+    assert ctx.type_mask == BSDFFlags.All
     assert ctx.component == np.uint32(-1)
-    assert ctx.mode == ERadiance
+    assert ctx.mode == TransportMode.Radiance
     ctx.reverse()
-    assert ctx.mode == EImportance
+    assert ctx.mode == TransportMode.Importance
 
     # By default, all components and types are queried
-    assert ctx.is_enabled(BSDF.EDeltaTransmission)
-    assert ctx.is_enabled(BSDF.EDelta, 1)
-    assert ctx.is_enabled(BSDF.EDiffuseTransmission, 6)
-    assert ctx.is_enabled(BSDF.EGlossy, 10)
+    assert ctx.is_enabled(BSDFFlags.DeltaTransmission)
+    assert ctx.is_enabled(BSDFFlags.Delta, 1)
+    assert ctx.is_enabled(BSDFFlags.DiffuseTransmission, 6)
+    assert ctx.is_enabled(BSDFFlags.Glossy, 10)
 
 
 def test02_bs_construct():

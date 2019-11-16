@@ -92,7 +92,7 @@ def test07_sample_rgb_spectrum():
         assert pdf_rgb_spectrum(MTS_WAVELENGTH_MAX + 0.5)  == 0.0
 
 def test08_rgb2spec_fetch_eval_mean():
-    from mitsuba.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
+    from mitsuba.scalar_rgb.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
 
     rgb_values = np.array([
         [0, 0, 0],

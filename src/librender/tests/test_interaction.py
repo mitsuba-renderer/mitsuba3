@@ -1,7 +1,7 @@
-import mitsuba
 import numpy as np
+import pytest
 
-from mitsuba.render import SurfaceInteraction3f
+from mitsuba.scalar_rgb.render import SurfaceInteraction3f
 from mitsuba.scalar_rgb.core   import Frame3f, Ray3f, RayDifferential3f
 
 def test01_intersection_construction():
@@ -100,25 +100,31 @@ def test02_intersection_partials():
 
 
 def test03_mueller_to_world_to_local():
-    # At a few places, coordinate changes between local BSDF reference frame and
-    # world coordinates need to take place. This change also needs to be applied
-    # to Mueller matrices used in computations involving polarization state.
-    #
-    # In practice, this is always a simple rotation of reference Stokes vectors
-    # (for incident & outgoing directions) of the Mueller matrix.
-    #
-    # To test this behavior we take any Mueller matrix (e.g. linear polarizer)
-    # for some arbitrary incident/outgoing directions in world coordinates and
-    # compute the round trip going to local frame and back again.
+    """
+    At a few places, coordinate changes between local BSDF reference frame and
+    world coordinates need to take place. This change also needs to be applied
+    to Mueller matrices used in computations involving polarization state.
+
+    In practice, this is always a simple rotation of reference Stokes vectors
+    (for incident & outgoing directions) of the Mueller matrix.
+
+    To test this behavior we take any Mueller matrix (e.g. linear polarizer)
+    for some arbitrary incident/outgoing directions in world coordinates and
+    compute the round trip going to local frame and back again.
+    """
+    try:
+        from mitsuba.scalar_polarized.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
+        from mitsuba.scalar_polarized.render.mueller import linear_polarizer
+    except ImportError:
+        pytest.skip("scalar_polarized mode not enabled")
 
     si = SurfaceInteraction3f()
     n = [1.0, 1.0, 1.0]
     n /= np.linalg.norm(n)
     si.sh_frame = Frame3f(n)
 
-    M_monochromatic = mitsuba.render.mueller.linear_polarizer(1)
+    M_monochromatic = linear_polarizer(1)
     # Assemble spectral version of Mueller matrix
-    n_spectral_samples = mitsuba.core.MTS_WAVELENGTH_SAMPLES
     M = np.zeros((n_spectral_samples, 4, 4))
     for i in range(n_spectral_samples):
         M[i, :, :] = M_monochromatic

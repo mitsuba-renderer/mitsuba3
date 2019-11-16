@@ -7,10 +7,10 @@ import mitsuba
 import numpy as np
 import pytest
 
-from mitsuba.render import Interaction3f, Interaction3fX, \
+from mitsuba.scalar_rgb.render import Interaction3f, Interaction3fX, \
                            SurfaceInteraction3f, SurfaceInteraction3fX
-from mitsuba.render import PositionSample3f, PositionSample3fX
-from mitsuba.render import DirectionSample3f, DirectionSample3fX
+from mitsuba.scalar_rgb.render import PositionSample3f, PositionSample3fX
+from mitsuba.scalar_rgb.render import DirectionSample3f, DirectionSample3fX
 
 def test01_position_sample_construction_single():
     record = PositionSample3f()

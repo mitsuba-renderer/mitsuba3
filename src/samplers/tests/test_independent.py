@@ -3,7 +3,7 @@ import pytest
 
 from mitsuba.scalar_rgb.core import PCG32, float_dtype
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import Sampler
+from mitsuba.scalar_rgb.render import Sampler
 
 @pytest.fixture(scope="module")
 def sampler():

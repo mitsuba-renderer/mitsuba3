@@ -3,7 +3,7 @@ import numpy as np
 from mitsuba.scalar_rgb.core import Frame3f, MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.core.math import Pi
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f
+from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f
 
 
 def test01_create():

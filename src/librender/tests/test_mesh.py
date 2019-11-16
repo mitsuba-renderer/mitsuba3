@@ -3,7 +3,7 @@ import pytest
 
 from mitsuba.scalar_rgb.core import Struct, float_dtype
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import Mesh
+from mitsuba.scalar_rgb.render import Mesh
 from mitsuba.test.util import fresolver_append_path
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import MicrofacetDistribution
+from mitsuba.scalar_rgb.render import MicrofacetDistribution
 
 
 def test01_construct():

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import Spiral
+from mitsuba.scalar_rgb.render import Spiral
 
 @pytest.fixture(scope="module")
 def film():

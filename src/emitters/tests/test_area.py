@@ -5,7 +5,7 @@ import pytest
 from mitsuba.scalar_rgb.core import warp
 from mitsuba.scalar_rgb.core.math import Pi
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import EMeasure, PositionSample3f, Interaction3f
+from mitsuba.scalar_rgb.render import EMeasure, PositionSample3f, Interaction3f
 from mitsuba.test.util import fresolver_append_path
 
 @fresolver_append_path

@@ -5,7 +5,7 @@ from mitsuba.scalar_rgb.core import Frame3f
 from mitsuba.scalar_rgb.core.math import Pi, InvPi
 from mitsuba.scalar_rgb.core.warp import square_to_uniform_sphere
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f
+from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f
 
 @pytest.fixture(scope="module")
 def interaction():

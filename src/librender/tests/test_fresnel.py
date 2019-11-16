@@ -1,4 +1,4 @@
-from mitsuba.render import (fresnel, fresnel_polarized, fresnel_conductor)
+from mitsuba.scalar_rgb.render import fresnel, fresnel_polarized, fresnel_conductor
 import numpy as np
 
 

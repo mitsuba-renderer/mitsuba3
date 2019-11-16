@@ -427,7 +427,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     """
 
     def instantiate(args):
-        from mitsuba.render import MicrofacetDistribution
+        from mitsuba.scalar_rgb.render import MicrofacetDistribution
         wi = [0, 0, 1]
         if len(args) == 1:
             angle = args[0] * np.pi / 180
@@ -461,7 +461,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     """
 
     from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
-    from mitsuba.render import BSDFContext, SurfaceInteraction3fX
+    from mitsuba.scalar_rgb.render import BSDFContext, SurfaceInteraction3fX
 
     def make_context(n):
         si = SurfaceInteraction3fX(n)
@@ -501,7 +501,7 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
     Adapter for interactive & batch testing of BSDFs using the Chi^2 test
     """
 
-    from mitsuba.render import BSDFContext, SurfaceInteraction3fX
+    from mitsuba.scalar_rgb.render import BSDFContext, SurfaceInteraction3fX
     from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 
     def make_context(n, theta, phi):
@@ -554,8 +554,8 @@ def EnvironmentAdapter(emitter_type, extra):
     Adapter for interactive & batch testing of environment map samplers
     """
 
-    from mitsuba.render import Interaction3fX
-    from mitsuba.render import DirectionSample3fX
+    from mitsuba.scalar_rgb.render import Interaction3fX
+    from mitsuba.scalar_rgb.render import DirectionSample3fX
 
     cache = [None, None]
 

@@ -3,7 +3,7 @@ import pytest
 
 from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render import BSDF, BSDFContext, SurfaceInteraction3f, \
+from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, \
                            EImportance, ERadiance
 
 
