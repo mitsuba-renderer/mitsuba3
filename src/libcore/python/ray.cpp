@@ -28,6 +28,11 @@ MTS_PY_EXPORT_STRUCT(Ray) {
 
     MTS_PY_CHECK_ALIAS(RayDifferential3f, m) {
         py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential3f))
+
+            .def(py::init<Ray3f &>(), "ray"_a)
+            .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
+                 "Initialize without differentials.",
+                 "o"_a, "d"_a, "time"_a, "wavelength"_a)
             .def_method(RayDifferential3f, scale_differential)
             .def_field(RayDifferential3f, o_x)
             .def_field(RayDifferential3f, o_y)

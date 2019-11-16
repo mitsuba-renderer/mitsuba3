@@ -1,12 +1,12 @@
 import numpy as np
 
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import MicrofacetDistribution
+from mitsuba.scalar_rgb.render import MicrofacetDistribution, MicrofacetType
 
 
 def test01_construct():
-    md = MicrofacetDistribution(MicrofacetDistribution.EBeckmann, 0.1, True)
-    assert md.type() == MicrofacetDistribution.EBeckmann
+    md = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, True)
+    assert md.type() == MicrofacetType.Beckmann
     assert np.allclose(md.alpha_u(), 0.1)
     assert np.allclose(md.alpha_v(), 0.1)
     assert md.sample_visible()
@@ -14,8 +14,8 @@ def test01_construct():
 
 def test02_eval_pdf_beckmann():
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf = MicrofacetDistribution(MicrofacetDistribution.EBeckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetDistribution.EBeckmann, 0.1, False)
+    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
     assert not mdf.is_isotropic()
     assert mdf.is_anisotropic()
     assert mdf_i.is_isotropic()
@@ -88,8 +88,8 @@ def test02_eval_pdf_beckmann():
 
 def test03_smith_g1_beckmann():
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf = MicrofacetDistribution(MicrofacetDistribution.EBeckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetDistribution.EBeckmann, 0.1, False)
+    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
     steps = 20
     theta = np.linspace(np.pi/3, np.pi/2, steps)
     phi = np.full(steps, np.pi/2)
@@ -133,7 +133,7 @@ def test03_smith_g1_beckmann():
 
 
 def test04_sample_beckmann():
-    mdf = MicrofacetDistribution(MicrofacetDistribution.EBeckmann, 0.1, 0.3, False)
+    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
@@ -195,8 +195,8 @@ def test04_sample_beckmann():
 
 def test03_smith_g1_ggx():
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf = MicrofacetDistribution(MicrofacetDistribution.EGGX, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetDistribution.EGGX, 0.1, False)
+    mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistribution(MicrofacetType.GGX, 0.1, False)
     steps = 20
     theta = np.linspace(np.pi/3, np.pi/2, steps)
     phi = np.full(steps, np.pi/2)
@@ -239,7 +239,7 @@ def test03_smith_g1_ggx():
 
 
 def test05_sample_ggx():
-    mdf = MicrofacetDistribution(MicrofacetDistribution.EGGX, 0.1, 0.3, False)
+    mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6

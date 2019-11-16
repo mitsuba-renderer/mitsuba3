@@ -9,7 +9,7 @@ def test01_intersection_construction():
     si.shape = None
     si.t = 1
     si.time = 2
-    si.wavelengths = [200, 300, 400, 500]
+    si.wavelengths = [200, 300, 400]
     si.p = [1, 2, 3]
     si.n = [4, 5, 6]
     si.uv = [7, 8]
@@ -28,7 +28,7 @@ def test01_intersection_construction():
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
-  wavelengths = [200, 300, 400, 500],
+  wavelengths = [200, 300, 400],
   p = [1, 2, 3],
   shape = nullptr,
   uv = [7, 8],
@@ -54,7 +54,7 @@ def test02_intersection_partials():
     o = np.array([0.44650541, 0.16336525, 0.74225088])
     d = np.array([0.2956123, 0.67325977, 0.67774232])
     time = 0.5
-    w = np.array([500, 600, 750, 800])
+    w = np.array([500, 600, 750])
     r = RayDifferential3f(o, d, time, w)
     r.o_x = r.o + np.array([0.1, 0, 0])
     r.o_y = r.o + np.array([0, 0.1, 0])
@@ -113,10 +113,10 @@ def test03_mueller_to_world_to_local():
     compute the round trip going to local frame and back again.
     """
     try:
-        from mitsuba.scalar_polarized.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
-        from mitsuba.scalar_polarized.render.mueller import linear_polarizer
+        from mitsuba.scalar_spectral_polarized.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
+        from mitsuba.scalar_spectral_polarized.render.mueller import linear_polarizer
     except ImportError:
-        pytest.skip("scalar_polarized mode not enabled")
+        pytest.skip("scalar_spectral_polarized mode not enabled")
 
     si = SurfaceInteraction3f()
     n = [1.0, 1.0, 1.0]

@@ -36,13 +36,13 @@ def check_first_blocks(blocks, expected, n_total = None):
 
 
 def test01_construct(film):
-    s = Spiral(film)
+    s = Spiral(film.size(), film.crop_offset())
     assert s is not None
     assert s.max_block_size() == 32
 
 def test02_small_film():
     f = make_film(15, 12)
-    s = Spiral(f)
+    s = Spiral(f.size(), f.crop_offset())
 
     (bo, bs) = s.next_block()
     assert np.all(bo == [0, 0])
@@ -65,7 +65,7 @@ def test03_normal_film():
     ]
 
     f = make_film(318, 322)
-    s = Spiral(f)
+    s = Spiral(f.size(), f.crop_offset())
 
     check_first_blocks(extract_blocks(s), expected, n_total=110)
     # Resetting and re-querying the blocks should yield the exact same results.

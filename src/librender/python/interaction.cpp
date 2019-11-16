@@ -46,9 +46,11 @@ MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
                 "ps"_a, "wavelengths"_a, D(SurfaceInteraction3f, SurfaceInteraction3f))
             .def_method(SurfaceInteraction3f, to_world)
             .def_method(SurfaceInteraction3f, to_local)
-            .def_method(SurfaceInteraction3f, to_world_mueller)
-            .def_method(SurfaceInteraction3f, to_local_mueller)
-            .def_method(SurfaceInteraction3f, emitter, "scene"_a, "active"_a=true)
+            .def_method(SurfaceInteraction3f, to_world_mueller,
+                        "M_local"_a, "wi_local"_a, "wo_local"_a)
+            .def_method(SurfaceInteraction3f, to_local_mueller,
+                        "M_world"_a, "wi_world"_a, "wo_world"_a)
+            .def_method(SurfaceInteraction3f, emitter, "scene"_a, "active"_a = true)
             .def_method(SurfaceInteraction3f, is_sensor)
             .def_method(SurfaceInteraction3f, is_medium_transition)
             .def("target_medium",
