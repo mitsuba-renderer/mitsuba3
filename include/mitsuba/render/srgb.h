@@ -10,12 +10,16 @@ MTS_INLINE depolarize_t<Spectrum> srgb_model_eval(const Array3f &coeff,
                                                   const wavelength_t<Spectrum> &wavelengths) {
     using UnpolarizedSpectrum = depolarize_t<Spectrum>;
 
-    UnpolarizedSpectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+    if constexpr (is_spectral_v<Spectrum>) {
+        UnpolarizedSpectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
-    return select(
-        enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-        max(0.f, fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f))
-    );
+        return select(
+            enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
+            max(0.f, fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f))
+        );
+    } else {
+        Throw("Not implemented for non-spectral modes");
+    }
 }
 
 template <typename Array3f>

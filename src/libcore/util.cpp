@@ -195,8 +195,8 @@ std::string mem_string(size_t size, bool precise) {
     float value = (float) size;
 
     int i = 0;
-    for (i = 0; i < 6 && value > 1024.0f; ++i)
-        value /= 1024.0f;
+    for (i = 0; i < 6 && value > 1024.f; ++i)
+        value /= 1024.f;
 
     return tfm::format(precise ? "%.5g %s" : "%.3g %s", value, orders[i]);
 }

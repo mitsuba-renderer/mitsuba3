@@ -139,9 +139,7 @@ public:
         auto wav_sample = math::sample_shifted<Wavelength>(wavelength_sample);
         Wavelength wavelengths;
         Spectrum spec_weight;
-        if constexpr (is_monochrome_v<Spectrum>) {
-            std::tie(wavelengths, spec_weight) = sample_uniform_spectrum(wav_sample);
-        } else if constexpr (is_rgb_v<Spectrum>) {
+        if constexpr (!is_spectral_v<Spectrum>) {
             // Note: wavelengths should not be used when rendering in RGB mode.
             wavelengths = std::numeric_limits<ScalarFloat>::quiet_NaN();
             spec_weight = 1.f;
@@ -179,9 +177,7 @@ public:
         auto wav_sample = math::sample_shifted<Wavelength>(wavelength_sample);
         Wavelength wavelengths;
         Spectrum spec_weight;
-        if constexpr (is_monochrome_v<Spectrum>) {
-            std::tie(wavelengths, spec_weight) = sample_uniform_spectrum(wav_sample);
-        } else if constexpr (is_rgb_v<Spectrum>) {
+        if constexpr (!is_spectral_v<Spectrum>) {
             // Note: wavelengths should not be used when rendering in RGB mode.
             wavelengths = std::numeric_limits<ScalarFloat>::quiet_NaN();
             spec_weight = 1.f;

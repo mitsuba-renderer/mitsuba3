@@ -188,7 +188,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::prepare_sampling_table() {
             m_area_distribution.append(area);
         }
         m_surface_area = m_area_distribution.normalize();
-        m_inv_surface_area = ScalarFloat(1) / m_surface_area;
+        m_inv_surface_area = 1.f / m_surface_area;
     }
 }
 

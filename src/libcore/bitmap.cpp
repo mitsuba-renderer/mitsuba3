@@ -1169,8 +1169,8 @@ void Bitmap::read_openexr(Stream *stream) {
         (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::RGBA)) {
 
         Imf::Chromaticities itu_rec_b_709;
-        Imf::Chromaticities xyz(Imath::V2f(1.0f, 0.0f), Imath::V2f(0.0f, 1.0f),
-                                Imath::V2f(0.0f, 0.0f), Imath::V2f(1.0f / 3.0f, 1.0f / 3.0f));
+        Imf::Chromaticities xyz(Imath::V2f(1.f, 0.f), Imath::V2f(0.f, 1.f),
+                                Imath::V2f(0.f, 0.f), Imath::V2f(1.f / 3.f, 1.f / 3.f));
 
         if (chroma_eq(file_chroma, itu_rec_b_709)) {
             /* Already in the right space -- do nothing. */
@@ -1309,10 +1309,10 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
 
     if (pixel_format == PixelFormat::XYZ || pixel_format == PixelFormat::XYZA) {
         Imf::addChromaticities(header, Imf::Chromaticities(
-            Imath::V2f(1.0f, 0.0f),
-            Imath::V2f(0.0f, 1.0f),
-            Imath::V2f(0.0f, 0.0f),
-            Imath::V2f(1.0f / 3.0f, 1.0f / 3.0f)));
+            Imath::V2f(1.f, 0.f),
+            Imath::V2f(0.f, 1.f),
+            Imath::V2f(0.f, 0.f),
+            Imath::V2f(1.f / 3.f, 1.f / 3.f)));
     }
 
     size_t pixel_stride = m_struct->size(),
@@ -1863,7 +1863,7 @@ namespace {
 
     inline void rgbe_to_float(uint8_t rgbe[4], float *data) {
         if (rgbe[3]) { /* nonzero pixel */
-            float f = std::ldexp(1.0f, (int) rgbe[3] - (128 + 8));
+            float f = std::ldexp(1.f, (int) rgbe[3] - (128 + 8));
             for (int i  = 0; i < 3; ++i)
                 data[i] = rgbe[i] * f;
         } else {

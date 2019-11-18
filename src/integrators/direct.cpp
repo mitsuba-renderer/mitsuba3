@@ -10,6 +10,7 @@ template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
+    MTS_IMPORT_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     // =============================================================

@@ -121,7 +121,7 @@ public:
             static_assert(is_spectral_v<Spectrum>);
             xyz = to_xyz(depolarize(value), wavelengths, active);
         }
-        Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.0f);
+        Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.f);
         return put(pos, values.data(), active);
     }
 

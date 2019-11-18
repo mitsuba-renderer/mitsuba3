@@ -15,10 +15,11 @@ class MitchellNetravaliFilter final : public ReconstructionFilter<Float, Spectru
 public:
     MTS_DECLARE_CLASS_VARIANT(MitchellNetravaliFilter, ReconstructionFilter)
     MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_TYPES()
 
     MitchellNetravaliFilter(const Properties &props) : Base(props) {
         // Filter radius
-        m_radius = 2.0f;
+        m_radius = 2.f;
         // B parameter from the paper
         m_b = props.float_("B", 1.f / 3.f);
         // C parameter from the paper

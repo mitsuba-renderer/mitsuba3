@@ -28,6 +28,7 @@ template <typename Float, typename Spectrum>
 class D65Spectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(D65Spectrum, ContinuousSpectrum)
+    MTS_IMPORT_BASE(ContinuousSpectrum)
 
     D65Spectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))

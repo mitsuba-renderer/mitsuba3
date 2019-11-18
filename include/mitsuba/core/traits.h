@@ -20,8 +20,8 @@ template <typename Spectrum> struct spectrum_traits {};
 template <typename Float>
 struct spectrum_traits<Color<Float, 1>> {
     using Scalar                             = Color<scalar_t<Float>, 1>;
+    using Wavelength                         = Color<Float, 1>;
     using Unpolarized                        = Color<Float, 1>;
-    using Wavelength                         = Color<Float, 0>; // don't bother storing a wavelength
     static constexpr bool is_monochrome      = true;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = false;
@@ -32,7 +32,7 @@ struct spectrum_traits<Color<Float, 1>> {
 template <typename Float>
 struct spectrum_traits<Color<Float, 3>> {
     using Scalar                             = Color<scalar_t<Float>, 3>;
-    using Wavelength                         = Color<Float, 0>;
+    using Wavelength                         = Color<Float, 3>; // TODO don't bother storing a wavelength
     using Unpolarized                        = Color<Float, 3>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = true;
@@ -69,7 +69,11 @@ struct spectrum_traits<void> {
 };
 
 template <typename T>
-struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> { };
+struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> {
+    using Scalar            = enoki::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
+    using Wavelength        = enoki::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
+    using Unpolarized       = enoki::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
+};
 
 NAMESPACE_END(detail)
 

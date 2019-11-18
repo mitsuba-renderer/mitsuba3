@@ -9,6 +9,7 @@ template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SRGBEmitterSpectrum, ContinuousSpectrum)
+    MTS_IMPORT_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 
     SRGBEmitterSpectrum(const Properties &props) {
@@ -26,7 +27,7 @@ public:
 
         Properties props2("d65");
         ScalarFloat value =
-            props.float_(props.has_property("scale") ? "scale" : "value", 1.0f);
+            props.float_(props.has_property("scale") ? "scale" : "value", 1.f);
         props2.set_float("value", value * intensity);
         m_d65 = (Base *) PluginManager::instance()
                     ->create_object<Base>(props2)

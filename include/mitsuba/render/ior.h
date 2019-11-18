@@ -72,7 +72,7 @@ static float lookup_ior(const std::string &name) {
     }
 
     Log(Error, "%s", oss.str().c_str());
-    return 0.0f;
+    return 0.f;
 }
 
 inline float lookup_ior(const Properties &props, const std::string &param_name,

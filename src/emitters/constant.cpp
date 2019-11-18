@@ -13,6 +13,7 @@ template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
+    MTS_IMPORT_BASE(Emitter)
     MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {

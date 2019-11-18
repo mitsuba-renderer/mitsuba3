@@ -234,8 +234,8 @@ protected:
     Mask is_inside(const Interaction3f &it, Mask active) const;
 
     void update_bbox() {
-        ScalarPoint3f a(0.0f, 0.0f, 0.0f);
-        ScalarPoint3f b(1.0f, 1.0f, 1.0f);
+        ScalarPoint3f a(0.f, 0.f, 0.f);
+        ScalarPoint3f b(1.f, 1.f, 1.f);
         a      = m_world_to_local.inverse() * a;
         b      = m_world_to_local.inverse() * b;
         m_bbox = ScalarBoundingBox3f(a);

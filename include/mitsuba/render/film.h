@@ -37,7 +37,7 @@ public:
 
     /// Accumulate a bitmap on top of the radiance values stored in the film.
     /// The size of the given bitmap has to match to current size.
-    virtual void add_bitmap(const Bitmap *bitmap, ScalarFloat multiplier = 1.0f) = 0;
+    virtual void add_bitmap(const Bitmap *bitmap, ScalarFloat multiplier = 1.f) = 0;
 
     /// Set the target filename (with or without extension)
     virtual void set_destination_file(const fs::path &filename) = 0;

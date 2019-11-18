@@ -28,7 +28,7 @@ public:
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
-    enum class ETriMeshFlags {
+    enum class TriMeshFlags {
         HasNormals      = 0x0001,
         HasTexcoords    = 0x0002,
         HasTangents     = 0x0004, // unused
@@ -37,6 +37,13 @@ public:
         SinglePrecision = 0x1000,
         DoublePrecision = 0x2000
     };
+
+    constexpr bool has_flag(TriMeshFlags flags, TriMeshFlags f) {
+        return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
+    }
+    constexpr bool has_flag(uint32_t flags, TriMeshFlags f) {
+        return (flags & static_cast<uint32_t>(f)) != 0;
+    }
 
     SerializedMesh(const Properties &props) : Base(props) {
         auto fail = [&](const std::string &descr) {
@@ -140,13 +147,13 @@ public:
             m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
         }
 
-        if (flags & Flags::HasTexcoords) {
+        if (has_flag(flags, TriMeshFlags::HasTexcoords)) {
             for (auto name : { "u", "v" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
         }
 
-        if (flags & Flags::HasColors) {
+        if (has_flag(flags, TriMeshFlags::HasColors)) {
             for (auto name : { "r", "g", "b" })
                 m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
             m_color_offset = (ScalarIndex) m_vertex_struct->offset("r");
@@ -164,10 +171,10 @@ public:
         m_face_count = (ScalarSize) face_count;
         m_faces = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
 
-        bool double_precision = flags & Flags::DoublePrecision;
+        bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
         read_helper(stream, double_precision, m_vertex_struct->offset("x"), 3);
 
-        if (flags & Flags::HasNormals) {
+        if (has_flag(flags, TriMeshFlags::HasNormals)) {
             if (m_disable_vertex_normals)
                 // Skip over vertex normals provided in the file.
                 advance_helper(stream, double_precision, 3);
@@ -176,10 +183,10 @@ public:
                             m_vertex_struct->offset("nx"), 3);
         }
 
-        if (flags & Flags::HasTexcoords)
+        if (has_flag(flags, TriMeshFlags::HasTexcoords))
             read_helper(stream, double_precision, m_vertex_struct->offset("u"), 2);
 
-        if (flags & Flags::HasColors)
+        if (has_flag(flags, TriMeshFlags::HasColors))
             read_helper(stream, double_precision, m_vertex_struct->offset("r"), 3);
 
         stream->read(m_faces.get(), m_face_count * sizeof(ScalarIndex) * 3);
@@ -208,7 +215,7 @@ public:
             }
         }
 
-        if (!m_disable_vertex_normals && (flags & Flags::HasNormals) == 0)
+        if (!m_disable_vertex_normals && !has_flag(flags, TriMeshFlags::HasNormals))
             recompute_vertex_normals();
 
         if (is_emitter())

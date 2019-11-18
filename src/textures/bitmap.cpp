@@ -164,7 +164,7 @@ public:
         } else if (IsRawData) {
             Throw("Cannot spectrally evaluate a raw-data texture");
         } else {
-            return interpolate<Vector3f, false, depolarized_t<Spectrum>>(si, active);
+            return interpolate<Vector3f, false, depolarize_t<Spectrum>>(si, active);
         }
     }
 

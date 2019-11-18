@@ -69,10 +69,10 @@ MTS_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 
             r = phi = 0;
         } else if (x * x > y * y) {
             r = x;
-            phi = (math::Pi / 4.0f) * (y / x);
+            phi = (math::Pi / 4.f) * (y / x);
         } else {
             r = y;
-            phi = (math::Pi / 2.0f) - (x / y) * (math::Pi / 4.0f);
+            phi = (math::Pi / 2.f) - (x / y) * (math::Pi / 4.f);
         }
     */
 

@@ -144,9 +144,7 @@ public:
         Ray3f ray;
         ray.time = time;
         Spectrum wav_weight;
-        if constexpr (is_monochrome_v<Spectrum>) {
-            std::tie(ray.wavelength, wav_weight) = sample_uniform_spectrum(wav_sample);
-        } else if constexpr (is_rgb_v<Spectrum>) {
+        if constexpr (!is_spectral_v<Spectrum>) {
             NotImplementedError("Sampling rays in RGB mode");
         } else {
             std::tie(ray.wavelength, wav_weight) = sample_rgb_spectrum(wav_sample);
@@ -186,9 +184,7 @@ public:
         RayDifferential3f ray;
         ray.time = time;
         Spectrum wav_weight;
-        if constexpr (is_monochrome_v<Spectrum>) {
-            std::tie(ray.wavelength, wav_weight) = sample_uniform_spectrum(wav_sample);
-        } else if constexpr (is_rgb_v<Spectrum>) {
+        if constexpr (!is_spectral_v<Spectrum>) {
             NotImplementedError("Sampling rays in RGB mode");
         } else {
             std::tie(ray.wavelength, wav_weight) = sample_rgb_spectrum(wav_sample);

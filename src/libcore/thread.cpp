@@ -190,13 +190,13 @@ bool Thread::set_priority(EPriority priority) {
 #if defined(__LINUX__) || defined(__OSX__)
     float factor;
     switch (priority) {
-        case EIdlePriority: factor = 0.0f; break;
+        case EIdlePriority: factor = 0.f; break;
         case ELowestPriority: factor = 0.2f; break;
         case ELowPriority: factor = 0.4f; break;
         case EHighPriority: factor = 0.6f; break;
         case EHighestPriority: factor = 0.8f; break;
-        case ERealtimePriority: factor = 1.0f; break;
-        default: factor = 0.0f; break;
+        case ERealtimePriority: factor = 1.f; break;
+        default: factor = 0.f; break;
     }
 
     const pthread_t thread_id = d->native_handle;

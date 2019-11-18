@@ -100,7 +100,7 @@ AnimatedTransform::eval(Float time, Mask active) const {
 
 typename AnimatedTransform::BoundingBox3f AnimatedTransform::translation_bounds() const {
     if (m_keyframes.empty()) {
-        auto p = m_transform * Point3f(0.0f);
+        auto p = m_transform * Point3f(0.f);
         return BoundingBox3f(p, p);
     }
     Throw("AnimatedTransform::translation_bounds() not implemented for"

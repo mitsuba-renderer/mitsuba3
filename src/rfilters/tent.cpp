@@ -18,7 +18,7 @@ public:
     MTS_IMPORT_TYPES()
 
     TentFilter(const Properties &props) : Base(props) {
-        m_radius = 1.0f;
+        m_radius = 1.f;
         m_inv_radius = 1.f / m_radius;
         init_discretization();
     }

@@ -13,7 +13,7 @@ template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
-    MTS_IMPORT_BASE(m_max_depth, m_rr_depth)
+    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }

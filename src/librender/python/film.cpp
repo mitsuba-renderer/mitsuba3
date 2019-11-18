@@ -14,7 +14,7 @@ MTS_PY_EXPORT(Film) {
             .def_method(Film, clear)
             .def_method(Film, put, "block"_a)
             .def_method(Film, set_bitmap, "bitmap"_a)
-            .def_method(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.0f)
+            .def_method(Film, add_bitmap, "bitmap"_a, "multiplier"_a = 1.f)
             .def_method(Film, set_destination_file, "filename"_a)
             .def("develop", py::overload_cast<>(&Film::develop))
             .def("develop", py::overload_cast<const ScalarPoint2i &, const ScalarVector2i &,

@@ -10,6 +10,7 @@ template <typename Float, typename Spectrum>
 class InterpolatedSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(InterpolatedSpectrum, ContinuousSpectrum)
+    MTS_IMPORT_BASE(ContinuousSpectrum)
     MTS_IMPORT_TYPES()
 
     using Index = replace_scalar_t<Wavelength, uint32_t>;
@@ -147,20 +148,24 @@ public:
     }
 
     ENOKI_INLINE Spectrum eval(const Wavelength &lambda, Mask active_) const override {
-        Wavelength t = (lambda - m_lambda_min) * m_inv_interval_size;
-        mask_t<Wavelength> active = active_;
-        active &= (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
+        if constexpr (is_spectral_v<Spectrum>) {
+            Wavelength t = (lambda - m_lambda_min) * m_inv_interval_size;
+            mask_t<Wavelength> active = active_;
+            active &= (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
 
-        Index i0 = clamp(Index(t), zero<Index>(), Index(m_size_minus_2)),
-              i1 = i0 + Index(1);
+            Index i0 = clamp(Index(t), zero<Index>(), Index(m_size_minus_2)),
+                i1 = i0 + Index(1);
 
-        Wavelength v0 = data_gather<Wavelength>(i0, active),
-                   v1 = data_gather<Wavelength>(i1, active);
+            Wavelength v0 = data_gather<Wavelength>(i0, active),
+                    v1 = data_gather<Wavelength>(i1, active);
 
-        Wavelength w1 = t - Wavelength(i0),
-                   w0 = (Float) 1 - w1;
+            Wavelength w1 = t - Wavelength(i0),
+                    w0 = (Float) 1 - w1;
 
-        return (w0 * v0 + w1 * v1) & active;
+            return (w0 * v0 + w1 * v1) & active;
+        } else {
+            Throw("Not implemented for non-spectral modes");
+        }
     }
 
     ENOKI_INLINE Spectrum pdf(const Wavelength &lambda, Mask active) const override {
@@ -169,32 +174,36 @@ public:
 
     ENOKI_INLINE std::pair<Wavelength, Spectrum> sample(const Wavelength &sample_,
                                                         Mask active) const override {
-        Wavelength sample = sample_ * m_integral;
+        if constexpr (is_spectral_v<Spectrum>) {
+            Wavelength sample = sample_ * m_integral;
 
-        // TODO: find_interval on differentiable m_cdf?
-        Index i0 = math::find_interval(m_cdf.size(),
-            [&](const Index &idx, const mask_t<Index> &active) {
-                return cdf_gather<Wavelength>(idx, active) <= sample;
-            },
-            active
-        );
-        Index i1 = i0 + Index(1);
+            // TODO: find_interval on differentiable m_cdf?
+            Index i0 = math::find_interval(m_cdf.size(),
+                [&](const Index &idx, const mask_t<Index> &active) {
+                    return cdf_gather<Wavelength>(idx, active) <= sample;
+                },
+                active
+            );
+            Index i1 = i0 + Index(1);
 
-        Wavelength f0 = data_gather<Wavelength>(i0, active),
-                   f1 = data_gather<Wavelength>(i1, active);
+            Wavelength f0 = data_gather<Wavelength>(i0, active),
+                    f1 = data_gather<Wavelength>(i1, active);
 
-        // Reuse the sample
-        sample = (sample - cdf_gather<Wavelength>(i0, active)) * m_inv_interval_size;
+            // Reuse the sample
+            sample = (sample - cdf_gather<Wavelength>(i0, active)) * m_inv_interval_size;
 
-        // Importance sample the linear interpolant
-        Wavelength t_linear = (f0 - safe_sqrt(f0 * f0 + 2.0f * sample * (f1 - f0))) / (f0 - f1);
-        Wavelength t_const  = sample / f0;
-        Wavelength t        = select(eq(f0, f1), t_const, t_linear);
+            // Importance sample the linear interpolant
+            Wavelength t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+            Wavelength t_const  = sample / f0;
+            Wavelength t        = select(eq(f0, f1), t_const, t_linear);
 
-        return {
-            m_lambda_min + (Wavelength(i0) + t) * m_interval_size,
-            m_integral
-        };
+            return {
+                m_lambda_min + (Wavelength(i0) + t) * m_interval_size,
+                m_integral
+            };
+        } else {
+            Throw("Not implemented for non-spectral modes");
+        }
     }
 
     Float mean() const override {
