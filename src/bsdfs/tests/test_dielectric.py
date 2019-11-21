@@ -3,9 +3,7 @@ import pytest
 
 from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, \
-                           EImportance, ERadiance
-
+from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, TransportMode
 
 def example_bsdf(reflectance=0.3, transmittance=0.6):
     return load_string("""<bsdf version="2.0.0" type="dielectric">
@@ -40,7 +38,7 @@ def test02_sample():
     bsdf = example_bsdf()
 
     for i in range(2):
-        ctx = BSDFContext(EImportance if i == 0 else ERadiance)
+        ctx = BSDFContext(TransportMode.Importance if i == 0 else TransportMode.Radiance)
 
         # Sample reflection
         bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
@@ -71,7 +69,7 @@ def test03_sample_reverse():
     bsdf = example_bsdf()
 
     for i in range(2):
-        ctx = BSDFContext(EImportance if i == 0 else ERadiance)
+        ctx = BSDFContext(TransportMode.Importance if i == 0 else TransportMode.Radiance)
 
         # Sample reflection
         bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
@@ -104,7 +102,7 @@ def test04_sample_specific_component():
     for i in range(2):
         for sample in np.linspace(0, 1, 3):
             for sel_type in range(2):
-                ctx = BSDFContext(EImportance if i == 0 else ERadiance)
+                ctx = BSDFContext(TransportMode.Importance if i == 0 else TransportMode.Radiance)
 
                 # Sample reflection
                 if sel_type == 0:

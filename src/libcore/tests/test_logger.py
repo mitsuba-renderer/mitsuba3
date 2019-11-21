@@ -1,4 +1,4 @@
-from mitsuba.scalar_rgb.core import Thread, Appender, Formatter, Log, Info
+from mitsuba.scalar_rgb.core import Thread, Appender, Formatter, Log, LogLevel
 
 
 def test01_custom():
@@ -27,7 +27,7 @@ def test01_custom():
         logger.set_formatter(MyFormatter())
         logger.add_appender(MyAppender())
 
-        Log(Info, "This is a test message")
+        Log(LogLevel.Info, "This is a test message")
         assert len(messages) == 1
         assert messages[0].startswith(
                 '200: class=None, thread=main, text=test01_custom(): This is a'

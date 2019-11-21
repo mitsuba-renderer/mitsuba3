@@ -10,9 +10,6 @@ MTS_PY_EXPORT(warp) {
     auto warp = m.def_submodule("warp", "Common warping techniques that map from the unit square "
                                         "to other domains, such as spheres, hemispheres, etc.");
 
-    // Import ditr.py in this submodule
-    warp.attr("distr") = py::module::import("mitsuba.core.warp.distr");
-
     warp.def(
         "square_to_uniform_disk",
         vectorize<Float>(warp::square_to_uniform_disk<Float>),

@@ -7,10 +7,9 @@ import mitsuba
 import numpy as np
 import pytest
 
-from mitsuba.scalar_rgb.render import Interaction3f, Interaction3fX, \
-                           SurfaceInteraction3f, SurfaceInteraction3fX
-from mitsuba.scalar_rgb.render import PositionSample3f, PositionSample3fX
-from mitsuba.scalar_rgb.render import DirectionSample3f, DirectionSample3fX
+from mitsuba.scalar_rgb.render import Interaction3f
+from mitsuba.scalar_rgb.render import PositionSample3f
+from mitsuba.scalar_rgb.render import DirectionSample3f
 
 def test01_position_sample_construction_single():
     record = PositionSample3f()
@@ -40,8 +39,13 @@ def test01_position_sample_construction_single():
            and np.all(record.uv == si.uv) \
            and record.pdf == 0.0
 
-
 def test02_position_sample_construction_dynamic():
+    try:
+        from mitsuba.packet_rgb.render import PositionSample3f as PositionSample3fX
+        from mitsuba.packet_rgb.render import SurfaceInteraction3f as SurfaceInteraction3fX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     n_records = 5
 
     records = PositionSample3fX(n_records)
@@ -83,6 +87,11 @@ def test02_position_sample_construction_dynamic():
 
 
 def test03_position_sample_construction_dynamic_slicing():
+    try:
+        from mitsuba.packet_rgb.render import PositionSample3f as PositionSample3fX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     n_records = 5
     records = PositionSample3fX(n_records)
     records.p = [[1.0, 1.0, 1.0], [0.9, 0.9, 0.9],
@@ -143,8 +152,12 @@ def test04_direction_sample_construction_single():
     d = (its.p - ref.p) / np.linalg.norm(its.p - ref.p)
     assert np.allclose(record.d, d)
 
-
 def test05_direction_sample_construction_dynamic_and_slicing():
+    try:
+        from mitsuba.packet_rgb.render import DirectionSample3f as DirectionSample3fX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     np.random.seed(12345)
     refs = np.array([[0.0, 0.5, 0.7],
                      [1.0, 1.5, 0.2],
@@ -188,9 +201,17 @@ def test05_direction_sample_construction_dynamic_and_slicing():
 
 
 def test06_direction_sample_construction_subclass():
+    assert issubclass(DirectionSample3f, PositionSample3f)
+
+    try:
+        from mitsuba.packet_rgb.render import DirectionSample3f as DirectionSample3fX
+        from mitsuba.packet_rgb.render import PositionSample3f as PositionSample3fXX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     # DirectionSample is a kind of PositionSample, but only if
     # the underlying types match.
-    assert issubclass(DirectionSample3f, PositionSample3f)
+
     assert issubclass(DirectionSample3fX, PositionSample3fX)
     assert not issubclass(DirectionSample3f, PositionSample3fX)
     assert not issubclass(DirectionSample3fX, PositionSample3f)

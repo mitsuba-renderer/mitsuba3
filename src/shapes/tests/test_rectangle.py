@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import mitsuba
-from mitsuba.scalar_rgb.core      import Ray3f, Ray3fX
+from mitsuba.scalar_rgb.core      import Ray3f
 from mitsuba.scalar_rgb.core.xml  import load_string
 
 UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
@@ -43,7 +43,13 @@ def test02_bbox():
 @pytest.mark.xfail(condition=UNSUPPORTED,
                    reason="Shape intersections not implemented with Embree or OptiX")
 def test03_ray_intersect():
-    scene = load_string("""<scene version="2.0.0">
+    try:
+        import mitsuba.packet_rgb.core.load_string as load_string_packet
+        import mitsuba.packet_rgb.core.Ray3f as Ray3fX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
+    scene = load_string_packet("""<scene version="2.0.0">
         <shape type="rectangle">
             <transform name="to_world">
                 <scale x="2" y="0.5" z="1"/>

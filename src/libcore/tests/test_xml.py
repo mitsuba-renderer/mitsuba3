@@ -1,6 +1,6 @@
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import Scene
-from mitsuba.scalar_rgb.core import Thread, Warn
+from mitsuba.scalar_rgb.core import Thread, LogLevel
 import pytest
 
 
@@ -126,7 +126,7 @@ def test13_duplicate_parameter():
     logger = Thread.thread().logger()
     l = logger.error_level()
     try:
-        logger.set_error_level(Warn)
+        logger.set_error_level(LogLevel.Warn)
         with pytest.raises(Exception) as e:
             load_string("""<scene version="2.0.0">
                        <integer name="a" value="1"/>

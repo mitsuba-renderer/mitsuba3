@@ -19,7 +19,7 @@ add_mitsuba_python_library(mitsuba_render_ext render
   spectrum.cpp
   spiral.cpp
   srgb.cpp
-#   # texture3d.cpp
+#   texture3d.cpp
 )
 
 target_link_libraries(mitsuba_render_ext PRIVATE mitsuba-core mitsuba-render tbb)

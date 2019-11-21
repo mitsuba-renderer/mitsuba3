@@ -4,7 +4,6 @@ import pytest
 from mitsuba.scalar_rgb.core.math import Pi
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.core import warp
-from mitsuba.scalar_rgb.render import EMeasure
 from mitsuba.scalar_rgb.render import Interaction3f
 
 def test01_point_construct():

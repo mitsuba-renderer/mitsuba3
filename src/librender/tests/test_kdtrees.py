@@ -1,8 +1,6 @@
-from mitsuba.scalar_rgb.core import Properties, Ray3f, Ray3fX, MTS_WAVELENGTH_SAMPLES
+from mitsuba.scalar_rgb.core import Properties, Ray3f, MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.render import ShapeKDTree, Mesh, SurfaceInteraction3f, Scene
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.render.rtbench import naive_planar_morton_scalar, \
-                                   planar_morton_scalar, planar_morton_packet
 from mitsuba.test.util import fresolver_append_path
 
 import math
@@ -15,7 +13,6 @@ from .mesh_generation import create_stairs
 def make_synthetic_scene(n_steps):
     props = Properties("scene")
     props["_unnamed_0"] = create_stairs(n_steps)
-    props["monochrome"] = False
     return Scene(props)
 
 
@@ -25,29 +22,7 @@ def compare_results(res_a, res_b, atol=0):
 
 # ------------------------------------------------------------------------------
 
-@fresolver_append_path
-def test01_bunny():
-    # Create kdtree
-    scene = load_string("""
-        <scene version="0.5.0">
-            <shape type="ply">
-                <string name="filename" value="resources/data/ply/bunny_lowres.ply"/>
-            </shape>
-        </scene>
-    """)
-
-    # Trace n rays and compare for consistency
-    n = 128
-    (time_naive, count_naive)   = naive_planar_morton_scalar(scene, n)
-    (time, count)               = planar_morton_scalar(scene, n)
-    (time_v, count_v)           = planar_morton_packet(scene, n)
-
-    assert count_naive > 0
-    assert count_naive == count
-    assert count_naive == count_v
-
-
-def test02_depth_scalar_stairs():
+def test01_depth_scalar_stairs():
     n_steps = 20
     scene = make_synthetic_scene(n_steps)
 
@@ -78,7 +53,7 @@ def test02_depth_scalar_stairs():
 
 
 @fresolver_append_path
-def test03_depth_scalar_bunny():
+def test02_depth_scalar_bunny():
     scene = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
@@ -108,9 +83,16 @@ def test03_depth_scalar_bunny():
             assert np.all(res_shadow == res_naive.is_valid())
             compare_results(res_naive, res)
 
+def test03_depth_packet_stairs():
+    try:
+        from mitsuba.packet_rgb.core import Ray3f as Ray3fX
+        from mitsuba.packet_rgb.render import Scene as SceneX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
 
-def test04_depth_packet_stairs():
-    scene = make_synthetic_scene(11)
+    props = Properties("scene")
+    props["_unnamed_0"] = create_stairs_packet(11)
+    scene = SceneX(props)
 
     n = 4
     inv_n = 1.0 / (n - 1)
