@@ -115,10 +115,11 @@ def test03_mueller_to_world_to_local():
     try:
         from mitsuba.scalar_spectral_polarized.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
         from mitsuba.scalar_spectral_polarized.render.mueller import linear_polarizer
+        from mitsuba.scalar_spectral_polarized.render import SurfaceInteraction3f as SurfaceInteraction3fM
     except ImportError:
         pytest.skip("scalar_spectral_polarized mode not enabled")
 
-    si = SurfaceInteraction3f()
+    si = SurfaceInteraction3fM()
     n = [1.0, 1.0, 1.0]
     n /= np.linalg.norm(n)
     si.sh_frame = Frame3f(n)

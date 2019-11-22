@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from mitsuba.scalar_rgb.core import Struct, float_dtype
+from mitsuba.scalar_rgb.core import Struct, float_dtype, FieldType
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import Mesh
 from mitsuba.test.util import fresolver_append_path
@@ -77,13 +77,11 @@ def test01_create_mesh():
 @fresolver_append_path
 def test02_ply_triangle():
     shape = load_string("""
-        <scene version="0.5.0">
-            <shape type="ply">
-                <string name="filename" value="data/triangle.ply"/>
-                <boolean name="face_normals" value="true"/>
-            </shape>
-        </scene>
-    """).kdtree()[0]
+        <shape type="ply" version="0.5.0">
+            <string name="filename" value="data/triangle.ply"/>
+            <boolean name="face_normals" value="true"/>
+        </shape>
+    """)
 
     vertices, faces = shape.vertices(), shape.faces()
     assert not shape.has_vertex_normals()
@@ -103,12 +101,10 @@ def test03_ply_computed_normals():
     """Checks(automatic) vertex normal computation for a PLY file that
     doesn't have them."""
     shape = load_string("""
-        <scene version="0.5.0">
-            <shape type="ply">
-                <string name="filename" value="data/triangle.ply"/>
-            </shape>
-        </scene>
-    """).kdtree()[0]
+        <shape type="ply" version="0.5.0">
+            <string name="filename" value="data/triangle.ply"/>
+        </shape>
+    """)
     vertices = shape.vertices()
     assert shape.has_vertex_normals()
     # Normals are stored in half precision
@@ -162,12 +158,10 @@ def test05_load_simple_mesh():
     """Tests the OBJ and PLY loaders on a simple example."""
     for mesh_format in ["obj", "ply"]:
         shape = load_string("""
-            <scene version="2.0.0">
-                <shape type="{0}">
-                    <string name="filename" value="resources/data/tests/{0}/cbox_smallbox.{0}"/>
-                </shape>
-            </scene>
-        """.format(mesh_format)).kdtree()[0]
+            <shape type="{0}" version="2.0.0">
+                <string name="filename" value="resources/data/tests/{0}/cbox_smallbox.{0}"/>
+            </shape>
+        """.format(mesh_format))
 
         vertices, faces = shape.vertices(), shape.faces()
         assert shape.has_vertex_normals()

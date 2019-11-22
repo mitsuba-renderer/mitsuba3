@@ -13,6 +13,13 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
 
     MTS_PY_CHECK_ALIAS(MicrofacetDistribution, m) {
         py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
+            // TODO is this needed?
+            .def(py::init([](MicrofacetType t, ScalarFloat alpha, bool sv) {
+                return MicrofacetDistribution(t, alpha, sv);
+            }), "type"_a, "alpha"_a, "sample_visible"_a = true)
+            .def(py::init([](MicrofacetType t, ScalarFloat alpha_u, ScalarFloat alpha_v, bool sv) {
+                return MicrofacetDistribution(t, alpha_u, alpha_v, sv);
+            }), "type"_a, "alpha_u"_a, "alpha_v"_a, "sample_visible"_a = true)
             .def(py::init<MicrofacetType, const Float &, bool>(), "type"_a, "alpha"_a,
                 "sample_visible"_a = true)
             .def(py::init<MicrofacetType, const Float &, const Float &, bool>(), "type"_a, "alpha_u"_a,

@@ -46,7 +46,7 @@ def check_scene(int_name, integrator, scene_name, is_empty = False):
 
     status = integrator.render(scene, sensor)
     assert status, "Rendering ({}) failed".format(variant_name)
-    # _save(scene.film(), int_name, suffix='_' + variant_name)
+    # _save(film, int_name, suffix='_' + variant_name)
 
     converted = film.bitmap().convert(PixelFormat.RGBA, FieldType.Float32, False)
     values    = np.array(converted, copy=False)

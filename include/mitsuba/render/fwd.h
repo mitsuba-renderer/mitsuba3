@@ -44,6 +44,9 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Wavelength             = wavelength_t<Spectrum>;
     using UnpolarizedSpectrum    = depolarize_t<Spectrum>;
 
+    using StokesVector4f         = StokesVector<UnpolarizedSpectrum>;
+    using MuellerMatrix4f        = MuellerMatrix<UnpolarizedSpectrum>;
+
     using Ray3f                  = Ray<Point<Float, 3>, Spectrum>;
     using RayDifferential3f      = RayDifferential<Point<Float, 3>, Spectrum>;
 
@@ -91,6 +94,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using RenderAliases        = mitsuba::RenderAliases<Float, Spectrum>;                          \
     using Wavelength           = typename RenderAliases::Wavelength;                               \
     using UnpolarizedSpectrum  = typename RenderAliases::UnpolarizedSpectrum;                      \
+    using StokesVector4f       = typename RenderAliases::StokesVector4f;                           \
+    using MuellerMatrix4f      = typename RenderAliases::MuellerMatrix4f;                          \
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 

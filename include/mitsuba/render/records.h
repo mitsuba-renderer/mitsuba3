@@ -213,7 +213,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os,
                          const PositionSample<Float, Spectrum> &ps) {
-    os << "PositionSample" << type_suffix<Float>() << "["  << std::endl
+    os << "PositionSample" << type_suffix<Point<Float, 3>>() << "["  << std::endl
        << "  p = " << string::indent(ps.p, 6) << "," << std::endl
        << "  n = " << string::indent(ps.n, 6) << "," << std::endl
        << "  uv = " << string::indent(ps.uv, 7) << "," << std::endl
@@ -228,7 +228,7 @@ std::ostream &operator<<(std::ostream &os,
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os,
                          const DirectionSample<Float, Spectrum> &ds) {
-    os << "DirectionSample" << type_suffix<Float>() << "[" << std::endl
+    os << "DirectionSample" << type_suffix<Point<Float, 3>>() << "[" << std::endl
        << "  p = " << string::indent(ds.p, 6) << "," << std::endl
        << "  n = " << string::indent(ds.n, 6) << "," << std::endl
        << "  uv = " << string::indent(ds.uv, 7) << "," << std::endl

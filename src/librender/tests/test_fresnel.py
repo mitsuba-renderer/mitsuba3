@@ -43,29 +43,44 @@ def test02_fresnel_polarized():
     assert np.allclose(a_s*a_s, 0.3846150939598947**2)
     assert np.allclose(a_p*a_p, 0)
 
+    try:
+        from mitsuba.packet_rgb.render import fresnel as fresnel_packet
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     cos_theta_i = np.linspace(-1, 1, 20)
-    F, cos_theta_t, _, scale = fresnel(cos_theta_i, 1)
+    F, cos_theta_t, _, scale = fresnel_packet(cos_theta_i, 1)
     assert np.all(F == np.zeros(20))
     assert np.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
 def test03_fresnel_conductor():
+    try:
+        from mitsuba.packet_rgb.render import fresnel as fresnel_packet
+        from mitsuba.packet_rgb.render import fresnel_conductor as fresnel_conductor_packet
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     # The conductive and diel. variants should agree given a real-valued IOR
     cos_theta_i = np.cos(np.linspace(0, np.pi / 2, 20))
 
-    r, cos_theta_t, _, scale = fresnel(cos_theta_i, 1.5)
-    r_2 = fresnel_conductor(cos_theta_i, 1.5)
+    r, cos_theta_t, _, scale = fresnel_packet(cos_theta_i, 1.5)
+    r_2 = fresnel_conductor_packet(cos_theta_i, 1.5)
     assert np.allclose(r, r_2)
 
-    r, cos_theta_t, _, scale = fresnel(cos_theta_i, 1 / 1.5)
-    r_2 = fresnel_conductor(cos_theta_i, 1 / 1.5)
+    r, cos_theta_t, _, scale = fresnel_packet(cos_theta_i, 1 / 1.5)
+    r_2 = fresnel_conductor_packet(cos_theta_i, 1 / 1.5)
     assert np.allclose(r, r_2)
 
 
 def test04_snell():
+    try:
+        from mitsuba.packet_rgb.render import fresnel as fresnel_packet
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
     # Snell's law
     theta_i = np.linspace(0, np.pi / 2, 20)
-    F, cos_theta_t, _, _ = fresnel(np.cos(theta_i), 1.5)
+    F, cos_theta_t, _, _ = fresnel_packet(np.cos(theta_i), 1.5)
     theta_t = np.arccos(cos_theta_t)
     np.allclose(np.sin(theta_i) - np.sin(theta_t) * 1.5, 0.0)
 

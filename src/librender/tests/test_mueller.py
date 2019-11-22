@@ -1,5 +1,5 @@
 import numpy as np
-from mitsuba.render.mueller import *
+from mitsuba.scalar_rgb.render.mueller import *
 import mitsuba.core
 
 
@@ -87,7 +87,7 @@ def test06_rotate_stokes_basis():
     b_00 = stokes_basis(w)        # Corresponding Stokes basis
 
     def rotate_vector(v, axis, angle):
-            return mitsuba.core.Transform4f.rotate(axis, angle).matrix[0:3, 0:3] @ v
+            return mitsuba.scalar_rgb.core.Transform4f.rotate(axis, angle).matrix[0:3, 0:3] @ v
 
     # Switch to basis rotated by 90˚.
     # Now polarization should also be at 90˚ (with Stokes vector [1, -1, 0, 0])
@@ -121,7 +121,7 @@ def test07_rotate_mueller_basis():
     M = linear_polarizer()
 
     def rotate_vector(v, axis, angle):
-            return mitsuba.core.Transform4f.rotate(axis, angle).matrix[0:3, 0:3] @ v
+            return mitsuba.scalar_rgb.core.Transform4f.rotate(axis, angle).matrix[0:3, 0:3] @ v
 
     # As reference, rotate the element directly by -45˚
     M_rotated_element = rotated_element(-45 * np.pi/180, M)

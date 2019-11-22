@@ -4,7 +4,7 @@ import numpy as np
 
 def test01_ctx_construct():
     ctx = BSDFContext()
-    assert ctx.type_mask == BSDFFlags.All
+    assert ctx.type_mask == +BSDFFlags.All
     assert ctx.component == np.uint32(-1)
     assert ctx.mode == TransportMode.Radiance
     ctx.reverse()

@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pytest
 
-from .mesh_generation import create_stairs
+from .mesh_generation import create_stairs, create_stairs_packet
 
 
 def make_synthetic_scene(n_steps):
@@ -61,7 +61,7 @@ def test02_depth_scalar_bunny():
             </shape>
         </scene>
     """)
-    b = scene.kdtree().bbox()
+    b = scene.bbox()
 
     n = 100
     inv_n = 1.0 / (n - 1)

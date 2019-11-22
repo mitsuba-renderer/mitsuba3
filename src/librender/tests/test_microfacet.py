@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import MicrofacetDistribution, MicrofacetType
@@ -13,9 +14,14 @@ def test01_construct():
 
 
 def test02_eval_pdf_beckmann():
+    try:
+        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
+    mdf   = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, False)
     assert not mdf.is_isotropic()
     assert mdf.is_anisotropic()
     assert mdf_i.is_isotropic()
@@ -87,9 +93,14 @@ def test02_eval_pdf_beckmann():
     assert np.allclose(mdf_i.pdf(wi, v), np.full(steps, 11.86709118 * np.cos(0.1)))
 
 def test03_smith_g1_beckmann():
+    try:
+        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
+    mdf   = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, False)
     steps = 20
     theta = np.linspace(np.pi/3, np.pi/2, steps)
     phi = np.full(steps, np.pi/2)
@@ -133,7 +144,12 @@ def test03_smith_g1_beckmann():
 
 
 def test04_sample_beckmann():
-    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    try:
+        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
+    mdf = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
@@ -194,9 +210,14 @@ def test04_sample_beckmann():
 
 
 def test03_smith_g1_ggx():
+    try:
+        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistribution(MicrofacetType.GGX, 0.1, False)
+    mdf   = MicrofacetDistributionP(MicrofacetType.GGX, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistributionP(MicrofacetType.GGX, 0.1, False)
     steps = 20
     theta = np.linspace(np.pi/3, np.pi/2, steps)
     phi = np.full(steps, np.pi/2)
@@ -239,7 +260,12 @@ def test03_smith_g1_ggx():
 
 
 def test05_sample_ggx():
-    mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
+    try:
+        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
+    mdf = MicrofacetDistributionP(MicrofacetType.GGX, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6

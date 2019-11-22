@@ -67,9 +67,8 @@ template <typename Point>                    struct BoundingSphere;
 template <typename Vector>                   struct Frame;
 template <typename Value>                    class DiscreteDistribution;
 
-template <typename Value> using StokesVector  = enoki::Array<Value, 4, true>;
-template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
-
+template <typename Spectrum> using StokesVector  = enoki::Array<Spectrum, 4, true>;
+template <typename Spectrum> using MuellerMatrix = enoki::Matrix<Spectrum, 4, true>;
 
 //! @}
 // =============================================================
@@ -155,8 +154,6 @@ template <typename Float_> struct CoreAliases {
 
     using Color1f             = Color<Float, 1>;
     using Color3f             = Color<Float, 3>;
-    using StokesVector4f      = StokesVector<Float>;
-    using MuellerMatrix4f     = MuellerMatrix<Float>;
 };
 
 template <typename T>
@@ -236,9 +233,7 @@ using managed_vector =
     using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
     using prefix ## DiscreteDistribution = typename prefix ## CoreAliases::DiscreteDistribution;   \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
-    using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
-    using prefix ## StokesVector4f       = typename prefix ## CoreAliases::StokesVector4f;         \
-    using prefix ## MuellerMatrix4f      = typename prefix ## CoreAliases::MuellerMatrix4f;
+    using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;
 
 #define MTS_IMPORT_CORE_TYPES()                                                                    \
     MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \

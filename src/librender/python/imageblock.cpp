@@ -15,7 +15,7 @@ MTS_PY_EXPORT(ImageBlock) {
             .def("put", vectorize<Float>(py::overload_cast<const Point2f &,
                 const wavelength_t<Spectrum> &, const Spectrum &, const Float &,
                 mask_t<Float>>(&ImageBlock::put)),
-                "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a, "active"_a = true,
+                "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a = 1.f, "active"_a = true,
                 D(ImageBlock, put, 2))
             .def("put",
                 [](ImageBlock &ib, const Point2f &pos,

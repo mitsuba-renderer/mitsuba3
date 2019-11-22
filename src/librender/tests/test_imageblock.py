@@ -101,11 +101,17 @@ def test03_put_values_basic():
     check_value(im, ref, atol=1e-6)
 
 def test04_put_packets_basic():
+    try:
+        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
+        from mitsuba.packet_rgb.render import ImageBlock as ImageBlockP
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     # Recall that we must pass a reconstruction filter to use the `put` methods.
-    rfilter = load_string("""<rfilter version="2.0.0" type="box">
+    rfilter = load_string_packet("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlock(PixelFormat.XYZAW, [10, 8], filter=rfilter)
+    im = ImageBlockP(PixelFormat.XYZAW, [10, 8], filter=rfilter)
 
     n = 29
     positions = np.random.uniform(size=(n, 2))
@@ -136,12 +142,19 @@ def test05_put_with_filter():
     """The previous tests used a very simple box filter, parametrized so that
     it essentially had no effect. In this test, we use a more realistic
     Gaussian reconstruction filter, with non-zero radius."""
-    rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
+
+    try:
+        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
+        from mitsuba.packet_rgb.render import ImageBlock as ImageBlockP
+    except ImportError:
+
+        pytest.skip("packet_rgb mode not enabled")
+    rfilter = load_string_packet("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="0.5"/>
         </rfilter>""")
     size = [12, 12]
-    im = ImageBlock(PixelFormat.XYZAW, size, filter=rfilter)
-    im2 = ImageBlock(PixelFormat.XYZAW, size, filter=rfilter)
+    im  = ImageBlockP(PixelFormat.XYZAW, size, filter=rfilter)
+    im2 = ImageBlockP(PixelFormat.XYZAW, size, filter=rfilter)
 
     positions = np.array([
         [5, 6], [0, 1], [5, 6], [1, 11], [11, 11],
