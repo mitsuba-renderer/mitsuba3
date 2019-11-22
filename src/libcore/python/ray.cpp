@@ -5,7 +5,7 @@
 MTS_PY_EXPORT_STRUCT(Ray) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(Ray3f, m) {
-        py::class_<Ray3f>(m, "Ray3f", D(Ray3f))
+        auto ray = py::class_<Ray3f>(m, "Ray3f", D(Ray3f))
             .def(py::init<>(), "Create an unitialized ray")
             .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
@@ -24,6 +24,7 @@ MTS_PY_EXPORT_STRUCT(Ray) {
             .def_field(Ray3f, time)
             .def_field(Ray3f, wavelength)
             .def_repr(Ray3f);
+        bind_slicing_operators<Ray3f, Ray<ScalarPoint3f, scalar_spectrum_t<Spectrum>>>(ray);
     }
 
     MTS_PY_CHECK_ALIAS(RayDifferential3f, m) {

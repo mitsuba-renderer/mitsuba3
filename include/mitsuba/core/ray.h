@@ -22,39 +22,39 @@ template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = array_size_v<Point_>;
 
     using Point                  = Point_;
-    using Value                  = value_t<Point>;
-    using Vector                 = mitsuba::Vector<Value, Size>;
+    using Float                  = value_t<Point>;
+    using Vector                 = mitsuba::Vector<Float, Size>;
     using Spectrum               = Spectrum_;
     using Wavelength             = wavelength_t<Spectrum_>;
 
     Point o;                            ///< Ray origin
     Vector d;                           ///< Ray direction
     Vector d_rcp;                       ///< Componentwise reciprocals of the ray direction
-    Value mint = math::Epsilon<Value>;  ///< Minimum position on the ray segment
-    Value maxt = math::Infinity<Value>; ///< Maximum position on the ray segment
-    Value time = 0.f;                   ///< Time value associated with this ray
+    Float mint = math::Epsilon<Float>;  ///< Minimum position on the ray segment
+    Float maxt = math::Infinity<Float>; ///< Maximum position on the ray segment
+    Float time = 0.f;                   ///< Time value associated with this ray
     Wavelength wavelength;              ///< Wavelength packet associated with the ray
 
     /// Construct a new ray (o, d) at time 'time'
-    Ray(const Point &o, const Vector &d, Value time,
+    Ray(const Point &o, const Vector &d, Float time,
         const Wavelength &wavelength)
         : o(o), d(d), d_rcp(rcp(d)), time(time),
           wavelength(wavelength) { }
 
     /// Construct a new ray (o, d) with time
-    Ray(const Point &o, const Vector &d, const Value &t)
+    Ray(const Point &o, const Vector &d, const Float &t)
         : o(o), d(d), time(t) {
         update();
     }
 
     /// Construct a new ray (o, d) with bounds
-    Ray(const Point &o, const Vector &d, Value mint, Value maxt,
-        Value time, const Wavelength &wavelength)
+    Ray(const Point &o, const Vector &d, Float mint, Float maxt,
+        Float time, const Wavelength &wavelength)
         : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt),
           time(time), wavelength(wavelength) { }
 
     /// Copy a ray, but change the [mint, maxt] interval
-    Ray(const Ray &r, Value mint, Value maxt)
+    Ray(const Ray &r, Float mint, Float maxt)
         : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(mint), maxt(maxt),
           time(r.time) { }
 
@@ -62,7 +62,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     void update() { d_rcp = rcp(d); }
 
     /// Return the position of a point along the ray
-    Point operator() (Value t) const { return fmadd(d, t, o); }
+    Point operator() (Float t) const { return fmadd(d, t, o); }
 
     /// Return a ray that points into the opposite direction
     Ray reverse() const {
@@ -89,7 +89,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;
     using Base::Base;
 
-    using typename Base::Value;
+    using typename Base::Float;
     using typename Base::Point;
     using typename Base::Vector;
     using Base::o;
@@ -103,7 +103,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     RayDifferential(const Base &ray)
         : Base(ray), has_differentials(false) { }
 
-    void scale_differential(Value amount) {
+    void scale_differential(Float amount) {
         o_x = fmadd(o_x - o, amount, o);
         o_y = fmadd(o_y - o, amount, o);
         d_x = fmadd(d_x - d, amount, d);

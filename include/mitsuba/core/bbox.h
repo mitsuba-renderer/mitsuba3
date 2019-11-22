@@ -302,7 +302,7 @@ template <typename Point_> struct BoundingBox {
      */
     template <typename Ray>
     MTS_INLINE auto ray_intersect(const Ray &ray) const {
-        using Value  = expr_t<typename Ray::Value>;
+        using Value  = expr_t<typename Ray::Float>;
         using Vector = expr_t<typename Ray::Vector>;
 
         /* First, ensure that the ray either has a nonzero slope on each axis,

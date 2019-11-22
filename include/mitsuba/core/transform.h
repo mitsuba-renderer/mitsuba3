@@ -14,12 +14,13 @@ NAMESPACE_BEGIN(mitsuba)
  * behave differently under homogeneous coordinate transformations, hence
  * the need to represent them using separate types)
  */
-template <typename Float, size_t Size> struct Transform {
+template <typename Float_, size_t Size> struct Transform {
 
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
+    using Float   = Float_;
     using Matrix  = enoki::Matrix<Float, Size>;
     using Mask    = mask_t<Float>;
     using Scalar  = scalar_t<Float>;

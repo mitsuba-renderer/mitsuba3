@@ -6,7 +6,7 @@
 MTS_PY_EXPORT_STRUCT(Transform) {
     MTS_IMPORT_CORE_TYPES()
     MTS_PY_CHECK_ALIAS(Transform3f, m) {
-        py::class_<Transform3f>(m, "Transform3f", D(Transform3f))
+        auto trans = py::class_<Transform3f>(m, "Transform3f", D(Transform3f))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform3f &>(), "Copy constructor")
             .def(py::init([](py::array a) {
@@ -37,6 +37,9 @@ MTS_PY_EXPORT_STRUCT(Transform) {
             .def_readwrite("matrix", &Transform3f::matrix)
             .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
             .def_repr(Transform3f);
+
+        // TODO
+        // bind_slicing_operators<Transform3f, ScalarTransform3f>(trans);
     }
 
     MTS_PY_CHECK_ALIAS(Transform4f, m) {

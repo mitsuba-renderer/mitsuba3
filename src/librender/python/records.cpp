@@ -6,7 +6,7 @@
 MTS_PY_EXPORT_STRUCT(PositionSample) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(PositionSample3f, m) {
-        py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
+        auto pos = py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
             .def(py::init<>(), "Construct an unitialized position sample")
             .def(py::init<const PositionSample3f &>(), "Copy constructor", "other"_a)
             .def(py::init<const SurfaceInteraction3f &>(),
@@ -19,6 +19,7 @@ MTS_PY_EXPORT_STRUCT(PositionSample) {
             .def_field(PositionSample3f, delta)
             .def_field(PositionSample3f, object)
             .def_repr(PositionSample3f);
+        bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
     }
 }
 

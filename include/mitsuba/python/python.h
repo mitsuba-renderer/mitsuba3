@@ -59,23 +59,25 @@ extern py::dtype dtype_for_struct(const Struct *s);
 
 template <typename VectorClass, typename ScalarClass, typename ClassBinding>
 void bind_slicing_operators(ClassBinding &c) {
-    c.def(py::init([](size_t n) -> VectorClass {
-        return zero<VectorClass>(n);
-    }))
-    .def("__getitem__", [](VectorClass &r, size_t i) {
-        if (i >= slices(r))
-            throw py::index_error();
-        return ScalarClass(enoki::slice(r, i));
-    })
-    .def("__setitem__", [](VectorClass &r, size_t i, const ScalarClass &r2) {
-        if (i >= slices(r))
-            throw py::index_error();
-        enoki::slice(r, i) = r2;
-    })
-    .def("__len__", [](const VectorClass &r) {
-        return slices(r);
-    })
-    ;
+    using Float = typename VectorClass::Float;
+    if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>) {
+        c.def(py::init([](size_t n) -> VectorClass {
+            return zero<VectorClass>(n);
+        }))
+        .def("__getitem__", [](VectorClass &r, size_t i) {
+            if (i >= slices(r))
+                throw py::index_error();
+            return ScalarClass(enoki::slice(r, i));
+        })
+        .def("__setitem__", [](VectorClass &r, size_t i, const ScalarClass &r2) {
+            if (i >= slices(r))
+                throw py::index_error();
+            enoki::slice(r, i) = r2;
+        })
+        .def("__len__", [](const VectorClass &r) {
+            return slices(r);
+        });
+    }
 }
 
 template <typename Source, typename Target> void pybind11_type_alias() {

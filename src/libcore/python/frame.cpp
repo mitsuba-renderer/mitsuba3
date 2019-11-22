@@ -4,7 +4,7 @@
 MTS_PY_EXPORT_STRUCT(Frame) {
     MTS_IMPORT_CORE_TYPES()
     MTS_PY_CHECK_ALIAS(Frame3f, m) {
-        py::class_<Frame3f>(m, "Frame3f", D(Frame3f))
+        auto f = py::class_<Frame3f>(m, "Frame3f", D(Frame3f))
             .def(py::init<>(), D(Frame3f, Frame3f))
             .def(py::init<const Frame3f &>(), "Copy constructor")
             .def(py::init<Vector3f, Vector3f, Vector3f>(), D(Frame3f, Frame3f, 3))
@@ -29,5 +29,6 @@ MTS_PY_EXPORT_STRUCT(Frame) {
             .def_field(Frame3f, t)
             .def_field(Frame3f, n)
             .def_repr(Frame3f);
+        bind_slicing_operators<Frame3f, ScalarFrame3f>(f);
     }
 }

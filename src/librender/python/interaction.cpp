@@ -9,7 +9,7 @@
 MTS_PY_EXPORT_STRUCT(Interaction) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(Interaction3f, m) {
-        py::class_<Interaction3f>(m, "Interaction3f", D(Interaction3f))
+        auto inter = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction3f))
             // Members
             .def_field(Interaction3f, t)
             .def_field(Interaction3f, time)
@@ -21,6 +21,7 @@ MTS_PY_EXPORT_STRUCT(Interaction) {
             .def_method(Interaction3f, spawn_ray_to)
             .def_method(Interaction3f, is_valid)
             .def_repr(Interaction3f);
+        bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
     }
 }
 
