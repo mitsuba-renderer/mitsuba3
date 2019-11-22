@@ -47,7 +47,7 @@ def test02_area_sample_direction():
     e = shape.emitter()
     # Direction sampling is conditioned on a sampled position
     it = Interaction3f()
-    it.wavelengths = [400, 500, 600, 750]
+    it.wavelengths = [1, 1, 1]
     it.p = [-5, 3, -1] # Some position
     it.time = 1.0
 
@@ -61,13 +61,30 @@ def test02_area_sample_direction():
     assert np.allclose(d_rec.d, d)
     assert d_rec.pdf > 1.0
 
+@fresolver_append_path
 def test03_area_sample_ray():
-    # TODO: test vectorized variant
-    from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES, Frame3f
-    shape = example_shape()
+    from mitsuba.scalar_rgb.core import Frame3f
+
+    try:
+        from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_SAMPLES
+        from mitsuba.scalar_spectral.core.xml import load_string as load_string_spectral
+    except ImportError:
+        pytest.skip("scalar_spectral mode not enabled")
+
+    shape = load_string_spectral("""
+                <shape version='2.0.0' type='ply'>
+                    <string name='filename' value='{filename}'/>
+                    {emitter}
+                    <transform name='to_world'>
+                        <translate x='10' y='-1' z='2'/>
+                    </transform>
+                </shape>
+            """.format(filename="data/triangle.ply",
+                    emitter="<emitter type='area'><spectrum name='radiance' value='1'/></emitter>"))
+
     e = shape.emitter()
 
-    radiance = load_string("<spectrum type='d65' version='2.0.0'/>").expand()[0]
+    radiance = load_string_spectral("<spectrum type='d65' version='2.0.0'/>").expand()[0]
     # Shifted wavelength sample
     wav_sample = 0.44 + np.arange(MTS_WAVELENGTH_SAMPLES) / float(MTS_WAVELENGTH_SAMPLES)
     wav_sample[wav_sample >= 1.0] -= 1.0
@@ -78,7 +95,7 @@ def test03_area_sample_ray():
     assert np.allclose(ray.time, 0.98)
     assert np.allclose(ray.wavelength, wavs)
     # Position on the light source
-    assert np.allclose(ray.o, [10, -0.53524196, 2.22540331])
+    assert np.allclose(ray.o, [10, -0.4500909,  2.083485])
     # Direction pointing out from the light source, in world coordinates.
     warped = warp.square_to_cosine_hemisphere([0.1, 0.2])
     assert np.allclose(ray.d, Frame3f([-1, 0, 0]).to_world(warped))

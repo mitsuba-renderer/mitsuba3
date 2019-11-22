@@ -34,7 +34,10 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
             .value("Delta1D", BSDFFlags::Delta1D, D(BSDFFlags, Delta1D))
             .value("All", BSDFFlags::All, D(BSDFFlags, All))
             .def(py::self == py::self)
-            ;
+            .def(py::self | py::self)
+            .def("__pos__", [](const BSDFFlags &f) {
+                return static_cast<UInt32>(f);
+            }, py::is_operator());
     }
 
     MTS_PY_CHECK_ALIAS(BSDFContext, m) {
@@ -78,11 +81,11 @@ MTS_PY_EXPORT(BSDF) {
                 .def("eval_tr", vectorize<Float>(&BSDF::eval_tr),
                     "si"_a, "active"_a = true, D(BSDF, eval_tr))
             .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
-                D(BSDF, flags))
+                "active"_a = true, D(BSDF, flags))
             .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
-                D(BSDF, flags, 2))
-            .def_method(BSDF, needs_differentials)
-            .def_method(BSDF, component_count)
+                "index"_a, "active"_a = true, D(BSDF, flags, 2))
+            .def_method(BSDF, needs_differentials, "active"_a = true)
+            .def_method(BSDF, component_count, "active"_a = true)
             .def_method(BSDF, id)
             .def("__repr__", &BSDF::to_string);
     }

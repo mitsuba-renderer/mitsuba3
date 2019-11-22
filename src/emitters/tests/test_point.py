@@ -17,7 +17,7 @@ def test02_point_sample_direction():
 
     # Direction sampling
     it = Interaction3f()
-    it.wavelengths = [400, 500, 600, 750]
+    it.wavelengths = [1, 1, 1]
     it.p = [0.0, -2.0, 4.5] # Some position
     it.time = 0.3
 

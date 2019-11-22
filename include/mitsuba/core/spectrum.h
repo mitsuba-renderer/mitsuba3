@@ -11,6 +11,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+// TODO should vary with modes
 #if !defined(MTS_WAVELENGTH_SAMPLES)
 #  define MTS_WAVELENGTH_SAMPLES 4
 #endif

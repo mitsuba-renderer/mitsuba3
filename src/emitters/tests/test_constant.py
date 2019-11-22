@@ -19,7 +19,7 @@ def example_emitter(spectrum = "1.0", extra = ""):
 @pytest.fixture(scope="module")
 def interaction():
     it = Interaction3f()
-    it.wavelengths = [400, 500, 600, 750]
+    it.wavelengths = [1, 1, 1]
     it.p = [-0.5, 0.3, -0.1]  # Some position inside the unit sphere
     it.time = 1.0
     return it
@@ -30,9 +30,16 @@ def test01_construct():
 
 
 def test02_sample_ray():
-    scale = 3.5
-    e = example_emitter(spectrum=scale)
-    d65 = ContinuousSpectrum.D65(scale=scale)
+    try:
+        from mitsuba.scalar_spectral.core.xml import load_string as load_string_spectral
+    except ImportError:
+        pytest.skip("scalar_spectral mode not enabled")
+
+    e = load_string_spectral("""
+            <emitter version="2.0.0" type="constant">
+                <spectrum name="radiance" value="3.5"/>
+            </emitter>
+        """)
 
     ray, weight = e.sample_ray(0.3, 0.4, [0.1, 0.6], [0.9, 0.24])
     assert np.allclose(ray.time, 0.3) and np.allclose(ray.mint, Epsilon)
@@ -46,7 +53,7 @@ def test02_sample_ray():
 
 
 def test03_sample_direction(interaction):
-    e = example_emitter(spectrum="400:3.1,500:6,600:10,700:15")
+    e = example_emitter(spectrum=3.5)
     ds, spectrum = e.sample_direction(interaction, [0.85, 0.13])
 
     assert np.allclose(ds.pdf, InvFourPi)

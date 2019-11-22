@@ -19,7 +19,11 @@ MTS_PY_EXPORT(Spectrum) {
     .def("pdf_uniform_spectrum", vectorize<Float>(&pdf_uniform_spectrum<Float>),
         "wavelengths"_a, D(pdf_uniform_spectrum));
 
-    m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
-    m.attr("MTS_WAVELENGTH_MIN")     = MTS_WAVELENGTH_MIN;
-    m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
+    if constexpr (is_spectral_v<Spectrum>) {
+        m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
+        m.attr("MTS_WAVELENGTH_MIN")     = MTS_WAVELENGTH_MIN;
+        m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
+    } else {
+        m.attr("MTS_WAVELENGTH_SAMPLES") = texture_channels_v<Spectrum>;
+    }
 }

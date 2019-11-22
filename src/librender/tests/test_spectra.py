@@ -1,8 +1,8 @@
 import numpy as np
+import pytest
 
 import mitsuba
-from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, \
-                         MTS_WAVELENGTH_SAMPLES
+from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.core.xml import load_string
 
 
@@ -74,7 +74,12 @@ def test06_srgb_d65():
 def test07_sample_rgb_spectrum():
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
-    from mitsuba.scalar_rgb.core import sample_rgb_spectrum, pdf_rgb_spectrum
+
+    try:
+        from mitsuba.scalar_spectral.core import sample_rgb_spectrum, pdf_rgb_spectrum
+        from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX
+    except ImportError:
+        pytest.skip("scalar_spectral mode not enabled")
 
     def spot_check(sample, expected_wav, expected_weight):
         wav, weight = sample_rgb_spectrum(sample)
@@ -92,7 +97,11 @@ def test07_sample_rgb_spectrum():
         assert pdf_rgb_spectrum(MTS_WAVELENGTH_MAX + 0.5)  == 0.0
 
 def test08_rgb2spec_fetch_eval_mean():
-    from mitsuba.scalar_rgb.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
+    try:
+        from mitsuba.scalar_spectral.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
+        from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX
+    except ImportError:
+        pytest.skip("scalar_spectral mode not enabled")
 
     rgb_values = np.array([
         [0, 0, 0],

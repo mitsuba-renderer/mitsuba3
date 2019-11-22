@@ -3,9 +3,9 @@
 
 MTS_PY_EXPORT(util) {
     if constexpr (is_double_v<Float>)
-        m.attr("float_dtype") = py::dtype("f");
+        m.attr("float_dtype") = py::dtype("d");
     else
-        m.attr("float_dtype")   = py::dtype("d");
+        m.attr("float_dtype") = py::dtype("f");
 
     m.attr("PacketSize") = array_size_v<Float>;
 

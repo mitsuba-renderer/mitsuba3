@@ -2,7 +2,7 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.scalar_rgb.core import (Bitmap, Struct, ReconstructionFilter, float_dtype)
+from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, float_dtype, FieldType, PixelFormat
 from mitsuba.scalar_rgb.core.xml import load_string
 
 
@@ -76,12 +76,12 @@ def test03_clear_set_add():
         </film>""")
     # Note that the internal storage format is independent from the format
     # which will be developped.
-    assert film.bitmap().pixel_format() == Bitmap.EXYZAW
+    assert film.bitmap().pixel_format() == PixelFormat.XYZAW
     assert film.bitmap().component_format() == (
         FieldType.Float32 if float_dtype == np.float32
-                        else FieldType.Float64)
+                          else FieldType.Float64)
 
-    b = Bitmap(Bitmap.EXYZAW, FieldType.Float, film.bitmap().size())
+    b = Bitmap(PixelFormat.XYZAW, FieldType.Float, film.bitmap().size())
     n = b.width() * b.height()
     # 0, 1, 2, ...
     ref = np.arange(n).reshape(b.height(), b.width(), 1).astype(
@@ -132,7 +132,7 @@ def test04_develop(file_format, tmpdir):
     film.develop()
 
     # Read back and check contents
-    other = Bitmap(filename).convert(Bitmap.EXYZAW, FieldType.Float, srgb_gamma=False)
+    other = Bitmap(filename).convert(PixelFormat.XYZAW, FieldType.Float, srgb_gamma=False)
     img   = np.array(other, copy=False)
 
     if file_format == "exr":

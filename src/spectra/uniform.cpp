@@ -28,7 +28,7 @@ public:
 
             return select(active, Spectrum(m_value), Spectrum(0.f));
         } else {
-            Throw("Not implemented for non-spectral modes");
+            return Spectrum(m_value);
         }
     }
 

@@ -5,7 +5,7 @@ from mitsuba.scalar_rgb.core import Frame3f
 from mitsuba.scalar_rgb.core.math import Pi, InvPi
 from mitsuba.scalar_rgb.core.warp import square_to_uniform_sphere
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f
+from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, BSDFFlags
 
 @pytest.fixture(scope="module")
 def interaction():
@@ -14,7 +14,7 @@ def interaction():
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
     si.sh_frame = Frame3f(si.n)
-    si.wavelengths = [300, 450, 520, 680]
+    si.wavelengths = [300, 450, 520]
     return si
 
 
@@ -24,8 +24,8 @@ def test01_create():
     </bsdf>""")
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == BSDF.EDiffuseReflection | BSDF.EFrontSide
-    assert bsdf.flags(1) == BSDF.EDiffuseReflection | BSDF.EBackSide
+    assert bsdf.flags(0) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
+    assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.BackSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
     bsdf = load_string("""<bsdf version="2.0.0" type="twosided">
@@ -34,8 +34,8 @@ def test01_create():
     </bsdf>""")
     assert bsdf is not None
     assert bsdf.component_count() == 2
-    assert bsdf.flags(0) == BSDF.EGlossyReflection  | BSDF.EFrontSide
-    assert bsdf.flags(1) == BSDF.EDiffuseReflection | BSDF.EBackSide
+    assert bsdf.flags(0) == BSDFFlags.GlossyReflection  | BSDFFlags.FrontSide
+    assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.BackSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
 
@@ -76,7 +76,7 @@ def test03_sample_eval_pdf(interaction):
 
             if np.any(s_value > 0):
                 # Multiply by square_to_cosine_hemisphere_theta
-                s_value *= bs.wo[2] * InvPi;
+                s_value *= bs.wo[2] * InvPi
                 if not up:
                     s_value *= -1
 

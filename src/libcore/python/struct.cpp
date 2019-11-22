@@ -44,6 +44,7 @@ MTS_PY_EXPORT(Struct) {
             .value("Float16", FieldType::Float16, D(Struct, FieldType, Float16))
             .value("Float32", FieldType::Float32, D(Struct, FieldType, Float32))
             .value("Float64", FieldType::Float64, D(Struct, FieldType, Float64))
+            .value("Float", struct_type_v<Float>)
             .value("Invalid", FieldType::Invalid, D(Struct, FieldType, Invalid))
             .def(py::init([](py::dtype dt) {
                 FieldType value = FieldType::Int8;

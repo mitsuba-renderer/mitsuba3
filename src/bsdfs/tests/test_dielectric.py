@@ -3,7 +3,7 @@ import pytest
 
 from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, TransportMode
+from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
 
 def example_bsdf(reflectance=0.3, transmittance=0.6):
     return load_string("""<bsdf version="2.0.0" type="dielectric">
@@ -18,10 +18,10 @@ def test01_create():
     b = load_string("<bsdf version='2.0.0' type='dielectric'></bsdf>")
     assert b is not None
     assert b.component_count() == 2
-    assert b.flags(0) == (BSDF.EDeltaReflection | BSDF.EFrontSide |
-                          BSDF.EBackSide)
-    assert b.flags(1) == (BSDF.EDeltaTransmission | BSDF.EFrontSide |
-                          BSDF.EBackSide | BSDF.ENonSymmetric)
+    assert b.flags(0) == (BSDFFlags.DeltaReflection | BSDFFlags.FrontSide |
+                          BSDFFlags.BackSide)
+    assert b.flags(1) == (BSDFFlags.DeltaTransmission | BSDFFlags.FrontSide |
+                          BSDFFlags.BackSide | BSDFFlags.NonSymmetric)
     assert b.flags() == b.flags(0) | b.flags(1)
 
     # Should not accept negative IORs
@@ -47,7 +47,7 @@ def test02_sample():
         assert np.allclose(bs.eta, 1.0)
         assert np.allclose(bs.wo, [0, 0, 1])
         assert bs.sampled_component == 0
-        assert bs.sampled_type == BSDF.EDeltaReflection
+        assert bs.sampled_type == +BSDFFlags.DeltaReflection
 
         # Sample refraction
         bs, spec = bsdf.sample(ctx, si, 0.05, [0, 0])
@@ -59,7 +59,7 @@ def test02_sample():
         assert np.allclose(bs.eta, 1.5)
         assert np.allclose(bs.wo, [0, 0, -1])
         assert bs.sampled_component == 1
-        assert bs.sampled_type == BSDF.EDeltaTransmission
+        assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
 
 def test03_sample_reverse():
@@ -78,7 +78,7 @@ def test03_sample_reverse():
         assert np.allclose(bs.eta, 1.0)
         assert np.allclose(bs.wo, [0, 0, -1])
         assert bs.sampled_component == 0
-        assert bs.sampled_type == BSDF.EDeltaReflection
+        assert bs.sampled_type == +BSDFFlags.DeltaReflection
 
         # Sample refraction
         bs, spec = bsdf.sample(ctx, si, 0.05, [0, 0])
@@ -90,7 +90,7 @@ def test03_sample_reverse():
         assert np.allclose(bs.eta, 1 / 1.5)
         assert np.allclose(bs.wo, [0, 0, 1])
         assert bs.sampled_component == 1
-        assert bs.sampled_type == BSDF.EDeltaTransmission
+        assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
 
 def test04_sample_specific_component():
@@ -106,7 +106,7 @@ def test04_sample_specific_component():
 
                 # Sample reflection
                 if sel_type == 0:
-                    ctx.type_mask = BSDF.EDeltaReflection
+                    ctx.type_mask = BSDFFlags.DeltaReflection
                 else:
                     ctx.component = 0
                 bs, spec = bsdf.sample(ctx, si, sample, [0, 0])
@@ -115,11 +115,11 @@ def test04_sample_specific_component():
                 assert np.allclose(bs.eta, 1.0)
                 assert np.allclose(bs.wo, [0, 0, 1])
                 assert bs.sampled_component == 0
-                assert bs.sampled_type == BSDF.EDeltaReflection
+                assert bs.sampled_type == +BSDFFlags.DeltaReflection
 
                 # Sample refraction
                 if sel_type == 0:
-                    ctx.type_mask = BSDF.EDeltaTransmission
+                    ctx.type_mask = BSDFFlags.DeltaTransmission
                 else:
                     ctx.component = 1
                 bs, spec = bsdf.sample(ctx, si, sample, [0, 0])
@@ -133,7 +133,7 @@ def test04_sample_specific_component():
                 assert np.allclose(bs.eta, 1.5)
                 assert np.allclose(bs.wo, [0, 0, -1])
                 assert bs.sampled_component == 1
-                assert bs.sampled_type == BSDF.EDeltaTransmission
+                assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
     ctx = BSDFContext()
     ctx.component = 3
