@@ -4,7 +4,6 @@ from __future__ import division
 import numpy as np
 import mitsuba
 from mitsuba.scalar_rgb.core import float_dtype, PCG32
-from mitsuba.scalar_rgb.core.xml import load_string
 
 
 class ChiSquareTest(object):
@@ -253,8 +252,8 @@ class ChiSquareTest(object):
 
         # Compute chi^2 statistic and pool low-valued cells
         chi2val, dof, pooled_in, pooled_out = \
-            mitsuba.core.math.chi2(histogram * self.sample_count,
-                                   pdf * self.sample_count, 5)
+            mitsuba.scalar_rgb.core.math.chi2(histogram * self.sample_count,
+                                              pdf * self.sample_count, 5)
 
         if dof < 1:
             self._log('The number of degrees of freedom is too low!')
@@ -398,6 +397,11 @@ def SpectrumAdapter(value):
     """
 
     def instantiate(args):
+        try:
+            from mitsuba.packet_spectral.core.xml import load_string
+        except ImportError:
+            pass
+
         if hasattr(value, 'sample'):
             return value
         else:
@@ -426,13 +430,18 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     (separately from BSDF models, which are also tested)
     """
 
+    try:
+        from mitsuba.packet_rgb.core import PacketSize
+        from mitsuba.packet_rgb.render import MicrofacetDistribution
+    except ImportError:
+        pass
+
     def instantiate(args):
-        from mitsuba.scalar_rgb.render import MicrofacetDistribution
         wi = [0, 0, 1]
         if len(args) == 1:
             angle = args[0] * np.pi / 180
             wi = [np.sin(angle), 0, np.cos(angle)]
-        return MicrofacetDistribution(md_type, alpha, sample_visible), wi
+        return MicrofacetDistribution(md_type, [alpha] * PacketSize, sample_visible), wi
 
     def sample_functor(sample, *args):
         dist, wi = instantiate(args)
@@ -460,8 +469,12 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
         Incoming direction, in local coordinates.
     """
 
-    from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
-    from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
+    try:
+        from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
+        from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
+        from mitsuba.packet_rgb.core.xml import load_string
+    except ImportError:
+        pass
 
     def make_context(n):
         si = SurfaceInteraction3fX(n)
@@ -500,9 +513,12 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
     """
     Adapter for interactive & batch testing of BSDFs using the Chi^2 test
     """
-
-    from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
-    from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
+    try:
+        from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
+        from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
+        from mitsuba.packet_rgb.core.xml import load_string
+    except ImportError:
+        pass
 
     def make_context(n, theta, phi):
         theta *= np.pi / 180
@@ -553,9 +569,12 @@ def EnvironmentAdapter(emitter_type, extra):
     """
     Adapter for interactive & batch testing of environment map samplers
     """
-
-    from mitsuba.packet_rgb.render import Interaction3f as Interaction3fX
-    from mitsuba.packet_rgb.render import DirectionSample3f as DirectionSample3fX
+    try:
+        from mitsuba.packet_rgb.render import Interaction3f as Interaction3fX
+        from mitsuba.packet_rgb.render import DirectionSample3f as DirectionSample3fX
+        from mitsuba.packet_rgb.core.xml import load_string
+    except ImportError:
+        pass
 
     cache = [None, None]
 

@@ -28,7 +28,7 @@ MTS_PY_EXPORT_STRUCT(Interaction) {
 MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(SurfaceInteraction3f, m) {
-        py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
+        auto inter = py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
             // Members
             .def_field(SurfaceInteraction3f, shape)
             .def_field(SurfaceInteraction3f, uv)
@@ -68,5 +68,6 @@ MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
             .def_method(SurfaceInteraction3f, compute_partials)
             .def_method(SurfaceInteraction3f, has_uv_partials)
             .def_repr(SurfaceInteraction3f);
+        // bind_slicing_operators<SurfaceInteraction3f, SurfaceInteraction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
     }
 }

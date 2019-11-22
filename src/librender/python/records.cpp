@@ -26,7 +26,7 @@ MTS_PY_EXPORT_STRUCT(PositionSample) {
 MTS_PY_EXPORT_STRUCT(DirectionSample) {
     MTS_IMPORT_TYPES(ObjectPtr)
     MTS_PY_CHECK_ALIAS(DirectionSample3f, m) {
-        py::class_<DirectionSample3f, PositionSample3f>(m, "DirectionSample3f", D(DirectionSample3f))
+        auto pos = py::class_<DirectionSample3f, PositionSample3f>(m, "DirectionSample3f", D(DirectionSample3f))
             .def(py::init<>(), "Construct an unitialized direct sample")
             .def(py::init<const PositionSample3f &>(), "Construct from a position sample", "other"_a)
             .def(py::init<const DirectionSample3f &>(), "Copy constructor", "other"_a)
@@ -41,5 +41,6 @@ MTS_PY_EXPORT_STRUCT(DirectionSample) {
             .def_field(DirectionSample3f, d)
             .def_field(DirectionSample3f, dist)
             .def_repr(DirectionSample3f);
+        bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
     }
 }

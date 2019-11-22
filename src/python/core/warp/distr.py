@@ -30,15 +30,18 @@ Each entry of the DISTRIBUTIONS table is a tuple with the following entries:
 from __future__ import division
 
 import mitsuba
-from mitsuba.scalar_rgb.core import warp, float_dtype
+
+try:
+    from mitsuba.packet_rgb.core import warp, float_dtype
+except ImportError:
+    pass
+
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import (
     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
     InteractiveBSDFAdapter, EnvironmentAdapter)
 from mitsuba.scalar_rgb.render import MicrofacetDistribution, MicrofacetType
 from mitsuba.scalar_rgb.core import Bitmap, Thread
-from mitsuba.scalar_rgb.core.warp import Hierarchical2D0, Hierarchical2D2
-from mitsuba.scalar_rgb.core.warp import Marginal2D0, Marginal2D2
 from mitsuba.test.util import fresolver_append_path
 import numpy as np
 
@@ -168,8 +171,8 @@ DISTRIBUTIONS = [
           ])),
 
     ('Spectrum: rgb', LineDomain([360.0, 830.0]),
-     (lambda x: mitsuba.scalar_rgb.core.sample_rgb_spectrum(x)[0],
-      mitsuba.scalar_rgb.core.pdf_rgb_spectrum),
+     (lambda x: mitsuba.packet_rgb.core.sample_rgb_spectrum(x)[0],
+      mitsuba.packet_rgb.core.pdf_rgb_spectrum),
      DEFAULT_SETTINGS_1),
 
     ('Microfact: Beckmann, all, 0.5', SphericalDomain(),
@@ -292,6 +295,11 @@ DISTRIBUTIONS = [
 
 @fresolver_append_path
 def Warp2D0Test(hierarchical):
+    try:
+        from mitsuba.packet_rgb.core.warp import Hierarchical2D0, Marginal2D0
+    except ImportError:
+        pass
+
     fr = Thread.thread().file_resolver()
 
     prefix = 'resources/data/tests/warp/'
@@ -312,6 +320,11 @@ def Warp2D0Test(hierarchical):
 
 @fresolver_append_path
 def Warp2D2Test(hierarchical):
+    try:
+        from mitsuba.packet_rgb.core.warp import Hierarchical2D2, Marginal2D2
+    except ImportError:
+        pass
+
     fr = Thread.thread().file_resolver()
 
     prefix = 'resources/data/tests/warp/'

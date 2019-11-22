@@ -458,7 +458,7 @@ DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spect
     using Vector2fX = Vector<FloatX, 2>;
     using Vector3fX = Vector<FloatX, 3>;
 
-    if (distr.sample_visible())
+    if (!distr.sample_visible())
         Throw("eval_reflectance(): requires visible normal sampling!");
 
     int res = 128;

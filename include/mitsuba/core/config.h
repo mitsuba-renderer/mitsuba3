@@ -14,6 +14,7 @@
     "scalar_spectral\n"                                                         \
     "scalar_spectral_polarized\n"                                               \
     "packet_rgb\n"                                                              \
+    "packet_spectral\n"                                                         \
 
 
 /// Default variant to be used by the "mitsuba" executable
@@ -27,6 +28,7 @@
     extern template struct MTS_EXPORT Name<float, Spectrum<float, 4>>;          \
     extern template struct MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
     extern template struct MTS_EXPORT Name<Packet<float>, Color<Packet<float>, 3>>; \
+    extern template struct MTS_EXPORT Name<Packet<float>, Spectrum<Packet<float>, 4>>; \
 
 
 /// Declare that a "class" template is to be imported and not instantiated
@@ -36,6 +38,7 @@
     extern template class MTS_EXPORT Name<float, Spectrum<float, 4>>;           \
     extern template class MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>; \
     extern template class MTS_EXPORT Name<Packet<float>, Color<Packet<float>, 3>>; \
+    extern template class MTS_EXPORT Name<Packet<float>, Spectrum<Packet<float>, 4>>; \
 
 
 /// Explicitly instantiate all variants of a "struct" template
@@ -45,6 +48,7 @@
     template struct MTS_EXPORT Name<float, Spectrum<float, 4>>;                 \
     template struct MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>;  \
     template struct MTS_EXPORT Name<Packet<float>, Color<Packet<float>, 3>>;    \
+    template struct MTS_EXPORT Name<Packet<float>, Spectrum<Packet<float>, 4>>; \
 
 
 /// Explicitly instantiate all variants of a "class" template
@@ -54,6 +58,7 @@
     template class MTS_EXPORT Name<float, Spectrum<float, 4>>;                  \
     template class MTS_EXPORT Name<float, MuellerMatrix<Spectrum<float, 4>>>;   \
     template class MTS_EXPORT Name<Packet<float>, Color<Packet<float>, 3>>;     \
+    template class MTS_EXPORT Name<Packet<float>, Spectrum<Packet<float>, 4>>;  \
 
 
 /// Call the variant function "func" for a specific variant "variant"
@@ -69,6 +74,8 @@
             return func<float, MuellerMatrix<Spectrum<float, 4>>>(__VA_ARGS__); \
         else if (variant == "packet_rgb")                                       \
             return func<Packet<float>, Color<Packet<float>, 3>>(__VA_ARGS__);   \
+        else if (variant == "packet_spectral")                                  \
+            return func<Packet<float>, Spectrum<Packet<float>, 4>>(__VA_ARGS__); \
         else                                                                    \
             Throw("Unsupported variant: %s", variant);                          \
     }()                                                                         \
@@ -93,6 +100,9 @@ template <typename Float_, typename Spectrum_> constexpr const char *get_variant
     else if constexpr (std::is_same_v<Float_, Packet<float>> &&
                        std::is_same_v<Spectrum_, Color<Packet<float>, 3>>)
         return "packet_rgb";
+    else if constexpr (std::is_same_v<Float_, Packet<float>> &&
+                       std::is_same_v<Spectrum_, Spectrum<Packet<float>, 4>>)
+        return "packet_spectral";
     else
         return "";
 }
