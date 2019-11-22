@@ -665,10 +665,6 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
 template <typename Float, size_t Dimension = 0> class Hierarchical2D {
 private:
     MTS_IMPORT_CORE_TYPES()
-    // using Vector2f = Vector<Float, 2>;
-    // using Vector2u = Vector<replace_scalar_t<Float, uint32_t>, 2>;
-    // using Vector2i = Vector<replace_scalar_t<Float, int32_t>, 2>;
-
     using FloatStorage = host_vector<Float>;
 
 #if !defined(_MSC_VER)
@@ -1157,7 +1153,7 @@ public:
             << ", ";
         for (size_t i = 0; i < m_levels.size(); ++i)
             size += m_levels[i].size * n_slices;
-        oss << util::mem_string(size * sizeof(Float)) << " }" << std::endl
+        oss << util::mem_string(size * sizeof(ScalarFloat)) << " }" << std::endl
             << "]";
         return oss.str();
     }
@@ -1172,7 +1168,7 @@ private:
         Level(ScalarVector2u res, uint32_t slices) : size(hprod(res)), width(res.x()) {
             uint32_t alloc_size = size  * slices;
             data.resize(alloc_size);
-            memset(data.data(), 0, alloc_size * sizeof(Float));
+            memset(data.data(), 0, alloc_size * sizeof(ScalarFloat));
         }
 
         /**
@@ -1237,7 +1233,7 @@ private:
     /// Resolution of each parameter (optional)
     uint32_t m_param_size[ArraySize];
 
-    /// Stride per parameter in units of sizeof(Float)
+    /// Stride per parameter in units of sizeof(ScalarFloat)
     uint32_t m_param_strides[ArraySize];
 
     /// Discretization of each parameter domain
@@ -1758,7 +1754,7 @@ private:
     /// Resolution of each parameter (optional)
     uint32_t m_param_size[ArraySize];
 
-    /// Stride per parameter in units of sizeof(Float)
+    /// Stride per parameter in units of sizeof(ScalarFloat)
     uint32_t m_param_strides[ArraySize];
 
     /// Discretization of each parameter domain

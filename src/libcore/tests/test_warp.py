@@ -206,7 +206,7 @@ def test_square_to_std_normal():
 
 def test_hierarchical_warp():
     try:
-        from mitsuba.scalar_rgb.core.warp import Hierarchical2D0
+        from mitsuba.packet_rgb.core.warp import Hierarchical2D0
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
 
@@ -220,7 +220,11 @@ def test_hierarchical_warp():
 
 
 def test_marginal_warp():
-    from mitsuba.scalar_rgb.core.warp import Marginal2D0
+    try:
+        from mitsuba.packet_rgb.core.warp import Marginal2D0
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     np.random.seed(0)
     data = np.random.rand(7, 3)
     distr = Marginal2D0(data)

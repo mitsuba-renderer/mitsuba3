@@ -220,7 +220,6 @@ MTS_PY_EXPORT(warp) {
                         data.data(), {}, {}, normalize, build_cdf);
                 }),
                 "data"_a, "normalize"_a = true, "build_cdf"_a = true)
-
             .def("sample",
                 vectorize<Float>([](const Marginal2D0 *lw, const Vector2f &sample, Mask active) {
                     return lw->sample(sample, (const Float *) nullptr, active);
@@ -276,8 +275,7 @@ MTS_PY_EXPORT(warp) {
                         return lw->eval(pos, params, active);
                     }),
                 "pos"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, eval))
-            .def("__repr__", &Marginal2D1::to_string)
-            ;
+            .def("__repr__", &Marginal2D1::to_string);
     }
 
     MTS_PY_CHECK_ALIAS(Marginal2D2, m) {
@@ -304,7 +302,6 @@ MTS_PY_EXPORT(warp) {
                     return lw->sample(sample, params, active);
                 }),
                 "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, sample))
-
             .def("invert",
                 vectorize<Float>([](const Marginal2D2 *lw, const Vector2f &invert, Float param1,
                                     Float param2, Mask active) {
@@ -319,8 +316,7 @@ MTS_PY_EXPORT(warp) {
                     return lw->eval(pos, params, active);
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, eval))
-            .def("__repr__", &Marginal2D2::to_string)
-            ;
+            .def("__repr__", &Marginal2D2::to_string);
     }
 
     MTS_PY_CHECK_ALIAS(Marginal2D3, m) {
@@ -367,8 +363,7 @@ MTS_PY_EXPORT(warp) {
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
                 D(warp, Marginal2D, eval))
-            .def("__repr__", &Marginal2D3::to_string)
-            ;
+            .def("__repr__", &Marginal2D3::to_string);
     }
 
     // --------------------------------------------------------------------
@@ -403,8 +398,7 @@ MTS_PY_EXPORT(warp) {
                     return lw->eval(pos, (const Float *) nullptr, active);
                 }),
                 "pos"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
-            .def("__repr__", &Hierarchical2D0::to_string)
-            ;
+            .def("__repr__", &Hierarchical2D0::to_string);
     }
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D1, m) {
@@ -444,8 +438,7 @@ MTS_PY_EXPORT(warp) {
                         return lw->eval(pos, params, active);
                     }),
                 "pos"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
-            .def("__repr__", &Hierarchical2D1::to_string)
-            ;
+            .def("__repr__", &Hierarchical2D1::to_string);
     }
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D2, m) {
@@ -487,8 +480,7 @@ MTS_PY_EXPORT(warp) {
                     return lw->eval(pos, params, active);
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
-            .def("__repr__", &Hierarchical2D2::to_string)
-            ;
+            .def("__repr__", &Hierarchical2D2::to_string);
     }
 
     MTS_PY_CHECK_ALIAS(Hierarchical2D3, m) {
@@ -535,7 +527,6 @@ MTS_PY_EXPORT(warp) {
                 }),
                 "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
                 D(warp, Hierarchical2D, eval))
-            .def("__repr__", &Hierarchical2D3::to_string)
-            ;
+            .def("__repr__", &Hierarchical2D3::to_string);
     }
 }
