@@ -1,5 +1,6 @@
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.core import float_dtype
+from mitsuba.scalar_rgb.core import Resampler, FilterBoundaryCondition
 from pytest import approx
 import numpy as np
 
@@ -64,8 +65,6 @@ def test07_resampler_box():
     assert np.all(b == [0.125, 0.5, 0.875])
 
 def test08_resampler_boundary_conditions():
-    from mitsuba.scalar_rgb.core import Resampler
-
     # Use a slightly larger filter
     f = load_string("""
         <rfilter version='2.0.0' type='box'>
@@ -77,20 +76,20 @@ def test08_resampler_boundary_conditions():
     b = np.zeros(3, dtype=float_dtype)
 
     resampler = Resampler(f, 5, 3)
-    resampler.set_boundary_condition(Resampler.EBoundaryCondition.EClamp)
+    resampler.set_boundary_condition(FilterBoundaryCondition.Clamp)
     assert resampler.taps() == 3
     resampler.resample(a, 1, b, 1, 1)
     assert np.allclose(b, [(0 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 1) / 3])
-    resampler.set_boundary_condition(Resampler.EBoundaryCondition.EZero)
+    resampler.set_boundary_condition(FilterBoundaryCondition.Zero)
     resampler.resample(a, 1, b, 1, 1)
     assert np.allclose(b, [(0 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 0) / 3])
-    resampler.set_boundary_condition(Resampler.EBoundaryCondition.EOne)
+    resampler.set_boundary_condition(FilterBoundaryCondition.One)
     resampler.resample(a, 1, b, 1, 1)
     assert np.allclose(b, [(1 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 1) / 3])
-    resampler.set_boundary_condition(Resampler.EBoundaryCondition.ERepeat)
+    resampler.set_boundary_condition(FilterBoundaryCondition.Repeat)
     resampler.resample(a, 1, b, 1, 1)
     assert np.allclose(b, [(1 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 0) / 3])
-    resampler.set_boundary_condition(Resampler.EBoundaryCondition.EMirror)
+    resampler.set_boundary_condition(FilterBoundaryCondition.Mirror)
     resampler.resample(a, 1, b, 1, 1)
     assert np.allclose(b, [(0.25 + 0 + 0.25) / 3, 0.5, (0.75 + 1 + 0.75) / 3])
 
@@ -104,7 +103,7 @@ def test09_resampler_filter_only():
     """)
 
     resampler = Resampler(f, 3, 3)
-    resampler.set_boundary_condition(Resampler.EBoundaryCondition.ERepeat)
+    resampler.set_boundary_condition(FilterBoundaryCondition.Repeat)
     assert resampler.taps() == 3
     a = np.linspace(0, 1, 3, dtype=float_dtype)
     b = np.zeros(3, dtype=float_dtype)

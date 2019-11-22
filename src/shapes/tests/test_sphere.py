@@ -59,16 +59,16 @@ def test03_ray_intersect_transform():
                 x_coord = r * (2 * (x * inv_n) - 1)
                 y_coord = r * (2 * (y * inv_n) - 1)
 
-                ray = Ray3f(o=[x_coord, y_coord + 1, -8], d=[0, 0, 1],
-                            time=0.0, wavelengths=wl)
+                ray = Ray3f(o=[x_coord, y_coord + 1, -8], d=[0.0, 0.0, 1.0],
+                            time=0.0, wavelength=wl)
                 si_found = s.ray_test(ray)
 
                 assert si_found == (x_coord ** 2 + y_coord ** 2 <= r * r) \
                     or np.abs(x_coord ** 2 + y_coord ** 2 - r * r) < 1e-8
 
                 if si_found:
-                    ray = Ray3f(o=[x_coord, y_coord + 1, -8], d=[0, 0, 1],
-                                time=0.0, wavelengths=wl)
+                    ray = Ray3f(o=[x_coord, y_coord + 1, -8], d=[0.0, 0.0, 1.0],
+                                time=0.0, wavelength=wl)
                     si = s.ray_intersect(ray)
                     ray_u = Ray3f(ray)
                     ray_v = Ray3f(ray)
