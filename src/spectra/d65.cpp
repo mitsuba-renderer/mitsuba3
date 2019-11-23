@@ -1,11 +1,11 @@
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/plugin.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * D65 illuminant data from CIE, expressed as Relative Spectral Power Distribution,
+ * D65 illuminant data from CIE, expressed as relative spectral power distribution,
  * normalized relative to the power at 560nm.
  */
 const float data[95] = {
@@ -25,10 +25,10 @@ const float data[95] = {
 
 /// CIE D65 spectrum discretized at 5nm intervals
 template <typename Float, typename Spectrum>
-class D65Spectrum final : public ContinuousSpectrum<Float, Spectrum> {
+class D65Spectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(D65Spectrum, ContinuousSpectrum)
-    MTS_IMPORT_BASE(ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(D65Spectrum, Texture)
+    MTS_IMPORT_BASE(Texture)
 
     D65Spectrum(const Properties &props) {
         if (props.has_property("scale") && props.has_property("value"))
@@ -39,7 +39,7 @@ public:
            sRGB yields a pixel value of (1, 1, 1) */
         m_scale =
             props.float_(props.has_property("scale") ? "scale" : "value", 1.f);
-        m_scale *= (1.f / 10568.f);
+        m_scale *= 1.f / 10568.f;
     }
 
     std::vector<ref<Object>> expand() const override {
@@ -54,9 +54,7 @@ public:
         props.set_pointer("values", (const void *) &tmp[0]);
 
         PluginManager *pmgr = PluginManager::instance();
-        ref<Base> spec      = pmgr->create_object<Base>(props);
-
-        return std::vector<ref<Object>>(1, spec.get());
+        return { ref<Object>(pmgr->create_object<Base>(props)) };
     }
 
     std::string to_string() const override {

@@ -1,4 +1,4 @@
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 
@@ -8,9 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
  * \c MTS_WAVELENGTH_MIN * and \c MTS_WAVELENGTH_MAX
  */
 template <typename Float, typename Spectrum>
-class UniformSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
+class UniformSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(UniformSpectrum, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(UniformSpectrum, Texture)
     MTS_IMPORT_TYPES()
 
     UniformSpectrum(const Properties &props) {
@@ -21,40 +21,43 @@ public:
         #endif
     }
 
-    Spectrum eval(const Wavelength &lambda, Mask /*active*/) const override {
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
+                             Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>) {
-            auto active = (lambda >= MTS_WAVELENGTH_MIN) &&
-                        (lambda <= MTS_WAVELENGTH_MAX);
+            auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
+                          (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
-            return select(active, Spectrum(m_value), Spectrum(0.f));
+            return select(active, UnpolarizedSpectrum(m_value),
+                                  UnpolarizedSpectrum(0.f));
         } else {
-            return Spectrum(m_value);
+            return m_value;
         }
     }
 
-    Spectrum pdf(const Wavelength &lambda, Mask /*active*/) const override {
+    Wavelength pdf(const SurfaceInteraction3f &si, Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>) {
-            auto active = (lambda >= MTS_WAVELENGTH_MIN) &&
-                        (lambda <= MTS_WAVELENGTH_MAX);
+            auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
+                          (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
             return select(active,
-                Spectrum(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Spectrum(0.f));
+                Wavelength(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Wavelength(0.f));
         } else {
-            Throw("Not implemented for non-spectral modes");
+            Throw("Not implemented for non-spectral modes"); // TODO
         }
     }
 
-    std::pair<Wavelength, Spectrum> sample(const Wavelength &sample,
-                                           Mask /*active*/) const override {
+    std::pair<Wavelength, UnpolarizedSpectrum> sample(const SurfaceInteraction3f &/*si*/,
+                                                      const Wavelength &sample,
+                                                      Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             return { MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
-                    Spectrum(m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)) };
+                     UnpolarizedSpectrum(m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)) };
         } else {
-            Throw("Not implemented for non-spectral modes");
+            Throw("Not implemented for non-spectral modes"); // TODO
         }
     }
 
-    Float mean() const override { return m_value; }
+    ScalarFloat mean() const override { return m_value; }
 
 #if defined(MTS_ENABLE_AUTODIFF)
     void put_parameters(DifferentiableParameters &dp) override {
@@ -67,7 +70,7 @@ public:
     }
 
 private:
-    Float m_value;
+    ScalarFloat m_value;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     FloatD m_value_d;

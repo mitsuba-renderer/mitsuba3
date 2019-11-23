@@ -11,7 +11,7 @@
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 
 py::object py_cast(Object *o) {
@@ -19,7 +19,7 @@ py::object py_cast(Object *o) {
     PY_CAST_VARIANTS(Scene);
     PY_CAST_VARIANTS(Mesh);
     PY_CAST_VARIANTS(Shape);
-    PY_CAST_VARIANTS(ContinuousSpectrum);
+    PY_CAST_VARIANTS(Texture);
     PY_CAST_VARIANTS(Texture3D);
     PY_CAST_VARIANTS(ReconstructionFilter);
 

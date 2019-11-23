@@ -3,7 +3,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -12,7 +12,7 @@ class PointLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(PointLight, Emitter)
     MTS_IMPORT_BASE(Emitter, m_medium, m_needs_sample_3, m_world_transform)
-    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
@@ -24,7 +24,7 @@ public:
                 ScalarTransform4f::translate(ScalarVector3f(props.point3f("position"))));
         }
 
-        m_intensity = props.spectrum<ContinuousSpectrum>("intensity", ContinuousSpectrum::D65(1.f));
+        m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
         m_needs_sample_3 = false;
     }
 
@@ -32,7 +32,8 @@ public:
                                           const Point2f & /*pos_sample*/, const Point2f &dir_sample,
                                           Mask active) const override {
         auto [wavelengths, spec_weight] = m_intensity->sample(
-            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
+            zero<SurfaceInteraction3f>(),
+            math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         const auto &trafo = m_world_transform->eval(time);
         Ray3f ray(trafo * Point3f(0.f),
@@ -59,7 +60,10 @@ public:
         Float inv_dist = rcp(ds.dist);
         ds.d *= inv_dist;
 
-        Spectrum spec = m_intensity->eval(it.wavelengths, active) *
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+
+        UnpolarizedSpectrum spec = m_intensity->eval(si, active) *
                         (inv_dist * inv_dist);
 
         return { ds, spec };
@@ -86,7 +90,7 @@ public:
     }
 
 private:
-    ref<ContinuousSpectrum> m_intensity;
+    ref<Texture> m_intensity;
 };
 
 

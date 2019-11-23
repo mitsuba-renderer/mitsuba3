@@ -193,9 +193,9 @@ template <typename Spectrum, typename Value = value_t<Spectrum>>
 Array<Value, 3> to_xyz(const Spectrum &value, const Spectrum &wavelengths,
                        mask_t<Value> active = true) {
     auto XYZw = cie1931_xyz(wavelengths, active);
-    return Array<Value, 3>(enoki::mean(XYZw.x() * value),
-                           enoki::mean(XYZw.y() * value),
-                           enoki::mean(XYZw.z() * value));
+    return Array<Value, 3>(enoki::hmean(XYZw.x() * value),
+                           enoki::hmean(XYZw.y() * value),
+                           enoki::hmean(XYZw.z() * value));
 }
 
 /// RGB to XYZ color conversion.
@@ -216,7 +216,7 @@ template <typename Spectrum>
 value_t<Spectrum> luminance(const Spectrum &value,
                             const Spectrum &wavelengths,
                             mask_t<Spectrum> active = true) {
-    return mean(cie1931_y(wavelengths, active) * value);
+    return hmean(cie1931_y(wavelengths, active) * value);
 }
 
 template <typename Value> Value luminance(const Color<Value, 3> &c) {

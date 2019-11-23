@@ -2,7 +2,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -11,10 +11,10 @@ class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothDiffuse, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Texture)
 
     SmoothDiffuse(const Properties &props) : Base(props) {
-        m_reflectance = props.spectrum<ContinuousSpectrum>("reflectance", .5f);
+        m_reflectance = props.texture<Texture>("reflectance", .5f);
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }
@@ -80,7 +80,7 @@ public:
     std::vector<ref<Object>> children() override { return { m_reflectance.get() }; }
 
 private:
-    ref<ContinuousSpectrum> m_reflectance;
+    ref<Texture> m_reflectance;
 };
 
 MTS_EXPORT_PLUGIN(SmoothDiffuse, "Smooth diffuse material");

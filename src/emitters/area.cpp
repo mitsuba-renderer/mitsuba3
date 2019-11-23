@@ -3,7 +3,7 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -12,7 +12,7 @@ class AreaLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(AreaLight, Emitter)
     MTS_IMPORT_BASE(Emitter, m_shape, m_medium)
-    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -20,7 +20,7 @@ public:
                   "The area light inherits this transformation from its parent "
                   "shape.");
 
-        m_radiance = props.spectrum<ContinuousSpectrum>("radiance", ContinuousSpectrum::D65(1.f));
+        m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
     }
 
     void set_shape(Shape *shape) override {
@@ -29,22 +29,26 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        return m_radiance->eval(si.wavelengths, active) &
-               (Frame3f::cos_theta(si.wi) > 0.f);
+        return select(
+            Frame3f::cos_theta(si.wi) > 0.f,
+            m_radiance->eval(si, active),
+            0.f
+        );
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           Mask active) const override {
-        // 1. Sample spectrum
-        auto [wavelengths, spec_weight] = m_radiance->sample(
-            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
-
-        // 2. Sample spatial component
+        // 1. Sample spatial component
         PositionSample3f ps = m_shape->sample_position(time, sample2, active);
 
-        // 3. Sample directional component
-        auto local = warp::square_to_cosine_hemisphere(sample3);
+        // 2. Sample directional component
+        Vector3f local = warp::square_to_cosine_hemisphere(sample3);
+
+        // 3. Sample spectrum
+        SurfaceInteraction3f si(ps, zero<Wavelength>(0.f));
+        auto [wavelengths, spec_weight] = m_radiance->sample(
+            si, math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         return std::make_pair(
             Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelengths),
@@ -59,7 +63,8 @@ public:
         DirectionSample3f ds = m_shape->sample_direction(it, sample, active);
         active &= dot(ds.d, ds.n) < 0.f && neq(ds.pdf, 0.f);
 
-        Spectrum spec = m_radiance->eval(it.wavelengths, active) / ds.pdf;
+        SurfaceInteraction3f si(ds, it.wavelengths);
+        Spectrum spec = m_radiance->eval(si, active) / ds.pdf;
 
         ds.object = this;
         return { ds, spec & active };
@@ -88,7 +93,7 @@ public:
     }
 
 private:
-    ref<ContinuousSpectrum> m_radiance;
+    ref<Texture> m_radiance;
     ScalarFloat m_area_times_pi = 0.f;
 };
 

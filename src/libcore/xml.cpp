@@ -18,7 +18,6 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
-#include <mitsuba/render/spectrum.h>
 #include <pugixml.hpp>
 #include <tbb/tbb.h>
 
@@ -154,11 +153,8 @@ void register_class(const Class *class_) {
         (*tags)[alias] = Tag::Object;
     (*tag_class)[class_key(alias, class_->variant())] = class_;
 
-    if (alias == "spectrum") {
-        // A texture is a kind of ContinuousSpectrum
-        (*tags)["texture"] = Tag::Object;
-        (*tag_class)[class_key("texture", class_->variant())] = class_;
-    }
+    if (alias == "texture")
+        (*tag_class)[class_key("spectrum", class_->variant())] = class_;
 }
 
 // Called by Class::static_shutdown()
@@ -764,7 +760,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_plugin_name("srgb");
                     }
                     ref<Object> obj = PluginManager::instance()->create_object(
-                        props2, Class::for_name("ContinuousSpectrum", ctx.variant));
+                        props2, Class::for_name("Texture", ctx.variant));
                     props.set_object(node.attribute("name").value(), obj);
                 }
                 break;
@@ -789,7 +785,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_float("value", value);
 
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("ContinuousSpectrum", ctx.variant));
+                            props2, Class::for_name("Texture", ctx.variant));
                         auto expanded   = obj->expand();
                         if (expanded.size() == 1)
                             obj = expanded[0];
@@ -800,18 +796,15 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             Throw("Not implemented yet: wav:value spectrum specification in RGB "
                                   "mode");
 
-                        /* Parse wavelength:value pairs, where wavelengths are
-                           expected to be specified in increasing order.
-                           Automatically detect whether wavelengths are regularly
-                           sampled, and instantiate the appropriate
-                           ContinuousSpectrum plugin. */
+                        /* Parse wavelength:value pairs, where wavelengths are expected to be
+                           specified in increasing order. Automatically detect whether wavelengths
+                           are regularly sampled, and instantiate the appropriate spectrum plugin. */
                         std::vector<Float> wavelengths, values;
                         bool is_regular = true;
                         Float interval = 0.f;
 
-                        /* Values are scaled so that integrating the
-                           spectrum against the CIE curves and converting
-                           to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */
+                        /* Values are scaled so that integrating the spectrum against the CIE curves
+                           and converting to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */
                         Float unit_conversion = 1.f;
                         if (within_emitter)
                             unit_conversion = 100.f / 10568.f;
@@ -853,13 +846,13 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         props2.set_long("size", wavelengths.size());
                         props2.set_pointer("values", values.data());
                         ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("ContinuousSpectrum", ctx.variant));
+                            props2, Class::for_name("Texture", ctx.variant));
 
                         if (ctx.color_mode == ColorMode::Monochrome) {
                             /* Monochrome mode: replace by the equivalent uniform spectrum by
                              * pre-integrating against the CIE Y matching curve. */
 #if 0
-                            auto *spectrum = (ContinuousSpectrum *) obj.get();
+                            auto *spectrum = (Texture *) obj.get();
                             double average  = 0;
 
                             for (Color1f wav = MTS_WAVELENGTH_MIN; all(wav <= MTS_WAVELENGTH_MAX);
@@ -876,7 +869,7 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             props2 = Properties("uniform");
                             props2.set_float("value", average);
                             obj = PluginManager::instance()->create_object(
-                                props2, Class::for_name("ContinuousSpectrum", ctx.variant));
+                                props2, Class::for_name("Texture", ctx.variant));
 #else
                             Throw("Not implemented yet: interpolated spectrum conversion in "
                                   "Monochrome mode");
@@ -1046,7 +1039,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
     auto unqueried = props.unqueried();
     if (!unqueried.empty()) {
         for (auto &v : unqueried) {
-            if (props.type(v) == PropertyType::Object) {
+            if (props.type(v) == Properties::Type::Object) {
                 const auto &obj = props.object(v);
                 Throw("Error while loading \"%s\" (near %s): unreferenced "
                       "object %s (within %s of type \"%s\")",

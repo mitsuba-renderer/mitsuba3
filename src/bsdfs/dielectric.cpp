@@ -1,6 +1,6 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/fresnel.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/ior.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -13,7 +13,7 @@ class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothDielectric, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Texture)
 
     SmoothDielectric(const Properties &props) : Base(props) {
 
@@ -29,8 +29,8 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_specular_reflectance   = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.spectrum<ContinuousSpectrum>("specular_transmittance", 1.f);
+        m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+        m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);
@@ -122,8 +122,8 @@ public:
 
 private:
     ScalarFloat m_eta;
-    ref<ContinuousSpectrum> m_specular_reflectance;
-    ref<ContinuousSpectrum> m_specular_transmittance;
+    ref<Texture> m_specular_reflectance;
+    ref<Texture> m_specular_transmittance;
 };
 
 MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")

@@ -5,7 +5,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -14,14 +14,14 @@ class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
     MTS_IMPORT_BASE(Emitter)
-    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
            about the scene and default to the unit bounding sphere. */
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        m_radiance = props.spectrum<ContinuousSpectrum>("radiance", ContinuousSpectrum::D65(1.f));
+        m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
     }
 
     void set_scene(const Scene *scene) override {
@@ -31,15 +31,15 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        return m_radiance->eval(si.wavelengths, active);
+        return m_radiance->eval(si, active);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           Mask active) const override {
         // 1. Sample spectrum
-        auto [wavelengths, weight] = m_radiance->sample(
-            math::sample_shifted<wavelength_t<Spectrum>>(wavelength_sample), active);
+        auto [wavelengths, weight] = m_radiance->sample(zero<SurfaceInteraction3f>(),
+            math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         // 2. Sample spatial component
         Vector3f v0 = warp::square_to_uniform_sphere(sample2);
@@ -68,9 +68,12 @@ public:
         ds.d      = d;
         ds.dist   = dist;
 
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+
         return std::make_pair(
             ds,
-            m_radiance->eval(it.wavelengths, active) / ds.pdf
+            m_radiance->eval(si, active) / ds.pdf
         );
     }
 
@@ -98,7 +101,7 @@ public:
     }
 
 protected:
-    ref<ContinuousSpectrum> m_radiance;
+    ref<Texture> m_radiance;
     ScalarBoundingSphere3f m_bsphere;
 };
 

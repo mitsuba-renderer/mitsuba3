@@ -1,4 +1,4 @@
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
@@ -6,11 +6,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class SRGBEmitterSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
+class SRGBEmitterSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SRGBEmitterSpectrum, ContinuousSpectrum)
-    MTS_IMPORT_BASE(ContinuousSpectrum)
-    MTS_IMPORT_TYPES()
+    MTS_DECLARE_CLASS_VARIANT(SRGBEmitterSpectrum, Texture)
+    MTS_IMPORT_BASE(Texture)
+    MTS_IMPORT_TYPES(Texture)
 
     SRGBEmitterSpectrum(const Properties &props) {
         if constexpr (is_rgb_v<Spectrum>)
@@ -29,33 +29,24 @@ public:
         ScalarFloat value =
             props.float_(props.has_property("scale") ? "scale" : "value", 1.f);
         props2.set_float("value", value * intensity);
-        m_d65 = (Base *) PluginManager::instance()
-                    ->create_object<Base>(props2)
-                    ->expand().front().get();
-
-        #if defined(MTS_ENABLE_AUTODIFF)
-            m_coeff_d = m_coeff;
-        #endif
+        PluginManager *pmgr = PluginManager::instance();
+        m_d65 = (Texture *) pmgr->create_object<Texture>(props2)->expand().at(0).get();
     }
 
-    Spectrum eval(const Wavelength &wavelengths, Mask active) const override {
-        return m_d65->eval(wavelengths, active) *
-               srgb_model_eval<Spectrum>(m_coeff, wavelengths);
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        return m_d65->eval(si, active) *
+               srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
     }
 
 #if defined(MTS_ENABLE_AUTODIFF)
     void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "coeff", m_coeff_d);
+        dp.put(this, "coeff", m_coeff);
     }
 #endif
 
 private:
-    Array<ScalarFloat, 3> m_coeff;
-    ref<Base> m_d65;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    Vector3fD m_coeff_d;
-#endif
+    Vector3f m_coeff;
+    ref<Texture> m_d65;
 };
 
 MTS_EXPORT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")

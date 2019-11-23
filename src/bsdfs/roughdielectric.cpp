@@ -6,7 +6,7 @@
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/fresnel.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/sampler.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -16,11 +16,11 @@ class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughDielectric, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
+    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughDielectric(const Properties &props) : Base(props) {
-        m_specular_reflectance   = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.spectrum<ContinuousSpectrum>("specular_transmittance", 1.f);
+        m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+        m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");
@@ -292,8 +292,8 @@ public:
     }
 
 private:
-    ref<ContinuousSpectrum> m_specular_reflectance;
-    ref<ContinuousSpectrum> m_specular_transmittance;
+    ref<Texture> m_specular_reflectance;
+    ref<Texture> m_specular_transmittance;
     MicrofacetType m_type;
     ScalarFloat m_alpha_u, m_alpha_v;
     ScalarFloat m_eta, m_inv_eta;

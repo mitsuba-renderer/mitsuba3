@@ -4,7 +4,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -18,9 +18,9 @@ class BitmapTextureImpl;
  */
 // TODO(!): test the "single-channel texture" use-case that was added during refactoring
 template <typename Float, typename Spectrum>
-class BitmapTexture : public ContinuousSpectrum<Float, Spectrum> {
+class BitmapTexture : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BitmapTexture, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(BitmapTexture, Texture)
     MTS_IMPORT_TYPES()
 
     BitmapTexture(const Properties &props) {
@@ -149,7 +149,7 @@ public:
             ptr += ChannelCount;
         }
 
-        m_mean = Float(mean / hprod(m_bitmap->size()));
+        m_mean = ScalarFloat(mean / hprod(m_bitmap->size()));
 
 #if defined(MTS_ENABLE_AUTODIFF)
         m_bitmap_d = FloatC::copy(m_bitmap->data(), hprod(m_bitmap->size()) * 3);
@@ -157,19 +157,19 @@ public:
     }
 
     // Evaluation of color data
-    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         if constexpr (ChannelCount < 3) {
             // TODO: we might still want to upscale, maybe let the user pass a flag to allow it
             Throw("Cannot spectrally evaluate a %d-channel texture", ChannelCount);
         } else if (IsRawData) {
             Throw("Cannot spectrally evaluate a raw-data texture");
         } else {
-            return interpolate<Vector3f, false, depolarize_t<Spectrum>>(si, active);
+            return interpolate<Vector3f, false, UnpolarizedSpectrum>(si, active);
         }
     }
 
     // Evaluation of raw 3-channel data (e.g. normal map)
-    Vector3f eval3(const SurfaceInteraction3f &si, Mask active = true) const override {
+    Vector3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
         if constexpr (ChannelCount != 1) {
             // TODO: we might still want to downscale, maybe let the user pass a flag to allow it
             Throw("Cannot evaluate a %d-channel texture as a scalar", ChannelCount);
@@ -181,7 +181,7 @@ public:
     }
 
     // Evaluation of raw scalar data
-    Float eval1(const SurfaceInteraction3f &si, Mask active = true) const override {
+    Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
         if constexpr (ChannelCount != 1) {
             // TODO: we might still want to downscale, maybe let the user pass a flag to allow it
             Throw("Cannot evaluate a %d-channel texture as a scalar", ChannelCount);
@@ -244,7 +244,7 @@ public:
         return fmadd(w0.y(), r0, w1.y() * r1);
     }
 
-    Float mean() const override { return m_mean; }
+    ScalarFloat mean() const override { return m_mean; }
 
 #if defined(MTS_ENABLE_AUTODIFF)
     void put_parameters(DifferentiableParameters &dp) override {
@@ -262,7 +262,7 @@ public:
     }
 
 protected:
-    Float m_mean;
+    ScalarFloat m_mean;
 };
 
 MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")

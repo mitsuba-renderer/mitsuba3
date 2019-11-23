@@ -3,7 +3,6 @@
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/spectrum.h>
-#include <mitsuba/render/spectrum.h>
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,34 +21,6 @@ private:
     std::string m_value;
 };
 
-/// Supported types of properties
-enum class PropertyType : uint32_t {
-    /// Boolean value (true/false)
-    Bool = 0,
-    /// 64-bit signed integer
-    Long,
-    /// Floating point value
-    Float,
-    /// 3D point
-    Point3f,
-    /// 3D vector
-    Vector3f,
-    /// 4x4 transform for homogeneous coordinates
-    Transform,
-    /// An animated 4x4 transformation
-    AnimatedTransform,
-    /// Tristimulus color value
-    Color,
-    /// String
-    String,
-    /// Named reference to another named object
-    NamedReference,
-    /// Arbitrary object
-    Object,
-    /// const void* pointer (for internal communication between plugins)
-    Pointer
-};
-
 /** \brief Associative parameter map for constructing
  * subclasses of \ref Object.
  *
@@ -57,7 +28,7 @@ enum class PropertyType : uint32_t {
  * the various type-dependent getters and setters. Instead, they
  * are accessed just like a normal Python map, e.g:
  *
- * XXX update
+ * TODO update
  * \code
  * myProps = mitsuba.core.Properties("plugin_name")
  * myProps["stringProperty"] = "hello"
@@ -66,6 +37,22 @@ enum class PropertyType : uint32_t {
  */
 class MTS_EXPORT_CORE Properties {
 public:
+    /// Supported types of properties
+    enum class Type {
+        Bool,              ///< Boolean value (true/false)
+        Long,              ///< 64-bit signed integer
+        Float,             ///< Floating point value
+        Point3f,           ///< 3D point
+        Vector3f,          ///< 3D vector
+        Transform,         ///< 4x4 transform for homogeneous coordinates
+        AnimatedTransform, ///< An animated 4x4 transformation
+        Color,             ///< Tristimulus color value
+        String,            ///< String
+        NamedReference,    ///< Named reference to another named object
+        Object,            ///< Arbitrary object
+        Pointer            ///< const void* pointer (for internal communication between plugins)
+    };
+
     using Float = float;
     MTS_IMPORT_CORE_TYPES()
 
@@ -97,7 +84,7 @@ public:
      * If no property exists under that name, an error is logged
      * and type <tt>void</tt> is returned.
      */
-    PropertyType type(const std::string &name) const;
+    Type type(const std::string &name) const;
 
     /**
      * \brief Remove a property with the specified name
@@ -276,55 +263,47 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Retrieve a color (use default value if no entry exists)
     const Color3f& color(const std::string &name, const Color3f &def_val) const;
 
-    /// Retrieve a continuous spectrum
-    template <typename ContinuousSpectrum>
-    ref<ContinuousSpectrum> spectrum(const std::string &name) const {
+    /// Retrieve a texture
+    template <typename Texture>
+    ref<Texture> texture(const std::string &name) const {
         ref<Object> object = find_object(name);
         if (!object)
             Throw("Property \"%s\" has not been specified!", name);
-        const Class *expected
-            = Class::for_name("ContinuousSpectrum", MTS_CLASS(ContinuousSpectrum)->variant());
-        if (!object->class_()->derives_from(expected))
+        if (!object->class_()->derives_from(MTS_CLASS(Texture)))
             Throw("The property \"%s\" has the wrong type (expected "
-                " <spectrum>).", name);
+                " <spectrum> or <texture>).", name);
         mark_queried(name);
-        return (ContinuousSpectrum *) object.get();
+        return (Texture *) object.get();
     }
 
 
-    /// Retrieve a continuous spectrum (use the provided spectrum if no entry exists)
-    template <typename ContinuousSpectrum>
-    ref<ContinuousSpectrum> spectrum(const std::string &name,
-                                     ref<ContinuousSpectrum> def_val) const {
+    /// Retrieve a texture (use the provided spectrum if no entry exists)
+    template <typename Texture>
+    ref<Texture> texture(const std::string &name, ref<Texture> def_val) const {
         ref<Object> object = find_object(name);
         if (!object)
             return def_val;
-        const Class *expected
-            = Class::for_name("ContinuousSpectrum", MTS_CLASS(ContinuousSpectrum)->variant());
-        if (!object->class_()->derives_from(expected))
+        if (!object->class_()->derives_from(MTS_CLASS(Texture)))
             Throw("The property \"%s\" has the wrong type (expected "
-                " <spectrum>).", name);
+                " <spectrum> or <texture>).", name);
         mark_queried(name);
-        return (ContinuousSpectrum *) object.get();
+        return (Texture *) object.get();
     }
 
     /// Retrieve a continuous spectrum (or create flat spectrum with default value)
-    template <typename ContinuousSpectrum>
-    ref<ContinuousSpectrum> spectrum(const std::string &name, Float def_val) const {
+    template <typename Texture>
+    ref<Texture> texture(const std::string &name, Float def_val) const {
         ref<Object> object = find_object(name);
         if (!object) {
             Properties props("uniform");
             props.set_float("value", def_val);
-            return (ContinuousSpectrum *) PluginManager::instance()
-                ->create_object<ContinuousSpectrum>(props).get();
+            return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         }
-        const Class *expected
-            = Class::for_name("ContinuousSpectrum", MTS_CLASS(ContinuousSpectrum)->variant());
-        if (!object->class_()->derives_from(expected))
+        if (!object->class_()->derives_from(MTS_CLASS(Texture)))
             Throw("The property \"%s\" has the wrong type (expected "
-                " <spectrum>).", name);
+                " <spectrum> or <texture>).", name);
         mark_queried(name);
-        return (ContinuousSpectrum *) object.get();
+        return (Texture *) object.get();
     }
 
     /// Retrieve a 3D texture
@@ -333,8 +312,7 @@ public:  // Type-specific getters and setters ----------------------------------
         ref<Object> object = find_object(name);
         if (!object)
             Throw("Property \"%s\" has not been specified!", name);
-        const Class *expected = Class::for_name("Texture3D", MTS_CLASS(Texture3D)->variant());
-        if (!object->class_()->derives_from(expected))
+        if (!object->class_()->derives_from(MTS_CLASS(Texture3D)))
             Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
                 name);
         mark_queried(name);
@@ -347,8 +325,7 @@ public:  // Type-specific getters and setters ----------------------------------
         ref<Object> object = find_object(name);
         if (!object)
             return def_val;
-        const Class *expected = Class::for_name("Texture3D", MTS_CLASS(Texture3D)->variant());
-        if (!object->class_()->derives_from(expected))
+        if (!object->class_()->derives_from(MTS_CLASS(Texture3D)))
             Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
                 name);
         mark_queried(name);
@@ -362,13 +339,12 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object) {
             Properties props("constant3d");
             ref<Object> obj
-                = this->spectrum<typename Texture3D::Base>("__default_spectrum", def_val).get();
+                = this->texture<typename Texture3D::Base>("__default_spectrum", def_val).get();
             props.set_object("color", obj);
             return (Texture3D *) PluginManager::instance()
                 ->create_object<Texture3D>(props).get();
         }
-        const Class *expected = Class::for_name("Texture3D", MTS_CLASS(Texture3D)->variant());
-        if (!object->class_()->derives_from(expected))
+        if (!object->class_()->derives_from(MTS_CLASS(Texture3D)))
             Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
                 name);
         mark_queried(name);

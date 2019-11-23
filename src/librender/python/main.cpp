@@ -16,7 +16,7 @@ MTS_PY_DECLARE(Film);
 MTS_PY_DECLARE(Spiral);
 MTS_PY_DECLARE(Integrator);
 MTS_PY_DECLARE(Sampler);
-MTS_PY_DECLARE(ContinuousSpectrum);
+MTS_PY_DECLARE(Texture);
 MTS_PY_DECLARE(MicrofacetDistribution);
 MTS_PY_DECLARE(PositionSample);
 MTS_PY_DECLARE(DirectionSample);
@@ -47,7 +47,7 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     MTS_PY_IMPORT(Spiral);
     MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Sampler);
-    MTS_PY_IMPORT(ContinuousSpectrum);
+    MTS_PY_IMPORT(Texture);
     MTS_PY_IMPORT(MicrofacetDistribution);
     MTS_PY_IMPORT(PositionSample);
     MTS_PY_IMPORT(DirectionSample);

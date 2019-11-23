@@ -2,7 +2,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -11,7 +11,7 @@ class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(BlendBSDF, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum, BSDF)
+    MTS_IMPORT_TYPES(Texture, BSDF)
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
@@ -24,7 +24,7 @@ public:
             }
         }
 
-        m_weight = props.spectrum<ContinuousSpectrum>("weight");
+        m_weight = props.texture<Texture>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
@@ -86,8 +86,8 @@ public:
                m_nested_bsdf[1]->eval(ctx, si, wo, active) * weight;
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo, Mask active) const override {
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
@@ -102,7 +102,7 @@ public:
     }
 
     MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
-        return clamp(m_weight->eval1(si, active), 0.f, 1.f);
+        return clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
     std::string to_string() const override {
@@ -120,7 +120,7 @@ public:
     }
 
 protected:
-    ref<ContinuousSpectrum> m_weight;
+    ref<Texture> m_weight;
     ref<BSDF> m_nested_bsdf[2];
 };
 

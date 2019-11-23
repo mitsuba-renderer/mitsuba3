@@ -7,7 +7,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 #define MTS_ROUGH_TRANSMITTANCE_RES 64
 
@@ -18,7 +18,7 @@ class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughPlastic, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
+    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughPlastic(const Properties &props) : Base(props) {
         /// Specifies the internal index of refraction at the interface
@@ -34,8 +34,8 @@ public:
         m_eta = int_ior / ext_ior;
         m_inv_eta_2 = 1.f / (m_eta * m_eta);
 
-        m_specular_reflectance = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
-        m_diffuse_reflectance  = props.spectrum<ContinuousSpectrum>("diffuse_reflectance",  .5f);
+        m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+        m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance",  .5f);
 
         /* Compute weights that further steer samples towards
            the specular or diffuse components */
@@ -68,7 +68,7 @@ public:
             }
             m_external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
             m_internal_reflectance =
-                mean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
+                hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
 
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
@@ -258,8 +258,8 @@ public:
     }
 
 private:
-    ref<ContinuousSpectrum> m_diffuse_reflectance;
-    ref<ContinuousSpectrum> m_specular_reflectance;
+    ref<Texture> m_diffuse_reflectance;
+    ref<Texture> m_specular_reflectance;
     MicrofacetType m_type;
     ScalarFloat m_eta, m_inv_eta_2;
     ScalarFloat m_alpha;

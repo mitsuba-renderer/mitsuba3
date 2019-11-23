@@ -44,25 +44,25 @@ MTS_PY_EXPORT(Properties) {
             .def("__getitem__", [](const Properties& p, const std::string &key) {
                     // We need to ask for type information to return the right cast
                     auto type = p.type(key);
-                    if (type == PropertyType::Bool)
+                    if (type == Properties::Type::Bool)
                         return py::cast(p.bool_(key));
-                    else if (type == PropertyType::Long)
+                    else if (type == Properties::Type::Long)
                         return py::cast(p.long_(key));
-                    else if (type == PropertyType::Float)
+                    else if (type == Properties::Type::Float)
                         return py::cast(p.float_(key));
-                    else if (type == PropertyType::String)
+                    else if (type == Properties::Type::String)
                         return py::cast(p.string(key));
-                    else if (type == PropertyType::Vector3f)
+                    else if (type == Properties::Type::Vector3f)
                         return py::cast(p.vector3f(key));
-                    else if (type == PropertyType::Point3f)
+                    else if (type == Properties::Type::Point3f)
                         return py::cast(p.point3f(key));
-                    else if (type == PropertyType::Transform)
+                    else if (type == Properties::Type::Transform)
                         return py::cast(p.transform(key));
-                    else if (type == PropertyType::AnimatedTransform)
+                    else if (type == Properties::Type::AnimatedTransform)
                         return py::cast(p.animated_transform(key));
-                    else if (type == PropertyType::Object)
+                    else if (type == Properties::Type::Object)
                         return py::cast(p.object(key));
-                    else if (type == PropertyType::Pointer)
+                    else if (type == Properties::Type::Pointer)
                         return py::cast(p.pointer(key));
                     else {
                         throw std::runtime_error("Unsupported property type");

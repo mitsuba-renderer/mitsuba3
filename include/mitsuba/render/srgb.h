@@ -31,7 +31,7 @@ MTS_INLINE value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
     Vec v = fmadd(fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
     Vec result = select(enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
                         max(0.f, fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f)));
-    return mean(result);
+    return hmean(result);
 }
 
 /**

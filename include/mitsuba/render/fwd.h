@@ -10,7 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 class DifferentiableParameters;
 struct BSDFContext;
 template <typename Float, typename Spectrum> class BSDF;
-template <typename Float, typename Spectrum> class ContinuousSpectrum;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
@@ -28,6 +27,7 @@ template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class ProjectiveCamera;
 template <typename Float, typename Spectrum> class Shape;
 template <typename Float, typename Spectrum> class ShapeKDTree;
+template <typename Float, typename Spectrum> class Texture;
 template <typename Float, typename Spectrum> class Texture3D;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
@@ -79,7 +79,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Film                   = mitsuba::Film<FloatU, SpectrumU>;
     using ImageBlock             = mitsuba::ImageBlock<FloatU, SpectrumU>;
     using ReconstructionFilter   = mitsuba::ReconstructionFilter<FloatU, SpectrumU>;
-    using ContinuousSpectrum     = mitsuba::ContinuousSpectrum<FloatU, SpectrumU>;
+    using Texture                = mitsuba::Texture<FloatU, SpectrumU>;
     using Texture3D              = mitsuba::Texture3D<FloatU, SpectrumU>;
 
     using ObjectPtr              = replace_scalar_t<Float, const Object *>;
@@ -128,7 +128,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Film                   = typename RenderAliases::Film;                                   \
     using ImageBlock             = typename RenderAliases::ImageBlock;                             \
     using ReconstructionFilter   = typename RenderAliases::ReconstructionFilter;                   \
-    using ContinuousSpectrum     = typename RenderAliases::ContinuousSpectrum;                     \
+    using Texture                = typename RenderAliases::Texture;                                \
     using Texture3D              = typename RenderAliases::Texture3D;                              \
     using ObjectPtr              = typename RenderAliases::ObjectPtr;                              \
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \

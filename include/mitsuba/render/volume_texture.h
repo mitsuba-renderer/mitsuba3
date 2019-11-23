@@ -75,8 +75,7 @@ public:
     virtual size_t data_size() const = 0;
 #endif
 
-    Float mean() const override { return Float(m_metadata.mean); }
-    Float max() const override { return m_metadata.max; }
+    ScalarFloat max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };
 
     std::string to_string() const override {

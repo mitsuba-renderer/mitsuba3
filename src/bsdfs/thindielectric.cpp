@@ -4,7 +4,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/fresnel.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -13,7 +13,7 @@ class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(ThinDielectric, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Texture)
 
     ThinDielectric(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
@@ -27,8 +27,8 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_specular_reflectance   = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.spectrum<ContinuousSpectrum>("specular_transmittance", 1.f);
+        m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+        m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);
@@ -106,8 +106,8 @@ public:
 
 private:
     ScalarFloat m_eta;
-    ref<ContinuousSpectrum> m_specular_transmittance;
-    ref<ContinuousSpectrum> m_specular_reflectance;
+    ref<Texture> m_specular_transmittance;
+    ref<Texture> m_specular_reflectance;
 };
 
 MTS_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")

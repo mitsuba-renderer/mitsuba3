@@ -5,7 +5,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -15,7 +15,7 @@ class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
     MTS_IMPORT_BASE(Emitter, m_world_transform)
-    MTS_IMPORT_TYPES(Scene, Shape, ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     using Warp = warp::Marginal2D<Float, 0>;
 
@@ -72,7 +72,7 @@ public:
 
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(m_bitmap->size(), luminance.get());
-        m_d65 = ContinuousSpectrum::D65(1.f);
+        m_d65 = Texture::D65(1.f);
 
 #if defined(MTS_ENABLE_AUTODIFF)
         m_bitmap_d = FloatC::copy(m_bitmap->data(), hprod(m_bitmap->size()) * 3);
@@ -95,7 +95,7 @@ public:
                              safe_acos(v.y()) * math::InvPi<Float>);
         uv -= floor(uv);
 
-        return eval_spectral(uv, si.wavelengths, active);
+        return eval_spectrum(uv, si.wavelengths, active);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float /* time */, Float /* wavelength_sample */,
@@ -134,7 +134,7 @@ public:
 
         return std::make_pair(
             ds,
-            eval_spectral(uv, it.wavelengths, active) / ds.pdf
+            eval_spectrum(uv, it.wavelengths, active) / ds.pdf
         );
     }
 
@@ -177,7 +177,7 @@ public:
     }
 
 protected:
-    Spectrum eval_spectral(Point2f uv, const Wavelength &wavelengths, Mask active) const {
+    UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
         uv *= Vector2f(m_bitmap->size() - 1u);
 
         Point2u pos = min(Point2u(uv), m_bitmap->size() - 2u);
@@ -208,28 +208,31 @@ protected:
 
         if constexpr (is_monochrome_v<Spectrum>) {
             // Only one channel is enough here
-            Spectrum v0 = fmadd(w0.x(), v00.x(), w1.x() * v10.x()),
-                     v1 = fmadd(w0.x(), v01.x(), w1.x() * v11.x());
+            UnpolarizedSpectrum v0 = fmadd(w0.x(), v00.x(), w1.x() * v10.x()),
+                                v1 = fmadd(w0.x(), v01.x(), w1.x() * v11.x());
             return fmadd(w0.y(), v0, w1.y() * v1);
         } else if constexpr (is_rgb_v<Spectrum>) {
             // No need for spectral conversion, we directly read-off the RGB values
-            Spectrum v0 = fmadd(w0.x(), head<3>(v00), w1.x() * head<3>(v10)),
-                     v1 = fmadd(w0.x(), head<3>(v01), w1.x() * head<3>(v11));
+            UnpolarizedSpectrum v0 = fmadd(w0.x(), head<3>(v00), w1.x() * head<3>(v10)),
+                                v1 = fmadd(w0.x(), head<3>(v01), w1.x() * head<3>(v11));
             return fmadd(w0.y(), v0, w1.y() * v1);
         } else {
             static_assert(is_spectral_v<Spectrum>);
-            Spectrum s00 = srgb_model_eval<Spectrum>(head<3>(v00), wavelengths),
-                     s10 = srgb_model_eval<Spectrum>(head<3>(v10), wavelengths),
-                     s01 = srgb_model_eval<Spectrum>(head<3>(v01), wavelengths),
-                     s11 = srgb_model_eval<Spectrum>(head<3>(v11), wavelengths),
-                     s0  = fmadd(w0.x(), s00, w1.x() * s10),
-                     s1  = fmadd(w0.x(), s01, w1.x() * s11),
-                     f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
-                     f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w()),
-                     s   = fmadd(w0.y(), s0, w1.y() * s1),
-                     f   = fmadd(w0.y(), f0, w1.y() * f1);
+            UnpolarizedSpectrum s00 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v00), wavelengths),
+                                s10 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v10), wavelengths),
+                                s01 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v01), wavelengths),
+                                s11 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v11), wavelengths),
+                                s0  = fmadd(w0.x(), s00, w1.x() * s10),
+                                s1  = fmadd(w0.x(), s01, w1.x() * s11),
+                                f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
+                                f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w()),
+                                s   = fmadd(w0.y(), s0, w1.y() * s1),
+                                f   = fmadd(w0.y(), f0, w1.y() * f1);
 
-            return s * f * m_d65->eval(wavelengths, active) * m_scale;
+            SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+            si.wavelengths = wavelengths;
+
+            return s * f * m_d65->eval(si, active) * m_scale;
         }
     }
 
@@ -238,8 +241,8 @@ protected:
     ScalarBoundingSphere3f m_bsphere;
     ref<Bitmap> m_bitmap;
     Warp m_warp;
-    ref<ContinuousSpectrum> m_d65;
-    Float m_scale;
+    ref<Texture> m_d65;
+    ScalarFloat m_scale;
 
 #if defined(MTS_ENABLE_AUTODIFF)
     FloatD m_bitmap_d;

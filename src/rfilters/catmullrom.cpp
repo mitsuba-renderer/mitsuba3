@@ -1,4 +1,5 @@
 #include <mitsuba/core/rfilter.h>
+#include <mitsuba/render/fwd.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

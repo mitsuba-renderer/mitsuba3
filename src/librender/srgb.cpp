@@ -1,7 +1,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <rgb2spec.h>
 #include <tbb/tbb.h>
@@ -43,18 +43,20 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
     using Array3f = Array<float, 3>;
     using Spectrum = Spectrum<float, 4>;
     using Matrix3f = Matrix<float, 3>;
-    using ContinuousSpectrum = ContinuousSpectrum<float, Spectrum>;
+    using Texture = Texture<float, Spectrum>;
     using Wavelength = wavelength_t<Spectrum>;
+    using SurfaceInteraction3f = SurfaceInteraction<float, Spectrum>;
 
-    ref<ContinuousSpectrum> d65 =
-        PluginManager::instance()->create_object<ContinuousSpectrum>(
+    ref<Texture> d65 =
+        PluginManager::instance()->create_object<Texture>(
             Properties("d65"));
     auto expanded = d65->expand();
     if (expanded.size() == 1)
-        d65 = (ContinuousSpectrum *) expanded[0].get();
+        d65 = (Texture *) expanded[0].get();
 
     const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
 
+    SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
     Array3f accum = 0.f;
     float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
     for (size_t i = 0; i < n_samples; ++i) {
@@ -68,7 +70,8 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
         else
             weight *= 3.f;
 
-        Array3f weight_v = weight * d65->eval(lambda).x() * cie1931_xyz(lambda);
+        si.wavelengths = lambda;
+        Array3f weight_v = weight * d65->eval(si).x() * cie1931_xyz(lambda);
 
         float model_eval =
             srgb_model_eval<Spectrum>(coeff, Wavelength(lambda)).x();

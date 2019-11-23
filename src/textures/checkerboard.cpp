@@ -1,4 +1,4 @@
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
@@ -6,21 +6,21 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class Checkerboard final : public ContinuousSpectrum<Float, Spectrum> {
+class Checkerboard final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Checkerboard, ContinuousSpectrum)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(Checkerboard, Texture)
+    MTS_IMPORT_TYPES(Texture)
 
     Checkerboard(const Properties &props) {
-        m_color0 = props.spectrum<ContinuousSpectrum>("color0", .4f);
-        m_color1 = props.spectrum<ContinuousSpectrum>("color1", .2f);
+        m_color0 = props.texture<Texture>("color0", .4f);
+        m_color1 = props.texture<Texture>("color1", .2f);
         m_transform = props.transform("to_uv", ScalarTransform4f()).extract();
     }
 
-    Spectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
-        auto uv = m_transform.transform_affine(it.uv);
-        auto mask = (uv - floor(uv)) > .5f;
-        Spectrum result = zero<Spectrum>();
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
+        Point2f uv = m_transform.transform_affine(it.uv);
+        mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
+        UnpolarizedSpectrum result = zero<UnpolarizedSpectrum>();
 
         Mask m0 = neq(mask.x(), mask.y()),
              m1 = !m0;
@@ -36,13 +36,32 @@ public:
         return result;
     }
 
-    Float mean() const override {
+    Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
+        Point2f uv = m_transform.transform_affine(it.uv);
+        mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
+        Float result = 0.f;
+
+        Mask m0 = neq(mask.x(), mask.y()),
+             m1 = !m0;
+
+        m0 &= active; m1 &= active;
+
+        if (any_or<true>(m0))
+            masked(result, m0) = m_color0->eval_1(it, m0);
+
+        if (any_or<true>(m1))
+            masked(result, m1) = m_color1->eval_1(it, m1);
+
+        return result;
+    }
+
+    ScalarFloat mean() const override {
         return .5f * (m_color0->mean() + m_color1->mean());
     }
 
 protected:
-    ref<ContinuousSpectrum> m_color0;
-    ref<ContinuousSpectrum> m_color1;
+    ref<Texture> m_color0;
+    ref<Texture> m_color1;
     ScalarTransform3f m_transform;
 };
 

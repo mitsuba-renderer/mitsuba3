@@ -1,14 +1,14 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class SRGBSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
+class SRGBSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, Texture)
     MTS_IMPORT_TYPES()
 
     static constexpr size_t kChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
@@ -28,18 +28,22 @@ public:
         }
     }
 
-    Spectrum eval(const Wavelength &wavelengths, Mask /*active*/) const override {
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return srgb_model_eval<Spectrum>(m_coeff, wavelengths);
+            return srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
         else
             return m_coeff;
     }
 
-    Float mean() const override {
-        if constexpr (is_spectral_v<Spectrum>)
-            return srgb_model_mean(m_coeff);
-        else
-            return hsum(m_coeff) / (ScalarFloat) kChannelCount;
+    ScalarFloat mean() const override {
+        if constexpr (is_spectral_v<Spectrum>) {
+            if constexpr (is_array_v<Float>)
+                return srgb_model_mean(hmean_inner(m_coeff));
+            else
+                return srgb_model_mean(m_coeff);
+        } else {
+            return hsum_nested(m_coeff) / (ScalarFloat) kChannelCount;
+        }
     }
 
 #if defined(MTS_ENABLE_AUTODIFF)

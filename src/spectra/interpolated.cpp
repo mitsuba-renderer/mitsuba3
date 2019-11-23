@@ -1,4 +1,4 @@
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/math.h>
@@ -7,10 +7,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Linear interpolant of a regularly sampled spectrum
 template <typename Float, typename Spectrum>
-class InterpolatedSpectrum final : public ContinuousSpectrum<Float, Spectrum> {
+class InterpolatedSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(InterpolatedSpectrum, ContinuousSpectrum)
-    MTS_IMPORT_BASE(ContinuousSpectrum)
+    MTS_DECLARE_CLASS_VARIANT(InterpolatedSpectrum, Texture)
+    MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES()
 
     using Index = replace_scalar_t<Wavelength, uint32_t>;
@@ -37,7 +37,7 @@ public:
         m_lambda_min = props.float_("lambda_min");
         m_lambda_max = props.float_("lambda_max");
 
-        if (props.type("values") == PropertyType::String) {
+        if (props.type("values") == Properties::Type::String) {
             std::vector<std::string> values_str =
                 string::tokenize(props.string("values"), " ,");
 
@@ -147,33 +147,34 @@ public:
 #endif
     }
 
-    ENOKI_INLINE Spectrum eval(const Wavelength &lambda, Mask active_) const override {
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active_) const override {
         if constexpr (is_spectral_v<Spectrum>) {
-            Wavelength t = (lambda - m_lambda_min) * m_inv_interval_size;
+            Wavelength t = (si.wavelengths - m_lambda_min) * m_inv_interval_size;
             mask_t<Wavelength> active = active_;
-            active &= (lambda >= m_lambda_min) && (lambda <= m_lambda_max);
+            active &= (si.wavelengths >= m_lambda_min) && (si.wavelengths <= m_lambda_max);
 
             Index i0 = clamp(Index(t), zero<Index>(), Index(m_size_minus_2)),
-                i1 = i0 + Index(1);
+                  i1 = i0 + Index(1);
 
             Wavelength v0 = data_gather<Wavelength>(i0, active),
-                    v1 = data_gather<Wavelength>(i1, active);
+                       v1 = data_gather<Wavelength>(i1, active);
 
             Wavelength w1 = t - Wavelength(i0),
-                    w0 = (Float) 1 - w1;
+                       w0 = 1.f - w1;
 
             return (w0 * v0 + w1 * v1) & active;
         } else {
-            Throw("Not implemented for non-spectral modes");
+            Throw("Not implemented for non-spectral modes"); // TODO
         }
     }
 
-    ENOKI_INLINE Spectrum pdf(const Wavelength &lambda, Mask active) const override {
-        return eval(lambda, active) * m_normalization;
+    Wavelength pdf(const SurfaceInteraction3f &si, Mask active) const override {
+        return eval(si, active) * m_normalization;
     }
 
-    ENOKI_INLINE std::pair<Wavelength, Spectrum> sample(const Wavelength &sample_,
-                                                        Mask active) const override {
+    std::pair<Wavelength, UnpolarizedSpectrum> sample(const SurfaceInteraction3f & /*si*/,
+                                                      const Wavelength &sample_,
+                                                      Mask active) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             Wavelength sample = sample_ * m_integral;
 
@@ -193,20 +194,20 @@ public:
             sample = (sample - cdf_gather<Wavelength>(i0, active)) * m_inv_interval_size;
 
             // Importance sample the linear interpolant
-            Wavelength t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
-            Wavelength t_const  = sample / f0;
-            Wavelength t        = select(eq(f0, f1), t_const, t_linear);
+            Wavelength t_linear = (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1),
+                       t_const  = sample / f0,
+                       t        = select(eq(f0, f1), t_const, t_linear);
 
             return {
                 m_lambda_min + (Wavelength(i0) + t) * m_interval_size,
                 m_integral
             };
         } else {
-            Throw("Not implemented for non-spectral modes");
+            Throw("Not implemented for non-spectral modes"); // TODO
         }
     }
 
-    Float mean() const override {
+    ScalarFloat mean() const override {
         return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
 

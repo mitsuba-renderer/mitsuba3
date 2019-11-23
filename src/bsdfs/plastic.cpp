@@ -5,7 +5,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/fresnel.h>
 #include <mitsuba/render/ior.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -14,7 +14,7 @@ class SmoothPlastic final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SmoothPlastic, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum)
+    MTS_IMPORT_TYPES(Texture)
 
     SmoothPlastic(const Properties &props) : Base(props) {
         // Specifies the internal index of refraction at the interface
@@ -34,8 +34,8 @@ public:
         m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
-        m_specular_reflectance = props.spectrum<ContinuousSpectrum>("specular_reflectance", 1.f);
-        m_diffuse_reflectance  = props.spectrum<ContinuousSpectrum>("diffuse_reflectance", .5f);
+        m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+        m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance", .5f);
 
         // Compute weights that further steer samples towards the specular or diffuse components
         ScalarFloat d_mean = hmax(m_diffuse_reflectance->mean()),
@@ -178,8 +178,8 @@ public:
     }
 
 private:
-    ref<ContinuousSpectrum> m_diffuse_reflectance;
-    ref<ContinuousSpectrum> m_specular_reflectance;
+    ref<Texture> m_diffuse_reflectance;
+    ref<Texture> m_specular_reflectance;
     ScalarFloat m_eta, m_inv_eta_2;
     ScalarFloat m_fdr_int, m_fdr_ext;
     ScalarFloat m_specular_sampling_weight;

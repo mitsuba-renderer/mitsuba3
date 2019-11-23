@@ -4,7 +4,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -13,11 +13,11 @@ class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(RoughConductor, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(ContinuousSpectrum, MicrofacetDistribution)
+    MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughConductor(const Properties &props) : Base(props) {
-        m_eta = props.spectrum<ContinuousSpectrum>("eta", 0.f);
-        m_k   = props.spectrum<ContinuousSpectrum>("k", 1.f);
+        m_eta = props.texture<Texture>("eta", 0.f);
+        m_k   = props.texture<Texture>("k", 1.f);
 
         mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();
@@ -70,9 +70,8 @@ public:
                      (cos_theta_i * Frame3f::cos_theta(m));
 
         // Evaluate the Fresnel factor
-        // TODO: handle polarization rather than discarding it here.
-        Complex<UnpolarizedSpectrum> eta_c(depolarize(m_eta->eval(si, active)),
-                                           depolarize(m_k->eval(si, active)));
+        Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+                                           m_k->eval(si, active));
 
         Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, m)), eta_c);
 
@@ -107,9 +106,8 @@ public:
         active &= neq(D, 0.f);
 
         // Evaluate the Fresnel factor
-        // TODO: handle polarization rather than discarding it here.
-        Complex<UnpolarizedSpectrum> eta_c(depolarize(m_eta->eval(si, active)),
-                                           depolarize(m_k->eval(si, active)));
+        Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+                                           m_k->eval(si, active));
 
         Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
 
@@ -172,9 +170,9 @@ private:
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
     /// Relative refractive index (real component)
-    ref<ContinuousSpectrum> m_eta;
+    ref<Texture> m_eta;
     /// Relative refractive index (imaginary component).
-    ref<ContinuousSpectrum> m_k;
+    ref<Texture> m_k;
 };
 
 MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor");

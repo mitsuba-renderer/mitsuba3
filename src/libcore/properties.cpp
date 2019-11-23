@@ -127,19 +127,19 @@ bool Properties::has_property(const std::string &name) const {
 
 namespace {
     struct PropertyTypeVisitor {
-        typedef PropertyType Result;
-        Result operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
-        Result operator()(const bool &) { return PropertyType::Bool; }
-        Result operator()(const int64_t &) { return PropertyType::Long; }
-        Result operator()(const Float &) { return PropertyType::Float; }
-        Result operator()(const Vector3f &) { return PropertyType::Vector3f; }
-        Result operator()(const Point3f &) { return PropertyType::Point3f; }
-        Result operator()(const std::string &) { return PropertyType::String; }
-        Result operator()(const Transform4f &) { return PropertyType::Transform; }
-        Result operator()(const Color3f &) { return PropertyType::Color; }
-        Result operator()(const NamedReference &) { return PropertyType::NamedReference; }
-        Result operator()(const ref<Object> &) { return PropertyType::Object; }
-        Result operator()(const void *&) { return PropertyType::Pointer; }
+        using Type = Properties::Type;
+        Type operator()(const std::nullptr_t &) { throw std::runtime_error("Internal error"); }
+        Type operator()(const bool &) { return Type::Bool; }
+        Type operator()(const int64_t &) { return Type::Long; }
+        Type operator()(const Float &) { return Type::Float; }
+        Type operator()(const Vector3f &) { return Type::Vector3f; }
+        Type operator()(const Point3f &) { return Type::Point3f; }
+        Type operator()(const std::string &) { return Type::String; }
+        Type operator()(const Transform4f &) { return Type::Transform; }
+        Type operator()(const Color3f &) { return Type::Color; }
+        Type operator()(const NamedReference &) { return Type::NamedReference; }
+        Type operator()(const ref<Object> &) { return Type::Object; }
+        Type operator()(const void *&) { return Type::Pointer; }
     };
 
     struct StreamVisitor {
@@ -160,7 +160,7 @@ namespace {
     };
 }
 
-PropertyType Properties::type(const std::string &name) const {
+Properties::Type Properties::type(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         Throw("type(): Could not find property named \"%s\"!", name);
@@ -228,7 +228,7 @@ std::vector<std::pair<std::string, NamedReference>> Properties::named_references
     result.reserve(d->entries.size());
     for (auto &e : d->entries) {
         auto type = e.second.data.visit(PropertyTypeVisitor());
-        if (type != PropertyType::NamedReference)
+        if (type != Type::NamedReference)
             continue;
         auto const &value = (const NamedReference &) e.second.data;
         result.push_back(std::make_pair(e.first, value));
@@ -242,7 +242,7 @@ std::vector<std::pair<std::string, ref<Object>>> Properties::objects() const {
     result.reserve(d->entries.size());
     for (auto &e : d->entries) {
         auto type = e.second.data.visit(PropertyTypeVisitor());
-        if (type != PropertyType::Object)
+        if (type != Type::Object)
             continue;
         result.push_back(std::make_pair(e.first, (const ref<Object> &) e.second));
         e.second.queried = true;

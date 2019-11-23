@@ -2,7 +2,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -11,7 +11,7 @@ class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(MaskBSDF, BSDF)
     MTS_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
-    MTS_IMPORT_TYPES(BSDF, ContinuousSpectrum)
+    MTS_IMPORT_TYPES(BSDF, Texture)
 
     MaskBSDF(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {
@@ -26,7 +26,7 @@ public:
            Throw("Child BSDF not specified");
 
         // Scalar-typed opacity texture
-        m_opacity = props.spectrum<ContinuousSpectrum>("opacity", 0.5f);
+        m_opacity = props.texture<Texture>("opacity", 0.5f);
 
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
             m_components.push_back(m_nested_bsdf->flags(i));
@@ -71,14 +71,14 @@ public:
         return { bs, result };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo, Mask active) const override {
         Float opacity = eval_opacity(si, active);
         return m_nested_bsdf->eval(ctx, si, wo, active) * opacity;
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo, Mask active) const override {
         uint32_t null_index      = (uint32_t) component_count() - 1;
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
@@ -94,7 +94,7 @@ public:
     }
 
     MTS_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
-        return clamp(m_opacity->eval1(si, active), 0.f, 1.f);
+        return clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
     std::vector<ref<Object>> children() override {
@@ -111,7 +111,7 @@ public:
     }
 
 protected:
-    ref<ContinuousSpectrum> m_opacity;
+    ref<Texture> m_opacity;
     ref<BSDF> m_nested_bsdf;
 };
 

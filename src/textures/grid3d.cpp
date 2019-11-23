@@ -6,7 +6,7 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/transform.h>
-#include <mitsuba/render/spectrum.h>
+#include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume_texture.h>
 #include <mitsuba/render/srgb.h>
 #include "volume_data.h"
@@ -64,11 +64,11 @@ public:
         return eval_impl<false>(it, active);
     }
 
-    Vector3f eval3(const Interaction3f & /*it*/, Mask  /*active*/) const override {
+    Vector3f eval_3(const Interaction3f & /*it*/, Mask  /*active*/) const override {
         NotImplementedError("eval3");
     }
 
-    Float eval1(const Interaction3f & /*it*/, Mask  /*active*/) const override {
+    Float eval_1(const Interaction3f & /*it*/, Mask  /*active*/) const override {
         NotImplementedError("eval1");
     }
 
