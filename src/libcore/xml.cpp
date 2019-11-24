@@ -117,8 +117,7 @@ inline std::string class_key(const std::string &name, const std::string &variant
 
 // Called by Class::Class()
 void register_class(const Class *class_) {
-    if (!class_)
-        throw std::runtime_error("XML::register_class called with nullptr");
+    Assert(class_ != nullptr);
 
     if (!tags) {
         tags = new std::unordered_map<std::string, Tag>();
@@ -140,7 +139,6 @@ void register_class(const Class *class_) {
         (*tags)["ref"]        = Tag::NamedReference;
         (*tags)["spectrum"]   = Tag::Spectrum;
         (*tags)["rgb"]        = Tag::RGB;
-        (*tags)["color"]      = Tag::Color;
         (*tags)["include"]    = Tag::Include;
         (*tags)["alias"]      = Tag::Alias;
         (*tags)["default"]    = Tag::Default;
@@ -161,6 +159,8 @@ void register_class(const Class *class_) {
 void cleanup() {
     delete tags;
     delete tag_class;
+    tags = nullptr;
+    tag_class = nullptr;
 }
 
 /// Helper function: map a position offset in bytes to a more readable line/column value
@@ -696,30 +696,6 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     check_attributes(src, node, { "name", "x", "y", "z" });
                     props.set_point3f(node.attribute("name").value(),
                                       detail::parse_vector(src, node));
-                }
-                break;
-
-            case Tag::Color : {
-                    check_attributes(src, node, { "name", "value" });
-                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
-
-                    if (tokens.size() != 3)
-                        src.throw_error(node, "'color' tag requires three values (got \"%s\")",
-                                        node.attribute("value").value());
-
-                    try {
-                        Color3f col(detail::stof(tokens[0]),
-                                    detail::stof(tokens[1]),
-                                    detail::stof(tokens[2]));
-
-                        if (ctx.color_mode == ColorMode::Monochrome)
-                            col = luminance(col);
-
-                        props.set_color(node.attribute("name").value(), col);
-                    } catch (...) {
-                        src.throw_error(node, "could not parse color \"%s\"",
-                                        node.attribute("value").value());
-                    }
                 }
                 break;
 
