@@ -94,9 +94,10 @@ def write_python_config(f, enabled):
     f.write('\n\n')
 
     f.write('/// Define a python submodule for each rendering mode\n')
-    w('#define MTS_PY_DEF_SUBMODULE(lib)')
+    w('#define MTS_PY_DEF_SUBMODULE(list, lib)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    auto __submodule__%s =  m.def_submodule("%s").def_submodule(#lib);' % (name, name))
+        w('    list.push_back(__submodule__%s);' % name)
     f.write('\n\n')
 
     f.write('/// Execute the pybind11 binding function for a set of bindings under a given name\n')

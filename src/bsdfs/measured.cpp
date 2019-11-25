@@ -245,7 +245,7 @@ public:
         bs.sampled_component = 0;
 
         Spectrum spec;
-        for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
+        for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
@@ -301,7 +301,7 @@ public:
         auto [sample, unused] = m_vndf.invert(u_m, params, active);
 
         Spectrum spec;
-        for (size_t i = 0; i < MTS_WAVELENGTH_SAMPLES; ++i) {
+        for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }

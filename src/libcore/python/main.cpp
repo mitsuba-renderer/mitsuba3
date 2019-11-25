@@ -87,7 +87,8 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
 #endif
 
     // Define submodules of `mitsuba.mode.core`
-    MTS_PY_DEF_SUBMODULE(core)
+    std::vector<py::module> submodule_list;
+    MTS_PY_DEF_SUBMODULE(submodule_list, core)
 
     Jit::static_initialization();
     Class::static_initialization();
@@ -163,19 +164,19 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
         "Sets the maximum number of threads to be used by TBB. Defaults to "
         "-1 (automatic).");
 
-    // TODO enable this
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */
-    // py::cpp_function cleanup_callback([scheduler_holder](py::handle weakref) {
-    //     delete scheduler_holder;
+    py::cpp_function cleanup_callback([scheduler_holder](py::handle weakref) {
+        delete scheduler_holder;
 
-    //     Bitmap::static_shutdown();
-    //     Logger::static_shutdown();
-    //     Thread::static_shutdown();
-    //     Class::static_shutdown();
-    //     Jit::static_shutdown();
-    //     weakref.dec_ref();
-    // });
+        Bitmap::static_shutdown();
+        Logger::static_shutdown();
+        Thread::static_shutdown();
+        Class::static_shutdown();
+        Jit::static_shutdown();
+        weakref.dec_ref();
+    });
 
-    // (void) py::weakref(m.attr("Object"), cleanup_callback).release();
+    for (auto& submodule : submodule_list)
+        (void) py::weakref(submodule.attr("Object"), cleanup_callback).release();
 }

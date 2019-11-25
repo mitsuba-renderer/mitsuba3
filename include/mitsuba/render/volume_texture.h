@@ -10,11 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Holds metadata about a volume, e.g. when loaded from a Mitsuba binary volume file.
 struct VolumeMetadata {
-    // TODO: how to parametrize over single / double precision?
-    using Vector3i = Vector<int32_t, 3>;
-    using Point3f = Point<float, 3>;
-    using BoundingBox3f = BoundingBox<Point3f>;
-    using Transform4f = Transform<float, 4>;
+    using Float = float;
+    MTS_IMPORT_CORE_TYPES()
 
     std::string filename;
     uint8_t version;

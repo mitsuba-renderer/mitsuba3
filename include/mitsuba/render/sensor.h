@@ -171,6 +171,9 @@ protected:
     ScalarFloat m_focus_distance;
 };
 
+/// Helper function to parse fov
+float parse_fov(const Properties &props, float aspect);
+
 MTS_EXTERN_CLASS(Sensor)
 MTS_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

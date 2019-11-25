@@ -153,15 +153,15 @@ square_to_uniform_square_concentric(const Point<Value, 2> &sample) {
 /// Convert an uniformly distributed square sample into barycentric coordinates
 template <typename Value>
 MTS_INLINE Point<Value, 2> square_to_uniform_triangle(const Point<Value, 2> &sample) {
-    Value t = circ(sample.x());
-    return { Value(1.f) - t, t * sample.y() };
+    Value t = safe_sqrt(1.f - sample.x());
+    return { 1.f - t, t * sample.y() };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_triangle
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) {
-    Value t = Value(1.f) - p.x();
-    return Point<Value, 2>(Value(1.f) - t * t, p.y() / t);
+    Value t = 1.f - p.x();
+    return Point<Value, 2>(1.f - t * t, p.y() / t);
 }
 
 /// Density of \ref square_to_uniform_triangle per unit area.
@@ -170,12 +170,12 @@ MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
     if constexpr (TestDomain) {
         return select(
             p.x() < zero<Value>() || p.y() < zero<Value>()
-                                  || (p.x() + p.y() > Value(1)),
+                                  || (p.x() + p.y() > 1.f),
             zero<Value>(),
-            Value(2)
+            2.f
         );
     } else {
-        return Value(2);
+        return 2.f;
     }
 }
 
@@ -408,8 +408,8 @@ MTS_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
                                             const Value &cos_cutoff) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return select(abs(squared_norm(v) - 1.f) > math::Epsilon<Value> ||
-                      v.z() < cos_cutoff, zero<Value>(),
+        return select(abs(squared_norm(v) - 1.f) > math::Epsilon<Value> || v.z() < cos_cutoff,
+                      zero<Value>(),
                       math::InvTwoPi<Value> / (1.f - cos_cutoff));
     else
         return math::InvTwoPi<Value> / (1.f - cos_cutoff);

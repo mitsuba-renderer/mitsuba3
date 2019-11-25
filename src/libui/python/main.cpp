@@ -20,7 +20,8 @@ PYBIND11_MODULE(mitsuba_ui_ext, m_) {
     py::module::import("nanogui");
 
     py::module m = py::module::import("mitsuba");
-    MTS_PY_DEF_SUBMODULE(ui)
+    std::vector<py::module> submodule_list;
+    MTS_PY_DEF_SUBMODULE(submodule_list, ui)
 
     MTS_PY_IMPORT(Texture);
 }

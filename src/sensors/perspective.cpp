@@ -19,56 +19,7 @@ public:
     // =============================================================
 
     PerspectiveCamera(const Properties &props) : Base(props) {
-        if (props.has_property("fov") && props.has_property("focal_length"))
-            Throw("Please specify either a focal length ('focal_length') or a "
-                  "field of view ('fov')!");
-
-        ScalarFloat fov;
-        std::string fov_axis;
-
-        if (props.has_property("fov")) {
-            fov = props.float_("fov");
-
-            fov_axis = string::to_lower(props.string("fov_axis", "x"));
-
-            if (fov_axis == "smaller")
-                fov_axis = m_aspect > 1 ? "y" : "x";
-            else if (fov_axis == "larger")
-                fov_axis = m_aspect > 1 ? "x" : "y";
-        } else {
-            std::string f = props.string("focal_length", "50mm");
-            if (string::ends_with(f, "mm"))
-                f = f.substr(0, f.length()-2);
-
-            ScalarFloat value;
-            try {
-                value = std::stof(f);
-            } catch (...) {
-                Throw("Could not parse the focal length (must be of the form "
-                    "<x>mm, where <x> is a positive integer)!");
-            }
-
-            fov = 2.f *
-                  rad_to_deg(std::atan(std::sqrt(ScalarFloat(36 * 36 + 24 * 24)) / (2.f * value)));
-            fov_axis = "diagonal";
-        }
-
-        if (fov_axis == "x") {
-            m_x_fov = fov;
-        } else if (fov_axis == "y") {
-            m_x_fov = rad_to_deg(
-                2.f * std::atan(std::tan(.5f * deg_to_rad(fov)) * m_aspect));
-        } else if (fov_axis == "diagonal") {
-            ScalarFloat diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
-            ScalarFloat width    = diagonal / std::sqrt(1.f + 1.f / (m_aspect * m_aspect));
-            m_x_fov = rad_to_deg(2.f * std::atan(width*.5f));
-        } else {
-            Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
-                  "'larger', 'diagonal', 'x', or 'y'!");
-        }
-
-        if (m_x_fov <= 0.f || m_x_fov >= 180.f)
-            Throw("The horizontal field of view must be in the range [0, 180]!");
+        m_x_fov = parse_fov(props, m_aspect);
 
         if (m_world_transform->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
@@ -77,6 +28,7 @@ public:
         m_needs_sample_3 = false;
     }
 
+    // TODO duplicate code with ThinLens
     void update_camera_transforms() {
         ScalarVector2f film_size = ScalarVector2f(m_film->size()),
                        crop_size = ScalarVector2f(m_film->crop_size()),
@@ -135,18 +87,7 @@ public:
                                           const Point2f &position_sample,
                                           const Point2f & /*aperture_sample*/,
                                           Mask active) const override {
-
-        auto wav_sample = math::sample_shifted<Wavelength>(wavelength_sample);
-        Wavelength wavelengths;
-        Spectrum spec_weight;
-        if constexpr (!is_spectral_v<Spectrum>) {
-            // Note: wavelengths should not be used when rendering in RGB mode.
-            wavelengths = std::numeric_limits<ScalarFloat>::quiet_NaN();
-            spec_weight = 1.f;
-        } else {
-            std::tie(wavelengths, spec_weight) = sample_rgb_spectrum(wav_sample);
-        }
-
+        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         Ray3f ray;
         ray.time = time;
         ray.wavelength = wavelengths;
@@ -167,24 +108,13 @@ public:
         ray.d = trafo * d;
         ray.update();
 
-        return std::make_pair(ray, spec_weight);
+        return std::make_pair(ray, wav_weight);
     }
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample, const Point2f &position_sample,
                             const Point2f & /*aperture_sample*/, Mask active) const override {
-        // TODO: refactor this to avoid code duplication
-        auto wav_sample = math::sample_shifted<Wavelength>(wavelength_sample);
-        Wavelength wavelengths;
-        Spectrum spec_weight;
-        if constexpr (!is_spectral_v<Spectrum>) {
-            // Note: wavelengths should not be used when rendering in RGB mode.
-            wavelengths = std::numeric_limits<ScalarFloat>::quiet_NaN();
-            spec_weight = 1.f;
-        } else {
-            std::tie(wavelengths, spec_weight) = sample_rgb_spectrum(wav_sample);
-        }
-
+        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         RayDifferential3f ray;
         ray.time = time;
         ray.wavelength = wavelengths;
@@ -210,7 +140,7 @@ public:
         ray.d_y = trafo * normalize(Vector3f(near_p) + m_dy);
         ray.has_differentials = true;
 
-        return std::make_pair(ray, spec_weight);
+        return std::make_pair(ray, wav_weight);
     }
 
     ScalarBoundingBox3f bbox() const override {

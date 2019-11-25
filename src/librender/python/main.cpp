@@ -29,7 +29,8 @@ PYBIND11_MODULE(mitsuba_render_ext, m_) {
     (void) m_; /* unused */
 
     py::module m = py::module::import("mitsuba");
-    MTS_PY_DEF_SUBMODULE(render)
+    std::vector<py::module> submodule_list;
+    MTS_PY_DEF_SUBMODULE(submodule_list, render)
 
     // MTS_PY_IMPORT(autodiff);
     MTS_PY_IMPORT(Scene);

@@ -31,79 +31,6 @@ ImageBlock<Float, Spectrum>::~ImageBlock() {
         delete[] m_weights_x;
 }
 
-#if 0
-// TODO(!): `active` mask should be used!
-template <typename Float, typename Spectrum>
-bool ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask /*active*/) {
-    Assert(m_filter != nullptr);
-    size_t channels = m_bitmap->channel_count();
-
-    // Check if all sample values are valid
-    bool valid_sample = true;
-    if (m_warn) {
-        for (size_t i = 0; i < channels; ++i)
-            valid_sample &= std::isfinite(value[i]) && value[i] >= 0;
-
-        if (unlikely(!valid_sample)) {
-            std::ostringstream oss;
-            oss << "Invalid sample value: [";
-            for (size_t i = 0; i < channels; ++i) {
-                oss << value[i];
-                if (i + 1 < channels) oss << ", ";
-            }
-            oss << "]";
-            Log(Warn, "%s", oss.str());
-            return false;
-        }
-    }
-
-    Float filter_radius = m_filter->radius();
-    Vector2i size = m_bitmap->size();
-
-    // Convert to pixel coordinates within the image block
-    Point2f pos = pos_ - (m_offset - m_border_size + .5f);
-
-    // Determine the affected range of pixels
-    Point2i lo = max(ceil2int <Point2i>(pos - filter_radius), 0),
-            hi = min(floor2int<Point2i>(pos + filter_radius), size - 1);
-
-    // Lookup values from the pre-rasterized filter
-    for (int x = lo.x(), idx = 0; x <= hi.x(); ++x)
-        m_weights_x[idx++] = m_filter->eval_discretized(x - pos.x());
-
-    for (int y = lo.y(), idx = 0; y <= hi.y(); ++y)
-        m_weights_y[idx++] = m_filter->eval_discretized(y - pos.y());
-
-    if (ENOKI_UNLIKELY(m_normalize)) {
-        Float wx = 0.f, wy = 0.f;
-        for (int x = 0; x <= hi.x() - lo.x(); ++x)
-            wx += m_weights_x[x];
-        for (int y = 0; y <= hi.y() - lo.y(); ++y)
-            wy += m_weights_y[y];
-        Float factor = rcp(wx * wy);
-        for (int x = 0; x <= hi.x() - lo.x(); ++x)
-            m_weights_x[x] *= factor;
-    }
-
-    // Rasterize the filtered sample into the framebuffer
-    for (int y = lo.y(), yr = 0; y <= hi.y(); ++y, ++yr) {
-        const Float weightY = m_weights_y[yr];
-        Float *dest = ((Float *) m_bitmap->data())
-            + (y * (size_t) size.x() + lo.x()) * channels;
-
-        for (int x = lo.x(), xr = 0; x <= hi.x(); ++x, ++xr) {
-            const Float weight = m_weights_x[xr] * weightY;
-
-            for (size_t k = 0; k < channels; ++k)
-                *dest++ += weight * value[k];
-        }
-    }
-
-    return true;
-}
-
-#else
-// TODO: merge the scalar, vector & differentiable implementations if possible
 template <typename Float, typename Spectrum>
 typename ImageBlock<Float, Spectrum>::Mask
 ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask active) {
@@ -182,7 +109,6 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
     return active;
 }
-#endif
 
 #if defined(MTS_ENABLE_AUTODIFF)
 template <typename Float, typename Spectrum>

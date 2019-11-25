@@ -103,9 +103,15 @@ def test04_transform_point():
     A = np.eye(4)
     A[3, 3] = 2
     assert np.allclose(Transform4f(A).transform_point([2, 4, 6]), [1, 2, 3])
+
+    try:
+        from mitsuba.packet_rgb.core import Transform4f as Transform4fX
+    except:
+        pass
+
     # TODO
     # assert np.allclose(
-    #     Transform4f(A).transform_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
+        # Transform4fX(A).transform_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
 
 def test05_transform_vector():
     A = np.eye(4)
@@ -124,6 +130,7 @@ def test06_transform_normal():
     # assert np.allclose(
     #     Transform4f(A).transform_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])
 
+# TODO
 @pytest.mark.skip()
 def test07_transform_has_scale():
     t = Transform4fX(11)

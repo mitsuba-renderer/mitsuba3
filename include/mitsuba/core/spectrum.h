@@ -8,13 +8,9 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
+#include <mitsuba/core/math.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-// TODO should vary with modes
-#if !defined(MTS_WAVELENGTH_SAMPLES)
-#  define MTS_WAVELENGTH_SAMPLES 4
-#endif
 
 #if !defined(MTS_WAVELENGTH_MIN)
 #  define MTS_WAVELENGTH_MIN 360.f
@@ -67,7 +63,7 @@ struct Color
 //! @{ \name Data types for discretized spectral data
 // =======================================================================
 
-template <typename Value_, size_t Size_ = MTS_WAVELENGTH_SAMPLES>
+template <typename Value_, size_t Size_ = 4>
 struct Spectrum
     : enoki::StaticArrayImpl<Value_, Size_,
                              enoki::array_approx_v<Value_>,
@@ -276,6 +272,18 @@ template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
                       0.003939804229326285f * tmp * tmp, zero<Value>());
     } else {
         return pdf_uniform_spectrum(wavelengths);
+    }
+}
+
+/// Helper function to sample a wavelength (and a weight) given a random number
+template <typename Float, typename Spectrum>
+std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
+    if constexpr (!is_spectral_v<Spectrum>) {
+        // Note: wavelengths should not be used when rendering in RGB mode.
+        return { std::numeric_limits<scalar_t<Float>>::quiet_NaN(), 1.f };
+    } else {
+        auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
+        return sample_rgb_spectrum(wav_sample);
     }
 }
 

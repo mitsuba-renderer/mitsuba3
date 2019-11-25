@@ -13,13 +13,19 @@
 
 
 /// Define a python submodule for each rendering mode
-#define MTS_PY_DEF_SUBMODULE(lib)                                               \
+#define MTS_PY_DEF_SUBMODULE(list, lib)                                         \
     auto __submodule__scalar_rgb =  m.def_submodule("scalar_rgb").def_submodule(#lib); \
+    list.push_back(__submodule__scalar_rgb);                                    \
     auto __submodule__scalar_mono =  m.def_submodule("scalar_mono").def_submodule(#lib); \
+    list.push_back(__submodule__scalar_mono);                                   \
     auto __submodule__scalar_spectral =  m.def_submodule("scalar_spectral").def_submodule(#lib); \
+    list.push_back(__submodule__scalar_spectral);                               \
     auto __submodule__scalar_spectral_polarized =  m.def_submodule("scalar_spectral_polarized").def_submodule(#lib); \
+    list.push_back(__submodule__scalar_spectral_polarized);                     \
     auto __submodule__packet_rgb =  m.def_submodule("packet_rgb").def_submodule(#lib); \
+    list.push_back(__submodule__packet_rgb);                                    \
     auto __submodule__packet_spectral =  m.def_submodule("packet_spectral").def_submodule(#lib); \
+    list.push_back(__submodule__packet_spectral);                               \
 
 
 /// Execute the pybind11 binding function for a set of bindings under a given name

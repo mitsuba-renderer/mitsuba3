@@ -24,16 +24,14 @@ MTS_INLINE auto stof(const std::string &s) {
 }
 
 /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
-template <typename BoundingBox>
-auto bbox_transform(const BoundingBox &bbox) {
-    using Vector3f    = typename BoundingBox::Vector;
-    using Float       = value_t<Vector3f>;
-    using Transform4f = Transform<Float, 4>;
+template <typename Float>
+auto bbox_transform(const BoundingBox<Point<Float, 3>> &bbox) {
+    MTS_IMPORT_CORE_TYPES()
 
-    Vector3f d        = rcp(bbox.max - bbox.min);
-    auto scale_transf = Transform4f::scale(d);
-    Vector3f t        = -1.f * Vector3f(bbox.min.x(), bbox.min.y(), bbox.min.z());
-    auto translation  = Transform4f::translate(t);
+    ScalarVector3f d  = rcp(bbox.max - bbox.min);
+    auto scale_transf = ScalarTransform4f::scale(d);
+    ScalarVector3f t  = -1.f * ScalarVector3f(bbox.min.x(), bbox.min.y(), bbox.min.z());
+    auto translation  = ScalarTransform4f::translate(t);
     return scale_transf * translation;
 }
 
@@ -47,9 +45,7 @@ NAMESPACE_END(detail)
 template <typename Float, size_t expected_channels>
 VolumeMetadata read_binary_volume_data(const std::string &filename,
                                        Vector<DynamicBuffer<Float>, expected_channels> *data) {
-    using Scalar        = scalar_t<Float>;
-    using BoundingBox3f = typename VolumeMetadata::BoundingBox3f;
-    using Point3f       = typename BoundingBox3f::Point;
+    MTS_IMPORT_CORE_TYPES()
 
     VolumeMetadata meta;
     auto fs       = Thread::thread()->file_resolver();
@@ -87,19 +83,20 @@ VolumeMetadata read_binary_volume_data(const std::string &filename,
     float dims[6];
     f.read(reinterpret_cast<char *>(dims), sizeof(float) * 6);
     meta.bbox =
-        BoundingBox3f(Point3f(dims[0], dims[1], dims[2]), Point3f(dims[3], dims[4], dims[5]));
+        ScalarBoundingBox3f(ScalarPoint3f(dims[0], dims[1], dims[2]),
+                            ScalarPoint3f(dims[3], dims[4], dims[5]));
     meta.transform = detail::bbox_transform(meta.bbox);
 
     for (size_t i = 0; i < expected_channels; ++i)
         set_slices((*data)[i], size);
     meta.mean = 0.;
-    meta.max  = -math::Infinity<Float>;
+    meta.max  = -math::Infinity<float>;
     for (size_t i = 0; i < size; ++i) {
         for (size_t j = 0; j < expected_channels; ++j) {
             auto val = detail::read<float>(f);
             slice((*data)[j], i) = val;
             meta.mean += (double) val;
-            meta.max = std::max((Scalar) meta.max, (Scalar) val);
+            meta.max = std::max(meta.max, val);
         }
     }
     meta.mean /= double(size * meta.channel_count);

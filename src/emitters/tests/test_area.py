@@ -42,7 +42,6 @@ def test01_area_construct():
             </emitter>""")
 
 def test02_area_sample_direction():
-    # TODO: test vectorized variant
     shape = example_shape()
     e = shape.emitter()
     # Direction sampling is conditioned on a sampled position
@@ -97,9 +96,51 @@ def test03_area_sample_ray():
     assert np.allclose(ray.time, 0.98)
     assert np.allclose(ray.wavelength, wavs)
     # Position on the light source
-    assert np.allclose(ray.o, [10, -0.4500909,  2.083485])
+    assert np.allclose(ray.o, [10, -0.53524196, 2.22540331])
     # Direction pointing out from the light source, in world coordinates.
     warped = warp.square_to_cosine_hemisphere([0.1, 0.2])
     assert np.allclose(ray.d, Frame3f([-1, 0, 0]).to_world(warped))
     assert np.allclose(weight, wav_weight * shape.surface_area() * Pi)
 
+@fresolver_append_path
+def example_shape_vec(filename = "data/triangle.ply", has_emitter = True):
+    try:
+        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
+    except ImportError:
+        pass
+
+    return load_string_packet("""
+        <shape version='2.0.0' type='ply'>
+            <string name='filename' value='{filename}'/>
+            {emitter}
+            <transform name='to_world'>
+                <translate x='10' y='-1' z='2'/>
+            </transform>
+        </shape>
+    """.format(filename=filename,
+               emitter="<emitter type='area'><spectrum name='radiance' value='1'/></emitter>" if has_emitter else ""))
+
+def test04_area_sample_direction_vec():
+    try:
+        from mitsuba.packet_rgb.render import Interaction3f as Interaction3fX
+        from mitsuba.packet_rgb.core import PacketSize
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
+    shape = example_shape_vec()
+    e = shape.emitter([True] * PacketSize) # TODO this shouldn't be needed
+
+    # Direction sampling is conditioned on a sampled position
+    it = Interaction3fX()
+    it.wavelengths = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]
+    it.p = [[-5, 3, -1], [0, 3, -1], [-5, 0, -1], [-5, 3, 0]] # Some positions
+    it.time = [1.0, 1.0, 1.0, 1.0]
+
+    sample = np.array([[0.5, 0.5], [0.5, 0.5], [0.5, 0.5], [0.5, 0.5]])
+
+    (d_rec, res) = e.sample_direction(it, sample)
+    d = [(d_rec.p[i] - it.p[i]) / np.linalg.norm(d_rec.p[i] - it.p[i]) for i in range(len(it.time))]
+
+    assert np.all(res > 0)
+    assert np.allclose(d_rec.d, d)
+    assert np.all(d_rec.pdf > 1.0)

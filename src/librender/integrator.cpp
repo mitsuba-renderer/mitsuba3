@@ -81,10 +81,6 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, total_blocks, 1),
         [&](const tbb::blocked_range<size_t> &range) {
-            // TODO: we probably don't really want to use that
-            using FloatX = DynamicArray<Packet<ScalarFloat>>;
-            using Point2fX = Point<FloatX, 2>;
-
             ScopedSetThreadEnvironment set_env(env);
             ref<Sampler> sampler = sensor->sampler()->clone();
             ref<ImageBlock> block =
@@ -92,7 +88,6 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
                                film->reconstruction_filter(), 0, true);
             scoped_flush_denormals flush_denormals(true);
 
-            Point2fX points;
             // For each block
             for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                 auto [offset, size] = spiral.next_block();
