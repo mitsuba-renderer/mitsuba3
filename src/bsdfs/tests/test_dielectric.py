@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
 
@@ -33,7 +32,7 @@ def test01_create():
 
 def test02_sample():
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * MTS_WAVELENGTH_SAMPLES
+    si.wavelengths = [532] * 3
     si.wi = [0, 0, 1]
     bsdf = example_bsdf()
 
@@ -42,7 +41,7 @@ def test02_sample():
 
         # Sample reflection
         bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-        assert np.allclose(spec, [0.3] * MTS_WAVELENGTH_SAMPLES)
+        assert np.allclose(spec, [0.3] * 3)
         assert np.allclose(bs.pdf, 0.04)
         assert np.allclose(bs.eta, 1.0)
         assert np.allclose(bs.wo, [0, 0, 1])
@@ -52,9 +51,9 @@ def test02_sample():
         # Sample refraction
         bs, spec = bsdf.sample(ctx, si, 0.05, [0, 0])
         if i == 0:
-            assert np.allclose(spec, [0.6] * MTS_WAVELENGTH_SAMPLES)
+            assert np.allclose(spec, [0.6] * 3)
         else:
-            assert np.allclose(spec, [0.6 / 1.5**2] * MTS_WAVELENGTH_SAMPLES)
+            assert np.allclose(spec, [0.6 / 1.5**2] * 3)
         assert np.allclose(bs.pdf, 1 - 0.04)
         assert np.allclose(bs.eta, 1.5)
         assert np.allclose(bs.wo, [0, 0, -1])
@@ -64,7 +63,7 @@ def test02_sample():
 
 def test03_sample_reverse():
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * MTS_WAVELENGTH_SAMPLES
+    si.wavelengths = [532] * 3
     si.wi = [0, 0, -1]
     bsdf = example_bsdf()
 
@@ -73,7 +72,7 @@ def test03_sample_reverse():
 
         # Sample reflection
         bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-        assert np.allclose(spec, [0.3] * MTS_WAVELENGTH_SAMPLES)
+        assert np.allclose(spec, [0.3] * 3)
         assert np.allclose(bs.pdf, 0.04)
         assert np.allclose(bs.eta, 1.0)
         assert np.allclose(bs.wo, [0, 0, -1])
@@ -83,9 +82,9 @@ def test03_sample_reverse():
         # Sample refraction
         bs, spec = bsdf.sample(ctx, si, 0.05, [0, 0])
         if i == 0:
-            assert np.allclose(spec, [0.6] * MTS_WAVELENGTH_SAMPLES)
+            assert np.allclose(spec, [0.6] * 3)
         else:
-            assert np.allclose(spec, [0.6 * 1.5**2] * MTS_WAVELENGTH_SAMPLES)
+            assert np.allclose(spec, [0.6 * 1.5**2] * 3)
         assert np.allclose(bs.pdf, 1 - 0.04)
         assert np.allclose(bs.eta, 1 / 1.5)
         assert np.allclose(bs.wo, [0, 0, 1])
@@ -95,7 +94,7 @@ def test03_sample_reverse():
 
 def test04_sample_specific_component():
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * MTS_WAVELENGTH_SAMPLES
+    si.wavelengths = [532] * 3
     si.wi = [0, 0, 1]
     bsdf = example_bsdf()
 
@@ -110,7 +109,7 @@ def test04_sample_specific_component():
                 else:
                     ctx.component = 0
                 bs, spec = bsdf.sample(ctx, si, sample, [0, 0])
-                assert np.allclose(spec, [0.3 * 0.04] * MTS_WAVELENGTH_SAMPLES)
+                assert np.allclose(spec, [0.3 * 0.04] * 3)
                 assert np.allclose(bs.pdf, 1.0)
                 assert np.allclose(bs.eta, 1.0)
                 assert np.allclose(bs.wo, [0, 0, 1])
@@ -124,11 +123,9 @@ def test04_sample_specific_component():
                     ctx.component = 1
                 bs, spec = bsdf.sample(ctx, si, sample, [0, 0])
                 if i == 0:
-                    assert np.allclose(spec, [0.6 * (1 - 0.04)] *
-                                       MTS_WAVELENGTH_SAMPLES)
+                    assert np.allclose(spec, [0.6 * (1 - 0.04)] * 3)
                 else:
-                    assert np.allclose(spec, [0.6 * (1 - 0.04) / 1.5**2] *
-                                       MTS_WAVELENGTH_SAMPLES)
+                    assert np.allclose(spec, [0.6 * (1 - 0.04) / 1.5**2] * 3)
                 assert np.allclose(bs.pdf, 1.0)
                 assert np.allclose(bs.eta, 1.5)
                 assert np.allclose(bs.wo, [0, 0, -1])
@@ -138,14 +135,14 @@ def test04_sample_specific_component():
     ctx = BSDFContext()
     ctx.component = 3
     bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-    assert np.all(spec == [0] * MTS_WAVELENGTH_SAMPLES)
+    assert np.all(spec == [0] * 3)
 
 
 def test05_spot_check():
     angle = 80 * np.pi / 180
     ctx = BSDFContext()
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * MTS_WAVELENGTH_SAMPLES
+    si.wavelengths = [532] * 3
     wi = [np.sin(angle), 0, np.cos(angle)]
     si.wi = wi
     bsdf = example_bsdf()

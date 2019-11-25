@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 import mitsuba
-from mitsuba.scalar_rgb.core      import MTS_WAVELENGTH_SAMPLES, Ray3f
+from mitsuba.scalar_rgb.core      import Ray3f
 from mitsuba.scalar_rgb.core.math import Pi
 from mitsuba.scalar_rgb.core.xml  import load_string
 
@@ -53,7 +53,7 @@ def test03_ray_intersect_transform():
         n = 21
         inv_n = 1.0 / n
 
-        wl = np.zeros(MTS_WAVELENGTH_SAMPLES)
+        wl = np.zeros(3)
         for x in range(n):
             for y in range(n):
                 x_coord = r * (2 * (x * inv_n) - 1)
@@ -100,7 +100,7 @@ def test04_sample_direct():
     it = Interaction3f()
     it.p = [0, 0, -3]
     it.t = 0
-    wl = np.zeros(MTS_WAVELENGTH_SAMPLES)
+    wl = np.zeros(3)
     sin_cone_angle = 1.0 / it.p[-1]
     cos_cone_angle = np.sqrt(1 - sin_cone_angle**2)
 

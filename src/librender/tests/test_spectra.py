@@ -5,12 +5,12 @@ import mitsuba
 
 def test01_cie1931():
     """CIE 1931 observer"""
-    XYZw = mitsuba.scalar_rgb.core.cie1931_xyz([600, 600, 600])
-    assert np.allclose(XYZw[0, 0], 1.0622)
-    assert np.allclose(XYZw[0, 1], 0.631)
-    assert np.allclose(XYZw[0, 2], 0.0008)
+    XYZw = mitsuba.scalar_rgb.core.cie1931_xyz(600)
+    assert np.allclose(XYZw[0], 1.0622)
+    assert np.allclose(XYZw[1], 0.631)
+    assert np.allclose(XYZw[2], 0.0008)
 
-    Y = mitsuba.scalar_rgb.core.cie1931_y([600, 600, 600])
+    Y = mitsuba.scalar_rgb.core.cie1931_y(600)
     assert np.allclose(Y, 0.631)
 
 def test02_interpolated():
@@ -93,17 +93,18 @@ def test06_srgb_d65():
         intensity  = (np.max(color) * 2.0) or 1.0
         normalized = np.array(color) / intensity
 
+        srgb_d65 = load_string("""
+            <spectrum version="2.0.0" type="srgb_d65">
+                <rgb name="color" value="{}"/>
+            </spectrum>
+        """.format(', '.join(map(str, color))))
+
         srgb = load_string("""
             <spectrum version="2.0.0" type="srgb">
-                <vector name="color" value="{}"/>
+                <rgb name="color" value="{}"/>
             </spectrum>
         """.format(', '.join(map(str, normalized))))
 
-        srgb_d65 = load_string("""
-            <spectrum version="2.0.0" type="srgb_d65">
-                <vector name="color" value="{}"/>
-            </spectrum>
-        """.format(', '.join(map(str, color))))
 
         assert np.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
                            d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)))

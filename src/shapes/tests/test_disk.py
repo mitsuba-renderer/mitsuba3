@@ -5,7 +5,6 @@ import mitsuba
 from mitsuba.scalar_rgb.core      import Ray3f
 from mitsuba.scalar_rgb.core.xml  import load_string
 from mitsuba.scalar_rgb.core.math import Pi
-from mitsuba.scalar_rgb.core      import MTS_WAVELENGTH_SAMPLES
 
 UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
 
@@ -64,7 +63,7 @@ def test03_ray_intersect():
             # grid size
             n = 10
 
-            wl = np.zeros(MTS_WAVELENGTH_SAMPLES)
+            wl = np.zeros(3)
 
             xx = np.linspace(-1, 1, n)
             yy = np.linspace(-1, 1, n)

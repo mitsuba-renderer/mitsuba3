@@ -177,6 +177,5 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
         weakref.dec_ref();
     });
 
-    for (auto& submodule : submodule_list)
-        (void) py::weakref(submodule.attr("Object"), cleanup_callback).release();
+    (void) py::weakref(submodule_list[0].attr("Object"), cleanup_callback).release();
 }

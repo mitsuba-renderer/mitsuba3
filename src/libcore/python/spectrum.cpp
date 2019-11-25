@@ -18,10 +18,10 @@ MTS_PY_EXPORT(Spectrum) {
         "wavelengths"_a, D(pdf_uniform_spectrum));
 
     if constexpr (is_spectral_v<Spectrum>) {
-        m.def("spectrum_to_xyz", vectorize<Float>(&spectrum_to_xyz<Float, MTS_WAVELENGTH_SAMPLES>),
+        m.def("spectrum_to_xyz", vectorize<Float>(&spectrum_to_xyz<Float, array_size_v<Spectrum>>),
               "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz));
 
-        m.attr("MTS_WAVELENGTH_SAMPLES") = MTS_WAVELENGTH_SAMPLES;
+        m.attr("MTS_WAVELENGTH_SAMPLES") = array_size_v<Spectrum>;
         m.attr("MTS_WAVELENGTH_MIN")     = MTS_WAVELENGTH_MIN;
         m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
     }

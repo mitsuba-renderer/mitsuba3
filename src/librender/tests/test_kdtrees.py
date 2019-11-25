@@ -1,4 +1,4 @@
-from mitsuba.scalar_rgb.core import Properties, Ray3f, MTS_WAVELENGTH_SAMPLES
+from mitsuba.scalar_rgb.core import Properties, Ray3f
 from mitsuba.scalar_rgb.render import ShapeKDTree, Mesh, SurfaceInteraction3f, Scene
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.test.util import fresolver_append_path
@@ -28,7 +28,7 @@ def test01_depth_scalar_stairs():
 
     n = 128
     inv_n = 1.0 / (n-1)
-    wavelengths = np.zeros(MTS_WAVELENGTH_SAMPLES)
+    wavelengths = np.zeros(3)
 
     for x in range(n - 1):
         for y in range(n - 1):
@@ -65,7 +65,7 @@ def test02_depth_scalar_bunny():
 
     n = 100
     inv_n = 1.0 / (n - 1)
-    wavelengths = np.zeros(MTS_WAVELENGTH_SAMPLES)
+    wavelengths = np.zeros(3)
 
     for x in range(n):
         for y in range(n):
@@ -98,7 +98,7 @@ def test03_depth_packet_stairs():
     inv_n = 1.0 / (n - 1)
     rays = Ray3fX(n * n)
     d = np.array([0, 0, -1])
-    wavelengths = np.zeros(MTS_WAVELENGTH_SAMPLES)
+    wavelengths = np.zeros(3)
 
     for x in range(n):
         for y in range(n):

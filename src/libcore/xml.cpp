@@ -402,10 +402,12 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
     src.modified = true;
 }
 
-static std::pair<std::string, std::string>
-parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
-         Tag parent_tag, Properties &props, ParameterList &param,
-         size_t &arg_counter, int depth, bool within_emitter = false) {
+static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseContext &ctx,
+                                                     pugi::xml_node &node, Tag parent_tag,
+                                                     Properties &props, ParameterList &param,
+                                                     size_t &arg_counter, int depth,
+                                                     bool within_emitter = false,
+                                                     bool within_spectrum = false) {
     try {
         if (!param.empty()) {
             for (auto attr: node.attributes()) {
@@ -528,7 +530,8 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         auto [arg_name, nested_id] =
                             parse_xml(src, ctx, ch, tag, props_nested, param,
                                       arg_counter_nested, depth + 1,
-                                      node_name == "emitter");
+                                      node_name == "emitter",
+                                      node_name == "spectrum");
                         if (!nested_id.empty())
                             props_nested.set_named_reference(arg_name, nested_id);
                     }
@@ -711,21 +714,24 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")",
                                         node.attribute("value").value());
 
-                    Properties props2(within_emitter ? "srgb_d65" : "srgb");
                     Color3f col;
                     try {
                         col = Color3f(detail::stof(tokens[0]),
                                       detail::stof(tokens[1]),
                                       detail::stof(tokens[2]));
-
-                        props2.set_color("color", col);
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
 
-                    ref<Object> obj = PluginManager::instance()->create_object(
-                        props2, Class::for_name("Texture", ctx.variant));
-                    props.set_object(node.attribute("name").value(), obj);
+                    if (!within_spectrum) {
+                        Properties props2(within_emitter ? "srgb_d65" : "srgb");
+                        props2.set_color("color", col);
+                        ref<Object> obj = PluginManager::instance()->create_object(
+                            props2, Class::for_name("Texture", ctx.variant));
+                        props.set_object(node.attribute("name").value(), obj);
+                    } else {
+                        props.set_color("color", col);
+                    }
                 }
                 break;
 

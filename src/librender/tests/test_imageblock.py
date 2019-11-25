@@ -4,11 +4,11 @@ import os
 import pytest
 
 from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, PixelFormat, float_dtype
-from mitsuba.scalar_rgb.core import cie1931_xyz, \
-                         MTS_WAVELENGTH_SAMPLES as N_SAMPLES
+from mitsuba.scalar_rgb.core import cie1931_xyz
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import ImageBlock
 
+N_SAMPLES = 3
 
 def convert_to_xyz(wavelengths, spectrum):
     responses = cie1931_xyz(wavelengths)

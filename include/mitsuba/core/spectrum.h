@@ -12,10 +12,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if !defined(MTS_WAVELENGTH_SAMPLES)
-#  define MTS_WAVELENGTH_SAMPLES 4
-#endif
-
 #if !defined(MTS_WAVELENGTH_MIN)
 #  define MTS_WAVELENGTH_MIN 360.f
 #endif

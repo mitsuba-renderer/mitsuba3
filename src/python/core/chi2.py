@@ -470,7 +470,6 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     """
 
     try:
-        from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
         from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
         from mitsuba.packet_rgb.core.xml import load_string
     except ImportError:
@@ -479,7 +478,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     def make_context(n):
         si = SurfaceInteraction3fX(n)
         si.wi = np.tile(wi, (n, 1))
-        si.wavelengths = np.full((n, MTS_WAVELENGTH_SAMPLES),
+        si.wavelengths = np.full((n, 3),
                                  532, dtype=float_dtype)
         return (si, BSDFContext())
 
@@ -515,7 +514,6 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
     """
     try:
         from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
-        from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES
         from mitsuba.packet_rgb.core.xml import load_string
     except ImportError:
         pass
@@ -529,7 +527,7 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
                        cos_theta], dtype=float_dtype)
         si = SurfaceInteraction3fX(n)
         si.wi = np.tile(wi, (n, 1))
-        si.wavelengths = np.full((n, MTS_WAVELENGTH_SAMPLES),
+        si.wavelengths = np.full((n, 3),
                                  532, dtype=float_dtype)
         return (si, BSDFContext())
 
