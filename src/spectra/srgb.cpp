@@ -11,20 +11,19 @@ public:
     MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, Texture)
     MTS_IMPORT_TYPES()
 
-    static constexpr size_t kChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
-
     SRGBSpectrum(const Properties &props) {
         ScalarColor3f color = props.color("color");
-        if (any(color < 0 || color > 1) && !props.bool_("within_emitter"))
+
+        if (any(color < 0 || color > 1))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 
-        if constexpr (is_monochrome_v<Spectrum>) {
-            m_coeff = luminance(color);
+        if constexpr (is_spectral_v<Spectrum>) {
+            m_coeff = srgb_model_fetch(color);
         } else if constexpr (is_rgb_v<Spectrum>) {
             m_coeff = color;
         } else {
-            static_assert(is_spectral_v<Spectrum>);
-            m_coeff = srgb_model_fetch(color);
+            static_assert(is_monochrome_v<Spectrum>);
+            m_coeff = luminance(color);
         }
     }
 
@@ -42,7 +41,7 @@ public:
             else
                 return srgb_model_mean(m_coeff);
         } else {
-            return hsum_nested(m_coeff) / (ScalarFloat) kChannelCount;
+            return hmean_nested(m_coeff);
         }
     }
 
@@ -53,8 +52,13 @@ public:
 #endif
 
 protected:
-    /// Depending on the color mode, either a spectral model coefficient or RGB color
-    Array<Float, kChannelCount> m_coeff;
+    /**
+     * Depending on the compiled variant, this plugin either stores coefficients
+     * for a spectral upsampling model, or a plain RGB/monochromatic value.
+     */
+    static constexpr size_t ChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
+
+    Array<Float, ChannelCount> m_coeff;
 };
 
 MTS_EXPORT_PLUGIN(SRGBSpectrum, "sRGB spectrum")

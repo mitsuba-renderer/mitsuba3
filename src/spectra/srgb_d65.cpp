@@ -13,29 +13,40 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     SRGBEmitterSpectrum(const Properties &props) {
-        if constexpr (is_rgb_v<Spectrum>)
-            Throw("SRGBEmitterSpectrum being used in RGB mode. An SRGBSpectrum should "
-                  " most likely be used instead");
-        if (props.has_property("scale") && props.has_property("value"))
-            Throw("Cannot specify both 'scale' and 'value'.");
+        if constexpr (!is_spectral_v<Spectrum>)
+            Throw("The 'srgb_d65' plugin can only be used in spectral mode.");
 
         ScalarColor3f color = props.color("color");
-        ScalarFloat intensity = hmax(color) * 2.f;
-        color /= intensity;
 
-        m_coeff = srgb_model_fetch(color);
+        if constexpr (is_spectral_v<Spectrum>) {
+            /* Evaluate the spectral upsampling model. This requires a
+               reflectance value (colors in [0, 1]) which is accomplished here by
+               scaling. We use a color where the highest component is 50%,
+               which generally yields a fairly smooth spectrum. */
+            ScalarFloat scale = hmax(color) * 2.f;
+            if (scale != 0.f)
+                color /= scale;
 
-        Properties props2("d65");
-        ScalarFloat value =
-            props.float_(props.has_property("scale") ? "scale" : "value", 1.f);
-        props2.set_float("value", value * intensity);
-        PluginManager *pmgr = PluginManager::instance();
-        m_d65 = (Texture *) pmgr->create_object<Texture>(props2)->expand().at(0).get();
+            m_coeff = srgb_model_fetch(color);
+
+            Properties props2("d65");
+            props2.set_float("scale", props.float_("scale", 1.f) * scale);
+            PluginManager *pmgr = PluginManager::instance();
+            m_d65 = (Texture *) pmgr->create_object<Texture>(props2)->expand().at(0).get();
+        } else if constexpr (is_rgb_v<Spectrum>) {
+            m_coeff = color;
+        } else {
+            static_assert(is_monochrome_v<Spectrum>);
+            m_coeff = luminance(color);
+        }
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        return m_d65->eval(si, active) *
-               srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
+        if constexpr (is_spectral_v<Spectrum>)
+            return m_d65->eval(si, active) *
+                   srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
+        else
+            return m_coeff;
     }
 
 #if defined(MTS_ENABLE_AUTODIFF)
@@ -45,7 +56,13 @@ public:
 #endif
 
 private:
-    Vector3f m_coeff;
+    /**
+     * Depending on the compiled variant, this plugin either stores coefficients
+     * for a spectral upsampling model, or a plain RGB/monochromatic value.
+     */
+    static constexpr size_t ChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
+
+    Array<Float, ChannelCount> m_coeff;
     ref<Texture> m_d65;
 };
 

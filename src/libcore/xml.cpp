@@ -35,8 +35,8 @@ NAMESPACE_BEGIN(xml)
 
 // Set of supported XML tags
 enum class Tag {
-    Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
-    Color, Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
+    Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB, SRGB,
+    Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
     NamedReference, Include, Alias, Default, Invalid
 };
 
@@ -139,6 +139,7 @@ void register_class(const Class *class_) {
         (*tags)["ref"]        = Tag::NamedReference;
         (*tags)["spectrum"]   = Tag::Spectrum;
         (*tags)["rgb"]        = Tag::RGB;
+        (*tags)["srgb"]       = Tag::SRGB;
         (*tags)["include"]    = Tag::Include;
         (*tags)["alias"]      = Tag::Alias;
         (*tags)["default"]    = Tag::Default;
@@ -726,15 +727,6 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     if (!within_emitter && any(col < 0 || col > 1))
                         src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
 
-                    if (ctx.color_mode == ColorMode::Monochrome) {
-                        // Replace sRGB spectrum by a constant value (no D65 either).
-                        ScalarFloat lum = luminance(props2.color("color"));
-                        props2 = Properties("uniform");
-                        props2.set_float("value", lum);
-                    } else if (ctx.color_mode == ColorMode::RGB) {
-                        // Even inside of emitter, we never use D65 in RGB mode.
-                        props2.set_plugin_name("srgb");
-                    }
                     ref<Object> obj = PluginManager::instance()->create_object(
                         props2, Class::for_name("Texture", ctx.variant));
                     props.set_object(node.attribute("name").value(), obj);
