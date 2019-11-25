@@ -125,8 +125,8 @@ public:
             } else if constexpr (is_monochrome_v<Spectrum>) {
                 // Convert to luminance
                 ScalarFloat lum;
-                if constexpr (ChannelCount <= 3)
-                    lum = luminance(raw);
+                if constexpr (ChannelCount == 3)
+                    lum = luminance(ScalarColor3f(raw));
                 else
                     lum = hsum(raw) / ChannelCount;
                 mean += (double) lum;

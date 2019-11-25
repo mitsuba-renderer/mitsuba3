@@ -116,10 +116,10 @@ public:
         if constexpr (is_monochrome_v<Spectrum>) {
             xyz = depolarize(value).x();
         } else if constexpr (is_rgb_v<Spectrum>) {
-            xyz = rgb_to_xyz(depolarize(value), active);
+            xyz = srgb_to_xyz(depolarize(value), active);
         } else {
             static_assert(is_spectral_v<Spectrum>);
-            xyz = to_xyz(depolarize(value), wavelengths, active);
+            xyz = spectrum_to_xyz(depolarize(value), wavelengths, active);
         }
         Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.f);
         return put(pos, values.data(), active);

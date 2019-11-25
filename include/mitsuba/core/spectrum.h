@@ -12,6 +12,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+#if !defined(MTS_WAVELENGTH_SAMPLES)
+#  define MTS_WAVELENGTH_SAMPLES 4
+#endif
+
 #if !defined(MTS_WAVELENGTH_MIN)
 #  define MTS_WAVELENGTH_MIN 360.f
 #endif
@@ -83,6 +87,7 @@ struct Spectrum
     ENOKI_ARRAY_IMPORT(Base, Spectrum)
 };
 
+/// Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.
 template <typename T>
 constexpr depolarize_t<T> depolarize(const T& spectrum) {
     if constexpr (std::is_same_v<depolarize_t<T>, T>)
@@ -131,28 +136,28 @@ extern MTS_EXPORT_CORE const float *cie1931_z_data;
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
  * in nanometers
  */
-template <typename T, typename Expr = expr_t<T>,
-          typename Result = Array<Expr, 3>>
-Result cie1931_xyz(const T &wavelengths, mask_t<Expr> active = true) {
-    using Index = int_array_t<Expr>;
+template <typename Float, typename Result = Array<Float, 3>>
+Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
+    using Int32 = int32_array_t<Float>;
 
-    Expr t = (wavelengths - MTS_CIE_MIN) *
+    Float t = (wavelength - MTS_CIE_MIN) *
              ((MTS_CIE_SAMPLES - 1) / (MTS_CIE_MAX - MTS_CIE_MIN));
 
-    active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
+    active &= wavelength >= MTS_CIE_MIN &&
+              wavelength <= MTS_CIE_MAX;
 
-    Index i0 = clamp(Index(t), zero<Index>(), Index(MTS_CIE_SAMPLES - 2)),
+    Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Expr v0_x = gather<Expr>(cie1931_x_data, i0, active),
-         v1_x = gather<Expr>(cie1931_x_data, i1, active),
-         v0_y = gather<Expr>(cie1931_y_data, i0, active),
-         v1_y = gather<Expr>(cie1931_y_data, i1, active),
-         v0_z = gather<Expr>(cie1931_z_data, i0, active),
-         v1_z = gather<Expr>(cie1931_z_data, i1, active);
+    Float v0_x = gather<Float>(cie1931_x_data, i0, active),
+          v1_x = gather<Float>(cie1931_x_data, i1, active),
+          v0_y = gather<Float>(cie1931_y_data, i0, active),
+          v1_y = gather<Float>(cie1931_y_data, i1, active),
+          v0_z = gather<Float>(cie1931_z_data, i0, active),
+          v1_z = gather<Float>(cie1931_z_data, i1, active);
 
-    Expr w1 = t - Expr(i0),
-         w0 = 1.f - w1;
+    Float w1 = t - Float(i0),
+          w0 = 1.f - w1;
 
     return Result(fmadd(w0, v0_x, w1 * v1_x),
                   fmadd(w0, v0_y, w1 * v1_y),
@@ -163,62 +168,68 @@ Result cie1931_xyz(const T &wavelengths, mask_t<Expr> active = true) {
  * \brief Evaluate the CIE 1931 Y color matching function given a wavelength in
  * nanometers
  */
-template <typename T, typename Expr = expr_t<T>>
-Expr cie1931_y(const T &wavelengths, mask_t<Expr> active = true) {
-    using Index = int_array_t<Expr>;
 
-    Expr t = (wavelengths - MTS_CIE_MIN) *
+template <typename Float>
+Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
+    using Int32 = int32_array_t<Float>;
+
+    Float t = (wavelength - MTS_CIE_MIN) *
              ((MTS_CIE_SAMPLES - 1) / (MTS_CIE_MAX - MTS_CIE_MIN));
 
-    active &= wavelengths >= MTS_CIE_MIN && wavelengths <= MTS_CIE_MAX;
+    active &= wavelength >= MTS_CIE_MIN &&
+              wavelength <= MTS_CIE_MAX;
 
-    Index i0 = clamp(Index(t), zero<Index>(), Index(MTS_CIE_SAMPLES - 2)),
+    Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Expr v0 = gather<Expr>(cie1931_y_data, i0, active),
-         v1 = gather<Expr>(cie1931_y_data, i1, active);
+    Float v0 = gather<Float>(cie1931_y_data, i0, active),
+          v1 = gather<Float>(cie1931_y_data, i1, active);
 
-    Expr w1 = t - Expr(i0),
-         w0 = 1.f - w1;
+    Float w1 = t - Float(i0),
+          w0 = 1.f - w1;
 
-    return fmadd(w0, v0, w1 * v1) & active;
+    return select(active, fmadd(w0, v0, w1 * v1), 0.f);
 }
 
 /// Spectral responses to XYZ.
-template <typename Spectrum, typename Value = value_t<Spectrum>>
-Array<Value, 3> to_xyz(const Spectrum &value, const Spectrum &wavelengths,
-                       mask_t<Value> active = true) {
-    auto XYZw = cie1931_xyz(wavelengths, active);
-    return Array<Value, 3>(enoki::hmean(XYZw.x() * value),
-                           enoki::hmean(XYZw.y() * value),
-                           enoki::hmean(XYZw.z() * value));
+template <typename Float, size_t Size>
+Array<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
+                                const Spectrum<Float, Size> &wavelengths,
+                                mask_t<Float> active = true) {
+    Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
+    return { hmean(XYZ.x() * value),
+             hmean(XYZ.y() * value),
+             hmean(XYZ.z() * value) };
 }
 
-/// RGB to XYZ color conversion.
-template <typename Spectrum, typename Value = value_t<Spectrum>>
-Array<Value, 3> rgb_to_xyz(const Spectrum &rgb, mask_t<Value> /*active*/ = true) {
-    using ScalarMatrix3f = enoki::Matrix<scalar_t<Value>, 3>;
-    static_assert(Spectrum::Size == 3);
-    // sRGB to XYZ conversion matrix.
-    // Source: http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
-    const ScalarMatrix3f M(0.4124564f, 0.3575761f, 0.1804375f,
-                           0.2126729f, 0.7151522f, 0.0721750f,
-                           0.0193339f, 0.1191920f, 0.9503041f);
-    // Vector<Value, 3> rgb(value.x(), value.y(), value.z());
+/// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
+template <typename Float>
+Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, mask_t<Float> /*active*/ = true) {
+    using ScalarMatrix3f = enoki::Matrix<scalar_t<Float>, 3>;
+    const ScalarMatrix3f M(0.412453f, 0.357580f, 0.180423f,
+                           0.212671f, 0.715160f, 0.072169f,
+                           0.019334f, 0.119193f, 0.950227f);
     return M * rgb;
 }
 
-template <typename Spectrum>
-value_t<Spectrum> luminance(const Spectrum &value,
-                            const Spectrum &wavelengths,
-                            mask_t<Spectrum> active = true) {
+/// Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB
+template <typename Float>
+Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &rgb, mask_t<Float> /*active*/ = true) {
+    using ScalarMatrix3f = enoki::Matrix<scalar_t<Float>, 3>;
+    const ScalarMatrix3f M(3.240479f, -1.537150f, -0.498535f,
+                          -0.969256f,  1.875991f,  0.041556f,
+                           0.055648f, -0.204043f,  1.057311f);
+    return M * rgb;
+}
+
+template <typename Float, size_t Size>
+Float luminance(const Spectrum<Float, Size> &value,
+                const Spectrum<Float, Size> &wavelengths,
+                mask_t<Float> active = true) {
     return hmean(cie1931_y(wavelengths, active) * value);
 }
 
-template <typename Value> Value luminance(const Color<Value, 3> &c) {
-    return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
-}
-template <typename Value> Value luminance(const Vector<Value, 3> &c) {
+template <typename Float> Float luminance(const Color<Float, 3> &c) {
     return c[0] * 0.212671f + c[1] * 0.715160f + c[2] * 0.072169f;
 }
 

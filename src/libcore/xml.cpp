@@ -84,22 +84,21 @@ using Float = float;
 MTS_IMPORT_CORE_TYPES()
 
 /// Throws if non-whitespace characters are found after the given index.
-void check_whitespace_only(const std::string &s, size_t offset) {
+static void check_whitespace_only(const std::string &s, size_t offset) {
     for (size_t i = offset; i < s.size(); ++i) {
-        if (!std::isspace(static_cast<unsigned char>(s[i])))
-            Throw("Invalid trailing characters while parsing float from string"
-                  " \"%s\"", s);
+        if (!std::isspace(s[i]))
+            Throw("Invalid trailing characters in floating point number \"%s\"", s);
     }
 }
 
-inline Float stof(const std::string &s) {
+static Float stof(const std::string &s) {
     size_t offset = 0;
     Float result = std::stof(s, &offset);
     check_whitespace_only(s, offset);
     return result;
 }
 
-inline int64_t stoll(const std::string &s) {
+static int64_t stoll(const std::string &s) {
     size_t offset = 0;
     int64_t result = std::stoll(s, &offset);
     check_whitespace_only(s, offset);
@@ -231,7 +230,7 @@ struct XMLObject {
 };
 
 enum class ColorMode {
-    Monochrome,
+    Monochromatic,
     RGB,
     Spectral
 };
@@ -239,7 +238,7 @@ enum class ColorMode {
 template <typename Float, typename Spectrum>
 ColorMode variant_to_color_mode() {
     if constexpr (is_monochrome_v<Spectrum>)
-        return ColorMode::Monochrome;
+        return ColorMode::Monochromatic;
     else if constexpr (is_rgb_v<Spectrum>)
         return ColorMode::RGB;
     else if constexpr (is_spectral_v<Spectrum>)
@@ -713,7 +712,6 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                         node.attribute("value").value());
 
                     Properties props2(within_emitter ? "srgb_d65" : "srgb");
-                    props2.set_bool("within_emitter", within_emitter);
                     Color3f col;
                     try {
                         col = Color3f(detail::stof(tokens[0]),
@@ -724,8 +722,6 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
-                    if (!within_emitter && any(col < 0 || col > 1))
-                        src.throw_error(node, "invalid RGB reflectance value, must be in the range [0, 1]!");
 
                     ref<Object> obj = PluginManager::instance()->create_object(
                         props2, Class::for_name("Texture", ctx.variant));
@@ -746,24 +742,22 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
                         }
 
-                        if (ctx.color_mode == ColorMode::Spectral && within_emitter)
+                        if (ctx.color_mode == ColorMode::Spectral && within_emitter) {
                             props2.set_plugin_name("d65");
-                        else if (ctx.color_mode == ColorMode::Monochrome)
-                            value /= MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN;
-                        props2.set_float("value", value);
+                            props2.set_float("scale", value);
+                        } else {
+                            props2.set_float("value", value);
+                        }
 
                         ref<Object> obj = PluginManager::instance()->create_object(
                             props2, Class::for_name("Texture", ctx.variant));
-                        auto expanded   = obj->expand();
-                        if (expanded.size() == 1)
+                        auto expanded = obj->expand();
+                        Assert(expanded.size() <= 1);
+                        if (!expanded.empty())
                             obj = expanded[0];
                         props.set_object(node.attribute("name").value(), obj);
 
                     } else {
-                        if (ctx.color_mode == ColorMode::RGB)
-                            Throw("Not implemented yet: wav:value spectrum specification in RGB "
-                                  "mode");
-
                         /* Parse wavelength:value pairs, where wavelengths are expected to be
                            specified in increasing order. Automatically detect whether wavelengths
                            are regularly sampled, and instantiate the appropriate spectrum plugin. */
@@ -771,16 +765,11 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         bool is_regular = true;
                         Float interval = 0.f;
 
-                        /* Values are scaled so that integrating the spectrum against the CIE curves
-                           and converting to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */
-                        Float unit_conversion = 1.f;
-                        if (within_emitter)
-                            unit_conversion = 100.f / 10568.f;
-
                         for (const std::string &token : tokens) {
                             std::vector<std::string> pair = string::tokenize(token, ":");
                             if (pair.size() != 2)
                                 src.throw_error(node, "invalid spectrum (expected wavelength:value pairs)");
+
                             Float wavelength, value;
                             try {
                                 wavelength = detail::stof(pair[0]);
@@ -789,19 +778,19 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                                 src.throw_error(node, "could not parse wavelength:value pair: \"%s\"", token);
                             }
 
-                            value *= unit_conversion;
                             wavelengths.push_back(wavelength);
                             values.push_back(value);
 
                             size_t n = wavelengths.size();
                             if (n <= 1)
                                 continue;
+
                             Float distance = (wavelengths[n - 1] - wavelengths[n - 2]);
                             if (distance < 0.f)
                                 src.throw_error(node, "wavelengths must be specified in increasing order");
                             if (n == 2)
                                 interval = distance;
-                            else if ((distance - interval) > math::Epsilon<Float>)
+                            else if (distance - interval > math::Epsilon<Float>)
                                 is_regular = false;
                         }
 
@@ -816,32 +805,52 @@ parse_xml(XMLSource &src, XMLParseContext &ctx, pugi::xml_node &node,
                         ref<Object> obj = PluginManager::instance()->create_object(
                             props2, Class::for_name("Texture", ctx.variant));
 
-                        if (ctx.color_mode == ColorMode::Monochrome) {
-                            /* Monochrome mode: replace by the equivalent uniform spectrum by
-                             * pre-integrating against the CIE Y matching curve. */
-#if 0
-                            auto *spectrum = (Texture *) obj.get();
-                            double average  = 0;
+                        if (ctx.color_mode != ColorMode::Spectral) {
+                            Color3f color = zero<Color3f>();
 
-                            for (Color1f wav = MTS_WAVELENGTH_MIN; all(wav <= MTS_WAVELENGTH_MAX);
-                             wav += 1.f) {
-                                Color1f Yw = cie1931_y(wav);
-                                average += (Yw * spectrum->eval(wav)).x();
+                            const int steps = 1000;
+                            for (int i = 0; i < steps; ++i) {
+                                Float x = MTS_WAVELENGTH_MIN +
+                                          (i / (Float)(steps - 1)) *
+                                              (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+
+                                if (x < wavelengths.front() ||
+                                    x > wavelengths.back())
+                                    continue;
+
+                                // Find interval containing 'x'
+                                UInt32 index = math::find_interval(
+                                    wavelengths.size(),
+                                    [&](uint32_t idx) {
+                                        return wavelengths[idx] <= x;
+                                    });
+
+                                Float x0 = wavelengths[index],
+                                      x1 = wavelengths[index + 1],
+                                      y0 = values[index],
+                                      y1 = values[index + 1];
+
+                                // Linear interpolant at 'x'
+                                Float y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
+
+                                Color3f xyz = cie1931_xyz(x);
+                                color += xyz * y;
                             }
-                            if (within_emitter)
-                                average /= MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN;
-                            else
-                                // Divide by the integral of the CIE y matching curve
-                                average *= 0.0093583;
 
-                            props2 = Properties("uniform");
-                            props2.set_float("value", average);
+                            color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Float) steps;
+
+                            Properties props2;
+
+                            if (ctx.color_mode == ColorMode::Monochromatic) {
+                                props2 = Properties("uniform");
+                                props2.set_float("value", luminance(color));
+                            } else {
+                                props2 = Properties(within_emitter ? "srgb_d65" : "srgb");
+                                props2.set_color("color", color);
+                            }
+
                             obj = PluginManager::instance()->create_object(
                                 props2, Class::for_name("Texture", ctx.variant));
-#else
-                            Throw("Not implemented yet: interpolated spectrum conversion in "
-                                  "Monochrome mode");
-#endif
                         }
 
                         props.set_object(node.attribute("name").value(), obj);
