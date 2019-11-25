@@ -18,6 +18,8 @@ def test02_interpolated():
 
     try:
         from mitsuba.scalar_spectral.core.xml import load_string
+        from mitsuba.scalar_spectral.render import PositionSample3f
+        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
     except:
         pytest.skip("scalar_spectral mode not enabled")
 
@@ -27,7 +29,9 @@ def test02_interpolated():
         <float name='lambda_max' value='830'/>
     </spectrum>
     """)
-    assert np.allclose(d65.eval([350, 456, 700, 840]), [0, 117.49, 71.6091, 0])
+
+    ps = PositionSample3f()
+    assert np.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])), [0, 117.49, 71.6091, 0])
 
 def test04_d65():
     """d65: Spot check the model in a few places, the chi^2 test will ensure
@@ -35,11 +39,15 @@ def test04_d65():
 
     try:
         from mitsuba.scalar_spectral.core.xml import load_string
+        from mitsuba.scalar_spectral.render import PositionSample3f
+        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
     except:
         pytest.skip("scalar_spectral mode not enabled")
 
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
-    assert np.allclose(d65.eval([350, 456, 700, 840]),
+    ps = PositionSample3f()
+
+    assert np.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
                        np.array([0, 117.49, 71.6091, 0]) / 10568.0)
 
 def test05_blackbody():
@@ -48,13 +56,16 @@ def test05_blackbody():
 
     try:
         from mitsuba.scalar_spectral.core.xml import load_string
+        from mitsuba.scalar_spectral.render import PositionSample3f
+        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
     except:
         pytest.skip("scalar_spectral mode not enabled")
 
     bb = load_string("""<spectrum version='2.0.0' type='blackbody'>
         <float name='temperature' value='5000'/>
     </spectrum>""")
-    assert np.allclose(bb.eval([350, 456, 700, 840]),
+    ps = PositionSample3f()
+    assert np.allclose(bb.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
                        [0, 10997.9, 11812, 0])
 
 def test06_srgb_d65():
@@ -64,6 +75,8 @@ def test06_srgb_d65():
     try:
         from mitsuba.scalar_spectral.core.xml import load_string
         from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_SAMPLES
+        from mitsuba.scalar_spectral.render import PositionSample3f
+        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
     except:
         pytest.skip("scalar_spectral mode not enabled")
 
@@ -71,7 +84,9 @@ def test06_srgb_d65():
     wavelengths = np.linspace(300, 800, MTS_WAVELENGTH_SAMPLES)
     wavelengths += (10 * np.random.uniform(size=wavelengths.shape)).astype(np.int)
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
-    d65_eval = d65.eval(wavelengths)
+
+    ps = PositionSample3f()
+    d65_eval = d65.eval(SurfaceInteraction3f(ps, wavelengths))
 
     for color in [[0, 0, 0], [1, 1, 1], [0.1, 0.2, 0.3], [34, 0.1, 62],
                   [0.001, 0.02, 11.4]]:
@@ -80,18 +95,18 @@ def test06_srgb_d65():
 
         srgb = load_string("""
             <spectrum version="2.0.0" type="srgb">
-                <color name="color" value="{}"/>
+                <vector name="color" value="{}"/>
             </spectrum>
         """.format(', '.join(map(str, normalized))))
 
         srgb_d65 = load_string("""
             <spectrum version="2.0.0" type="srgb_d65">
-                <color name="color" value="{}"/>
+                <vector name="color" value="{}"/>
             </spectrum>
         """.format(', '.join(map(str, color))))
 
-        assert np.allclose(srgb_d65.eval(wavelengths),
-                           d65_eval * intensity * srgb.eval(wavelengths))
+        assert np.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
+                           d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)))
 
 def test07_sample_rgb_spectrum():
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will

@@ -4,7 +4,7 @@ import pytest
 from mitsuba.scalar_rgb.core import warp
 from mitsuba.scalar_rgb.core.math import InvFourPi, Epsilon
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import ContinuousSpectrum, PositionSample3f, Interaction3f
+from mitsuba.scalar_rgb.render import PositionSample3f, Interaction3f
 
 
 def example_emitter(spectrum = "1.0", extra = ""):

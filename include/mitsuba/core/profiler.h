@@ -33,7 +33,7 @@ enum class ProfilerPhase : int {
     EndpointEvaluate,           /* Endpoint::eval() and Endpoint::pdf() */
     EndpointSampleRay,          /* Endpoint::sample_ray() */
     EndpointSampleDirection,    /* Endpoint::sample_direction() */
-    SpectrumEval,               /* ContinuousSpectrum::eval() */
+    TextureEval,                /* Texture::eval() */
 
     ProfilerPhaseCount
 };

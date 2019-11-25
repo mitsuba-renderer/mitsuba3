@@ -68,6 +68,7 @@ def test03_area_sample_ray():
     try:
         from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_SAMPLES
         from mitsuba.scalar_spectral.core.xml import load_string as load_string_spectral
+        from mitsuba.scalar_spectral.render import SurfaceInteraction3f as SurfaceInteraction3fS
     except ImportError:
         pytest.skip("scalar_spectral mode not enabled")
 
@@ -88,7 +89,8 @@ def test03_area_sample_ray():
     # Shifted wavelength sample
     wav_sample = 0.44 + np.arange(MTS_WAVELENGTH_SAMPLES) / float(MTS_WAVELENGTH_SAMPLES)
     wav_sample[wav_sample >= 1.0] -= 1.0
-    (wavs, wav_weight) = radiance.sample(wav_sample)
+
+    (wavs, wav_weight) = radiance.sample(SurfaceInteraction3fS(), wav_sample)
 
     (ray, weight) = e.sample_ray(time=0.98, sample1=wav_sample[0],
                                  sample2=[0.4, 0.6], sample3=[0.1, 0.2])
