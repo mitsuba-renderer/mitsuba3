@@ -91,6 +91,10 @@ public:
         return true;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("radiance", m_radiance.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "ConstantBackgroundEmitter[" << std::endl

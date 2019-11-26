@@ -55,6 +55,10 @@ public:
 
     ScalarFloat mean() const override { return m_value; }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("value", m_value);
+    }
+
     std::string to_string() const override {
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }

@@ -24,6 +24,10 @@ const Class *Object::class_() const {
     return m_class;
 }
 
+void Object::traverse(TraversalCallback *callback) { }
+
+void Object::parameters_changed() { }
+
 std::string Object::id() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << (void *) this << "]";

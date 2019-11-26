@@ -58,6 +58,12 @@ public:
         return 0.f;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("specular_reflectance", m_specular_reflectance.get());
+        callback->put_object("eta", m_eta.get());
+        callback->put_object("k", m_k.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothConductor[" << std::endl

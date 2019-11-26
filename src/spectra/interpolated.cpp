@@ -93,7 +93,7 @@ public:
     }
 
     /// Note: this assumes that the wavelengths and number of entries have not changed.
-    void parameters_changed() {
+    void parameters_changed() override {
         // TODO: copy values to CPU to compute CDF?
 
         // Update CDF, normalization and integral from the new values

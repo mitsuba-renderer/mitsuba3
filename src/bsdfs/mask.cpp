@@ -97,6 +97,11 @@ public:
         return clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("opacity", m_opacity.get());
+        callback->put_object("nested_bsdf", m_nested_bsdf.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Mask[" << std::endl

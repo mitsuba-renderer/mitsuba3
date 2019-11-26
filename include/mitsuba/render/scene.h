@@ -182,6 +182,11 @@ protected:
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
+    void traverse(TraversalCallback *callback) override {
+        for (auto child : m_children)
+            callback->put_object(child->id(), child.get());
+    }
+
 protected:
     /// Acceleration data structure (type depends on implementation)
     void *m_accel = nullptr;

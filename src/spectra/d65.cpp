@@ -53,6 +53,10 @@ public:
         return { ref<Object>(pmgr->create_object<Base>(props)) };
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale", m_scale);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "D65Spectrum[" << std::endl

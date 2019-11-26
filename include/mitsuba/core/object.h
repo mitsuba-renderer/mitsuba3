@@ -6,6 +6,20 @@
 #include <mitsuba/core/class.h>
 
 NAMESPACE_BEGIN(mitsuba)
+/**
+ * \brief Abstract class providing an interface for scene traversal mechanism
+ */
+class TraversalCallback {
+public:
+    virtual ~TraversalCallback() = default;
+    template <typename T> void put_parameter(const std::string &name, T &t) {
+        put_parameter_impl(name, typeid(T), &t);
+    }
+    virtual void put_object(const std::string &name, Object *obj) = 0;
+protected:
+    virtual void put_parameter_impl(const std::string &name, const std::type_info &type,
+                                    void *ptr) = 0;
+};
 
 /**
  * \brief Object base class with builtin reference counting
@@ -60,6 +74,20 @@ public:
      * supported by any Mitsuba object, hence it is located this level.
      */
     virtual std::vector<ref<Object>> expand() const;
+
+    /**
+     * \brief Expand the object into a list of sub-objects and return them
+     *
+     * Default implementation does nothing.
+     */
+    virtual void traverse(TraversalCallback *callback);
+
+    /**
+     * \brief Update internal data structures after applying changes to parameters
+     *
+     * Default implementation does nothing.
+     */
+    virtual void parameters_changed();
 
     /**
      * \brief Return a \ref Class instance containing run-time type information

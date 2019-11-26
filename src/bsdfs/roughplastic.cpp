@@ -238,6 +238,13 @@ public:
         return result;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("alpha", m_alpha);
+        callback->put_parameter("eta", m_eta);
+        callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
+        callback->put_object("specular_reflectance", m_specular_reflectance.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughPlastic[" << std::endl

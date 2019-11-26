@@ -94,18 +94,31 @@
     void instantiate_##name(py::module m)                                       \
 
 
-#define PY_CAST_VARIANTS(Name)                                                  \
-    if (auto tmp = dynamic_cast<Name<float, Color<float, 3>> *>(o); tmp)        \
+/// Cast an Object pointer ('o') to the corresponding python object
+#define PY_CAST_OBJECT(Type)                                                    \
+    if (auto tmp = dynamic_cast<Type *>(o); tmp)                                \
         return py::cast(tmp);                                                   \
-    if (auto tmp = dynamic_cast<Name<float, Color<float, 1>> *>(o); tmp)        \
-        return py::cast(tmp);                                                   \
-    if (auto tmp = dynamic_cast<Name<float, Spectrum<float, 4>> *>(o); tmp)     \
-        return py::cast(tmp);                                                   \
-    if (auto tmp = dynamic_cast<Name<float, MuellerMatrix<Spectrum<float, 4>>> *>(o); tmp) \
-        return py::cast(tmp);                                                   \
-    if (auto tmp = dynamic_cast<Name<Packet<float>, Color<Packet<float>, 3>> *>(o); tmp) \
-        return py::cast(tmp);                                                   \
-    if (auto tmp = dynamic_cast<Name<Packet<float>, Spectrum<Packet<float>, 4>> *>(o); tmp) \
-        return py::cast(tmp);                                                   \
+
+
+/// Cast any variants of an Object pointer to the corresponding python object
+#define PY_CAST_OBJECT_VARIANTS(Name)                                           \
+    PY_CAST_OBJECT(PYBIND11_TYPE(Name<float, Color<float, 3>>))                 \
+    PY_CAST_OBJECT(PYBIND11_TYPE(Name<float, Color<float, 1>>))                 \
+    PY_CAST_OBJECT(PYBIND11_TYPE(Name<float, Spectrum<float, 4>>))              \
+    PY_CAST_OBJECT(PYBIND11_TYPE(Name<float, MuellerMatrix<Spectrum<float, 4>>>)) \
+    PY_CAST_OBJECT(PYBIND11_TYPE(Name<Packet<float>, Color<Packet<float>, 3>>)) \
+    PY_CAST_OBJECT(PYBIND11_TYPE(Name<Packet<float>, Spectrum<Packet<float>, 4>>)) \
+
+
+/// Cast a void pointer ('ptr') to the corresponding python object given a std::type_info 'type'
+#define PY_CAST(Type)                                                           \
+    if (std::string(type.name()) == std::string(typeid(Type).name()))           \
+        return py::cast(static_cast<Type *>(ptr));                              \
+
+
+/// Cast any variants of a void pointer ('ptr') to the corresponding python object
+#define PY_CAST_VARIANTS(Type)                                                  \
+    PY_CAST(PYBIND11_TYPE(typename CoreAliases<float>::Type))                   \
+    PY_CAST(PYBIND11_TYPE(typename CoreAliases<Packet<float>>::Type))           \
 
 

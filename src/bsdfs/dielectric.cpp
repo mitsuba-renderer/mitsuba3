@@ -106,6 +106,12 @@ public:
         return 0.f;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("eta", m_eta);
+        callback->put_object("specular_reflectance", m_specular_reflectance.get());
+        callback->put_object("specular_transmittance", m_specular_transmittance.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothDielectric[" << std::endl

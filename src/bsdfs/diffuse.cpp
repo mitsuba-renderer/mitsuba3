@@ -69,6 +69,10 @@ public:
         return select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("reflectance", m_reflectance.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothDiffuse[" << std::endl

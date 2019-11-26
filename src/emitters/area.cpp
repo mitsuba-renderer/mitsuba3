@@ -78,6 +78,10 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("radiance", m_radiance.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "AreaLight[" << std::endl

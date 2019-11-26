@@ -105,6 +105,12 @@ public:
         return clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("weight", m_weight.get());
+        callback->put_object("bsdf_0", m_nested_bsdf[0].get());
+        callback->put_object("bsdf_1", m_nested_bsdf[1].get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "BlendBSDF[" << std::endl

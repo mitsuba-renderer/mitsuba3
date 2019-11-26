@@ -320,6 +320,12 @@ public:
 
     ScalarSize effective_primitive_count() const override { return 1; }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("center", m_center);
+        callback->put_parameter("radius", m_radius);
+        Base::traverse(callback);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Sphere[" << std::endl

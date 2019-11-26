@@ -45,6 +45,10 @@ public:
         }
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("coeff", m_coeff);
+    }
+
 protected:
     /**
      * Depending on the compiled variant, this plugin either stores coefficients

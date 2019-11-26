@@ -59,6 +59,12 @@ public:
         return .5f * (m_color0->mean() + m_color1->mean());
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("transform", m_transform);
+        callback->put_object("color0", m_color0.get());
+        callback->put_object("color1", m_color1.get());
+    }
+
 protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;

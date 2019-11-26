@@ -124,6 +124,11 @@ public:
         return result;
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("nested_brdf_0", m_nested_brdf[0].get());
+        callback->put_object("nested_brdf_1", m_nested_brdf[1].get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "TwoSided[" << std::endl

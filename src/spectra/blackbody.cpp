@@ -168,6 +168,10 @@ public:
         return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("temperature", m_temperature);
+    }
+
 private:
     ScalarFloat m_temperature;
     ScalarFloat m_integral_min;

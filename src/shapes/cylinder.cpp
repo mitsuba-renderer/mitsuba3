@@ -308,6 +308,12 @@ public:
 
     ScalarSize effective_primitive_count() const override { return 1; }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("radius", m_radius);
+        callback->put_parameter("length", m_length);
+        Base::traverse(callback);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Cylinder[" << std::endl

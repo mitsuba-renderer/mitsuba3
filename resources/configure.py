@@ -80,7 +80,7 @@ def write_core_config(f, enabled, default_mode):
     f.write('NAMESPACE_END(mitsuba)\n')
 
 
-def write_python_config(f, enabled):
+def write_python_config(f, enabled, float_types):
     def w(s):
         f.write(s.ljust(79) + ' \\\n')
 
@@ -138,13 +138,30 @@ def write_python_config(f, enabled):
     w('    void instantiate_##name(py::module m)')
     f.write('\n\n')
 
-    w('#define PY_CAST_VARIANTS(Name)')
-    for index, (name, float_, spectrum) in enumerate(enabled):
-        spectrum = spectrum.replace('Float', float_)
-        w('    if (auto tmp = dynamic_cast<Name<%s, %s> *>(o); tmp)' % (float_, spectrum))
-        w('        return py::cast(tmp);')
+    f.write('/// Cast an Object pointer (\'o\') to the corresponding python object\n')
+    w('#define PY_CAST_OBJECT(Type)')
+    w('    if (auto tmp = dynamic_cast<Type *>(o); tmp)')
+    w('        return py::cast(tmp);')
     f.write('\n\n')
 
+    f.write('/// Cast any variants of an Object pointer to the corresponding python object\n')
+    w('#define PY_CAST_OBJECT_VARIANTS(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        spectrum = spectrum.replace('Float', float_)
+        w('    PY_CAST_OBJECT(PYBIND11_TYPE(Name<%s, %s>))' % (float_, spectrum))
+    f.write('\n\n')
+
+    f.write('/// Cast a void pointer (\'ptr\') to the corresponding python object given a std::type_info \'type\'\n')
+    w('#define PY_CAST(Type)')
+    w('    if (std::string(type.name()) == std::string(typeid(Type).name()))')
+    w('        return py::cast(static_cast<Type *>(ptr));')
+    f.write('\n\n')
+
+    f.write('/// Cast any variants of a void pointer (\'ptr\') to the corresponding python object\n')
+    w('#define PY_CAST_VARIANTS(Type)')
+    for index, float_ in enumerate(float_types):
+        w('    PY_CAST(PYBIND11_TYPE(typename CoreAliases<%s>::Type))' % (float_))
+    f.write('\n\n')
 
 def write_to_file_if_changed(filename, contents):
     """Writes the given contents to file, only if they do not already match."""
@@ -196,5 +213,5 @@ if __name__ == '__main__':
 
     fname = realpath(join(root, "include/mitsuba/python/config.h"))
     output = StringIO()
-    write_python_config(output, enabled)
+    write_python_config(output, enabled, float_types)
     write_to_file_if_changed(fname, output.getvalue())

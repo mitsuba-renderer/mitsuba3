@@ -79,6 +79,10 @@ public:
         return m_world_transform->translation_bounds();
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("intensity", m_intensity.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "PointLight[" << std::endl

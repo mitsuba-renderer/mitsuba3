@@ -148,6 +148,12 @@ public:
         return select(active, result, 0.f);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("alpha_u", m_alpha_u);
+        callback->put_parameter("alpha_v", m_alpha_v);
+        callback->put_object("eta", m_eta.get());
+        callback->put_object("k", m_k.get());
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;

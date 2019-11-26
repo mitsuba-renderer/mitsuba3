@@ -50,6 +50,10 @@ public:
 
     ScalarFloat max() const override { NotImplementedError("max"); }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("color", m_color.get());
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Constant3D[" << std::endl

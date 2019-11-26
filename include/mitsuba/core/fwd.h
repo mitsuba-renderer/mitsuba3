@@ -84,6 +84,10 @@ template <typename Float_> struct CoreAliases {
     using UInt64  =  uint64_array_t<Float>;
     using Float64 = float64_array_t<Float>;
 
+    // Only used for casting parameters to python object
+    using Array1f  = Array<Float, 1>;
+    using Array3f  = Array<Float, 3>;
+
     using Vector1i = Vector<Int32, 1>;
     using Vector2i = Vector<Int32, 2>;
     using Vector3i = Vector<Int32, 3>;
