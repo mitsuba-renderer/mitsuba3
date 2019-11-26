@@ -14,7 +14,6 @@ def interaction():
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
     si.sh_frame = Frame3f(si.n)
-    si.wavelengths = [300, 450, 520]
     return si
 
 

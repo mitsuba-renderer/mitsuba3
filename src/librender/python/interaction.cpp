@@ -68,6 +68,8 @@ MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
             .def_method(SurfaceInteraction3f, compute_partials)
             .def_method(SurfaceInteraction3f, has_uv_partials)
             .def_repr(SurfaceInteraction3f);
+
+        // TODO
         // bind_slicing_operators<SurfaceInteraction3f, SurfaceInteraction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
     }
 }

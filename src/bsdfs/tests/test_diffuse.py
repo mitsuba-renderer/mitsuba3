@@ -22,7 +22,6 @@ def test02_eval_pdf():
     si.n  = [0, 0, 1]
     si.wi = [0, 0, 1]
     si.sh_frame = Frame3f(si.n)
-    si.wavelengths = [1, 1, 1]
 
     ctx = BSDFContext()
 

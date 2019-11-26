@@ -38,8 +38,7 @@ MTS_PY_EXPORT_STRUCT(Transform) {
             .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
             .def_repr(Transform3f);
 
-        // TODO
-        // bind_slicing_operators<Transform3f, ScalarTransform3f>(trans);
+        bind_slicing_operators<Transform3f, ScalarTransform3f>(trans);
     }
 
     MTS_PY_CHECK_ALIAS(Transform4f, m) {

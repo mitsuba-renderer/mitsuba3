@@ -14,13 +14,15 @@ NAMESPACE_BEGIN(mitsuba)
  * behave differently under homogeneous coordinate transformations, hence
  * the need to represent them using separate types)
  */
-template <typename Float_, size_t Size> struct Transform {
+template <typename Point_> struct Transform {
 
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
 
-    using Float   = Float_;
+    static constexpr size_t Size = Point_::Size;
+
+    using Float   = value_t<Point_>;
     using Matrix  = enoki::Matrix<Float, Size>;
     using Mask    = mask_t<Float>;
     using Scalar  = scalar_t<Float>;
@@ -46,11 +48,6 @@ template <typename Float_, size_t Size> struct Transform {
     Transform(const Matrix &value)
         : matrix(value),
           inverse_transpose(enoki::inverse_transpose(value)) { }
-
-    template <typename T>
-    Transform(const Transform<T, Size> &other)
-        : matrix(static_cast<Matrix>(other.matrix)),
-          inverse_transpose(static_cast<Matrix>(other.inverse_transpose)) { }
 
     /// Concatenate transformations
     MTS_INLINE Transform operator*(const Transform &other) const {
@@ -326,7 +323,7 @@ template <typename Float_, size_t Size> struct Transform {
 
     /// Extract a lower-dimensional submatrix
     template <size_t ExtractedSize = Size - 1,
-              typename Result = Transform<Float, ExtractedSize>>
+              typename Result = Transform<Point<Float, ExtractedSize>>>
     MTS_INLINE Result extract() const {
         Result result;
         for (size_t i = 0; i < ExtractedSize - 1; ++i) {
@@ -420,7 +417,7 @@ public:
     // TODO move this method definition to transform.cpp
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
     template <typename T>
-    Transform<T, 4> eval(T time, mask_t<T> active = true) const {
+    Transform<Point<T, 4>> eval(T time, mask_t<T> active = true) const {
         using Index        = uint32_array_t<T>;
         using Value        = replace_scalar_t<T, Float>; // ensure we are working with Float32
         using Matrix3f     = Matrix<Value, 3>;
@@ -435,7 +432,7 @@ public:
 
         // Perhaps the transformation isn't animated
         if (likely(size() <= 1))
-            return Transform<T, 4>(m_transform.matrix);
+            return Transform<Point<T, 4>>(m_transform.matrix);
 
         // Look up the interval containing 'time'
         Index idx0 = math::find_interval(
@@ -468,7 +465,7 @@ public:
                  trans1 = gather<Vector3f, Stride, false>(m_keyframes.data() + TransOffset, idx1, active),
                  trans = trans0 * (1 - t) + trans1 * t;
 
-        return Transform<T, 4>(
+        return Transform<Point<T, 4>>(
             enoki::transform_compose(scale, quat, trans),
             enoki::transform_compose_inverse(scale, quat, trans)
         );
@@ -518,8 +515,8 @@ private:
 //! @{ \name Printing
 // -----------------------------------------------------------------------
 
-template <typename Float, size_t Size>
-std::ostream &operator<<(std::ostream &os, const Transform<Float, Size> &t) {
+template <typename Point>
+std::ostream &operator<<(std::ostream &os, const Transform<Point> &t) {
     os << t.matrix;
     return os;
 }

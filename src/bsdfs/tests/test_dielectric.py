@@ -32,7 +32,6 @@ def test01_create():
 
 def test02_sample():
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * 3
     si.wi = [0, 0, 1]
     bsdf = example_bsdf()
 
@@ -63,7 +62,6 @@ def test02_sample():
 
 def test03_sample_reverse():
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * 3
     si.wi = [0, 0, -1]
     bsdf = example_bsdf()
 
@@ -94,7 +92,6 @@ def test03_sample_reverse():
 
 def test04_sample_specific_component():
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * 3
     si.wi = [0, 0, 1]
     bsdf = example_bsdf()
 
@@ -142,7 +139,6 @@ def test05_spot_check():
     angle = 80 * np.pi / 180
     ctx = BSDFContext()
     si = SurfaceInteraction3f()
-    si.wavelengths = [532] * 3
     wi = [np.sin(angle), 0, np.cos(angle)]
     si.wi = wi
     bsdf = example_bsdf()

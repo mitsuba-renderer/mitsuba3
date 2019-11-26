@@ -240,7 +240,7 @@ public:  // Type-specific getters and setters ----------------------------------
             const std::string &name, ref<AnimatedTransform> def_val) const;
     /// Retrieve an animated transformation (default value is a constant transform)
     ref<AnimatedTransform> animated_transform(const std::string &name,
-                                              const Transform<Float, 4> &def_val) const;
+                                              const Transform<Point4f> &def_val) const;
 
     /// Store an arbitrary object in the Properties instance
     void set_object(const std::string &name, const ref<Object> &value, bool warn_duplicates = true);

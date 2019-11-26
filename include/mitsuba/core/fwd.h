@@ -59,7 +59,7 @@ template <typename Value, size_t Size>       struct Point;
 template <typename Value, size_t Size>       struct Normal;
 template <typename Value, size_t Size>       struct Color;
 template <typename Value, size_t Size>       struct Spectrum;
-template <typename Value, size_t Size>       struct Transform;
+template <typename Point>                    struct Transform;
 template <typename Point, typename Spectrum> struct Ray;
 template <typename Point, typename Spectrum> struct RayDifferential;
 template <typename Point>                    struct BoundingBox;
@@ -147,8 +147,8 @@ template <typename Float_> struct CoreAliases {
     using BoundingSphere4f = BoundingSphere<Point4f>;
 
     using Frame3f          = Frame<Float>;
-    using Transform3f      = Transform<Float, 3>;
-    using Transform4f      = Transform<Float, 4>;
+    using Transform3f      = Transform<Point3f>;
+    using Transform4f      = Transform<Point4f>;
 
     using DiscreteDistribution = DiscreteDistribution<Float>;
 
