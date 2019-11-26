@@ -147,9 +147,6 @@ public:
 
     /// Clear everything to zero.
     void clear() { m_bitmap->clear(); }
-#if defined(MTS_ENABLE_AUTODIFF)
-    void clear_d();
-#endif
 
     // =============================================================
     //! @{ \name Accesors
@@ -192,14 +189,6 @@ public:
     /// Return a pointer to the underlying bitmap representation (const version)
     const Bitmap *bitmap() const { return m_bitmap.get(); }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    /// Return the differentiable variables representing the image (one per channel)
-    std::vector<FloatD> &bitmap_d() { return m_bitmap_d; }
-
-    /// Return the differentiable variable representing the image (one per channel)
-    const std::vector<FloatD> &bitmap_d() const { return m_bitmap_d; }
-#endif
-
     //! @}
     // =============================================================
 
@@ -216,10 +205,6 @@ protected:
     const ReconstructionFilter *m_filter;
     Float  *m_weights_x  , *m_weights_y;
     bool m_warn, m_normalize;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    std::vector<FloatD> m_bitmap_d;
-#endif
 };
 
 MTS_EXTERN_CLASS(ImageBlock)

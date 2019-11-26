@@ -85,11 +85,6 @@ public:
             return gather<Index3, sizeof(ScalarIndex)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
         }
-#if defined(MTS_ENABLE_AUTODIFF)
-        else {
-            return gather<Index3, sizeof(Index)>(m_faces_d, index, active);
-        }
-#endif
     }
 
     /// Returns the world-space position of the vertex with index \c index
@@ -104,11 +99,6 @@ public:
             return gather<Point3f, sizeof(ScalarFloat)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
         }
-#if defined(MTS_ENABLE_AUTODIFF)
-        else {
-            return gather<Point3f, sizeof(ScalarFloat)>(m_vertex_positions_d, index, active);
-        }
-#endif
     }
 
     /// Returns the normal direction of the vertex with index \c index
@@ -123,11 +113,6 @@ public:
             return gather<Normal3f, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
         }
-#if defined(MTS_ENABLE_AUTODIFF)
-        else {
-            return gather<Normal3f, sizeof(ScalarFloat)>(m_vertex_normals_d, index, active);
-        }
-#endif
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
@@ -141,11 +126,6 @@ public:
             return gather<Point2f, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
         }
-#if defined(MTS_ENABLE_AUTODIFF)
-        else {
-            return gather<Point2f, sizeof(ScalarFloat)>(m_vertex_texcoords_d, index, active);
-        }
-#endif
     }
 
     /// Returns the surface area of the face with index \c index
@@ -327,12 +307,6 @@ protected:
     bool m_disable_vertex_normals = false;
 
 #if defined(MTS_ENABLE_AUTODIFF)
-    /* Differentiable versions of the above */
-    Point3uD m_faces_d;
-    Point3fD m_vertex_positions_d;
-    Normal3fD m_vertex_normals_d;
-    Point2fD m_vertex_texcoords_d;
-
     RTcontext m_optix_context = nullptr;
     RTgeometrytriangles m_optix_geometry = nullptr;
     RTbuffer m_optix_faces_buf = nullptr;

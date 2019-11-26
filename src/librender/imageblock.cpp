@@ -110,91 +110,92 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     return active;
 }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-template <typename Float, typename Spectrum>
-MaskD ImageBlock<Float, Spectrum>::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
-    Assert(m_filter != nullptr);
+// TODO remove this
+// #if defined(MTS_ENABLE_AUTODIFF)
+// template <typename Float, typename Spectrum>
+// MaskD ImageBlock<Float, Spectrum>::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
+//     Assert(m_filter != nullptr);
 
-    uint32_t channels = (uint32_t) m_bitmap->channel_count();
-    MaskD is_valid(true);
+//     uint32_t channels = (uint32_t) m_bitmap->channel_count();
+//     MaskD is_valid(true);
 
-    // Check if all sample values are valid
-    if (m_warn) {
-        MaskD is_valid = true;
-        for (size_t k = 0; k < channels; ++k)
-            is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
+//     // Check if all sample values are valid
+//     if (m_warn) {
+//         MaskD is_valid = true;
+//         for (size_t k = 0; k < channels; ++k)
+//             is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
 
-        if (any(active && !is_valid))
-            Log(Warn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
+//         if (any(active && !is_valid))
+//             Log(Warn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
 
-        active &= is_valid;
-    }
+//         active &= is_valid;
+//     }
 
-    Vector2i size = Vector2i(m_bitmap->size());
+//     Vector2i size = Vector2i(m_bitmap->size());
 
-    // Convert to pixel coordinates within the image block
-    Point2fD pos = pos_ - (m_offset - m_border_size + .5f);
+//     // Convert to pixel coordinates within the image block
+//     Point2fD pos = pos_ - (m_offset - m_border_size + .5f);
 
-    // Determine the affected range of pixels
-    Float filter_radius = m_filter->radius();
-    Point2iD lo = max(ceil2int <Point2iD>(pos - filter_radius), 0),
-             hi = min(floor2int<Point2iD>(pos + filter_radius), size - 1);
+//     // Determine the affected range of pixels
+//     Float filter_radius = m_filter->radius();
+//     Point2iD lo = max(ceil2int <Point2iD>(pos - filter_radius), 0),
+//              hi = min(floor2int<Point2iD>(pos + filter_radius), size - 1);
 
-    Point2fD base = lo - pos;
+//     Point2fD base = lo - pos;
 
-    while (m_bitmap->channel_count() != m_bitmap_d.size())
-        m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));
+//     while (m_bitmap->channel_count() != m_bitmap_d.size())
+//         m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));
 
-    /// Subtraction of 2*math::Epsilon ensures that we only do 1 scatter_add
-    /// instead of the conservative 4 when using the box filter
-    int n = (int) std::ceil((m_filter->radius() - 2*math::Epsilon) * 2);
-    std::vector<FloatD> weights_x_d(n), weights_y_d(n);
+//     /// Subtraction of 2*math::Epsilon ensures that we only do 1 scatter_add
+//     /// instead of the conservative 4 when using the box filter
+//     int n = (int) std::ceil((m_filter->radius() - 2*math::Epsilon) * 2);
+//     std::vector<FloatD> weights_x_d(n), weights_y_d(n);
 
-    for (int k = 0; k < n; ++k) {
-        Point2fD p = base + (Float) k;
-        weights_x_d[k] = m_filter->eval(p.x());
-        weights_y_d[k] = m_filter->eval(p.y());
-    }
+//     for (int k = 0; k < n; ++k) {
+//         Point2fD p = base + (Float) k;
+//         weights_x_d[k] = m_filter->eval(p.x());
+//         weights_y_d[k] = m_filter->eval(p.y());
+//     }
 
-    if (ENOKI_UNLIKELY(m_normalize)) {
-        FloatD wx = 0.f, wy = 0.f;
-        for (int k = 0; k < n; ++k) {
-            wx += weights_x_d[k];
-            wy += weights_y_d[k];
-        }
+//     if (ENOKI_UNLIKELY(m_normalize)) {
+//         FloatD wx = 0.f, wy = 0.f;
+//         for (int k = 0; k < n; ++k) {
+//             wx += weights_x_d[k];
+//             wy += weights_y_d[k];
+//         }
 
-        FloatD factor = rcp(wx * wy);
-        for (int k = 0; k < n; ++k)
-            weights_x_d[k] *= factor;
-    }
+//         FloatD factor = rcp(wx * wy);
+//         for (int k = 0; k < n; ++k)
+//             weights_x_d[k] *= factor;
+//     }
 
-    for (int yr = 0; yr < n; ++yr) {
-        Int32D y = lo.y() + yr;
-        MaskD enabled = active && y <= hi.y();
+//     for (int yr = 0; yr < n; ++yr) {
+//         Int32D y = lo.y() + yr;
+//         MaskD enabled = active && y <= hi.y();
 
-        for (int xr = 0; xr < n; ++xr) {
-            Int32D x     = lo.x() + xr,
-                   index = y * (int32_t) size.x() + x;
+//         for (int xr = 0; xr < n; ++xr) {
+//             Int32D x     = lo.x() + xr,
+//                    index = y * (int32_t) size.x() + x;
 
-            enabled &= x <= hi.x();
+//             enabled &= x <= hi.x();
 
-            FloatD weight = weights_x_d[xr] * weights_y_d[yr];
-            for (uint32_t k = 0; k < channels; ++k)
-                scatter_add(m_bitmap_d[k], value[k] * weight, index, enabled);
-        }
-    }
+//             FloatD weight = weights_x_d[xr] * weights_y_d[yr];
+//             for (uint32_t k = 0; k < channels; ++k)
+//                 scatter_add(m_bitmap_d[k], value[k] * weight, index, enabled);
+//         }
+//     }
 
-    return active;
-}
+//     return active;
+// }
 
-template <typename Float, typename Spectrum>
-void ImageBlock<Float, Spectrum>::clear_d() {
-    m_bitmap_d.resize(m_bitmap->channel_count());
-    for (size_t i = 0; i < m_bitmap_d.size(); ++i)
-        m_bitmap_d[i] = zero<FloatD>(hprod(m_bitmap->size()));
-}
+// template <typename Float, typename Spectrum>
+// void ImageBlock<Float, Spectrum>::clear_d() {
+//     m_bitmap_d.resize(m_bitmap->channel_count());
+//     for (size_t i = 0; i < m_bitmap_d.size(); ++i)
+//         m_bitmap_d[i] = zero<FloatD>(hprod(m_bitmap->size()));
+// }
 
-#endif
+// #endif
 
 template <typename Float, typename Spectrum>
 std::string ImageBlock<Float, Spectrum>::to_string() const {

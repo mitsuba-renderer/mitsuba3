@@ -48,16 +48,6 @@ public:
             m_fixed_max    = true;
             m_metadata.max = props.float_("max_value");
         }
-
-#if defined(MTS_ENABLE_AUTODIFF)
-        // Copy parsed data over to the GPU
-        if constexpr(is_monochrome_v<Spectrum>) {
-            m_data_d = CUDAArray<Float>::copy(m_data.data(), m_size);
-        } else {
-            for (int i = 0; i < 3; ++i)
-                m_data_d[i] = CUDAArray<Float>::copy(m_data[i].data(), m_size);
-        }
-#endif
     }
 
     Spectrum eval(const Interaction3f &it, Mask active) const override {
@@ -130,15 +120,7 @@ public:
 
         auto wgather = [&](const Index &index) {
             using VectorNf = Array<Float, m_channel_count>;
-            // TODO: unify this
-            if constexpr (!is_diff_array_v<Index>) {
-                return gather<VectorNf>(m_data.data(), index, active);
-            }
-#if defined(MTS_ENABLE_AUTODIFF)
-            else {
-                return gather<VectorNf>(m_data_d, index, active);
-            }
-#endif
+            return gather<VectorNf>(m_data.data(), index, active);
         };
 
         // (z * ny + y) * nx + x
@@ -205,22 +187,17 @@ public:
 
     }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "data", m_data);
-    }
+    // TODO
+    // void parameters_changed() override {
+    //     Base::parameters_changed();
 
-    void parameters_changed() override {
-        Base::parameters_changed();
+    //     auto acc = hsum(hsum(detach(m_data)))[0];
+    //     m_metadata.mean = (double) acc / (double) (m_size * 3);
+    //     if (!m_fixed_max)
+    //         m_metadata.max  = hmax(hmax(m_data))[0];
+    // }
 
-        auto acc = hsum(hsum(detach(m_data)))[0];
-        m_metadata.mean = (double) acc / (double) (m_size * 3);
-        if (!m_fixed_max)
-            m_metadata.max  = hmax(hmax(m_data))[0];
-    }
-
-    size_t data_size() const override { return m_data.size(); }
-#endif
+    // size_t data_size() const override { return m_data.size(); }
 
 protected:
     DataBuffer m_data;

@@ -14,12 +14,6 @@ public:
     SpectrumfP eval(const Interaction3fP &it, MaskP active) const override {
         PYBIND11_OVERLOAD(SpectrumfP, Texture3D, eval, it, active);
     }
-#if defined(MTS_ENABLE_AUTODIFF)
-    SpectrumfD eval(const Interaction3fD &it,
-                    const MaskD &active) const override {
-        PYBIND11_OVERLOAD(SpectrumfD, Texture3D, eval, it, active);
-    }
-#endif
     Float mean() const override { PYBIND11_OVERLOAD(Float, Texture3D, mean); }
     Float max() const override { PYBIND11_OVERLOAD(Float, Texture3D, max); }
     Vector3i resolution() const override { PYBIND11_OVERLOAD(Vector3i, Texture3D, resolution); }
@@ -40,12 +34,6 @@ MTS_PY_EXPORT(Texture3D) {
              vectorize_wrapper(py::overload_cast<const Interaction3fP &, MaskP>(
                  &Texture3D::eval, py::const_)),
              D(Texture3D, eval), "it"_a, "active"_a = true)
-#if defined(MTS_ENABLE_AUTODIFF)
-        .def("eval",
-             py::overload_cast<const Interaction3fD &, const MaskD &>(
-                 &Texture3D::eval, py::const_),
-             D(Texture3D, eval), "it"_a, "active"_a = true)
-#endif
         .def("eval_gradient",
              py::overload_cast<const Interaction3f &, bool>(&Texture3D::eval_gradient,
                                                             py::const_),
@@ -54,12 +42,6 @@ MTS_PY_EXPORT(Texture3D) {
              vectorize_wrapper(py::overload_cast<const Interaction3fP &, MaskP>(
                  &Texture3D::eval_gradient, py::const_)),
              D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
-#if defined(MTS_ENABLE_AUTODIFF)
-        .def("eval_gradient",
-             py::overload_cast<const Interaction3fD &, const MaskD &>(
-                 &Texture3D::eval_gradient, py::const_),
-             D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
-#endif
         .def_method(Texture3D, mean)
         .def_method(Texture3D, max)
         .def_method(Texture3D, bbox)

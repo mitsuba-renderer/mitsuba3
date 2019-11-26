@@ -73,10 +73,6 @@ public:
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(m_bitmap->size(), luminance.get());
         m_d65 = Texture::D65(1.f);
-
-#if defined(MTS_ENABLE_AUTODIFF)
-        m_bitmap_d = FloatC::copy(m_bitmap->data(), hprod(m_bitmap->size()) * 3);
-#endif
     }
 
     void set_scene(const Scene *scene) override {
@@ -188,23 +184,13 @@ protected:
         UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
 
         Vector4f v00, v10, v01, v11;
-        if constexpr (is_diff_array_v<Float>) {
-#if defined(MTS_ENABLE_AUTODIFF)
-            uint32_t width = (uint32_t) m_bitmap->size().x();
-            v00            = gather<Vector4f>(m_bitmap_d, index, active);
-            v10            = gather<Vector4f>(m_bitmap_d, index + 1u, active);
-            v01            = gather<Vector4f>(m_bitmap_d, index + width, active);
-            v11            = gather<Vector4f>(m_bitmap_d, index + width + 1u, active);
-#endif
-        } else {
-            uint32_t width   = (uint32_t) m_bitmap->size().x() * 4;
-            const Float *ptr = (const Float *) m_bitmap->data();
+        uint32_t width   = (uint32_t) m_bitmap->size().x() * 4;
+        const Float *ptr = (const Float *) m_bitmap->data();
 
-            v00 = gather<Vector4f>(ptr, index, active);
-            v10 = gather<Vector4f>(ptr + 4, index, active);
-            v01 = gather<Vector4f>(ptr + width, index, active);
-            v11 = gather<Vector4f>(ptr + width + 4, index, active);
-        }
+        v00 = gather<Vector4f>(ptr, index, active);
+        v10 = gather<Vector4f>(ptr + 4, index, active);
+        v01 = gather<Vector4f>(ptr + width, index, active);
+        v11 = gather<Vector4f>(ptr + width + 4, index, active);
 
         if constexpr (is_monochrome_v<Spectrum>) {
             // Only one channel is enough here
@@ -243,10 +229,6 @@ protected:
     Warp m_warp;
     ref<Texture> m_d65;
     ScalarFloat m_scale;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    FloatD m_bitmap_d;
-#endif
 };
 
 MTS_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter");

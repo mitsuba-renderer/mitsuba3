@@ -45,12 +45,6 @@ public:
         }
     }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "coeff", m_coeff_d);
-    }
-#endif
-
 protected:
     /**
      * Depending on the compiled variant, this plugin either stores coefficients

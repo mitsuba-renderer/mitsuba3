@@ -91,11 +91,12 @@ const Float *cie1931_z_data = nullptr;
 static Float *cie_alloc() {
     Float *src = (Float *) cie1931_tbl;
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
-    src = (Float *) cuda_host_malloc(size);
-    memcpy(src, cie1931_tbl, size);
-#endif
+// TODO
+// #if defined(MTS_ENABLE_AUTODIFF)
+//     const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
+//     src = (Float *) cuda_host_malloc(size);
+//     memcpy(src, cie1931_tbl, size);
+// #endif
 
     cie1931_x_data = src;
     cie1931_y_data = src + MTS_CIE_SAMPLES;

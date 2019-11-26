@@ -88,18 +88,13 @@ public:
         m_size_minus_2 = uint32_t(size - 2);
 
         m_cdf.resize(size);
-#if defined(MTS_ENABLE_AUTODIFF)
-        // Copy parsed data over to the GPU
-        m_data_d = CUDAArray<Float>::copy(m_data.data(), m_data.size());
-#endif
+
         parameters_changed();
     }
 
     /// Note: this assumes that the wavelengths and number of entries have not changed.
     void parameters_changed() {
-#if defined(MTS_ENABLE_AUTODIFF)
         // TODO: copy values to CPU to compute CDF?
-#endif
 
         // Update CDF, normalization and integral from the new values
         m_cdf[0] = 0.f;
@@ -116,35 +111,15 @@ public:
         // Store the normalization factor
         m_integral = ScalarFloat(accum);
         m_normalization = ScalarFloat(1.0 / accum);
-
-#if defined(MTS_ENABLE_AUTODIFF)
-        m_integral_d = m_integral;
-        m_normalization_d = m_normalization;
-        m_cdf_d = CUDAArray<Float>::copy(m_cdf.data(), m_cdf.size());
-#endif
     }
 
     template <typename Wavelength>
     Wavelength data_gather(const Index &index, const mask_t<Index> &active) const {
-        if constexpr (!is_diff_array_v<Index>) {
-            return gather<Wavelength>(m_data.data(), index, active);
-        }
-#if defined(MTS_ENABLE_AUTODIFF)
-        else {
-            return gather<Wavelength>(m_data_d, index, active);
-        }
-#endif
+        return gather<Wavelength>(m_data.data(), index, active);
     }
     template <typename Wavelength>
     Wavelength cdf_gather(const Index &index, const mask_t<Index> &active) const {
-        if constexpr (!is_diff_array_v<Index>) {
-            return gather<Wavelength>(m_cdf.data(), index, active);
-        }
-#if defined(MTS_ENABLE_AUTODIFF)
-        else {
-            return gather<Wavelength>(m_cdf_d, index, active);
-        }
-#endif
+        return gather<Wavelength>(m_cdf.data(), index, active);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active_) const override {
@@ -211,12 +186,6 @@ public:
         return m_integral / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "data", m_data_d);
-    }
-#endif
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "InterpolatedSpectrum[" << std::endl
@@ -240,10 +209,6 @@ private:
     ScalarFloat m_inv_interval_size;
     ScalarFloat m_integral;
     ScalarFloat m_normalization;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    FloatD m_data_d, m_cdf_d, m_integral_d, m_normalization_d;
-#endif
 };
 
 MTS_EXPORT_PLUGIN(InterpolatedSpectrum, "Interpolated spectrum")

@@ -150,10 +150,6 @@ public:
         }
 
         m_mean = ScalarFloat(mean / hprod(m_bitmap->size()));
-
-#if defined(MTS_ENABLE_AUTODIFF)
-        m_bitmap_d = FloatC::copy(m_bitmap->data(), hprod(m_bitmap->size()) * 3);
-#endif
     }
 
     // Evaluation of color data
@@ -206,13 +202,11 @@ public:
         if constexpr (is_diff_array_v<Float>) {
             // TODO: restore and unify this for GPU
             NotImplementedError("interpolate on the GPU");
-// #if defined(MTS_ENABLE_AUTODIFF)
 //             uint32_t width = (uint32_t) m_bitmap->size().x();
 //             v00 = gather<Vector3f>(m_bitmap_d, index, active);
 //             v10 = gather<Vector3f>(m_bitmap_d, index + 1u, active);
 //             v01 = gather<Vector3f>(m_bitmap_d, index + width, active);
 //             v11 = gather<Vector3f>(m_bitmap_d, index + width + 1u, active);
-// #endif
         }
         uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
         auto *ptr = (const ScalarFloat *) m_bitmap->data();
@@ -245,12 +239,6 @@ public:
     }
 
     ScalarFloat mean() const override { return m_mean; }
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "bitmap", m_bitmap_d);
-    }
-#endif
 
     std::string to_string() const override {
         std::ostringstream oss;

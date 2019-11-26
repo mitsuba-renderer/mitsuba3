@@ -44,33 +44,24 @@ public:
             m_world_to_local = m_metadata.transform * m_world_to_local;
             update_bbox();
         }
-
-#if defined(MTS_ENABLE_AUTODIFF)
-        // Avoids resolution being treated as a literal
-        // TODO: isn't there an Enoki helper for this?
-        m_shape_d.x() = UInt32C::copy(&m_metadata.shape.x(), 1);
-        m_shape_d.y() = UInt32C::copy(&m_metadata.shape.y(), 1);
-        m_shape_d.z() = UInt32C::copy(&m_metadata.shape.z(), 1);
-#endif
     }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    void parameters_changed() override {
-        size_t new_size = data_size();
-        if (m_size != new_size) {
-            // Only support a special case: resolution doubling along all axes
-            if (new_size != m_size * 8)
-                Throw("Unsupported Grid3DBase data size update: %d -> %d. Expected %d or %d "
-                      "(doubling "
-                      "the resolution).",
-                      m_size, new_size, m_size, m_size * 8);
-            m_metadata.shape *= 2;
-            m_size       = new_size;
-        }
-    }
+    // TODO
+    // void parameters_changed() override {
+    //     size_t new_size = data_size();
+    //     if (m_size != new_size) {
+    //         // Only support a special case: resolution doubling along all axes
+    //         if (new_size != m_size * 8)
+    //             Throw("Unsupported Grid3DBase data size update: %d -> %d. Expected %d or %d "
+    //                   "(doubling "
+    //                   "the resolution).",
+    //                   m_size, new_size, m_size, m_size * 8);
+    //         m_metadata.shape *= 2;
+    //         m_size       = new_size;
+    //     }
+    // }
 
-    virtual size_t data_size() const = 0;
-#endif
+    // virtual size_t data_size() const = 0;
 
     ScalarFloat max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };

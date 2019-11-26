@@ -15,10 +15,6 @@ public:
 
     UniformSpectrum(const Properties &props) {
         m_value = props.float_("value");
-
-        #if defined(MTS_ENABLE_AUTODIFF)
-            m_value_d = m_value;
-        #endif
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
@@ -59,22 +55,12 @@ public:
 
     ScalarFloat mean() const override { return m_value; }
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    void put_parameters(DifferentiableParameters &dp) override {
-        dp.put(this, "value", m_value_d);
-    }
-#endif
-
     std::string to_string() const override {
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }
 
 private:
     ScalarFloat m_value;
-
-#if defined(MTS_ENABLE_AUTODIFF)
-    FloatD m_value_d;
-#endif
 };
 
 MTS_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
