@@ -128,8 +128,6 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
         return ray_test_cpu(ray, active);
 }
 
-MTS_VARIANT std::vector<ref<Object>> Scene<Float, Spectrum>::children() { return m_children; }
-
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
                                                  bool test_visibility, Mask active) const {

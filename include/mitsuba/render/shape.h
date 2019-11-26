@@ -308,9 +308,6 @@ public:
     virtual RTgeometrytriangles optix_geometry(RTcontext context);
 #endif
 
-    // Return a list of objects that are referenced or owned by the shape
-    std::vector<ref<Object>> children() override;
-
     //! @}
     // =============================================================
 

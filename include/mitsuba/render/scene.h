@@ -153,9 +153,6 @@ public:
     /// Return the scene's integrator
     const Integrator* integrator() const { return m_integrator; }
 
-    // Return a list of objects that are referenced or owned by the scene
-    std::vector<ref<Object>> children() override;
-
     //! @}
     // =============================================================
 

@@ -15,8 +15,6 @@ public:
         m_color = props.texture<Texture>("color", 1.f);
     }
 
-    std::vector<ref<Object>> children() override { return { m_color.get() }; }
-
     Spectrum eval(const Interaction3f &it, Mask active) const override {
         return eval_impl<false>(it, active);
     }

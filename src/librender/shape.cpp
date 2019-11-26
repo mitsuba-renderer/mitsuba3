@@ -152,23 +152,5 @@ Shape<Float, Spectrum>::effective_primitive_count() const {
     return primitive_count();
 }
 
-MTS_VARIANT std::vector<ref<Object>>
-Shape<Float, Spectrum>::children() {
-    std::vector<ref<Object>> result;
-
-    if (m_bsdf)
-        result.push_back(m_bsdf.get());
-    if (m_emitter)
-        result.push_back(m_emitter.get());
-    if (m_sensor)
-        result.push_back(m_sensor.get());
-    if (m_interior_medium)
-        result.push_back(m_interior_medium.get());
-    if (m_exterior_medium)
-        result.push_back(m_exterior_medium.get());
-
-    return result;
-}
-
 MTS_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

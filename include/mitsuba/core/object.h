@@ -62,16 +62,6 @@ public:
     virtual std::vector<ref<Object>> expand() const;
 
     /**
-     * \brief Return a list of objects that are referenced or owned by this
-     * instance.
-     *
-     * An example would be a texture used by a shading model. This method
-     * can used to iterate over the scene graph. The default implementation
-     * returns an empty list.
-     */
-    virtual std::vector<ref<Object>> children();
-
-    /**
      * \brief Return a \ref Class instance containing run-time type information
      * about this Object
      * \sa Class

@@ -22,13 +22,6 @@ MTS_PY_EXPORT(Object) {
                     l.append(py_cast(o2));
                 return l;
             })
-            .def("children", [](Object &o) -> py::list {
-                auto result = o.children();
-                py::list l;
-                for (Object *o2: result)
-                    l.append(py_cast(o2));
-                return l;
-            })
             .def("__repr__", &Object::to_string, D(Object, to_string));
     }
 }

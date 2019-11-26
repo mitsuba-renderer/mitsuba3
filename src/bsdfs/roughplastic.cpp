@@ -238,10 +238,6 @@ public:
         return result;
     }
 
-    std::vector<ref<Object>> children() override {
-        return { m_diffuse_reflectance.get(), m_specular_reflectance.get() };
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughPlastic[" << std::endl

@@ -97,10 +97,6 @@ public:
         return clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
-    std::vector<ref<Object>> children() override {
-        return { m_opacity.get(), m_nested_bsdf.get() };
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Mask[" << std::endl

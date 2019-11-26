@@ -20,10 +20,6 @@ std::vector<ref<Object>> Object::expand() const {
     return { };
 }
 
-std::vector<ref<Object>> Object::children() {
-    return { };
-}
-
 const Class *Object::class_() const {
     return m_class;
 }

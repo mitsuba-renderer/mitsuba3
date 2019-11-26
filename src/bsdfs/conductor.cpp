@@ -58,10 +58,6 @@ public:
         return 0.f;
     }
 
-    std::vector<ref<Object>> children() override {
-        return { m_specular_reflectance.get(), m_eta.get(), m_k.get() };
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothConductor[" << std::endl

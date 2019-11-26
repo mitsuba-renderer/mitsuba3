@@ -77,8 +77,6 @@ public:
         return oss.str();
     }
 
-    std::vector<ref<Object>> children() override { return { m_reflectance.get() }; }
-
 private:
     ref<Texture> m_reflectance;
 };

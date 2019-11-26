@@ -115,10 +115,6 @@ public:
         return oss.str();
     }
 
-    std::vector<ref<Object>> children() override {
-        return { m_nested_bsdf[0].get(), m_nested_bsdf[1].get(), m_weight.get() };
-    }
-
 protected:
     ref<Texture> m_weight;
     ref<BSDF> m_nested_bsdf[2];
