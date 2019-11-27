@@ -26,7 +26,7 @@ if (MTS_ENABLE_AUTODIFF)
     COMMENT "Running bin2c"
     PRE_BUILD VERBATIM)
 
-  set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h scene_optix.cpp)
+  set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h)
   set(LIBRENDER_EXTRA_LIB optix)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
@@ -63,6 +63,7 @@ add_library(mitsuba-render-obj OBJECT
   texture.cpp      ${INC_DIR}/texture.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
+  ${LIBRENDER_EXTRA_SRC}
 )
 add_dependencies(mitsuba-render-obj mitsuba-conf-header)
 

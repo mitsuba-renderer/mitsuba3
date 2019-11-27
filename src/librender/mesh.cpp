@@ -525,12 +525,7 @@ static void __rt_check(RTcontext context, RTresult errval, const char *file,
     }
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::put_parameters(DifferentiableParameters &dp) {
-    dp.put(this, "vertex_positions", m_vertex_positions_d);
-    if (has_vertex_texcoords())
-        dp.put(this, "vertex_texcoords", m_vertex_texcoords_d);
-}
-
+#if 0
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
     UInt32D vertex_range   = arange<UInt32D>(m_vertex_count),
             vertex_range_2 = vertex_range * 2,
@@ -597,6 +592,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
         rt_check(rtAccelerationMarkDirty(accel));
     }
 }
+#endif
 
 template <typename Value, size_t Dim, typename Func,
           typename Result = Array<DiffArray<CUDAArray<Value>>, Dim>>
@@ -631,33 +627,33 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
     rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_faces_buf));
     rt_check(rtBufferSetFormat(m_optix_faces_buf, RT_FORMAT_UNSIGNED_INT3));
     rt_check(rtBufferSetSize1D(m_optix_faces_buf, m_face_count));
-    m_faces_d = cuda_upload<Index, 3>(
-        m_face_count, [this](size_t i) { return face_indices(i); });
+    // m_faces_d = cuda_upload<Index, 3>(
+    //     m_face_count, [this](size_t i) { return face_indices(i); });
 
     // Vertex positions
     rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_positions_buf));
     rt_check(rtBufferSetFormat(m_optix_vertex_positions_buf, RT_FORMAT_FLOAT3));
     rt_check(rtBufferSetSize1D(m_optix_vertex_positions_buf, m_vertex_count));
-    m_vertex_positions_d = cuda_upload<float, 3>(
-        m_vertex_count, [this](size_t i) { return vertex_position(i); });
+    // m_vertex_positions_d = cuda_upload<float, 3>(
+    //     m_vertex_count, [this](size_t i) { return vertex_position(i); });
 
     // Vertex texture coordinates
     rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_texcoords_buf));
     rt_check(rtBufferSetFormat(m_optix_vertex_texcoords_buf, RT_FORMAT_FLOAT2));
     rt_check(rtBufferSetSize1D(
         m_optix_vertex_texcoords_buf, has_vertex_texcoords() ? m_vertex_count : 0));
-    if (has_vertex_texcoords())
-        m_vertex_texcoords_d = cuda_upload<float, 2>(
-            m_vertex_count, [this](size_t i) { return vertex_texcoord(i); });
+    // if (has_vertex_texcoords())
+    //     m_vertex_texcoords_d = cuda_upload<float, 2>(
+    //         m_vertex_count, [this](size_t i) { return vertex_texcoord(i); });
 
     // Vertex normals
     rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_normals_buf));
     rt_check(rtBufferSetFormat(m_optix_vertex_normals_buf, RT_FORMAT_FLOAT3));
     rt_check(rtBufferSetSize1D(
         m_optix_vertex_normals_buf, has_vertex_normals() ? m_vertex_count : 0));
-    if (has_vertex_normals())
-        m_vertex_normals_d = cuda_upload<float, 3>(
-            m_vertex_count, [this](size_t i) { return vertex_normal(i); });
+    // if (has_vertex_normals())
+    //     m_vertex_normals_d = cuda_upload<float, 3>(
+    //         m_vertex_count, [this](size_t i) { return vertex_normal(i); });
 
     rt_check(rtGeometryTrianglesCreate(context, &m_optix_geometry));
     rt_check(rtGeometryTrianglesSetPrimitiveCount(m_optix_geometry, m_face_count));
@@ -691,6 +687,14 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
     return m_optix_geometry;
 }
 #endif
+
+MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback * /*callback*/) {
+    // TODO
+}
+
+MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
+    // TODO
+}
 
 MTS_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

@@ -238,13 +238,11 @@ public:
     virtual RTCGeometry embree_geometry(RTCDevice device) const override;
 #endif
 
+    void traverse(TraversalCallback *callback) override;
+
+    void parameters_changed() override;
 
 #if defined(MTS_ENABLE_AUTODIFF)
-    /// Register all differentiable parameters with the container \c dp
-    void put_parameters(DifferentiableParameters &dp) override;
-
-    /// Update internal data structures after applying changes to parameters
-    void parameters_changed() override;
 
     /// Return the OptiX version of this shape
     virtual RTgeometrytriangles optix_geometry(RTcontext context) override;

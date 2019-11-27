@@ -276,7 +276,7 @@ private:
     ScalarFloat m_specular_sampling_weight;
     bool m_nonlinear;
     bool m_sample_visible;
-    DynamicBuffer<Float> m_external_transmittance;
+    DynamicBuffer<ScalarFloat> m_external_transmittance;
     ScalarFloat m_internal_reflectance;
 };
 

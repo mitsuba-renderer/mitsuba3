@@ -69,36 +69,36 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     Vector2i window_size = hi - lo;
 
     // Lookup values from the pre-rasterized filter
-    ScalarPoint2i max_size(hmax(window_size.x()),
-                           hmax(window_size.y()));
+    int n = ceil2int<int>((m_filter->radius() - 2.f * math::Epsilon<ScalarFloat>) * 2.f);
 
     Point2f base = lo - pos;
-    ENOKI_NOUNROLL for (int i = 0; i <= max_size.x(); ++i)
-        m_weights_x[i] = m_filter->eval_discretized(base.x() + (ScalarFloat) i, active);
-
-    ENOKI_NOUNROLL for (int i = 0; i <= max_size.y(); ++i)
-        m_weights_y[i] = m_filter->eval_discretized(base.y() + (ScalarFloat) i, active);
+    ENOKI_NOUNROLL for (int i = 0; i < n; ++i) {
+        Point2f p = base + i;
+        m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
+        m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
+    }
 
     if (ENOKI_UNLIKELY(m_normalize)) {
         Float wx(0), wy(0);
-        for (int x = 0; x <= max_size.x(); ++x)
-            wx += m_weights_x[x];
-        for (int y = 0; y <= max_size.y(); ++y)
-            wy += m_weights_y[y];
+        for (int i = 0; i <= n; ++i) {
+            wx += m_weights_x[i];
+            wy += m_weights_y[i];
+        }
+
         Float factor = rcp(wx * wy);
-        for (int x = 0; x <= max_size.x(); ++x)
-            m_weights_x[x] *= factor;
+        for (int i = 0; i <= n; ++i)
+            m_weights_x[i] *= factor;
     }
 
     // Rasterize the filtered sample into the framebuffer
     ScalarFloat *buffer = (ScalarFloat *) m_bitmap->data();
-    ENOKI_NOUNROLL for (int yr = 0; yr <= max_size.y(); ++yr) {
+    ENOKI_NOUNROLL for (int yr = 0; yr <= n; ++yr) {
         Mask enabled = active && yr <= window_size.y();
         Int32 y = lo.y() + yr;
 
-        ENOKI_NOUNROLL for (int xr = 0; xr <= max_size.x(); ++xr) {
-            Int32 x       = lo.x() + xr,
-                   offset = channels * (y * size.x() + x);
+        ENOKI_NOUNROLL for (int xr = 0; xr <= n; ++xr) {
+            Int32 x = lo.x() + xr;
+            Int32 offset = channels * (y * size.x() + x);
             Float weights = m_weights_y[yr] * m_weights_x[xr];
 
             enabled &= xr <= window_size.x();
@@ -109,93 +109,6 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
     return active;
 }
-
-// TODO remove this
-// #if defined(MTS_ENABLE_AUTODIFF)
-// template <typename Float, typename Spectrum>
-// MaskD ImageBlock<Float, Spectrum>::put(const Point2fD &pos_, const FloatD *value, MaskD active) {
-//     Assert(m_filter != nullptr);
-
-//     uint32_t channels = (uint32_t) m_bitmap->channel_count();
-//     MaskD is_valid(true);
-
-//     // Check if all sample values are valid
-//     if (m_warn) {
-//         MaskD is_valid = true;
-//         for (size_t k = 0; k < channels; ++k)
-//             is_valid &= enoki::isfinite(value[k]) && value[k] >= 0;
-
-//         if (any(active && !is_valid))
-//             Log(Warn, "ImageBlock::put(): invalid (negative/NaN) sample values detected!");
-
-//         active &= is_valid;
-//     }
-
-//     Vector2i size = Vector2i(m_bitmap->size());
-
-//     // Convert to pixel coordinates within the image block
-//     Point2fD pos = pos_ - (m_offset - m_border_size + .5f);
-
-//     // Determine the affected range of pixels
-//     Float filter_radius = m_filter->radius();
-//     Point2iD lo = max(ceil2int <Point2iD>(pos - filter_radius), 0),
-//              hi = min(floor2int<Point2iD>(pos + filter_radius), size - 1);
-
-//     Point2fD base = lo - pos;
-
-//     while (m_bitmap->channel_count() != m_bitmap_d.size())
-//         m_bitmap_d.push_back(zero<FloatD>(hprod(m_bitmap->size())));
-
-//     /// Subtraction of 2*math::Epsilon ensures that we only do 1 scatter_add
-//     /// instead of the conservative 4 when using the box filter
-//     int n = (int) std::ceil((m_filter->radius() - 2*math::Epsilon) * 2);
-//     std::vector<FloatD> weights_x_d(n), weights_y_d(n);
-
-//     for (int k = 0; k < n; ++k) {
-//         Point2fD p = base + (Float) k;
-//         weights_x_d[k] = m_filter->eval(p.x());
-//         weights_y_d[k] = m_filter->eval(p.y());
-//     }
-
-//     if (ENOKI_UNLIKELY(m_normalize)) {
-//         FloatD wx = 0.f, wy = 0.f;
-//         for (int k = 0; k < n; ++k) {
-//             wx += weights_x_d[k];
-//             wy += weights_y_d[k];
-//         }
-
-//         FloatD factor = rcp(wx * wy);
-//         for (int k = 0; k < n; ++k)
-//             weights_x_d[k] *= factor;
-//     }
-
-//     for (int yr = 0; yr < n; ++yr) {
-//         Int32D y = lo.y() + yr;
-//         MaskD enabled = active && y <= hi.y();
-
-//         for (int xr = 0; xr < n; ++xr) {
-//             Int32D x     = lo.x() + xr,
-//                    index = y * (int32_t) size.x() + x;
-
-//             enabled &= x <= hi.x();
-
-//             FloatD weight = weights_x_d[xr] * weights_y_d[yr];
-//             for (uint32_t k = 0; k < channels; ++k)
-//                 scatter_add(m_bitmap_d[k], value[k] * weight, index, enabled);
-//         }
-//     }
-
-//     return active;
-// }
-
-// template <typename Float, typename Spectrum>
-// void ImageBlock<Float, Spectrum>::clear_d() {
-//     m_bitmap_d.resize(m_bitmap->channel_count());
-//     for (size_t i = 0; i < m_bitmap_d.size(); ++i)
-//         m_bitmap_d[i] = zero<FloatD>(hprod(m_bitmap->size()));
-// }
-
-// #endif
 
 template <typename Float, typename Spectrum>
 std::string ImageBlock<Float, Spectrum>::to_string() const {
