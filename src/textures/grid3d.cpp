@@ -187,17 +187,21 @@ public:
 
     }
 
-    // TODO
-    // void parameters_changed() override {
-    //     Base::parameters_changed();
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("data", m_data);
+        Base::traverse(callback);
+    }
 
-    //     auto acc = hsum(hsum(detach(m_data)))[0];
-    //     m_metadata.mean = (double) acc / (double) (m_size * 3);
-    //     if (!m_fixed_max)
-    //         m_metadata.max  = hmax(hmax(m_data))[0];
-    // }
+    void parameters_changed() override {
+        Base::parameters_changed();
 
-    // size_t data_size() const override { return m_data.size(); }
+        auto acc = hsum(hsum(detach(m_data)));
+        m_metadata.mean = (double) acc / (double) (m_size * 3);
+        if (!m_fixed_max)
+            m_metadata.max  = hmax(hmax(m_data));
+    }
+
+    size_t data_size() const override { return m_data.size(); }
 
 protected:
     DataBuffer m_data;

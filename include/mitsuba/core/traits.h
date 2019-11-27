@@ -90,31 +90,6 @@ template <typename T> using depolarize_t = typename detail::spectrum_traits<T>::
 // =============================================================
 
 // =============================================================
-//! @{ \name Buffer types
-// =============================================================
-
-NAMESPACE_BEGIN(detail)
-template <typename Value, typename Enable = void>
-struct dynamic_buffer_t {};
-
-template <typename Value>
-struct dynamic_buffer_t<Value, std::enable_if_t<!is_dynamic_array_v<Value>>> {
-    using type = DynamicArray<Packet<scalar_t<Value>>>;
-};
-
-template <typename Value>
-struct dynamic_buffer_t<Value, std::enable_if_t<is_dynamic_array_v<Value>>> {
-    using type = Value;
-};
-NAMESPACE_END(detail)
-
-template <typename Value>
-using DynamicBuffer = typename detail::dynamic_buffer_t<Value>::type;
-
-//! @}
-// =============================================================
-
-// =============================================================
 //! @{ \name Function traits
 // =============================================================
 

@@ -43,6 +43,12 @@ public:
         return select(x < 2.f, result, 0.f);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("b", m_b);
+        callback->put_parameter("c", m_c);
+        Base::traverse(callback);
+    }
+
     std::string to_string() const override {
         return tfm::format("MitchellNetravaliFilter[radius=%f, B=%f, C=%f]", m_radius, m_b, m_c);
     }

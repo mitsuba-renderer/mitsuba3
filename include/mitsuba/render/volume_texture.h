@@ -46,25 +46,29 @@ public:
         }
     }
 
-    // TODO
-    // void parameters_changed() override {
-    //     size_t new_size = data_size();
-    //     if (m_size != new_size) {
-    //         // Only support a special case: resolution doubling along all axes
-    //         if (new_size != m_size * 8)
-    //             Throw("Unsupported Grid3DBase data size update: %d -> %d. Expected %d or %d "
-    //                   "(doubling "
-    //                   "the resolution).",
-    //                   m_size, new_size, m_size, m_size * 8);
-    //         m_metadata.shape *= 2;
-    //         m_size       = new_size;
-    //     }
-    // }
-
-    // virtual size_t data_size() const = 0;
+    virtual size_t data_size() const = 0;
 
     ScalarFloat max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };
+
+
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("size", m_size);
+    }
+
+    void parameters_changed() override {
+        size_t new_size = data_size();
+        if (m_size != new_size) {
+            // Only support a special case: resolution doubling along all axes
+            if (new_size != m_size * 8)
+                Throw("Unsupported Grid3DBase data size update: %d -> %d. Expected %d or %d "
+                      "(doubling "
+                      "the resolution).",
+                      m_size, new_size, m_size, m_size * 8);
+            m_metadata.shape *= 2;
+            m_size       = new_size;
+        }
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -81,7 +85,5 @@ protected:
     VolumeMetadata m_metadata;
     size_t m_size;
 };
-
-
 
 NAMESPACE_END(mitsuba)

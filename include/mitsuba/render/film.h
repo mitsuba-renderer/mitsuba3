@@ -101,6 +101,14 @@ public:
     //! @}
     // =============================================================
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("size", m_size);
+        callback->put_parameter("crop_size", m_crop_size);
+        callback->put_parameter("crop_offset", m_crop_offset);
+        callback->put_parameter("high_quality_edges", m_high_quality_edges);
+        callback->put_object("filter", m_filter.get());
+    }
+
     virtual std::string to_string() const override {
         std::ostringstream oss;
         oss << "Film[" << std::endl

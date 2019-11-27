@@ -75,6 +75,14 @@ protected:
     /// Mandatory initialization prior to calls to \ref eval_discretized()
     void init_discretization();
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("radius", m_radius);
+    }
+
+    void parameters_changed() override {
+        init_discretization();
+    }
+
 protected:
     ScalarFloat m_radius, m_scale_factor;
     ScalarFloat m_values[MTS_FILTER_RESOLUTION + 1];

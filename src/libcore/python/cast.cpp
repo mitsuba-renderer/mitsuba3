@@ -54,11 +54,16 @@ py::object py_cast(const std::type_info &type, void *ptr) {
     PY_CAST_VARIANTS(Point3f)
     PY_CAST_VARIANTS(Vector3f)
     PY_CAST_VARIANTS(Normal3f)
+    PY_CAST_VARIANTS(Frame3f)
     PY_CAST_VARIANTS(Matrix3f)
     PY_CAST_VARIANTS(Matrix4f)
     PY_CAST_VARIANTS(Transform3f)
     PY_CAST_VARIANTS(Transform4f)
     PY_CAST(AnimatedTransform)
+
+    PY_CAST_VARIANTS(DynamicBuffer);
+    PY_CAST_VARIANTS(DataBuffer1);
+    PY_CAST_VARIANTS(DataBuffer3);
 
     Log(Warn, "Unable to cast void pointer. Is your type registered in py_cast()? (%s)", type.name());
     return py::none();

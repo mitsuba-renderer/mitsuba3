@@ -45,7 +45,7 @@ public:
         m_flip_normals = props.bool_("flip_normals", false);
         m_center = m_object_to_world * ScalarPoint3f(0, 0, 0);
         m_world_to_object = m_object_to_world.inverse();
-        m_inv_surface_area = 1.f / (4.f * math::Pi<ScalarFloat> * m_radius * m_radius);
+        m_inv_surface_area = 1.f / surface_area();
 
         if (m_radius <= 0.f) {
             m_radius = std::abs(m_radius);
@@ -324,6 +324,13 @@ public:
         callback->put_parameter("center", m_center);
         callback->put_parameter("radius", m_radius);
         Base::traverse(callback);
+    }
+
+    void parameters_changed() override {
+        Base::parameters_changed();
+        m_object_to_world = ScalarTransform4f::translate(m_center);
+        m_world_to_object = m_object_to_world.inverse();
+        m_inv_surface_area = 1.f / surface_area();
     }
 
     std::string to_string() const override {

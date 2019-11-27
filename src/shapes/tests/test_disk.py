@@ -5,6 +5,7 @@ import mitsuba
 from mitsuba.scalar_rgb.core      import Ray3f
 from mitsuba.scalar_rgb.core.xml  import load_string
 from mitsuba.scalar_rgb.core.math import Pi
+from mitsuba.core import DefaultTraversalCallback
 
 UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
 
@@ -104,3 +105,23 @@ def test03_ray_intersect():
                             dn_dv = (si_v.n - si.n) / eps
                             assert np.allclose(dp_dv, si.dp_dv, atol=2e-2)
                             assert np.allclose(dn_dv, dn[1], atol=2e-2)
+
+def test04_parameters_changed():
+    disk = example_disk()
+    params = {}
+    disk.traverse(DefaultTraversalCallback("disk", params))
+
+    ps = disk.sample_position(1.0, np.array([0.7, 0.3]))
+
+    params['disk.frame'].n = np.array([0.5, 0.5, 0.5])
+
+    disk.parameters_changed()
+
+    params['disk.frame'].n = np.array([0.0, 0.0, 1.0])
+
+    disk.parameters_changed()
+
+    ps_new = disk.sample_position(1.0, np.array([0.7, 0.3]))
+
+    assert np.allclose(ps_new.p, ps.p, atol=2e-2)
+    assert np.allclose(ps_new.n, ps.n, atol=2e-2)

@@ -37,10 +37,14 @@ public:
 
         m_world_to_object = m_object_to_world.inverse();
 
-        m_dp_du = m_object_to_world * ScalarVector3f(1.f, 0.f, 0.f);
-        m_dp_dv = m_object_to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        ScalarVector3f dp_du = m_object_to_world * ScalarVector3f(1.f, 0.f, 0.f);
+        ScalarVector3f dp_dv = m_object_to_world * ScalarVector3f(0.f, 1.f, 0.f);
+
+        m_du = norm(dp_du);
+        m_dv = norm(dp_dv);
+
         ScalarNormal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
-        m_frame = ScalarFrame3f(normalize(m_dp_du), normalize(m_dp_dv), normal);
+        m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
 
         m_inv_surface_area = 1.f / surface_area();
         if (abs_dot(m_frame.s, m_frame.t) > math::Epsilon<ScalarFloat> ||
@@ -62,7 +66,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return math::Pi<ScalarFloat> * norm(m_dp_du) * norm(m_dp_dv);
+        return math::Pi<ScalarFloat> * m_du * m_dv;
     }
 
     // =============================================================
@@ -159,13 +163,28 @@ public:
 
     ScalarSize effective_primitive_count() const override { return 1; }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("frame", m_frame);
+        callback->put_parameter("du", m_du);
+        callback->put_parameter("dv", m_dv);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed() override {
+        Base::parameters_changed();
+        m_object_to_world = ScalarTransform4f::to_frame(m_frame)
+                            * ScalarTransform4f::scale(ScalarVector3f(m_du, m_dv, 1.f));
+        m_world_to_object = m_object_to_world.inverse();
+        m_inv_surface_area = 1.f / surface_area();
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Disk[" << std::endl
             << "  center = "  << m_object_to_world * ScalarPoint3f(0.f, 0.f, 0.f) << "," << std::endl
-            << "  n = "  << m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f) << "," << std::endl
-            << "  du = "  << norm(m_object_to_world * ScalarNormal3f(1.f, 0.f, 0.f)) << "," << std::endl
-            << "  dv = "  << norm(m_object_to_world * ScalarNormal3f(0.f, 1.f, 0.f)) << "," << std::endl
+            << "  n = "  << m_frame.n << "," << std::endl
+            << "  du = "  << m_du << "," << std::endl
+            << "  dv = "  << m_dv << "," << std::endl
             << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
             << "]";
         return oss.str();
@@ -175,7 +194,7 @@ private:
     ScalarTransform4f m_object_to_world;
     ScalarTransform4f m_world_to_object;
     ScalarFrame3f m_frame;
-    ScalarVector3f m_dp_du, m_dp_dv;
+    ScalarFloat m_du, m_dv;
     ScalarFloat m_inv_surface_area;
 };
 

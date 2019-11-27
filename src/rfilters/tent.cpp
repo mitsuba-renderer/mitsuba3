@@ -27,6 +27,11 @@ public:
         return max(0.f, 1.f - abs(x * m_inv_radius));
     }
 
+    void parameters_changed() override {
+        Base::parameters_changed();
+        m_inv_radius = 1.f / m_radius;
+    }
+
     std::string to_string() const override {
         return tfm::format("TentFilter[radius=%f]", m_radius);
     }

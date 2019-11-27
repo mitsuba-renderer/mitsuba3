@@ -314,6 +314,11 @@ public:
         Base::traverse(callback);
     }
 
+    void parameters_changed() override {
+        Base::parameters_changed();
+        m_inv_surface_area = 1.f / surface_area();
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Cylinder[" << std::endl

@@ -87,6 +87,11 @@ public:
 #undef MTS_SELECT_IMPL
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("transform", m_transform);
+        callback->put_object("bitmap", m_bitmap.get());
+    }
+
 protected:
     ref<Bitmap> m_bitmap;
     std::string m_name;
@@ -112,6 +117,11 @@ public:
         auto color_mode = IsRawData ? m_bitmap->pixel_format() : PixelFormat::RGB;
         m_bitmap = m_bitmap->convert(color_mode, Bitmap::FloatFieldType, false);
 
+        calculate_mean();
+    }
+
+private:
+    void calculate_mean() {
         // Convert to spectral coefficients, monochrome or leave in RGB.
         auto *ptr = (ScalarFloat *) m_bitmap->data();
         double mean = 0.0;
@@ -152,6 +162,7 @@ public:
         m_mean = ScalarFloat(mean / hprod(m_bitmap->size()));
     }
 
+public:
     // Evaluation of color data
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         if constexpr (ChannelCount < 3) {
@@ -239,6 +250,10 @@ public:
     }
 
     ScalarFloat mean() const override { return m_mean; }
+
+    void parameters_changed() override {
+        calculate_mean();
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;

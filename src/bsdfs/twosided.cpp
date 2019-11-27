@@ -26,8 +26,13 @@ public:
         if (!m_nested_brdf[1])
             m_nested_brdf[1] = m_nested_brdf[0];
 
+        parameters_changed();
+    }
+
+    void parameters_changed() override {
         // Add all nested components, overwriting any front / back side flag.
         m_flags = BSDFFlags(0);
+        m_components.clear();
         for (size_t i = 0; i < m_nested_brdf[0]->component_count(); ++i) {
             auto c = (m_nested_brdf[0]->flags(i) & ~BSDFFlags::BackSide);
             m_components.push_back(c | BSDFFlags::FrontSide);

@@ -28,26 +28,31 @@ public:
                   "refraction must be positive!");
 
         m_eta = int_ior / ext_ior;
-        m_inv_eta_2 = 1.f / (m_eta * m_eta);
-
-        // Numerically approximate the diffuse Fresnel reflectance
-        m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
-        m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
         m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
         m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance", .5f);
-
-        // Compute weights that further steer samples towards the specular or diffuse components
-        ScalarFloat d_mean = hmax(m_diffuse_reflectance->mean()),
-                    s_mean = hmax(m_specular_reflectance->mean());
-
-        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
         m_nonlinear = props.bool_("nonlinear", false);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide);
         m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0] | m_components[1];
+
+        parameters_changed();
+    }
+
+    void parameters_changed() override {
+        m_inv_eta_2 = 1.f / (m_eta * m_eta);
+
+        // Numerically approximate the diffuse Fresnel reflectance
+        m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
+        m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
+
+        // Compute weights that further steer samples towards the specular or diffuse components
+        ScalarFloat d_mean = hmax(m_diffuse_reflectance->mean()),
+                    s_mean = hmax(m_specular_reflectance->mean());
+
+        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,

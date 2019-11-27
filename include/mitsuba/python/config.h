@@ -97,7 +97,7 @@
 /// Cast an Object pointer ('o') to the corresponding python object
 #define PY_CAST_OBJECT(Type)                                                    \
     if (auto tmp = dynamic_cast<Type *>(o); tmp)                                \
-        return py::cast(tmp);                                                   \
+        return py::cast(tmp, py::return_value_policy::reference);               \
 
 
 /// Cast any variants of an Object pointer to the corresponding python object
@@ -113,12 +113,12 @@
 /// Cast a void pointer ('ptr') to the corresponding python object given a std::type_info 'type'
 #define PY_CAST(Type)                                                           \
     if (std::string(type.name()) == std::string(typeid(Type).name()))           \
-        return py::cast(static_cast<Type *>(ptr));                              \
+        return py::cast(static_cast<Type *>(ptr), py::return_value_policy::reference); \
 
 
 /// Cast any variants of a void pointer ('ptr') to the corresponding python object
 #define PY_CAST_VARIANTS(Type)                                                  \
-    PY_CAST(PYBIND11_TYPE(typename CoreAliases<float>::Type))                   \
     PY_CAST(PYBIND11_TYPE(typename CoreAliases<Packet<float>>::Type))           \
+    PY_CAST(PYBIND11_TYPE(typename CoreAliases<float>::Type))                   \
 
 

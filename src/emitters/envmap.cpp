@@ -158,6 +158,17 @@ public:
         return ScalarBoundingBox3f();
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("scale", m_scale);
+        callback->put_object("d65", m_d65.get());
+        callback->put_object("bitmap", m_bitmap.get());
+    }
+
+    void parameters_changed() override {
+        // TODO update bsphere
+        // TODO update bitmap and warp
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "EnvironmentMapEmitter[" << std::endl
@@ -233,4 +244,3 @@ protected:
 
 MTS_EXPORT_PLUGIN(EnvironmentMapEmitter, "Environment map emitter");
 NAMESPACE_END(mitsuba)
-

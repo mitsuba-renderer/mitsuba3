@@ -50,8 +50,10 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("coeff", m_coeff);
-        callback->put_object("d65", m_d65.get());
+        if constexpr (is_spectral_v<Spectrum>)
+            callback->put_object("d65", m_d65.get());
+        else
+            callback->put_parameter("coeff", m_coeff);
     }
 
 private:

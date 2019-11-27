@@ -308,18 +308,9 @@ public:
     virtual RTgeometrytriangles optix_geometry(RTcontext context);
 #endif
 
-    virtual void traverse(TraversalCallback *callback) override {
-        // TODO is casting really necessary?
-        callback->put_object("bsdf", (Object *) m_bsdf.get());
-        if (m_emitter)
-            callback->put_object("emitter", (Object *) m_emitter.get());
-        if (m_sensor)
-            callback->put_object("sensor", (Object *) m_sensor.get());
-        if (m_interior_medium)
-            callback->put_object("interior_medium", (Object *) m_interior_medium.get());
-        if (m_exterior_medium)
-            callback->put_object("exterior_medium", (Object *) m_exterior_medium.get());
-    }
+    void traverse(TraversalCallback *callback) override;
+
+    void parameters_changed() override;
 
     //! @}
     // =============================================================

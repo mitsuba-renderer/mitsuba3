@@ -156,6 +156,16 @@ public:
     //! @}
     // =============================================================
 
+    void traverse(TraversalCallback *callback) override {
+        Base::traverse(callback);
+        // TODO x_fov
+    }
+
+    void parameters_changed() override {
+        Base::parameters_changed();
+        // TODO
+    }
+
     std::string to_string() const override {
         using string::indent;
 

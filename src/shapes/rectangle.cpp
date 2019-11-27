@@ -36,13 +36,17 @@ public:
 
         m_world_to_object = m_object_to_world.inverse();
 
-        m_dp_du = m_object_to_world * ScalarVector3f(2.f, 0.f, 0.f);
-        m_dp_dv = m_object_to_world * ScalarVector3f(0.f, 2.f, 0.f);
+        ScalarVector3f dp_du = m_object_to_world * ScalarVector3f(2.f, 0.f, 0.f);
+        ScalarVector3f dp_dv = m_object_to_world * ScalarVector3f(0.f, 2.f, 0.f);
+
+        m_du = norm(dp_du);
+        m_dv = norm(dp_dv);
+
         ScalarNormal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
-        m_frame = ScalarFrame3f(normalize(m_dp_du), normalize(m_dp_dv), normal);
+        m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
 
         m_inv_surface_area = rcp(surface_area());
-        if (abs(dot(normalize(m_dp_du), normalize(m_dp_dv))) > math::Epsilon<ScalarFloat>)
+        if (abs(dot(m_frame.s, m_frame.t)) > math::Epsilon<ScalarFloat>)
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Rectangle shape.");
 
@@ -60,7 +64,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return norm(m_dp_du) * norm(m_dp_dv);
+        return m_du * m_dv;
     }
 
     // =============================================================
@@ -154,8 +158,8 @@ public:
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
-        si.dp_du      = m_dp_du;
-        si.dp_dv      = m_dp_dv;
+        si.dp_du      = m_du * m_frame.s;
+        si.dp_dv      = m_dv * m_frame.t;
         si.p          = ray(si.t);
         si.time       = ray.time;
         si.uv         = Point2f(fmadd(cache[0], .5f, .5f),
@@ -174,6 +178,21 @@ public:
 
     ScalarSize effective_primitive_count() const override { return 1; }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("frame", m_frame);
+        callback->put_parameter("du", m_du);
+        callback->put_parameter("dv", m_dv);
+        Base::traverse(callback);
+    }
+
+    void parameters_changed() override {
+        Base::parameters_changed();
+        m_object_to_world = ScalarTransform4f::to_frame(m_frame) *
+                            ScalarTransform4f::scale(ScalarVector3f(0.5f * m_du, 0.5f * m_dv, 1.f));
+        m_world_to_object = m_object_to_world.inverse();
+        m_inv_surface_area = 1.f / surface_area();
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Rectangle[" << std::endl
@@ -189,7 +208,7 @@ private:
     ScalarTransform4f m_object_to_world;
     ScalarTransform4f m_world_to_object;
     ScalarFrame3f m_frame;
-    ScalarVector3f m_dp_du, m_dp_dv;
+    ScalarFloat m_du, m_dv;
     ScalarFloat m_inv_surface_area;
 };
 

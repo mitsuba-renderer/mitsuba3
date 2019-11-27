@@ -218,7 +218,6 @@ protected:
     ScalarTransform4f m_world_to_local;
     /// Bounding box
     ScalarBoundingBox3f m_bbox;
-
 };
 
 MTS_EXTERN_CLASS(Texture)

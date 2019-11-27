@@ -23,14 +23,21 @@ public:
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
 
+
+        m_alpha_u = distr.alpha_u();
+        m_alpha_v = distr.alpha_v();
+
+        parameters_changed();
+    }
+
+    void parameters_changed() override {
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
 
-        m_alpha_u = m_alpha_v = distr.alpha_u();
-        if (distr.is_anisotropic()) {
-            m_alpha_v = distr.alpha_v();
+        if (m_alpha_u != m_alpha_v) {
             m_flags = m_flags | BSDFFlags::Anisotropic;
         }
 
+        m_components.clear();
         m_components.push_back(m_flags);
     }
 

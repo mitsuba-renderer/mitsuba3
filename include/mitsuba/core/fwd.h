@@ -73,6 +73,54 @@ template <typename Spectrum> using MuellerMatrix = enoki::Matrix<Spectrum, 4, tr
 //! @}
 // =============================================================
 
+// =============================================================
+//! @{ \name Buffer types
+// =============================================================
+
+NAMESPACE_BEGIN(detail)
+template <typename Value, typename Enable = void>
+struct dynamic_buffer_t {};
+
+template <typename Value>
+struct dynamic_buffer_t<Value, std::enable_if_t<!is_dynamic_array_v<Value>>> {
+    using type = DynamicArray<Packet<scalar_t<Value>>>;
+};
+
+template <typename Value>
+struct dynamic_buffer_t<Value, std::enable_if_t<is_dynamic_array_v<Value>>> {
+    using type = Value;
+};
+NAMESPACE_END(detail)
+
+template <typename Value>
+using DynamicBuffer = typename detail::dynamic_buffer_t<Value>::type;
+
+//! @}
+// =============================================================
+
+// =============================================================
+//! @{ \name Plateform agnostic vector types
+// =============================================================
+
+template <typename T>
+using host_vector =
+    std::vector<scalar_t<T>,
+                std::conditional_t<is_cuda_array_v<T>, cuda_host_allocator<scalar_t<T>>,
+                                   std::allocator<scalar_t<T>>>>;
+
+template <typename T>
+using managed_vector =
+    std::vector<scalar_t<T>,
+                std::conditional_t<is_cuda_array_v<T>, cuda_managed_allocator<scalar_t<T>>,
+                                   std::allocator<scalar_t<T>>>>;
+
+//! @}
+// =============================================================
+
+// =============================================================
+//! @{ \name CoreAliases struct
+// =============================================================
+
 template <typename Float_> struct CoreAliases {
     using Float   = Float_;
 
@@ -83,10 +131,6 @@ template <typename Float_> struct CoreAliases {
     using Int64   =   int64_array_t<Float>;
     using UInt64  =  uint64_array_t<Float>;
     using Float64 = float64_array_t<Float>;
-
-    // Only used for casting parameters to python object
-    using Array1f  = Array<Float, 1>;
-    using Array3f  = Array<Float, 3>;
 
     using Vector1i = Vector<Int32, 1>;
     using Vector2i = Vector<Int32, 2>;
@@ -158,19 +202,20 @@ template <typename Float_> struct CoreAliases {
 
     using Color1f             = Color<Float, 1>;
     using Color3f             = Color<Float, 3>;
+
+    /*
+     * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
+     * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
+     */
+    using Array1f  = Array<Float, 1>;
+    using Array3f  = Array<Float, 3>;
+    using DynamicBuffer  = DynamicBuffer<Float>;
+    using DataBuffer1    = Vector<DynamicBuffer, 1>;
+    using DataBuffer3    = Vector<DynamicBuffer, 3>;
 };
 
-template <typename T>
-using host_vector =
-    std::vector<scalar_t<T>,
-                std::conditional_t<is_cuda_array_v<T>, cuda_host_allocator<scalar_t<T>>,
-                                   std::allocator<scalar_t<T>>>>;
-
-template <typename T>
-using managed_vector =
-    std::vector<scalar_t<T>,
-                std::conditional_t<is_cuda_array_v<T>, cuda_managed_allocator<scalar_t<T>>,
-                                   std::allocator<scalar_t<T>>>>;
+//! @}
+// =============================================================
 
 #define MTS_VARIANT template <typename Float, typename Spectrum>
 

@@ -238,6 +238,11 @@ public:
         return fs::exists(filename);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_object("storage", m_storage.get());
+        Base::traverse(callback);
+    }
+
     virtual std::string to_string() const override {
         std::ostringstream oss;
         oss << "HDRFilm[" << std::endl

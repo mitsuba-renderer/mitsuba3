@@ -141,7 +141,7 @@ def write_python_config(f, enabled, float_types):
     f.write('/// Cast an Object pointer (\'o\') to the corresponding python object\n')
     w('#define PY_CAST_OBJECT(Type)')
     w('    if (auto tmp = dynamic_cast<Type *>(o); tmp)')
-    w('        return py::cast(tmp);')
+    w('        return py::cast(tmp, py::return_value_policy::reference);')
     f.write('\n\n')
 
     f.write('/// Cast any variants of an Object pointer to the corresponding python object\n')
@@ -154,7 +154,7 @@ def write_python_config(f, enabled, float_types):
     f.write('/// Cast a void pointer (\'ptr\') to the corresponding python object given a std::type_info \'type\'\n')
     w('#define PY_CAST(Type)')
     w('    if (std::string(type.name()) == std::string(typeid(Type).name()))')
-    w('        return py::cast(static_cast<Type *>(ptr));')
+    w('        return py::cast(static_cast<Type *>(ptr), py::return_value_policy::reference);')
     f.write('\n\n')
 
     f.write('/// Cast any variants of a void pointer (\'ptr\') to the corresponding python object\n')

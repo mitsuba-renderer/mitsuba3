@@ -24,7 +24,7 @@ const Class *Object::class_() const {
     return m_class;
 }
 
-void Object::traverse(TraversalCallback *callback) { }
+void Object::traverse(TraversalCallback */*callback*/) { }
 
 void Object::parameters_changed() { }
 

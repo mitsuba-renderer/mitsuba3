@@ -152,5 +152,29 @@ Shape<Float, Spectrum>::effective_primitive_count() const {
     return primitive_count();
 }
 
+MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    callback->put_object("bsdf", m_bsdf.get());
+    if (m_emitter)
+        callback->put_object("emitter", m_emitter.get());
+    if (m_sensor)
+        callback->put_object("sensor", m_sensor.get());
+    if (m_interior_medium)
+        callback->put_object("interior_medium", m_interior_medium.get());
+    if (m_exterior_medium)
+        callback->put_object("exterior_medium", m_exterior_medium.get());
+}
+
+MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed() {
+    m_bsdf->parameters_changed();
+    if (m_emitter)
+        m_emitter->parameters_changed();
+    if (m_sensor)
+        m_sensor->parameters_changed();
+    if (m_interior_medium)
+        m_interior_medium->parameters_changed();
+    if (m_exterior_medium)
+        m_exterior_medium->parameters_changed();
+}
+
 MTS_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

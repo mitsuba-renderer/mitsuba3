@@ -95,6 +95,10 @@ public:
         callback->put_object("radiance", m_radiance.get());
     }
 
+    void parameters_changed() override {
+        // TODO update bsphere
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "ConstantBackgroundEmitter[" << std::endl

@@ -285,6 +285,10 @@ public:
         callback->put_object("specular_transmittance", m_specular_transmittance.get());
     }
 
+    void parameters_changed() override {
+        m_inv_eta = 1.f / (m_eta);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl

@@ -35,6 +35,12 @@ public:
         return max(0.f, exp(m_alpha * sqr(x)) - m_bias);
     }
 
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("stddev", m_stddev);
+        callback->put_parameter("alpha", m_alpha);
+        Base::traverse(callback);
+    }
+
     std::string to_string() const override {
         return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]", m_stddev, m_radius);
     }
