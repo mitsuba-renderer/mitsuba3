@@ -47,8 +47,9 @@ NAMESPACE_END(enoki)
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename UInt32>
-using PCG32 = enoki::PCG32<UInt32>;
+template <typename UInt32> using PCG32 = std::conditional_t<is_dynamic_array_v<UInt32>,
+                                                            enoki::PCG32<UInt32, 1>,
+                                                            enoki::PCG32<UInt32>>;
 
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the

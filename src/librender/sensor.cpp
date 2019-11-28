@@ -115,7 +115,7 @@ MTS_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
 // Helper functions
 // =============================================================================
 
-float parse_fov(const Properties &props, float aspect) {
+MTS_EXPORT float parse_fov(const Properties &props, float aspect) {
     if (props.has_property("fov") && props.has_property("focal_length"))
         Throw("Please specify either a focal length ('focal_length') or a "
                 "field of view ('fov')!");

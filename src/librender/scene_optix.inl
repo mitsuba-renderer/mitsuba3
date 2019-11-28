@@ -229,7 +229,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
         // Incident direction in local coordinates
         si.wi = select(si.is_valid(), si.to_local(-ray.d), -ray.d);
     } else {
-        Throw("Should only be called in GPU mode.");
+        Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
 
     return si;
@@ -298,7 +298,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         }
         rt_check(rt);
     } else {
-        Throw("Should only be called in GPU mode.");
+        Throw("ray_test_gpu() should only be called in GPU mode.");
     }
 
     return hit;

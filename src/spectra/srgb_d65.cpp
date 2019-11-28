@@ -13,9 +13,6 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     SRGBEmitterSpectrum(const Properties &props) {
-        if constexpr (!is_spectral_v<Spectrum>)
-            Throw("The 'srgb_d65' plugin can only be used in spectral mode.");
-
         ScalarColor3f color = props.color("color");
 
         if constexpr (is_spectral_v<Spectrum>) {
@@ -63,7 +60,7 @@ private:
      */
     static constexpr size_t ChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
 
-    Array<Float, ChannelCount> m_coeff;
+    Array<ScalarFloat, ChannelCount> m_coeff;
     ref<Texture> m_d65;
 };
 

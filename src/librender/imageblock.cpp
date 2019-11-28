@@ -66,9 +66,9 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     // Determine the affected range of pixels
     Point2i lo = max(ceil2int <Point2i>(pos - filter_radius), 0),
             hi = min(floor2int<Point2i>(pos + filter_radius), size - 1);
-    Vector2i window_size = hi - lo;
 
-    // Lookup values from the pre-rasterized filter
+    /// Subtraction of 2*math::Epsilon ensures that we only do 1 scatter_add
+    /// instead of the conservative 4 when using the box filter
     int n = ceil2int<int>((m_filter->radius() - 2.f * math::Epsilon<ScalarFloat>) * 2.f);
 
     Point2f base = lo - pos;
@@ -92,16 +92,16 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
     // Rasterize the filtered sample into the framebuffer
     ScalarFloat *buffer = (ScalarFloat *) m_bitmap->data();
-    ENOKI_NOUNROLL for (int yr = 0; yr <= n; ++yr) {
-        Mask enabled = active && yr <= window_size.y();
+    ENOKI_NOUNROLL for (int yr = 0; yr < n; ++yr) {
         Int32 y = lo.y() + yr;
+        Mask enabled = active && y <= hi.y();
 
-        ENOKI_NOUNROLL for (int xr = 0; xr <= n; ++xr) {
+        ENOKI_NOUNROLL for (int xr = 0; xr < n; ++xr) {
             Int32 x = lo.x() + xr;
             Int32 offset = channels * (y * size.x() + x);
             Float weights = m_weights_y[yr] * m_weights_x[xr];
 
-            enabled &= xr <= window_size.x();
+            enabled &= x <= hi.x();
             ENOKI_NOUNROLL for (uint32_t k = 0; k < channels; ++k)
                 scatter_add(buffer + k, weights * value[k], offset, enabled);
         }
