@@ -36,12 +36,9 @@ public:
 
     ScalarFloat mean() const override {
         if constexpr (is_spectral_v<Spectrum>) {
-            if constexpr (is_array_v<Float>)
-                return srgb_model_mean(hmean_inner(m_coeff));
-            else
-                return srgb_model_mean(m_coeff);
+            return srgb_model_mean(m_coeff);
         } else {
-            return hmean_nested(m_coeff);
+            return hmean(m_coeff);
         }
     }
 
@@ -56,7 +53,7 @@ protected:
      */
     static constexpr size_t ChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
 
-    Array<Float, ChannelCount> m_coeff;
+    Array<ScalarFloat, ChannelCount> m_coeff;
 };
 
 MTS_EXPORT_PLUGIN(SRGBSpectrum, "sRGB spectrum")

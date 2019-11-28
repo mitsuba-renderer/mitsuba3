@@ -35,8 +35,7 @@ public:
      *    <tt>is_valid()</tt> method to determine whether an
      *    intersection was actually found.
      */
-    SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       Mask active = true) const;
+    SurfaceInteraction3f ray_intersect(const Ray3f &ray, Mask active = true) const;
 
     /**
      * \brief Ray intersection using brute force search. Used in
@@ -44,8 +43,7 @@ public:
      *
      * \remark Not implemented by the Embree/OptiX backends
      */
-    SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray,
-                                             Mask active = true) const;
+    SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray, Mask active = true) const;
 
     /**
      * \brief Intersect a ray against all primitives stored in the scene

@@ -34,14 +34,14 @@ public:
     MTS_IMPORT_TYPES()
 
     static constexpr int m_channel_count = texture_channels_v<Spectrum>;
-    using DynamicBuffer = DynamicBuffer<Float>;
+    using DynamicBuffer = DynamicBuffer<ScalarFloat>;
     // TODO: linearize data storage
     using DataBuffer    = Vector<DynamicBuffer, m_channel_count>;
 
     Grid3D(const Properties &props) : Base(props) {
         // Read volume data from the binary file, typically 1 or 3 channels
         auto meta =
-            read_binary_volume_data<Float, m_channel_count>(props.string("filename"), &m_data);
+            read_binary_volume_data<ScalarFloat, m_channel_count>(props.string("filename"), &m_data);
 
         set_metadata(meta, props.bool_("use_grid_bbox", false));
         if (props.has_property("max_value")) {

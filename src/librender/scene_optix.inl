@@ -30,7 +30,7 @@ struct OptixState {
     RTgeometrygroup group;
 };
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu() {
+MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
     m_accel = new OptixState();
     OptixState &s = *(OptixState *) m_accel;
 
@@ -118,7 +118,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu() {
     rt_check(rtContextDeclareVariable(s.context, "accel", &accel));
     rt_check(rtVariableSetUserData(accel, sizeof(void *), &s.accel));
 
-    for (const Shape *shape : m_shapes) {
+    uint32_t shape_index = 0;
+    for (Shape *shape : m_shapes) {
         RTgeometrytriangles tri = shape->optix_geometry(s.context);
         rt_check(rtGeometryTrianglesSetAttributeProgram(tri, s.attr_prog));
 
@@ -129,10 +130,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu() {
         RTvariable shape_ptr_var;
         rt_check(rtGeometryInstanceSetMaterialCount(tri_inst, 1));
         rt_check(rtGeometryInstanceSetMaterial(tri_inst, 0, s.material));
-        rt_check(rtGeometryGroupSetChild(s.group, s.shape_index, tri_inst));
+        rt_check(rtGeometryGroupSetChild(s.group, shape_index, tri_inst));
 
         rt_check(rtGeometryInstanceDeclareVariable(tri_inst, "shape_ptr", &shape_ptr_var));
         rt_check(rtVariableSet1ull(shape_ptr_var, (uintptr_t) shape));
+        shape_index++;
     }
 
     Log(Info, "Validating and building scene in OptiX.");
@@ -148,7 +150,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu() {
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     OptixState &s = *(OptixState *) m_accel;
     rt_check(rtContextDestroy(s.context));
-    dleete (OptixState *) m_accel;
+    delete (OptixState *) m_accel;
     m_accel = nullptr;
 }
 
@@ -160,71 +162,75 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
     set_slices(active, ray_count);
     SurfaceInteraction3f si = empty<SurfaceInteraction3f>(ray_count);
 
-    cuda_eval();
+    if constexpr (is_cuda_array_v<Float>) {
+        cuda_eval();
 
-    const void *cuda_ptr[kOptixVariableCount] = {
-        // Active mask
-        active.data(),
-        // In: ray origin
-        ray.o.x().data(), ray.o.y().data(), ray.o.z().data(),
-        // In: ray direction
-        ray.d.x().data(), ray.d.y().data(), ray.d.z().data(),
-        // In: ray extents
-        ray.mint.data(), ray.maxt.data(),
-        // Out: Distance along ray
-        si.t.data(),
-        // Out: Intersection position
-        si.p.x().data(), si.p.y().data(), si.p.z().data(),
-        // Out: UV coordinates
-        si.uv.x().data(), si.uv.y().data(),
-        // Out: Geometric normal
-        si.n.x().data(), si.n.y().data(), si.n.z().data(),
-        // Out: Shading normal
-        si.sh_frame.n.x().data(), si.sh_frame.n.y().data(), si.sh_frame.n.z().data(),
-        // Out: Texture space derivative (U)
-        si.dp_du.x().data(), si.dp_du.y().data(), si.dp_du.z().data(),
-        // Ovt: Texture space derivative (V)
-        si.dp_dv.x().data(), si.dp_dv.y().data(), si.dp_dv.z().data(),
-        // Out: Shape pointer (on host)
-        si.shape.data(),
-        // Out: Primitive index
-        si.prim_index.data(),
-        // Out: Hit flag
-        nullptr
-    };
+        const void *cuda_ptr[kOptixVariableCount] = {
+            // Active mask
+            active.data(),
+            // In: ray origin
+            ray.o.x().data(), ray.o.y().data(), ray.o.z().data(),
+            // In: ray direction
+            ray.d.x().data(), ray.d.y().data(), ray.d.z().data(),
+            // In: ray extents
+            ray.mint.data(), ray.maxt.data(),
+            // Out: Distance along ray
+            si.t.data(),
+            // Out: Intersection position
+            si.p.x().data(), si.p.y().data(), si.p.z().data(),
+            // Out: UV coordinates
+            si.uv.x().data(), si.uv.y().data(),
+            // Out: Geometric normal
+            si.n.x().data(), si.n.y().data(), si.n.z().data(),
+            // Out: Shading normal
+            si.sh_frame.n.x().data(), si.sh_frame.n.y().data(), si.sh_frame.n.z().data(),
+            // Out: Texture space derivative (U)
+            si.dp_du.x().data(), si.dp_du.y().data(), si.dp_du.z().data(),
+            // Ovt: Texture space derivative (V)
+            si.dp_dv.x().data(), si.dp_dv.y().data(), si.dp_dv.z().data(),
+            // Out: Shape pointer (on host)
+            si.shape.data(),
+            // Out: Primitive index
+            si.prim_index.data(),
+            // Out: Hit flag
+            nullptr
+        };
 
-    auto &s = *m_optix_state;
-    for (size_t i = 0; i < kOptixVariableCount; ++i) {
-        if (cuda_ptr[i]) {
-            rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
-            rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
-                                              (void *) cuda_ptr[i]));
-        } else {
-            rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
-            rt_check(
-                rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
+        OptixState &s = *(OptixState *) m_accel;
+        for (size_t i = 0; i < kOptixVariableCount; ++i) {
+            if (cuda_ptr[i]) {
+                rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
+                rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
+                                                (void *) cuda_ptr[i]));
+            } else {
+                rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
+                rt_check(
+                    rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
+            }
         }
+
+        RTresult rt = rtContextLaunch1D(s.context, 0, ray_count);
+        if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
+            cuda_malloc_trim();
+            rt = rtContextLaunch1D(s.context, 0, ray_count);
+        }
+        rt_check(rt);
+
+        si.time = ray.time;
+        si.wavelengths = ray.wavelength;
+        si.instance = nullptr;
+        si.duv_dx = si.duv_dy = 0.f;
+
+        // Gram-schmidt orthogonalization to compute local shading frame
+        si.sh_frame.s = normalize(
+            fnmadd(si.sh_frame.n, dot(si.sh_frame.n, si.dp_du), si.dp_du));
+        si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
+
+        // Incident direction in local coordinates
+        si.wi = select(si.is_valid(), si.to_local(-ray.d), -ray.d);
+    } else {
+        Throw("Should only be called in GPU mode.");
     }
-
-    RTresult rt = rtContextLaunch1D(s.context, 0, ray_count);
-    if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
-        cuda_malloc_trim();
-        rt = rtContextLaunch1D(s.context, 0, ray_count);
-    }
-    rt_check(rt);
-
-    si.time = ray.time;
-    si.wavelengths = ray.wavelength;
-    si.instance = nullptr;
-    si.duv_dx = si.duv_dy = 0.f;
-
-    // Gram-schmidt orthogonalization to compute local shading frame
-    si.sh_frame.s = normalize(
-        fnmadd(si.sh_frame.n, dot(si.sh_frame.n, si.dp_du), si.dp_du));
-    si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
-
-    // Incident direction in local coordinates
-    si.wi = select(si.is_valid(), si.to_local(-ray.d), -ray.d);
 
     return si;
 }
@@ -240,56 +246,60 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
 
     cuda_eval();
 
-    const void *cuda_ptr[kOptixVariableCount] = {
-        // Active mask
-        active.data(),
-        // In: ray origin
-        ray.o.x().data(), ray.o.y().data(), ray.o.z().data(),
-        // In: ray direction
-        ray.d.x().data(), ray.d.y().data(), ray.d.z().data(),
-        // In: ray extents
-        ray.mint.data(), ray.maxt.data(),
-        // Out: Distance along ray
-        nullptr,
-        // Out: Intersection position
-        nullptr, nullptr, nullptr,
-        // Out: UV coordinates
-        nullptr, nullptr,
-        // Out: Geometric normal
-        nullptr, nullptr, nullptr,
-        // Out: Shading normal
-        nullptr, nullptr, nullptr,
-        // Out: Texture space derivative (U)
-        nullptr, nullptr, nullptr,
-        // Ovt: Textvre space derivative (V)
-        nullptr, nullptr, nullptr,
-        // Out: Shape pointer (on host)
-        nullptr,
-        // Out: Primitive index
-        nullptr,
-        // Out: Hit flag
-        hit.data()
-    };
+    if constexpr (is_cuda_array_v<Float>) {
+        const void *cuda_ptr[kOptixVariableCount] = {
+            // Active mask
+            active.data(),
+            // In: ray origin
+            ray.o.x().data(), ray.o.y().data(), ray.o.z().data(),
+            // In: ray direction
+            ray.d.x().data(), ray.d.y().data(), ray.d.z().data(),
+            // In: ray extents
+            ray.mint.data(), ray.maxt.data(),
+            // Out: Distance along ray
+            nullptr,
+            // Out: Intersection position
+            nullptr, nullptr, nullptr,
+            // Out: UV coordinates
+            nullptr, nullptr,
+            // Out: Geometric normal
+            nullptr, nullptr, nullptr,
+            // Out: Shading normal
+            nullptr, nullptr, nullptr,
+            // Out: Texture space derivative (U)
+            nullptr, nullptr, nullptr,
+            // Ovt: Textvre space derivative (V)
+            nullptr, nullptr, nullptr,
+            // Out: Shape pointer (on host)
+            nullptr,
+            // Out: Primitive index
+            nullptr,
+            // Out: Hit flag
+            hit.data()
+        };
 
-    auto &s = *m_optix_state;
-    for (size_t i = 0; i < kOptixVariableCount; ++i) {
-        if (cuda_ptr[i]) {
-            rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
-            rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
-                                              (void *) cuda_ptr[i]));
-        } else {
-            rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
-            rt_check(
-                rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
+        OptixState &s = *(OptixState *) m_accel;
+        for (size_t i = 0; i < kOptixVariableCount; ++i) {
+            if (cuda_ptr[i]) {
+                rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
+                rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
+                                                (void *) cuda_ptr[i]));
+            } else {
+                rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
+                rt_check(
+                    rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
+            }
         }
-    }
 
-    RTresult rt = rtContextLaunch1D(s.context, 1, ray_count);
-    if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
-        cuda_malloc_trim();
-        rt = rtContextLaunch1D(s.context, 1, ray_count);
+        RTresult rt = rtContextLaunch1D(s.context, 1, ray_count);
+        if (rt == RT_ERROR_MEMORY_ALLOCATION_FAILED) {
+            cuda_malloc_trim();
+            rt = rtContextLaunch1D(s.context, 1, ray_count);
+        }
+        rt_check(rt);
+    } else {
+        Throw("Should only be called in GPU mode.");
     }
-    rt_check(rt);
 
     return hit;
 }

@@ -60,19 +60,19 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
     if (vertex_struct->has_field("nx") &&
         vertex_struct->has_field("ny") &&
         vertex_struct->has_field("nz")) {
-        check_field(vertex_struct, 3, "nx", struct_type_v<Float>);
-        check_field(vertex_struct, 4, "ny", struct_type_v<Float>);
-        check_field(vertex_struct, 5, "nz", struct_type_v<Float>);
+        check_field(vertex_struct, 3, "nx", struct_type_v<ScalarFloat>);
+        check_field(vertex_struct, 4, "ny", struct_type_v<ScalarFloat>);
+        check_field(vertex_struct, 5, "nz", struct_type_v<ScalarFloat>);
         m_normal_offset = (ScalarIndex) vertex_struct->field("nx").offset;
     }
 
     if (vertex_struct->has_field("u") && vertex_struct->has_field("v")) {
         if (m_normal_offset == 0) {
-            check_field(vertex_struct, 3, "u", struct_type_v<Float>);
-            check_field(vertex_struct, 4, "v", struct_type_v<Float>);
+            check_field(vertex_struct, 3, "u", struct_type_v<ScalarFloat>);
+            check_field(vertex_struct, 4, "v", struct_type_v<ScalarFloat>);
         } else {
-            check_field(vertex_struct, 6, "u", struct_type_v<Float>);
-            check_field(vertex_struct, 7, "v", struct_type_v<Float>);
+            check_field(vertex_struct, 6, "u", struct_type_v<ScalarFloat>);
+            check_field(vertex_struct, 7, "v", struct_type_v<ScalarFloat>);
         }
         m_texcoord_offset = (ScalarIndex) vertex_struct->field("u").offset;
     }

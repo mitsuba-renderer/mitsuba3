@@ -306,7 +306,9 @@ protected:
 };
 
 NAMESPACE_BEGIN(detail)
-template <typename T> struct struct_type { };
+template <typename T> struct struct_type {
+    static constexpr FieldType value = struct_type<scalar_t<T>>::value; \
+};
 
 #define MTS_STRUCT_TYPE(type, entry) \
     template <> struct struct_type<type> { \
@@ -327,7 +329,7 @@ MTS_STRUCT_TYPE(double, Float64);
 #undef MTS_STRUCT_TYPE
 NAMESPACE_END(detail)
 
-template <typename T> constexpr FieldType struct_type_v = detail::struct_type<scalar_t<T>>::value;
+template <typename T> constexpr FieldType struct_type_v = detail::struct_type<T>::value;
 
 
 
