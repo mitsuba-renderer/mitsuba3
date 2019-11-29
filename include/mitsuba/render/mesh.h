@@ -242,8 +242,7 @@ public:
 
     void parameters_changed() override;
 
-#if defined(MTS_ENABLE_AUTODIFF)
-
+#if defined(MTS_ENABLE_OPTIX)
     /// Return the OptiX version of this shape
     virtual RTgeometrytriangles optix_geometry(RTcontext context) override;
 #endif
@@ -304,7 +303,13 @@ protected:
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
 
-#if defined(MTS_ENABLE_AUTODIFF)
+#if defined(MTS_ENABLE_OPTIX)
+    /* GPU versions of the above */
+    Point3u  m_faces_c;
+    Point3f  m_vertex_positions_c;
+    Normal3f m_vertex_normals_c;
+    Point2f  m_vertex_texcoords_c;
+
     RTcontext m_optix_context = nullptr;
     RTgeometrytriangles m_optix_geometry = nullptr;
     RTbuffer m_optix_faces_buf = nullptr;

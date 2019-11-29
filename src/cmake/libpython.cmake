@@ -95,7 +95,7 @@ endif()
 set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # Copy enoki python library to 'dist' folder
-if (MTS_ENABLE_AUTODIFF)
+if (MTS_ENABLE_OPTIX)
   add_dist(python/enoki-python)
   if (APPLE)
     set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "@loader_path/..")

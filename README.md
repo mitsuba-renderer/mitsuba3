@@ -106,7 +106,7 @@ git clone --recursive https://github.com/mitsuba-renderer/mitsuba2
 cd mitsuba2
 
 # Build using CMake & GNU Make (legacy)
-cmake -D MTS_ENABLE_AUTODIFF=ON . # include differentiable rendering support, or:
+cmake -D MTS_ENABLE_OPTIX=ON . # include differentiable rendering support, or:
 cmake . # do not include differentiable rendering support.
 make -j 4
 

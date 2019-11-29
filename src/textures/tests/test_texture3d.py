@@ -255,7 +255,7 @@
 #     return final_value, final_loss
 
 
-# @pytest.mark.skipif(not mitsuba.ENABLE_AUTODIFF, reason='Autodiff-only test')
+# @pytest.mark.skipif(not mitsuba.ENABLE_OPTIX, reason='Autodiff-only test')
 # def test06_autodiff_constant3d():
 #     from enoki import hsum
 #     from mitsuba.render.autodiff import get_differentiable_parameters
@@ -287,7 +287,7 @@
 #     assert np.allclose(final_value, target)
 
 
-# @pytest.mark.skipif(not mitsuba.ENABLE_AUTODIFF, reason='Autodiff-only test')
+# @pytest.mark.skipif(not mitsuba.ENABLE_OPTIX, reason='Autodiff-only test')
 # @pytest.mark.parametrize('side', [2])
 # def test07_autodiff_grid3d(side):
 #     from enoki import FloatD, hsum
@@ -339,7 +339,7 @@
 #     assert np.allclose(final_values, target_values, atol=1e-4)
 
 
-# @pytest.mark.skipif(not mitsuba.ENABLE_AUTODIFF, reason='Autodiff-only test')
+# @pytest.mark.skipif(not mitsuba.ENABLE_OPTIX, reason='Autodiff-only test')
 # def test08_autodiff_grid3d_multigrid():
 #     """Tests the ability of Grid3D to handle data updates with doubled resolution."""
 #     from enoki import FloatD, Vector4fD, Vector3fD

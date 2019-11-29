@@ -1,5 +1,4 @@
 add_mitsuba_python_library(mitsuba_render_ext render
-#   # autodiff.cpp
   bsdf.cpp
   emitter.cpp
   endpoint.cpp

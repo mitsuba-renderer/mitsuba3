@@ -4,7 +4,7 @@ project(mitsuba)
 
 # ---------- User options ----------
 option(MTS_USE_EMBREE            "Use Embree for ray tracing operations?" OFF)
-option(MTS_ENABLE_AUTODIFF       "Enable derivative computation using CUDA?" OFF)
+option(MTS_ENABLE_OPTIX          "Enable the use of Optix for ray tracing in GPU mode?" OFF)
 
 if (UNIX)
   option(MTS_ENABLE_PROFILER     "Enable sampling profiler" ON)
@@ -28,7 +28,7 @@ endif()
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
-if (MTS_ENABLE_AUTODIFF)
+if (MTS_ENABLE_OPTIX)
   set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
 endif()
 
@@ -170,7 +170,7 @@ else()
   message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
 endif()
 
-if (MTS_ENABLE_AUTODIFF)
+if (MTS_ENABLE_OPTIX)
   set(CMAKE_REQUIRED_INCLUDES "${MTS_OPTIX_PATH}/include")
   CHECK_INCLUDE_FILE_CXX("optix.h" HAVE_OPTIX_H)
   if (NOT HAVE_OPTIX_H)
@@ -180,7 +180,7 @@ if (MTS_ENABLE_AUTODIFF)
   include_directories(${MTS_OPTIX_PATH}/include)
   link_directories(${MTS_OPTIX_PATH}/lib64)
   add_definitions(-DMTS_USE_OPTIX=1)
-  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
+  add_definitions(-DMTS_ENABLE_OPTIX=1)
 endif()
 
 # Compile with compiler warnings turned on

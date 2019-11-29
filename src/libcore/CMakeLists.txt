@@ -122,7 +122,7 @@ if (WIN32 OR APPLE)
   add_dependencies(mitsuba-core jpeg png16)
 endif()
 
-if (MTS_ENABLE_AUTODIFF)
+if (MTS_ENABLE_OPTIX)
   add_dist(enoki-autodiff enoki-cuda)
   target_link_libraries(mitsuba-core PUBLIC enoki-autodiff enoki-cuda cuda)
 endif()

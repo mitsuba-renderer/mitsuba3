@@ -3,7 +3,7 @@ set(INC_DIR "../../include/mitsuba/render")
 set(LIBRENDER_EXTRA_SRC "")
 set(LIBRENDER_EXTRA_LIB "")
 
-if (MTS_ENABLE_AUTODIFF)
+if (MTS_ENABLE_OPTIX)
   # Glob up PTX files
   file(GLOB resources "${PROJECT_SOURCE_DIR}/resources/ptx/*.ptx")
 
@@ -42,7 +42,6 @@ add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/records.h
   ${INC_DIR}/volume_texture.h
 
-  # autodiff.cpp     ${INC_DIR}/autodiff.h
   bsdf.cpp         ${INC_DIR}/bsdf.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h

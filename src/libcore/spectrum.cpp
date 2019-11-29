@@ -92,7 +92,7 @@ static Float *cie_alloc() {
     Float *src = (Float *) cie1931_tbl;
 
 // TODO
-// #if defined(MTS_ENABLE_AUTODIFF)
+// #if defined(MTS_ENABLE_OPTIX)
 //     const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
 //     src = (Float *) cuda_host_malloc(size);
 //     memcpy(src, cie1931_tbl, size);

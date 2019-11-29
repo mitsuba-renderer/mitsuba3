@@ -10,7 +10,6 @@ add_mitsuba_python_library(mitsuba_core_ext core
   bsphere.cpp
   cast.cpp
   ddistr.cpp
-  autodiff.cpp
   filesystem.cpp
   formatter.cpp
   frame.cpp

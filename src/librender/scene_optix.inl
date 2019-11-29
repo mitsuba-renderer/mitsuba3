@@ -43,14 +43,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     rt_check(rtContextSetMaxCallableProgramDepth(s.context, 0));
 
     const char *var_names[kOptixVariableCount] = {
-        "in_mask",         "in_ox",       "in_oy",       "in_oz",
-        "in_dx",           "in_dy",       "in_dz",       "in_mint",
-        "in_maxt",         "out_t",       "out_p_x",     "out_p_y",
-        "out_p_z",         "out_u",       "out_v",       "out_ng_x",
-        "out_ng_y",        "out_ng_z",    "out_ns_x",    "out_ns_y",
-        "out_ns_z",        "out_dp_du_x", "out_dp_du_y", "out_dp_du_z",
-        "out_dp_dv_x",     "out_dp_dv_y", "out_dp_dv_z", "out_shape_ptr",
-        "out_primitive_id","out_hit"
+        "in_mask",          "in_ox",       "in_oy",       "in_oz",
+        "in_dx",            "in_dy",       "in_dz",       "in_mint",
+        "in_maxt",          "out_t",       "out_p_x",     "out_p_y",
+        "out_p_z",          "out_u",       "out_v",       "out_ng_x",
+        "out_ng_y",         "out_ng_z",    "out_ns_x",    "out_ns_y",
+        "out_ns_z",         "out_dp_du_x", "out_dp_du_y", "out_dp_du_z",
+        "out_dp_dv_x",      "out_dp_dv_y", "out_dp_dv_z", "out_shape_ptr",
+        "out_primitive_id", "out_hit"
     };
 
     RTvariable var_obj[kOptixVariableCount];

@@ -4,15 +4,12 @@
 #include <enoki/array.h>
 #include <enoki/dynamic.h>
 
-#if defined(MTS_ENABLE_AUTODIFF)
+#if defined(MTS_ENABLE_OPTIX)
 #  include <enoki/cuda.h>
 #  include <enoki/autodiff.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-
-// template <typename T>
-// using float_array_t = replace_scalar_t<T, Float>;
 
 /// Convenience function which computes an array size/type suffix (like '2u' or '3fP')
 template <typename T> std::string type_suffix() {

@@ -70,10 +70,10 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     m.attr("NDEBUG") = false;
 #endif // NDEBUG
 
-#if defined(MTS_ENABLE_AUTODIFF)
-    m.attr("ENABLE_AUTODIFF")  = true;
+#if defined(MTS_ENABLE_OPTIX)
+    m.attr("ENABLE_OPTIX")  = true;
 #else
-    m.attr("ENABLE_AUTODIFF")  = false;
+    m.attr("ENABLE_OPTIX")  = false;
 #endif
 #if defined(MTS_USE_EMBREE)
     m.attr("USE_EMBREE")  = true;

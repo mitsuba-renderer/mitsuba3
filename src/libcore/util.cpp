@@ -307,7 +307,7 @@ std::string info_features() {
 
     oss << "Enabled processor features:";
 
-#if defined(MTS_ENABLE_AUTODIFF)
+#if defined(MTS_ENABLE_OPTIX)
     oss << " cuda";
 #endif
 

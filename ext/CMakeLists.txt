@@ -59,9 +59,9 @@ if (MTS_USE_EMBREE)
 endif()
 
 # Run the Enoki CMake script and update the compilation flags
-set(ENOKI_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
-set(ENOKI_CUDA     ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
-set(ENOKI_PYTHON   ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
+set(ENOKI_AUTODIFF ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
+set(ENOKI_CUDA     ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
+set(ENOKI_PYTHON   ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
 set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11"
   CACHE STRING "Path containing the 'pybind11' library used to compile Enoki." FORCE)
 add_subdirectory(enoki)
