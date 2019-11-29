@@ -845,18 +845,18 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                             color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Float) steps;
 
-                            Properties props2;
+                            Properties props3;
 
                             if (ctx.color_mode == ColorMode::Monochromatic) {
-                                props2 = Properties("uniform");
-                                props2.set_float("value", luminance(color));
+                                props3 = Properties("uniform");
+                                props3.set_float("value", luminance(color));
                             } else {
-                                props2 = Properties(within_emitter ? "srgb_d65" : "srgb");
-                                props2.set_color("color", color);
+                                props3 = Properties(within_emitter ? "srgb_d65" : "srgb");
+                                props3.set_color("color", color);
                             }
 
                             obj = PluginManager::instance()->create_object(
-                                props2, Class::for_name("Texture", ctx.variant));
+                                props3, Class::for_name("Texture", ctx.variant));
                         }
 
                         props.set_object(node.attribute("name").value(), obj);

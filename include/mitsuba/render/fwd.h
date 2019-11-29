@@ -100,7 +100,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
 #define MTS_IMPORT_TYPES(...)                                                                      \
-    MTS_IMPORT_RENDER_BASIC_TYPES();                                                               \
+    MTS_IMPORT_RENDER_BASIC_TYPES()                                                                \
     using PositionSample3f     = typename RenderAliases::PositionSample3f;                         \
     using DirectionSample3f    = typename RenderAliases::DirectionSample3f;                        \
     using Interaction3f        = typename RenderAliases::Interaction3f;                            \

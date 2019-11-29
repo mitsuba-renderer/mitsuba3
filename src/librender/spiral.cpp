@@ -1,6 +1,7 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/spiral.h>
 #include <mitsuba/mitsuba.h>
+#include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
 
