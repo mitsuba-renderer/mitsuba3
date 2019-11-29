@@ -103,10 +103,11 @@ using DynamicBuffer = typename detail::dynamic_buffer_t<Value>::type;
 //! @{ \name Plateform agnostic vector types
 // =============================================================
 
-template <typename T>
+// TODO clean this
+template <typename T, typename Type = T>
 using host_vector =
     std::vector<scalar_t<T>,
-                std::conditional_t<is_cuda_array_v<T>, cuda_host_allocator<scalar_t<T>>,
+                std::conditional_t<is_cuda_array_v<Type>, cuda_host_allocator<scalar_t<T>>,
                                    std::allocator<scalar_t<T>>>>;
 
 template <typename T>

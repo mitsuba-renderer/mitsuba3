@@ -1,8 +1,10 @@
+#include <mitsuba/core/fwd.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Spectrum) {
-   m.def("cie1931_xyz", vectorize<Float>([](Float wavelengths) {
+    MTS_IMPORT_CORE_TYPES()
+    m.def("cie1931_xyz", vectorize<Float>([](Float wavelengths) {
             return cie1931_xyz(wavelengths);
         }), "wavelength"_a, D(cie1931_xyz))
     .def("cie1931_y", vectorize<Float>([](Float wavelengths) {
@@ -24,5 +26,11 @@ MTS_PY_EXPORT(Spectrum) {
         m.attr("MTS_WAVELENGTH_SAMPLES") = array_size_v<Spectrum>;
         m.attr("MTS_WAVELENGTH_MIN")     = MTS_WAVELENGTH_MIN;
         m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
+    }
+
+    if constexpr (is_cuda_array_v<Float>) {
+        py::module::import("enoki");
+        pybind11_type_alias<Array<Float, 3>, Color3f>();
+        pybind11_type_alias<Array<Float, array_size_v<Spectrum>>, Spectrum>();
     }
 }

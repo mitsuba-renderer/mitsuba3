@@ -11,7 +11,6 @@
 
 MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(atomic);
-MTS_PY_DECLARE(autodiff);
 MTS_PY_DECLARE(random);
 MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(util);
@@ -99,7 +98,6 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
     MTS_PY_IMPORT(atomic);
-    MTS_PY_IMPORT(autodiff);
     MTS_PY_IMPORT(random);
     MTS_PY_IMPORT(sample_tea);
     MTS_PY_IMPORT(util);

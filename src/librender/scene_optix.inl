@@ -156,13 +156,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const {
-    Ray3f ray(ray_);
-    size_t ray_count = std::max(slices(ray.o), slices(ray.d));
-    set_slices(ray, ray_count);
-    set_slices(active, ray_count);
-    SurfaceInteraction3f si = empty<SurfaceInteraction3f>(ray_count);
-
     if constexpr (is_cuda_array_v<Float>) {
+        Ray3f ray(ray_);
+        size_t ray_count = std::max(slices(ray.o), slices(ray.d));
+        set_slices(ray, ray_count);
+        set_slices(active, ray_count);
+
+        SurfaceInteraction3f si = empty<SurfaceInteraction3f>(ray_count);
+
         cuda_eval();
 
         const void *cuda_ptr[kOptixVariableCount] = {
@@ -200,12 +201,10 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
         for (size_t i = 0; i < kOptixVariableCount; ++i) {
             if (cuda_ptr[i]) {
                 rt_check(rtBufferSetSize1D(s.var_buf[i], ray_count));
-                rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID,
-                                                (void *) cuda_ptr[i]));
+                rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) cuda_ptr[i]));
             } else {
                 rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
-                rt_check(
-                    rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
+                rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
             }
         }
 
@@ -228,25 +227,25 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
 
         // Incident direction in local coordinates
         si.wi = select(si.is_valid(), si.to_local(-ray.d), -ray.d);
+
+        return si;
     } else {
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
-
-    return si;
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
-    Ray3f ray(ray_);
-    size_t ray_count = std::max(slices(ray.o), slices(ray.d));
-    Mask hit = empty<Mask>(ray_count);
-
-    set_slices(ray, ray_count);
-    set_slices(active, ray_count);
-
-    cuda_eval();
-
     if constexpr (is_cuda_array_v<Float>) {
+        Ray3f ray(ray_);
+        size_t ray_count = std::max(slices(ray.o), slices(ray.d));
+        Mask hit = empty<Mask>(ray_count);
+
+        set_slices(ray, ray_count);
+        set_slices(active, ray_count);
+
+        cuda_eval();
+
         const void *cuda_ptr[kOptixVariableCount] = {
             // Active mask
             active.data(),
@@ -297,11 +296,11 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
             rt = rtContextLaunch1D(s.context, 1, ray_count);
         }
         rt_check(rt);
+
+        return hit;
     } else {
         Throw("ray_test_gpu() should only be called in GPU mode.");
     }
-
-    return hit;
 }
 
 NAMESPACE_END(msiuba)

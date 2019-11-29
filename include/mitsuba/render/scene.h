@@ -134,9 +134,9 @@ public:
     const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
 
     /// Return the list of emitters
-    host_vector<ref<Emitter>> &emitters() { return m_emitters; }
+    host_vector<ref<Emitter>, Float> &emitters() { return m_emitters; }
     /// Return the list of emitters (const version)
-    const host_vector<ref<Emitter>> &emitters() const { return m_emitters; }
+    const host_vector<ref<Emitter>, Float> &emitters() const { return m_emitters; }
 
     /// Return the environment emitter (if any)
     const Emitter *environment() const { return m_environment.get(); }
@@ -191,7 +191,7 @@ protected:
 
     ScalarBoundingBox3f m_bbox;
 
-    host_vector<ref<Emitter>> m_emitters;
+    host_vector<ref<Emitter>, Float> m_emitters;
     std::vector<ref<Shape>> m_shapes;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;

@@ -80,10 +80,12 @@ public:
         using Index3 = Array<Index, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Index3>(face(index));
-        } else if constexpr (!is_diff_array_v<Index>) {
+        } else if constexpr (!is_cuda_array_v<Index>) {
             index *= scalar_t<Index>(m_face_size / sizeof(ScalarIndex));
             return gather<Index3, sizeof(ScalarIndex)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
+        } else {
+            return gather<Index3, sizeof(ScalarIndex)>(m_faces_c, index, active);
         }
     }
 
@@ -94,10 +96,12 @@ public:
         using Point3f = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Point3f>(vertex(index));
-        } else if constexpr (!is_diff_array_v<Index>) {
+        } else if constexpr (!is_cuda_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
             return gather<Point3f, sizeof(ScalarFloat)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
+        } else {
+            return gather<Point3f, sizeof(ScalarFloat)>(m_vertex_positions_c, index, active);
         }
     }
 
@@ -108,10 +112,12 @@ public:
         using Normal3f = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Normal3f>(vertex(index) + m_normal_offset);
-        } else if constexpr (!is_diff_array_v<Index>) {
+        } else if constexpr (!is_cuda_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
             return gather<Normal3f, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
+        } else {
+            return gather<Normal3f, sizeof(ScalarFloat)>(m_vertex_normals_c, index, active);
         }
     }
 
@@ -121,10 +127,12 @@ public:
         using Point2f = Point<replace_scalar_t<Index, ScalarFloat>, 2>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Point2f>(vertex(index) + m_texcoord_offset);
-        } else if constexpr (!is_diff_array_v<Index>) {
+        } else if constexpr (!is_cuda_array_v<Index>) {
             index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
             return gather<Point2f, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
+        } else {
+            return gather<Point2f, sizeof(ScalarFloat)>(m_vertex_texcoords_c, index, active);
         }
     }
 
@@ -344,12 +352,12 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Mesh)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(faces, m_faces, uint8_t*)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(vertices, m_vertices, uint8_t*)
 
-    //ENOKI_CALL_SUPPORT(face)
-    //ENOKI_CALL_SUPPORT(vertex)
+    ENOKI_CALL_SUPPORT_METHOD(face)
+    ENOKI_CALL_SUPPORT_METHOD(vertex)
 
-    //ENOKI_CALL_SUPPORT(has_vertex_normals)
-    //ENOKI_CALL_SUPPORT(vertex_position)
-    //ENOKI_CALL_SUPPORT(vertex_normal)
+    ENOKI_CALL_SUPPORT_METHOD(has_vertex_normals)
+    ENOKI_CALL_SUPPORT_METHOD(vertex_position)
+    ENOKI_CALL_SUPPORT_METHOD(vertex_normal)
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Mesh)
 
 //! @}

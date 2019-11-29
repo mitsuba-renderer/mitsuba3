@@ -552,5 +552,11 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
     }
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::BSDF)
 
+NAMESPACE_BEGIN(enoki)
+template <> struct enoki_type<mitsuba::BSDFFlags> {
+    static constexpr EnokiType value = EnokiType::UInt32;
+};
+NAMESPACE_END(enoki)
+
 //! @}
 // -----------------------------------------------------------------------
