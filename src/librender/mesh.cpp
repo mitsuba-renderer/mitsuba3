@@ -697,6 +697,10 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
 
     return m_optix_geometry;
 }
+#else // MTS_ENABLE_OPTIX off
+MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
+    // TODO
+}
 #endif
 
 MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback * /*callback*/) {

@@ -85,9 +85,12 @@ public:
             index *= scalar_t<Index>(m_face_size / sizeof(ScalarIndex));
             return gather<Result, sizeof(ScalarIndex)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
-        } else {
+        }
+#if defined(MTS_ENABLE_OPTIX)
+        else {
             return gather<Result, sizeof(ScalarIndex)>(m_faces_c, index, active);
         }
+#endif
     }
 
     /// Returns the world-space position of the vertex with index \c index
@@ -101,9 +104,12 @@ public:
             index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
             return gather<Result, sizeof(ScalarFloat)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
-        } else {
+        }
+#if defined(MTS_ENABLE_OPTIX)
+        else {
             return gather<Result, sizeof(ScalarFloat)>(m_vertex_positions_c, index, active);
         }
+#endif
     }
 
     /// Returns the normal direction of the vertex with index \c index
@@ -117,9 +123,12 @@ public:
             index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
             return gather<Result, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
-        } else {
+        }
+#if defined(MTS_ENABLE_OPTIX)
+        else {
             return gather<Result, sizeof(ScalarFloat)>(m_vertex_normals_c, index, active);
         }
+#endif
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
@@ -132,9 +141,12 @@ public:
             index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
             return gather<Result, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
-        } else {
+        }
+#if defined(MTS_ENABLE_OPTIX)
+        else {
             return gather<Result, sizeof(ScalarFloat)>(m_vertex_texcoords_c, index, active);
         }
+#endif
     }
 
     /// Returns the surface area of the face with index \c index
