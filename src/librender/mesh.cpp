@@ -30,8 +30,9 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     m_mesh = true;
 }
 
-MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct, ScalarSize vertex_count,
-                                        Struct *face_struct, ScalarSize face_count)
+MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_struct,
+                                        ScalarSize vertex_count, Struct *face_struct,
+                                        ScalarSize face_count)
     : m_name(name), m_vertex_count(vertex_count), m_face_count(face_count),
       m_vertex_struct(vertex_struct), m_face_struct(face_struct) {
     /* Helper lambda function to determine compatibility (offset/type) of a 'Struct' field */
@@ -92,7 +93,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write(Stream *) const {
     NotImplementedError("write");
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f Mesh<Float, Spectrum>::bbox() const {
+MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
+Mesh<Float, Spectrum>::bbox() const {
     return m_bbox;
 }
 
@@ -131,7 +133,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                             vertex_position(idx[1]),
                             vertex_position(idx[2]) };
 
-        ScalarVector3f side_0 = v[1] - v[0], side_1 = v[2] - v[0];
+        ScalarVector3f side_0 = v[1] - v[0],
+                       side_1 = v[2] - v[0];
         ScalarNormal3f n = cross(side_0, side_1);
         ScalarFloat length_sqr = squared_norm(n);
         if (likely(length_sqr > 0)) {
