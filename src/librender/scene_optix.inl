@@ -39,7 +39,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     rt_check(rtContextSetRayTypeCount(s.context, 1));
     rt_check(rtContextSetEntryPointCount(s.context, 2));
     rt_check(rtContextSetStackSize(s.context, 0));
-    rt_check(rtContextSetMaxTraceDepth(s.context, 0));
+    rt_check(rtContextSetMaxTraceDepth(s.context, 1));
     rt_check(rtContextSetMaxCallableProgramDepth(s.context, 0));
 
     const char *var_names[kOptixVariableCount] = {
@@ -78,12 +78,12 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx,   "ray_hit",         &prog[3]));
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_attr_ptx, "ray_attr",        &prog[4]));
 
-#if !defined(MTS_OPTIX_DEBUG)
+#if 0 //!defined(MTS_OPTIX_DEBUG)
         rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 0));
         rt_check(rtContextSetPrintEnabled(s.context, 0));
 #else
         rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_err", &prog[5]));
-        // rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 1));
+        rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 1));
         rt_check(rtContextSetPrintEnabled(s.context, 1));
         rt_check(rtContextSetPrintBufferSize(s.context, 4096));
         rt_check(rtContextSetUsageReportCallback(
@@ -137,6 +137,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         shape_index++;
     }
+
+    // This will trigger the scatter calls to upload geometry to the device
+    cuda_eval();
 
     Log(Info, "Validating and building scene in OptiX.");
     rt_check(rtContextValidate(s.context));

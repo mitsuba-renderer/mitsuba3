@@ -530,17 +530,19 @@ static void __rt_check(RTcontext context, RTresult errval, const char *file,
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
     if constexpr (is_cuda_array_v<Float>) {
+        static_assert(is_cuda_array_v<UInt32>);
         UInt32 vertex_range   = arange<UInt32>(m_vertex_count),
                vertex_range_2 = vertex_range * 2,
                vertex_range_3 = vertex_range * 3,
                face_range_3   = arange<UInt32>(m_face_count) * 3;
 
-        ScalarIndex *faces_ptr = nullptr;
+        uint32_t *faces_ptr = nullptr;
+        float *vertex_positions_ptr = nullptr;
+
         rt_check(rtBufferGetDevicePointer(m_optix_faces_buf, 0, (void **) &faces_ptr));
         for (size_t i = 0; i < 3; ++i)
             scatter(faces_ptr + i, m_faces_c[i], face_range_3);
 
-        float *vertex_positions_ptr = nullptr;
         rt_check(rtBufferGetDevicePointer(m_optix_vertex_positions_buf, 0,
                                         (void **) &vertex_positions_ptr));
 
@@ -616,7 +618,7 @@ Result cuda_upload(size_t size, Func func) {
         void *dst = cuda_malloc(size * sizeof(ScalarValue));
         cuda_memcpy_to_device_async(dst, tmp + j * size,
                                     size * sizeof(ScalarValue));
-        result[j] = Value::map(dst, size, true);
+        result[j] = CUDAArray<ScalarValue>::map(dst, size, true);
     }
 
     cuda_host_free(tmp);
