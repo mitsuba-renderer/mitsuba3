@@ -72,18 +72,18 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     }
 
     RTprogram prog[6];
-    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_gen_closest", &prog[0]));
-    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_gen_any", &prog[1]));
-    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_miss", &prog[2]));
-    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_hit", &prog[3]));
-    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_attr_ptx, "ray_attr", &prog[4]));
+    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx,   "ray_gen_closest", &prog[0]));
+    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx,   "ray_gen_any",     &prog[1]));
+    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx,   "ray_miss",        &prog[2]));
+    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx,   "ray_hit",         &prog[3]));
+    rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_attr_ptx, "ray_attr",        &prog[4]));
 
 #if !defined(MTS_OPTIX_DEBUG)
         rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 0));
         rt_check(rtContextSetPrintEnabled(s.context, 0));
 #else
         rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx, "ray_err", &prog[5]));
-        rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 1));
+        // rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 1));
         rt_check(rtContextSetPrintEnabled(s.context, 1));
         rt_check(rtContextSetPrintBufferSize(s.context, 4096));
         rt_check(rtContextSetUsageReportCallback(
@@ -127,13 +127,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         rt_check(rtGeometryInstanceCreate(s.context, &tri_inst));
         rt_check(rtGeometryInstanceSetGeometryTriangles(tri_inst, tri));
 
-        RTvariable shape_ptr_var;
         rt_check(rtGeometryInstanceSetMaterialCount(tri_inst, 1));
         rt_check(rtGeometryInstanceSetMaterial(tri_inst, 0, s.material));
         rt_check(rtGeometryGroupSetChild(s.group, shape_index, tri_inst));
 
+        RTvariable shape_ptr_var;
         rt_check(rtGeometryInstanceDeclareVariable(tri_inst, "shape_ptr", &shape_ptr_var));
         rt_check(rtVariableSet1ull(shape_ptr_var, (uintptr_t) shape));
+
         shape_index++;
     }
 

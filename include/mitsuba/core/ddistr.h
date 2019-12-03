@@ -76,7 +76,7 @@ public:
     }
 
     /// Access an entry by its index
-    template <typename Index, typename Value = float_array_t<Index>>
+    template <typename Index, typename Value = replace_scalar_t<Index, ScalarFloat>>
     Value eval(Index entry, mask_t<Index> active = true) const {
         return gather<Value>(m_cdf.data(), entry + 1, active) -
                gather<Value>(m_cdf.data(), entry, active);

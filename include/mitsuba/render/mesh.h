@@ -97,7 +97,7 @@ public:
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index, const mask_t<Index> &active = true) const {
         using Index3 = Array<Index, 3>;
-        using Result = Point<float_array_t<Index>, 3>;
+        using Result = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Result>(vertex(index));
         } else if constexpr (!is_cuda_array_v<Index>) {
@@ -116,7 +116,7 @@ public:
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index, const mask_t<Index> &active = true) const {
         using Index3 = Array<Index, 3>;
-        using Result = Normal<float_array_t<Index>, 3>;
+        using Result = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_normal_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {
@@ -134,7 +134,7 @@ public:
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index, const mask_t<Index> &active = true) const {
-        using Result = Point<float_array_t<Index>, 2>;
+        using Result = Point<replace_scalar_t<Index, ScalarFloat>, 2>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_texcoord_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {

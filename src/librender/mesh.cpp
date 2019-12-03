@@ -636,14 +636,14 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
         rt_check(rtBufferSetFormat(m_optix_faces_buf, RT_FORMAT_UNSIGNED_INT3));
         rt_check(rtBufferSetSize1D(m_optix_faces_buf, m_face_count));
         m_faces_c = cuda_upload<Index, 3>(
-            m_face_count, [this](size_t i) { return face_indices(i); });
+            m_face_count, [this](ScalarIndex i) { return face_indices(i); });
 
         // Vertex positions
         rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_positions_buf));
         rt_check(rtBufferSetFormat(m_optix_vertex_positions_buf, RT_FORMAT_FLOAT3));
         rt_check(rtBufferSetSize1D(m_optix_vertex_positions_buf, m_vertex_count));
         m_vertex_positions_c = cuda_upload<Float, 3>(
-            m_vertex_count, [this](size_t i) { return vertex_position(i); });
+            m_vertex_count, [this](ScalarIndex i) { return vertex_position(i); });
 
         // Vertex texture coordinates
         rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_texcoords_buf));
@@ -652,7 +652,7 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
             m_optix_vertex_texcoords_buf, has_vertex_texcoords() ? m_vertex_count : 0));
         if (has_vertex_texcoords())
             m_vertex_texcoords_c = cuda_upload<Float, 2>(
-                m_vertex_count, [this](size_t i) { return vertex_texcoord(i); });
+                m_vertex_count, [this](ScalarIndex i) { return vertex_texcoord(i); });
 
         // Vertex normals
         rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix_vertex_normals_buf));
@@ -661,7 +661,7 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
             m_optix_vertex_normals_buf, has_vertex_normals() ? m_vertex_count : 0));
         if (has_vertex_normals())
             m_vertex_normals_c = cuda_upload<Float, 3>(
-                m_vertex_count, [this](size_t i) { return vertex_normal(i); });
+                m_vertex_count, [this](ScalarIndex i) { return vertex_normal(i); });
 
         rt_check(rtGeometryTrianglesCreate(context, &m_optix_geometry));
         rt_check(rtGeometryTrianglesSetPrimitiveCount(m_optix_geometry, m_face_count));
