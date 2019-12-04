@@ -8,6 +8,7 @@ MTS_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
 
 MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
     Assert(m_radius > 0);
+    m_values.resize(MTS_FILTER_RESOLUTION + 1);
 
     // Evaluate and store the filter values
     for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)

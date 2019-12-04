@@ -530,7 +530,6 @@ static void __rt_check(RTcontext context, RTresult errval, const char *file,
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
     if constexpr (is_cuda_array_v<Float>) {
-        static_assert(is_cuda_array_v<UInt32>);
         UInt32 vertex_range   = arange<UInt32>(m_vertex_count),
                vertex_range_2 = vertex_range * 2,
                vertex_range_3 = vertex_range * 3,

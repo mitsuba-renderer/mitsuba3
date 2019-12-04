@@ -62,7 +62,7 @@ public:
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
         Int32 index = min(Int32(abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
-        return gather<Float>(m_values, index, active);
+        return gather<Float>(m_values.data(), index, active);
     }
 
 protected:
@@ -85,7 +85,7 @@ protected:
 
 protected:
     ScalarFloat m_radius, m_scale_factor;
-    ScalarFloat m_values[MTS_FILTER_RESOLUTION + 1];
+    host_vector<Float> m_values;
     uint32_t m_border_size;
 };
 

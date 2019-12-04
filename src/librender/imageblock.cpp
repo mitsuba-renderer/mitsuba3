@@ -72,7 +72,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     int n = ceil2int<int>((m_filter->radius() - 2.f * math::Epsilon<ScalarFloat>) * 2.f);
 
     Point2f base = lo - pos;
-    ENOKI_NOUNROLL for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
         Point2f p = base + i;
         m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
         m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
@@ -89,21 +89,50 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
         for (int i = 0; i <= n; ++i)
             m_weights_x[i] *= factor;
     }
-
     // Rasterize the filtered sample into the framebuffer
     ScalarFloat *buffer = (ScalarFloat *) m_bitmap->data();
-    ENOKI_NOUNROLL for (int yr = 0; yr < n; ++yr) {
-        Int32 y = lo.y() + yr;
-        Mask enabled = active && y <= hi.y();
 
-        ENOKI_NOUNROLL for (int xr = 0; xr < n; ++xr) {
-            Int32 x = lo.x() + xr;
-            Int32 offset = channels * (y * size.x() + x);
-            Float weights = m_weights_y[yr] * m_weights_x[xr];
+    // TODO unify this (implement ImageBuffer that handles images on GPU)
+    if constexpr (!is_cuda_array_v<Float>) {
+        ENOKI_NOUNROLL for (int yr = 0; yr < n; ++yr) {
+            Int32 y = lo.y() + yr;
+            Mask enabled = active && y <= hi.y();
 
-            enabled &= x <= hi.x();
-            ENOKI_NOUNROLL for (uint32_t k = 0; k < channels; ++k)
-                scatter_add(buffer + k, weights * value[k], offset, enabled);
+            ENOKI_NOUNROLL for (int xr = 0; xr < n; ++xr) {
+                Int32 x = lo.x() + xr;
+                Int32 offset = channels * (y * size.x() + x);
+                Float weights = m_weights_y[yr] * m_weights_x[xr];
+
+                enabled &= x <= hi.x();
+                ENOKI_NOUNROLL for (uint32_t k = 0; k < channels; ++k)
+                    scatter_add(buffer + k, weights * value[k], offset, enabled);
+            }
+        }
+    } else {
+        uint32_t n_slices = value[0].size();
+
+        // Make sure active has the right size
+        set_slices(active, n_slices);
+
+        for (size_t s = 0; s < n_slices; s++)
+        {
+            for (int yr = 0; yr < n; ++yr) {
+                ScalarInt32 y = lo.y()[s] + yr;
+                ScalarMask enabled = active[s] && y <= hi.y()[s];
+
+                for (int xr = 0; xr < n; ++xr) {
+                    ScalarInt32 x = lo.x()[s] + xr;
+                    ScalarInt32 offset = (y * size.x() + x) * channels;
+                    ScalarFloat weights = m_weights_y[yr][s] * m_weights_x[xr][s];
+
+                    enabled &= x <= hi.x()[s];
+
+                    for (uint32_t k = 0; k < channels; ++k) {
+                        auto val = value[k].size() == 1 ? value[k][0] : value[k][s];
+                        scatter_add(buffer + k, weights * val, offset, enabled);
+                    }
+                }
+            }
         }
     }
 
