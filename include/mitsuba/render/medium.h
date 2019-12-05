@@ -12,6 +12,7 @@ class MTS_EXPORT_RENDER Medium : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Medium, Object, "medium")
 
+    ENOKI_PINNED_OPERATOR_NEW(Float)
 protected:
     virtual ~Medium();
 

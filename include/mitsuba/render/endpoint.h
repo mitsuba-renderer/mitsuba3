@@ -220,6 +220,8 @@ public:
     //! @}
     // =============================================================
 
+    ENOKI_PINNED_OPERATOR_NEW(Float)
+
 protected:
     Endpoint(const Properties &props);
 

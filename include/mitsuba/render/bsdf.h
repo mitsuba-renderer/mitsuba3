@@ -468,6 +468,7 @@ public:
     // -----------------------------------------------------------------------
 
     ENOKI_CALL_SUPPORT_FRIEND()
+    ENOKI_PINNED_OPERATOR_NEW(Float)
 
 protected:
     BSDF(const Properties &props);
