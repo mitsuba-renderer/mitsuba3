@@ -46,9 +46,9 @@ MTS_PY_EXPORT_STRUCT(random) {
                         result.mutable_data()[i] = rng.next_uint64_bounded(bound);
                     return result;
                 }, "bound"_a, "shape"_a)
-            .def("next_float32", (ScalarFloat (PCG32::*)()) &PCG32::next_float32, DE(PCG32, next_float32))
+            .def("next_float32", (ScalarFloat32 (PCG32::*)()) &PCG32::next_float32, DE(PCG32, next_float32))
             .def("next_float32", [](PCG32 &rng, const std::vector<size_t> &shape) {
-                py::array_t<ScalarFloat> result(shape);
+                py::array_t<ScalarFloat32> result(shape);
                 for (py::ssize_t i = 0; i < result.size(); ++i)
                     result.mutable_data()[i] = rng.next_float32();
                 return result;

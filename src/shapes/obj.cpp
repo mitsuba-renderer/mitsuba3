@@ -40,7 +40,13 @@ public:
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
-    ScalarFloat strtof(const char *nptr, char **endptr) {
+    using InputFloat = float;
+    using InputPoint3f  = Point<InputFloat, 3>;
+    using InputVector2f = Vector<InputFloat, 2>;
+    using InputVector3f = Vector<InputFloat, 3>;
+    using InputNormal3f = Normal<InputFloat, 3>;
+
+    InputFloat strtof(const char *nptr, char **endptr) {
             return std::strtof(nptr, endptr);
     }
 
@@ -74,9 +80,9 @@ public:
         };
 
         /// Temporary buffers for vertices, normals, and texture coordinates
-        std::vector<ScalarVector3f> vertices;
-        std::vector<ScalarNormal3f> normals;
-        std::vector<ScalarVector2f> texcoords;
+        std::vector<InputVector3f> vertices;
+        std::vector<InputNormal3f> normals;
+        std::vector<InputVector2f> texcoords;
         std::vector<ScalarIndex3> triangles;
         std::vector<VertexBinding> vertex_map;
 
@@ -113,7 +119,7 @@ public:
             bool parse_error = false;
             if (cur[0] == 'v' && (cur[1] == ' ' || cur[1] == '\t')) {
                 // Vertex position
-                ScalarPoint3f p;
+                InputPoint3f p;
                 cur += 2;
                 for (size_t i = 0; i < 3; ++i) {
                     const char *orig = cur;
@@ -127,7 +133,7 @@ public:
                 vertices.push_back(p);
             } else if (cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Vertex normal
-                ScalarNormal3f n;
+                InputNormal3f n;
                 cur += 3;
                 for (size_t i = 0; i < 3; ++i) {
                     const char *orig = cur;
@@ -140,7 +146,7 @@ public:
                 normals.push_back(n);
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
-                ScalarVector2f uv;
+                InputVector2f uv;
                 cur += 3;
                 for (size_t i = 0; i < 2; ++i) {
                     const char *orig = cur;
@@ -230,17 +236,17 @@ public:
         m_face_count = (ScalarSize) triangles.size();
         m_vertex_struct = new Struct();
         for (auto name : { "x", "y", "z" })
-            m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
+            m_vertex_struct->append(name, struct_type_v<InputFloat>);
 
         if (!m_disable_vertex_normals) {
             for (auto name : { "nx", "ny", "nz" })
-                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
+                m_vertex_struct->append(name, struct_type_v<InputFloat>);
             m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
         }
 
         if (!texcoords.empty()) {
             for (auto name : { "u", "v" })
-                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
+                m_vertex_struct->append(name, struct_type_v<InputFloat>);
             m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
         }
 

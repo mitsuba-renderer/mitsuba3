@@ -21,7 +21,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 static RTCDevice __embree_device = nullptr;
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props) {
+MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
     if (!__embree_device)
         __embree_device = rtcNewDevice("");
 
@@ -34,12 +34,12 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &props)
     Log(Info, "Embree ready. (took %s)", util::time_string(timer.value()));
 }
 
-MTS_VARIANT void Scene<Spectrum, Float>::accel_release() {
+MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     rtcReleaseScene((RTCScene) m_accel);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Spectrum, Float>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
     ScopedPhase sp(ProfilerPhase::RayIntersect);
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
@@ -59,7 +59,7 @@ Scene<Spectrum, Float>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
         rh.ray.mask = 0;
         rh.ray.id = 0;
         rh.ray.flags = 0;
-        rtcIntersect1((RTScene) m_accel, &context, &rh);
+        rtcIntersect1((RTCScene) m_accel, &context, &rh);
 
         if (rh.ray.tfar != ray.maxt) {
             ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
@@ -88,7 +88,7 @@ Scene<Spectrum, Float>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
         } else {
             si.wavelengths = ray.wavelength;
             si.wi = -ray.d;
-            si.t = math::Infinity;
+            si.t = math::Infinity<Float>;
         }
     } else {
         context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
@@ -110,16 +110,15 @@ Scene<Spectrum, Float>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
         store(rh.ray.id, UInt32(0));
         store(rh.ray.flags, UInt32(0));
 
-        rtcIntersectW(valid, (RTScene) m_accel, &context, &rh);
+        rtcIntersectW(valid, (RTCScene) m_accel, &context, &rh);
 
         Mask hit = active && neq(load<Float>(rh.ray.tfar), ray.maxt);
 
         if (likely(any(hit))) {
-            using ShapePtr = Array<const Shape *, PacketSize>;
-
+            using ShapePtr = replace_scalar_t<Float, const Shape *>;
             ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
             UInt32 shape_index = load<UInt32>(rh.hit.geomID);
-            UInt32 prim_index = load<UInt32>(rh.hit.primID);
+            UInt32 prim_index  = load<UInt32>(rh.hit.primID);
 
             // Fill in basic information common to all shapes
             si.t = load<Float>(rh.ray.tfar);
@@ -128,7 +127,7 @@ Scene<Spectrum, Float>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, hit);
             si.prim_index = prim_index;
 
-            FloatP cache[2] = { load<Float>(rh.hit.u), load<Float>(rh.hit.v) };
+            Float cache[2] = { load<Float>(rh.hit.u), load<Float>(rh.hit.v) };
 
             // Ask shape(s) to fill in the rest using the cache
             si.shape->fill_surface_interaction(ray, cache, si, active);
@@ -144,13 +143,13 @@ Scene<Spectrum, Float>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             si.wavelengths = ray.wavelength;
             si.wi = -ray.d;
         }
-        si.t[!hit] = math::Infinity;
+        si.t[!hit] = math::Infinity<Float>;
     }
     return si;
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene::ray_test_cpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
     ScopedPhase p(ProfilerPhase::RayTest);
 
     RTCIntersectContext context;
@@ -170,7 +169,7 @@ Scene::ray_test_cpu(const Ray3f &ray, Mask active) const {
         ray2.mask = 0;
         ray2.id = 0;
         ray2.flags = 0;
-        rtcOccluded1((RTScene) m_accel, &context, &ray2);
+        rtcOccluded1((RTCScene) m_accel, &context, &ray2);
         return ray2.tfar != ray.maxt;
     } else {
         context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
@@ -191,7 +190,7 @@ Scene::ray_test_cpu(const Ray3f &ray, Mask active) const {
         store(ray2.mask, UInt32(0));
         store(ray2.id, UInt32(0));
         store(ray2.flags, UInt32(0));
-        rtcOccludedW(valid, (RTScene) m_accel, &context, &ray2);
+        rtcOccludedW(valid, (RTCScene) m_accel, &context, &ray2);
         return active && neq(load<Float>(ray2.tfar), ray.maxt);
     }
 }

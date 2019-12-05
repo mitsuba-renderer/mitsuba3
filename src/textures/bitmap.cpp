@@ -107,7 +107,7 @@ public:
     MTS_IMPORT_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
     MTS_IMPORT_TYPES()
 
-    using StorageType = Vector<ScalarFloat, ChannelCount>;
+    using StorageType = Vector<Bitmap::Float, ChannelCount>;
 
     BitmapTextureImpl(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
         : Base(bitmap, name, transform) {
@@ -123,7 +123,7 @@ public:
 private:
     void calculate_mean() {
         // Convert to spectral coefficients, monochrome or leave in RGB.
-        auto *ptr = (ScalarFloat *) m_bitmap->data();
+        auto *ptr = (Bitmap::Float *) m_bitmap->data();
         double mean = 0.0;
         for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
             // Load data from the scalar-typed buffer

@@ -54,7 +54,7 @@ public:
                 if constexpr (is_monochrome_v<Spectrum>) {
                     coeff = ScalarVector4f(lum, lum, lum, 1.f);
                 } else if constexpr (is_rgb_v<Spectrum>) {
-                    coeff = concat(rgb, 1.f);
+                    coeff = concat(rgb, ScalarFloat(1.f));
                 } else {
                     static_assert(is_spectral_v<Spectrum>);
                     // Fetch spectral fit for given sRGB color value

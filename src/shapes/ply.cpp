@@ -27,6 +27,11 @@ public:
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
 
+    // TODO this should depend on the file format
+    using InputFloat = float;
+    using InputPoint3f  = Point<InputFloat, 3>;
+    using InputNormal3f = Normal<InputFloat, 3>;
+
     struct PLYElement {
         std::string name;
         size_t count;
@@ -73,6 +78,8 @@ public:
             fail(e.what());
         }
 
+        // TODO check header float type (32 vs 64)
+
         bool has_vertex_normals = false;
         for (auto &el : header.elements) {
             size_t size = el.struct_->size();
@@ -80,11 +87,11 @@ public:
                 m_vertex_struct = new Struct();
 
                 for (auto name : { "x", "y", "z" })
-                    m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
+                    m_vertex_struct->append(name, struct_type_v<InputFloat>);
 
                 if (!m_disable_vertex_normals) {
                     for (auto name : { "nx", "ny", "nz" })
-                        m_vertex_struct->append(name, struct_type_v<ScalarFloat>,
+                        m_vertex_struct->append(name, struct_type_v<InputFloat>,
                                                 FieldFlags::Default, 0.0);
 
                     if (el.struct_->has_field("nx") &&
@@ -108,7 +115,7 @@ public:
                 }
                 if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
                     for (auto name : { "u", "v" })
-                        m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
+                        m_vertex_struct->append(name, struct_type_v<InputFloat>);
 
                     m_texcoord_offset = (ScalarIndex) m_vertex_struct->field("u").offset;
                 }
@@ -147,7 +154,7 @@ public:
 
                     if (!has_vertex_normals) {
                         for (size_t j = 0; j < count; ++j) {
-                            ScalarPoint3f p = enoki::load<ScalarPoint3f>(target);
+                            InputPoint3f p = enoki::load<InputPoint3f>(target);
                             p = m_to_world.transform_affine(p);
                             if (unlikely(!all(enoki::isfinite(p))))
                                 fail("mesh contains invalid vertex positions/normal data");
@@ -157,16 +164,16 @@ public:
                         }
                     } else {
                         for (size_t j = 0; j < count; ++j) {
-                            ScalarPoint3f p = enoki::load<ScalarPoint3f>(target);
-                            ScalarNormal3f n =
-                                enoki::load<ScalarNormal3f>(target + sizeof(ScalarFloat) * 3);
+                            InputPoint3f p = enoki::load<InputPoint3f>(target);
+                            InputNormal3f n =
+                                enoki::load<InputNormal3f>(target + sizeof(InputFloat) * 3);
                             n = normalize(m_to_world.transform_affine(n));
                             p = m_to_world.transform_affine(p);
                             if (unlikely(!all(enoki::isfinite(p) && enoki::isfinite(n))))
                                 fail("mesh contains invalid vertex positions/normal data");
                             m_bbox.expand(p);
                             enoki::store_unaligned(target, p);
-                            enoki::store_unaligned(target + sizeof(ScalarFloat) * 3, n);
+                            enoki::store_unaligned(target + sizeof(InputFloat) * 3, n);
                             target += o_struct_size;
                         }
                     }

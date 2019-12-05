@@ -141,8 +141,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             n *= rsqrt<ScalarVector3f::Approx>(length_sqr);
 
             // Use Enoki to compute the face angles at the same time
-            auto side1 = transpose(Array<Packet<float, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
-            auto side2 = transpose(Array<Packet<float, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
+            auto side1 = transpose(Array<Packet<ScalarFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
+            auto side2 = transpose(Array<Packet<ScalarFloat, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
             ScalarVector3f face_angles = unit_angle(normalize(side1), normalize(side2));
 
             for (size_t j = 0; j < 3; ++j)

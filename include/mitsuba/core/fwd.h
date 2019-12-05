@@ -132,6 +132,7 @@ template <typename Float_> struct CoreAliases {
     using UInt32  =  uint32_array_t<Float>;
     using Int64   =   int64_array_t<Float>;
     using UInt64  =  uint64_array_t<Float>;
+    using Float32 = float32_array_t<Float>;
     using Float64 = float64_array_t<Float>;
 
     using Vector1i = Vector<Int32, 1>;
@@ -228,6 +229,7 @@ template <typename Float_> struct CoreAliases {
     using prefix ## UInt32               = typename prefix ## CoreAliases::UInt32;                 \
     using prefix ## Int64                = typename prefix ## CoreAliases::Int64;                  \
     using prefix ## UInt64               = typename prefix ## CoreAliases::UInt64;                 \
+    using prefix ## Float32              = typename prefix ## CoreAliases::Float32;                \
     using prefix ## Float64              = typename prefix ## CoreAliases::Float64;                \
     using prefix ## Vector1i             = typename prefix ## CoreAliases::Vector1i;               \
     using prefix ## Vector2i             = typename prefix ## CoreAliases::Vector2i;               \

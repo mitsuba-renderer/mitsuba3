@@ -90,7 +90,8 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             m_weights_x[i] *= factor;
     }
     // Rasterize the filtered sample into the framebuffer
-    ScalarFloat *buffer = (ScalarFloat *) m_bitmap->data();
+    using BitmapFloat = typename Bitmap::Float;
+    BitmapFloat *buffer = (BitmapFloat *) m_bitmap->data();
 
     // TODO unify this (implement ImageBuffer that handles images on GPU)
     if constexpr (!is_cuda_array_v<Float>) {
@@ -105,7 +106,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
                 enabled &= x <= hi.x();
                 ENOKI_NOUNROLL for (uint32_t k = 0; k < channels; ++k)
-                    scatter_add(buffer + k, weights * value[k], offset, enabled);
+                    scatter_add<sizeof(BitmapFloat)>(buffer + k, weights * value[k], offset, enabled);
             }
         }
     } else {
