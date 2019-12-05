@@ -66,13 +66,13 @@ public:
 #define MTS_SELECT_IMPL(IsRaw)                                                                     \
     switch (m_bitmap->channel_count()) {                                                           \
         case 1:                                                                                    \
-            return { new BitmapTextureImpl<Float, Spectrum, 1, IsRaw>(bitmap, m_name,              \
+            return { new BitmapTextureImpl<Float, Spectrum, IsRaw ? 1 : 3, IsRaw>(bitmap, m_name,  \
                                                                       m_transform) };              \
         case 3:                                                                                    \
-            return { new BitmapTextureImpl<Float, Spectrum, 3, IsRaw>(bitmap, m_name,              \
+            return { new BitmapTextureImpl<Float, Spectrum, IsRaw ? 3 : 3, IsRaw>(bitmap, m_name,  \
                                                                       m_transform) };              \
         case 4:                                                                                    \
-            return { new BitmapTextureImpl<Float, Spectrum, 4, IsRaw>(bitmap, m_name,              \
+            return { new BitmapTextureImpl<Float, Spectrum, IsRaw ? 4 : 3, IsRaw>(bitmap, m_name,  \
                                                                       m_transform) };              \
         default:                                                                                   \
             Throw("Unsupported channel count: %d (expected 1, 3 or 4)",                            \
@@ -107,7 +107,8 @@ public:
     MTS_IMPORT_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
     MTS_IMPORT_TYPES()
 
-    using StorageType = Vector<Bitmap::Float, ChannelCount>;
+    using BitmapFloat = typename Bitmap::Float;
+    using StorageType = Vector<BitmapFloat, ChannelCount>;
 
     BitmapTextureImpl(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
         : Base(bitmap, name, transform) {
@@ -123,7 +124,7 @@ public:
 private:
     void calculate_mean() {
         // Convert to spectral coefficients, monochrome or leave in RGB.
-        auto *ptr = (Bitmap::Float *) m_bitmap->data();
+        auto *ptr = (BitmapFloat *) m_bitmap->data();
         double mean = 0.0;
         for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
             // Load data from the scalar-typed buffer
