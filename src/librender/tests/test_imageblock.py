@@ -3,22 +3,9 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, PixelFormat, float_dtype
-from mitsuba.scalar_rgb.core import cie1931_xyz
+from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, PixelFormat, float_dtype, srgb_to_xyz
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import ImageBlock
-
-N_SAMPLES = 3
-
-def convert_to_xyz(wavelengths, spectrum):
-    responses = cie1931_xyz(wavelengths)
-    xyz = np.zeros(shape=(3,))
-    for li in range(N_SAMPLES):
-        xyz[0] += spectrum[li] * responses[li, 0]
-        xyz[1] += spectrum[li] * responses[li, 1]
-        xyz[2] += spectrum[li] * responses[li, 2]
-    xyz /= float(N_SAMPLES)
-    return xyz
 
 def check_value(im, arr, atol=1e-9):
     vals = np.array(im.bitmap(), copy=False)
@@ -90,14 +77,15 @@ def test03_put_values_basic():
                           3 + 1 + 1))
     for i in range(border, im.height() + border):
         for j in range(border, im.width() + border):
-            wavelengths = np.random.uniform(size=(N_SAMPLES,), low=350, high=750)
-            spectrum = np.random.uniform(size=(N_SAMPLES,))
-            ref[i, j, :3] = convert_to_xyz(wavelengths, spectrum)
+            wavelengths = np.random.uniform(size=(3,), low=350, high=750)
+            spectrum = np.random.uniform(size=(3,))
+            ref[i, j, :3] = srgb_to_xyz(spectrum)
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight
             # To avoid the effects of the reconstruction filter (simpler test),
             # we'll just add one sample right in the center of each pixel.
             im.put([j + 0.5, i + 0.5], wavelengths, spectrum, alpha=1.0)
+
     check_value(im, ref, atol=1e-6)
 
 def test04_put_packets_basic():
@@ -121,8 +109,8 @@ def test04_put_packets_basic():
     # the same pixel receives several values
     positions[-3:, :] = positions[:3, :]
 
-    wavelengths = np.random.uniform(size=(n, N_SAMPLES), low=350, high=750)
-    spectra = np.arange(n * N_SAMPLES).reshape((n, N_SAMPLES))
+    wavelengths = np.random.uniform(size=(n, 3), low=350, high=750)
+    spectra = np.arange(n * 3).reshape((n, 3))
     alphas = np.ones(shape=(n,))
 
     border = im.border_size()
@@ -130,7 +118,7 @@ def test04_put_packets_basic():
                           3 + 1 + 1))
     for i in range(n):
         (x, y) = positions[i, :] + border
-        ref[int(y), int(x), :3] += convert_to_xyz(wavelengths[i, :], spectra[i, :])
+        ref[int(y), int(x), :3] +=  srgb_to_xyz(spectra[i, :])
         ref[int(y), int(x),  3] += 1  # Alpha
         ref[int(y), int(x),  4] += 1  # Weight
     # Vectorized `put`
@@ -147,14 +135,17 @@ def test05_put_with_filter():
         from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
         from mitsuba.packet_rgb.render import ImageBlock as ImageBlockP
     except ImportError:
-
         pytest.skip("packet_rgb mode not enabled")
-    rfilter = load_string_packet("""<rfilter version="2.0.0" type="gaussian">
+
+    rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
+            <float name="stddev" value="0.5"/>
+        </rfilter>""")
+    rfilter_p = load_string_packet("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="0.5"/>
         </rfilter>""")
     size = [12, 12]
-    im  = ImageBlockP(PixelFormat.XYZAW, size, filter=rfilter)
-    im2 = ImageBlockP(PixelFormat.XYZAW, size, filter=rfilter)
+    im  = ImageBlockP(PixelFormat.XYZAW, size, filter=rfilter_p)
+    im2 = ImageBlock(PixelFormat.XYZAW, size, filter=rfilter)
 
     positions = np.array([
         [5, 6], [0, 1], [5, 6], [1, 11], [11, 11],
@@ -163,8 +154,8 @@ def test05_put_with_filter():
     n = positions.shape[0]
     positions += np.random.uniform(size=positions.shape, low=0, high=0.95)
 
-    wavelengths = np.random.uniform(size=(n, N_SAMPLES), low=350, high=750)
-    spectra = np.arange(n * N_SAMPLES).reshape((n, N_SAMPLES))
+    wavelengths = np.random.uniform(size=(n, 3), low=350, high=750)
+    spectra = np.arange(n * 3).reshape((n, 3))
     alphas = np.ones(shape=(n,))
 
     radius = int(math.ceil(rfilter.radius()))
@@ -195,7 +186,7 @@ def test05_put_with_filter():
                 weight = rfilter.eval_discretized(w_pos[0]) \
                          * rfilter.eval_discretized(w_pos[1])
 
-                xyz = convert_to_xyz(wavelengths[i, :], spectra[i, :])
+                xyz = srgb_to_xyz(spectra[i, :])
                 ref[r_pos[1], r_pos[0], :3] += weight * xyz
                 ref[r_pos[1], r_pos[0],  3] += weight * 1  # Alpha
                 ref[r_pos[1], r_pos[0],  4] += weight * 1  # Weight
@@ -206,3 +197,34 @@ def test05_put_with_filter():
     check_value(im, ref, atol=1e-6)
     check_value(im2, ref, atol=1e-6)
 
+
+def test06_put_values_basic():
+    try:
+        from mitsuba.scalar_spectral.core.xml import load_string as load_string_spectral
+        from mitsuba.scalar_spectral.core import spectrum_to_xyz, MTS_WAVELENGTH_SAMPLES
+        from mitsuba.scalar_spectral.render import ImageBlock as ImageBlockS
+    except ImportError:
+        pytest.skip("scalar_spectral mode not enabled")
+
+    # Recall that we must pass a reconstruction filter to use the `put` methods.
+    rfilter = load_string_spectral("""<rfilter version="2.0.0" type="box">
+            <float name="radius" value="0.4"/>
+        </rfilter>""")
+    im = ImageBlockS(PixelFormat.XYZAW, [10, 8], filter=rfilter)
+
+    # From a spectrum & alpha value
+    border = im.border_size()
+    ref = np.zeros(shape=(im.height() + 2 * border, im.width() + 2 * border,
+                          3 + 1 + 1))
+    for i in range(border, im.height() + border):
+        for j in range(border, im.width() + border):
+            wavelengths = np.random.uniform(size=(MTS_WAVELENGTH_SAMPLES,), low=350, high=750)
+            spectrum = np.random.uniform(size=(MTS_WAVELENGTH_SAMPLES,))
+            ref[i, j, :3] = spectrum_to_xyz(spectrum, wavelengths)
+            ref[i, j,  3] = 1  # Alpha
+            ref[i, j,  4] = 1  # Weight
+            # To avoid the effects of the reconstruction filter (simpler test),
+            # we'll just add one sample right in the center of each pixel.
+            im.put([j + 0.5, i + 0.5], wavelengths, spectrum, alpha=1.0)
+
+    check_value(im, ref, atol=1e-6)

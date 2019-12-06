@@ -19,6 +19,13 @@ MTS_PY_EXPORT(Spectrum) {
     .def("pdf_uniform_spectrum", vectorize<Float>(&pdf_uniform_spectrum<Float>),
         "wavelengths"_a, D(pdf_uniform_spectrum));
 
+    if constexpr (is_rgb_v<Spectrum>) {
+        m.def("srgb_to_xyz", vectorize<Float>(&srgb_to_xyz<Float>),
+              "rgb"_a, "active"_a = true, D(srgb_to_xyz));
+        m.def("xyz_to_srgb", vectorize<Float>(&xyz_to_srgb<Float>),
+              "rgb"_a, "active"_a = true, D(xyz_to_srgb));
+    }
+
     if constexpr (is_spectral_v<Spectrum>) {
         m.def("spectrum_to_xyz", vectorize<Float>(&spectrum_to_xyz<Float, array_size_v<Spectrum>>),
               "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz));
