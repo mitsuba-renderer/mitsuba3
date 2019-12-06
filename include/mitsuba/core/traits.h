@@ -22,6 +22,7 @@ struct spectrum_traits<Color<Float, 1>> {
     using Scalar                             = Color<scalar_t<Float>, 1>;
     using Wavelength                         = Color<Float, 1>;
     using Unpolarized                        = Color<Float, 1>;
+    template<typename F> using Replace       = Color<F, 1>;
     static constexpr bool is_monochrome      = true;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = false;
@@ -34,6 +35,7 @@ struct spectrum_traits<Color<Float, 3>> {
     using Scalar                             = Color<scalar_t<Float>, 3>;
     using Wavelength                         = Color<Float, 3>; // TODO don't bother storing a wavelength
     using Unpolarized                        = Color<Float, 3>;
+    template<typename F> using Replace       = Color<F, 3>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = true;
     static constexpr bool is_spectral        = false;
@@ -46,6 +48,7 @@ struct spectrum_traits<Spectrum<Float, Size>> {
     using Scalar                             = Spectrum<scalar_t<Float>, Size>;
     using Wavelength                         = Spectrum<Float, Size>;
     using Unpolarized                        = Spectrum<Float, Size>;
+    template<typename F> using Replace       = Spectrum<F, Size>;
     static constexpr bool is_monochrome      = false;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = true;
@@ -58,6 +61,7 @@ template <typename T>
 struct spectrum_traits<MuellerMatrix<T>> : spectrum_traits<T> {
     using Scalar                             = MuellerMatrix<typename spectrum_traits<T>::Scalar>;
     using Unpolarized                        = T;
+    template<typename F> using Replace       = MuellerMatrix<F>;
     static constexpr bool is_polarized       = true;
 };
 
@@ -70,9 +74,10 @@ struct spectrum_traits<void> {
 
 template <typename T>
 struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> {
-    using Scalar            = enoki::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
-    using Wavelength        = enoki::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
-    using Unpolarized       = enoki::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
+    using Scalar                       = enoki::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
+    using Wavelength                   = enoki::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
+    using Unpolarized                  = enoki::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
+    template<typename F> using Replace = enoki::detail::MaskedArray<typename spectrum_traits<T>::template Replace<F>>;
 };
 
 NAMESPACE_END(detail)
@@ -85,6 +90,7 @@ template <typename T> constexpr size_t texture_channels_v = detail::spectrum_tra
 template <typename T> using scalar_spectrum_t = typename detail::spectrum_traits<T>::Scalar;
 template <typename T> using wavelength_t = typename detail::spectrum_traits<T>::Wavelength;
 template <typename T> using depolarize_t = typename detail::spectrum_traits<T>::Unpolarized;
+template <typename S, typename T> using replace_float_spectrum_t = typename detail::spectrum_traits<S>::template Replace<T>;
 
 //! @}
 // =============================================================
