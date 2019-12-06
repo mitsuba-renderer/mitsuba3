@@ -151,7 +151,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         // Perform a visibility test if requested
         if (test_visibility && any_or<true>(active)) {
-            Ray3f ray(ref.p, ds.d, math::Epsilon<Float> * (1.f + hmax(abs(ref.p))),
+            Ray3f ray(ref.p, ds.d, math::RayEpsilon<Float> * (1.f + hmax(abs(ref.p))),
                       ds.dist * (1.f - math::ShadowEpsilon<Float>), ref.time, ref.wavelengths);
             spec[ray_test(ray, active)] = 0.f;
         }

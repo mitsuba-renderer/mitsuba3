@@ -66,7 +66,7 @@ struct Interaction {
         Float dist = norm(d);
         d /= dist;
 
-        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::Epsilon<Float>,
+        return Ray3f(p, d, (1.f + hmax(abs(p))) * math::RayEpsilon<Float>,
                      dist * (1.f - math::ShadowEpsilon<Float>), time, wavelengths);
     }
 
