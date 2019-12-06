@@ -9,9 +9,9 @@ MTS_PY_EXPORT_STRUCT(Ray) {
             .def(py::init<>(), "Create an unitialized ray")
             .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
-                D(Ray3f, Ray3f, 5), "o"_a, "d"_a, "time"_a, "wavelength"_a)
+                D(Ray3f, Ray3f, 5), "o"_a, "d"_a, "time"_a, "wavelengths"_a)
             .def(py::init<Point3f, Vector3f, Float, Float, Float, const Wavelength &>(),
-                D(Ray3f, Ray3f, 6), "o"_a, "d"_a, "mint"_a, "maxt"_a, "time"_a, "wavelength"_a)
+                D(Ray3f, Ray3f, 6), "o"_a, "d"_a, "mint"_a, "maxt"_a, "time"_a, "wavelengths"_a)
             .def(py::init<const Ray3f &, Float, Float>(),
                 D(Ray3f, Ray3f, 7), "other"_a, "mint"_a, "maxt"_a)
             .def_method(Ray3f, update)
@@ -22,7 +22,7 @@ MTS_PY_EXPORT_STRUCT(Ray) {
             .def_field(Ray3f, mint)
             .def_field(Ray3f, maxt)
             .def_field(Ray3f, time)
-            .def_field(Ray3f, wavelength)
+            .def_field(Ray3f, wavelengths)
             .def_repr(Ray3f);
         bind_slicing_operators<Ray3f, Ray<ScalarPoint3f, scalar_spectrum_t<Spectrum>>>(ray);
     }
@@ -33,7 +33,7 @@ MTS_PY_EXPORT_STRUCT(Ray) {
             .def(py::init<Ray3f &>(), "ray"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
                  "Initialize without differentials.",
-                 "o"_a, "d"_a, "time"_a, "wavelength"_a)
+                 "o"_a, "d"_a, "time"_a, "wavelengths"_a)
             .def_method(RayDifferential3f, scale_differential)
             .def_field(RayDifferential3f, o_x)
             .def_field(RayDifferential3f, o_y)

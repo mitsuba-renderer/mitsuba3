@@ -69,7 +69,7 @@ def test03_ray_intersect():
                     z = 1.1*l*z
 
                     ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
-                                time=0.0, wavelength=wl)
+                                time=0.0, wavelengths=wl)
                     si_found = s.ray_test(ray)
                     si = s.ray_intersect(ray)
 
@@ -78,7 +78,7 @@ def test03_ray_intersect():
 
                     if  si_found:
                         ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
-                                    time=0.0, wavelength=wl)
+                                    time=0.0, wavelengths=wl)
 
                         si = s.ray_intersect(ray)
                         ray_u = Ray3f(ray)

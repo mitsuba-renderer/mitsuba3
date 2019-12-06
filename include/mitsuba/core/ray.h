@@ -33,13 +33,13 @@ template <typename Point_, typename Spectrum_> struct Ray {
     Float mint = math::Epsilon<Float>;  ///< Minimum position on the ray segment
     Float maxt = math::Infinity<Float>; ///< Maximum position on the ray segment
     Float time = 0.f;                   ///< Time value associated with this ray
-    Wavelength wavelength;              ///< Wavelength packet associated with the ray
+    Wavelength wavelengths;             ///< Wavelength packet associated with the ray
 
     /// Construct a new ray (o, d) at time 'time'
     Ray(const Point &o, const Vector &d, Float time,
-        const Wavelength &wavelength)
+        const Wavelength &wavelengths)
         : o(o), d(d), d_rcp(rcp(d)), time(time),
-          wavelength(wavelength) { }
+          wavelengths(wavelengths) { }
 
     /// Construct a new ray (o, d) with time
     Ray(const Point &o, const Vector &d, const Float &t)
@@ -49,9 +49,9 @@ template <typename Point_, typename Spectrum_> struct Ray {
 
     /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Float mint, Float maxt,
-        Float time, const Wavelength &wavelength)
+        Float time, const Wavelength &wavelengths)
         : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt),
-          time(time), wavelength(wavelength) { }
+          time(time), wavelengths(wavelengths) { }
 
     /// Copy a ray, but change the [mint, maxt] interval
     Ray(const Ray &r, Float mint, Float maxt)
@@ -67,17 +67,17 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Return a ray that points into the opposite direction
     Ray reverse() const {
         Ray result;
-        result.o          = o;
-        result.d          = -d;
-        result.d_rcp      = -d_rcp;
-        result.mint       = mint;
-        result.maxt       = maxt;
-        result.time       = time;
-        result.wavelength = wavelength;
+        result.o           = o;
+        result.d           = -d;
+        result.d_rcp       = -d_rcp;
+        result.mint        = mint;
+        result.maxt        = maxt;
+        result.time        = time;
+        result.wavelengths = wavelengths;
         return result;
     }
 
-    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelength)
+    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 };
 
 /**
@@ -111,7 +111,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     }
 
     ENOKI_DERIVED_STRUCT(RayDifferential, Base,
-        ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelength),
+        ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelengths),
         ENOKI_DERIVED_FIELDS(o_x, o_y, d_x, d_y, has_differentials)
     )
 };
@@ -125,8 +125,8 @@ std::ostream &operator<<(std::ostream &os, const Ray<Point, Spectrum> &r) {
        << "  mint = " << r.mint << "," << std::endl
        << "  maxt = " << r.maxt << "," << std::endl
        << "  time = " << r.time << "," << std::endl;
-    if constexpr (sizeof(r.wavelength) > 0)
-        os << "  wavelength = " << string::indent(r.wavelength, 15) << std::endl;
+    if (r.wavelengths.size() > 0)
+        os << "  wavelengths = " << string::indent(r.wavelengths, 16) << std::endl;
     os << "]";
     return os;
 }
@@ -138,10 +138,10 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // Support for static & dynamic vectorization
-ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelength)
+ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 
 ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
-                     time, wavelength, o_x, o_y, d_x, d_y, has_differentials)
+                     time, wavelengths, o_x, o_y, d_x, d_y, has_differentials)
 
 //! @}
 // -----------------------------------------------------------------------

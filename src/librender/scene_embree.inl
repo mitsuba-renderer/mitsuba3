@@ -69,7 +69,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             // Fill in basic information common to all shapes
             si.t = rh.ray.tfar;
             si.time = ray.time;
-            si.wavelengths = ray.wavelength;
+            si.wavelengths = ray.wavelengths;
             si.shape = m_shapes[shape_index];
             si.prim_index = prim_index;
 
@@ -86,7 +86,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             // Incident direction in local coordinates
             si.wi = si.to_local(-ray.d);
         } else {
-            si.wavelengths = ray.wavelength;
+            si.wavelengths = ray.wavelengths;
             si.wi = -ray.d;
             si.t = math::Infinity<Float>;
         }
@@ -123,7 +123,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             // Fill in basic information common to all shapes
             si.t = load<Float>(rh.ray.tfar);
             si.time = ray.time;
-            si.wavelengths = ray.wavelength;
+            si.wavelengths = ray.wavelengths;
             si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, hit);
             si.prim_index = prim_index;
 
@@ -140,7 +140,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             // Incident direction in local coordinates
             si.wi = select(hit, si.to_local(-ray.d), -ray.d);
         } else {
-            si.wavelengths = ray.wavelength;
+            si.wavelengths = ray.wavelengths;
             si.wi = -ray.d;
         }
         si.t[!hit] = math::Infinity<Float>;

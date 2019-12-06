@@ -75,14 +75,14 @@ def test03_ray_intersect():
                     y = 1.1*r*(y - translate[1])
 
                     ray = Ray3f(o=[x, y, -10], d=[0, 0, 1],
-                                time=0.0, wavelength=wl)
+                                time=0.0, wavelengths=wl)
                     si_found = s.ray_test(ray)
 
                     assert si_found == (x**2 + y**2 <= r*r)
 
                     if  si_found:
                         ray = Ray3f(o=[x, y, -10], d=[0, 0, 1],
-                                    time=0.0, wavelength=wl)
+                                    time=0.0, wavelengths=wl)
 
                         si = s.ray_intersect(ray)
                         ray_u = Ray3f(ray)

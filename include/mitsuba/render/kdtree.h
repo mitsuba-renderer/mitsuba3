@@ -2338,7 +2338,7 @@ public:
         // Fill in basic information common to all shapes
         si.t = t;
         si.time = ray.time;
-        si.wavelengths = ray.wavelength;
+        si.wavelengths = ray.wavelengths;
         si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, active);
         si.prim_index = prim_index;
         si.instance = nullptr;

@@ -61,7 +61,7 @@ def test03_ray_intersect():
     n = 15
     coords = np.linspace(-1, 1, n)
     rays = [Ray3f(o=[a, a, 5], d=[0, 0, -1], time=0.0,
-                  wavelength=[400, 500, 600, 700]) for a in coords]
+                  wavelengths=[400, 500, 600, 700]) for a in coords]
     si_scalar = []
     valid_count = 0
     for i in range(n):

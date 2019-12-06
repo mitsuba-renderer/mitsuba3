@@ -33,6 +33,7 @@ public:
         /* ---------------------- First intersection ---------------------- */
 
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
+        std::cout << ray.wavelengths << " " << si.wavelengths << std::endl;
         Mask valid_ray = si.is_valid();
         EmitterPtr emitter = si.emitter(scene);
 

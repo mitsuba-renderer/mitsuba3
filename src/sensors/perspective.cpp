@@ -90,7 +90,7 @@ public:
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         Ray3f ray;
         ray.time = time;
-        ray.wavelength = wavelengths;
+        ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
@@ -117,7 +117,7 @@ public:
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         RayDifferential3f ray;
         ray.time = time;
-        ray.wavelength = 0.f; //wavelengths;
+        ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *

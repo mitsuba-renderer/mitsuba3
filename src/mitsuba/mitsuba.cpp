@@ -36,7 +36,7 @@ Options:
         Default: )" MTS_DEFAULT_VARIANT R"(
 
         Available modes:
-)" << string::indent(MTS_VARIANTS, 14) << R"(
+              )" << string::indent(MTS_VARIANTS, 14) << R"(
     -v, --verbose
         Be more verbose. (can be specified multiple times)
 
@@ -47,7 +47,7 @@ Options:
         Define a constant that can referenced as "$key"
         within the scene description.
 
-    -s <sensor_i>, --sensor <sensor_i>
+    -s <index>, --sensor <index>
         Index of the sensor to render with (following the declaration
         order in the scene file). Default value: 0.
 
@@ -64,7 +64,9 @@ template <typename Float, typename Spectrum>
 bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
     if (!scene)
-        Throw("Could not cast to Scene<Float, Spectrum>: %s", scene_->to_string());
+        Throw("Root element of the input file must be a <scene> tag!");
+    if (sensor_i >= scene->sensors().size())
+        Throw("Specified sensor index is out of bounds!");
     auto sensor = scene->sensors()[sensor_i];
 
     filename.replace_extension("exr");
@@ -178,7 +180,8 @@ int main(int argc, char *argv[]) {
             ref<Object> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
 
-            bool success  = MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename);
+            bool success = MTS_INVOKE_VARIANT(mode, render, parsed.get(),
+                                              sensor_i, filename);
             print_profile = print_profile || success;
             arg_extra = arg_extra->next();
         }

@@ -92,7 +92,7 @@ public:
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         Ray3f ray;
         ray.time = time;
-        ray.wavelength = wavelengths;
+        ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
@@ -126,7 +126,7 @@ public:
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         RayDifferential3f ray;
         ray.time = time;
-        ray.wavelength = wavelengths;
+        ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
@@ -139,8 +139,8 @@ public:
         // Sampled position on the focal plane
         Float f_dist = m_focus_distance / near_p.z();
         Point3f focus_p   = near_p          * f_dist,
-               focus_p_x = (near_p + m_dx) * f_dist,
-               focus_p_y = (near_p + m_dy) * f_dist;
+                focus_p_x = (near_p + m_dx) * f_dist,
+                focus_p_y = (near_p + m_dy) * f_dist;
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = normalize(Vector3f(focus_p - aperture_p));

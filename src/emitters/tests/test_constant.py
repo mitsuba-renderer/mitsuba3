@@ -48,8 +48,8 @@ def test02_sample_ray():
     assert np.dot(ray.d, ray.o) < 0
     assert np.all(weight > 0)
     # Wavelengths sampled should be different
-    n = len(ray.wavelength)
-    assert n > 0 and len(np.unique(ray.wavelength))
+    n = len(ray.wavelengths)
+    assert n > 0 and len(np.unique(ray.wavelengths))
 
 
 def test03_sample_direction(interaction):

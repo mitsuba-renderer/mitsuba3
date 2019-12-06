@@ -94,8 +94,8 @@ bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
                 if (hprod(size) == 0)
                     Throw("Internal error -- generated empty image block!");
                 if (size != block->size())
-                    block = new ImageBlock(PixelFormat::XYZAW, size, film->reconstruction_filter(), 0,
-                                           true);
+                    block = new ImageBlock(PixelFormat::XYZAW, size, film->reconstruction_filter(),
+                                           0, true);
                 block->set_offset(offset);
 
                 // Ensure that the sample generation is fully deterministic
@@ -181,7 +181,8 @@ void SamplingIntegrator<Float, Spectrum>::render_block_scalar(const Scene *scene
             }
             /* ImageBlock::put */ {
                 ScopedPhase sp(ProfilerPhase::ImageBlockPut);
-                block->put(position_sample, ray.wavelength, ray_weight * result, alpha);
+                block->put(position_sample, ray.wavelengths,
+                           ray_weight * result, alpha);
             }
         }
     }
@@ -205,10 +206,9 @@ MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &pr
     if (m_rr_depth <= 0)
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
-    /** Longest visualized path depth (\c -1 = infinite).
-     * A value of \c 1 will visualize only directly visible light sources.
-     * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
-     */
+    /*  Longest visualized path depth (\c -1 = infinite). A value of \c 1 will
+        visualize only directly visible light sources. \c 2 will lead to
+        single-bounce (direct-only) illumination, and so on. */
     m_max_depth = props.int_("max_depth", -1);
     if (m_max_depth < 0 && m_max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
