@@ -39,7 +39,6 @@ def test01_position_sample_construction_single():
            and np.all(record.uv == si.uv) \
            and record.pdf == 0.0
 
-@pytest.mark.skip("TODO")
 def test02_position_sample_construction_dynamic():
     try:
         from mitsuba.packet_rgb.render import PositionSample3f as PositionSample3fX
