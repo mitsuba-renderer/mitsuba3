@@ -46,7 +46,11 @@ MTS_VARIANT ref<Texture<Float, Spectrum>>
 Texture<Float, Spectrum>::D65(ScalarFloat scale) {
     Properties props(is_spectral_v<Spectrum> ? "d65" : "uniform");
     props.set_float("value", scale);
-    return PluginManager::instance()->create_object<Texture>(props);
+    ref<Texture> texture = PluginManager::instance()->create_object<Texture>(props);
+    std::vector<ref<Object>> children = texture->expand();
+    if (!children.empty())
+        return (Texture *) children[0].get();
+    return texture;
 }
 
 //! @}
