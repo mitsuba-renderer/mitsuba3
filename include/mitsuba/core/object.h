@@ -6,20 +6,6 @@
 #include <mitsuba/core/class.h>
 
 NAMESPACE_BEGIN(mitsuba)
-/**
- * \brief Abstract class providing an interface for scene traversal mechanism
- */
-class TraversalCallback {
-public:
-    virtual ~TraversalCallback() = default;
-    template <typename T> void put_parameter(const std::string &name, T &t) {
-        put_parameter_impl(name, typeid(T), &t);
-    }
-    virtual void put_object(const std::string &name, Object *obj) = 0;
-protected:
-    virtual void put_parameter_impl(const std::string &name, const std::type_info &type,
-                                    void *ptr) = 0;
-};
 
 /**
  * \brief Object base class with builtin reference counting
@@ -76,16 +62,29 @@ public:
     virtual std::vector<ref<Object>> expand() const;
 
     /**
-     * \brief Expand the object into a list of sub-objects and return them
+     * \brief Traverse the attributes and object graph of this instance
      *
-     * Default implementation does nothing.
+     * Implementing this function enable s recursive traversal of C++ scene
+     * graphs. It is e.g. used to determine the set of differentiable
+     * parameters when using Mitsuba for optimization.
+     *
+     * \remark The default implementation does nothing.
+     *
+     * \sa TraversalCallback
      */
     virtual void traverse(TraversalCallback *callback);
 
     /**
-     * \brief Update internal data structures after applying changes to parameters
+     * \brief Update internal state after applying changes to parameters
      *
-     * Default implementation does nothing.
+     * This function should be invoked when attributes (obtained via \ref
+     * traverse) are modified in some way. The obect can then update its
+     * internal state so that derived quantities are consistent with the
+     * change.
+     *
+     * \remark The default implementation does nothing.
+     *
+     * \sa TraversalCallback
      */
     virtual void parameters_changed();
 
@@ -245,6 +244,32 @@ public:
     operator bool() const { return m_ptr != nullptr; }
 private:
     T *m_ptr = nullptr;
+};
+
+/**
+ * \brief Abstract class providing an interface for traversing scene graphs
+ *
+ * This interface can be implemented either in C++ or in Python, to be used in
+ * conjunction with \ref Object::traverse() to traverse a scene graph. Mitsuba
+ * currently uses this mechanism to determine a scene's differentiable
+ * parameters.
+ */
+class TraversalCallback {
+public:
+    /// Inform the traversal callback about an attribute of an instance
+    template <typename T> void put_parameter(const std::string &name, T &t) {
+        put_parameter_impl(name, typeid(T), &t);
+    }
+
+    /// Inform the tranversal callback that the instance references another Mitsuba object
+    virtual void put_object(const std::string &name, Object *obj) = 0;
+
+    virtual ~TraversalCallback() = default;
+protected:
+    /// Actual implementation of \ref put_parameter(). [To be provided by subclass]
+    virtual void put_parameter_impl(const std::string &name,
+                                    const std::type_info &type,
+                                    void *ptr) = 0;
 };
 
 /// Prints the canonical string representation of an object instance

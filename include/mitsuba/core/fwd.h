@@ -42,6 +42,7 @@ class Struct;
 class StructConverter;
 class Thread;
 class ThreadLocalBase;
+class TraversalCallback;
 class ZStream;
 enum LogLevel : int;
 
