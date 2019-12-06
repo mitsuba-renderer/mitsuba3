@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 from mitsuba.core import Bitmap, Struct, Thread
 from mitsuba.core.xml import load_file
@@ -22,8 +23,12 @@ scene.integrator().render(scene)
 # After rendering, the rendered data is stored in the film
 film = scene.sensor().film()
 
-# Write out rendering as high dynamic range OpenEXR file
+# Write out rendering as high dynamic range OpenEXR file (after converting to linear RGB space)
 film.bitmap().convert(Bitmap.ERGB, Struct.EFloat32, srgb_gamma=False).write('cbox.exr')
 
 # Write out a tonemapped JPG of the same rendering
 film.bitmap().convert(Bitmap.ERGB, Struct.EUInt8, srgb_gamma=True).write('cbox.jpg')
+
+# Get the pixel values as a numpy array for further processing
+image_np = np.array(film.bitmap().convert(Bitmap.ERGB, Struct.EFloat32, srgb_gamma=False))
+print(image_np.shape)

@@ -4,7 +4,7 @@ import numpy as np
 from mitsuba.core import Bitmap, Struct, Thread
 from mitsuba.core.xml import load_file
 
-from mitsuba.core import Bitmap, EDebug, Log
+from mitsuba.core import Bitmap
 from mitsuba.render import RadianceSample3fX, ImageBlock
 
 SCENE_DIR = '../../../resources/data/scenes/'
@@ -34,15 +34,13 @@ scale = np.array([1.0 / film_size[0], 1.0 / film_size[1]])
 pos = np.stack([pos % int(film_size[0]), pos / int(film_size[0])], axis=1)
 position_sample = pos + np.random.rand(n_rays, 2).astype(np.float32)
 
-active = np.ones(n_rays).astype(np.bool)
 
 # Sample rays starting from the camera sensor
 rays, weights = sensor.sample_ray_differential(
     time=0,
     sample1=np.random.rand(n_rays).astype(np.float32),
     sample2=position_sample * scale,
-    sample3=np.random.rand(n_rays, 2).astype(np.float32),
-    active=active)
+    sample3=np.random.rand(n_rays, 2).astype(np.float32))
 
 # Intersect rays with the scene geometry
 surface_interaction = scene.ray_intersect(rays)

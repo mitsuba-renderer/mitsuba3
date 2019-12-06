@@ -16,6 +16,14 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     differences_to_mitsuba1
     bibliography
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Python interface
+
+    python_bindings/intro
+    python_bindings/rendering_scene
+    python_bindings/depth_integrator
+
 
 .. toctree::
     :maxdepth: 2
