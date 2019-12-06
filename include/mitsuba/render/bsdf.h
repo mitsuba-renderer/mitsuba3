@@ -124,38 +124,39 @@ enum class BSDFFlags : uint32_t {
 
 /// Allows or-ing of BSDFFlags
 constexpr BSDFFlags operator |(BSDFFlags f1, BSDFFlags f2) {
-    return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
+    return (BSDFFlags) ((uint32_t) f1 | (uint32_t) f2);
 }
 /// Allows and-ing of BSDFFlags
 constexpr BSDFFlags operator &(BSDFFlags f1, BSDFFlags f2) {
-    return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
+    return (BSDFFlags) ((uint32_t) f1 & (uint32_t) f2);
 }
 /// Allows and-ing of BSDFFlags
-template <typename UInt32>
-constexpr UInt32 operator &(const UInt32 &f1, BSDFFlags f2) {
-    return (f1 & static_cast<uint32_t>(f2));
+template <typename T>
+constexpr T operator &(const T &f1, BSDFFlags f2) {
+    using UInt32 = replace_scalar_t<T, uint32_t>;
+    return static_cast<T>(static_cast<UInt32>(f1) & (uint32_t) f2);
 }
 /// Allows not-ing of BSDFFlags
 constexpr BSDFFlags operator ~(BSDFFlags f1) {
-    return static_cast<BSDFFlags>(~static_cast<uint32_t>(f1));
+    return (BSDFFlags) (~(uint32_t) f1);
 }
 /// Allows using unary `+` for conversion from BSDFFlags to the underlying type
 constexpr auto operator+(BSDFFlags e) noexcept {
-    return static_cast<std::underlying_type_t<BSDFFlags>>(e);
+    return (uint32_t) e;
 }
 /// Allows adding BSDFFlags
 template <typename UInt32>
 constexpr BSDFFlags operator +(BSDFFlags f1, UInt32 f2) {
-    return static_cast<BSDFFlags>(static_cast<uint32_t>(f1) + static_cast<uint32_t>(f2));
+    return (BSDFFlags) ((uint32_t) f1 + (uint32_t) f2);
 }
-
 /// Check presence of a flag in a combined BSDFFlag
 constexpr bool has_flag(BSDFFlags flags, BSDFFlags f) {
-    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
+    return ((uint32_t)flags & (uint32_t)f) != 0u;
 }
-template <typename UInt32>
-constexpr mask_t<UInt32> has_flag(const UInt32 &flags, BSDFFlags f) {
-    return neq(flags & UInt32(static_cast<uint32_t>(f)), 0u);
+template <typename T>
+constexpr mask_t<T> has_flag(T flags, BSDFFlags f) {
+    using UInt32 = replace_scalar_t<T, uint32_t>;
+    return neq(static_cast<UInt32>(flags) & (uint32_t) f, 0u);
 }
 
 /**
@@ -549,7 +550,7 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
 
     auto needs_differentials() const {
-        return neq(flags() & mitsuba::BSDFFlags::NeedsDifferentials, 0);
+        return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
     }
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::BSDF)
 
