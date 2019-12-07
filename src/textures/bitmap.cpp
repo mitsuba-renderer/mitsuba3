@@ -9,14 +9,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-// Forward declaration
-template <typename Float, typename Spectrum, size_t ChannelCount, bool IsRawData>
+// Forward declaration of specialized bitmap texture
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class BitmapTextureImpl;
 
-/**
- * Bilinearly interpolated image texture.
- */
-// TODO(!): test the "single-channel texture" use-case that was added during refactoring
+/// Bilinearly interpolated bitmap texture.
 template <typename Float, typename Spectrum>
 class BitmapTexture : public Texture<Float, Spectrum> {
 public:
@@ -26,246 +23,273 @@ public:
     BitmapTexture(const Properties &props) {
         m_transform = props.transform("to_uv", ScalarTransform4f()).extract();
 
-        auto fs = Thread::thread()->file_resolver();
+        FileResolver* fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
         Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
 
         m_bitmap = new Bitmap(file_path);
 
-        // Optional texture upsampling
-        ScalarFloat upscale = props.float_("upscale", 1.f);
-        if (upscale != 1.f) {
-            using ScalarVector2s = Vector<size_t, 2>;
-            using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
+        /* Convert to linear RGB float bitmap, will be converted
+           into spectral profile coefficients below (in place) */
+        PixelFormat pixel_format = m_bitmap->pixel_format();
+        switch (pixel_format) {
+            case PixelFormat::Y:
+            case PixelFormat::YA:
+                pixel_format = PixelFormat::Y;
+                break;
 
-            ScalarVector2s old_size = m_bitmap->size(),
-                           new_size = upscale * old_size;
+            case PixelFormat::RGB:
+            case PixelFormat::RGBA:
+            case PixelFormat::XYZ:
+            case PixelFormat::XYZA:
+                pixel_format = PixelFormat::RGB;
+                break;
 
-            auto rfilter =
-                PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
-
-            Log(Info, "Upsampling bitmap texture \"%s\" to %ix%i ..", m_name,
-                       new_size.x(), new_size.y());
-            m_bitmap = m_bitmap->resample(new_size, rfilter);
+            default:
+                Throw("The texture needs to have a known pixel "
+                      "format (Y[A], RGB[A], XYZ[A])");
         }
 
-        m_is_raw_data = props.bool_("raw_data", false) || !props.bool_("color_processing", true);
+        /* Should Mitsuba disable transformations to the stored color data? (e.g.
+           sRGB to linear, spectral upsampling, etc.) */
+        m_raw = props.bool_("raw", false);
+        if (m_raw) {
+            /* Don't undo gamma correction in the conversion below.
+               This is needed, e.g., for normal maps. */
+            m_bitmap->set_srgb_gamma(false);
+        }
+
+        // Convert the image into the working floating point representation
+        m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
+
+        ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
+
+        double mean = 0.0;
+        if (m_bitmap->channel_count() == 3) {
+            if (is_spectral_v<Spectrum> && !m_raw) {
+                for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
+                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    value = srgb_model_fetch(value);
+                    mean += (double) srgb_model_mean(value);
+                    store_unaligned(ptr, value);
+                    ptr += 3;
+                }
+            } else {
+                for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
+                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    mean += (double) luminance(value);
+                    ptr += 3;
+                }
+            }
+        } else {
+            for (size_t i = 0; i < m_bitmap->pixel_count(); ++i)
+                mean += (double) ptr[i];
+        }
+
+        m_mean = ScalarFloat(mean / m_bitmap->pixel_count());
     }
 
-    BitmapTexture(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
-        : m_bitmap(bitmap), m_name(name), m_transform(transform) {}
+    template <uint32_t Channels, bool Raw>
+    using Impl = BitmapTextureImpl<Float, Spectrum, Channels, Raw>;
 
     /**
-     * Recursively expand into an implementation specialized for the channel count
-     * of the bitmap actually loaded.
+     * Recursively expand into an implementation specialized to the
+     * actual loaded image.
      */
     std::vector<ref<Object>> expand() const override {
-        // Allow bitmap to be modified in expanded object.
-        Bitmap *bitmap = const_cast<Bitmap *>(m_bitmap.get());
-#define MTS_SELECT_IMPL(IsRaw)                                                                     \
-    switch (m_bitmap->channel_count()) {                                                           \
-        case 1:                                                                                    \
-            return { new BitmapTextureImpl<Float, Spectrum, IsRaw ? 1 : 3, IsRaw>(bitmap, m_name,  \
-                                                                      m_transform) };              \
-        case 3:                                                                                    \
-            return { new BitmapTextureImpl<Float, Spectrum, IsRaw ? 3 : 3, IsRaw>(bitmap, m_name,  \
-                                                                      m_transform) };              \
-        case 4:                                                                                    \
-            return { new BitmapTextureImpl<Float, Spectrum, IsRaw ? 4 : 3, IsRaw>(bitmap, m_name,  \
-                                                                      m_transform) };              \
-        default:                                                                                   \
-            Throw("Unsupported channel count: %d (expected 1, 3 or 4)",                            \
-                  m_bitmap->channel_count());                                                      \
-    }
+        ref<Object> result;
 
-        if (m_is_raw_data) {
-            MTS_SELECT_IMPL(true)
-        } else {
-            MTS_SELECT_IMPL(false)
+        switch (m_bitmap->channel_count()) {
+            case 1:
+                result = m_raw
+                  ? (Object *) new Impl<1, true >(m_bitmap, m_name, m_transform, m_mean)
+                  : (Object *) new Impl<1, false>(m_bitmap, m_name, m_transform, m_mean);
+                break;
+
+            case 3:
+                result = m_raw
+                  ? (Object *) new Impl<3, true >(m_bitmap, m_name, m_transform, m_mean)
+                  : (Object *) new Impl<3, false>(m_bitmap, m_name, m_transform, m_mean);
+                break;
+
+            default:
+                Throw("Unsupported channel count: %d (expected 1 or 3)",
+                      m_bitmap->channel_count());
         }
-#undef MTS_SELECT_IMPL
-    }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("transform", m_transform);
-        callback->put_object("bitmap", m_bitmap.get());
+        return { result };
     }
 
 protected:
     ref<Bitmap> m_bitmap;
     std::string m_name;
     ScalarTransform3f m_transform;
-    /// Whether this texture holds raw data, which should not be interpreted as colors.
-    bool m_is_raw_data;
+    bool m_raw;
+    ScalarFloat m_mean;
 };
 
-template <typename Float, typename Spectrum, size_t ChannelCount, bool IsRawData>
-class BitmapTextureImpl final : public BitmapTexture<Float, Spectrum> {
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+class BitmapTextureImpl final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BitmapTextureImpl, BitmapTexture)
-    MTS_IMPORT_BASE(BitmapTexture, m_bitmap, m_name, m_transform)
+    MTS_DECLARE_CLASS_VARIANT(BitmapTextureImpl, Texture)
     MTS_IMPORT_TYPES()
 
-    using BitmapFloat = typename Bitmap::Float;
-    using StorageType = Vector<BitmapFloat, ChannelCount>;
-
-    BitmapTextureImpl(Bitmap *bitmap, const std::string &name, const ScalarTransform3f &transform)
-        : Base(bitmap, name, transform) {
-
-        /* Convert to linear RGB float bitmap, will be converted
-           into spectral profile coefficients below (in place) */
-        auto color_mode = IsRawData ? m_bitmap->pixel_format() : PixelFormat::RGB;
-        m_bitmap = m_bitmap->convert(color_mode, Bitmap::FloatFieldType, false);
-
-        calculate_mean();
+    BitmapTextureImpl(const Bitmap *bitmap,
+                      const std::string &name,
+                      const ScalarTransform3f &transform,
+                      ScalarFloat mean)
+        : m_resolution(bitmap->size()), m_name(name),
+          m_transform(transform), m_mean(mean) {
+        m_data = DynamicBuffer<Float>::copy(bitmap->data(),
+            hprod(m_resolution) * Channels);
     }
 
-private:
-    void calculate_mean() {
-        // Convert to spectral coefficients, monochrome or leave in RGB.
-        auto *ptr = (BitmapFloat *) m_bitmap->data();
-        double mean = 0.0;
-        for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
-            // Load data from the scalar-typed buffer
-            const StorageType raw = load_unaligned<StorageType>(ptr);
-
-            if constexpr (IsRawData || (is_monochrome_v<Spectrum> && ChannelCount == 1)) {
-                // Leave data untouched
-                mean += (double) hsum(raw) / StorageType::Size;
-            } else if constexpr (is_monochrome_v<Spectrum>) {
-                // Convert to luminance
-                ScalarFloat lum;
-                if constexpr (ChannelCount == 3)
-                    lum = luminance(ScalarColor3f(raw));
-                else
-                    lum = hsum(raw) / ChannelCount;
-                mean += (double) lum;
-                store_unaligned(ptr, lum);
-            } else if constexpr (is_spectral_v<Spectrum>) {
-                // Fetch spectral fit for given sRGB color value (3 coefficients)
-                ScalarVector3f coeff;
-
-                if constexpr (ChannelCount == 1)
-                    coeff = srgb_model_fetch(Color<ScalarFloat, 3>(raw.x()));
-                if constexpr (ChannelCount == 3)
-                    coeff = srgb_model_fetch(raw);
-                if constexpr (ChannelCount == 4)
-                    coeff = srgb_model_fetch(Color<ScalarFloat, 3>(raw.x(), raw.y(), raw.z()));
-
-                mean += (double) srgb_model_mean(coeff);
-                store_unaligned(ptr, coeff);
-            }
-
-            ptr += ChannelCount;
-        }
-
-        m_mean = ScalarFloat(mean / hprod(m_bitmap->size()));
+    void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("data", m_data);
+        callback->put_parameter("resolution", m_resolution);
+        callback->put_parameter("transform", m_transform);
     }
 
-public:
-    // Evaluation of color data
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        if constexpr (ChannelCount < 3) {
-            // TODO: we might still want to upscale, maybe let the user pass a flag to allow it
-            Throw("Cannot spectrally evaluate a %d-channel texture", ChannelCount);
-        } else if (IsRawData) {
-            Throw("Cannot spectrally evaluate a raw-data texture");
+        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
+            Throw("The bitmap texture %s was queried for a spectrum, but texture conversion "
+                  "into spectra was explicitly disabled! (raw=true)",
+                  to_string());
         } else {
-            return interpolate<Vector3f, false, UnpolarizedSpectrum>(si, active);
+            auto result = interpolate(si, active);
+
+            if constexpr (Channels == 3 && is_monochromatic_v<Spectrum>)
+                return luminance(result);
+            else
+                return result;
         }
     }
 
-    // Evaluation of raw 3-channel data (e.g. normal map)
-    Vector3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
-        if constexpr (ChannelCount != 1) {
-            // TODO: we might still want to downscale, maybe let the user pass a flag to allow it
-            Throw("Cannot evaluate a %d-channel texture as a scalar", ChannelCount);
-        } else if (!IsRawData) {
-            Throw("Cannot evaluate a color texture as raw data");
-        } else {
-            return interpolate<Vector3f, true, Vector3f>(si, active);
-        }
-    }
-
-    // Evaluation of raw scalar data
     Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
-        if constexpr (ChannelCount != 1) {
-            // TODO: we might still want to downscale, maybe let the user pass a flag to allow it
-            Throw("Cannot evaluate a %d-channel texture as a scalar", ChannelCount);
+        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
+            Throw("eval_1(): The bitmap texture %s was queried for a scalar value, but texture "
+                  "conversion into spectra was requested! (raw=false)",
+                  to_string());
         } else {
-            return interpolate<Float, true, Float>(si, active);
+            auto result = interpolate(si, active);
+
+            if constexpr (Channels == 3)
+                return luminance(result);
+            else
+                return result;
         }
     }
 
-    template <typename GatherType, bool IsRaw, typename Return>
-    Return interpolate(const SurfaceInteraction3f &si, Mask active) const {
+    Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
+        if constexpr (Channels != 3) {
+            Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but it is "
+                  "monochromatic!", to_string());
+        } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
+            Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but texture "
+                  "conversion into spectra was requested! (raw=false)",
+                  to_string());
+        } else {
+            return interpolate(si, active);
+        }
+    }
+
+    MTS_INLINE auto interpolate(const SurfaceInteraction3f &si, Mask active) const {
+        if constexpr (!is_array_v<Mask>)
+            active = true;
+
         Point2f uv = m_transform.transform_affine(si.uv);
         uv -= floor(uv);
-        uv *= Vector2f(m_bitmap->size() - 1u);
+        uv *= Vector2f(m_resolution - 1u);
 
-        Point2u pos = min(Point2u(uv), m_bitmap->size() - 2u);
+        Point2u pos = min(Point2u(uv), m_resolution - 2u);
 
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
 
-        UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
+        UInt32 index = pos.x() + pos.y() * m_resolution.x();
+        uint32_t width = m_resolution.x();
 
-        if constexpr (is_diff_array_v<Float>) {
-            // TODO: restore and unify this for GPU
-            NotImplementedError("interpolate on the GPU");
-//             uint32_t width = (uint32_t) m_bitmap->size().x();
-//             v00 = gather<Vector3f>(m_bitmap_d, index, active);
-//             v10 = gather<Vector3f>(m_bitmap_d, index + 1u, active);
-//             v01 = gather<Vector3f>(m_bitmap_d, index + width, active);
-//             v11 = gather<Vector3f>(m_bitmap_d, index + width + 1u, active);
-        }
-        uint32_t width = (uint32_t) m_bitmap->size().x() * 3;
-        auto *ptr = (const ScalarFloat *) m_bitmap->data();
+        using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
 
-        GatherType v00 = gather<GatherType, 0, true>(ptr, index, active);
-        GatherType v10 = gather<GatherType, 0, true>(ptr + ChannelCount, index, active);
-        GatherType v01 = gather<GatherType, 0, true>(ptr + width, index, active);
-        GatherType v11 = gather<GatherType, 0, true>(ptr + width + ChannelCount, index, active);
-
-        Return r00, r10, r01, r11;
-        if constexpr (IsRaw || !is_spectral_v<Spectrum>) {
-            // No further processing on the data stored in memory
-            if constexpr (is_monochrome_v<Spectrum> && ChannelCount > 1) {
-                r00 = v00.x(); r01 = v01.x(); r10 = v10.x(); r11 = v11.x();
-            } else {
-                r00 = v00; r01 = v01; r10 = v10; r11 = v11;
-            }
-        } else {
-            // Evaluate spectral upsampling model from stored coefficients
-            r00 = srgb_model_eval<Spectrum>(v00, si.wavelengths);
-            r10 = srgb_model_eval<Spectrum>(v10, si.wavelengths);
-            r01 = srgb_model_eval<Spectrum>(v01, si.wavelengths);
-            r11 = srgb_model_eval<Spectrum>(v11, si.wavelengths);
-        }
+        StorageType v00 = gather<StorageType>(m_data, index, active),
+                    v10 = gather<StorageType>(m_data, index + 1, active),
+                    v01 = gather<StorageType>(m_data, index + width, active),
+                    v11 = gather<StorageType>(m_data, index + width + 1, active);
 
         // Bilinear interpolation
-        Return r0 = fmadd(w0.x(), r00, w1.x() * r10),
-               r1 = fmadd(w0.x(), r01, w1.x() * r11);
-        return fmadd(w0.y(), r0, w1.y() * r1);
+        if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
+            // Evaluate spectral upsampling model from stored coefficients
+            UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
+
+            c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
+            c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
+            c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
+            c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
+
+            c0 = fmadd(w0.x(), c00, w1.x() * c10);
+            c1 = fmadd(w0.x(), c01, w1.x() * c11);
+
+            return fmadd(w0.y(), c0, w1.y() * c1);
+        } else {
+            StorageType v0 = fmadd(w0.x(), v00, w1.x() * v10),
+                        v1 = fmadd(w0.x(), v01, w1.x() * v11);
+
+            return fmadd(w0.y(), v0, w1.y() * v1);
+        }
+    }
+
+    void parameters_changed() override {
+        /// Convert m_data into a managed array (available in CPU/GPU address space)
+        if constexpr (is_cuda_array_v<Float>)
+            m_data = m_data.managed();
+
+        // Recompute the mean texture value following an update
+        ScalarFloat *ptr = m_data.data();
+
+        double mean = 0.0;
+        size_t pixel_count = hprod(m_resolution);
+        if (Channels == 3) {
+            if (is_spectral_v<Spectrum> && !Raw) {
+                for (size_t i = 0; i < pixel_count; ++i) {
+                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    mean += (double) srgb_model_mean(value);
+                    ptr += 3;
+                }
+            } else {
+                for (size_t i = 0; i < pixel_count; ++i) {
+                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    mean += (double) luminance(value);
+                    ptr += 3;
+                }
+            }
+        } else {
+            for (size_t i = 0; i < pixel_count; ++i)
+                mean += (double) ptr[i];
+        }
+
+        m_mean = ScalarFloat(mean / pixel_count);
     }
 
     ScalarFloat mean() const override { return m_mean; }
 
-    void parameters_changed() override {
-        calculate_mean();
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Bitmap[" << std::endl
+        oss << "BitmapTextureImpl[" << std::endl
             << "  name = \"" << m_name << "\"," << std::endl
-            << "  bitmap = " << string::indent(m_bitmap) << std::endl
+            << "  resolution = \"" << m_resolution << "\"," << std::endl
+            << "  raw = " << (int) Raw << "," << std::endl
+            << "  mean = " << m_mean << "," << std::endl
+            << "  transform = " << string::indent(m_transform) << std::endl
             << "]";
         return oss.str();
     }
 
 protected:
+    DynamicBuffer<Float> m_data;
+    ScalarVector2u m_resolution;
+    std::string m_name;
+    ScalarTransform3f m_transform;
     ScalarFloat m_mean;
 };
 

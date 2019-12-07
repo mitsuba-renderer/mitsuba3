@@ -22,7 +22,7 @@ public:
         } else if constexpr (is_rgb_v<Spectrum>) {
             m_coeff = color;
         } else {
-            static_assert(is_monochrome_v<Spectrum>);
+            static_assert(is_monochromatic_v<Spectrum>);
             m_coeff = luminance(color);
         }
     }
@@ -51,7 +51,7 @@ protected:
      * Depending on the compiled variant, this plugin either stores coefficients
      * for a spectral upsampling model, or a plain RGB/monochromatic value.
      */
-    static constexpr size_t ChannelCount = is_monochrome_v<Spectrum> ? 1 : 3;
+    static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
     Array<ScalarFloat, ChannelCount> m_coeff;
 };

@@ -9,10 +9,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 
 /**
-     * This enumeration lists all pixel format types supported
-     * by the \ref Bitmap class. This both determines the
-     * number of channels, and how they should be interpreted
-     */
+ * This enumeration lists all pixel format types supported
+ * by the \ref Bitmap class. This both determines the
+ * number of channels, and how they should be interpreted
+ */
 enum class PixelFormat {
     /// Single-channel luminance bitmap
     Y,
@@ -25,9 +25,6 @@ enum class PixelFormat {
 
     /// RGB bitmap + alpha channel
     RGBA,
-
-    /// RGB bitmap + alpha channel + weight
-    RGBAW,
 
     /// XYZ tristimulus bitmap
     XYZ,
@@ -176,7 +173,6 @@ public:
     //! @{ \name Constructors
     // ======================================================================
 
-
     /**
      * \brief Create a bitmap of the specified type and allocate
      * the necessary amount of memory
@@ -263,8 +259,9 @@ public:
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
         return m_pixel_format == PixelFormat::YA
-               || m_pixel_format == PixelFormat::RGBA || m_pixel_format == PixelFormat::RGBAW
-               || m_pixel_format == PixelFormat::XYZA || m_pixel_format == PixelFormat::XYZAW;
+            || m_pixel_format == PixelFormat::RGBA
+            || m_pixel_format == PixelFormat::XYZA
+            || m_pixel_format == PixelFormat::XYZAW;
     }
 
     /// Return the number bytes of storage used per pixel

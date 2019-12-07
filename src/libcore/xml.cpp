@@ -237,7 +237,7 @@ enum class ColorMode {
 
 template <typename Float, typename Spectrum>
 ColorMode variant_to_color_mode() {
-    if constexpr (is_monochrome_v<Spectrum>)
+    if constexpr (is_monochromatic_v<Spectrum>)
         return ColorMode::Monochromatic;
     else if constexpr (is_rgb_v<Spectrum>)
         return ColorMode::RGB;

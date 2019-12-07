@@ -11,7 +11,8 @@ MTS_INLINE depolarize_t<Spectrum> srgb_model_eval(const Array3f &coeff,
     using UnpolarizedSpectrum = depolarize_t<Spectrum>;
 
     if constexpr (is_spectral_v<Spectrum>) {
-        UnpolarizedSpectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+        UnpolarizedSpectrum v =
+            fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
         return select(
             enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),

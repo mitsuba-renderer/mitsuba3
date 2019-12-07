@@ -36,6 +36,7 @@ public:
                                BSDFFlags::BackSide);
         m_components.push_back(BSDFFlags::DeltaTransmission | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | BSDFFlags::NonSymmetric);
+
         m_flags = m_components[0] | m_components[1];
     }
 

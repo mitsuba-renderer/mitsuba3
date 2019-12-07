@@ -15,7 +15,6 @@ MTS_PY_EXPORT(Bitmap) {
             .value("YA",    PixelFormat::YA,    D(Bitmap, PixelFormat, YA))
             .value("RGB",   PixelFormat::RGB,   D(Bitmap, PixelFormat, RGB))
             .value("RGBA",  PixelFormat::RGBA,  D(Bitmap, PixelFormat, RGBA))
-            .value("RGBAW", PixelFormat::RGBAW, D(Bitmap, PixelFormat, RGBAW))
             .value("XYZ",   PixelFormat::XYZ,   D(Bitmap, PixelFormat, XYZ))
             .value("XYZA",  PixelFormat::XYZA,  D(Bitmap, PixelFormat, XYZA))
             .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
@@ -56,7 +55,6 @@ MTS_PY_EXPORT(Bitmap) {
                         case 2: pixel_format = PixelFormat::YA; break;
                         case 3: pixel_format = PixelFormat::RGB; break;
                         case 4: pixel_format = PixelFormat::RGBA; break;
-                        case 5: pixel_format = PixelFormat::RGBAW; break;
                         default: pixel_format = PixelFormat::MultiChannel; break;
                     }
                 }
@@ -126,6 +124,7 @@ MTS_PY_EXPORT(Bitmap) {
             .def("struct_", &Bitmap::struct_, D(Bitmap, struct))
             .def(py::self == py::self)
             .def(py::self != py::self);
+
     auto fieldtype_ = m.attr("FieldType");
     bitmap.attr("UInt8")   = fieldtype_.attr("UInt8");
     bitmap.attr("Int8")    = fieldtype_.attr("Int8");

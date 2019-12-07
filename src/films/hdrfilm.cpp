@@ -39,7 +39,7 @@ public:
                   " found %s instead.", file_format);
         }
 
-        if (pixel_format == "luminance" || is_monochrome_v<Spectrum>) {
+        if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
             m_pixel_format = PixelFormat::Y;
             if (pixel_format != "luminance")
                 Log(Warn,

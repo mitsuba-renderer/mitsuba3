@@ -122,8 +122,8 @@ public:
      * \return
      *     An trichromatic intensity or reflectance value
      */
-    virtual Vector3f eval_3(const SurfaceInteraction3f &si,
-                            Mask active = true) const;
+    virtual Color3f eval_3(const SurfaceInteraction3f &si,
+                           Mask active = true) const;
 
     /**
      * Return the mean value of the spectrum over the support

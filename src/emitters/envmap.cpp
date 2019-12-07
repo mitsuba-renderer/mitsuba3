@@ -51,7 +51,7 @@ public:
                 ScalarFloat lum   = mitsuba::luminance(rgb);
 
                 ScalarVector4f coeff;
-                if constexpr (is_monochrome_v<Spectrum>) {
+                if constexpr (is_monochromatic_v<Spectrum>) {
                     coeff = ScalarVector4f(lum, lum, lum, 1.f);
                 } else if constexpr (is_rgb_v<Spectrum>) {
                     coeff = concat(rgb, ScalarFloat(1.f));
@@ -203,7 +203,7 @@ protected:
         v01 = gather<Vector4f>(ptr + width, index, active);
         v11 = gather<Vector4f>(ptr + width + 4, index, active);
 
-        if constexpr (is_monochrome_v<Spectrum>) {
+        if constexpr (is_monochromatic_v<Spectrum>) {
             // Only one channel is enough here
             UnpolarizedSpectrum v0 = fmadd(w0.x(), v00.x(), w1.x() * v10.x()),
                                 v1 = fmadd(w0.x(), v01.x(), w1.x() * v11.x());

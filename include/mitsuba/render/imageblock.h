@@ -113,7 +113,7 @@ public:
                "This `put` variant requires XYZAW internal storage format.");
 
         Array<Float, 3> xyz;
-        if constexpr (is_monochrome_v<Spectrum>) {
+        if constexpr (is_monochromatic_v<Spectrum>) {
             xyz = depolarize(value).x();
         } else if constexpr (is_rgb_v<Spectrum>) {
             xyz = srgb_to_xyz(depolarize(value), active);

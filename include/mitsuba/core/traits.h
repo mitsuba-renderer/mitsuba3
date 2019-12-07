@@ -23,7 +23,7 @@ struct spectrum_traits<Color<Float, 1>> {
     using Wavelength                         = Color<Float, 1>;
     using Unpolarized                        = Color<Float, 1>;
     template<typename F> using Replace       = Color<F, 1>;
-    static constexpr bool is_monochrome      = true;
+    static constexpr bool is_monochromatic   = true;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = false;
     static constexpr bool is_polarized       = false;
@@ -36,7 +36,7 @@ struct spectrum_traits<Color<Float, 3>> {
     using Wavelength                         = Color<Float, 3>; // TODO don't bother storing a wavelength
     using Unpolarized                        = Color<Float, 3>;
     template<typename F> using Replace       = Color<F, 3>;
-    static constexpr bool is_monochrome      = false;
+    static constexpr bool is_monochromatic   = fale;
     static constexpr bool is_rgb             = true;
     static constexpr bool is_spectral        = false;
     static constexpr bool is_polarized       = false;
@@ -49,7 +49,7 @@ struct spectrum_traits<Spectrum<Float, Size>> {
     using Wavelength                         = Spectrum<Float, Size>;
     using Unpolarized                        = Spectrum<Float, Size>;
     template<typename F> using Replace       = Spectrum<F, Size>;
-    static constexpr bool is_monochrome      = false;
+    static constexpr bool is_monochromatic   = false;
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = true;
     static constexpr bool is_polarized       = false;
@@ -82,7 +82,7 @@ struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> {
 
 NAMESPACE_END(detail)
 
-template <typename T> constexpr bool is_monochrome_v = detail::spectrum_traits<T>::is_monochrome;
+template <typename T> constexpr bool is_monochromatic_v = detail::spectrum_traits<T>::is_monochromatic;
 template <typename T> constexpr bool is_rgb_v = detail::spectrum_traits<T>::is_rgb;
 template <typename T> constexpr bool is_spectral_v = detail::spectrum_traits<T>::is_spectral;
 template <typename T> constexpr bool is_polarized_v = detail::spectrum_traits<T>::is_polarized;

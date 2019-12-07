@@ -32,7 +32,7 @@ MTS_VARIANT Float Texture<Float, Spectrum>::eval_1(const SurfaceInteraction3f &,
     NotImplementedError("eval_1");
 }
 
-MTS_VARIANT typename Texture<Float, Spectrum>::Vector3f
+MTS_VARIANT typename Texture<Float, Spectrum>::Color3f
 Texture<Float, Spectrum>::eval_3(const SurfaceInteraction3f &, Mask) const {
     NotImplementedError("eval_3");
 }

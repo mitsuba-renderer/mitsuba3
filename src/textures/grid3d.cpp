@@ -147,7 +147,7 @@ public:
             v101 = srgb_model_eval<Spectrum>(d101, wavelengths);
             v110 = srgb_model_eval<Spectrum>(d110, wavelengths);
             v111 = srgb_model_eval<Spectrum>(d111, wavelengths);
-        } else if constexpr (is_monochrome_v<Spectrum>) {
+        } else if constexpr (is_monochromatic_v<Spectrum>) {
             v000 = d000.x(); v001 = d001.x(); v010 = d010.x(); v011 = d011.x();
             v100 = d100.x(); v101 = d101.x(); v110 = d110.x(); v111 = d111.x();
         } else {
@@ -166,7 +166,7 @@ public:
         Spectrum result = fmadd(v0, rf.z(), v1 * f.z());
 
         if constexpr (with_gradient) {
-            if constexpr (!is_monochrome_v<Spectrum>)
+            if constexpr (!is_monochromatic_v<Spectrum>)
                 NotImplementedError("eval_gradient with multichannel Grid3D texture");
 
             Float gx0 = fmadd(d001 - d000, rf.y(), (d011 - d010) * f.y()).x(),
