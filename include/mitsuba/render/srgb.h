@@ -6,20 +6,19 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Spectrum, typename Array3f>
-MTS_INLINE depolarize_t<Spectrum> srgb_model_eval(const Array3f &coeff,
-                                                  const wavelength_t<Spectrum> &wavelengths) {
-    using UnpolarizedSpectrum = depolarize_t<Spectrum>;
+MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
+                                    const wavelength_t<Spectrum> &wavelengths) {
+    static_assert(!is_polarized_v<Spectrum>, "srgb_model_eval(): requires unpolarized spectrum type!");
 
     if constexpr (is_spectral_v<Spectrum>) {
-        UnpolarizedSpectrum v =
-            fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+        Spectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
         return select(
             enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
             max(0.f, fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f))
         );
     } else {
-        Throw("Not implemented for non-spectral modes");
+        Throw("srgb_model_eval(): invoked for a non-spectral color type!");
     }
 }
 

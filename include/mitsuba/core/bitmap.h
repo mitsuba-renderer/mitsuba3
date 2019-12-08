@@ -166,9 +166,6 @@ public:
     using Vector2s = Vector<size_t, 2>;
     using ReconstructionFilter = ReconstructionFilter<Float, Color<Float, 3>>;
 
-    /// FieldType of the floating-point per-pixel components
-    static constexpr FieldType FloatFieldType = struct_type_v<Float>;
-
     // ======================================================================
     //! @{ \name Constructors
     // ======================================================================

@@ -33,7 +33,7 @@ public:
     MTS_IMPORT_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
     MTS_IMPORT_TYPES()
 
-    static constexpr int m_channel_count = texture_channels_v<Spectrum>;
+    static constexpr int m_channel_count = is_monochromatic_v<Spectrum> ? 1 : 3;
     using DynamicBuffer = DynamicBuffer<ScalarFloat>;
     // TODO: linearize data storage
     using DataBuffer    = Vector<DynamicBuffer, m_channel_count>;
@@ -138,15 +138,15 @@ public:
 
         Spectrum  v000, v001, v010, v011, v100, v101, v110, v111;
         if constexpr (is_spectral_v<Spectrum>) {
-            v000 = srgb_model_eval<Spectrum>(d000, wavelengths);
-            v001 = srgb_model_eval<Spectrum>(d001, wavelengths);
-            v010 = srgb_model_eval<Spectrum>(d010, wavelengths);
-            v011 = srgb_model_eval<Spectrum>(d011, wavelengths);
+            v000 = srgb_model_eval<UnpolarizedSpectrum>(d000, wavelengths);
+            v001 = srgb_model_eval<UnpolarizedSpectrum>(d001, wavelengths);
+            v010 = srgb_model_eval<UnpolarizedSpectrum>(d010, wavelengths);
+            v011 = srgb_model_eval<UnpolarizedSpectrum>(d011, wavelengths);
 
-            v100 = srgb_model_eval<Spectrum>(d100, wavelengths);
-            v101 = srgb_model_eval<Spectrum>(d101, wavelengths);
-            v110 = srgb_model_eval<Spectrum>(d110, wavelengths);
-            v111 = srgb_model_eval<Spectrum>(d111, wavelengths);
+            v100 = srgb_model_eval<UnpolarizedSpectrum>(d100, wavelengths);
+            v101 = srgb_model_eval<UnpolarizedSpectrum>(d101, wavelengths);
+            v110 = srgb_model_eval<UnpolarizedSpectrum>(d110, wavelengths);
+            v111 = srgb_model_eval<UnpolarizedSpectrum>(d111, wavelengths);
         } else if constexpr (is_monochromatic_v<Spectrum>) {
             v000 = d000.x(); v001 = d001.x(); v010 = d010.x(); v011 = d011.x();
             v100 = d100.x(); v101 = d101.x(); v110 = d110.x(); v111 = d111.x();

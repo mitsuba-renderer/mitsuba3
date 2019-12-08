@@ -15,7 +15,7 @@ template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
 
 NAMESPACE_BEGIN(detail)
 
-template <typename Spectrum> struct spectrum_traits {};
+template <typename Spectrum> struct spectrum_traits { };
 
 template <typename Float>
 struct spectrum_traits<Color<Float, 1>> {
@@ -26,7 +26,6 @@ struct spectrum_traits<Color<Float, 1>> {
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = false;
     static constexpr bool is_polarized       = false;
-    static constexpr size_t texture_channels = 1;
 };
 
 template <typename Float>
@@ -38,7 +37,6 @@ struct spectrum_traits<Color<Float, 3>> {
     static constexpr bool is_rgb             = true;
     static constexpr bool is_spectral        = false;
     static constexpr bool is_polarized       = false;
-    static constexpr size_t texture_channels = 3;
 };
 
 template <typename Float, size_t Size>
@@ -50,8 +48,6 @@ struct spectrum_traits<Spectrum<Float, Size>> {
     static constexpr bool is_rgb             = false;
     static constexpr bool is_spectral        = true;
     static constexpr bool is_polarized       = false;
-    // The 3 sRGB spectral upsampling model coefficients are stored in textures
-    static constexpr size_t texture_channels = 3;
 };
 
 template <typename T>
@@ -70,9 +66,9 @@ struct spectrum_traits<void> {
 
 template <typename T>
 struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> {
-    using Scalar                       = enoki::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
-    using Wavelength                   = enoki::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
-    using Unpolarized                  = enoki::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
+    using Scalar       = enoki::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
+    using Wavelength   = enoki::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
+    using Unpolarized  = enoki::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
 };
 
 NAMESPACE_END(detail)
@@ -81,7 +77,6 @@ template <typename T> constexpr bool is_monochromatic_v = detail::spectrum_trait
 template <typename T> constexpr bool is_rgb_v = detail::spectrum_traits<T>::is_rgb;
 template <typename T> constexpr bool is_spectral_v = detail::spectrum_traits<T>::is_spectral;
 template <typename T> constexpr bool is_polarized_v = detail::spectrum_traits<T>::is_polarized;
-template <typename T> constexpr size_t texture_channels_v = detail::spectrum_traits<T>::texture_channels;
 template <typename T> using scalar_spectrum_t = typename detail::spectrum_traits<T>::Scalar;
 template <typename T> using wavelength_t = typename detail::spectrum_traits<T>::Wavelength;
 template <typename T> using depolarize_t = typename detail::spectrum_traits<T>::Unpolarized;
@@ -169,13 +164,13 @@ template <typename T> using underlying_t = typename detail::underlying<T>::type;
 template <typename... > constexpr bool false_v = false;
 
 /// Helper function to convert GPU array resulting from horizontal operation to CPU scalar
-template <typename T, bool SizeCheck = false>
+template <typename T>
 scalar_t<T> scalar_cast(const T &v) {
     if constexpr (is_cuda_array_v<T>) {
-        if constexpr (SizeCheck) {
-            if (slices(v) != 1)
-                Throw("This array should be of size == 1");
-        }
+#if !defined(NDEBUG)
+        if (slices(v) != 1)
+            Throw("scalar_cast(): array should be of size 1!");
+#endif
         return v[0];
     } else {
         return v;

@@ -24,29 +24,26 @@ public:
            about the scene and default to the unit bounding sphere. */
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        auto fs = Thread::thread()->file_resolver();
+        FileResolver *fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
 
-        m_bitmap = new Bitmap(file_path);
+        ref<Bitmap> bitmap = new Bitmap(file_path);
 
-        /* Convert to linear RGB float bitmap, will be converted
-           into spectral profile coefficients below */
-        m_bitmap = m_bitmap->convert(PixelFormat::RGBA, Bitmap::FloatFieldType, false);
-        m_name = file_path.filename().string();
+        /* Convert to linear RGBA float bitmap, will undergo further
+           conversion into coefficients of a spectral upsampling model below */
+        bitmap = bitmap->convert(PixelFormat::RGBA, struct_type_v<ScalarFloat>, false);
+        m_filename = file_path.filename().string();
 
-        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[hprod(m_bitmap->size())]);
+        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[bitmap->pixel_count()]);
 
-        ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data(),
-              *lum_ptr = (ScalarFloat *) luminance.get();
+        ScalarFloat *ptr     = (ScalarFloat *) bitmap->data(),
+                    *lum_ptr = (ScalarFloat *) luminance.get();
 
-        // TODO: avoid having this code duplicated over BitmapTexture
-        for (size_t y = 0; y < m_bitmap->size().y(); ++y) {
+        for (size_t y = 0; y < bitmap->size().y(); ++y) {
             ScalarFloat sin_theta =
-                std::sin(y / ScalarFloat(m_bitmap->size().y() - 1) * math::Pi<ScalarFloat>);
+                std::sin(y / ScalarFloat(bitmap->size().y() - 1) * math::Pi<ScalarFloat>);
 
-            for (size_t x = 0; x < m_bitmap->size().x(); ++x) {
-                // We potentially overwrite the pixel value with the spectral
-                // upsampling coefficients.
+            for (size_t x = 0; x < bitmap->size().x(); ++x) {
                 ScalarColor3f rgb = load_unaligned<ScalarVector3f>(ptr);
                 ScalarFloat lum   = mitsuba::luminance(rgb);
 
@@ -57,11 +54,13 @@ public:
                     coeff = concat(rgb, ScalarFloat(1.f));
                 } else {
                     static_assert(is_spectral_v<Spectrum>);
-                    // Fetch spectral fit for given sRGB color value
-                    ScalarFloat scale      = hmax(rgb) * 2.f;
+                    /* Evaluate the spectral upsampling model. This requires a
+                       reflectance value (colors in [0, 1]) which is accomplished here by
+                       scaling. We use a color where the highest component is 50%,
+                       which generally yields a fairly smooth spectrum. */
+                    ScalarFloat scale = hmax(rgb) * 2.f;
                     ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
-                    coeff = concat(static_cast<Array<ScalarFloat, 3>>(srgb_model_fetch(rgb_norm)),
-                                   scale);
+                    coeff = concat(srgb_model_fetch(rgb_norm), scale);
                 }
 
                 *lum_ptr++ = lum * sin_theta;
@@ -70,8 +69,11 @@ public:
             }
         }
 
+        m_resolution = bitmap->size();
+        m_data = DynamicBuffer<Float>::copy(bitmap->data(), hprod(m_resolution) * 4);
+
         m_scale = props.float_("scale", 1.f);
-        m_warp = Warp(m_bitmap->size(), luminance.get());
+        m_warp = Warp(m_resolution, luminance.get());
         m_d65 = Texture::D65(1.f);
     }
 
@@ -122,7 +124,7 @@ public:
         ds.n      = -d;
         ds.uv     = uv;
         ds.time   = it.time;
-        ds.pdf    = pdf * inv_sin_theta * (1.f / (2.f * math::Pi<Float> * math::Pi<Float>) );
+        ds.pdf    = pdf * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>)));
         ds.delta  = false;
         ds.object = this;
         ds.d      = d;
@@ -146,10 +148,7 @@ public:
         uv -= floor(uv);
 
         Float inv_sin_theta = safe_rsqrt(sqr(d.x()) + sqr(d.z()));
-        Float result =
-            m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * math::Pi<Float> * math::Pi<Float>) );
-
-        return result;
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>)));
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -160,20 +159,19 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("scale", m_scale);
-        callback->put_object("d65", m_d65.get());
-        callback->put_object("bitmap", m_bitmap.get());
+        callback->put_parameter("data", m_data);
+        callback->put_parameter("resolution", m_resolution);
     }
 
     void parameters_changed() override {
-        // TODO update bsphere
-        // TODO update bitmap and warp
+        // TODO update warp
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "EnvironmentMapEmitter[" << std::endl
-            << "  name = \"" << m_name << "\"," << std::endl
-            << "  bitmap = " << string::indent(m_bitmap) << "," << std::endl
+            << "  filename = \"" << m_filename << "\"," << std::endl
+            << "  resolution = \"" << m_resolution << "\"," << std::endl
             << "  bsphere = " << m_bsphere << std::endl
             << "]";
         return oss.str();
@@ -185,58 +183,61 @@ public:
 
 protected:
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
-        uv *= Vector2f(m_bitmap->size() - 1u);
+        uv *= Vector2f(m_resolution - 1u);
 
-        Point2u pos = min(Point2u(uv), m_bitmap->size() - 2u);
+        Point2u pos = min(Point2u(uv), m_resolution - 2u);
 
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
 
-        UInt32 index = pos.x() + pos.y() * (uint32_t) m_bitmap->size().x();
+        const uint32_t width = m_resolution.x();
+        UInt32 index = pos.x() + pos.y() * width;
 
-        Vector4f v00, v10, v01, v11;
-        uint32_t width   = (uint32_t) m_bitmap->size().x() * 4;
-        const Float *ptr = (const Float *) m_bitmap->data();
+        Vector4f v00 = gather<Vector4f>(m_data, index, active),
+                 v10 = gather<Vector4f>(m_data, index + 1, active),
+                 v01 = gather<Vector4f>(m_data, index + width, active),
+                 v11 = gather<Vector4f>(m_data, index + width + 1, active);
 
-        v00 = gather<Vector4f>(ptr, index, active);
-        v10 = gather<Vector4f>(ptr + 4, index, active);
-        v01 = gather<Vector4f>(ptr + width, index, active);
-        v11 = gather<Vector4f>(ptr + width + 4, index, active);
+        if constexpr (is_spectral_v<Spectrum>) {
+            UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
+            Float f0, f1, f;
 
-        if constexpr (is_monochromatic_v<Spectrum>) {
-            // Only one channel is enough here
-            UnpolarizedSpectrum v0 = fmadd(w0.x(), v00.x(), w1.x() * v10.x()),
-                                v1 = fmadd(w0.x(), v01.x(), w1.x() * v11.x());
-            return fmadd(w0.y(), v0, w1.y() * v1);
-        } else if constexpr (is_rgb_v<Spectrum>) {
-            // No need for spectral conversion, we directly read-off the RGB values
-            UnpolarizedSpectrum v0 = fmadd(w0.x(), head<3>(v00), w1.x() * head<3>(v10)),
-                                v1 = fmadd(w0.x(), head<3>(v01), w1.x() * head<3>(v11));
-            return fmadd(w0.y(), v0, w1.y() * v1);
-        } else {
-            static_assert(is_spectral_v<Spectrum>);
-            UnpolarizedSpectrum s00 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v00), wavelengths),
-                                s10 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v10), wavelengths),
-                                s01 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v01), wavelengths),
-                                s11 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v11), wavelengths),
-                                s0  = fmadd(w0.x(), s00, w1.x() * s10),
-                                s1  = fmadd(w0.x(), s01, w1.x() * s11),
-                                f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w()),
-                                f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w()),
-                                s   = fmadd(w0.y(), s0, w1.y() * s1),
-                                f   = fmadd(w0.y(), f0, w1.y() * f1);
+            s00 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v00), wavelengths);
+            s10 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v10), wavelengths);
+            s01 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v01), wavelengths);
+            s11 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v11), wavelengths);
 
+            s0  = fmadd(w0.x(), s00, w1.x() * s10);
+            s1  = fmadd(w0.x(), s01, w1.x() * s11);
+            f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w());
+            f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w());
+
+            s   = fmadd(w0.y(), s0, w1.y() * s1);
+            f   = fmadd(w0.y(), f0, w1.y() * f1);
+
+            /// Evaluate the whitepoint spectrum
             SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
             si.wavelengths = wavelengths;
+            UnpolarizedSpectrum wp = m_d65->eval(si, active);
 
-            return s * f * m_d65->eval(si, active) * m_scale;
+            return s * wp * f * m_scale;
+        } else {
+            Vector4f v0 = fmadd(w0.x(), v00, w1.x() * v10),
+                     v1 = fmadd(w0.x(), v01, w1.x() * v11),
+                     v  = fmadd(w0.y(), v0, w1.y() * v1);
+
+            if constexpr (is_monochromatic_v<Spectrum>)
+                return head<1>(v) * m_scale;
+            else
+                return head<3>(v) * m_scale;
         }
     }
 
 protected:
-    std::string m_name;
+    std::string m_filename;
     ScalarBoundingSphere3f m_bsphere;
-    ref<Bitmap> m_bitmap;
+    DynamicBuffer<Float> m_data;
+    ScalarVector2u m_resolution;
     Warp m_warp;
     ref<Texture> m_d65;
     ScalarFloat m_scale;
