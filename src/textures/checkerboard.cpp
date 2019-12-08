@@ -19,10 +19,10 @@ public:
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
         Point2f uv = m_transform.transform_affine(it.uv);
-        mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
+        mask_t<Point2f> mask = uv - floor(uv) > .5f;
         UnpolarizedSpectrum result = zero<UnpolarizedSpectrum>();
 
-        Mask m0 = neq(mask.x(), mask.y()),
+        Mask m0 = eq(mask.x(), mask.y()),
              m1 = !m0;
 
         m0 &= active; m1 &= active;
