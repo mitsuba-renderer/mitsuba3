@@ -45,7 +45,7 @@ public:
         value = m_specular_reflectance->eval(si, active) *
                 fresnel_conductor(UnpolarizedSpectrum(cos_theta_i), eta);
 
-        return { bs, value };
+        return { bs, value & active };
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,

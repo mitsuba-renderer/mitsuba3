@@ -46,7 +46,7 @@ public:
         m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
 
         m_inv_surface_area = rcp(surface_area());
-        if (abs(dot(m_frame.s, m_frame.t)) > math::Epsilon<ScalarFloat>)
+        if (abs(dot(m_frame.s, m_frame.t)) > math::RayEpsilon<ScalarFloat>)
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Rectangle shape.");
 

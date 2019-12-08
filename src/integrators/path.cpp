@@ -129,7 +129,7 @@ public:
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
         return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), 0.f);
-    };
+    }
 };
 
 MTS_EXPORT_PLUGIN(PathIntegrator, "Path Tracer integrator");

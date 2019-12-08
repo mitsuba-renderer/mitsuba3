@@ -35,6 +35,8 @@ MTS_PY_EXPORT(math) {
     math.attr("Infinity")        = py::cast(math::Infinity<Float>);
     math.attr("Min")             = py::cast(math::Min<Float>);
     math.attr("Max")             = py::cast(math::Max<Float>);
+    math.attr("RayEpsilon")      = py::cast(math::RayEpsilon<Float>);
+    math.attr("ShadowEpsilon")   = py::cast(math::ShadowEpsilon<Float>);
 
     math.def("i0e", enoki::i0e<ScalarFloat>, "x"_a)
         .def("legendre_p",

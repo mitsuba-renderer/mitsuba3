@@ -100,8 +100,8 @@ public:
         Vector3f dc_v = m_center - it.p;
         Float dc_2 = squared_norm(dc_v);
 
-        Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::Epsilon<Float>) :
-                                                        (1.f - math::Epsilon<Float>));
+        Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::RayEpsilon<Float>) :
+                                                        (1.f - math::RayEpsilon<Float>));
         Mask outside_mask = active && dc_2 > sqr(radius_adj);
         if (likely(any(outside_mask))) {
             Float inv_dc            = rsqrt(dc_2),

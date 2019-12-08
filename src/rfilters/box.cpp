@@ -22,7 +22,7 @@ public:
            samplers (Hammersley and Halton in particular) place samples
            at positions like (0, 0). Without such an epsilon and rounding
            errors, samples may end up not contributing to any pixel. */
-        m_radius = props.float_("radius", .5f) + math::Epsilon<Float>;
+        m_radius = props.float_("radius", .5f) + math::RayEpsilon<Float>;
         init_discretization();
     }
 

@@ -26,8 +26,8 @@ public:
 
     void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = max(math::Epsilon<Float>,
-                               m_bsphere.radius * (1.f + math::Epsilon<Float>));
+        m_bsphere.radius = max(math::RayEpsilon<Float>,
+                               m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

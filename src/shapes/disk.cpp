@@ -47,8 +47,8 @@ public:
         m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
 
         m_inv_surface_area = 1.f / surface_area();
-        if (abs_dot(m_frame.s, m_frame.t) > math::Epsilon<ScalarFloat> ||
-            abs_dot(m_frame.s, m_frame.n) > math::Epsilon<ScalarFloat>)
+        if (abs_dot(m_frame.s, m_frame.t) > math::RayEpsilon<ScalarFloat> ||
+            abs_dot(m_frame.s, m_frame.n) > math::RayEpsilon<ScalarFloat>)
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Disk shape.");
 

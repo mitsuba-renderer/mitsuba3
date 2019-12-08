@@ -67,9 +67,9 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     Point2i lo = max(ceil2int <Point2i>(pos - filter_radius), 0),
             hi = min(floor2int<Point2i>(pos + filter_radius), size - 1);
 
-    /// Subtraction of 2*math::Epsilon ensures that we only do 1 scatter_add
+    /// Subtraction of 2*math::RayEpsilon ensures that we only do 1 scatter_add
     /// instead of the conservative 4 when using the box filter
-    int n = ceil2int<int>((m_filter->radius() - 2.f * math::Epsilon<ScalarFloat>) * 2.f);
+    int n = ceil2int<int>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
 
     Point2f base = lo - pos;
     for (int i = 0; i < n; ++i) {
