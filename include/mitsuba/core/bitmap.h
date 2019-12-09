@@ -194,7 +194,7 @@ public:
      *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
-    Bitmap(PixelFormat pixel_format, FieldType component_format,
+    Bitmap(PixelFormat pixel_format, Struct::Type component_format,
            const Vector2s &size, size_t channel_count = 0,
            uint8_t *data = nullptr);
 
@@ -230,7 +230,7 @@ public:
     PixelFormat pixel_format() const { return m_pixel_format; }
 
     /// Return the component format of this bitmap
-    FieldType component_format() const { return m_component_format; }
+    Struct::Type component_format() const { return m_component_format; }
 
     /// Return a pointer to the underlying bitmap storage
     void *data() { return m_data.get(); }
@@ -465,7 +465,7 @@ public:
      *      the ouutput values.
      */
     ref<Bitmap> convert(PixelFormat pixel_format,
-                        FieldType component_format,
+                        Struct::Type component_format,
                         bool srgb_gamma = true) const;
 
     void convert(Bitmap *target) const;
@@ -607,7 +607,7 @@ public:
  protected:
      std::unique_ptr<uint8_t[]> m_data;
      PixelFormat m_pixel_format;
-     FieldType m_component_format;
+     Struct::Type m_component_format;
      Vector2s m_size;
      ref<Struct> m_struct;
      bool m_srgb_gamma;

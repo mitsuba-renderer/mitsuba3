@@ -56,12 +56,12 @@ extern "C" {
 
 NAMESPACE_BEGIN(mitsuba)
 
-Bitmap::Bitmap(PixelFormat pixel_format, FieldType component_format,
+Bitmap::Bitmap(PixelFormat pixel_format, Struct::Type component_format,
                const Vector2s &size, size_t channel_count, uint8_t *data)
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
-    if (m_component_format == FieldType::UInt8)
+    if (m_component_format == Struct::Type::UInt8)
         m_srgb_gamma = true;  // sRGB by default
     else
         m_srgb_gamma = false; // Linear by default
@@ -121,9 +121,9 @@ void Bitmap::set_srgb_gamma(bool value) {
             suffix = suffix.substr(it + 1);
         if (suffix != "A" && suffix != "W") {
             if (value)
-                field.flags = field.flags | FieldFlags::Gamma;
+                field.flags = field.flags | Struct::Flags::Gamma;
             else
-                field.flags = field.flags & ~FieldFlags::Gamma;
+                field.flags = field.flags & ~Struct::Flags::Gamma;
         }
     }
 }
@@ -157,13 +157,13 @@ void Bitmap::rebuild_struct(size_t channel_count) {
 
     m_struct = new Struct();
     for (auto ch: channels) {
-        FieldFlags flags = FieldFlags::None;
+        Struct::Flags flags = Struct::Flags::None;
         if (ch != "A" && ch != "W" && m_srgb_gamma)
-            flags = flags | FieldFlags::Gamma;
+            flags = flags | Struct::Flags::Gamma;
         if (ch == "W")
-            flags = flags | FieldFlags::Weight;
+            flags = flags | Struct::Flags::Weight;
         if (Struct::is_integer(m_component_format))
-            flags = flags | FieldFlags::Normalized;
+            flags = flags | Struct::Flags::Normalized;
         m_struct->append(ch, m_component_format, flags);
     }
 }
@@ -175,17 +175,17 @@ size_t Bitmap::buffer_size() const {
 size_t Bitmap::bytes_per_pixel() const {
     size_t result;
     switch (m_component_format) {
-        case FieldType::Int8:
-        case FieldType::UInt8:   result = 1; break;
-        case FieldType::Int16:
-        case FieldType::UInt16:  result = 2; break;
-        case FieldType::Int32:
-        case FieldType::UInt32:  result = 4; break;
-        case FieldType::Int64:
-        case FieldType::UInt64:  result = 8; break;
-        case FieldType::Float16: result = 2; break;
-        case FieldType::Float32: result = 4; break;
-        case FieldType::Float64: result = 8; break;
+        case Struct::Type::Int8:
+        case Struct::Type::UInt8:   result = 1; break;
+        case Struct::Type::Int16:
+        case Struct::Type::UInt16:  result = 2; break;
+        case Struct::Type::Int32:
+        case Struct::Type::UInt32:  result = 4; break;
+        case Struct::Type::Int64:
+        case Struct::Type::UInt64:  result = 8; break;
+        case Struct::Type::Float16: result = 2; break;
+        case Struct::Type::Float32: result = 4; break;
+        case Struct::Type::Float64: result = 8; break;
         default: Throw("Unknown component format: %d", m_component_format);
     }
     return result * channel_count();
@@ -305,17 +305,17 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
         Throw("Bitmap::resample(): Incompatible temporary bitmap specified!");
 
     switch (m_component_format) {
-        case FieldType::Float16:
+        case Struct::Type::Float16:
             mitsuba::resample<enoki::half, false>(target, this, rfilter, bc,
                                                   clamp, temp);
             break;
 
-        case FieldType::Float32:
+        case Struct::Type::Float32:
             mitsuba::resample<float, false>(target, this, rfilter, bc,
                                             clamp, temp);
             break;
 
-        case FieldType::Float64:
+        case Struct::Type::Float64:
             mitsuba::resample<double, false>(target, this, rfilter, bc,
                                              clamp, temp);
             break;
@@ -337,7 +337,7 @@ ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rf
 }
 
 ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
-                            FieldType component_format,
+                            Struct::Type component_format,
                             bool srgb_gamma) const {
     ref<Bitmap> result = new Bitmap(
         pixel_format, component_format, m_size,
@@ -378,7 +378,7 @@ void Bitmap::convert(Bitmap *target) const {
         /* Set alpha/weight to 1.0 by default */
         if (suffix == "A" || suffix == "W") {
             field.default_ = 1.0;
-            field.flags = field.flags | FieldFlags::Default;
+            field.flags = field.flags | Struct::Flags::Default;
             continue;
         }
 
@@ -511,32 +511,32 @@ void Bitmap::accumulate(const Bitmap *bitmap,
 
     for (int y = 0; y < size.y(); ++y) {
         switch (m_component_format) {
-        case FieldType::UInt8:
+        case Struct::Type::UInt8:
             for (size_t i = 0; i < columns; ++i)
                 ((uint8_t *) target)[i] = (uint8_t) std::min(0xFF, ((uint8_t *) source)[i] + ((uint8_t *) target)[i]);
             break;
 
-        case FieldType::UInt16:
+        case Struct::Type::UInt16:
             for (size_t i = 0; i < columns; ++i)
                 ((uint16_t *) target)[i] = (uint16_t) std::min(0xFFFF, ((uint16_t *) source)[i] + ((uint16_t *) target)[i]);
             break;
 
-        case FieldType::UInt32:
+        case Struct::Type::UInt32:
             for (size_t i = 0; i < columns; ++i)
                 ((uint32_t *) target)[i] = std::min((uint32_t) 0xFFFFFFFFUL, ((uint32_t *) source)[i] + ((uint32_t *) target)[i]);
             break;
 
-        case FieldType::Float16:
+        case Struct::Type::Float16:
             for (size_t i = 0; i < columns; ++i)
                 ((enoki::half *) target)[i] += ((enoki::half *) source)[i];
             break;
 
-        case FieldType::Float32:
+        case Struct::Type::Float32:
             for (size_t i = 0; i < columns; ++i)
                 ((float *) target)[i] += ((float *) source)[i];
             break;
 
-        case FieldType::Float64:
+        case Struct::Type::Float64:
             for (size_t i = 0; i < columns; ++i)
                 ((double *) target)[i] += ((double *) source)[i];
             break;
@@ -931,9 +931,9 @@ void Bitmap::read_openexr(Stream *stream) {
     Imf::PixelType pixel_type = channels.begin().channel().type;
 
     switch (pixel_type) {
-        case Imf::HALF:  m_component_format = FieldType::Float16; break;
-        case Imf::FLOAT: m_component_format = FieldType::Float32; break;
-        case Imf::UINT:  m_component_format = FieldType::UInt32;  break;
+        case Imf::HALF:  m_component_format = Struct::Type::Float16; break;
+        case Imf::FLOAT: m_component_format = Struct::Type::Float32; break;
+        case Imf::UINT:  m_component_format = Struct::Type::UInt32;  break;
         default: Throw("read_openexr(): Invalid component type (must be "
                        "float16, float32, or uint32)");
     }
@@ -1151,9 +1151,9 @@ void Bitmap::read_openexr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case FieldType::Float16: convert((enoki::half *) m_data.get()); break;
-            case FieldType::Float32: convert((float *)       m_data.get()); break;
-            case FieldType::UInt32:  convert((uint32_t*)     m_data.get()); break;
+            case Struct::Type::Float16: convert((enoki::half *) m_data.get()); break;
+            case Struct::Type::Float32: convert((float *)       m_data.get()); break;
+            case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
         }
 
@@ -1222,9 +1222,9 @@ void Bitmap::read_openexr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case FieldType::Float16: convert((enoki::half *) m_data.get()); break;
-            case FieldType::Float32: convert((float *)       m_data.get()); break;
-            case FieldType::UInt32:  convert((uint32_t*)     m_data.get()); break;
+            case Struct::Type::Float16: convert((enoki::half *) m_data.get()); break;
+            case Struct::Type::Float32: convert((float *)       m_data.get()); break;
+            case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
         }
     }
@@ -1324,9 +1324,9 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
     for (auto field : *m_struct) {
         Imf::PixelType comp_type;
         switch (field.type) {
-            case FieldType::Float32: comp_type = Imf::FLOAT; break;
-            case FieldType::Float16: comp_type = Imf::HALF; break;
-            case FieldType::UInt32: comp_type = Imf::UINT; break;
+            case Struct::Type::Float32: comp_type = Imf::FLOAT; break;
+            case Struct::Type::Float16: comp_type = Imf::HALF; break;
+            case Struct::Type::UInt32: comp_type = Imf::UINT; break;
             default: Throw("Unexpected field type!");
         }
 
@@ -1456,7 +1456,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     jpeg_start_decompress(&cinfo);
 
     m_size = Vector2s(cinfo.output_width, cinfo.output_height);
-    m_component_format = FieldType::UInt8;
+    m_component_format = Struct::Type::UInt8;
     m_srgb_gamma = true;
 
     switch (cinfo.output_components) {
@@ -1507,9 +1507,9 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     else
         Throw("write_jpeg(): Unsupported pixel format!");
 
-    if (m_component_format != FieldType::UInt8)
+    if (m_component_format != Struct::Type::UInt8)
         Throw("write_jpeg(): Unsupported component format %s, expected %s",
-              m_component_format, FieldType::UInt8);
+              m_component_format, Struct::Type::UInt8);
 
     memset(&jbuf, 0, sizeof(jbuf_out_t));
     cinfo.err = jpeg_std_error(&jerr);
@@ -1641,8 +1641,8 @@ void Bitmap::read_png(Stream *stream) {
     }
 
     switch (bit_depth) {
-        case 8: m_component_format = FieldType::UInt8; break;
-        case 16: m_component_format = FieldType::UInt16; break;
+        case 8: m_component_format = Struct::Type::UInt8; break;
+        case 16: m_component_format = Struct::Type::UInt16; break;
         default: Throw("read_png(): Unsupported bit depth: %i", bit_depth);
     }
 
@@ -1697,8 +1697,8 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     }
 
     switch (m_component_format) {
-        case FieldType::UInt8: bit_depth = 8; break;
-        case FieldType::UInt16: bit_depth = 16; break;
+        case Struct::Type::UInt8: bit_depth = 8; break;
+        case Struct::Type::UInt16: bit_depth = 16; break;
         default:
             Throw("write_png(): Unsupported component type!");
             return;
@@ -1757,7 +1757,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
     png_write_info(png_ptr, info_ptr);
 
     #if defined(LITTLE_ENDIAN)
-        if (m_component_format == FieldType::UInt16 || m_component_format == FieldType::Int16)
+        if (m_component_format == Struct::Type::UInt16 || m_component_format == Struct::Type::Int16)
             png_set_swap(png_ptr); // Swap the byte order on little endian machines
     #endif
 
@@ -1813,7 +1813,7 @@ void Bitmap::read_ppm(Stream *stream) {
     m_size = Vector2s(int_values[0], int_values[1]);
     m_pixel_format = PixelFormat::RGB;
     m_srgb_gamma = true;
-    m_component_format = int_values[2] <= 0xFF ? FieldType::UInt8 : FieldType::UInt16;
+    m_component_format = int_values[2] <= 0xFF ? Struct::Type::UInt8 : Struct::Type::UInt16;
     rebuild_struct();
 
     auto fs = dynamic_cast<FileStream *>(stream);
@@ -1829,11 +1829,11 @@ void Bitmap::read_ppm(Stream *stream) {
 
 void Bitmap::write_ppm(Stream *stream) const {
     if (m_pixel_format != PixelFormat::RGB ||
-        (m_component_format != FieldType::UInt8 && m_component_format != FieldType::UInt16))
+        (m_component_format != Struct::Type::UInt8 && m_component_format != Struct::Type::UInt16))
         Throw("write_ppm(): Only 8 or 16-bit RGB images are supported");
     stream->write_line(
         tfm::format("P6\n%i\n%i\n%i", m_size.x(), m_size.y(),
-                    m_component_format == FieldType::UInt8 ? 0xFF : 0xFFFF));
+                    m_component_format == Struct::Type::UInt8 ? 0xFF : 0xFFFF));
     stream->write(uint8_data(), buffer_size());
 }
 
@@ -1957,7 +1957,7 @@ void Bitmap::read_rgbe(Stream *stream) {
     if (!format_recognized)
         Throw("read_rgbe(): unrecognized format!");
 
-    m_component_format = FieldType::Float32;
+    m_component_format = Struct::Type::Float32;
     m_srgb_gamma = false;
     rebuild_struct();
     m_data = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size()]);
@@ -2036,7 +2036,7 @@ void Bitmap::read_rgbe(Stream *stream) {
 }
 
 void Bitmap::write_rgbe(Stream *stream) const {
-    if (m_component_format != FieldType::Float32)
+    if (m_component_format != Struct::Type::Float32)
         Throw("write_rgbe(): component format must be Float32!");
 
     std::string format_name;
@@ -2109,7 +2109,7 @@ void Bitmap::read_pfm(Stream *stream) {
 
     bool color = header[1] == 'F';
     m_pixel_format = color ? PixelFormat::RGB : PixelFormat::Y;
-    m_component_format = FieldType::Float32;
+    m_component_format = Struct::Type::Float32;
     m_srgb_gamma = false;
 
     Float scale_and_order;
@@ -2156,7 +2156,7 @@ void Bitmap::read_pfm(Stream *stream) {
 }
 
 void Bitmap::write_pfm(Stream *stream) const {
-    if (m_component_format != FieldType::Float32)
+    if (m_component_format != Struct::Type::Float32)
         Throw("write_pfm(): component format must be Float32!");
     if (m_pixel_format != PixelFormat::RGB && m_pixel_format != PixelFormat::RGBA &&
         m_pixel_format != PixelFormat::Y)
@@ -2241,7 +2241,7 @@ void Bitmap::read_bmp(Stream *stream) {
             Throw("read_bmp(): Compressed files are currently not supported!");
 
         m_size = Vector2s((size_t) width, (size_t) std::abs(height));
-        m_component_format = FieldType::UInt8;
+        m_component_format = Struct::Type::UInt8;
         m_srgb_gamma = true;
 
         switch (bpp) {
@@ -2313,7 +2313,7 @@ void Bitmap::read_tga(Stream *stream) {
 
         m_size = Vector2s((size_t) width, (size_t) height);
         m_srgb_gamma = true;
-        m_component_format = FieldType::UInt8;
+        m_component_format = Struct::Type::UInt8;
 
         bool do_vflip = !(descriptor & (1 << 5));
         bool greyscale = color_type == 3 || color_type == 11;

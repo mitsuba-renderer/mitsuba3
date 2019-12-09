@@ -44,35 +44,35 @@ public:
         auto jacobian      = tf->field("jacobian");
 
         if (!(description.shape.size() == 1 &&
-              description.dtype == FieldType::UInt8 &&
+              description.dtype == Struct::Type::UInt8 &&
 
               theta_i.shape.size() == 1 &&
-              theta_i.dtype == FieldType::Float32 &&
+              theta_i.dtype == Struct::Type::Float32 &&
 
               phi_i.shape.size() == 1 &&
-              phi_i.dtype == FieldType::Float32 &&
+              phi_i.dtype == Struct::Type::Float32 &&
 
               wavelengths.shape.size() == 1 &&
-              wavelengths.dtype == FieldType::Float32 &&
+              wavelengths.dtype == Struct::Type::Float32 &&
 
               ndf.shape.size() == 2 &&
-              ndf.dtype == FieldType::Float32 &&
+              ndf.dtype == Struct::Type::Float32 &&
 
               sigma.shape.size() == 2 &&
-              sigma.dtype == FieldType::Float32 &&
+              sigma.dtype == Struct::Type::Float32 &&
 
               vndf.shape.size() == 4 &&
-              vndf.dtype == FieldType::Float32 &&
+              vndf.dtype == Struct::Type::Float32 &&
               vndf.shape[0] == phi_i.shape[0] &&
               vndf.shape[1] == theta_i.shape[0] &&
 
               luminance.shape.size() == 4 &&
-              luminance.dtype == FieldType::Float32 &&
+              luminance.dtype == Struct::Type::Float32 &&
               luminance.shape[0] == phi_i.shape[0] &&
               luminance.shape[1] == theta_i.shape[0] &&
               luminance.shape[2] == luminance.shape[3] &&
 
-              spectra.dtype == FieldType::Float32 &&
+              spectra.dtype == Struct::Type::Float32 &&
               spectra.shape.size() == 5 &&
               spectra.shape[0] == phi_i.shape[0] &&
               spectra.shape[1] == theta_i.shape[0] &&
@@ -84,7 +84,7 @@ public:
 
               jacobian.shape.size() == 1 &&
               jacobian.shape[0] == 1 &&
-              jacobian.dtype == FieldType::UInt8))
+              jacobian.dtype == Struct::Type::UInt8))
               Throw("Invalid file structure: %s", tf->to_string());
 
         m_isotropic = phi_i.shape[0] <= 2;

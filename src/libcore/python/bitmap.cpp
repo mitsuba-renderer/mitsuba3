@@ -34,12 +34,12 @@ MTS_PY_EXPORT(Bitmap) {
                 .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
                 .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
 
-        bitmap.def(py::init<Bitmap::PixelFormat, FieldType, const Vector2s &, size_t>(),
+        bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2s &, size_t>(),
                 "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,
                 D(Bitmap, Bitmap))
 
             .def(py::init([](py::array obj, py::object pixel_format_) {
-                FieldType component_format = obj.dtype().cast<FieldType>();
+                Struct::Type component_format = obj.dtype().cast<Struct::Type>();
                 if (obj.ndim() != 2 && obj.ndim() != 3)
                     throw py::type_error("Expected an array of size 2 or 3");
 
@@ -100,7 +100,7 @@ MTS_PY_EXPORT(Bitmap) {
                 "clamp"_a = std::make_pair(-math::Infinity<BitmapFloat>, math::Infinity<BitmapFloat>),
                 D(Bitmap, resample, 2)
             )
-            .def("convert", py::overload_cast<Bitmap::PixelFormat, FieldType, bool>(
+            .def("convert", py::overload_cast<Bitmap::PixelFormat, Struct::Type, bool>(
                 &Bitmap::convert, py::const_), D(Bitmap, convert),
                 "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
                 py::call_guard<py::gil_scoped_release>())
@@ -122,19 +122,19 @@ MTS_PY_EXPORT(Bitmap) {
             .def(py::self == py::self)
             .def(py::self != py::self);
 
-    auto fieldtype_ = m.attr("FieldType");
-    bitmap.attr("UInt8")   = fieldtype_.attr("UInt8");
-    bitmap.attr("Int8")    = fieldtype_.attr("Int8");
-    bitmap.attr("UInt16")  = fieldtype_.attr("UInt16");
-    bitmap.attr("Int16")   = fieldtype_.attr("Int16");
-    bitmap.attr("UInt32")  = fieldtype_.attr("UInt32");
-    bitmap.attr("Int32")   = fieldtype_.attr("Int32");
-    bitmap.attr("UInt64")  = fieldtype_.attr("UInt64");
-    bitmap.attr("Int64")   = fieldtype_.attr("Int64");
-    bitmap.attr("Float16") = fieldtype_.attr("Float16");
-    bitmap.attr("Float32") = fieldtype_.attr("Float32");
-    bitmap.attr("Float64") = fieldtype_.attr("Float64");
-    bitmap.attr("Invalid") = fieldtype_.attr("Invalid");
+    auto type_ = m.attr("Struct").attr("Type");
+    bitmap.attr("UInt8")   = type_.attr("UInt8");
+    bitmap.attr("Int8")    = type_.attr("Int8");
+    bitmap.attr("UInt16")  = type_.attr("UInt16");
+    bitmap.attr("Int16")   = type_.attr("Int16");
+    bitmap.attr("UInt32")  = type_.attr("UInt32");
+    bitmap.attr("Int32")   = type_.attr("Int32");
+    bitmap.attr("UInt64")  = type_.attr("UInt64");
+    bitmap.attr("Int64")   = type_.attr("Int64");
+    bitmap.attr("Float16") = type_.attr("Float16");
+    bitmap.attr("Float32") = type_.attr("Float32");
+    bitmap.attr("Float64") = type_.attr("Float64");
+    bitmap.attr("Invalid") = type_.attr("Invalid");
 
     bitmap.def(py::init<const fs::path &, Bitmap::FileFormat>(), "path"_a,
             "format"_a = Bitmap::FileFormat::Auto,

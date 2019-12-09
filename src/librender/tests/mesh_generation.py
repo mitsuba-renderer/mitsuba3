@@ -1,4 +1,4 @@
-from mitsuba.scalar_rgb.core import Thread, FileResolver, Struct, float_dtype, Properties, FieldType
+from mitsuba.scalar_rgb.core import Thread, FileResolver, Struct, float_dtype, Properties
 from mitsuba.scalar_rgb.render import ShapeKDTree, Mesh
 
 import numpy as np
@@ -11,9 +11,9 @@ vertex_struct = Struct() \
 vdt = vertex_struct.dtype()
 
 index_struct = Struct() \
-    .append("i0", FieldType.UInt32) \
-    .append("i1", FieldType.UInt32) \
-    .append("i2", FieldType.UInt32)
+    .append("i0", Struct.Type.UInt32) \
+    .append("i1", Struct.Type.UInt32) \
+    .append("i2", Struct.Type.UInt32)
 idt = vertex_struct.dtype()
 
 

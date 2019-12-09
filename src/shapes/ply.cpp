@@ -92,7 +92,7 @@ public:
                 if (!m_disable_vertex_normals) {
                     for (auto name : { "nx", "ny", "nz" })
                         m_vertex_struct->append(name, struct_type_v<InputFloat>,
-                                                FieldFlags::Default, 0.0);
+                                                Struct::Flags::Default, 0.0);
 
                     if (el.struct_->has_field("nx") &&
                         el.struct_->has_field("ny") &&
@@ -252,19 +252,19 @@ public:
             emitter()->set_shape(this);
     }
 
-    std::string type_name(const FieldType type) const {
+    std::string type_name(const Struct::Type type) const {
         switch (type) {
-            case FieldType::Int8:    return "char";
-            case FieldType::UInt8:   return "uchar";
-            case FieldType::Int16:   return "short";
-            case FieldType::UInt16:  return "ushort";
-            case FieldType::Int32:   return "int";
-            case FieldType::UInt32:  return "uint";
-            case FieldType::Int64:   return "long";
-            case FieldType::UInt64:  return "ulong";
-            case FieldType::Float16: return "half";
-            case FieldType::Float32: return "float";
-            case FieldType::Float64: return "double";
+            case Struct::Type::Int8:    return "char";
+            case Struct::Type::UInt8:   return "uchar";
+            case Struct::Type::Int16:   return "short";
+            case Struct::Type::UInt16:  return "ushort";
+            case Struct::Type::Int32:   return "int";
+            case Struct::Type::UInt32:  return "uint";
+            case Struct::Type::Int64:   return "long";
+            case Struct::Type::UInt64:  return "ulong";
+            case Struct::Type::Float16: return "half";
+            case Struct::Type::Float32: return "float";
+            case Struct::Type::Float64: return "double";
             default: Throw("internal error");
         }
     }
@@ -279,7 +279,7 @@ public:
 
         Timer timer;
         stream->write_line("ply");
-        if (Struct::host_byte_order() == FieldByteOrder::BigEndian)
+        if (Struct::host_byte_order() == Struct::ByteOrder::BigEndian)
             stream->write_line("format binary_big_endian 1.0");
         else
             stream->write_line("format binary_little_endian 1.0");
@@ -309,7 +309,7 @@ public:
         if (m_face_struct->field_count() > 0) {
             ref<Struct> face_struct_out = new Struct(true);
 
-            face_struct_out->append("__size", FieldType::UInt8, FieldFlags::Default, 3.0);
+            face_struct_out->append("__size", Struct::Type::UInt8, Struct::Flags::Default, 3.0);
             for (auto f: *m_face_struct)
                 face_struct_out->append(f.name, f.type);
 
@@ -337,34 +337,34 @@ public:
 
 private:
     PLYHeader parse_ply_header(Stream *stream) {
-        FieldByteOrder byte_order = Struct::host_byte_order();
+        Struct::ByteOrder byte_order = Struct::host_byte_order();
         bool ply_tag_seen = false;
         bool header_processed = false;
         PLYHeader header;
 
-        std::unordered_map<std::string, FieldType> fmt_map;
-        fmt_map["char"]   = FieldType::Int8;
-        fmt_map["uchar"]  = FieldType::UInt8;
-        fmt_map["short"]  = FieldType::Int16;
-        fmt_map["ushort"] = FieldType::UInt16;
-        fmt_map["int"]    = FieldType::Int32;
-        fmt_map["uint"]   = FieldType::UInt32;
-        fmt_map["float"]  = FieldType::Float32;
-        fmt_map["double"] = FieldType::Float64;
+        std::unordered_map<std::string, Struct::Type> fmt_map;
+        fmt_map["char"]   = Struct::Type::Int8;
+        fmt_map["uchar"]  = Struct::Type::UInt8;
+        fmt_map["short"]  = Struct::Type::Int16;
+        fmt_map["ushort"] = Struct::Type::UInt16;
+        fmt_map["int"]    = Struct::Type::Int32;
+        fmt_map["uint"]   = Struct::Type::UInt32;
+        fmt_map["float"]  = Struct::Type::Float32;
+        fmt_map["double"] = Struct::Type::Float64;
 
         /* Unofficial extensions :) */
-        fmt_map["uint8"]   = FieldType::UInt8;
-        fmt_map["uint16"]  = FieldType::UInt16;
-        fmt_map["uint32"]  = FieldType::UInt32;
-        fmt_map["int8"]    = FieldType::Int8;
-        fmt_map["int16"]   = FieldType::Int16;
-        fmt_map["int32"]   = FieldType::Int32;
-        fmt_map["long"]    = FieldType::Int64;
-        fmt_map["ulong"]   = FieldType::UInt64;
-        fmt_map["half"]    = FieldType::Float16;
-        fmt_map["float16"] = FieldType::Float16;
-        fmt_map["float32"] = FieldType::Float32;
-        fmt_map["float64"] = FieldType::Float64;
+        fmt_map["uint8"]   = Struct::Type::UInt8;
+        fmt_map["uint16"]  = Struct::Type::UInt16;
+        fmt_map["uint32"]  = Struct::Type::UInt32;
+        fmt_map["int8"]    = Struct::Type::Int8;
+        fmt_map["int16"]   = Struct::Type::Int16;
+        fmt_map["int32"]   = Struct::Type::Int32;
+        fmt_map["long"]    = Struct::Type::Int64;
+        fmt_map["ulong"]   = Struct::Type::UInt64;
+        fmt_map["half"]    = Struct::Type::Float16;
+        fmt_map["float16"] = Struct::Type::Float16;
+        fmt_map["float32"] = Struct::Type::Float32;
+        fmt_map["float64"] = Struct::Type::Float64;
 
         ref<Struct> struct_;
 
@@ -395,9 +395,9 @@ private:
                 if (token == "ascii")
                     header.ascii = true;
                 else if (token == "binary_little_endian")
-                    byte_order = FieldByteOrder::LittleEndian;
+                    byte_order = Struct::ByteOrder::LittleEndian;
                 else if (token == "binary_big_endian")
-                    byte_order = FieldByteOrder::BigEndian;
+                    byte_order = Struct::ByteOrder::BigEndian;
                 else
                     Throw("invalid PLY header: invalid token after \"format\"");
                 if (!(iss >> token))
@@ -441,7 +441,7 @@ private:
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property list\"");
 
-                    struct_->append(token + ".count", it1->second, FieldFlags::Assert, 3);
+                    struct_->append(token + ".count", it1->second, Struct::Flags::Assert, 3);
                     for (int i = 0; i<3; ++i)
                         struct_->append(tfm::format("i%i", i), it2->second);
                 } else {
@@ -450,9 +450,9 @@ private:
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property\"");
-                    FieldFlags flags = FieldFlags::None;
-                    if (it->second >= FieldType::Int8 && it->second <= FieldType::UInt64)
-                        flags = FieldFlags::Normalized | FieldFlags::Gamma;
+                    Struct::Flags flags = Struct::Flags::None;
+                    if (it->second >= Struct::Type::Int8 && it->second <= Struct::Type::UInt64)
+                        flags = Struct::Flags::Normalized | Struct::Flags::Gamma;
                     struct_->append(token, it->second, flags);
                 }
 
@@ -478,7 +478,7 @@ private:
             for (size_t i = 0; i < el.count; ++i) {
                 for (auto const &field : *(el.struct_)) {
                     switch (field.type) {
-                        case FieldType::Int8: {
+                        case Struct::Type::Int8: {
                                 int value;
                                 if (!(is >> value)) Throw("Could not parse \"char\" value for field %s", field.name);
                                 if (value < -128 || value > 127)
@@ -487,7 +487,7 @@ private:
                             }
                             break;
 
-                        case FieldType::UInt8: {
+                        case Struct::Type::UInt8: {
                                 int value;
                                 if (!(is >> value))
                                     Throw("Could not parse \"uchar\" value for field %s (may be due to non-triangular faces)", field.name);
@@ -497,63 +497,63 @@ private:
                             }
                             break;
 
-                        case FieldType::Int16: {
+                        case Struct::Type::Int16: {
                                 int16_t value;
                                 if (!(is >> value)) Throw("Could not parse \"short\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::UInt16: {
+                        case Struct::Type::UInt16: {
                                 uint16_t value;
                                 if (!(is >> value)) Throw("Could not parse \"ushort\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::Int32: {
+                        case Struct::Type::Int32: {
                                 int32_t value;
                                 if (!(is >> value)) Throw("Could not parse \"int\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::UInt32: {
+                        case Struct::Type::UInt32: {
                                 uint32_t value;
                                 if (!(is >> value)) Throw("Could not parse \"uint\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::Int64: {
+                        case Struct::Type::Int64: {
                                 int64_t value;
                                 if (!(is >> value)) Throw("Could not parse \"long\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::UInt64: {
+                        case Struct::Type::UInt64: {
                                 uint64_t value;
                                 if (!(is >> value)) Throw("Could not parse \"ulong\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::Float16: {
+                        case Struct::Type::Float16: {
                                 float value;
                                 if (!(is >> value)) Throw("Could not parse \"half\" value for field %s", field.name);
                                 out->write(enoki::half::float32_to_float16(value));
                             }
                             break;
 
-                        case FieldType::Float32: {
+                        case Struct::Type::Float32: {
                                 float value;
                                 if (!(is >> value)) Throw("Could not parse \"float\" value for field %s", field.name);
                                 out->write(value);
                             }
                             break;
 
-                        case FieldType::Float64: {
+                        case Struct::Type::Float64: {
                                 double value;
                                 if (!(is >> value)) Throw("Could not parse \"double\" value for field %s", field.name);
                                 out->write(value);

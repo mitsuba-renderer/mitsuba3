@@ -11,18 +11,18 @@ py::dtype dtype_for_struct(const Struct *s) {
         offsets.append(py::int_(field.offset));
         std::string format;
         switch (field.type) {
-            case FieldType::Int8:    format = "int8";   break;
-            case FieldType::UInt8:   format = "uint8";  break;
-            case FieldType::Int16:   format = "int16";  break;
-            case FieldType::UInt16:  format = "uint16"; break;
-            case FieldType::Int32:   format = "int32";  break;
-            case FieldType::UInt32:  format = "uint32"; break;
-            case FieldType::Int64:   format = "int64";  break;
-            case FieldType::UInt64:  format = "uint64"; break;
-            case FieldType::Float16: format = "float16";  break;
-            case FieldType::Float32: format = "float32";  break;
-            case FieldType::Float64: format = "float64";  break;
-            case FieldType::Invalid: format = "invalid";  break;
+            case Struct::Type::Int8:    format = "int8";   break;
+            case Struct::Type::UInt8:   format = "uint8";  break;
+            case Struct::Type::Int16:   format = "int16";  break;
+            case Struct::Type::UInt16:  format = "uint16"; break;
+            case Struct::Type::Int32:   format = "int32";  break;
+            case Struct::Type::UInt32:  format = "uint32"; break;
+            case Struct::Type::Int64:   format = "int64";  break;
+            case Struct::Type::UInt64:  format = "uint64"; break;
+            case Struct::Type::Float16: format = "float16";  break;
+            case Struct::Type::Float32: format = "float32";  break;
+            case Struct::Type::Float64: format = "float64";  break;
+            case Struct::Type::Invalid: format = "invalid";  break;
             default: Throw("Internal error.");
         }
         formats.append(py::str(format));
@@ -31,84 +31,79 @@ py::dtype dtype_for_struct(const Struct *s) {
 }
 
 MTS_PY_EXPORT(Struct) {
-    MTS_PY_CHECK_ALIAS(FieldType, m) {
-        py::enum_<FieldType>(m, "FieldType")
-            .value("Int8",    FieldType::Int8,    D(Struct, FieldType, Int8))
-            .value("UInt8",   FieldType::UInt8,   D(Struct, FieldType, UInt8))
-            .value("Int16",   FieldType::Int16,   D(Struct, FieldType, Int16))
-            .value("UInt16",  FieldType::UInt16,  D(Struct, FieldType, UInt16))
-            .value("Int32",   FieldType::Int32,   D(Struct, FieldType, Int32))
-            .value("UInt32",  FieldType::UInt32,  D(Struct, FieldType, UInt32))
-            .value("Int64",   FieldType::Int64,   D(Struct, FieldType, Int64))
-            .value("UInt64",  FieldType::UInt64,  D(Struct, FieldType, UInt64))
-            .value("Float16", FieldType::Float16, D(Struct, FieldType, Float16))
-            .value("Float32", FieldType::Float32, D(Struct, FieldType, Float32))
-            .value("Float64", FieldType::Float64, D(Struct, FieldType, Float64))
-            .value("Float", struct_type_v<Float>)
-            .value("Invalid", FieldType::Invalid, D(Struct, FieldType, Invalid))
-            .def(py::init([](py::dtype dt) {
-                FieldType value = FieldType::Int8;
-                if (dt.kind() == 'i') {
-                    switch (dt.itemsize()) {
-                        case 1: value = FieldType::Int8; break;
-                        case 2: value = FieldType::Int16; break;
-                        case 4: value = FieldType::Int32; break;
-                        case 8: value = FieldType::Int64; break;
-                        default: throw py::type_error("FieldType(): Invalid integer type!");
-                    }
-                } else if (dt.kind() == 'u') {
-                    switch (dt.itemsize()) {
-                        case 1: value = FieldType::UInt8; break;
-                        case 2: value = FieldType::UInt16; break;
-                        case 4: value = FieldType::UInt32; break;
-                        case 8: value = FieldType::UInt64; break;
-                        default: throw py::type_error("FieldType(): Invalid unsigned integer type!");
-                    }
-                } else if (dt.kind() == 'f') {
-                    switch (dt.itemsize()) {
-                        case 2: value = FieldType::Float16; break;
-                        case 4: value = FieldType::Float32; break;
-                        case 8: value = FieldType::Float64; break;
-                        default: throw py::type_error("FieldType(): Invalid floating point type!");
-                    }
-                } else {
-                    throw py::type_error("FieldType(): Invalid type!");
-                }
-                return new FieldType(value);
-            }), "dtype"_a);
-    }
-
-    py::implicitly_convertible<py::dtype, FieldType>();
-
-    MTS_PY_CHECK_ALIAS(FieldByteOrder, m) {
-        py::enum_<FieldByteOrder>(m, "FieldByteOrder")
-            .value("LittleEndian", FieldByteOrder::LittleEndian,
-                D(Struct, FieldByteOrder, LittleEndian))
-            .value("BigEndian", FieldByteOrder::BigEndian,
-                D(Struct, FieldByteOrder, BigEndian))
-            .value("HostByteOrder", FieldByteOrder::HostByteOrder,
-                D(Struct, FieldByteOrder, HostByteOrder));
-    }
-
-    MTS_PY_CHECK_ALIAS(FieldFlags, m) {
-        py::enum_<FieldFlags>(m, "FieldFlags", py::arithmetic())
-            .value("Normalized", FieldFlags::Normalized, D(Struct, FieldFlags, Normalized))
-            .value("Gamma",      FieldFlags::Gamma,   D(Struct, FieldFlags, Gamma))
-            .value("Weight",     FieldFlags::Weight,  D(Struct, FieldFlags, Weight))
-            .value("Assert",     FieldFlags::Assert,  D(Struct, FieldFlags, Assert))
-            .value("Default",    FieldFlags::Default, D(Struct, FieldFlags, Default))
-            .def(py::self | py::self);
-    }
 
     MTS_PY_CHECK_ALIAS(Struct, m) {
         auto c = MTS_PY_CLASS(Struct, Object);
 
-        c.def(py::init<bool, FieldByteOrder>(), "pack"_a = false,
-                "byte_order"_a = FieldByteOrder::HostByteOrder,
+        py::enum_<Struct::Type>(c, "Type")
+            .value("Int8",    Struct::Type::Int8,    D(Struct, Struct::Type, Int8))
+            .value("UInt8",   Struct::Type::UInt8,   D(Struct, Struct::Type, UInt8))
+            .value("Int16",   Struct::Type::Int16,   D(Struct, Struct::Type, Int16))
+            .value("UInt16",  Struct::Type::UInt16,  D(Struct, Struct::Type, UInt16))
+            .value("Int32",   Struct::Type::Int32,   D(Struct, Struct::Type, Int32))
+            .value("UInt32",  Struct::Type::UInt32,  D(Struct, Struct::Type, UInt32))
+            .value("Int64",   Struct::Type::Int64,   D(Struct, Struct::Type, Int64))
+            .value("UInt64",  Struct::Type::UInt64,  D(Struct, Struct::Type, UInt64))
+            .value("Float16", Struct::Type::Float16, D(Struct, Struct::Type, Float16))
+            .value("Float32", Struct::Type::Float32, D(Struct, Struct::Type, Float32))
+            .value("Float64", Struct::Type::Float64, D(Struct, Struct::Type, Float64))
+            .value("Float", struct_type_v<Float>)
+            .value("Invalid", Struct::Type::Invalid, D(Struct, Struct::Type, Invalid))
+            .def(py::init([](py::dtype dt) {
+                Struct::Type value = Struct::Type::Int8;
+                if (dt.kind() == 'i') {
+                    switch (dt.itemsize()) {
+                        case 1: value = Struct::Type::Int8; break;
+                        case 2: value = Struct::Type::Int16; break;
+                        case 4: value = Struct::Type::Int32; break;
+                        case 8: value = Struct::Type::Int64; break;
+                        default: throw py::type_error("Struct::Type(): Invalid integer type!");
+                    }
+                } else if (dt.kind() == 'u') {
+                    switch (dt.itemsize()) {
+                        case 1: value = Struct::Type::UInt8; break;
+                        case 2: value = Struct::Type::UInt16; break;
+                        case 4: value = Struct::Type::UInt32; break;
+                        case 8: value = Struct::Type::UInt64; break;
+                        default: throw py::type_error("Struct::Type(): Invalid unsigned integer type!");
+                    }
+                } else if (dt.kind() == 'f') {
+                    switch (dt.itemsize()) {
+                        case 2: value = Struct::Type::Float16; break;
+                        case 4: value = Struct::Type::Float32; break;
+                        case 8: value = Struct::Type::Float64; break;
+                        default: throw py::type_error("Struct::Type(): Invalid floating point type!");
+                    }
+                } else {
+                    throw py::type_error("Struct::Type(): Invalid type!");
+                }
+                return new Struct::Type(value);
+            }), "dtype"_a);
+
+        py::implicitly_convertible<py::dtype, Struct::Type>();
+
+        py::enum_<Struct::Flags>(c, "Flags", py::arithmetic())
+            .value("Normalized", Struct::Flags::Normalized, D(Struct, Struct::Flags, Normalized))
+            .value("Gamma",      Struct::Flags::Gamma,   D(Struct, Struct::Flags, Gamma))
+            .value("Weight",     Struct::Flags::Weight,  D(Struct, Struct::Flags, Weight))
+            .value("Assert",     Struct::Flags::Assert,  D(Struct, Struct::Flags, Assert))
+            .value("Default",    Struct::Flags::Default, D(Struct, Struct::Flags, Default))
+            .def(py::self | py::self);
+
+        py::enum_<Struct::ByteOrder>(c, "ByteOrder")
+            .value("LittleEndian", Struct::ByteOrder::LittleEndian,
+                D(Struct, Struct::ByteOrder, LittleEndian))
+            .value("BigEndian", Struct::ByteOrder::BigEndian,
+                D(Struct, Struct::ByteOrder, BigEndian))
+            .value("HostByteOrder", Struct::ByteOrder::HostByteOrder,
+                D(Struct, Struct::ByteOrder, HostByteOrder));
+
+        c.def(py::init<bool, Struct::ByteOrder>(), "pack"_a = false,
+                "byte_order"_a = Struct::ByteOrder::HostByteOrder,
                 D(Struct, Struct))
             .def("append",
-                (Struct &(Struct::*)(const std::string&, FieldType, FieldFlags, double)) &Struct::append,
-                "name"_a, "type"_a, "flags"_a = FieldFlags::None, "default"_a = 0.0,
+                (Struct &(Struct::*)(const std::string&, Struct::Type, Struct::Flags, double)) &Struct::append,
+                "name"_a, "type"_a, "flags"_a = Struct::Flags::None, "default"_a = 0.0,
                 D(Struct, append), py::return_value_policy::reference)
             .def("field", py::overload_cast<const std::string &>(&Struct::field), D(Struct, field),
                 py::return_value_policy::reference_internal)

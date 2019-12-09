@@ -38,7 +38,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
     /* Helper lambda function to determine compatibility (offset/type) of a 'Struct' field */
     auto check_field = [](const Struct *s, size_t idx,
                           const std::string &suffix_exp,
-                          FieldType type_exp) {
+                          Struct::Type type_exp) {
         if (idx >= s->field_count())
             Throw("Mesh::Mesh(): Incompatible data structure %s", s->to_string());
         auto field = s->operator[](idx);

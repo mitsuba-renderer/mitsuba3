@@ -15,92 +15,6 @@ NAMESPACE_BEGIN(mitsuba)
 // TODO: remove this
 #define MTS_STRUCTCONVERTER_USE_JIT 0
 
-/// Type of a field in the \c Struct
-enum class FieldType : uint32_t {
-    // Invalid/unspecified
-    Invalid = 0,
-
-    // Signed and unsigned integer values
-    UInt8,  Int8,
-    UInt16, Int16,
-    UInt32, Int32,
-    UInt64, Int64,
-
-    // Floating point values
-    Float16, Float32, Float64,
-};
-
-/// Byte order of the fields in the \c Struct
-enum class FieldByteOrder {
-    LittleEndian,
-    BigEndian,
-    HostByteOrder
-};
-
-/// Field-specific flags
-enum class FieldFlags : uint32_t {
-    /// No flags set (default value)
-    None = 0x00,
-
-    /**
-     * Specifies whether an integer field encodes a normalized value in the
-     * range [0, 1]. The flag is ignored if specified for floating point
-     * valued fields.
-     */
-    Normalized = 0x01,
-
-    /**
-     * Specifies whether the field encodes a sRGB gamma-corrected value.
-     * Assumes \c Normalized is also specified.
-     */
-    Gamma      = 0x02,
-
-    /**
-     * In \ref FieldConverter::convert, check that the field value matches
-     * the specified default value. Otherwise, return a failure
-     */
-    Assert     = 0x04,
-
-    /**
-     * In \ref FieldConverter::convert, when the field is missing in the
-     * source record, replace it by the specified default value
-     */
-    Default    = 0x08,
-
-    /**
-     * In \ref FieldConverter::convert, when an input structure contains a
-     * weight field, the value of all entries are considered to be
-     * expressed relative to its value. Converting to an un-weighted
-     * structure entails a division by the weight.
-     */
-    Weight     = 0x10
-};
-
-/// Allows or-ing of FieldFlags
-constexpr FieldFlags operator |(FieldFlags f1, FieldFlags f2) {
-    return static_cast<FieldFlags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
-}
-/// Allows and-ing of FieldFlags
-constexpr FieldFlags operator &(FieldFlags f1, FieldFlags f2) {
-    return static_cast<FieldFlags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
-}
-/// Allows not-ing of FieldFlags
-constexpr FieldFlags operator ~(FieldFlags f1) {
-    return static_cast<FieldFlags>(~static_cast<uint32_t>(f1));
-}
-/// Allows using unary `+` for conversion from FieldFlags to the underlying type
-constexpr auto operator+(FieldFlags e) noexcept {
-    return static_cast<std::underlying_type_t<FieldFlags>>(e);
-}
-/// Check presence of a flag in a combined FieldFlags
-constexpr bool has_flag(FieldFlags flags, FieldFlags f) {
-    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
-}
-template <typename UInt32>
-constexpr bool has_flag(const UInt32 &flags, FieldFlags f) {
-    return neq(flags & UInt32(static_cast<uint32_t>(f)), 0u);
-}
-
 /**
  * \brief Descriptor for specifying the contents and in-memory layout
  * of a POD-style data record
@@ -114,13 +28,74 @@ public:
 
     using Float = float;
 
+    /// Type of a field in the \c Struct
+    enum class Type : uint32_t {
+        // Invalid/unspecified
+        Invalid = 0,
+
+        // Signed and unsigned integer values
+        UInt8,  Int8,
+        UInt16, Int16,
+        UInt32, Int32,
+        UInt64, Int64,
+
+        // Floating point values
+        Float16, Float32, Float64,
+    };
+
+    /// Byte order of the fields in the \c Struct
+    enum class ByteOrder {
+        LittleEndian,
+        BigEndian,
+        HostByteOrder
+    };
+
+    /// Field-specific flags
+    enum class Flags : uint32_t {
+        /// No flags set (default value)
+        None = 0x00,
+
+        /**
+         * Specifies whether an integer field encodes a normalized value in the
+         * range [0, 1]. The flag is ignored if specified for floating point
+         * valued fields.
+         */
+        Normalized = 0x01,
+
+        /**
+         * Specifies whether the field encodes a sRGB gamma-corrected value.
+         * Assumes \c Normalized is also specified.
+         */
+        Gamma      = 0x02,
+
+        /**
+         * In \ref FieldConverter::convert, check that the field value matches
+         * the specified default value. Otherwise, return a failure
+         */
+        Assert     = 0x04,
+
+        /**
+         * In \ref FieldConverter::convert, when the field is missing in the
+         * source record, replace it by the specified default value
+         */
+        Default    = 0x08,
+
+        /**
+         * In \ref FieldConverter::convert, when an input structure contains a
+         * weight field, the value of all entries are considered to be
+         * expressed relative to its value. Converting to an un-weighted
+         * structure entails a division by the weight.
+         */
+        Weight     = 0x10
+    };
+
     /// Field specifier with size and offset
     struct MTS_EXPORT Field {
         /// Name of the field
         std::string name;
 
         /// Type identifier
-        FieldType type;
+        Type type;
 
         /// Size in bytes
         size_t size;
@@ -129,7 +104,7 @@ public:
         size_t offset;
 
         /// Additional flags
-        FieldFlags flags;
+        Flags flags;
 
         /// Default value
         double default_;
@@ -140,7 +115,7 @@ public:
          * Specifies a pair of weights and source field names that will be
          * linearly blended to obtain the output field value. Note that this
          * only works for floating point fields or integer fields with the \ref
-         * FieldFlags::Normalized flag. Gamma-corrected fields will be blended in linear
+         * Flags::Normalized flag. Gamma-corrected fields will be blended in linear
          * space.
          */
         std::vector<std::pair<double, std::string>> blend;
@@ -185,14 +160,14 @@ public:
     using FieldConstIterator = std::vector<Field>::const_iterator;
 
     /// Create a new \c Struct and indicate whether the contents are packed or aligned
-    Struct(bool pack = false, FieldByteOrder byte_order = FieldByteOrder::HostByteOrder);
+    Struct(bool pack = false, ByteOrder byte_order = ByteOrder::HostByteOrder);
 
     /// Copy constructor
     Struct(const Struct &s);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
-    Struct &append(const std::string &name, FieldType type,
-                   FieldFlags flags = FieldFlags::None, double default_ = 0.0);
+    Struct &append(const std::string &name, Type type,
+                   Flags flags = Flags::None, double default_ = 0.0);
 
     /// Append a new field to the \c Struct (manual version)
     Struct &append(Field field) { m_fields.push_back(field); return *this; }
@@ -216,14 +191,14 @@ public:
     size_t field_count() const { return m_fields.size(); }
 
     /// Return the byte order of the \c Struct
-    FieldByteOrder byte_order() const { return m_byte_order; }
+    ByteOrder byte_order() const { return m_byte_order; }
 
     /// Return the byte order of the host machine
-    static FieldByteOrder host_byte_order() {
+    static ByteOrder host_byte_order() {
         #if defined(LITTLE_ENDIAN)
-            return FieldByteOrder::LittleEndian;
+            return ByteOrder::LittleEndian;
         #elif defined(BIG_ENDIAN)
-            return FieldByteOrder::LittleEndian;
+            return ByteOrder::LittleEndian;
         #else
             #error Either LITTLE_ENDIAN or BIG_ENDIAN must be defined!
         #endif
@@ -272,65 +247,89 @@ public:
     std::string to_string() const override;
 
     /// Check whether the given type is an unsigned type
-    static bool is_unsigned(FieldType type) {
-        return type == FieldType::UInt8 ||
-               type == FieldType::UInt16 ||
-               type == FieldType::UInt32 ||
-               type == FieldType::UInt64;
+    static bool is_unsigned(Type type) {
+        return type == Type::UInt8 ||
+               type == Type::UInt16 ||
+               type == Type::UInt32 ||
+               type == Type::UInt64;
     }
 
     /// Check whether the given type is a signed type
-    static bool is_signed(FieldType type) {
+    static bool is_signed(Type type) {
         return !is_unsigned(type);
     }
 
     /// Check whether the given type is an integer type
-    static bool is_integer(FieldType type) {
+    static bool is_integer(Type type) {
         return !is_float(type);
     }
 
     /// Check whether the given type is a floating point type
-    static bool is_float(FieldType type) {
-        return type == FieldType::Float16 ||
-               type == FieldType::Float32 ||
-               type == FieldType::Float64;
+    static bool is_float(Type type) {
+        return type == Type::Float16 ||
+               type == Type::Float32 ||
+               type == Type::Float64;
     }
 
     /// Return the representable range of the given type
-    static std::pair<double, double> range(FieldType type);
+    static std::pair<double, double> range(Type type);
 
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
-    FieldByteOrder m_byte_order;
+    ByteOrder m_byte_order;
 };
 
 NAMESPACE_BEGIN(detail)
 template <typename T> struct struct_type {
-    static constexpr FieldType value = struct_type<scalar_t<T>>::value; \
+    static constexpr Struct::Type value = struct_type<scalar_t<T>>::value; \
 };
 
 #define MTS_STRUCT_TYPE(type, entry) \
     template <> struct struct_type<type> { \
-        static constexpr FieldType value = FieldType::entry; \
+        static constexpr Struct::Type value = Struct::Type::entry; \
     };
 
-MTS_STRUCT_TYPE(int8_t, Int8);
-MTS_STRUCT_TYPE(uint8_t, UInt8);
-MTS_STRUCT_TYPE(int16_t, Int16);
-MTS_STRUCT_TYPE(uint16_t, UInt16);
-MTS_STRUCT_TYPE(int32_t, Int32);
-MTS_STRUCT_TYPE(uint32_t, UInt32);
-MTS_STRUCT_TYPE(int64_t, Int64);
-MTS_STRUCT_TYPE(uint64_t, UInt64);
+MTS_STRUCT_TYPE(int8_t,      Int8);
+MTS_STRUCT_TYPE(uint8_t,     UInt8);
+MTS_STRUCT_TYPE(int16_t,     Int16);
+MTS_STRUCT_TYPE(uint16_t,    UInt16);
+MTS_STRUCT_TYPE(int32_t,     Int32);
+MTS_STRUCT_TYPE(uint32_t,    UInt32);
+MTS_STRUCT_TYPE(int64_t,     Int64);
+MTS_STRUCT_TYPE(uint64_t,    UInt64);
 MTS_STRUCT_TYPE(enoki::half, Float16);
-MTS_STRUCT_TYPE(float, Float32);
-MTS_STRUCT_TYPE(double, Float64);
+MTS_STRUCT_TYPE(float,       Float32);
+MTS_STRUCT_TYPE(double,      Float64);
 #undef MTS_STRUCT_TYPE
 NAMESPACE_END(detail)
 
-template <typename T> constexpr FieldType struct_type_v = detail::struct_type<T>::value;
+template <typename T> constexpr Struct::Type struct_type_v = detail::struct_type<T>::value;
 
+/// Allows or-ing of Flags
+constexpr Struct::Flags operator |(Struct::Flags f1, Struct::Flags f2) {
+    return static_cast<Struct::Flags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
+}
+/// Allows and-ing of Struct::Flags
+constexpr Struct::Flags operator &(Struct::Flags f1, Struct::Flags f2) {
+    return static_cast<Struct::Flags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
+}
+/// Allows not-ing of Struct::Flags
+constexpr Struct::Flags operator ~(Struct::Flags f1) {
+    return static_cast<Struct::Flags>(~static_cast<uint32_t>(f1));
+}
+/// Allows using unary `+` for conversion from Struct::Flags to the underlying type
+constexpr auto operator+(Struct::Flags e) noexcept {
+    return static_cast<std::underlying_type_t<Struct::Flags>>(e);
+}
+/// Check presence of a flag in a combined Struct::Flags
+constexpr bool has_flag(Struct::Flags flags, Struct::Flags f) {
+    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
+}
+template <typename UInt32>
+constexpr bool has_flag(const UInt32 &flags, Struct::Flags f) {
+    return neq(flags & UInt32(static_cast<uint32_t>(f)), 0u);
+}
 
 
 /**
@@ -434,8 +433,8 @@ protected:
     // Support data structures/functions for non-accelerated conversion backend
 
     struct Value {
-        FieldType type;
-        FieldFlags flags;
+        Struct::Type type;
+        Struct::Flags flags;
         union {
             Float f;
             float s;
@@ -460,6 +459,6 @@ protected:
 #endif
 };
 
-extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, FieldType value);
+extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Struct::Type value);
 
 NAMESPACE_END(mitsuba)
