@@ -3,7 +3,7 @@ import numpy as np
 import os
 import pytest
 
-from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, PixelFormat, float_dtype, srgb_to_xyz
+from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, float_dtype, srgb_to_xyz
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.scalar_rgb.render import ImageBlock
 
@@ -19,7 +19,7 @@ def check_value(im, arr, atol=1e-9):
                               + '\n\n' + str(ref[:, :, k])
 
 def test01_construct():
-    im = ImageBlock(PixelFormat.RGBA, [33, 12])
+    im = ImageBlock(Bitmap.PixelFormat.RGBA, [33, 12])
     assert im is not None
     assert np.all(im.offset() == 0)
     im.set_offset([10, 20])
@@ -29,13 +29,13 @@ def test01_construct():
     assert im.warns()
     assert im.border_size() == 0  # Since there's no reconstruction filter
     assert im.channel_count() == 4
-    assert im.pixel_format() == PixelFormat.RGBA
+    assert im.pixel_format() == Bitmap.PixelFormat.RGBA
     assert im.bitmap() is not None
 
     rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="15"/>
         </rfilter>""")
-    im = ImageBlock(PixelFormat.YA, [10, 11], filter=rfilter, channels=2, warn=False)
+    im = ImageBlock(Bitmap.PixelFormat.YA, [10, 11], filter=rfilter, channels=2, warn=False)
     assert im.border_size() == rfilter.border_size()
     assert im.channel_count() == 2
     assert not im.warns()
@@ -43,18 +43,18 @@ def test01_construct():
     # Can't specify a number of channels, unless we're using the multichannel
     # pixel format.
     with pytest.raises(RuntimeError):
-        ImageBlock(PixelFormat.YA, [10, 11], channels=5)
-    im = ImageBlock(PixelFormat.MultiChannel, [10, 11], channels=6)
+        ImageBlock(Bitmap.PixelFormat.YA, [10, 11], channels=5)
+    im = ImageBlock(Bitmap.PixelFormat.MultiChannel, [10, 11], channels=6)
     assert im is not None
     im.channel_count() == 6
 
 def test02_put_image_block():
     # TODO: test with varying `offset` values
-    im = ImageBlock(PixelFormat.RGBA, [10, 5])
+    im = ImageBlock(Bitmap.PixelFormat.RGBA, [10, 5])
     # Should be cleared right away.
     check_value(im, 0)
 
-    im2 = ImageBlock(PixelFormat.RGBA, im.size())
+    im2 = ImageBlock(Bitmap.PixelFormat.RGBA, im.size())
     ref = 3.14 * np.arange(
             im.height() * im.width()).reshape(im.height(), im.width(), 1)
     np.array(im2.bitmap(), copy=False)[:] = ref
@@ -69,7 +69,7 @@ def test03_put_values_basic():
     rfilter = load_string("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlock(PixelFormat.XYZAW, [10, 8], filter=rfilter)
+    im = ImageBlock(Bitmap.PixelFormat.XYZAW, [10, 8], filter=rfilter)
 
     # From a spectrum & alpha value
     border = im.border_size()
@@ -99,7 +99,7 @@ def test04_put_packets_basic():
     rfilter = load_string_packet("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlockP(PixelFormat.XYZAW, [10, 8], filter=rfilter)
+    im = ImageBlockP(Bitmap.PixelFormat.XYZAW, [10, 8], filter=rfilter)
 
     n = 29
     positions = np.random.uniform(size=(n, 2))
@@ -144,8 +144,8 @@ def test05_put_with_filter():
             <float name="stddev" value="0.5"/>
         </rfilter>""")
     size = [12, 12]
-    im  = ImageBlockP(PixelFormat.XYZAW, size, filter=rfilter_p)
-    im2 = ImageBlock(PixelFormat.XYZAW, size, filter=rfilter)
+    im  = ImageBlockP(Bitmap.PixelFormat.XYZAW, size, filter=rfilter_p)
+    im2 = ImageBlock(Bitmap.PixelFormat.XYZAW, size, filter=rfilter)
 
     positions = np.array([
         [5, 6], [0, 1], [5, 6], [1, 11], [11, 11],
@@ -210,7 +210,7 @@ def test06_put_values_basic():
     rfilter = load_string_spectral("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlockS(PixelFormat.XYZAW, [10, 8], filter=rfilter)
+    im = ImageBlockS(Bitmap.PixelFormat.XYZAW, [10, 8], filter=rfilter)
 
     # From a spectrum & alpha value
     border = im.border_size()

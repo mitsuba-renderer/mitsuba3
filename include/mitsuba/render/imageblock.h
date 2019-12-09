@@ -30,7 +30,7 @@ public:
      * Construct a new image block of the requested properties
      *
      * \param fmt
-     *    Specifies the pixel format -- see \ref PixelFormat
+     *    Specifies the pixel format -- see \ref Bitmap::PixelFormat
      *    for a list of possibilities
      *
      * \param size
@@ -61,7 +61,7 @@ public:
      *    Ensure that splats created via ``ImageBlock::put()`` add a
      *    unit amount of energy?
      */
-    ImageBlock(PixelFormat fmt,
+    ImageBlock(Bitmap::PixelFormat fmt,
                const ScalarVector2i &size,
                const ReconstructionFilter *filter = nullptr,
                size_t channels = 0,
@@ -109,7 +109,7 @@ public:
              const Spectrum &value,
              const Float &alpha,
              Mask active = true) {
-        Assert(m_bitmap->pixel_format() == PixelFormat::XYZAW,
+        Assert(m_bitmap->pixel_format() == Bitmap::PixelFormat::XYZAW,
                "This `put` variant requires XYZAW internal storage format.");
 
         Array<Float, 3> xyz;
@@ -181,7 +181,7 @@ public:
     size_t channel_count() const { return m_bitmap->channel_count(); }
 
     /// Return the underlying pixel format
-    PixelFormat pixel_format() const { return m_bitmap->pixel_format(); }
+    Bitmap::PixelFormat pixel_format() const { return m_bitmap->pixel_format(); }
 
     /// Return a pointer to the underlying bitmap representation
     Bitmap *bitmap() { return m_bitmap; }

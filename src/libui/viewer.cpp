@@ -302,9 +302,9 @@ void MitsubaViewer::load(Tab *tab, const fs::path &fname) {
         Thread::thread()->set_logger(logger);
 
         ref<FileStream> stream = new FileStream(fname);
-        ImageFileFormat file_format = Bitmap::detect_file_format(stream);
+        Bitmap::FileFormat file_format = Bitmap::detect_file_format(stream);
 
-        if (file_format != ImageFileFormat::Unknown) {
+        if (file_format != Bitmap::FileFormat::Unknown) {
             ref<Bitmap> bitmap = new Bitmap(stream, file_format);
             std::vector<std::pair<std::string, ref<Bitmap>>> images = bitmap->split();
 

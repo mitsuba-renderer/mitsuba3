@@ -9,35 +9,32 @@ MTS_PY_EXPORT(Bitmap) {
     using Vector2s    = typename Bitmap::Vector2s;
     using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
 
-    MTS_PY_CHECK_ALIAS(PixelFormat, m) {
-        py::enum_<PixelFormat>(m, "PixelFormat", D(Bitmap, PixelFormat))
-            .value("Y",     PixelFormat::Y,     D(Bitmap, PixelFormat, Y))
-            .value("YA",    PixelFormat::YA,    D(Bitmap, PixelFormat, YA))
-            .value("RGB",   PixelFormat::RGB,   D(Bitmap, PixelFormat, RGB))
-            .value("RGBA",  PixelFormat::RGBA,  D(Bitmap, PixelFormat, RGBA))
-            .value("XYZ",   PixelFormat::XYZ,   D(Bitmap, PixelFormat, XYZ))
-            .value("XYZA",  PixelFormat::XYZA,  D(Bitmap, PixelFormat, XYZA))
-            .value("XYZAW", PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
-            .value("MultiChannel", PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel));
-    }
-
-    MTS_PY_CHECK_ALIAS(ImageFileFormat, m) {
-        py::enum_<ImageFileFormat>(m, "ImageFileFormat", D(Bitmap, ImageFileFormat))
-            .value("PNG",     ImageFileFormat::PNG,     D(Bitmap, ImageFileFormat, PNG))
-            .value("OpenEXR", ImageFileFormat::OpenEXR, D(Bitmap, ImageFileFormat, OpenEXR))
-            .value("RGBE",    ImageFileFormat::RGBE,    D(Bitmap, ImageFileFormat, RGBE))
-            .value("PFM",     ImageFileFormat::PFM,     D(Bitmap, ImageFileFormat, PFM))
-            .value("PPM",     ImageFileFormat::PPM,     D(Bitmap, ImageFileFormat, PPM))
-            .value("JPEG",    ImageFileFormat::JPEG,    D(Bitmap, ImageFileFormat, JPEG))
-            .value("TGA",     ImageFileFormat::TGA,     D(Bitmap, ImageFileFormat, TGA))
-            .value("BMP",     ImageFileFormat::BMP,     D(Bitmap, ImageFileFormat, BMP))
-            .value("Unknown", ImageFileFormat::Unknown, D(Bitmap, ImageFileFormat, Unknown))
-            .value("Auto",    ImageFileFormat::Auto,    D(Bitmap, ImageFileFormat, Auto));
-    }
-
     MTS_PY_CHECK_ALIAS(Bitmap, m) {
-        auto bitmap = MTS_PY_CLASS(Bitmap, Object)
-            .def(py::init<PixelFormat, FieldType, const Vector2s &, size_t>(),
+        auto bitmap = MTS_PY_CLASS(Bitmap, Object);
+
+        py::enum_<Bitmap::PixelFormat>(bitmap, "PixelFormat", D(Bitmap, Bitmap::PixelFormat))
+            .value("Y",     Bitmap::PixelFormat::Y,     D(Bitmap, Bitmap::PixelFormat, Y))
+            .value("YA",    Bitmap::PixelFormat::YA,    D(Bitmap, Bitmap::PixelFormat, YA))
+            .value("RGB",   Bitmap::PixelFormat::RGB,   D(Bitmap, Bitmap::PixelFormat, RGB))
+            .value("RGBA",  Bitmap::PixelFormat::RGBA,  D(Bitmap, Bitmap::PixelFormat, RGBA))
+            .value("XYZ",   Bitmap::PixelFormat::XYZ,   D(Bitmap, Bitmap::PixelFormat, XYZ))
+            .value("XYZA",  Bitmap::PixelFormat::XYZA,  D(Bitmap, Bitmap::PixelFormat, XYZA))
+            .value("XYZAW", Bitmap::PixelFormat::XYZAW, D(Bitmap, Bitmap::PixelFormat, XYZAW))
+            .value("MultiChannel", Bitmap::PixelFormat::MultiChannel, D(Bitmap, Bitmap::PixelFormat, MultiChannel));
+
+        py::enum_<Bitmap::FileFormat>(bitmap, "FileFormat", D(Bitmap, FileFormat))
+                .value("PNG",     Bitmap::FileFormat::PNG,     D(Bitmap, FileFormat, PNG))
+                .value("OpenEXR", Bitmap::FileFormat::OpenEXR, D(Bitmap, FileFormat, OpenEXR))
+                .value("RGBE",    Bitmap::FileFormat::RGBE,    D(Bitmap, FileFormat, RGBE))
+                .value("PFM",     Bitmap::FileFormat::PFM,     D(Bitmap, FileFormat, PFM))
+                .value("PPM",     Bitmap::FileFormat::PPM,     D(Bitmap, FileFormat, PPM))
+                .value("JPEG",    Bitmap::FileFormat::JPEG,    D(Bitmap, FileFormat, JPEG))
+                .value("TGA",     Bitmap::FileFormat::TGA,     D(Bitmap, FileFormat, TGA))
+                .value("BMP",     Bitmap::FileFormat::BMP,     D(Bitmap, FileFormat, BMP))
+                .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
+                .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
+
+        bitmap.def(py::init<Bitmap::PixelFormat, FieldType, const Vector2s &, size_t>(),
                 "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,
                 D(Bitmap, Bitmap))
 
@@ -46,21 +43,21 @@ MTS_PY_EXPORT(Bitmap) {
                 if (obj.ndim() != 2 && obj.ndim() != 3)
                     throw py::type_error("Expected an array of size 2 or 3");
 
-                PixelFormat pixel_format = PixelFormat::Y;
+                Bitmap::PixelFormat pixel_format = Bitmap::PixelFormat::Y;
                 size_t channel_count = 1;
                 if (obj.ndim() == 3) {
                     channel_count = obj.shape()[2];
                     switch (channel_count) {
-                        case 1: pixel_format = PixelFormat::Y; break;
-                        case 2: pixel_format = PixelFormat::YA; break;
-                        case 3: pixel_format = PixelFormat::RGB; break;
-                        case 4: pixel_format = PixelFormat::RGBA; break;
-                        default: pixel_format = PixelFormat::MultiChannel; break;
+                        case 1: pixel_format = Bitmap::PixelFormat::Y; break;
+                        case 2: pixel_format = Bitmap::PixelFormat::YA; break;
+                        case 3: pixel_format = Bitmap::PixelFormat::RGB; break;
+                        case 4: pixel_format = Bitmap::PixelFormat::RGBA; break;
+                        default: pixel_format = Bitmap::PixelFormat::MultiChannel; break;
                     }
                 }
 
                 if (!pixel_format_.is_none())
-                    pixel_format = pixel_format_.cast<PixelFormat>();
+                    pixel_format = pixel_format_.cast<Bitmap::PixelFormat>();
 
                 obj = py::array::ensure(obj, py::array::c_style);
                 Vector2s size(obj.shape()[1], obj.shape()[0]);
@@ -103,7 +100,7 @@ MTS_PY_EXPORT(Bitmap) {
                 "clamp"_a = std::make_pair(-math::Infinity<BitmapFloat>, math::Infinity<BitmapFloat>),
                 D(Bitmap, resample, 2)
             )
-            .def("convert", py::overload_cast<PixelFormat, FieldType, bool>(
+            .def("convert", py::overload_cast<Bitmap::PixelFormat, FieldType, bool>(
                 &Bitmap::convert, py::const_), D(Bitmap, convert),
                 "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
                 py::call_guard<py::gil_scoped_release>())
@@ -139,21 +136,21 @@ MTS_PY_EXPORT(Bitmap) {
     bitmap.attr("Float64") = fieldtype_.attr("Float64");
     bitmap.attr("Invalid") = fieldtype_.attr("Invalid");
 
-    bitmap.def(py::init<const fs::path &, ImageFileFormat>(), "path"_a,
-            "format"_a = ImageFileFormat::Auto,
+    bitmap.def(py::init<const fs::path &, Bitmap::FileFormat>(), "path"_a,
+            "format"_a = Bitmap::FileFormat::Auto,
             py::call_guard<py::gil_scoped_release>())
-        .def(py::init<Stream *, ImageFileFormat>(), "stream"_a,
-            "format"_a = ImageFileFormat::Auto,
+        .def(py::init<Stream *, Bitmap::FileFormat>(), "stream"_a,
+            "format"_a = Bitmap::FileFormat::Auto,
             py::call_guard<py::gil_scoped_release>())
         .def("write",
-            py::overload_cast<Stream *, ImageFileFormat, int>(
+            py::overload_cast<Stream *, Bitmap::FileFormat, int>(
                 &Bitmap::write, py::const_),
-            "stream"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
+            "stream"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
             D(Bitmap, write), py::call_guard<py::gil_scoped_release>())
         .def("write",
-            py::overload_cast<const fs::path &, ImageFileFormat, int>(
+            py::overload_cast<const fs::path &, Bitmap::FileFormat, int>(
                 &Bitmap::write, py::const_),
-            "path"_a, "format"_a = ImageFileFormat::Auto, "quality"_a = -1,
+            "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
             D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
         .def("split", &Bitmap::split, D(Bitmap, split))
         .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))

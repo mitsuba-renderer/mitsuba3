@@ -3,7 +3,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-ImageBlock<Float, Spectrum>::ImageBlock(PixelFormat fmt, const ScalarVector2i &size,
+ImageBlock<Float, Spectrum>::ImageBlock(Bitmap::PixelFormat fmt, const ScalarVector2i &size,
                                         const ReconstructionFilter *filter, size_t channels,
                                         bool warn, bool border, bool normalize)
     : m_offset(0), m_size(size), m_filter(filter), m_weights_x(nullptr), m_weights_y(nullptr),

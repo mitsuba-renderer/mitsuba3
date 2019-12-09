@@ -31,7 +31,7 @@ public:
 
         /* Convert to linear RGBA float bitmap, will undergo further
            conversion into coefficients of a spectral upsampling model below */
-        bitmap = bitmap->convert(PixelFormat::RGBA, struct_type_v<ScalarFloat>, false);
+        bitmap = bitmap->convert(Bitmap::PixelFormat::RGBA, struct_type_v<ScalarFloat>, false);
         m_filename = file_path.filename().string();
 
         std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[bitmap->pixel_count()]);

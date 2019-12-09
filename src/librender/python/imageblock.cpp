@@ -6,7 +6,7 @@ MTS_PY_EXPORT(ImageBlock) {
     MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
     MTS_PY_CHECK_ALIAS(ImageBlock, m) {
         MTS_PY_CLASS(ImageBlock, Object)
-            .def(py::init<PixelFormat, const ScalarVector2i &, const ReconstructionFilter *,
+            .def(py::init<Bitmap::PixelFormat, const ScalarVector2i &, const ReconstructionFilter *,
                  size_t, bool, bool, bool>(),
                 "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
                 "warn"_a = true, "border"_a = true, "normalize"_a = false)

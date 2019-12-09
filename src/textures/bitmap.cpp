@@ -32,18 +32,18 @@ public:
 
         /* Convert to linear RGB float bitmap, will be converted
            into spectral profile coefficients below (in place) */
-        PixelFormat pixel_format = m_bitmap->pixel_format();
+        Bitmap::PixelFormat pixel_format = m_bitmap->pixel_format();
         switch (pixel_format) {
-            case PixelFormat::Y:
-            case PixelFormat::YA:
-                pixel_format = PixelFormat::Y;
+            case Bitmap::PixelFormat::Y:
+            case Bitmap::PixelFormat::YA:
+                pixel_format = Bitmap::PixelFormat::Y;
                 break;
 
-            case PixelFormat::RGB:
-            case PixelFormat::RGBA:
-            case PixelFormat::XYZ:
-            case PixelFormat::XYZA:
-                pixel_format = PixelFormat::RGB;
+            case Bitmap::PixelFormat::RGB:
+            case Bitmap::PixelFormat::RGBA:
+            case Bitmap::PixelFormat::XYZ:
+            case Bitmap::PixelFormat::XYZA:
+                pixel_format = Bitmap::PixelFormat::RGB;
                 break;
 
             default:

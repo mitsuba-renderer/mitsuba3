@@ -98,11 +98,11 @@ Bitmap::Bitmap(Bitmap &&bitmap)
       m_owns_data(bitmap.m_owns_data) {
 }
 
-Bitmap::Bitmap(Stream *stream, ImageFileFormat format) {
+Bitmap::Bitmap(Stream *stream, FileFormat format) {
     read(stream, format);
 }
 
-Bitmap::Bitmap(const fs::path &filename, ImageFileFormat format) {
+Bitmap::Bitmap(const fs::path &filename, FileFormat format) {
     ref<FileStream> fs = new FileStream(filename);
     read(fs, format);
 }
@@ -670,26 +670,26 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
     return result;
 }
 
-void Bitmap::read(Stream *stream, ImageFileFormat format) {
-    if (format == ImageFileFormat::Auto)
+void Bitmap::read(Stream *stream, FileFormat format) {
+    if (format == FileFormat::Auto)
         format = detect_file_format(stream);
 
     switch (format) {
-        case ImageFileFormat::BMP:     read_bmp(stream);     break;
-        case ImageFileFormat::JPEG:    read_jpeg(stream);    break;
-        case ImageFileFormat::OpenEXR: read_openexr(stream); break;
-        case ImageFileFormat::RGBE:    read_rgbe(stream);    break;
-        case ImageFileFormat::PFM:     read_pfm(stream);     break;
-        case ImageFileFormat::PPM:     read_ppm(stream);     break;
-        case ImageFileFormat::TGA:     read_tga(stream);     break;
-        case ImageFileFormat::PNG:     read_png(stream);     break;
+        case FileFormat::BMP:     read_bmp(stream);     break;
+        case FileFormat::JPEG:    read_jpeg(stream);    break;
+        case FileFormat::OpenEXR: read_openexr(stream); break;
+        case FileFormat::RGBE:    read_rgbe(stream);    break;
+        case FileFormat::PFM:     read_pfm(stream);     break;
+        case FileFormat::PPM:     read_ppm(stream);     break;
+        case FileFormat::TGA:     read_tga(stream);     break;
+        case FileFormat::PNG:     read_png(stream);     break;
         default:
             Throw("Bitmap: Unknown file format!");
     }
 }
 
-ImageFileFormat Bitmap::detect_file_format(Stream *stream) {
-    ImageFileFormat format = ImageFileFormat::Unknown;
+Bitmap::FileFormat Bitmap::detect_file_format(Stream *stream) {
+    FileFormat format = FileFormat::Unknown;
 
     /* Try to automatically detect the file format */
     size_t pos = stream->tell();
@@ -697,56 +697,56 @@ ImageFileFormat Bitmap::detect_file_format(Stream *stream) {
     stream->read(start, 8);
 
     if (start[0] == 'B' && start[1] == 'M') {
-        format = ImageFileFormat::BMP;
+        format = FileFormat::BMP;
     } else if (start[0] == '#' && start[1] == '?') {
-        format = ImageFileFormat::RGBE;
+        format = FileFormat::RGBE;
     } else if (start[0] == 'P' && (start[1] == 'F' || start[1] == 'f')) {
-        format = ImageFileFormat::PFM;
+        format = FileFormat::PFM;
     } else if (start[0] == 'P' && start[1] == '6') {
-        format = ImageFileFormat::PPM;
+        format = FileFormat::PPM;
     } else if (start[0] == 0xFF && start[1] == 0xD8) {
-        format = ImageFileFormat::JPEG;
+        format = FileFormat::JPEG;
     } else if (png_sig_cmp(start, 0, 8) == 0) {
-        format = ImageFileFormat::PNG;
+        format = FileFormat::PNG;
     } else if (Imf::isImfMagic((const char *) start)) {
-        format = ImageFileFormat::OpenEXR;
+        format = FileFormat::OpenEXR;
     } else {
         /* Check for a TGAv2 file */
         char footer[18];
         stream->seek(stream->size() - 18);
         stream->read(footer, 18);
         if (footer[17] == 0 && strncmp(footer, "TRUEVISION-XFILE.", 17) == 0)
-            format = ImageFileFormat::TGA;
+            format = FileFormat::TGA;
     }
     stream->seek(pos);
     return format;
 }
 
-void Bitmap::write(const fs::path &path, ImageFileFormat format, int quality) const {
+void Bitmap::write(const fs::path &path, FileFormat format, int quality) const {
     ref<FileStream> fs = new FileStream(path, FileStream::ETruncReadWrite);
     write(fs, format, quality);
 }
 
-void Bitmap::write(Stream *stream, ImageFileFormat format, int quality) const {
+void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
     auto fs = dynamic_cast<FileStream *>(stream);
 
-    if (format == ImageFileFormat::Auto) {
+    if (format == FileFormat::Auto) {
         if (!fs)
             Throw("Bitmap::write(): can't decide file format based on filename "
                   "since the target stream is not a file stream");
         std::string extension = string::to_lower(fs->path().extension().string());
         if (extension == ".exr")
-            format = ImageFileFormat::OpenEXR;
+            format = FileFormat::OpenEXR;
         else if (extension == ".png")
-            format = ImageFileFormat::PNG;
+            format = FileFormat::PNG;
         else if (extension == ".jpg" || extension == ".jpeg")
-            format = ImageFileFormat::JPEG;
+            format = FileFormat::JPEG;
         else if (extension == ".hdr" || extension == ".rgbe")
-            format = ImageFileFormat::RGBE;
+            format = FileFormat::RGBE;
         else if (extension == ".pfm")
-            format = ImageFileFormat::PFM;
+            format = FileFormat::PFM;
         else if (extension == ".ppm")
-            format = ImageFileFormat::PPM;
+            format = FileFormat::PPM;
         else
             Throw("Bitmap::write(): unsupported bitmap file extension \"%s\"",
                   extension);
@@ -759,31 +759,31 @@ void Bitmap::write(Stream *stream, ImageFileFormat format, int quality) const {
     );
 
     switch (format) {
-        case ImageFileFormat::OpenEXR:
+        case FileFormat::OpenEXR:
             write_openexr(stream, quality);
             break;
 
-        case ImageFileFormat::PNG:
+        case FileFormat::PNG:
             if (quality == -1)
                 quality = 5;
             write_png(stream, quality);
             break;
 
-        case ImageFileFormat::JPEG:
+        case FileFormat::JPEG:
             if (quality == -1)
                 quality = 100;
             write_jpeg(stream, quality);
             break;
 
-        case ImageFileFormat::PPM:
+        case FileFormat::PPM:
             write_ppm(stream);
             break;
 
-        case ImageFileFormat::RGBE:
+        case FileFormat::RGBE:
             write_rgbe(stream);
             break;
 
-        case ImageFileFormat::PFM:
+        case FileFormat::PFM:
             write_pfm(stream);
             break;
 
@@ -2389,31 +2389,31 @@ void Bitmap::read_tga(Stream *stream) {
     }
 }
 
-std::ostream &operator<<(std::ostream &os, PixelFormat value) {
+std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value) {
     switch (value) {
-        case PixelFormat::Y:            os << "y"; break;
-        case PixelFormat::YA:           os << "ya"; break;
-        case PixelFormat::RGB:          os << "rgb"; break;
-        case PixelFormat::RGBA:         os << "rgba"; break;
-        case PixelFormat::XYZ:          os << "xyz"; break;
-        case PixelFormat::XYZA:         os << "xyza"; break;
-        case PixelFormat::XYZAW:        os << "xyzaw"; break;
-        case PixelFormat::MultiChannel: os << "multichannel"; break;
+        case Bitmap::PixelFormat::Y:            os << "y"; break;
+        case Bitmap::PixelFormat::YA:           os << "ya"; break;
+        case Bitmap::PixelFormat::RGB:          os << "rgb"; break;
+        case Bitmap::PixelFormat::RGBA:         os << "rgba"; break;
+        case Bitmap::PixelFormat::XYZ:          os << "xyz"; break;
+        case Bitmap::PixelFormat::XYZA:         os << "xyza"; break;
+        case Bitmap::PixelFormat::XYZAW:        os << "xyzaw"; break;
+        case Bitmap::PixelFormat::MultiChannel: os << "multichannel"; break;
         default: Throw("Unknown pixel format!");
     }
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, ImageFileFormat value) {
+std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value) {
     switch (value) {
-        case ImageFileFormat::PNG:     os << "PNG"; break;
-        case ImageFileFormat::OpenEXR: os << "OpenEXR"; break;
-        case ImageFileFormat::JPEG:    os << "JPEG"; break;
-        case ImageFileFormat::BMP:     os << "BMP"; break;
-        case ImageFileFormat::PFM:     os << "PFM"; break;
-        case ImageFileFormat::PPM:     os << "PPM"; break;
-        case ImageFileFormat::RGBE:    os << "RGBE"; break;
-        case ImageFileFormat::Auto:    os << "Auto"; break;
+        case Bitmap::FileFormat::PNG:     os << "PNG"; break;
+        case Bitmap::FileFormat::OpenEXR: os << "OpenEXR"; break;
+        case Bitmap::FileFormat::JPEG:    os << "JPEG"; break;
+        case Bitmap::FileFormat::BMP:     os << "BMP"; break;
+        case Bitmap::FileFormat::PFM:     os << "PFM"; break;
+        case Bitmap::FileFormat::PPM:     os << "PPM"; break;
+        case Bitmap::FileFormat::RGBE:    os << "RGBE"; break;
+        case Bitmap::FileFormat::Auto:    os << "Auto"; break;
         default: Throw("Unknown file format!");
     }
     return os;

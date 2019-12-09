@@ -361,13 +361,13 @@ def test14_weight(param):
 
 
 def test15_test_dither():
-    from mitsuba.scalar_rgb.core import Bitmap, PixelFormat
+    from mitsuba.scalar_rgb.core import Bitmap
     import numpy.linalg as la
 
-    b = Bitmap(PixelFormat.Y, FieldType.Float32, [10, 256])
+    b = Bitmap(Bitmap.PixelFormat.Y, FieldType.Float32, [10, 256])
     value = np.linspace(0, 1 / 255.0, 10)
     np.array(b, copy=False)[:, :, 0] = np.tile(value, (256, 1))
-    b = b.convert(PixelFormat.Y, FieldType.UInt8, False)
-    b = b.convert(PixelFormat.Y, FieldType.Float32, False)
+    b = b.convert(Bitmap.PixelFormat.Y, FieldType.UInt8, False)
+    b = b.convert(Bitmap.PixelFormat.Y, FieldType.Float32, False)
     err = la.norm(np.mean(np.array(b, copy=False), axis=(0, 2)) - value)
     assert(err < 5e-4)

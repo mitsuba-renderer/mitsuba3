@@ -28,11 +28,11 @@ public:
         m_dest_file = props.string("filename", "");
 
         if (file_format == "openexr" || file_format == "exr")
-            m_file_format = ImageFileFormat::OpenEXR;
+            m_file_format = Bitmap::FileFormat::OpenEXR;
         else if (file_format == "rgbe")
-            m_file_format = ImageFileFormat::RGBE;
+            m_file_format = Bitmap::FileFormat::RGBE;
         else if (file_format == "pfm")
-            m_file_format = ImageFileFormat::PFM;
+            m_file_format = Bitmap::FileFormat::PFM;
         else {
             Throw("The \"file_format\" parameter must either be "
                   "equal to \"openexr\", \"pfm\", or \"rgbe\","
@@ -40,22 +40,22 @@ public:
         }
 
         if (pixel_format == "luminance" || is_monochromatic_v<Spectrum>) {
-            m_pixel_format = PixelFormat::Y;
+            m_pixel_format = Bitmap::PixelFormat::Y;
             if (pixel_format != "luminance")
                 Log(Warn,
                     "Monochrome mode enabled, setting film output pixel format "
                     "to 'luminance' (was %s).",
                     pixel_format);
         } else if (pixel_format == "luminance_alpha")
-            m_pixel_format = PixelFormat::YA;
+            m_pixel_format = Bitmap::PixelFormat::YA;
         else if (pixel_format == "rgb")
-            m_pixel_format = PixelFormat::RGB;
+            m_pixel_format = Bitmap::PixelFormat::RGB;
         else if (pixel_format == "rgba")
-            m_pixel_format = PixelFormat::RGBA;
+            m_pixel_format = Bitmap::PixelFormat::RGBA;
         else if (pixel_format == "xyz")
-            m_pixel_format = PixelFormat::XYZ;
+            m_pixel_format = Bitmap::PixelFormat::XYZ;
         else if (pixel_format == "xyza")
-            m_pixel_format = PixelFormat::XYZA;
+            m_pixel_format = Bitmap::PixelFormat::XYZA;
         else {
             Throw("The \"pixel_format\" parameter must either be equal to "
                   "\"luminance\", \"luminance_alpha\", \"rgb\", \"rgba\", "
@@ -75,11 +75,11 @@ public:
                   " Found %s instead.", component_format);
         }
 
-        if (m_file_format == ImageFileFormat::RGBE) {
-            if (m_pixel_format != PixelFormat::RGB) {
+        if (m_file_format == Bitmap::FileFormat::RGBE) {
+            if (m_pixel_format != Bitmap::PixelFormat::RGB) {
                 Log(Warn, "The RGBE format only supports pixel_format=\"rgb\"."
                            " Overriding..");
-                m_pixel_format = PixelFormat::RGB;
+                m_pixel_format = Bitmap::PixelFormat::RGB;
             }
             if (m_component_format != FieldType::Float32) {
                 Log(Warn, "The RGBE format only supports "
@@ -87,12 +87,12 @@ public:
                 m_component_format = FieldType::Float32;
             }
         }
-        else if (m_file_format == ImageFileFormat::PFM) {
+        else if (m_file_format == Bitmap::FileFormat::PFM) {
             // PFM output; override pixel & component format if necessary
-            if (m_pixel_format != PixelFormat::RGB && m_pixel_format != PixelFormat::Y) {
+            if (m_pixel_format != Bitmap::PixelFormat::RGB && m_pixel_format != Bitmap::PixelFormat::Y) {
                 Log(Warn, "The PFM format only supports pixel_format=\"rgb\""
                            " or \"luminance\". Overriding (setting to \"rgb\")..");
-                m_pixel_format = PixelFormat::RGB;
+                m_pixel_format = Bitmap::PixelFormat::RGB;
             }
             if (m_component_format != FieldType::Float32) {
                 Log(Warn, "The PFM format only supports"
@@ -114,14 +114,14 @@ public:
             }
         }
 
-        m_storage = new ImageBlock(PixelFormat::XYZAW, m_crop_size, nullptr, 0,
+        m_storage = new ImageBlock(Bitmap::PixelFormat::XYZAW, m_crop_size, nullptr, 0,
                                    true);
         m_storage->set_offset(m_crop_offset);
     }
 
     void set_crop_window(const ScalarVector2i &crop_size, const ScalarPoint2i &crop_offset) override {
         if (m_crop_size != crop_size)
-            m_storage = new ImageBlock(PixelFormat::XYZAW, crop_size);
+            m_storage = new ImageBlock(Bitmap::PixelFormat::XYZAW, crop_size);
         m_crop_size = crop_size;
         m_crop_offset = crop_offset;
         check_valid_crop_window();
@@ -199,9 +199,9 @@ public:
 
         fs::path filename = m_dest_file;
         std::string proper_extension;
-        if (m_file_format == ImageFileFormat::OpenEXR)
+        if (m_file_format == Bitmap::FileFormat::OpenEXR)
             proper_extension = ".exr";
-        else if (m_file_format == ImageFileFormat::RGBE)
+        else if (m_file_format == Bitmap::FileFormat::RGBE)
             proper_extension = ".rgbe";
         else
             proper_extension = ".pfm";
@@ -222,9 +222,9 @@ public:
 
     bool destination_exists(const fs::path &base_name) const override {
         std::string proper_extension;
-        if (m_file_format == ImageFileFormat::OpenEXR)
+        if (m_file_format == Bitmap::FileFormat::OpenEXR)
             proper_extension = ".exr";
-        else if (m_file_format == ImageFileFormat::RGBE)
+        else if (m_file_format == Bitmap::FileFormat::RGBE)
             proper_extension = ".rgbe";
         else
             proper_extension = ".pfm";
@@ -260,8 +260,8 @@ public:
     }
 
 protected:
-    ImageFileFormat m_file_format;
-    PixelFormat m_pixel_format;
+    Bitmap::FileFormat m_file_format;
+    Bitmap::PixelFormat m_pixel_format;
     FieldType m_component_format;
     fs::path m_dest_file;
     ref<ImageBlock> m_storage;
