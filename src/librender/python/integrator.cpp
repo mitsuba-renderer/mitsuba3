@@ -66,4 +66,10 @@ MTS_PY_EXPORT(Integrator) {
     MTS_PY_CHECK_ALIAS(MonteCarloIntegrator, m){
         MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
     }
+
+    m.def("mis_weight", [](Float pdf_a, Float pdf_b) {
+        pdf_a *= pdf_a;
+        pdf_b *= pdf_b;
+        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Float(0.f));
+    });
 }

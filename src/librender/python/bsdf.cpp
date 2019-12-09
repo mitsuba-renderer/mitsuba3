@@ -1,5 +1,6 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/shape.h>
 
 MTS_PY_EXPORT_STRUCT(BSDFSample) {
     MTS_IMPORT_TYPES()
@@ -39,6 +40,8 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
                 return static_cast<UInt32>(f);
             }, py::is_operator());
     }
+
+    m.def("has_flag", &has_flag<replace_scalar_t<Float, BSDFFlags>>);
 
     MTS_PY_CHECK_ALIAS(BSDFContext, m) {
         py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
@@ -90,6 +93,11 @@ MTS_PY_EXPORT(BSDF) {
             .def_method(BSDF, id)
             .def("__repr__", &BSDF::to_string);
 
+        if constexpr (is_cuda_array_v<Float>) {
+            pybind11_type_alias<UInt64, BSDFPtr>();
+            pybind11_type_alias<UInt32, replace_scalar_t<Float, BSDFFlags>>();
+        }
+
         if constexpr (is_array_v<Float>) {
             bsdf.def_static(
                 "sample_vec",
@@ -112,6 +120,12 @@ MTS_PY_EXPORT(BSDF) {
                                     Mask active) { return ptr->pdf(ctx, si, wo, active); }),
                 "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
                 D(BSDF, pdf));
+            bsdf.def_static(
+                "flags_vec",
+                vectorize<Float>([](const BSDFPtr &ptr, Mask active) {
+                    return ptr->flags(active); }),
+                "ptr"_a, "active"_a = true,
+                D(BSDF, flags));
         }
     }
 }

@@ -34,6 +34,7 @@ public:
 };
 
 MTS_PY_EXPORT(Object) {
+    MTS_IMPORT_CORE_TYPES()
     MTS_PY_CHECK_ALIAS(Class, m) {
         py::class_<Class>(m, "Class", D(Class));
     }
@@ -63,4 +64,7 @@ MTS_PY_EXPORT(Object) {
             .def_property_readonly("ptr", [](Object *self){ return (uintptr_t) self; })
             .def("__repr__", &Object::to_string, D(Object, to_string));
     }
+
+    if constexpr (is_cuda_array_v<Float>)
+        pybind11_type_alias<UInt64, replace_scalar_t<Float, const Object *>>();
 }

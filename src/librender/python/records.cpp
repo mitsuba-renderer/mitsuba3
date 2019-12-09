@@ -4,7 +4,7 @@
 #include <mitsuba/render/scene.h>
 
 MTS_PY_EXPORT_STRUCT(PositionSample) {
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(ObjectPtr)
     MTS_PY_CHECK_ALIAS(PositionSample3f, m) {
         auto pos = py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample3f))
             .def(py::init<>(), "Construct an unitialized position sample")
@@ -19,6 +19,11 @@ MTS_PY_EXPORT_STRUCT(PositionSample) {
             .def_field(PositionSample3f, delta)
             .def_field(PositionSample3f, object)
             .def_repr(PositionSample3f);
+
+        // TODO is that needed?
+        if constexpr (is_array_v<Float>)
+            pos.def("set_object", [](PositionSample3f& ps, UInt64 ptr){ ps.object = static_cast<ObjectPtr>(ptr); });
+
         bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
     }
 }

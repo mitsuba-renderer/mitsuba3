@@ -8,6 +8,9 @@ MTS_PY_EXPORT(Emitter) {
         auto emitter = MTS_PY_CLASS(Emitter, Endpoint)
             .def_method(Emitter, is_environment);
 
+        if constexpr (is_cuda_array_v<Float>)
+            pybind11_type_alias<UInt64, EmitterPtr>();
+
         if constexpr (is_array_v<Float>) {
             emitter.def_static(
                 "sample_ray_vec",
