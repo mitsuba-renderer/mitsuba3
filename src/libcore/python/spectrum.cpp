@@ -30,6 +30,12 @@ MTS_PY_EXPORT(Spectrum) {
         m.def("spectrum_to_xyz", vectorize<Float>(&spectrum_to_xyz<Float, array_size_v<Spectrum>>),
               "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz));
 
+        m.def("sample_shifted",
+            vectorize<Float>(
+                py::overload_cast<const value_t<Array<Float, array_size_v<Spectrum>>> &>(
+                    &math::sample_shifted<Array<Float, array_size_v<Spectrum>>>)),
+            "sample"_a);
+
         m.attr("MTS_WAVELENGTH_SAMPLES") = array_size_v<Spectrum>;
         m.attr("MTS_WAVELENGTH_MIN")     = MTS_WAVELENGTH_MIN;
         m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;

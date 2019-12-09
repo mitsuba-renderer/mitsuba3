@@ -3,7 +3,7 @@
 from __future__ import division
 import numpy as np
 import mitsuba
-from mitsuba.scalar_rgb.core import float_dtype, PCG32
+from mitsuba.packet_rgb.core import float_dtype, PCG32
 
 
 class ChiSquareTest(object):
@@ -396,12 +396,14 @@ def SpectrumAdapter(value):
     Chi^2 test.
     """
 
-    def instantiate(args):
-        try:
-            from mitsuba.packet_spectral.core.xml import load_string
-        except ImportError:
-            pass
+    try:
+        from mitsuba.packet_spectral.core.xml import load_string
+        from mitsuba.packet_spectral.core import sample_shifted_spectrum
+        from mitsuba.packet_spectral.render import SurfaceInteraction3f
+    except ImportError:
+        pass
 
+    def instantiate(args):
         if hasattr(value, 'sample'):
             return value
         else:
@@ -414,7 +416,7 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        wavelength, weight = plugin.sample(sample)
+        wavelength, weight = plugin.sample(SurfaceInteraction3f(), sample_shifted(sample))
         return wavelength
 
     def pdf_functor(pdf, *args):
