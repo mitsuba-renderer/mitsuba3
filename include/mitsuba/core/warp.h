@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(warp)
 // =======================================================================
 
 template <typename Value>
-Value circ(Value x) { return safe_sqrt(fnmadd(-x, x, 1.f)); }
+Value circ(Value x) { return safe_sqrt(fnmadd(x, x, 1.f)); }
 
 /// Uniformly sample a vector on a 2D disk
 template <typename Value>
@@ -262,7 +262,7 @@ Value square_to_tent_pdf(const Point<Value, 2> &p_) {
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
 template <typename Value>
 MTS_INLINE Vector<Value, 3> square_to_uniform_sphere(const Point<Value, 2> &sample) {
-    Value z = fnmadd(-2.f, sample.y(), 1.f),
+    Value z = fnmadd(2.f, sample.y(), 1.f),
           r = circ(z);
     auto [s, c] = sincos(2.f * math::Pi<Value> * sample.x());
     return { r * c, r * s, z };
@@ -437,7 +437,7 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 
     Value tan_theta_m_sqr = -sqr(alpha) * log(1.f - r2);
     Value cos_theta_m = rsqrt(1.f + tan_theta_m_sqr);
-    p *= safe_sqrt(fnmadd(-cos_theta_m, cos_theta_m, 1.f) / r2);
+    p *= safe_sqrt(fnmadd(cos_theta_m, cos_theta_m, 1.f) / r2);
 
     return { p.x(), p.y(), cos_theta_m };
 #endif
