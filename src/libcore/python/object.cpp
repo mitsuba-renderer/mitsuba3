@@ -60,6 +60,7 @@ MTS_PY_EXPORT(Object) {
             })
             .def_method(Object, traverse)
             .def_method(Object, parameters_changed)
+            .def_property_readonly("ptr", [](Object *self){ return (uintptr_t) self; })
             .def("__repr__", &Object::to_string, D(Object, to_string));
     }
 }

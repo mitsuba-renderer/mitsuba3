@@ -70,16 +70,17 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
 
 MTS_PY_EXPORT(BSDF) {
     MTS_IMPORT_TYPES(BSDF)
+    MTS_IMPORT_OBJECT_TYPES()
     MTS_PY_CHECK_ALIAS(BSDF, m) {
-        MTS_PY_CLASS(BSDF, Object)
+        auto bsdf = MTS_PY_CLASS(BSDF, Object)
             .def("sample", vectorize<Float>(&BSDF::sample),
                 "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
-                .def("eval", vectorize<Float>(&BSDF::eval),
-                    "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
-                .def("pdf", vectorize<Float>(&BSDF::pdf),
-                    "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
-                .def("eval_tr", vectorize<Float>(&BSDF::eval_tr),
-                    "si"_a, "active"_a = true, D(BSDF, eval_tr))
+            .def("eval", vectorize<Float>(&BSDF::eval),
+                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
+            .def("pdf", vectorize<Float>(&BSDF::pdf),
+                "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
+            .def("eval_tr", vectorize<Float>(&BSDF::eval_tr),
+                "si"_a, "active"_a = true, D(BSDF, eval_tr))
             .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
                 "active"_a = true, D(BSDF, flags))
             .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
@@ -88,5 +89,29 @@ MTS_PY_EXPORT(BSDF) {
             .def_method(BSDF, component_count, "active"_a = true)
             .def_method(BSDF, id)
             .def("__repr__", &BSDF::to_string);
+
+        if constexpr (is_array_v<Float>) {
+            bsdf.def_static(
+                "sample_vec",
+                vectorize<Float>([](const BSDFPtr &ptr, const BSDFContext &ctx,
+                                    const SurfaceInteraction3f &si, Float s1, const Point2f &s2,
+                                    Mask active) { return ptr->sample(ctx, si, s1, s2, active); }),
+                "ptr"_a, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true,
+                D(BSDF, sample));
+            bsdf.def_static(
+                "eval_vec",
+                vectorize<Float>([](const BSDFPtr &ptr, const BSDFContext &ctx,
+                                    const SurfaceInteraction3f &si, const Vector3f &wo,
+                                    Mask active) { return ptr->eval(ctx, si, wo, active); }),
+                "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
+                D(BSDF, eval));
+            bsdf.def_static(
+                "pdf_vec",
+                vectorize<Float>([](const BSDFPtr &ptr, const BSDFContext &ctx,
+                                    const SurfaceInteraction3f &si, const Vector3f &wo,
+                                    Mask active) { return ptr->pdf(ctx, si, wo, active); }),
+                "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
+                D(BSDF, pdf));
+        }
     }
 }
