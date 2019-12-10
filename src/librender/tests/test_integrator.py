@@ -6,8 +6,32 @@ import pytest
 
 import mitsuba
 from mitsuba.scalar_spectral.core import Bitmap, Struct
+from mitsuba.scalar_rgb.core.xml import load_string as load_string_scalar_rgb
 from mitsuba.test.scenes import SCENES, make_integrator
 
+
+def get_modes_load_string_func():
+    load_string_list = []
+
+    try:
+        from mitsuba.scalar_rgb.core.xml import load_string as load_string_scalar_rgb
+        load_string_list.append(load_string_scalar_rgb)
+    except ImportError:
+        pass
+
+    try:
+        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet_rgb
+        load_string_list.append(load_string_packet_rgb)
+    except ImportError:
+        pass
+
+    # TODO add GPU and spectral modes
+
+    return load_string_list
+
+modes = [
+    'load_string_func', get_modes_load_string_func()
+]
 
 integrators = [
     'int_name', [
@@ -17,6 +41,7 @@ integrators = [
     ]
 ]
 
+parameters = [ (integrator, mode) for integrator in integrators[1] for mode in modes[1] ]
 
 scene_i = 0
 def _save(film, int_name, suffix=''):
@@ -29,8 +54,9 @@ def _save(film, int_name, suffix=''):
     print('Saved debug image to: ' + fname)
     scene_i += 1
 
-def check_scene(int_name, integrator, scene_name, is_empty = False):
-    scene = SCENES[scene_name]['factory']()
+def check_scene(int_name, scene_name, load_string_func = load_string_scalar_rgb, is_empty = False):
+    integrator = make_integrator(int_name, "", load_string_func)
+    scene = SCENES[scene_name]['factory'](load_string_func=load_string_func)
     integrator_type = {
         'direct': 'direct',
         'depth':  'depth',
@@ -65,48 +91,44 @@ def test01_create(int_name):
 
     if int_name == "direct":
         # These properties should be queried
-        integrator = make_integrator(int_name, """
+        integrator = make_integrator(int_name, xml="""
             <integer name="emitter_samples" value="3"/>
             <integer name="bsdf_samples" value="12"/>
         """)
         # Cannot specify both shading_samples and (emitter_samples | bsdf_samples)
         with pytest.raises(RuntimeError):
-            integrator = make_integrator(int_name, """
+            integrator = make_integrator(int_name, xml="""
                 <integer name="shading_samples" value="3"/>
                 <integer name="emitter_samples" value="5"/>
             """)
     elif int_name == "path":
         # These properties should be queried
-        integrator = make_integrator(int_name, """
+        integrator = make_integrator(int_name, xml="""
             <integer name="rr_depth" value="5"/>
             <integer name="max_depth" value="-1"/>
         """)
         # Cannot use a negative `max_depth`, except -1 (unlimited depth)
         with pytest.raises(RuntimeError):
-            integrator = make_integrator(int_name, """
+            integrator = make_integrator(int_name, xml="""
                 <integer name="max_depth" value="-2"/>
             """)
 
 
-@pytest.mark.parametrize(*integrators)
-def test02_render_empty_scene(int_name):
-    integrator = make_integrator(int_name)
-    check_scene(int_name, integrator, 'empty', is_empty=True)
+@pytest.mark.parametrize("int_name, load_string_func", parameters)
+def test02_render_empty_scene(int_name, load_string_func):
+    check_scene(int_name, 'empty', load_string_func, is_empty=True)
 
-@pytest.mark.parametrize(*integrators)
-def test03_render_teapot(int_name):
-    integrator = make_integrator(int_name)
-    check_scene(int_name, integrator, 'teapot')
+@pytest.mark.parametrize("int_name, load_string_func", parameters)
+def test03_render_teapot(int_name, load_string_func):
+    check_scene(int_name, 'teapot', load_string_func)
 
-@pytest.mark.parametrize(*integrators)
-def test04_render_box(int_name):
-    integrator = make_integrator(int_name)
-    check_scene(int_name, integrator, 'box')
+@pytest.mark.parametrize("int_name, load_string_func", parameters)
+def test04_render_box(int_name, load_string_func):
+    check_scene(int_name, 'box', load_string_func)
 
-@pytest.mark.parametrize(*integrators)
-def test05_render_museum_plane(int_name):
-    integrator = make_integrator(int_name)
-    check_scene(int_name, integrator, 'museum_plane')
+@pytest.mark.parametrize("int_name, load_string_func", parameters)
+def test05_render_museum_plane(int_name, load_string_func):
+    check_scene(int_name, 'museum_plane', load_string_func)
 
 
 @pytest.mark.skipif(mitsuba.DEBUG, reason="Timeout is unreliable in debug mode.")

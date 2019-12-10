@@ -1,14 +1,14 @@
 """Test fixtures containing common scenes."""
 import pytest
-from mitsuba.scalar_rgb.core.xml import load_string
+from mitsuba.scalar_rgb.core.xml import load_string as load_string_scalar_rgb
 from mitsuba.test.util import fresolver_append_path
 
 
 @pytest.fixture
 def empty_scene():
     return make_empty_scene()
-def make_empty_scene(spp = 16):
-    scene = load_string("""
+def make_empty_scene(spp = 16, load_string_func = load_string_scalar_rgb):
+    scene = load_string_func("""
         <scene version='2.0.0'>
             <sensor type="perspective">
                 <film type="hdrfilm">
@@ -30,8 +30,8 @@ def make_empty_scene(spp = 16):
 def teapot_scene():
     return make_teapot_scene()
 @fresolver_append_path
-def make_teapot_scene(spp = 32):
-    scene = load_string("""
+def make_teapot_scene(spp = 32, load_string_func = load_string_scalar_rgb):
+    scene = load_string_func("""
         <scene version='2.0.0'>
             <sensor type="perspective">
                 <float name="near_clip" value="1"/>
@@ -79,8 +79,8 @@ def make_teapot_scene(spp = 32):
 def box_scene():
     return make_box_scene()
 @fresolver_append_path
-def make_box_scene(spp = 16):
-    scene = load_string("""
+def make_box_scene(spp = 16, load_string_func = load_string_scalar_rgb):
+    scene = load_string_func("""
         <scene version='2.0.0'>
             <integrator type="path"/>
 
@@ -191,8 +191,8 @@ def make_box_scene(spp = 16):
 def museum_plane_scene():
     return make_museum_plane_scene()
 @fresolver_append_path
-def make_museum_plane_scene(spp = 16, roughness = 0.01):
-    scene = load_string("""
+def make_museum_plane_scene(spp = 16, roughness = 0.01, load_string_func = load_string_scalar_rgb):
+    scene = load_string_func("""
         <scene version="2.0.0">
             <sensor type="perspective">
                 <float name="fov" value="50"/>
@@ -247,8 +247,8 @@ def make_museum_plane_scene(spp = 16, roughness = 0.01):
     return scene
 
 
-def make_integrator(kind, xml = ""):
-    integrator = load_string("<integrator version='2.0.0' type='%s'>"
+def make_integrator(kind, xml = "", load_string_func = load_string_scalar_rgb):
+    integrator = load_string_func("<integrator version='2.0.0' type='%s'>"
                              "%s</integrator>" % (kind, xml))
     assert integrator is not None
     return integrator
