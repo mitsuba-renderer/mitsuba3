@@ -173,7 +173,7 @@ public:
         Float sin_alpha = m_radius * rcp(norm(m_center - it.p)),
               cos_alpha = enoki::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
-        return select(sin_alpha < (1.f - math::Epsilon<Float>),
+        return select(sin_alpha < math::OneMinusEpsilon<Float>,
             // Reference point lies outside the sphere
             warp::square_to_uniform_cone_pdf(zero<Vector3f>(), cos_alpha),
             m_inv_surface_area * sqr(ds.dist) / abs_dot(ds.d, ds.n)

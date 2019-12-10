@@ -398,8 +398,8 @@ def SpectrumAdapter(value):
 
     try:
         from mitsuba.packet_spectral.core.xml import load_string
-        from mitsuba.packet_spectral.core import sample_shifted_spectrum
-        from mitsuba.packet_spectral.render import SurfaceInteraction3f
+        from mitsuba.packet_spectral.core import sample_shifted
+        from mitsuba.packet_spectral.render import SurfaceInteraction3f as SurfaceInteraction3fX
     except ImportError:
         pass
 
@@ -416,12 +416,15 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        wavelength, weight = plugin.sample(SurfaceInteraction3f(), sample_shifted(sample))
-        return wavelength
+        si = SurfaceInteraction3fX(len(sample))
+        wavelength, weight = plugin.sample(si, sample_shifted(sample))
+        return wavelength[:, 0]
 
-    def pdf_functor(pdf, *args):
+    def pdf_functor(w, *args):
         plugin = instantiate(args)
-        return plugin.pdf(pdf)
+        si = SurfaceInteraction3fX(len(w))
+        si.wavelengths = np.repeat(w, 4).reshape(len(w), 4)
+        return plugin.pdf(si)[:, 0]
 
     return sample_functor, pdf_functor
 

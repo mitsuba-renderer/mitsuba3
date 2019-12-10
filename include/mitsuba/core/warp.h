@@ -283,7 +283,7 @@ template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return select(abs(squared_norm(v) - 1.f) > math::Epsilon<Value>,
+        return select(abs(squared_norm(v) - 1.f) > math::RayEpsilon<Value>,
                       zero<Value>(), math::InvFourPi<Value>);
     else
         return math::InvFourPi<Value>;
@@ -321,7 +321,7 @@ template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_hemisphere_pdf(const Vector<Value, 3> &v) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return select(abs(squared_norm(v) - 1.f) > math::Epsilon<Value> ||
+        return select(abs(squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
                       v.z() < 0.f, zero<Value>(), math::InvTwoPi<Value>);
     else
         return math::InvTwoPi<Value>;
@@ -351,7 +351,7 @@ MTS_INLINE Point<Value, 2> cosine_hemisphere_to_square(const Vector<Value, 3> &v
 template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
     if constexpr (TestDomain)
-        return select(abs(squared_norm(v) - 1.f) > math::Epsilon<Value> ||
+        return select(abs(squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
                       v.z() < 0.f, zero<Value>(), math::InvPi<Value> * v.z());
     else
         return math::InvPi<Value> * v.z();
@@ -408,7 +408,7 @@ MTS_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
                                             const Value &cos_cutoff) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return select(abs(squared_norm(v) - 1.f) > math::Epsilon<Value> || v.z() < cos_cutoff,
+        return select(abs(squared_norm(v) - 1.f) > math::RayEpsilon<Value> || v.z() < cos_cutoff,
                       zero<Value>(),
                       math::InvTwoPi<Value> / (1.f - cos_cutoff));
     else
