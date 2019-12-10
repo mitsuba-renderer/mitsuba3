@@ -18,7 +18,7 @@ public:
         /* Can't seed yet on the GPU because we don't know yet
            how many entries will be needed. */
         if (!is_dynamic_array_v<Float>)
-            seed(0);
+            seed(PCG32_DEFAULT_STATE);
     }
 
     ref<Base> clone() override {

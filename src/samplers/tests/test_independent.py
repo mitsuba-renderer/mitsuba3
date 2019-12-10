@@ -33,15 +33,6 @@ def test02_sample_vs_pcg32(sampler):
         assert np.all(sampler.next_1d() == next_float(ref))
         assert np.all(sampler.next_2d() == [next_float(ref), next_float(ref)])
 
-    # PCG32P is not exposed in Python, so it's harder to check the vectorized
-    # variants against the reference, but we check at least that the samples
-    # returned are not all equal in a packet.
-    for i in range(5):
-        res = sampler.next_1d_p()
-        assert np.unique(res).size == res.size
-        res = sampler.next_2d_p()
-        assert np.unique(res).size == res.size
-
 def test03_clone(sampler):
     """After cloning, the new sampler should *not* yield the same values: it
     should automatically be seeded differently rather than copying the exact
@@ -50,14 +41,24 @@ def test03_clone(sampler):
     for i in range(5):
         assert np.all(sampler.next_1d() != sampler2.next_1d())
         assert np.all(sampler.next_2d() != sampler2.next_2d())
-        assert np.all(sampler.next_1d_p() != sampler2.next_1d_p())
-        assert np.all(sampler.next_2d_p() != sampler2.next_2d_p())
 
 def test04_seed_vectorized(sampler):
     """For a given seed, the first lane of a sampled packet should be equal
     to the sample of a scalar independent sampler."""
+
+    try:
+        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
+    sampler_p = load_string_packet("""<sampler version="2.0.0" type="independent">
+                <integer name="sample_count" value="%d"/>
+            </sampler>""" % 8)
+
     for seed in range(10):
         sampler.seed(seed)
-        assert sampler.next_1d() == sampler.next_1d_p()[0]
-        p = sampler.next_2d_p()
+        print(np.repeat(seed, 16))
+        sampler_p.seed(np.repeat(seed, 16))
+        assert sampler.next_1d() == sampler_p.next_1d(np.repeat(True, 16))[0]
+        p = sampler_p.next_2d(np.repeat(True, 16)) # TODO this shouldn't be needed
         assert np.allclose(sampler.next_2d(), p[0, :])

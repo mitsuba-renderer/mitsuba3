@@ -44,12 +44,13 @@ def test02_bbox():
                    reason="Shape intersections not implemented with Embree or OptiX")
 def test03_ray_intersect():
     try:
-        import mitsuba.packet_rgb.core.load_string as load_string_packet
-        import mitsuba.packet_rgb.core.Ray3f as Ray3fX
+        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
+        from mitsuba.packet_rgb.core import Ray3f as Ray3fX
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
 
-    scene = load_string_packet("""<scene version="2.0.0">
+    # Scalar
+    scene = load_string("""<scene version="2.0.0">
         <shape type="rectangle">
             <transform name="to_world">
                 <scale x="2" y="0.5" z="1"/>
@@ -57,11 +58,10 @@ def test03_ray_intersect():
         </shape>
     </scene>""")
 
-    # Scalar
     n = 15
     coords = np.linspace(-1, 1, n)
     rays = [Ray3f(o=[a, a, 5], d=[0, 0, -1], time=0.0,
-                  wavelengths=[400, 500, 600, 700]) for a in coords]
+                  wavelengths=[0, 0, 0]) for a in coords]
     si_scalar = []
     valid_count = 0
     for i in range(n):
@@ -76,11 +76,20 @@ def test03_ray_intersect():
 
     assert valid_count == 7
 
+    # Packet
+    scene_p = load_string_packet("""<scene version="2.0.0">
+        <shape type="rectangle">
+            <transform name="to_world">
+                <scale x="2" y="0.5" z="1"/>
+            </transform>
+        </shape>
+    </scene>""")
+
     packet = Ray3fX(n)
     for i in range(n):
         packet[i] = rays[i]
-    si_p = scene.ray_intersect(packet)
-    its_found_p = scene.ray_test(packet)
+    si_p = scene_p.ray_intersect(packet)
+    its_found_p = scene_p.ray_test(packet)
 
     assert np.all(si_p.is_valid() == its_found_p)
     for i in range(n):

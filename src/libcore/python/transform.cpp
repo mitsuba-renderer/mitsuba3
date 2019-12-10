@@ -10,7 +10,10 @@ MTS_PY_EXPORT_STRUCT(Transform) {
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform3f &>(), "Copy constructor")
             .def(py::init([](py::array a) {
-                return new Transform3f(py::cast<Matrix3f>(a));
+                if (a.size() == 9)
+                    return new Transform3f(py::cast<ScalarMatrix3f>(a));
+                else
+                    return new Transform3f(py::cast<Matrix3f>(a));
             }))
             .def(py::init<Matrix3f>(), D(Transform3f, Transform3f))
             .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
@@ -42,11 +45,14 @@ MTS_PY_EXPORT_STRUCT(Transform) {
     }
 
     MTS_PY_CHECK_ALIAS(Transform4f, m) {
-        py::class_<Transform4f>(m, "Transform4f", D(Transform4f))
+        auto trans = py::class_<Transform4f>(m, "Transform4f", D(Transform4f))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform4f &>(), "Copy constructor")
             .def(py::init([](py::array a) {
-                return new Transform4f(py::cast<Matrix4f>(a));
+                if (a.size() == 16)
+                    return new Transform4f(py::cast<ScalarMatrix4f>(a));
+                else
+                    return new Transform4f(py::cast<Matrix4f>(a));
             }))
             .def(py::init<Matrix4f>(), D(Transform4f, Transform4f))
             .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
@@ -88,6 +94,8 @@ MTS_PY_EXPORT_STRUCT(Transform) {
             .def_readwrite("matrix", &Transform4f::matrix)
             .def_readwrite("inverse_transpose", &Transform4f::inverse_transpose)
             .def_repr(Transform4f);
+
+        bind_slicing_operators<Transform4f, ScalarTransform4f>(trans);
     }
 
     py::implicitly_convertible<py::array, Transform4f>();

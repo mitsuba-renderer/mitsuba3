@@ -109,17 +109,22 @@ def test04_transform_point():
     except:
         pass
 
-    # TODO
-    # assert np.allclose(
-        # Transform4fX(A).transform_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
+    assert np.allclose(
+        Transform4fX(A).transform_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
 
 def test05_transform_vector():
     A = np.eye(4)
     A[3, 3] = 2
     A[1, 1] = .5
     assert np.allclose(Transform4f(A).transform_vector([2, 4, 6]), [2, 2, 6])
-    # assert np.allclose(
-    #     Transform4f(A).transform_vector([[2, 4, 6], [4, 6, 8]]), [[2, 2, 6], [4, 3, 8]])
+
+    try:
+        from mitsuba.packet_rgb.core import Transform4f as Transform4fX
+    except:
+        pass
+
+    assert np.allclose(
+        Transform4fX(A).transform_vector([[2, 4, 6], [4, 6, 8]]), [[2, 2, 6], [4, 3, 8]])
 
 def test06_transform_normal():
     A = np.eye(4)
@@ -127,12 +132,21 @@ def test06_transform_normal():
     A[1, 2] = .5
     A[1, 1] = .5
     assert np.allclose(Transform4f(A).transform_normal([2, 4, 6]), [2, 8, 2])
-    # assert np.allclose(
-    #     Transform4f(A).transform_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])
 
-# TODO
-@pytest.mark.skip()
+    try:
+        from mitsuba.packet_rgb.core import Transform4f as Transform4fX
+    except:
+        pass
+
+    assert np.allclose(
+        Transform4fX(A).transform_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])
+
 def test07_transform_has_scale():
+    try:
+        from mitsuba.packet_rgb.core import Transform4f as Transform4fX
+    except:
+        pytest.skip("packet_rgb mode not enabled")
+
     t = Transform4fX(11)
     t[0] = Transform4f.rotate([1, 0, 0], 0.5)
     t[1] = Transform4f.rotate([0, 1, 0], 50)
@@ -165,7 +179,6 @@ def test07_transform_has_scale():
         [41, 1e3, 0,   1]
     ]))) < 1e-5
 
-@pytest.mark.skip(reason="AnimatedTransform isn't a templated class")
 def test08_atransform_construct():
     t = Transform4f.rotate([1, 0, 0], 30)
     a = AnimatedTransform(t)
@@ -174,49 +187,9 @@ def test08_atransform_construct():
     assert t0 == t
     assert not t0.has_scale()
     # Animation is constant over time
-    for tt in a.eval([0, 10, 200, 1e5]):
-        assert np.all(t0 == tt)
+    for v in [10, 200, 1e5]:
+        assert np.all(t0 == a.eval(v))
 
-def eval():
-    a = AnimatedTransform()
-    trafo0 = Transform4f.translate([1, 2, 3])
-    trafo1 = Transform4f.translate([2, 4, 6])
-    assert(len(a) == 0)
-    assert a.eval(100) == Transform4f()
-
-    a.append(1, trafo0)
-    assert a.eval(100) == trafo0
-    assert(len(a) == 1)
-    with pytest.raises(Exception):
-        a.append(-1, trafo1)
-    with pytest.raises(Exception):
-        a.append(1, trafo1)
-    a.append(2, trafo1)
-    assert(len(a) == 2)
-    assert(np.all(a[0].time == 1))
-    assert(np.all(a[0].trans == [1, 2, 3]))
-    assert(np.all(a[0].quat == [0, 0, 0, 1]))
-    assert(np.all(a[0].scale == np.eye(3)))
-    assert(np.all(a[1].time == 2))
-    assert(np.all(a[1].trans == [2, 4, 6]))
-    assert(np.all(a[1].quat == [0, 0, 0, 1]))
-    assert(np.all(a[1].scale == np.eye(3)))
-    with pytest.raises(IndexError):
-        print(a[2].trans)
-    a.append(3, trafo1)
-    assert np.allclose(a.eval(0).matrix, trafo0.matrix)
-    assert np.allclose(a.eval(1).matrix, trafo0.matrix)
-    assert np.allclose(a.eval(1.5).matrix, 0.5*(trafo0.matrix + trafo1.matrix))
-    assert np.allclose(a.eval([1.5])[0].matrix, 0.5*(trafo0.matrix + trafo1.matrix))
-    assert np.allclose(a.eval(2).matrix, trafo1.matrix)
-    assert np.allclose(a.eval(3).matrix, trafo1.matrix)
-
-    vec_transform = a.eval([-100,1.5,100])
-    assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
-    assert np.allclose(vec_transform[1].matrix, 0.5 * (trafo0.matrix + trafo1.matrix))
-    assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
-
-@pytest.mark.skip(reason="AnimatedTransform isn't a templated class")
 def test10_atransform_interpolate_rotation():
     a = AnimatedTransform()
     axis = np.array([1.0, 2.0, 3.0])
@@ -227,25 +200,18 @@ def test10_atransform_interpolate_rotation():
     trafo_mid = Transform4f.rotate(axis, 15)
     a.append(2, trafo0)
     a.append(3, trafo1)
-    vec_transform = a.eval([-10,2.5,10])
-    assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
-    assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
-    assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
 
-@pytest.mark.skip(reason="AnimatedTransform isn't a templated class")
+    assert np.allclose(a.eval(-10).matrix, trafo0.matrix)
+    assert np.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
+    assert np.allclose(a.eval( 10).matrix, trafo1.matrix)
+
 def test11_atransform_interpolate_scale():
-    try:
-        from mitsuba.packet_rgb.core import AnimatedTransform as AnimatedTransformP
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
-
-    a = AnimatedTransformP()
+    a = AnimatedTransform()
     trafo0 = Transform4f.scale([1,2,3])
     trafo1 = Transform4f.scale([4,5,6])
     trafo_mid = Transform4f.scale([2.5, 3.5, 4.5])
     a.append(2, trafo0)
     a.append(3, trafo1)
-    vec_transform = a.eval([-10, 2.5, 10])
-    assert np.allclose(vec_transform[0].matrix, trafo0.matrix)
-    assert np.allclose(vec_transform[1].matrix, trafo_mid.matrix)
-    assert np.allclose(vec_transform[2].matrix, trafo1.matrix)
+    assert np.allclose(a.eval(-10).matrix, trafo0.matrix)
+    assert np.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
+    assert np.allclose(a.eval( 10).matrix, trafo1.matrix)

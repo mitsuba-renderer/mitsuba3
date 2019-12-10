@@ -92,8 +92,14 @@ def test04_scrambled_radical_inverse():
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 def test02_radical_inverse_vectorized():
-    v = RadicalInverse()
+    try:
+        from mitsuba.packet_rgb.core.qmc import RadicalInverseP
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
+    v   = RadicalInverse()
+    v_p = RadicalInverseP()
     for index in range(1024):
-        result = v.eval_scrambled(index, np.arange(10, dtype=np.uint64))
+        result = v_p.eval_scrambled(index, np.arange(10, dtype=np.uint64))
         for i in range(len(result)):
             assert np.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7

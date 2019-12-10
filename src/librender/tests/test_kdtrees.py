@@ -1,5 +1,5 @@
 from mitsuba.scalar_rgb.core import Properties, Ray3f
-from mitsuba.scalar_rgb.render import ShapeKDTree, Mesh, SurfaceInteraction3f, Scene
+from mitsuba.scalar_rgb.render import SurfaceInteraction3f, Scene
 from mitsuba.scalar_rgb.core.xml import load_string
 from mitsuba.test.util import fresolver_append_path
 

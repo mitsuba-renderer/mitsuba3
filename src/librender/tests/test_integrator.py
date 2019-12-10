@@ -5,7 +5,7 @@ import os
 import pytest
 
 import mitsuba
-from mitsuba.scalar_rgb.core import Bitmap, Struct
+from mitsuba.scalar_spectral.core import Bitmap, Struct
 from mitsuba.test.scenes import SCENES, make_integrator
 
 
@@ -40,13 +40,13 @@ def check_scene(int_name, integrator, scene_name, is_empty = False):
 
     avg = SCENES[scene_name][integrator_type]
     # TODO: test other variants as well
-    variant_name = 'scalar_rgb'
+    variant_name = 'scalar_spectral'
     film = sensor.film()
     film.clear()
 
     status = integrator.render(scene, sensor)
     assert status, "Rendering ({}) failed".format(variant_name)
-    # _save(film, int_name, suffix='_' + variant_name)
+    _save(film, int_name, suffix='_' + variant_name)
 
     converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     values    = np.array(converted, copy=False)
@@ -119,15 +119,16 @@ def test06_render_timeout(int_name):
     integrator = make_integrator(int_name,
                                  """<float name="timeout" value="{}"/>""".format(timeout))
     scene = SCENES['teapot']['factory'](spp=100000)
+    sensor = scene.sensors()[0]
 
     def wrapped_scalar():
-        assert integrator.render(scene, vectorize=False) is True
+        assert integrator.render(scene, sensor) is True
     def wrapped_vector():
-        assert integrator.render(scene, vectorize=True) is True
+        assert integrator.render(scene, sensor) is True
 
-    scene.film().clear()
+    sensor.film().clear()
     effective_s = timeit(wrapped_scalar, number=1)
-    scene.film().clear()
+    sensor.film().clear()
     effective_v = timeit(wrapped_vector, number=1)
 
     # Check that timeout is respected +/- 0.5s.
@@ -144,14 +145,17 @@ def make_reference_renders():
         'full':   make_integrator('path'),
     }
 
-    spp = 16384
+    spp = 32
     averages = { n: {} for n in SCENES }
     for int_name, integrator in integrators.items():
         for scene_name, props in SCENES.items():
             scene = props['factory'](spp=spp)
+            sensor = scene.sensors()[0]
 
-            integrator.render(scene, vectorize=True)
-            film = scene.film()
+            film = sensor.film()
+            film.clear()
+
+            status = integrator.render(scene, sensor)
 
             # Extract per-channel averages
             converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)

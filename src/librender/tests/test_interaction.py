@@ -9,6 +9,7 @@ def test01_intersection_construction():
     si.shape = None
     si.t = 1
     si.time = 2
+    si.wavelengths = [0, 0, 0]
     si.p = [1, 2, 3]
     si.n = [4, 5, 6]
     si.uv = [7, 8]
@@ -27,7 +28,7 @@ def test01_intersection_construction():
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
-  wavelengths = [-nan, -nan, -nan],
+  wavelengths = [0, 0, 0],
   p = [1, 2, 3],
   shape = nullptr,
   uv = [7, 8],
