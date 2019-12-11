@@ -7,8 +7,10 @@
 # from mitsuba.scalar_rgb.core import MTS_WAVELENGTH_SAMPLES, MTS_WAVELENGTH_MIN, \
 #                          MTS_WAVELENGTH_MAX, Properties, BoundingBox3f
 # from mitsuba.scalar_rgb.core.xml import load_string
-# from mitsuba.scalar_rgb.render import Texture3D, Interaction3f
+# from mitsuba.scalar_rgb.render import Interaction3f
 # from mitsuba.test.util import tmpfile
+
+# TODO enable this
 
 # def test01_constant_construct():
 #     t3d = load_string("""

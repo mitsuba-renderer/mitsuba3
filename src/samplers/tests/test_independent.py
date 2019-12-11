@@ -57,7 +57,7 @@ def test04_seed_vectorized(sampler):
 
     for seed in range(10):
         sampler.seed(seed)
-        sampler_p.seed(np.repeat(seed, 16))
-        assert sampler.next_1d() == sampler_p.next_1d(np.repeat(True, 16))[0]
-        p = sampler_p.next_2d(np.repeat(True, 16)) # TODO this shouldn't be needed
+        sampler_p.seed(seed)
+        assert sampler.next_1d() == sampler_p.next_1d()[0]
+        p = sampler_p.next_2d()
         assert np.allclose(sampler.next_2d(), p[0, :])

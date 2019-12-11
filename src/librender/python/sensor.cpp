@@ -5,7 +5,7 @@ MTS_PY_EXPORT(Sensor) {
     MTS_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     MTS_PY_CHECK_ALIAS(Sensor, m) {
         MTS_PY_CLASS(Sensor, Endpoint)
-            .def_method(Sensor, sample_ray_differential,
+            .def("sample_ray_differential", vectorize<Float>(&Sensor::sample_ray_differential),
                 "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
             .def_method(Sensor, shutter_open)
             .def_method(Sensor, shutter_open_time)

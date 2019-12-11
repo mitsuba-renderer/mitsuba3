@@ -26,8 +26,9 @@ MTS_PY_EXPORT(Shape) {
                 vectorize<Float>(
                     py::overload_cast<const Ray3f &, Mask>(&Shape::ray_intersect, py::const_)),
                 "ray"_a, "active"_a = true, D(Shape, ray_intersect))
-            .def_method(Shape, ray_test, "ray"_a, "active"_a = true)
-            .def_method(Shape, fill_surface_interaction, "ray"_a, "cache"_a, "si"_a, "active"_a = true)
+            .def("ray_test", vectorize<Float>(&Shape::ray_test), "ray"_a, "active"_a = true)
+            .def("fill_surface_interaction", &Shape::fill_surface_interaction,
+                 "ray"_a, "cache"_a, "si"_a, "active"_a = true) // TODO vectorize this
             .def("bbox", py::overload_cast<>(
                 &Shape::bbox, py::const_), D(Shape, bbox))
             .def("bbox", py::overload_cast<ScalarUInt32>(
@@ -42,7 +43,8 @@ MTS_PY_EXPORT(Shape) {
             .def_method(Shape, exterior_medium)
             .def_method(Shape, is_emitter)
             .def_method(Shape, is_sensor)
-            .def("emitter", py::overload_cast<Mask>(&Shape::emitter, py::const_), "active"_a = true)
+            .def("emitter", vectorize<Float>(py::overload_cast<Mask>(&Shape::emitter, py::const_)),
+                 "active"_a = true)
             .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
             .def_method(Shape, primitive_count)
             .def_method(Shape, effective_primitive_count);

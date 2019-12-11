@@ -128,7 +128,7 @@ def test04_area_sample_direction_vec():
         pytest.skip("packet_rgb mode not enabled")
 
     shape = example_shape_vec()
-    e = shape.emitter([True] * PacketSize) # TODO this shouldn't be needed
+    e = shape.emitter()
 
     # Direction sampling is conditioned on a sampled position
     it = Interaction3fX()
