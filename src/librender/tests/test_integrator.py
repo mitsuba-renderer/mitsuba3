@@ -9,23 +9,21 @@ from mitsuba.scalar_spectral.core import Bitmap, Struct
 from mitsuba.scalar_rgb.core.xml import load_string as load_string_scalar_rgb
 from mitsuba.test.scenes import SCENES, make_integrator
 
+import importlib
 
 def get_modes_load_string_func():
     load_string_list = []
 
-    try:
-        from mitsuba.scalar_rgb.core.xml import load_string as load_string_scalar_rgb
-        load_string_list.append(load_string_scalar_rgb)
-    except ImportError:
-        pass
+    def add_load_string(mode):
+        try:
+            f = importlib.import_module('mitsuba.%s.core.xml' % mode).load_string
+            load_string_list.append((mode, f))
+        except ImportError:
+            pass
 
-    try:
-        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet_rgb
-        load_string_list.append(load_string_packet_rgb)
-    except ImportError:
-        pass
-
-    # TODO add GPU and spectral modes
+    add_load_string('scalar_rgb')
+    add_load_string('packet_rgb')
+    # add_load_string('gpu_rgb') # TODO fix this
 
     return load_string_list
 
@@ -41,7 +39,7 @@ integrators = [
     ]
 ]
 
-parameters = [ (integrator, mode) for integrator in integrators[1] for mode in modes[1] ]
+parameters = [ (integrator, mode[0], mode[1]) for integrator in integrators[1] for mode in modes[1] ]
 
 scene_i = 0
 def _save(film, int_name, suffix=''):
@@ -54,7 +52,7 @@ def _save(film, int_name, suffix=''):
     print('Saved debug image to: ' + fname)
     scene_i += 1
 
-def check_scene(int_name, scene_name, load_string_func = load_string_scalar_rgb, is_empty = False):
+def check_scene(int_name, scene_name, mode_name, load_string_func = load_string_scalar_rgb, is_empty = False):
     integrator = make_integrator(int_name, "", load_string_func)
     scene = SCENES[scene_name]['factory'](load_string_func=load_string_func)
     integrator_type = {
@@ -65,21 +63,19 @@ def check_scene(int_name, scene_name, load_string_func = load_string_scalar_rgb,
     sensor = scene.sensors()[0]
 
     avg = SCENES[scene_name][integrator_type]
-    # TODO: test other variants as well
-    variant_name = 'scalar_spectral'
     film = sensor.film()
     film.clear()
 
     status = integrator.render(scene, sensor)
-    assert status, "Rendering ({}) failed".format(variant_name)
-    _save(film, int_name, suffix='_' + variant_name)
+    assert status, "Rendering ({}) failed".format(mode_name)
+    _save(film, int_name, suffix='_' + mode_name)
 
     converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     values    = np.array(converted, copy=False)
     means     = np.mean(values, axis=(0, 1))
     # Very noisy images, so we add a tolerance
     assert np.allclose(means, avg, rtol=5e-2), \
-           "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, variant_name)
+           "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, mode_name)
 
     return np.array(film.bitmap(), copy=True)
 
@@ -114,21 +110,21 @@ def test01_create(int_name):
             """)
 
 
-@pytest.mark.parametrize("int_name, load_string_func", parameters)
-def test02_render_empty_scene(int_name, load_string_func):
-    check_scene(int_name, 'empty', load_string_func, is_empty=True)
+@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
+def test02_render_empty_scene(int_name, mode_name, load_string_func):
+    check_scene(int_name, 'empty', mode_name, load_string_func, is_empty=True)
 
-@pytest.mark.parametrize("int_name, load_string_func", parameters)
-def test03_render_teapot(int_name, load_string_func):
-    check_scene(int_name, 'teapot', load_string_func)
+@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
+def test03_render_teapot(int_name, mode_name, load_string_func):
+    check_scene(int_name, 'teapot', mode_name, load_string_func)
 
-@pytest.mark.parametrize("int_name, load_string_func", parameters)
-def test04_render_box(int_name, load_string_func):
-    check_scene(int_name, 'box', load_string_func)
+@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
+def test04_render_box(int_name, mode_name, load_string_func):
+    check_scene(int_name, 'box', mode_name, load_string_func)
 
-@pytest.mark.parametrize("int_name, load_string_func", parameters)
-def test05_render_museum_plane(int_name, load_string_func):
-    check_scene(int_name, 'museum_plane', load_string_func)
+@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
+def test05_render_museum_plane(int_name, mode_name, load_string_func):
+    check_scene(int_name, 'museum_plane', mode_name, load_string_func)
 
 
 @pytest.mark.skipif(mitsuba.DEBUG, reason="Timeout is unreliable in debug mode.")
