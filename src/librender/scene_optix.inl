@@ -78,7 +78,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_rt_ptx,   "ray_hit",         &prog[3]));
     rt_check(rtProgramCreateFromPTXString(s.context, (const char *) optix_attr_ptx, "ray_attr",        &prog[4]));
 
-#if 0 //!defined(MTS_OPTIX_DEBUG)
+#if !defined(MTS_OPTIX_DEBUG)
         rt_check(rtContextSetExceptionEnabled(s.context, RT_EXCEPTION_ALL, 0));
         rt_check(rtContextSetPrintEnabled(s.context, 0));
 #else

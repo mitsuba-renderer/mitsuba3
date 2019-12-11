@@ -124,11 +124,19 @@ protected:
     SamplingIntegrator(const Properties &props);
     virtual ~SamplingIntegrator();
 
-    virtual void render_block_scalar(const Scene *scene,
-                                     const Sensor *sensor,
-                                     Sampler *sampler,
-                                     ImageBlock *block,
-                                     size_t sample_count = size_t(-1)) const;
+    virtual void render_block(const Scene *scene,
+                              const Sensor *sensor,
+                              Sampler *sampler,
+                              ImageBlock *block,
+                              size_t sample_count = size_t(-1)) const;
+
+    void render_sample(const Scene *scene,
+                       const Sensor *sensor,
+                       Sampler *sampler,
+                       ImageBlock *block,
+                       const Vector2f &pos,
+                       ScalarFloat diff_scale_factor,
+                       Mask active = true) const;
 
 protected:
     /// Integrators should stop all work when this flag is set to true.
