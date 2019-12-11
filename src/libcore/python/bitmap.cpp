@@ -12,27 +12,27 @@ MTS_PY_EXPORT(Bitmap) {
     MTS_PY_CHECK_ALIAS(Bitmap, m) {
         auto bitmap = MTS_PY_CLASS(Bitmap, Object);
 
-        py::enum_<Bitmap::PixelFormat>(bitmap, "PixelFormat", D(Bitmap, Bitmap::PixelFormat))
-            .value("Y",     Bitmap::PixelFormat::Y,     D(Bitmap, Bitmap::PixelFormat, Y))
-            .value("YA",    Bitmap::PixelFormat::YA,    D(Bitmap, Bitmap::PixelFormat, YA))
-            .value("RGB",   Bitmap::PixelFormat::RGB,   D(Bitmap, Bitmap::PixelFormat, RGB))
-            .value("RGBA",  Bitmap::PixelFormat::RGBA,  D(Bitmap, Bitmap::PixelFormat, RGBA))
-            .value("XYZ",   Bitmap::PixelFormat::XYZ,   D(Bitmap, Bitmap::PixelFormat, XYZ))
-            .value("XYZA",  Bitmap::PixelFormat::XYZA,  D(Bitmap, Bitmap::PixelFormat, XYZA))
-            .value("XYZAW", Bitmap::PixelFormat::XYZAW, D(Bitmap, Bitmap::PixelFormat, XYZAW))
-            .value("MultiChannel", Bitmap::PixelFormat::MultiChannel, D(Bitmap, Bitmap::PixelFormat, MultiChannel));
+        py::enum_<Bitmap::PixelFormat>(bitmap, "PixelFormat", D(Bitmap, PixelFormat))
+            .value("Y",     Bitmap::PixelFormat::Y,     D(Bitmap, PixelFormat, Y))
+            .value("YA",    Bitmap::PixelFormat::YA,    D(Bitmap, PixelFormat, YA))
+            .value("RGB",   Bitmap::PixelFormat::RGB,   D(Bitmap, PixelFormat, RGB))
+            .value("RGBA",  Bitmap::PixelFormat::RGBA,  D(Bitmap, PixelFormat, RGBA))
+            .value("XYZ",   Bitmap::PixelFormat::XYZ,   D(Bitmap, PixelFormat, XYZ))
+            .value("XYZA",  Bitmap::PixelFormat::XYZA,  D(Bitmap, PixelFormat, XYZA))
+            .value("XYZAW", Bitmap::PixelFormat::XYZAW, D(Bitmap, PixelFormat, XYZAW))
+            .value("MultiChannel", Bitmap::PixelFormat::MultiChannel, D(Bitmap, PixelFormat, MultiChannel));
 
         py::enum_<Bitmap::FileFormat>(bitmap, "FileFormat", D(Bitmap, FileFormat))
-                .value("PNG",     Bitmap::FileFormat::PNG,     D(Bitmap, FileFormat, PNG))
-                .value("OpenEXR", Bitmap::FileFormat::OpenEXR, D(Bitmap, FileFormat, OpenEXR))
-                .value("RGBE",    Bitmap::FileFormat::RGBE,    D(Bitmap, FileFormat, RGBE))
-                .value("PFM",     Bitmap::FileFormat::PFM,     D(Bitmap, FileFormat, PFM))
-                .value("PPM",     Bitmap::FileFormat::PPM,     D(Bitmap, FileFormat, PPM))
-                .value("JPEG",    Bitmap::FileFormat::JPEG,    D(Bitmap, FileFormat, JPEG))
-                .value("TGA",     Bitmap::FileFormat::TGA,     D(Bitmap, FileFormat, TGA))
-                .value("BMP",     Bitmap::FileFormat::BMP,     D(Bitmap, FileFormat, BMP))
-                .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
-                .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
+            .value("PNG",     Bitmap::FileFormat::PNG,     D(Bitmap, FileFormat, PNG))
+            .value("OpenEXR", Bitmap::FileFormat::OpenEXR, D(Bitmap, FileFormat, OpenEXR))
+            .value("RGBE",    Bitmap::FileFormat::RGBE,    D(Bitmap, FileFormat, RGBE))
+            .value("PFM",     Bitmap::FileFormat::PFM,     D(Bitmap, FileFormat, PFM))
+            .value("PPM",     Bitmap::FileFormat::PPM,     D(Bitmap, FileFormat, PPM))
+            .value("JPEG",    Bitmap::FileFormat::JPEG,    D(Bitmap, FileFormat, JPEG))
+            .value("TGA",     Bitmap::FileFormat::TGA,     D(Bitmap, FileFormat, TGA))
+            .value("BMP",     Bitmap::FileFormat::BMP,     D(Bitmap, FileFormat, BMP))
+            .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
+            .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
 
         bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2s &, size_t>(),
                 "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,

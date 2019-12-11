@@ -36,19 +36,19 @@ MTS_PY_EXPORT(Struct) {
         auto c = MTS_PY_CLASS(Struct, Object);
 
         py::enum_<Struct::Type>(c, "Type")
-            .value("Int8",    Struct::Type::Int8,    D(Struct, Struct::Type, Int8))
-            .value("UInt8",   Struct::Type::UInt8,   D(Struct, Struct::Type, UInt8))
-            .value("Int16",   Struct::Type::Int16,   D(Struct, Struct::Type, Int16))
-            .value("UInt16",  Struct::Type::UInt16,  D(Struct, Struct::Type, UInt16))
-            .value("Int32",   Struct::Type::Int32,   D(Struct, Struct::Type, Int32))
-            .value("UInt32",  Struct::Type::UInt32,  D(Struct, Struct::Type, UInt32))
-            .value("Int64",   Struct::Type::Int64,   D(Struct, Struct::Type, Int64))
-            .value("UInt64",  Struct::Type::UInt64,  D(Struct, Struct::Type, UInt64))
-            .value("Float16", Struct::Type::Float16, D(Struct, Struct::Type, Float16))
-            .value("Float32", Struct::Type::Float32, D(Struct, Struct::Type, Float32))
-            .value("Float64", Struct::Type::Float64, D(Struct, Struct::Type, Float64))
+            .value("Int8",    Struct::Type::Int8,    D(Struct, Type, Int8))
+            .value("UInt8",   Struct::Type::UInt8,   D(Struct, Type, UInt8))
+            .value("Int16",   Struct::Type::Int16,   D(Struct, Type, Int16))
+            .value("UInt16",  Struct::Type::UInt16,  D(Struct, Type, UInt16))
+            .value("Int32",   Struct::Type::Int32,   D(Struct, Type, Int32))
+            .value("UInt32",  Struct::Type::UInt32,  D(Struct, Type, UInt32))
+            .value("Int64",   Struct::Type::Int64,   D(Struct, Type, Int64))
+            .value("UInt64",  Struct::Type::UInt64,  D(Struct, Type, UInt64))
+            .value("Float16", Struct::Type::Float16, D(Struct, Type, Float16))
+            .value("Float32", Struct::Type::Float32, D(Struct, Type, Float32))
+            .value("Float64", Struct::Type::Float64, D(Struct, Type, Float64))
             .value("Float", struct_type_v<Float>)
-            .value("Invalid", Struct::Type::Invalid, D(Struct, Struct::Type, Invalid))
+            .value("Invalid", Struct::Type::Invalid, D(Struct, Type, Invalid))
             .def(py::init([](py::dtype dt) {
                 Struct::Type value = Struct::Type::Int8;
                 if (dt.kind() == 'i') {
@@ -83,20 +83,20 @@ MTS_PY_EXPORT(Struct) {
         py::implicitly_convertible<py::dtype, Struct::Type>();
 
         py::enum_<Struct::Flags>(c, "Flags", py::arithmetic())
-            .value("Normalized", Struct::Flags::Normalized, D(Struct, Struct::Flags, Normalized))
-            .value("Gamma",      Struct::Flags::Gamma,   D(Struct, Struct::Flags, Gamma))
-            .value("Weight",     Struct::Flags::Weight,  D(Struct, Struct::Flags, Weight))
-            .value("Assert",     Struct::Flags::Assert,  D(Struct, Struct::Flags, Assert))
-            .value("Default",    Struct::Flags::Default, D(Struct, Struct::Flags, Default))
+            .value("Normalized", Struct::Flags::Normalized, D(Struct, Flags, Normalized))
+            .value("Gamma",      Struct::Flags::Gamma,   D(Struct, Flags, Gamma))
+            .value("Weight",     Struct::Flags::Weight,  D(Struct, Flags, Weight))
+            .value("Assert",     Struct::Flags::Assert,  D(Struct, Flags, Assert))
+            .value("Default",    Struct::Flags::Default, D(Struct, Flags, Default))
             .def(py::self | py::self);
 
         py::enum_<Struct::ByteOrder>(c, "ByteOrder")
             .value("LittleEndian", Struct::ByteOrder::LittleEndian,
-                D(Struct, Struct::ByteOrder, LittleEndian))
+                D(Struct, ByteOrder, LittleEndian))
             .value("BigEndian", Struct::ByteOrder::BigEndian,
-                D(Struct, Struct::ByteOrder, BigEndian))
+                D(Struct, ByteOrder, BigEndian))
             .value("HostByteOrder", Struct::ByteOrder::HostByteOrder,
-                D(Struct, Struct::ByteOrder, HostByteOrder));
+                D(Struct, ByteOrder, HostByteOrder));
 
         c.def(py::init<bool, Struct::ByteOrder>(), "pack"_a = false,
                 "byte_order"_a = Struct::ByteOrder::HostByteOrder,

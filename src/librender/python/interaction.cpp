@@ -9,17 +9,17 @@
 MTS_PY_EXPORT_STRUCT(Interaction) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(Interaction3f, m) {
-        auto inter = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction3f))
+        auto inter = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction))
             // Members
-            .def_field(Interaction3f, t)
-            .def_field(Interaction3f, time)
-            .def_field(Interaction3f, wavelengths)
-            .def_field(Interaction3f, p)
+            .def_field(Interaction3f, t,           D(Interaction, t))
+            .def_field(Interaction3f, time,        D(Interaction, time))
+            .def_field(Interaction3f, wavelengths, D(Interaction, wavelengths))
+            .def_field(Interaction3f, p,           D(Interaction, p))
             // Methods
-            .def(py::init<>(), D(Interaction3f, Interaction3f))
-            .def_method(Interaction3f, spawn_ray)
-            .def_method(Interaction3f, spawn_ray_to)
-            .def_method(Interaction3f, is_valid)
+            .def(py::init<>(), D(Interaction, Interaction))
+            .def("spawn_ray",    &Interaction3f::spawn_ray,    D(Interaction, spawn_ray))
+            .def("spawn_ray_to", &Interaction3f::spawn_ray_to, D(Interaction, spawn_ray_to))
+            .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
             .def_repr(Interaction3f);
         bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
     }
@@ -28,45 +28,54 @@ MTS_PY_EXPORT_STRUCT(Interaction) {
 MTS_PY_EXPORT_STRUCT(SurfaceInteraction) {
     MTS_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(SurfaceInteraction3f, m) {
-        auto inter = py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f", D(SurfaceInteraction3f))
+        auto inter =
+            py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f",
+                                                            D(SurfaceInteraction))
             // Members
-            .def_field(SurfaceInteraction3f, shape)
-            .def_field(SurfaceInteraction3f, uv)
-            .def_field(SurfaceInteraction3f, n)
-            .def_field(SurfaceInteraction3f, sh_frame)
-            .def_field(SurfaceInteraction3f, dp_du)
-            .def_field(SurfaceInteraction3f, dp_dv)
-            .def_field(SurfaceInteraction3f, duv_dx)
-            .def_field(SurfaceInteraction3f, duv_dy)
-            .def_field(SurfaceInteraction3f, wi)
-            .def_field(SurfaceInteraction3f, prim_index)
-            .def_field(SurfaceInteraction3f, instance)
+            .def_field(SurfaceInteraction3f, shape,      D(SurfaceInteraction, shape))
+            .def_field(SurfaceInteraction3f, uv,         D(SurfaceInteraction, uv))
+            .def_field(SurfaceInteraction3f, n,          D(SurfaceInteraction, n))
+            .def_field(SurfaceInteraction3f, sh_frame,   D(SurfaceInteraction, sh_frame))
+            .def_field(SurfaceInteraction3f, dp_du,      D(SurfaceInteraction, dp_du))
+            .def_field(SurfaceInteraction3f, dp_dv,      D(SurfaceInteraction, dp_dv))
+            .def_field(SurfaceInteraction3f, duv_dx,     D(SurfaceInteraction, duv_dx))
+            .def_field(SurfaceInteraction3f, duv_dy,     D(SurfaceInteraction, duv_dy))
+            .def_field(SurfaceInteraction3f, wi,         D(SurfaceInteraction, wi))
+            .def_field(SurfaceInteraction3f, prim_index, D(SurfaceInteraction, prim_index))
+            .def_field(SurfaceInteraction3f, instance,   D(SurfaceInteraction, instance))
             // // Methods
-            .def(py::init<>(), D(SurfaceInteraction3f, SurfaceInteraction3f))
-            .def(py::init<const PositionSample3f &, const Wavelength &>(),
-                "ps"_a, "wavelengths"_a, D(SurfaceInteraction3f, SurfaceInteraction3f))
-            .def_method(SurfaceInteraction3f, to_world)
-            .def_method(SurfaceInteraction3f, to_local)
-            .def_method(SurfaceInteraction3f, to_world_mueller,
-                        "M_local"_a, "wi_local"_a, "wo_local"_a)
-            .def_method(SurfaceInteraction3f, to_local_mueller,
-                        "M_world"_a, "wi_world"_a, "wo_world"_a)
-            .def_method(SurfaceInteraction3f, emitter, "scene"_a, "active"_a = true)
-            .def_method(SurfaceInteraction3f, is_sensor)
-            .def_method(SurfaceInteraction3f, is_medium_transition)
+            .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
+            .def(py::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
+                "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
+            .def("to_world", &SurfaceInteraction3f::to_world, D(SurfaceInteraction, to_world))
+            .def("to_local", &SurfaceInteraction3f::to_local, D(SurfaceInteraction, to_local))
+            .def("to_world_mueller", &SurfaceInteraction3f::to_world_mueller, "M_local"_a,
+                "wi_local"_a, "wo_local"_a, D(SurfaceInteraction, to_world_mueller))
+            .def("to_local_mueller", &SurfaceInteraction3f::to_local_mueller, "M_world"_a,
+                "wi_world"_a, "wo_world"_a, D(SurfaceInteraction, to_local_mueller))
+            .def("emitter", &SurfaceInteraction3f::emitter, D(SurfaceInteraction, emitter),
+                "scene"_a, "active"_a = true)
+            .def("is_sensor", &SurfaceInteraction3f::is_sensor, D(SurfaceInteraction, is_sensor))
+            .def("is_medium_transition", &SurfaceInteraction3f::is_medium_transition,
+                D(SurfaceInteraction, is_medium_transition))
             .def("target_medium",
-                py::overload_cast<const Vector3f &>(&SurfaceInteraction3f::target_medium, py::const_),
-                "d"_a, D(SurfaceInteraction3f, target_medium))
+                py::overload_cast<const Vector3f &>(&SurfaceInteraction3f::target_medium,
+                                                    py::const_),
+                "d"_a, D(SurfaceInteraction, target_medium))
             .def("target_medium",
-                py::overload_cast<const Float &>(&SurfaceInteraction3f::target_medium, py::const_),
-                "cos_theta"_a, D(SurfaceInteraction3f, target_medium, 2))
-            .def("bsdf", py::overload_cast<const RayDifferential3f &>(&SurfaceInteraction3f::bsdf),
-                "ray"_a, D(SurfaceInteraction3f, bsdf))
+                py::overload_cast<const Float &>(&SurfaceInteraction3f::target_medium,
+                                                py::const_),
+                "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
+            .def("bsdf",
+                py::overload_cast<const RayDifferential3f &>(&SurfaceInteraction3f::bsdf),
+                "ray"_a, D(SurfaceInteraction, bsdf))
             .def("bsdf", py::overload_cast<>(&SurfaceInteraction3f::bsdf, py::const_),
-                D(SurfaceInteraction3f, bsdf, 2))
-            // .def_method(SurfaceInteraction3f, normal_derivative)
-            .def_method(SurfaceInteraction3f, compute_partials)
-            .def_method(SurfaceInteraction3f, has_uv_partials)
+                D(SurfaceInteraction, bsdf, 2))
+            .def("compute_partials", &SurfaceInteraction3f::compute_partials,
+                D(SurfaceInteraction, compute_partials))
+            .def("has_uv_partials", &SurfaceInteraction3f::has_uv_partials,
+                D(SurfaceInteraction, has_uv_partials))
+            // .def("normal_derivative", &SurfaceInteraction3f::normal_derivative, D(SurfaceInteraction, normal_derivative)) // TODO
             .def_repr(SurfaceInteraction3f);
 
         // Manually bind the slicing operators to handle ShapePtr properly

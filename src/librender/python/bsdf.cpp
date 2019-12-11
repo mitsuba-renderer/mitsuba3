@@ -51,22 +51,22 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
                 "mode"_a, "type_mak"_a, "component"_a, D(BSDFContext, BSDFContext, 2))
             .def_method(BSDFContext, reverse)
             .def_method(BSDFContext, is_enabled, "type"_a, "component"_a = 0)
-            .def_field(BSDFContext, mode)
-            .def_field(BSDFContext, type_mask)
-            .def_field(BSDFContext, component)
+            .def_field(BSDFContext, mode,      D(BSDFContext, mode))
+            .def_field(BSDFContext, type_mask, D(BSDFContext, type_mask))
+            .def_field(BSDFContext, component, D(BSDFContext, component))
             .def_repr(BSDFContext);
     }
 
     MTS_PY_CHECK_ALIAS(BSDFSample3f, m) {
-        py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3f))
-            .def(py::init<>(), D(BSDFSample3f, BSDFSample3f))
-            .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3f, BSDFSample3f, 2))
+        py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3))
+            .def(py::init<>(), D(BSDFSample3, BSDFSample3))
+            .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3, 2))
             .def(py::init<const BSDFSample3f &>(), "bs"_a, "Copy constructor")
-            .def_field(BSDFSample3f, wo)
-            .def_field(BSDFSample3f, pdf)
-            .def_field(BSDFSample3f, eta)
-            .def_field(BSDFSample3f, sampled_type)
-            .def_field(BSDFSample3f, sampled_component)
+            .def_readwrite("wo", &BSDFSample3f::wo, D(BSDFSample3, wo))
+            .def_readwrite("pdf", &BSDFSample3f::pdf, D(BSDFSample3, pdf))
+            .def_readwrite("eta", &BSDFSample3f::eta, D(BSDFSample3, eta))
+            .def_readwrite("sampled_type", &BSDFSample3f::sampled_type, D(BSDFSample3, sampled_type))
+            .def_readwrite("sampled_component", &BSDFSample3f::sampled_component, D(BSDFSample3, sampled_component))
             .def_repr(BSDFSample3f);
     }
 }

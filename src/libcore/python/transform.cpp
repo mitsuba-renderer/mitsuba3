@@ -6,7 +6,7 @@
 MTS_PY_EXPORT_STRUCT(Transform) {
     MTS_IMPORT_CORE_TYPES()
     MTS_PY_CHECK_ALIAS(Transform3f, m) {
-        auto trans = py::class_<Transform3f>(m, "Transform3f", D(Transform3f))
+        auto trans = py::class_<Transform3f>(m, "Transform3f", D(Transform))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform3f &>(), "Copy constructor")
             .def(py::init([](py::array a) {
@@ -15,7 +15,7 @@ MTS_PY_EXPORT_STRUCT(Transform) {
                 else
                     return new Transform3f(py::cast<Matrix3f>(a));
             }))
-            .def(py::init<Matrix3f>(), D(Transform3f, Transform3f))
+            .def(py::init<Matrix3f>(), D(Transform, Transform))
             .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
             .def("transform_point",
                 [](const Transform3f &t, const Point2f &v) {
@@ -25,18 +25,18 @@ MTS_PY_EXPORT_STRUCT(Transform) {
                 [](const Transform3f &t, const Vector2f &v) {
                     return t*v;
                 })
-            .def_static("translate", &Transform3f::translate, "v"_a, D(Transform3f, translate))
-            .def_static("scale", &Transform3f::scale, "v"_a, D(Transform3f, scale))
+            .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
+            .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
             .def_static("rotate", &Transform3f::template rotate<3>,
-                        "angle"_a, D(Transform3f, rotate, 2))
-            .def("has_scale", &Transform3f::has_scale, D(Transform3f, has_scale))
+                        "angle"_a, D(Transform, rotate, 2))
+            .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
             /// Operators
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(py::self * py::self)
             /// Fields
-            .def("inverse",   &Transform3f::inverse, D(Transform3f, inverse))
-            .def("has_scale", &Transform3f::has_scale, D(Transform3f, has_scale))
+            .def("inverse",   &Transform3f::inverse, D(Transform, inverse))
+            .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
             .def_readwrite("matrix", &Transform3f::matrix)
             .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
             .def_repr(Transform3f);
@@ -45,7 +45,7 @@ MTS_PY_EXPORT_STRUCT(Transform) {
     }
 
     MTS_PY_CHECK_ALIAS(Transform4f, m) {
-        auto trans = py::class_<Transform4f>(m, "Transform4f", D(Transform4f))
+        auto trans = py::class_<Transform4f>(m, "Transform4f", D(Transform))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform4f &>(), "Copy constructor")
             .def(py::init([](py::array a) {
@@ -54,7 +54,7 @@ MTS_PY_EXPORT_STRUCT(Transform) {
                 else
                     return new Transform4f(py::cast<Matrix4f>(a));
             }))
-            .def(py::init<Matrix4f>(), D(Transform4f, Transform4f))
+            .def(py::init<Matrix4f>(), D(Transform, Transform))
             .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
             .def("transform_point",
                 [](const Transform4f &t, const Point3f &v) {
@@ -68,29 +68,29 @@ MTS_PY_EXPORT_STRUCT(Transform) {
                 [](const Transform4f &t, const Normal3f &v) {
                     return t*v;
                 })
-            .def_static("translate", &Transform4f::translate, "v"_a, D(Transform4f, translate))
-            .def_static("scale", &Transform4f::scale, "v"_a, D(Transform4f, scale))
+            .def_static("translate", &Transform4f::translate, "v"_a, D(Transform, translate))
+            .def_static("scale", &Transform4f::scale, "v"_a, D(Transform, scale))
             .def_static("rotate", &Transform4f::template rotate<4>,
-                "axis"_a, "angle"_a, D(Transform4f, rotate))
+                "axis"_a, "angle"_a, D(Transform, rotate))
             .def_static("perspective", &Transform4f::template perspective<4>,
-                "fov"_a, "near"_a, "far"_a, D(Transform4f, perspective))
+                "fov"_a, "near"_a, "far"_a, D(Transform, perspective))
             .def_static("orthographic", &Transform4f::template orthographic<4>,
-                "near"_a, "far"_a, D(Transform4f, orthographic))
+                "near"_a, "far"_a, D(Transform, orthographic))
             .def_static("look_at", &Transform4f::template look_at<4>,
-                "origin"_a, "target"_a, "up"_a, D(Transform4f, look_at))
+                "origin"_a, "target"_a, "up"_a, D(Transform, look_at))
             .def_static("from_frame", &Transform4f::template from_frame<Float>,
-                "frame"_a, D(Transform4f, from_frame))
+                "frame"_a, D(Transform, from_frame))
             .def_static("to_frame", &Transform4f::template to_frame<Float>,
-                "frame"_a, D(Transform4f, to_frame))
-            .def("has_scale", &Transform4f::has_scale, D(Transform4f, has_scale))
-            .def("extract", &Transform4f::template extract<3>, D(Transform4f, extract))
+                "frame"_a, D(Transform, to_frame))
+            .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
+            .def("extract", &Transform4f::template extract<3>, D(Transform, extract))
             /// Operators
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def(py::self * py::self)
             /// Fields
-            .def("inverse",   &Transform4f::inverse, D(Transform4f, inverse))
-            .def("has_scale", &Transform4f::has_scale, D(Transform4f, has_scale))
+            .def("inverse",   &Transform4f::inverse, D(Transform, inverse))
+            .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
             .def_readwrite("matrix", &Transform4f::matrix)
             .def_readwrite("inverse_transpose", &Transform4f::inverse_transpose)
             .def_repr(Transform4f);

@@ -28,7 +28,7 @@ MTS_PY_EXPORT(Spectrum) {
 
     if constexpr (is_spectral_v<Spectrum>) {
         m.def("spectrum_to_xyz", vectorize<Float>(&spectrum_to_xyz<Float, array_size_v<Spectrum>>),
-              "value"_a, "wavelengths"_a, "active"_a = true, D(to_xyz));
+              "value"_a, "wavelengths"_a, "active"_a = true, D(spectrum_to_xyz));
 
         m.def("sample_shifted",
             vectorize<Float>(

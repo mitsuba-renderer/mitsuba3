@@ -8,7 +8,7 @@ MTS_PY_EXPORT(Texture) {
         py::class_<mitsuba::GPUTexture, nanogui::Texture, nanogui::ref<mitsuba::GPUTexture>>(m, "Texture", D(Texture))
             .def(py::init<const Bitmap *, nanogui::Texture::InterpolationMode,
                         nanogui::Texture::InterpolationMode, nanogui::Texture::WrapMode>(),
-                D(Texture, Texture),"bitmap"_a,
+                D(GPUTexture, GPUTexture),"bitmap"_a,
                 "min_interpolation_mode"_a = nanogui::Texture::InterpolationMode::Bilinear,
                 "mag_interpolation_mode"_a = nanogui::Texture::InterpolationMode::Bilinear,
                 "wrap_mode"_a              = nanogui::Texture::WrapMode::ClampToEdge);
