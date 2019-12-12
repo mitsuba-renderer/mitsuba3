@@ -26,11 +26,9 @@ public:
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
-
-    // TODO this should depend on the file format
-    using InputFloat = float;
-    using InputPoint3f  = Point<InputFloat, 3>;
-    using InputNormal3f = Normal<InputFloat, 3>;
+    using typename Base::InputFloat;
+    using typename Base::InputPoint3f ;
+    using typename Base::InputNormal3f;
 
     struct PLYElement {
         std::string name;

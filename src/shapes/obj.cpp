@@ -39,12 +39,11 @@ public:
     using typename Base::ScalarIndex;
     using typename Base::VertexHolder;
     using typename Base::FaceHolder;
-
-    using InputFloat = float;
-    using InputPoint3f  = Point<InputFloat, 3>;
-    using InputVector2f = Vector<InputFloat, 2>;
-    using InputVector3f = Vector<InputFloat, 3>;
-    using InputNormal3f = Normal<InputFloat, 3>;
+    using typename Base::InputFloat;
+    using typename Base::InputPoint3f ;
+    using typename Base::InputVector2f;
+    using typename Base::InputVector3f;
+    using typename Base::InputNormal3f;
 
     InputFloat strtof(const char *nptr, char **endptr) {
             return std::strtof(nptr, endptr);

@@ -60,7 +60,7 @@ public:
                        which generally yields a fairly smooth spectrum. */
                     ScalarFloat scale = hmax(rgb) * 2.f;
                     ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
-                    coeff = concat(srgb_model_fetch(rgb_norm), scale);
+                    coeff = concat((ScalarColor3f) srgb_model_fetch(rgb_norm), scale);
                 }
 
                 *lum_ptr++ = lum * sin_theta;

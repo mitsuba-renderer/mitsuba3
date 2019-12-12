@@ -16,6 +16,13 @@ public:
     MTS_IMPORT_TYPES()
     MTS_IMPORT_BASE(Shape, m_mesh)
 
+    // TODO this should depend on the file format
+    using InputFloat = float;
+    using InputPoint3f  = Point<InputFloat, 3>;
+    using InputVector2f = Vector<InputFloat, 2>;
+    using InputVector3f = Vector<InputFloat, 3>;
+    using InputNormal3f = Normal<InputFloat, 3>;
+
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
 
