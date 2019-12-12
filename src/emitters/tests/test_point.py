@@ -38,6 +38,7 @@ def test03_point_sample_direction_vec():
         from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
+
     e = load_string_packet("""<emitter version='2.0.0' type='point'>
             <point name='position' x='10' y='-1' z='2'/>
         </emitter>""")

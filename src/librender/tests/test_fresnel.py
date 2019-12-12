@@ -1,6 +1,6 @@
 from mitsuba.scalar_rgb.render import fresnel, fresnel_polarized, fresnel_conductor
 import numpy as np
-
+import pytest
 
 def test01_fresnel():
     ct_crit = -np.sqrt(1 - 1 / 1.5**2)

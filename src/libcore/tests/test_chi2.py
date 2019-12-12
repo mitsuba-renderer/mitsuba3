@@ -24,4 +24,9 @@ def run_chi2(name, domain, adapter, settings):
 
 @pytest.mark.parametrize("name, domain, adapter, settings", DISTRIBUTIONS)
 def test_chi2(name, domain, adapter, settings):
+    try:
+        import mitsuba.packet_rgb.core
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     run_chi2(name, domain, adapter, settings)

@@ -107,7 +107,7 @@ def test04_transform_point():
     try:
         from mitsuba.packet_rgb.core import Transform4f as Transform4fX
     except:
-        pass
+        return
 
     assert np.allclose(
         Transform4fX(A).transform_point([[2, 4, 6], [4, 6, 8]]), [[1, 2, 3], [2, 3, 4]])
@@ -121,7 +121,7 @@ def test05_transform_vector():
     try:
         from mitsuba.packet_rgb.core import Transform4f as Transform4fX
     except:
-        pass
+        return
 
     assert np.allclose(
         Transform4fX(A).transform_vector([[2, 4, 6], [4, 6, 8]]), [[2, 2, 6], [4, 3, 8]])
@@ -136,7 +136,7 @@ def test06_transform_normal():
     try:
         from mitsuba.packet_rgb.core import Transform4f as Transform4fX
     except:
-        pass
+        return
 
     assert np.allclose(
         Transform4fX(A).transform_normal([[2, 4, 6], [4, 6, 8]]), [[2, 8, 2], [4, 12, 2]])

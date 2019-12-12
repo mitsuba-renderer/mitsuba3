@@ -1,5 +1,5 @@
 import numpy as np
-
+import pytest
 
 def check_vectorization(func, pdf_func, func_vec, pdf_func_vec, resolution = 2):
     """
@@ -48,7 +48,7 @@ def test_square_to_uniform_disk():
         from mitsuba.packet_rgb.core.warp import square_to_uniform_disk as square_to_uniform_disk_vec, \
                                                  square_to_uniform_disk_pdf as square_to_uniform_disk_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_uniform_disk, square_to_uniform_disk_pdf, \
                         square_to_uniform_disk_vec, square_to_uniform_disk_pdf_vec)
@@ -69,7 +69,7 @@ def test_square_to_uniform_disk_concentric():
         from mitsuba.packet_rgb.core.warp import square_to_uniform_disk_concentric as square_to_uniform_disk_concentric_vec, \
                                                  square_to_uniform_disk_pdf as square_to_uniform_disk_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_uniform_disk_concentric, square_to_uniform_disk_pdf, \
                         square_to_uniform_disk_concentric_vec, square_to_uniform_disk_pdf_vec)
@@ -92,7 +92,7 @@ def test_square_to_uniform_triangle():
         from mitsuba.packet_rgb.core.warp import square_to_uniform_triangle as square_to_uniform_triangle_vec, \
                                                  square_to_uniform_triangle_pdf as square_to_uniform_triangle_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_uniform_triangle, square_to_uniform_triangle_pdf, \
                         square_to_uniform_triangle_vec, square_to_uniform_triangle_pdf_vec)
@@ -126,7 +126,7 @@ def test_square_to_tent():
         from mitsuba.packet_rgb.core.warp import square_to_tent as square_to_tent_vec, \
                                                  square_to_tent_pdf as square_to_tent_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_tent, square_to_tent_pdf, \
                         square_to_tent_vec, square_to_tent_pdf_vec)
@@ -147,7 +147,7 @@ def test_square_to_uniform_sphere_vec():
         from mitsuba.packet_rgb.core.warp import square_to_uniform_sphere as square_to_uniform_sphere_vec, \
                                                  square_to_uniform_sphere_pdf as square_to_uniform_sphere_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_uniform_sphere, square_to_uniform_sphere_pdf, \
                         square_to_uniform_sphere_vec, square_to_uniform_sphere_pdf_vec)
@@ -167,7 +167,7 @@ def test_square_to_uniform_hemisphere():
         from mitsuba.packet_rgb.core.warp import square_to_uniform_hemisphere as square_to_uniform_hemisphere_vec, \
                                                  square_to_uniform_hemisphere_pdf as square_to_uniform_hemisphere_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_uniform_hemisphere, square_to_uniform_hemisphere_pdf, \
                         square_to_uniform_hemisphere_vec, square_to_uniform_hemisphere_pdf_vec)
@@ -187,7 +187,7 @@ def test_square_to_cosine_hemisphere():
         from mitsuba.packet_rgb.core.warp import square_to_cosine_hemisphere as square_to_cosine_hemisphere_vec, \
                                                  square_to_cosine_hemisphere_pdf as square_to_cosine_hemisphere_pdf_vec
     except ImportError:
-        pass
+        return
 
     check_vectorization(square_to_cosine_hemisphere, square_to_cosine_hemisphere_pdf, \
                         square_to_cosine_hemisphere_vec, square_to_cosine_hemisphere_pdf_vec)
@@ -212,7 +212,7 @@ def test_square_to_uniform_cone():
         from mitsuba.packet_rgb.core.warp import square_to_uniform_cone as square_to_uniform_cone_vec, \
                                                  square_to_uniform_cone_pdf as square_to_uniform_cone_pdf_vec
     except ImportError:
-        pass
+        return
 
     fwd_vec = lambda v: square_to_uniform_cone_vec(v, 0.3)
     pdf_vec = lambda v: square_to_uniform_cone_pdf_vec(v, 0.3)
@@ -235,7 +235,7 @@ def test_square_to_beckmann():
         from mitsuba.packet_rgb.core.warp import square_to_beckmann as square_to_beckmann_vec, \
                                                  square_to_beckmann_pdf as square_to_beckmann_pdf_vec
     except ImportError:
-        pass
+        return
 
     fwd_vec = lambda v: square_to_beckmann_vec(v, 0.3)
     pdf_vec = lambda v: square_to_beckmann_pdf_vec(v, 0.3)
@@ -258,7 +258,7 @@ def test_square_to_von_mises_fisher():
         from mitsuba.packet_rgb.core.warp import square_to_von_mises_fisher as square_to_von_mises_fisher_vec, \
                                                  square_to_von_mises_fisher_pdf as square_to_von_mises_fisher_pdf_vec
     except ImportError:
-        pass
+        return
 
     fwd_vec = lambda v: square_to_von_mises_fisher_vec(v, 10)
     pdf_vec = lambda v: square_to_von_mises_fisher_pdf_vec(v, 10)

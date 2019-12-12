@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from mitsuba.scalar_rgb.core.math import find_interval
 from mitsuba.scalar_rgb.core.math import is_power_of_two
@@ -9,7 +10,6 @@ from mitsuba.scalar_rgb.core.math import log2i
 from mitsuba.scalar_rgb.core.math import round_to_power_of_two
 from mitsuba.scalar_rgb.core.math import solve_quadratic
 from mitsuba.scalar_rgb.core import PCG32
-
 
 def test01_log2i():
     assert log2i(1) == 0

@@ -1,5 +1,5 @@
 import numpy as np
-
+import pytest
 
 def test_pcg32():
     from mitsuba.scalar_rgb.core import PCG32

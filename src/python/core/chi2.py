@@ -3,7 +3,7 @@
 from __future__ import division
 import numpy as np
 import mitsuba
-from mitsuba.packet_rgb.core import float_dtype, PCG32
+from mitsuba.scalar_rgb.core import float_dtype
 
 
 class ChiSquareTest(object):
@@ -112,6 +112,12 @@ class ChiSquareTest(object):
         ``(positions, weights)`` instead of just poisitions, the samples are
         considered to be weighted.
         """
+
+        try:
+            from mitsuba.scalar_rgb.core import PCG32
+        except ImportError:
+            pass
+
         # Generate a table of uniform variates
         samples_in = PCG32().next_float((self.sample_count, self.sample_dim))
 
