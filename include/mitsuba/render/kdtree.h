@@ -1995,20 +1995,12 @@ class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<scal
                                                           ShapeKDTree<Float, Spectrum>> {
 public:
     MTS_DECLARE_CLASS(ShapeKDTree, TShapeKDTree)
+    MTS_IMPORT_TYPES(Shape, Mesh)
 
-    using ScalarFloat            = scalar_t<Float>;
-    using Point2f                = Point<Float, 2>;
-    using Point3f                = Point<Float, 3>;
-    using ScalarPoint3f          = Point<ScalarFloat, 3>;
-    using ScalarBoundingBox3f    = BoundingBox<ScalarPoint3f>;
-    using Ray3f                  = Ray<Point3f, Spectrum>;
-    using Mask                   = mask_t<Float>;
-    using SurfaceInteraction3f   = SurfaceInteraction<Float, Spectrum>;
     using SurfaceAreaHeuristic3f = SurfaceAreaHeuristic3<ScalarFloat>;
-    using Shape                  = mitsuba::Shape<Float, Spectrum>;
-    using Mesh                   = mitsuba::Mesh<Float, Spectrum>;
     using Size                   = uint32_t;
     using Index                  = uint32_t;
+
     using Base = TShapeKDTree<ScalarBoundingBox3f, uint32_t, SurfaceAreaHeuristic3f, ShapeKDTree>;
     using typename Base::KDNode;
     using Base::ready;

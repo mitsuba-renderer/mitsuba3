@@ -99,6 +99,9 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
+// This macro is needed to get this to compile across all compilers
+#define MTS_IMPORT_TYPES_HELPER(...) RenderAliases, ##__VA_ARGS__
+
 #define MTS_IMPORT_TYPES(...)                                                                      \
     MTS_IMPORT_RENDER_BASIC_TYPES()                                                                \
     using PositionSample3f     = typename RenderAliases::PositionSample3f;                         \
@@ -107,7 +110,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;                     \
     using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;                      \
     using BSDFSample3f         = typename RenderAliases::BSDFSample3f;                             \
-    ENOKI_MAP_USING(RenderAliases, ##__VA_ARGS__)
+    ENOKI_MAP_USING(MTS_IMPORT_TYPES_HELPER(__VA_ARGS__))
 
 #define MTS_IMPORT_OBJECT_TYPES()                                                                  \
     using Scene                  = typename RenderAliases::Scene;                                  \

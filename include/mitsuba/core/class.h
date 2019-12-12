@@ -209,6 +209,9 @@ private:
     }                                                                                              \
     MTS_INSTANTIATE_CLASS(Name)
 
+// This macro is needed to get this to compile across all compilers
+#define MTS_IMPORT_BASE_HELPER(...) Base, ##__VA_ARGS__
+
 /**
  * \brief Imports the desired methods and fields by generating a sequence of
  * `using` declarations. This is useful when inheriting from template parents,
@@ -230,7 +233,7 @@ private:
  */
 #define MTS_IMPORT_BASE(Name, ...)                                                                 \
     using Base = Name<Float, Spectrum>;                                                            \
-    ENOKI_MAP_IMPORT(Base, ##__VA_ARGS__)
+    ENOKI_MAP_IMPORT(MTS_IMPORT_BASE_HELPER(__VA_ARGS__))
 
 NAMESPACE_BEGIN(detail)
 /// Replacement for std::is_constructible which also works when the destructor is not accessible
