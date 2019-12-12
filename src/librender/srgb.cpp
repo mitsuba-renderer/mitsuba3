@@ -39,6 +39,7 @@ Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
     return Array3f(out[0], out[1], out[2]);
 }
 
+#if 0
 Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
     using Array3f = Array<float, 3>;
     using Spectrum = Spectrum<float, 4>;
@@ -87,5 +88,6 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
 
     return xyz_to_srgb * accum;
 }
+#endif
 
 NAMESPACE_END(mitsuba)

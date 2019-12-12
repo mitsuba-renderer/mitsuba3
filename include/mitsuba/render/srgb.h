@@ -42,6 +42,6 @@ MTS_INLINE value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
 MTS_EXPORT_RENDER Array<float, 3> srgb_model_fetch(const Color<float, 3> &);
 
 /// Sanity check: convert the coefficients back to sRGB
-MTS_EXPORT_RENDER Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &);
+// MTS_EXPORT_RENDER Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &);
 
 NAMESPACE_END(mitsuba)

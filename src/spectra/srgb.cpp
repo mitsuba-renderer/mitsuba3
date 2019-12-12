@@ -9,6 +9,7 @@ template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public Texture<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, Texture)
+    MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES()
 
     SRGBSpectrum(const Properties &props) {

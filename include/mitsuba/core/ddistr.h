@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * samples to a stored discrete probability distribution.
  */
 template <typename Float_>
-class MTS_EXPORT_CORE DiscreteDistribution {
+class DiscreteDistribution {
     using Float = Float_;
     using ScalarFloat = scalar_t<Float>;
     using FloatStorage = host_vector<Float>;
