@@ -121,9 +121,9 @@ void Bitmap::set_srgb_gamma(bool value) {
             suffix = suffix.substr(it + 1);
         if (suffix != "A" && suffix != "W") {
             if (value)
-                field.flags = field.flags | Struct::Flags::Gamma;
+                field.flags |= +Struct::Flags::Gamma;
             else
-                field.flags = field.flags & ~Struct::Flags::Gamma;
+                field.flags &= ~Struct::Flags::Gamma;
         }
     }
 }
@@ -157,13 +157,13 @@ void Bitmap::rebuild_struct(size_t channel_count) {
 
     m_struct = new Struct();
     for (auto ch: channels) {
-        Struct::Flags flags = Struct::Flags::None;
+        uint32_t flags = +Struct::Flags::None;
         if (ch != "A" && ch != "W" && m_srgb_gamma)
-            flags = flags | Struct::Flags::Gamma;
+            flags |= +Struct::Flags::Gamma;
         if (ch == "W")
-            flags = flags | Struct::Flags::Weight;
+            flags |= +Struct::Flags::Weight;
         if (Struct::is_integer(m_component_format))
-            flags = flags | Struct::Flags::Normalized;
+            flags |= +Struct::Flags::Normalized;
         m_struct->append(ch, m_component_format, flags);
     }
 }
@@ -361,10 +361,13 @@ void Bitmap::convert(Bitmap *target) const {
     bool source_is_xyz = m_pixel_format == PixelFormat::XYZ ||
                          m_pixel_format == PixelFormat::XYZA ||
                          m_pixel_format == PixelFormat::XYZAW;
-    bool source_is_y = m_pixel_format == PixelFormat::Y || m_pixel_format == PixelFormat::YA;
+    bool source_is_y   = m_pixel_format == PixelFormat::Y ||
+                         m_pixel_format == PixelFormat::YA;
 
     for (auto &field: *target_struct) {
         if (m_struct->has_field(field.name))
+            continue;
+        if (!field.blend.empty())
             continue;
 
         std::string prefix = "";
@@ -378,7 +381,7 @@ void Bitmap::convert(Bitmap *target) const {
         // Set alpha/weight to 1.0 by default
         if (suffix == "A" || suffix == "W") {
             field.default_ = 1.0;
-            field.flags = field.flags | Struct::Flags::Default;
+            field.flags |= +Struct::Flags::Default;
             continue;
         }
 
@@ -456,8 +459,7 @@ void Bitmap::convert(Bitmap *target) const {
             }
         }
 
-        Throw("Unable to convert %s to %s: don't know how to obtain"
-              " channel \"%s\".",
+        Throw("Unable to convert %s to %s: don't know how to obtain channel \"%s\".",
               m_struct->to_string(), target_struct->to_string(), field.name);
     }
 
@@ -467,86 +469,54 @@ void Bitmap::convert(Bitmap *target) const {
         Throw("Bitmap::convert(): conversion kernel indicated a failure!");
 }
 
-void Bitmap::accumulate(const Bitmap *bitmap,
+
+void Bitmap::accumulate(const Bitmap *source,
                         Point2i source_offset,
                         Point2i target_offset,
                         Vector2i size) {
-    Assert(pixel_format()     == bitmap->pixel_format()     &&
-           component_format() == bitmap->component_format() &&
-           channel_count()    == bitmap->channel_count());
+    if (unlikely(pixel_format()     != source->pixel_format()     ||
+                 component_format() != source->component_format() ||
+                 channel_count()    != source->channel_count()))
+        Throw("Bitmap::accumulate(): source and target are incompatible!");
 
-    Vector2i offset_increase(
-        std::max(0, std::max(-source_offset.x(), -target_offset.x())),
-        std::max(0, std::max(-source_offset.y(), -target_offset.y()))
-    );
-
-    source_offset += offset_increase;
-    target_offset += offset_increase;
-    size -= offset_increase;
-
-    Vector2i size_decrease(
-        std::max(0, std::max(
-            source_offset.x() + size.x() - (int) bitmap->width(),
-            target_offset.x() + size.x() - (int) width())),
-        std::max(0, std::max(
-            source_offset.y() + size.y() - (int) bitmap->height(),
-            target_offset.y() + size.y() - (int) height()))
-    );
-
-    size -= size_decrease;
-
-    if (size.x() <= 0 || size.y() <= 0)
-        return;
-
-    const size_t columns       = (size_t) size.x() * channel_count();
-    const size_t pixel_stride  = bytes_per_pixel();
-    const size_t source_stride = bitmap->width() * pixel_stride;
-    const size_t target_stride = width() * pixel_stride;
-
-    const uint8_t *source = bitmap->uint8_data() +
-        (source_offset.x() + source_offset.y() * (size_t) bitmap->width()) * pixel_stride;
-
-    uint8_t *target = m_data.get() +
-        (target_offset.x() + target_offset.y() * (size_t) m_size.x()) * pixel_stride;
-
-    for (int y = 0; y < size.y(); ++y) {
-        switch (m_component_format) {
+    switch (m_component_format) {
         case Struct::Type::UInt8:
-            for (size_t i = 0; i < columns; ++i)
-                ((uint8_t *) target)[i] = (uint8_t) std::min(0xFF, ((uint8_t *) source)[i] + ((uint8_t *) target)[i]);
+            accumulate_2d((const uint8_t *) source->data(), (uint8_t *) data(),
+                           source_offset, target_offset, source->size(), m_size, size,
+                           channel_count());
             break;
 
         case Struct::Type::UInt16:
-            for (size_t i = 0; i < columns; ++i)
-                ((uint16_t *) target)[i] = (uint16_t) std::min(0xFFFF, ((uint16_t *) source)[i] + ((uint16_t *) target)[i]);
+            accumulate_2d((const uint16_t *) source->data(), (uint16_t *) data(),
+                          source_offset, target_offset, source->size(), m_size, size,
+                          channel_count());
             break;
 
         case Struct::Type::UInt32:
-            for (size_t i = 0; i < columns; ++i)
-                ((uint32_t *) target)[i] = std::min((uint32_t) 0xFFFFFFFFUL, ((uint32_t *) source)[i] + ((uint32_t *) target)[i]);
+            accumulate_2d((const uint32_t *) source->data(), (uint32_t *) data(),
+                          source_offset, target_offset, source->size(), m_size, size,
+                          channel_count());
             break;
 
         case Struct::Type::Float16:
-            for (size_t i = 0; i < columns; ++i)
-                ((enoki::half *) target)[i] += ((enoki::half *) source)[i];
+            accumulate_2d((const enoki::half *) source->data(),
+                          (enoki::half *) data(), source_offset, target_offset,
+                          source->size(), m_size, size, channel_count());
             break;
 
         case Struct::Type::Float32:
-            for (size_t i = 0; i < columns; ++i)
-                ((float *) target)[i] += ((float *) source)[i];
+            accumulate_2d((const float *) source->data(), (float *) data(), source_offset,
+                          target_offset, source->size(), m_size, size, channel_count());
             break;
 
         case Struct::Type::Float64:
-            for (size_t i = 0; i < columns; ++i)
-                ((double *) target)[i] += ((double *) source)[i];
+            accumulate_2d((const double *) source->data(), (double *) data(),
+                          source_offset, target_offset, source->size(), m_size, size,
+                          channel_count());
             break;
 
         default:
-            Log(Error, "Unknown component format: %d", m_component_format);
-        }
-
-        source += source_stride;
-        target += target_stride;
+            Throw("Unknown component format: %d", m_component_format);
     }
 }
 

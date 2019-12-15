@@ -1,10 +1,7 @@
 #pragma once
 
-#include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/object.h>
-#include <mitsuba/core/rfilter.h>
-#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
 
@@ -23,19 +20,17 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER ImageBlock : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(ImageBlock, Object)
-    MTS_IMPORT_TYPES()
-    using ReconstructionFilter = typename RenderAliases::ReconstructionFilter;
+    MTS_IMPORT_TYPES(ReconstructionFilter)
 
     /**
      * Construct a new image block of the requested properties
      *
-     * \param fmt
-     *    Specifies the pixel format -- see \ref Bitmap::PixelFormat
-     *    for a list of possibilities
-     *
      * \param size
      *    Specifies the block dimensions (not accounting for additional
      *    border pixels required to support image reconstruction filters)
+     *
+     * \param channel_count
+     *    Specifies the number of image channels.
      *
      * \param filter
      *    Pointer to the film's reconstruction filter. If passed, it is used to
@@ -43,38 +38,35 @@ public:
      *    when any of the block's \ref put operations are used, except for
      *    \c put(const ImageBlock*).
      *
-     * \param channels
-     *    Specifies the number of output channels. This is only valid
-     *    when \ref MultiChannel is chosen as the pixel format,
-     *    otherwise pass 0 so that channels are set automatically from the
-     *    pixel format.
+     * \param warn_negative
+     *    Warn when writing samples with negative components?
+     *
+     * \param warn_invalid
+     *    Warn when writing samples with components that are equal to
+     *    NaN (not a number) or +/- infinity?
      *
      * \param border
      *    Allocate a border region around the image block to support
      *    contributions to adjacent pixels when using wide (i.e. non-box)
      *    reconstruction filters?
      *
-     * \param warn
-     *    Warn when writing bad sample values?
-     *
      * \param normalize
      *    Ensure that splats created via ``ImageBlock::put()`` add a
-     *    unit amount of energy?
+     *    unit amount of energy? Stratified sampling techniques that
+     *    sample rays in image space should set this to \c false, since
+     *    the samples will eventually be divided by the accumulated
+     *    sample weight to remove any non-uniformity.
      */
-    ImageBlock(Bitmap::PixelFormat fmt,
-               const ScalarVector2i &size,
+    ImageBlock(const ScalarVector2i &size,
+               size_t channel_count,
                const ReconstructionFilter *filter = nullptr,
-               size_t channels = 0,
-               bool warn = true,
+               bool warn_negative = true,
+               bool warn_invalid = true,
                bool border = true,
                bool normalize = false);
 
     /// Accumulate another image block into this one
-    void put(const ImageBlock *block) {
-        ScalarPoint2i offset = block->offset() - m_offset -
-                         ScalarVector2i(block->border_size() - m_border_size);
-        m_bitmap->accumulate(block->bitmap(), offset);
-    }
+    void put(const ImageBlock *block);
 
     /**
      * \brief Store a single sample / packets of samples inside the
@@ -82,10 +74,6 @@ public:
      *
      * \note This method is only valid if a reconstruction filter was given at
      * the construction of the block.
-     *
-     * This variant assumes that the ImageBlock's internal storage format
-     * is XYZAW. The given Spectrum will be converted to XYZ color space
-     * for storage.
      *
      * \param pos
      *    Denotes the sample position in fractional pixel coordinates. It is
@@ -102,27 +90,30 @@ public:
      *    Alpha value assocated with the sample
      *
      * \return \c false if one of the sample values was \a invalid, e.g.
-     *    NaN or negative. A warning is also printed if \c m_warn is enabled.
+     *    NaN or negative. A warning is also printed if \c m_warn_negative
+     *    or \c m_warn_invalid is enabled.
      */
     Mask put(const Point2f &pos,
              const Wavelength &wavelengths,
              const Spectrum &value,
              const Float &alpha,
              Mask active = true) {
-        Assert(m_bitmap->pixel_format() == Bitmap::PixelFormat::XYZAW,
-               "This `put` variant requires XYZAW internal storage format.");
+        if (unlikely(m_channel_count != 5))
+            Throw("ImageBlock::put(): non-standard image block configuration! (AOVs?)");
 
-        Array<Float, 3> xyz;
+        UnpolarizedSpectrum value_u = depolarize(value);
+
+        Color3f xyz;
         if constexpr (is_monochromatic_v<Spectrum>) {
-            xyz = depolarize(value).x();
+            xyz = value_u.x();
         } else if constexpr (is_rgb_v<Spectrum>) {
-            xyz = srgb_to_xyz(depolarize(value), active);
+            xyz = srgb_to_xyz(value_u, active);
         } else {
             static_assert(is_spectral_v<Spectrum>);
-            xyz = spectrum_to_xyz(depolarize(value), wavelengths, active);
+            xyz = spectrum_to_xyz(value_u, wavelengths, active);
         }
-        Array<Float, 5> values(xyz.x(), xyz.y(), xyz.z(), alpha, 1.f);
-        return put(pos, values.data(), active);
+        Float values[5] = { xyz.x(), xyz.y(), xyz.z(), alpha, 1.f };
+        return put(pos, values, active);
     }
 
     /**
@@ -141,20 +132,27 @@ public:
      *    The array must match the length given by \ref channel_count()
      *
      * \return \c false if one of the sample values was \a invalid, e.g.
-     *    NaN or negative. A warning is also printed if \c m_warn is enabled.
+     *    NaN or negative. A warning is also printed if \c m_warn_negative
+     *    or \c m_warn_invalid is enabled.
      */
     Mask put(const Point2f &pos, const Float *value, Mask active = true);
 
     /// Clear everything to zero.
-    void clear() { m_bitmap->clear(); }
+    void clear();
 
     // =============================================================
     //! @{ \name Accesors
     // =============================================================
 
-    /// Set the current block offset. This corresponds to the offset
-    /// from a larger image's (e.g. a Film) corner to this block's corner.
+    /**\brief Set the current block offset.
+     *
+     * This corresponds to the offset from the top-left corner of a larger
+     * image (e.g. a Film) to the top-left corner of this ImageBlock instance.
+     */
     void set_offset(const ScalarPoint2i &offset) { m_offset = offset; }
+
+    /// Set the block size. This potentially destroys the block's content.
+    void set_size(const ScalarVector2i &size);
 
     /// Return the current block offset
     const ScalarPoint2i &offset() const { return m_offset; }
@@ -168,26 +166,29 @@ public:
     /// Return the bitmap's height in pixels
     size_t height() const { return m_size.y(); }
 
-    /// Warn when writing bad sample values?
-    bool warns() const { return m_warn; }
+    /// Warn when writing invalid (NaN, +/- infinity) sample values?
+    void set_warn_invalid(bool value) { m_warn_invalid = value; }
 
-    /// Warn when writing bad sample values?
-    void set_warn(bool warn) { m_warn = warn; }
+    /// Warn when writing invalid (NaN, +/- infinity) sample values?
+    bool warn_invalid() const { return m_warn_invalid; }
 
-    /// Return the border region used by the reconstruction filter
-    size_t border_size() const { return m_border_size; }
+    /// Warn when writing negative sample values?
+    void set_warn_negative(bool value) { m_warn_negative = value; }
+
+    /// Warn when writing negative sample values?
+    bool warn_negative() const { return m_warn_negative; }
 
     /// Return the number of channels stored by the image block
-    size_t channel_count() const { return m_bitmap->channel_count(); }
+    size_t channel_count() const { return (size_t) m_channel_count; }
 
-    /// Return the underlying pixel format
-    Bitmap::PixelFormat pixel_format() const { return m_bitmap->pixel_format(); }
+    /// Return the border region used by the reconstruction filter
+    int border_size() const { return m_border_size; }
 
-    /// Return a pointer to the underlying bitmap representation
-    Bitmap *bitmap() { return m_bitmap; }
+    /// Return the underlying pixel buffer
+    DynamicBuffer<Float> &data() { return m_data; }
 
-    /// Return a pointer to the underlying bitmap representation (const version)
-    const Bitmap *bitmap() const { return m_bitmap.get(); }
+    /// Return the underlying pixel buffer (const version)
+    const DynamicBuffer<Float> &data() const { return m_data; }
 
     //! @}
     // =============================================================
@@ -198,13 +199,16 @@ protected:
     /// Virtual destructor
     virtual ~ImageBlock();
 protected:
-    ref<Bitmap> m_bitmap;
     ScalarPoint2i m_offset;
     ScalarVector2i m_size;
+    uint32_t m_channel_count;
     int m_border_size;
+    DynamicBuffer<Float> m_data;
     const ReconstructionFilter *m_filter;
-    Float  *m_weights_x  , *m_weights_y;
-    bool m_warn, m_normalize;
+    Float *m_weights_x, *m_weights_y;
+    bool m_warn_negative;
+    bool m_warn_invalid;
+    bool m_normalize;
 };
 
 MTS_EXTERN_CLASS(ImageBlock)

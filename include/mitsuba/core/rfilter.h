@@ -57,7 +57,7 @@ public:
     uint32_t border_size() const { return m_border_size; }
 
     /// Evaluate the filter function
-    virtual Float eval(Float x) const = 0;
+    virtual Float eval(Float x, Mask active = true) const = 0;
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
@@ -75,17 +75,9 @@ protected:
     /// Mandatory initialization prior to calls to \ref eval_discretized()
     void init_discretization();
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("radius", m_radius);
-    }
-
-    void parameters_changed() override {
-        init_discretization();
-    }
-
 protected:
     ScalarFloat m_radius, m_scale_factor;
-    host_vector<Float> m_values;
+    std::vector<Float> m_values;
     uint32_t m_border_size;
 };
 

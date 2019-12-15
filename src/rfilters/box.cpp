@@ -26,7 +26,7 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x) const override {
+    Float eval(Float x, mask_t<Float> /* active */) const override {
         return select(abs(x) <= m_radius, Float(1.f), Float(0.f));
     }
 

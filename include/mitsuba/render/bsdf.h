@@ -122,42 +122,14 @@ enum class BSDFFlags : uint32_t {
     All          = Diffuse | Glossy | Delta | Delta1D
 };
 
-/// Allows or-ing of BSDFFlags
-constexpr BSDFFlags operator |(BSDFFlags f1, BSDFFlags f2) {
-    return (BSDFFlags) ((uint32_t) f1 | (uint32_t) f2);
-}
-/// Allows and-ing of BSDFFlags
-constexpr BSDFFlags operator &(BSDFFlags f1, BSDFFlags f2) {
-    return (BSDFFlags) ((uint32_t) f1 & (uint32_t) f2);
-}
-/// Allows and-ing of BSDFFlags
-template <typename T>
-constexpr T operator &(const T &f1, BSDFFlags f2) {
-    using UInt32 = replace_scalar_t<T, uint32_t>;
-    return static_cast<T>(static_cast<UInt32>(f1) & (uint32_t) f2);
-}
-/// Allows not-ing of BSDFFlags
-constexpr BSDFFlags operator ~(BSDFFlags f1) {
-    return (BSDFFlags) (~(uint32_t) f1);
-}
-/// Allows using unary `+` for conversion from BSDFFlags to the underlying type
-constexpr auto operator+(BSDFFlags e) noexcept {
-    return (uint32_t) e;
-}
-/// Allows adding BSDFFlags
+constexpr uint32_t operator |(BSDFFlags f1, BSDFFlags f2) { return (uint32_t) f1 | (uint32_t) f2; }
+constexpr uint32_t operator |(uint32_t f1, BSDFFlags f2)      { return f1 | (uint32_t) f2; }
+constexpr uint32_t operator &(BSDFFlags f1, BSDFFlags f2) { return (uint32_t) f1 & (uint32_t) f2; }
+constexpr uint32_t operator &(uint32_t f1, BSDFFlags f2)      { return f1 & (uint32_t) f2; }
+constexpr uint32_t operator ~(BSDFFlags f1)                   { return ~(uint32_t) f1; }
+constexpr uint32_t operator +(BSDFFlags e)                    { return (uint32_t) e; }
 template <typename UInt32>
-constexpr BSDFFlags operator +(BSDFFlags f1, UInt32 f2) {
-    return (BSDFFlags) ((uint32_t) f1 + (uint32_t) f2);
-}
-/// Check presence of a flag in a combined BSDFFlag
-constexpr bool has_flag(BSDFFlags flags, BSDFFlags f) {
-    return ((uint32_t)flags & (uint32_t)f) != 0u;
-}
-template <typename T>
-constexpr mask_t<T> has_flag(T flags, BSDFFlags f) {
-    using UInt32 = replace_scalar_t<T, uint32_t>;
-    return neq(static_cast<UInt32>(flags) & (uint32_t) f, 0u);
-}
+constexpr auto has_flag(UInt32 flags, BSDFFlags f)            { return (flags & (uint32_t) f) != 0; }
 
 /**
  * \brief Context data structure for BSDF evaluation and sampling
@@ -210,8 +182,8 @@ struct MTS_EXPORT_RENDER BSDFContext {
      * enabled in this context.
      */
     bool is_enabled(BSDFFlags type_, uint32_t component_ = 0) const {
-        auto type_number = static_cast<uint32_t>(type_);
-        return (type_mask == (uint32_t) -1 || (type_mask & type_number) == type_number)
+        uint32_t type = (uint32_t) type_;
+        return (type_mask == (uint32_t) -1 || (type_mask & type) == type)
             && (component == (uint32_t) -1 || component == component_);
     }
 };
@@ -441,10 +413,10 @@ public:
     // -----------------------------------------------------------------------
 
     /// Flags for all components combined.
-    BSDFFlags flags(Mask /*active*/ = true) const { return m_flags; }
+    uint32_t flags(Mask /*active*/ = true) const { return m_flags; }
 
     /// Flags for a specific component of this BSDF.
-    BSDFFlags flags(size_t i, Mask /*active*/ = true) const {
+    uint32_t flags(size_t i, Mask /*active*/ = true) const {
         Assert(i < m_components.size());
         return m_components[i];
     }
@@ -477,10 +449,10 @@ protected:
 
 protected:
     /// Combined flags for all components of this BSDF.
-    BSDFFlags m_flags;
+    uint32_t m_flags;
 
     /// Flags for each component of this BSDF.
-    std::vector<BSDFFlags> m_components;
+    std::vector<uint32_t> m_components;
 
     /// Identifier (if available)
     std::string m_id;

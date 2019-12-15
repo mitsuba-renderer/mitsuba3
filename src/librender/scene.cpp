@@ -178,9 +178,12 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "Scene[" << std::endl
         << "  children = [" << std::endl;
-    for (auto shape : m_children)
-        oss << "    " << string::indent(shape->to_string(), 4)
-            << "," << std::endl;
+    for (size_t i = 0; i < m_children.size(); ++i) {
+        oss << "    " << string::indent(m_children[i]->to_string(), 4);
+        if (i + 1 < m_children.size())
+            oss << ",";
+        oss << std::endl;
+    }
     oss << "  ]"<< std::endl
         << "]";
     return oss.str();

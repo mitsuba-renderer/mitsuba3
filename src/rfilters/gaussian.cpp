@@ -31,14 +31,8 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x) const override {
+    Float eval(Float x, mask_t<Float> /* active */) const override {
         return max(0.f, exp(m_alpha * sqr(x)) - m_bias);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("stddev", m_stddev);
-        callback->put_parameter("alpha", m_alpha);
-        Base::traverse(callback);
     }
 
     std::string to_string() const override {

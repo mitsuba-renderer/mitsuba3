@@ -104,7 +104,7 @@ public:
         size_t offset;
 
         /// Additional flags
-        Flags flags;
+        uint32_t flags;
 
         /// Default value
         double default_;
@@ -166,8 +166,10 @@ public:
     Struct(const Struct &s);
 
     /// Append a new field to the \c Struct; determines size and offset automatically
-    Struct &append(const std::string &name, Type type,
-                   Flags flags = Flags::None, double default_ = 0.0);
+    Struct &append(const std::string &name,
+                   Type type,
+                   uint32_t flags = (uint32_t) Flags::None,
+                   double default_ = 0.0);
 
     /// Append a new field to the \c Struct (manual version)
     Struct &append(Field field) { m_fields.push_back(field); return *this; }
@@ -306,31 +308,13 @@ NAMESPACE_END(detail)
 
 template <typename T> constexpr Struct::Type struct_type_v = detail::struct_type<T>::value;
 
-/// Allows or-ing of Flags
-constexpr Struct::Flags operator |(Struct::Flags f1, Struct::Flags f2) {
-    return static_cast<Struct::Flags>(static_cast<uint32_t>(f1) | static_cast<uint32_t>(f2));
-}
-/// Allows and-ing of Struct::Flags
-constexpr Struct::Flags operator &(Struct::Flags f1, Struct::Flags f2) {
-    return static_cast<Struct::Flags>(static_cast<uint32_t>(f1) & static_cast<uint32_t>(f2));
-}
-/// Allows not-ing of Struct::Flags
-constexpr Struct::Flags operator ~(Struct::Flags f1) {
-    return static_cast<Struct::Flags>(~static_cast<uint32_t>(f1));
-}
-/// Allows using unary `+` for conversion from Struct::Flags to the underlying type
-constexpr auto operator+(Struct::Flags e) noexcept {
-    return static_cast<std::underlying_type_t<Struct::Flags>>(e);
-}
-/// Check presence of a flag in a combined Struct::Flags
-constexpr bool has_flag(Struct::Flags flags, Struct::Flags f) {
-    return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
-}
-template <typename UInt32>
-constexpr bool has_flag(const UInt32 &flags, Struct::Flags f) {
-    return neq(flags & UInt32(static_cast<uint32_t>(f)), 0u);
-}
-
+constexpr uint32_t operator |(Struct::Flags f1, Struct::Flags f2) { return (uint32_t) f1 | (uint32_t) f2; }
+constexpr uint32_t operator |(uint32_t f1, Struct::Flags f2)      { return f1 | (uint32_t) f2; }
+constexpr uint32_t operator &(Struct::Flags f1, Struct::Flags f2) { return (uint32_t) f1 & (uint32_t) f2; }
+constexpr uint32_t operator &(uint32_t f1, Struct::Flags f2)      { return f1 & (uint32_t) f2; }
+constexpr uint32_t operator ~(Struct::Flags f1)                   { return ~(uint32_t) f1; }
+constexpr uint32_t operator +(Struct::Flags e)                    { return (uint32_t) e; }
+constexpr bool has_flag(uint32_t flags, Struct::Flags f)          { return (flags & (uint32_t) f) != 0; }
 
 /**
  * \brief This class solves the any-to-any problem: effiently converting from
@@ -434,7 +418,7 @@ protected:
 
     struct Value {
         Struct::Type type;
-        Struct::Flags flags;
+        uint32_t flags;
         union {
             Float f;
             float s;

@@ -3,11 +3,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum>
-BSDF<Float, Spectrum>::BSDF(const Properties &props) : m_flags(BSDFFlags::None), m_id(props.id()) { }
+MTS_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
+    : m_flags(+BSDFFlags::None), m_id(props.id()) { }
 
-template <typename Float, typename Spectrum>
-BSDF<Float, Spectrum>::~BSDF() { }
+MTS_VARIANT BSDF<Float, Spectrum>::~BSDF() { }
+
+MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_tr(const SurfaceInteraction3f & /* si */,
+                                                    Mask /* active */) const {
+    return 0.f;
+}
 
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
@@ -108,11 +112,6 @@ std::string type_mask_to_string(Index type_mask) {
     Assert(type_mask == 0);
     oss << "}";
     return oss.str();
-}
-
-template <typename Float, typename Spectrum>
-Spectrum BSDF<Float, Spectrum>::eval_tr(const SurfaceInteraction3f & /*si*/, Mask /*active*/) const {
-    return 0.f;
 }
 
 std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {

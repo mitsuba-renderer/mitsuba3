@@ -119,9 +119,13 @@ struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray
 //! @}
 // =======================================================================
 
-#define MTS_CIE_MIN     360.f
-#define MTS_CIE_MAX     830.f
-#define MTS_CIE_SAMPLES 95
+#define MTS_CIE_MIN           360.f
+#define MTS_CIE_MAX           830.f
+#define MTS_CIE_SAMPLES       95
+
+/* Scaling the CIE curves by the following constant ensures that
+   a unit-valued spectrum integrates to a luminance of 1.0 */
+#define MTS_CIE_Y_NORMALIZATION float(1.0 / 106.7502593994140625)
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
 extern MTS_EXPORT_CORE const float *cie1931_x_data;

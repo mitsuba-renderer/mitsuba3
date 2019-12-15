@@ -92,7 +92,7 @@ public:
                 if (!m_disable_vertex_normals) {
                     for (auto name : { "nx", "ny", "nz" })
                         m_vertex_struct->append(name, struct_type_v<InputFloat>,
-                                                Struct::Flags::Default, 0.0);
+                                                +Struct::Flags::Default, 0.0);
 
                     if (el.struct_->has_field("nx") &&
                         el.struct_->has_field("ny") &&
@@ -309,7 +309,7 @@ public:
         if (m_face_struct->field_count() > 0) {
             ref<Struct> face_struct_out = new Struct(true);
 
-            face_struct_out->append("__size", Struct::Type::UInt8, Struct::Flags::Default, 3.0);
+            face_struct_out->append("__size", Struct::Type::UInt8, +Struct::Flags::Default, 3.0);
             for (auto f: *m_face_struct)
                 face_struct_out->append(f.name, f.type);
 
@@ -441,7 +441,7 @@ private:
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property list\"");
 
-                    struct_->append(token + ".count", it1->second, Struct::Flags::Assert, 3);
+                    struct_->append(token + ".count", it1->second, +Struct::Flags::Assert, 3);
                     for (int i = 0; i<3; ++i)
                         struct_->append(tfm::format("i%i", i), it2->second);
                 } else {
@@ -450,8 +450,9 @@ private:
                         Throw("invalid PLY header: unknown format type \"%s\"", token);
                     if (!(iss >> token))
                         Throw("invalid PLY header: missing token after \"property\"");
-                    Struct::Flags flags = Struct::Flags::None;
-                    if (it->second >= Struct::Type::Int8 && it->second <= Struct::Type::UInt64)
+                    uint32_t flags = +Struct::Flags::None;
+                    if (it->second >= Struct::Type::Int8 &&
+                        it->second <= Struct::Type::UInt64)
                         flags = Struct::Flags::Normalized | Struct::Flags::Gamma;
                     struct_->append(token, it->second, flags);
                 }

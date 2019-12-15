@@ -17,8 +17,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Abstract integrator base-class; does not make any assumptions on
- * how radiance is computed.
+ * \brief Abstract integrator base class, which does not make any assumptions
+ * with regards to how radiance is computed.
  *
  * In Mitsuba, the different rendering techniques are collectively referred to
  * as \a integrators, since they perform integration over a high-dimensional
@@ -58,20 +58,19 @@ protected:
     virtual ~Integrator() { }
 };
 
-/** \brief Abstract base class, which describes integrators
- * capable of computing samples of the scene's radiance function.
+/** \brief Integrator based on Monte Carlo sampling
+ *
+ * This integrator performs Monte Carlo integration to return an unbiased
+ * statistical estimate of the radiance value along a given ray. The default
+ * implementation of the \ref render() method then repeatedly invokes this
+ * estimator to compute all pixels of the image.
  */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(SamplingIntegrator, Integrator)
-    MTS_IMPORT_TYPES()
-    using Base       = Integrator<Float, Spectrum>;
-    using Film       = typename RenderAliases::Film;
-    using ImageBlock = typename RenderAliases::ImageBlock;
-    using Sampler    = typename RenderAliases::Sampler;
-    using Scene      = typename RenderAliases::Scene;
-    using Sensor     = typename RenderAliases::Sensor;
+    MTS_IMPORT_BASE(Integrator)
+    MTS_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Sampler)
 
     /**
      * \brief Sample the incident radiance along a ray.
@@ -88,14 +87,38 @@ public:
      * \param active
      *    A mask that indicates which SIMD lanes are active
      *
+     * \param aov
+     *    Integrators may return one or more arbitrary output variables (AOVs)
+     *    via this parameter. If \c nullptr is provided to this argument, no
+     *    AOVs should be returned. Otherwise, the caller guarantees that space
+     *    for at least <tt>aov_names().size()</tt> entries has been allocated.
+     *
      * \return
      *    A pair containing a spectrum and a mask specifying whether a surface
      *    or medium interaction was sampled. False mask entries indicate that
      *    the ray "escaped" the scene, in which case the the returned spectrum
-     *    contains the contribution of environment maps, if present.
+     *    contains the contribution of environment maps, if present. The mask
+     *    can be used to estimate a suitable alpha channel of a rendered image.
+     *
+     * \remark
+     *    In the Python bindings, this function returns the \c aov output
+     *    argument as an additional return value. In other words:
+     *    <tt>
+     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, active)
+     *    </tt>
      */
-    virtual std::pair<Spectrum, Mask> sample(const Scene *scene, Sampler *sampler,
-                                             const RayDifferential3f &ray, Mask active) const;
+    virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                             Sampler *sampler,
+                                             const RayDifferential3f &ray,
+                                             Float *aovs = nullptr,
+                                             Mask active = true) const;
+
+    /**
+     * For integrators that return one or more arbitrary output variables
+     * (AOVs), this function specifies a list of associated channel names. The
+     * default implementation simply returns an empty vector.
+     */
+    virtual std::vector<std::string> aov_names() const;
 
     // =========================================================================
     //! @{ \name Integrator interface implementation
@@ -128,12 +151,14 @@ protected:
                               const Sensor *sensor,
                               Sampler *sampler,
                               ImageBlock *block,
+                              Float *aovs,
                               size_t sample_count = size_t(-1)) const;
 
     void render_sample(const Scene *scene,
                        const Sensor *sensor,
                        Sampler *sampler,
                        ImageBlock *block,
+                       Float *aovs,
                        const Vector2f &pos,
                        ScalarFloat diff_scale_factor,
                        Mask active = true) const;
@@ -153,8 +178,11 @@ protected:
      */
     uint32_t m_samples_per_pass;
 
-    /** Maximum amount of time to spend rendering (excluding scene parsing).
-     * Specified in seconds. A negative values indicates no timeout. */
+    /**
+     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
+     *
+     * Specified in seconds. A negative values indicates no timeout.
+     */
     float m_timeout;
 
     /// Timer used to enforce the timeout.

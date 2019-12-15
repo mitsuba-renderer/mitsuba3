@@ -6,10 +6,11 @@ MTS_PY_EXPORT(ImageBlock) {
     MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
     MTS_PY_CHECK_ALIAS(ImageBlock, m) {
         MTS_PY_CLASS(ImageBlock, Object)
-            .def(py::init<Bitmap::PixelFormat, const ScalarVector2i &, const ReconstructionFilter *,
-                 size_t, bool, bool, bool>(),
-                "fmt"_a, "size"_a, "filter"_a = nullptr, "channels"_a = 0,
-                "warn"_a = true, "border"_a = true, "normalize"_a = false)
+            .def(py::init<const ScalarVector2i &, size_t,
+                  const ReconstructionFilter *, bool, bool, bool, bool>(),
+                "size"_a, "channel_count"_a, "filter"_a = nullptr,
+                "warn_negative"_a = true, "warn_invalid"_a = true,
+                "border"_a = true, "normalize"_a = false)
             .def("put", py::overload_cast<const ImageBlock *>(&ImageBlock::put),
                 D(ImageBlock, put), "block"_a)
             .def("put", vectorize<Float>(py::overload_cast<const Point2f &,
@@ -30,11 +31,12 @@ MTS_PY_EXPORT(ImageBlock) {
             .def_method(ImageBlock, size)
             .def_method(ImageBlock, width)
             .def_method(ImageBlock, height)
-            .def_method(ImageBlock, warns)
-            .def_method(ImageBlock, set_warn, "warn"_a)
+            .def_method(ImageBlock, warn_invalid)
+            .def_method(ImageBlock, warn_negative)
+            .def_method(ImageBlock, set_warn_invalid, "value"_a)
+            .def_method(ImageBlock, set_warn_negative, "value"_a)
             .def_method(ImageBlock, border_size)
             .def_method(ImageBlock, channel_count)
-            .def_method(ImageBlock, pixel_format)
-            .def("bitmap", py::overload_cast<>(&ImageBlock::bitmap));
+            .def("data", py::overload_cast<>(&ImageBlock::data, py::const_), D(ImageBlock, data));
     }
 }

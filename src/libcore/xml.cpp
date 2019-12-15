@@ -817,7 +817,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             const int steps = 1000;
                             for (int i = 0; i < steps; ++i) {
                                 Float x = MTS_WAVELENGTH_MIN +
-                                          (i / (Float)(steps - 1)) *
+                                          (i / (Float) (steps - 1)) *
                                               (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
 
                                 if (x < wavelengths.front() ||
@@ -844,9 +844,18 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             }
 
                             color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Float) steps;
+                            color = xyz_to_srgb(color);
+
+                            if (!within_emitter)
+                                color *= MTS_CIE_Y_NORMALIZATION;
+
+                            if (!within_emitter && any(color < 0.f || color > 1.f)) {
+                                Log(Warn, "Spectrum (at %s): clamping out-of-gamut color %s",
+                                    src.offset(node.offset_debug()), color);
+                                color = clamp(color, 0.f, 1.f);
+                            }
 
                             Properties props3;
-
                             if (ctx.color_mode == ColorMode::Monochromatic) {
                                 props3 = Properties("uniform");
                                 props3.set_float("value", luminance(color));

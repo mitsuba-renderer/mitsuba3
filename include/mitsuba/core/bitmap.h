@@ -81,7 +81,7 @@ public:
          * The following is supported:
          * <ul>
          *   <li>Loading and saving of \ref Float16 / \ref Float32/ \ref
-         *   EUInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
+         *   UInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
          *   <li>Loading and saving of spectral bitmaps</tt>
          *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
          *   <li>Loading and saving of string-valued metadata fields</li>
@@ -188,14 +188,16 @@ public:
      *
      * \param channel_count
      *    Channel count of the image. This parameter is only required when
-     *    \c pfmt = \ref MultiChannel
+     *    \c pixel_format = \ref PixelFormat::MultiChannel
      *
      * \param data
      *    External pointer to the image data. If set to \c nullptr, the
      *    implementation will allocate memory itself.
      */
-    Bitmap(PixelFormat pixel_format, Struct::Type component_format,
-           const Vector2s &size, size_t channel_count = 0,
+    Bitmap(PixelFormat pixel_format,
+           Struct::Type component_format,
+           const Vector2s &size,
+           size_t channel_count = 0,
            uint8_t *data = nullptr);
 
     /**
@@ -237,6 +239,12 @@ public:
 
     /// Return a pointer to the underlying bitmap storage
     const void *data() const { return m_data.get(); }
+
+    /// Return a pointer to the underlying data
+    uint8_t *uint8_data() { return m_data.get(); }
+
+    /// Return a pointer to the underlying data (const)
+    const uint8_t *uint8_data() const { return m_data.get(); }
 
     /// Return the bitmap dimensions in pixels
     const Vector2s &size() const { return m_size; }
@@ -285,8 +293,11 @@ public:
     /// Clear the bitmap to zero
     void clear();
 
-    /// Return a \c Struct instance describing the contents of the bitmap
+    /// Return a \c Struct instance describing the contents of the bitmap (const version)
     const Struct *struct_() const { return m_struct.get(); }
+
+    /// Return a \c Struct instance describing the contents of the bitmap
+    Struct *struct_() { return m_struct.get(); }
 
     /**
      * Write an encoded form of the bitmap to a stream using the specified file format
@@ -434,8 +445,8 @@ public:
      * <li>For each pixel and channel, it converts the associated value
      *   into a normalized linear-space form (any gamma of the source
      *   bitmap is removed)</li>
-     * <li>The multiplier and gamma correction specified in
-     *      \c targetGamma is applied</li>
+     * <li>gamma correction (sRGB ramp) is applied
+     *     if \c srgb_gamma is \c true</li>
      * <li>The corrected value is clamped against the representable range
      *   of the desired component format.</li>
      * <li>The clamped gamma-corrected value is then written to
@@ -478,11 +489,11 @@ public:
      * <tt>bitmap != this</tt>.
      *
      * \remark This function throws an exception when the bitmaps
-     * use different component formats or channels, or when the
-     * component format is \ref EBitmask.
+     * use different component formats or channels.
      */
     void accumulate(const Bitmap *bitmap,
-                    Point2i source_offset, Point2i target_offset,
+                    Point2i source_offset,
+                    Point2i target_offset,
                     Vector2i size);
 
     /**
@@ -495,8 +506,7 @@ public:
      * ignored. It is assumed that <tt>bitmap != this</tt>.
      *
      * \remark This function throws an exception when the bitmaps
-     * use different component formats or channels, or when the
-     * component format is \ref EBitmask.
+     * use different component formats or channels.
      */
     void accumulate(const Bitmap *bitmap, const Point2i &target_offset) {
         accumulate(bitmap, Point2i(0), target_offset, bitmap->size());
@@ -513,8 +523,7 @@ public:
      * that <tt>bitmap != this</tt>.
      *
      * \remark This function throws an exception when the bitmaps
-     * use different component formats or channels, or when the
-     * component format is \ref EBitmask.
+     * use different component formats or channels.
      */
     void accumulate(const Bitmap *bitmap) {
         accumulate(bitmap, Point2i(0), Point2i(0), bitmap->size());
@@ -540,12 +549,6 @@ public:
 
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
-
-    /// Return a pointer to the underlying data
-    uint8_t *uint8_data() { return m_data.get(); }
-
-    /// Return a pointer to the underlying data (const)
-    const uint8_t *uint8_data() const { return m_data.get(); }
 
     /// Static initialization of bitmap-related data structures (thread pools, etc.)
     static void static_initialization();
@@ -614,6 +617,77 @@ public:
      bool m_owns_data;
      Properties m_metadata;
 };
+
+
+/**
+ * \brief Accumulate the contents of a source bitmap into a
+ * target bitmap with specified offsets for both.
+ *
+ * Out-of-bounds regions are safely ignored. It is assumed that
+ * <tt>source != target</tt>.
+ *
+ * The function supports `T` being a raw pointer or an arbitrary Enoki array
+ * that can potentially live on the GPU and/or be differentiable.
+ */
+template <typename T, typename ConstT>
+void accumulate_2d(ConstT source,
+                   T target,
+                   Point<int, 2> source_offset,
+                   Point<int, 2> target_offset,
+                   Vector<int, 2> source_size,
+                   Vector<int, 2> target_size,
+                   Vector<int, 2> size,
+                   int channel_count) {
+    using Value = std::decay_t<T>;
+
+    /// Clip against bounds of source and target image
+    Vector<int, 2> shift = target_offset - source_offset;
+    source_offset = max( shift, 0);
+    target_offset = max(-shift, 0);
+    size -= max(source_offset + size - source_size, 0);
+    size -= max(target_offset + size - target_size, 0);
+
+    if (any(size <= 0))
+        return;
+
+    int n = size.x() * channel_count;
+
+    if constexpr (std::is_pointer_v<T>) {
+        constexpr Value maxval = std::numeric_limits<Value>::max();
+
+        source += (source_offset.x() + source_offset.y() * (size_t) source_size.x()) * channel_count;
+        target += (target_offset.x() + target_offset.y() * (size_t) target_size.x()) * channel_count;
+
+        for (int y = 0; y < size.y(); ++y) {
+            for (int i = 0; i < n; ++i) {
+                if constexpr (std::is_integral_v<Value>)
+                    target[i] = (Value) max(maxval, source[i] + target[i]);
+                else
+                    target[i] += source[i];
+            }
+
+            source += source_size.x() * channel_count;
+            target += target_size.x() * channel_count;
+        }
+    } else {
+        using Int32 = int32_array_t<Value>;
+        Int32 index = arange<Int32>(n * size.y());
+
+        Int32 y   = index / n,
+              col = index - y * n;
+
+        Int32 index_source = col + (source_offset.x() + source_size.x() * (y + source_offset.y())) *
+                                       channel_count,
+              index_target = col + (target_offset.x() + target_size.x() * (y + target_offset.y())) *
+                                       channel_count;
+
+        scatter(
+            target,
+            gather<Value>(source, index_source) + gather<Value>(target, index_target),
+            index_target
+        );
+    }
+}
 
 extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value);
 extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value);

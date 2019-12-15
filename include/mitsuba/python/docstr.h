@@ -351,8 +351,6 @@ static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
 
@@ -1712,8 +1710,6 @@ static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
@@ -1759,8 +1755,6 @@ static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
 
@@ -2065,23 +2059,9 @@ static const char *__doc_mitsuba_Film_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
-static const char *__doc_mitsuba_Film_add_bitmap =
-R"doc(Accumulate a bitmap on top of the radiance values stored in the film.
-The size of the given bitmap has to match to current size.)doc";
-
-static const char *__doc_mitsuba_Film_bitmap =
-R"doc(Returns a pointer to the underlying image storage, or nullptr if there
-is none.)doc";
-
-static const char *__doc_mitsuba_Film_check_valid_crop_window = R"doc(Throws if the crop window specification is invalid.)doc";
-
 static const char *__doc_mitsuba_Film_class = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_clear = R"doc(Clear the film)doc";
 
 static const char *__doc_mitsuba_Film_crop_offset = R"doc(Return the offset of the crop window)doc";
 
@@ -2119,17 +2099,13 @@ static const char *__doc_mitsuba_Film_m_high_quality_edges = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_prepare = R"doc(Configure the film for rendering a specified set of channels)doc";
+
 static const char *__doc_mitsuba_Film_put = R"doc(Merge an image block into the film)doc";
 
 static const char *__doc_mitsuba_Film_reconstruction_filter = R"doc(Return the image reconstruction filter (const version))doc";
 
-static const char *__doc_mitsuba_Film_set_bitmap =
-R"doc(Overwrite the film with the given bitmap. The size of the given bitmap
-has to match to current size.)doc";
-
-static const char *__doc_mitsuba_Film_set_crop_window =
-R"doc(Set the size and offset of the crop window. Values stored in the film
-may be reset when crop size changes.)doc";
+static const char *__doc_mitsuba_Film_set_crop_window = R"doc(Set the size and offset of the crop window.)doc";
 
 static const char *__doc_mitsuba_Film_set_destination_file = R"doc(Set the target filename (with or without extension))doc";
 
@@ -2137,9 +2113,7 @@ static const char *__doc_mitsuba_Film_size =
 R"doc(Ignoring the crop window, return the resolution of the underlying
 sensor)doc";
 
-static const char *__doc_mitsuba_Film_to_string = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_traverse = R"doc(//! @})doc";
+static const char *__doc_mitsuba_Film_to_string = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_FilterBoundaryCondition =
 R"doc(When resampling data to a different resolution using
@@ -2345,18 +2319,15 @@ static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a new image block of the requested properties
-
-Parameter ``fmt``:
-    Specifies the pixel format -- see Bitmap::PixelFormat for a list
-    of possibilities
 
 Parameter ``size``:
     Specifies the block dimensions (not accounting for additional
     border pixels required to support image reconstruction filters)
+
+Parameter ``channel_count``:
+    Specifies the number of image channels.
 
 Parameter ``filter``:
     Pointer to the film's reconstruction filter. If passed, it is used
@@ -2364,28 +2335,24 @@ Parameter ``filter``:
     mandatory when any of the block's put operations are used, except
     for ``put``(const ImageBlock*).
 
-Parameter ``channels``:
-    Specifies the number of output channels. This is only valid when
-    MultiChannel is chosen as the pixel format, otherwise pass 0 so
-    that channels are set automatically from the pixel format.
+Parameter ``warn_negative``:
+    Warn when writing samples with negative components?
+
+Parameter ``warn_invalid``:
+    Warn when writing samples with components that are equal to NaN
+    (not a number) or +/- infinity?
 
 Parameter ``border``:
     Allocate a border region around the image block to support
     contributions to adjacent pixels when using wide (i.e. non-box)
     reconstruction filters?
 
-Parameter ``warn``:
-    Warn when writing bad sample values?
-
 Parameter ``normalize``:
     Ensure that splats created via ``ImageBlock::put()`` add a unit
-    amount of energy?)doc";
-
-static const char *__doc_mitsuba_ImageBlock_bitmap = R"doc(Return a pointer to the underlying bitmap representation)doc";
-
-static const char *__doc_mitsuba_ImageBlock_bitmap_2 =
-R"doc(Return a pointer to the underlying bitmap representation (const
-version))doc";
+    amount of energy? Stratified sampling techniques that sample rays
+    in image space should set this to ``False``, since the samples
+    will eventually be divided by the accumulated sample weight to
+    remove any non-uniformity.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_border_size = R"doc(Return the border region used by the reconstruction filter)doc";
 
@@ -2395,11 +2362,17 @@ static const char *__doc_mitsuba_ImageBlock_class = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_clear = R"doc(Clear everything to zero.)doc";
 
+static const char *__doc_mitsuba_ImageBlock_data = R"doc(Return the underlying pixel buffer)doc";
+
+static const char *__doc_mitsuba_ImageBlock_data_2 = R"doc(Return the underlying pixel buffer (const version))doc";
+
 static const char *__doc_mitsuba_ImageBlock_height = R"doc(Return the bitmap's height in pixels)doc";
 
-static const char *__doc_mitsuba_ImageBlock_m_bitmap = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_m_border_size = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_m_channel_count = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_m_data = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_filter = R"doc()doc";
 
@@ -2409,15 +2382,15 @@ static const char *__doc_mitsuba_ImageBlock_m_offset = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_size = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_m_warn = R"doc()doc";
+static const char *__doc_mitsuba_ImageBlock_m_warn_invalid = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_m_warn_negative = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_weights_x = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_m_weights_y = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_offset = R"doc(Return the current block offset)doc";
-
-static const char *__doc_mitsuba_ImageBlock_pixel_format = R"doc(Return the underlying pixel format)doc";
 
 static const char *__doc_mitsuba_ImageBlock_put = R"doc(Accumulate another image block into this one)doc";
 
@@ -2426,10 +2399,6 @@ R"doc(Store a single sample / packets of samples inside the image block.
 
 \note This method is only valid if a reconstruction filter was given
 at the construction of the block.
-
-This variant assumes that the ImageBlock's internal storage format is
-XYZAW. The given Spectrum will be converted to XYZ color space for
-storage.
 
 Parameter ``pos``:
     Denotes the sample position in fractional pixel coordinates. It is
@@ -2447,7 +2416,8 @@ Parameter ``alpha``:
 
 Returns:
     ``False`` if one of the sample values was *invalid*, e.g. NaN or
-    negative. A warning is also printed if ``m_warn`` is enabled.)doc";
+    negative. A warning is also printed if ``m_warn_negative`` or
+    ``m_warn_invalid`` is enabled.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_put_3 =
 R"doc(Store a single sample inside the block.
@@ -2466,25 +2436,35 @@ Parameter ``value``:
 
 Returns:
     ``False`` if one of the sample values was *invalid*, e.g. NaN or
-    negative. A warning is also printed if ``m_warn`` is enabled.)doc";
+    negative. A warning is also printed if ``m_warn_negative`` or
+    ``m_warn_invalid`` is enabled.)doc";
 
 static const char *__doc_mitsuba_ImageBlock_set_offset =
-R"doc(Set the current block offset. This corresponds to the offset from a
-larger image's (e.g. a Film) corner to this block's corner.)doc";
+R"doc(Set the current block offset.
 
-static const char *__doc_mitsuba_ImageBlock_set_warn = R"doc(Warn when writing bad sample values?)doc";
+This corresponds to the offset from the top-left corner of a larger
+image (e.g. a Film) to the top-left corner of this ImageBlock
+instance.)doc";
+
+static const char *__doc_mitsuba_ImageBlock_set_size = R"doc(Set the block size. This potentially destroys the block's content.)doc";
+
+static const char *__doc_mitsuba_ImageBlock_set_warn_invalid = R"doc(Warn when writing invalid (NaN, +/- infinity) sample values?)doc";
+
+static const char *__doc_mitsuba_ImageBlock_set_warn_negative = R"doc(Warn when writing negative sample values?)doc";
 
 static const char *__doc_mitsuba_ImageBlock_size = R"doc(Return the current block size)doc";
 
 static const char *__doc_mitsuba_ImageBlock_to_string = R"doc(//! @})doc";
 
-static const char *__doc_mitsuba_ImageBlock_warns = R"doc(Warn when writing bad sample values?)doc";
+static const char *__doc_mitsuba_ImageBlock_warn_invalid = R"doc(Warn when writing invalid (NaN, +/- infinity) sample values?)doc";
+
+static const char *__doc_mitsuba_ImageBlock_warn_negative = R"doc(Warn when writing negative sample values?)doc";
 
 static const char *__doc_mitsuba_ImageBlock_width = R"doc(Return the bitmap's width in pixels)doc";
 
 static const char *__doc_mitsuba_Integrator =
-R"doc(Abstract integrator base-class; does not make any assumptions on how
-radiance is computed.
+R"doc(Abstract integrator base class, which does not make any assumptions
+with regards to how radiance is computed.
 
 In Mitsuba, the different rendering techniques are collectively
 referred to as *integrators*, since they perform integration over a
@@ -2510,8 +2490,6 @@ static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -2700,8 +2678,6 @@ static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Medium_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_operator_delete = R"doc()doc";
@@ -2871,8 +2847,6 @@ static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
@@ -2941,8 +2915,6 @@ static const char *__doc_mitsuba_Mesh_m_face_struct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_faces_c = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_inv_surface_area = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
@@ -2950,20 +2922,6 @@ static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_normal_offset = R"doc(Byte offset of the normal data within the vertex buffer)doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_context = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_faces_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_geometry = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_geometry_ready = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_normals_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_positions_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_texcoords_buf = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_surface_area = R"doc()doc";
 
@@ -2973,21 +2931,13 @@ static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_normals_c = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_vertex_positions_c = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_vertex_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_texcoords_c = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_normal_derivative = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
@@ -3092,8 +3042,6 @@ static const char *__doc_mitsuba_MicrofacetDistribution_5 = R"doc()doc";
 static const char *__doc_mitsuba_MicrofacetDistribution_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_G = R"doc(Smith's separable shadowing-masking approximation)doc";
 
@@ -3244,8 +3192,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
 static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
@@ -3550,7 +3496,7 @@ static const char *__doc_mitsuba_ProfilerPhase_SampleEmitterDirection = R"doc()d
 
 static const char *__doc_mitsuba_ProfilerPhase_SampleEmitterRay = R"doc()doc";
 
-static const char *__doc_mitsuba_ProfilerPhase_SamplingIntegratorEval = R"doc()doc";
+static const char *__doc_mitsuba_ProfilerPhase_SamplingIntegratorSample = R"doc()doc";
 
 static const char *__doc_mitsuba_ProfilerPhase_TextureEval = R"doc()doc";
 
@@ -3630,8 +3576,6 @@ static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -4094,8 +4038,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -4118,11 +4060,7 @@ static const char *__doc_mitsuba_ReconstructionFilter_m_scale_factor = R"doc()do
 
 static const char *__doc_mitsuba_ReconstructionFilter_m_values = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_parameters_changed = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_radius = R"doc(Return the filter's width)doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Resampler =
 R"doc(Utility class for efficiently resampling discrete datasets to
@@ -4229,8 +4167,6 @@ static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
@@ -4262,8 +4198,12 @@ Parameter ``size``:
     dynamic-size implementations))doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator =
-R"doc(Abstract base class, which describes integrators capable of computing
-samples of the scene's radiance function.)doc";
+R"doc(Integrator based on Monte Carlo sampling
+
+This integrator performs Monte Carlo integration to return an unbiased
+statistical estimate of the radiance value along a given ray. The
+default implementation of the render() method then repeatedly invokes
+this estimator to compute all pixels of the image.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_2 = R"doc()doc";
 
@@ -4277,9 +4217,12 @@ static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_SamplingIntegrator_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_aov_names =
+R"doc(For integrators that return one or more arbitrary output variables
+(AOVs), this function specifies a list of associated channel names.
+The default implementation simply returns an empty vector.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_cancel = R"doc()doc";
 
@@ -4299,6 +4242,7 @@ static const char *__doc_mitsuba_SamplingIntegrator_m_stop = R"doc(Integrators s
 
 static const char *__doc_mitsuba_SamplingIntegrator_m_timeout =
 R"doc(Maximum amount of time to spend rendering (excluding scene parsing).
+
 Specified in seconds. A negative values indicates no timeout.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_render = R"doc(//! @{ \name Integrator interface implementation)doc";
@@ -4323,12 +4267,25 @@ Parameter ``ray``:
 Parameter ``active``:
     A mask that indicates which SIMD lanes are active
 
+Parameter ``aov``:
+    Integrators may return one or more arbitrary output variables
+    (AOVs) via this parameter. If ``nullptr`` is provided to this
+    argument, no AOVs should be returned. Otherwise, the caller
+    guarantees that space for at least ``aov_names().size()`` entries
+    has been allocated.
+
 Returns:
     A pair containing a spectrum and a mask specifying whether a
     surface or medium interaction was sampled. False mask entries
     indicate that the ray "escaped" the scene, in which case the the
     returned spectrum contains the contribution of environment maps,
-    if present.)doc";
+    if present. The mask can be used to estimate a suitable alpha
+    channel of a rendered image.
+
+Remark:
+    In the Python bindings, this function returns the ``aov`` output
+    argument as an additional return value. In other words: `` (spec,
+    mask, aov) = integrator.sample(scene, sampler, ray, active) ``)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_should_stop =
 R"doc(Indicates whether cancel() or a timeout have occured. Should be
@@ -4351,8 +4308,6 @@ static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -4532,8 +4487,6 @@ static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -4640,8 +4593,6 @@ static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_8 = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
@@ -4655,8 +4606,6 @@ static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -4823,8 +4772,6 @@ static const char *__doc_mitsuba_Shape_operator_new_2 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_operator_new_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
@@ -6171,8 +6118,6 @@ static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D = R"doc(Abstract base class for spatially-varying 3D textures.)doc";
 
@@ -8369,8 +8314,6 @@ Returns:
     not integrate to one))doc";
 
 static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
-
-static const char *__doc_mitsuba_srgb_model_eval_rgb = R"doc(Sanity check: convert the coefficients back to sRGB)doc";
 
 static const char *__doc_mitsuba_srgb_model_fetch =
 R"doc(Look up the model coefficients for a sRGB color value @param c An sRGB

@@ -15,31 +15,26 @@ public:
     TwoSidedBRDF(const Properties &props) : Base(props) {
         auto bsdfs = props.objects();
         if (bsdfs.size() > 0)
-            m_nested_brdf[0] = dynamic_cast<BSDF *>(bsdfs[0].second.get());
+            m_brdf[0] = dynamic_cast<BSDF *>(bsdfs[0].second.get());
         if (bsdfs.size() == 2)
-            m_nested_brdf[1] = dynamic_cast<BSDF *>(bsdfs[1].second.get());
+            m_brdf[1] = dynamic_cast<BSDF *>(bsdfs[1].second.get());
         else if (bsdfs.size() > 2)
             Throw("At most two nested BSDFs can be specified!");
 
-        if (!m_nested_brdf[0])
+        if (!m_brdf[0])
             Throw("A nested one-sided material is required!");
-        if (!m_nested_brdf[1])
-            m_nested_brdf[1] = m_nested_brdf[0];
+        if (!m_brdf[1])
+            m_brdf[1] = m_brdf[0];
 
-        parameters_changed();
-    }
-
-    void parameters_changed() override {
         // Add all nested components, overwriting any front / back side flag.
-        m_flags = BSDFFlags(0);
-        m_components.clear();
-        for (size_t i = 0; i < m_nested_brdf[0]->component_count(); ++i) {
-            auto c = (m_nested_brdf[0]->flags(i) & ~BSDFFlags::BackSide);
+        for (size_t i = 0; i < m_brdf[0]->component_count(); ++i) {
+            auto c = (m_brdf[0]->flags(i) & ~BSDFFlags::BackSide);
             m_components.push_back(c | BSDFFlags::FrontSide);
             m_flags = m_flags | m_components.back();
         }
-        for (size_t i = 0; i < m_nested_brdf[1]->component_count(); ++i) {
-            auto c = (m_nested_brdf[1]->flags(i) & ~BSDFFlags::FrontSide);
+
+        for (size_t i = 0; i < m_brdf[1]->component_count(); ++i) {
+            auto c = (m_brdf[1]->flags(i) & ~BSDFFlags::FrontSide);
             m_components.push_back(c | BSDFFlags::BackSide);
             m_flags = m_flags | m_components.back();
         }
@@ -62,15 +57,15 @@ public:
         Result result = zero<Result>();
         if (any_or<true>(front_side))
             masked(result, front_side) =
-                m_nested_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
+                m_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
 
         if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
-                ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
+                ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
             masked(result, back_side) =
-                m_nested_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
+                m_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
             masked(result.first.wo.z(), back_side) *= -1.f;
         }
 
@@ -88,16 +83,16 @@ public:
              back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         if (any_or<true>(front_side))
-            result = m_nested_brdf[0]->eval(ctx, si, wo, front_side);
+            result = m_brdf[0]->eval(ctx, si, wo, front_side);
 
         if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
-                ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
+                ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
             wo.z() *= -1.f;
 
-            masked(result, back_side) = m_nested_brdf[1]->eval(ctx, si, wo, back_side);
+            masked(result, back_side) = m_brdf[1]->eval(ctx, si, wo, back_side);
         }
 
         return result;
@@ -114,37 +109,37 @@ public:
              back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         if (any_or<true>(front_side))
-            result = m_nested_brdf[0]->pdf(ctx, si, wo, front_side);
+            result = m_brdf[0]->pdf(ctx, si, wo, front_side);
 
         if (any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
-                ctx.component -= (uint32_t) m_nested_brdf[0]->component_count();
+                ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
             si.wi.z() *= -1.f;
             wo.z() *= -1.f;
 
-            masked(result, back_side) = m_nested_brdf[1]->pdf(ctx, si, wo, back_side);
+            masked(result, back_side) = m_brdf[1]->pdf(ctx, si, wo, back_side);
         }
 
         return result;
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("nested_brdf_0", m_nested_brdf[0].get());
-        callback->put_object("nested_brdf_1", m_nested_brdf[1].get());
+        callback->put_object("brdf_0", m_brdf[0].get());
+        callback->put_object("brdf_1", m_brdf[1].get());
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "TwoSided[" << std::endl
-            << "  nested_brdf[0] = " << string::indent(m_nested_brdf[0]->to_string()) << "," << std::endl
-            << "  nested_brdf[1] = " << string::indent(m_nested_brdf[1]->to_string()) << std::endl
+            << "  brdf[0] = " << string::indent(m_brdf[0]->to_string()) << "," << std::endl
+            << "  brdf[1] = " << string::indent(m_brdf[1]->to_string()) << std::endl
             << "]";
         return oss.str();
     }
 
 protected:
-    ref<BSDF> m_nested_brdf[2];
+    ref<BSDF> m_brdf[2];
 };
 
 MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");

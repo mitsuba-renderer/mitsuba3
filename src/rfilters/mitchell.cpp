@@ -28,7 +28,7 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x) const override {
+    Float eval(Float x, mask_t<Float> /* active */) const override {
         x = abs(x);
         Float x2 = sqr(x), x3 = x2*x;
 
@@ -41,12 +41,6 @@ public:
         );
 
         return select(x < 2.f, result, 0.f);
-    }
-
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("b", m_b);
-        callback->put_parameter("c", m_c);
-        Base::traverse(callback);
     }
 
     std::string to_string() const override {

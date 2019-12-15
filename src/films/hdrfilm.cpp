@@ -13,8 +13,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MTS_DECLARE_CLASS_VARIANT(HDRFilm, Film)
-    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges,
-                    m_filter, check_valid_crop_window)
+    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges, m_filter)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -86,8 +85,7 @@ public:
                            "component_format=\"float32\". Overriding..");
                 m_component_format = Struct::Type::Float32;
             }
-        }
-        else if (m_file_format == Bitmap::FileFormat::PFM) {
+        } else if (m_file_format == Bitmap::FileFormat::PFM) {
             // PFM output; override pixel & component format if necessary
             if (m_pixel_format != Bitmap::PixelFormat::RGB && m_pixel_format != Bitmap::PixelFormat::Y) {
                 Log(Warn, "The PFM format only supports pixel_format=\"rgb\""
@@ -106,67 +104,49 @@ public:
             std::string key = string::to_lower(keys[i]);
             key.erase(std::remove_if(key.begin(), key.end(), ::isspace), key.end());
 
-            if ((string::starts_with(key, "metadata['")
-                 && string::ends_with(key, "']")) ||
-                (string::starts_with(key, "label[")
-                 && string::ends_with(key, "]"))) {
+            if ((string::starts_with(key, "metadata['") && string::ends_with(key, "']")) ||
+                (string::starts_with(key, "label[")     && string::ends_with(key, "]")))
                 props.mark_queried(keys[i]);
-            }
         }
-
-        m_storage = new ImageBlock(Bitmap::PixelFormat::XYZAW, m_crop_size, nullptr, 0,
-                                   true);
-        m_storage->set_offset(m_crop_offset);
-    }
-
-    void set_crop_window(const ScalarVector2i &crop_size, const ScalarPoint2i &crop_offset) override {
-        if (m_crop_size != crop_size)
-            m_storage = new ImageBlock(Bitmap::PixelFormat::XYZAW, crop_size);
-        m_crop_size = crop_size;
-        m_crop_offset = crop_offset;
-        check_valid_crop_window();
-        m_storage->set_offset(m_crop_offset);
-    }
-
-    /// Resets all channels to zero.
-    void clear() override {
-        m_storage->clear();
-    }
-
-    void put(const ImageBlock *block) override {
-        m_storage->put(block);
-    }
-
-    void set_bitmap(const Bitmap *bitmap) override {
-        bitmap->convert(m_storage->bitmap());
     }
 
     void set_destination_file(const fs::path &dest_file) override {
         m_dest_file = dest_file;
     }
 
-    void add_bitmap(const Bitmap *bitmap, ScalarFloat multiplier) override {
-        /* This function basically just exists to support the somewhat peculiar
-           film updates done by BDPT. */
-        auto storage = m_storage->bitmap();
-        auto converted = bitmap->convert(
-                storage->pixel_format(), storage->component_format(),
-                storage->srgb_gamma());
-
-        ScalarVector2i size = storage->size();
-        size_t n_pixels = (size_t) size.x() * (size_t) size.y();
-        const ScalarFloat *source = static_cast<const ScalarFloat *>(converted->data());
-        ScalarFloat *target = static_cast<ScalarFloat *>(storage->data());
-        for (size_t i = 0; i < n_pixels; ++i) {
-            for (size_t k = 0; k < storage->channel_count(); ++k)
-                (*target++) += (*source++ * multiplier);
+    void prepare(const std::vector<std::string> &channels) override {
+        std::vector<std::string> channels_sorted = channels;
+        channels_sorted.push_back("R");
+        channels_sorted.push_back("G");
+        channels_sorted.push_back("B");
+        std::sort(channels_sorted.begin(), channels_sorted.end());
+        for (size_t i = 1; i < channels.size(); ++i) {
+            if (channels[i] == channels[i - 1])
+                Throw("Film::prepare(): duplicate channel name \"%s\"", channels[i]);
         }
+
+        m_storage = new ImageBlock(m_crop_size, channels.size());
+        m_storage->set_offset(m_crop_offset);
+        m_storage->clear();
+        m_channels = channels;
+    }
+
+    void put(const ImageBlock *block) override {
+        Assert(m_storage != nullptr);
+        m_storage->put(block);
     }
 
     bool develop(const ScalarPoint2i  &source_offset,
                  const ScalarVector2i &size,
                  const ScalarPoint2i  &target_offset,
                  Bitmap *target) const override {
+        Assert(m_storage != nullptr);
+        (void) source_offset;
+        (void) size;
+        (void) target_offset;
+        (void) target;
+
+#if 0
         const Bitmap *source = m_storage->bitmap();
 
         StructConverter cvt(source->struct_(), target->struct_());
@@ -190,6 +170,7 @@ public:
                 target_data += target->width() * target_bpp;
             }
         }
+#endif
         return true;
     }
 
@@ -212,13 +193,68 @@ public:
 
         Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
 
-        ref<Bitmap> bitmap =
-            m_storage->bitmap()->convert(m_pixel_format, m_component_format, false);
+        bool has_aovs = m_channels.size() != 5;
 
-        bitmap->write(filename, m_file_format);
+        ref<Bitmap> source = new Bitmap(
+            has_aovs ? Bitmap::PixelFormat::MultiChannel : Bitmap::PixelFormat::XYZAW,
+            struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
+            (uint8_t *) m_storage->data().managed().data());
+
+        ref<Bitmap> target = new Bitmap(
+            has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
+            m_component_format, m_storage->size(),
+            has_aovs ? (m_storage->channel_count() - 1): 0);
+
+        if (has_aovs) {
+            for (size_t i = 0, j = 0; i < m_channels.size(); ++i, ++j) {
+                Struct::Field &source_field = source->struct_()->operator[](i),
+                              &dest_field   = target->struct_()->operator[](j);
+
+                switch (i) {
+                    case 0:
+                        dest_field.name = "R";
+                        dest_field.blend = {
+                            {  3.240479f, "X" },
+                            { -1.537150f, "Y" },
+                            { -0.498535f, "Z" }
+                        };
+                        break;
+
+                    case 1:
+                        dest_field.name = "G";
+                        dest_field.blend = {
+                            { -0.969256, "X" },
+                            {  1.875991, "Y" },
+                            {  0.041556, "Z" }
+                        };
+                        break;
+
+                    case 2:
+                        dest_field.name = "B";
+                        dest_field.blend = {
+                            {  0.055648, "X" },
+                            { -0.204043, "Y" },
+                            {  1.057311, "Z" }
+                        };
+                        break;
+
+                    case 4:
+                        source_field.flags |= +Struct::Flags::Weight;
+                        j--;
+                        break;
+
+                    default:
+                        dest_field.name = m_channels[i];
+                        break;
+                }
+
+                source_field.name = m_channels[i];
+            }
+        }
+
+        source->convert(target);
+        target->write(filename, m_file_format);
     }
-
-    Bitmap *bitmap() override { return m_storage->bitmap(); }
 
     bool destination_exists(const fs::path &base_name) const override {
         std::string proper_extension;
@@ -238,12 +274,7 @@ public:
         return fs::exists(filename);
     }
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_object("storage", m_storage.get());
-        Base::traverse(callback);
-    }
-
-    virtual std::string to_string() const override {
+    std::string to_string() const override {
         std::ostringstream oss;
         oss << "HDRFilm[" << std::endl
             << "  size = " << m_size        << "," << std::endl
@@ -265,6 +296,7 @@ protected:
     Struct::Type m_component_format;
     fs::path m_dest_file;
     ref<ImageBlock> m_storage;
+    std::vector<std::string> m_channels;
 };
 
 MTS_EXPORT_PLUGIN(HDRFilm, "HDR Film");

@@ -21,7 +21,7 @@ enum class ProfilerPhase : int {
     LoadTexture,                /* Texture loading */
     InitKDTree,                 /* kd-tree construction */
     Render,                     /* Integrator::render() */
-    SamplingIntegratorEval,     /* SamplingIntegrator::eval() */
+    SamplingIntegratorSample,   /* SamplingIntegrator::sample() */
     SampleEmitterRay,           /* Scene::sample_emitter_ray() */
     SampleEmitterDirection,     /* Scene::sample_emitter_direction() */
     RayTest,                    /* Scene::ray_test() */
@@ -45,7 +45,7 @@ constexpr const char
         "Texture loading",
         "kd-tree construction",
         "Integrator::render()",
-        "SamplingIntegrator::eval()",
+        "SamplingIntegrator::sample()",
         "Scene::sample_emitter_ray()",
         "Scene::sample_emitter_direction()",
         "Scene::ray_test()",

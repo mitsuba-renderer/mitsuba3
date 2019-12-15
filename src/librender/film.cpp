@@ -12,19 +12,23 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
         props.int_("width", is_m_film ? 1 : 768),
         props.int_("height", is_m_film ? 1 : 576)
     );
+
     // Crop window specified in pixels - by default, this matches the full sensor area.
-    m_crop_offset = ScalarPoint2i(
+    ScalarPoint2i crop_offset = ScalarPoint2i(
         props.int_("crop_offset_x", 0),
         props.int_("crop_offset_y", 0)
     );
-    m_crop_size = ScalarVector2i(
+
+    ScalarVector2i crop_size = ScalarVector2i(
         props.int_("crop_width", m_size.x()),
         props.int_("crop_height", m_size.y())
     );
-    check_valid_crop_window();
 
-    /* If set to true, regions slightly outside of the film plane will also be sampled, which
-       improves the image quality at the edges especially with large reconstruction filters. */
+    set_crop_window(crop_offset, crop_size);
+
+    /* If set to true, regions slightly outside of the film plane will also be
+       sampled, which improves the image quality at the edges especially with
+       large reconstruction filters. */
     m_high_quality_edges = props.bool_("high_quality_edges", false);
 
     // Use the provided reconstruction filter, if any.
@@ -41,29 +45,36 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 
     if (!m_filter) {
         // No reconstruction filter has been selected. Load a Gaussian filter by default
-        m_filter = static_cast<ReconstructionFilter *>(
-            PluginManager::instance()->create_object<ReconstructionFilter>(Properties("gaussian")));
+        m_filter =
+            PluginManager::instance()->create_object<ReconstructionFilter>(Properties("gaussian"));
     }
 }
 
 MTS_VARIANT Film<Float, Spectrum>::~Film() {}
 
-MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
-                                                        const ScalarPoint2i &crop_offset) {
-    m_crop_size   = crop_size;
-    m_crop_offset = crop_offset;
-    check_valid_crop_window();
-}
-
-MTS_VARIANT void Film<Float, Spectrum>::check_valid_crop_window() const {
-    if (m_crop_offset.x() < 0 || m_crop_offset.y() < 0 || m_crop_size.x() <= 0 ||
-        m_crop_size.y() <= 0 || m_crop_offset.x() + m_crop_size.x() > m_size.x() ||
-        m_crop_offset.y() + m_crop_size.y() > m_size.y()) {
+MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2i &crop_offset,
+                                                        const ScalarVector2i &crop_size) {
+    if (any(crop_offset < 0 || crop_size <= 0 || crop_offset + crop_size > m_size))
         Throw("Invalid crop window specification!\n"
               "offset %s + crop size %s vs full size %s",
-              m_crop_offset, m_crop_size, m_size);
-    }
+              crop_offset, crop_size, m_size);
+
+    m_crop_size   = crop_size;
+    m_crop_offset = crop_offset;
 }
+
+MTS_VARIANT std::string Film<Float, Spectrum>::to_string() const {
+    std::ostringstream oss;
+    oss << "Film[" << std::endl
+        << "  size = "        << m_size        << "," << std::endl
+        << "  crop_size = "   << m_crop_size   << "," << std::endl
+        << "  crop_offset = " << m_crop_offset << "," << std::endl
+        << "  high_quality_edges = " << m_high_quality_edges << "," << std::endl
+        << "  m_filter = " << m_filter << std::endl
+        << "]";
+    return oss.str();
+}
+
 
 MTS_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)

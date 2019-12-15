@@ -118,7 +118,7 @@ MTS_PY_EXPORT(Bitmap) {
                     &Bitmap::accumulate), D(Bitmap, accumulate, 3),
                 "bitmap"_a)
             .def_method(Bitmap, vflip)
-            .def("struct_", &Bitmap::struct_, D(Bitmap, struct))
+            .def("struct_", py::overload_cast<>(&Bitmap::struct_, py::const_), D(Bitmap, struct))
             .def(py::self == py::self)
             .def(py::self != py::self);
 

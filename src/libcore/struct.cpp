@@ -34,7 +34,7 @@ public:
     struct Key {
         std::string name;
         Struct::Type type;
-        Struct::Flags flags;
+        uint32_t flags;
 
         bool operator<(const Key &o) const {
             return std::make_tuple(name, type, flags) < std::make_tuple(o.name, o.type, o.flags);
@@ -632,7 +632,7 @@ public:
 
         if (Struct::is_integer(kr.type)) {
             kr.type = struct_type_v<float>;
-            kr.flags = kr.flags & ~Struct::Flags::Normalized;
+            kr.flags &= ~Struct::Flags::Normalized;
             int_to_float = true;
         }
 
@@ -642,7 +642,7 @@ public:
         }
 
         if (has_flag(kr.flags, Struct::Flags::Gamma)) {
-            kr.flags = kr.flags & ~Struct::Flags::Gamma;
+            kr.flags &= ~Struct::Flags::Gamma;
             inv_gamma = true;
         }
 
@@ -733,7 +733,8 @@ public:
             cc.comment(("# Save field \""+ field.name + "\"").c_str());
         #endif
 
-        if (has_flag(field.flags, Struct::Flags::Gamma) && !has_flag(key.flags, Struct::Flags::Gamma)) {
+        if (has_flag(field.flags, Struct::Flags::Gamma) &&
+           !has_flag(key.flags,   Struct::Flags::Gamma)) {
             value.xmm = gamma(value.xmm, true);
         }
 
@@ -993,7 +994,7 @@ bool Struct::has_field(const std::string &name) const {
     return false;
 }
 
-Struct &Struct::append(const std::string &name, Struct::Type type, Struct::Flags flags, double default_) {
+Struct &Struct::append(const std::string &name, Struct::Type type, uint32_t flags, double default_) {
     Field f;
     f.name = name;
     f.type = type;
@@ -1286,7 +1287,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
             kv.second.xmm = accum;
         }
 
-        Struct::Flags flag_mask = Struct::Flags::Normalized | Struct::Flags::Gamma;
+        uint32_t flag_mask = Struct::Flags::Normalized | Struct::Flags::Gamma;
         if (!((kv.first.type == f.type || (Struct::is_integer(kv.first.type) &&
                                            Struct::is_integer(f.type) &&
                                            !has_flag(f.flags, Struct::Flags::Normalized))) &&
@@ -1645,7 +1646,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     if (!m_source->has_field(f.name) && has_flag(f.flags, Struct::Flags::Default)) {
                         value.d = f.default_;
                         value.type = Struct::Type::Float64;
-                        value.flags = Struct::Flags::None;
+                        value.flags = +Struct::Flags::None;
                     } else {
                         if (!load(src, m_source->field(f.name), value))
                             return false;
@@ -1653,7 +1654,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 } else {
                     value.type = struct_type_v<float>;
                     value.f = 0;
-                    value.flags = Struct::Flags::None;
+                    value.flags = +Struct::Flags::None;
                     for (auto kv : f.blend) {
                         Value value2;
                         if (!load(src, m_source->field(kv.second), value2))
@@ -1663,7 +1664,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     }
                 }
 
-                Struct::Flags flag_mask = Struct::Flags::Normalized | Struct::Flags::Gamma;
+                uint32_t flag_mask = Struct::Flags::Normalized | Struct::Flags::Gamma;
                 if ((!((value.type == f.type || (Struct::is_integer(value.type) &&
                                                  Struct::is_integer(f.type) &&
                                                  !has_flag(f.flags, Struct::Flags::Normalized))) &&

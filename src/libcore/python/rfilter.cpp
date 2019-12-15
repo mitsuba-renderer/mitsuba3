@@ -57,7 +57,7 @@ MTS_PY_EXPORT(rfilter) {
             .def_method(ReconstructionFilter, radius)
             .def("eval",
                 vectorize<Float>(&ReconstructionFilter::eval),
-                D(ReconstructionFilter, eval), "x"_a)
+                D(ReconstructionFilter, eval), "x"_a, "active"_a = true)
             .def("eval_discretized",
                 vectorize<Float>(&ReconstructionFilter::eval_discretized),
                 D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)

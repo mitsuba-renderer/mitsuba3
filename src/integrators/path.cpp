@@ -18,8 +18,12 @@ public:
 
     PathIntegrator(const Properties &props) : Base(props) { }
 
-    std::pair<Spectrum, Mask> sample(const Scene *scene, Sampler *sampler,
-                                     const RayDifferential3f &ray_, Mask active) const override {
+    std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                     Sampler *sampler,
+                                     const RayDifferential3f &ray_,
+                                     Float * /* aovs */,
+                                     Mask active) const override {
+        ScopedPhase sp(ProfilerPhase::SamplingIntegratorSample);
         RayDifferential3f ray = ray_;
 
         // Tracks radiance scaling due to index of refraction changes
@@ -73,7 +77,7 @@ public:
                 Vector3f wo = si.to_local(ds.d);
                 Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
 
-                // Determine probability of having sampled that same direction using BSDF sampling.
+                // Determine density of sampling that same direction using BSDF sampling
                 Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
                 Float mis = select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
@@ -81,6 +85,7 @@ public:
             }
 
             /* ----------------------- BSDF sampling ---------------------- */
+
             // Sample BSDF * cos(theta)
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
                                                sampler->next_2d(active), active);

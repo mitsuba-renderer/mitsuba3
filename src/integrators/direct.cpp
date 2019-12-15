@@ -44,8 +44,12 @@ public:
         m_frac_lum    = m_emitter_samples / (ScalarFloat) sum;
     }
 
-    std::pair<Spectrum, Mask> sample(const Scene *scene, Sampler *sampler,
-                                     const RayDifferential3f &ray, Mask active) const override {
+    std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                     Sampler *sampler,
+                                     const RayDifferential3f &ray,
+                                     Float * /* aovs */,
+                                     Mask active) const override {
+        ScopedPhase sp(ProfilerPhase::SamplingIntegratorSample);
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
         Mask valid_ray = si.is_valid();
 

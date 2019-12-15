@@ -16,7 +16,7 @@ MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
 
     m_values[MTS_FILTER_RESOLUTION] = 0;
     m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;
-    m_border_size = (uint32_t) std::ceil(m_radius - .5f - 2.f * math::Epsilon<ScalarFloat>);
+    m_border_size = (int) std::ceil(m_radius - .5f - 2.f * math::RayEpsilon<ScalarFloat>);
 }
 
 std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value) {

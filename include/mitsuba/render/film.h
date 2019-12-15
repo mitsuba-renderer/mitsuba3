@@ -21,26 +21,13 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Film : public Object {
 public:
     MTS_DECLARE_CLASS_VARIANT(Film, Object, "film")
-    MTS_IMPORT_TYPES();
-    using ImageBlock           = typename RenderAliases::ImageBlock;
-    using ReconstructionFilter = ReconstructionFilter<Float, Spectrum>;
+    MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
 
-    /// Clear the film
-    virtual void clear() = 0;
+    /// Configure the film for rendering a specified set of channels
+    virtual void prepare(const std::vector<std::string> &channels) = 0;
 
     /// Merge an image block into the film
     virtual void put(const ImageBlock *block) = 0;
-
-    /// Overwrite the film with the given bitmap.
-    /// The size of the given bitmap has to match to current size.
-    virtual void set_bitmap(const Bitmap *bitmap) = 0;
-
-    /// Accumulate a bitmap on top of the radiance values stored in the film.
-    /// The size of the given bitmap has to match to current size.
-    virtual void add_bitmap(const Bitmap *bitmap, ScalarFloat multiplier = 1.f) = 0;
-
-    /// Set the target filename (with or without extension)
-    virtual void set_destination_file(const fs::path &filename) = 0;
 
     /// Develop the film and write the result to the previously specified filename
     virtual void develop() = 0;
@@ -60,6 +47,9 @@ public:
         const ScalarPoint2i  &target_offset,
         Bitmap *target) const = 0;
 
+    /// Set the target filename (with or without extension)
+    virtual void set_destination_file(const fs::path &filename) = 0;
+
     /// Does the destination file already exist?
     virtual bool destination_exists(const fs::path &basename) const = 0;
 
@@ -74,10 +64,6 @@ public:
     //! @{ \name Accessor functions
     // =============================================================
 
-    /// Returns a pointer to the underlying image storage, or nullptr
-    /// if there is none.
-    virtual Bitmap *bitmap() { return nullptr; }
-
     /// Ignoring the crop window, return the resolution of the underlying sensor
     const ScalarVector2i &size() const { return m_size; }
 
@@ -87,11 +73,9 @@ public:
     /// Return the offset of the crop window
     const ScalarPoint2i &crop_offset() const { return m_crop_offset; }
 
-    /**
-     * Set the size and offset of the crop window.
-     * Values stored in the film may be reset when crop size changes.
-     */
-    virtual void set_crop_window(const ScalarVector2i &crop_size, const ScalarPoint2i &crop_offset);
+    /// Set the size and offset of the crop window.
+    void set_crop_window(const ScalarPoint2i &crop_offset,
+                         const ScalarVector2i &crop_size);
 
     /// Return the image reconstruction filter (const version)
     const ReconstructionFilter *reconstruction_filter() const {
@@ -101,25 +85,8 @@ public:
     //! @}
     // =============================================================
 
-    void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("size", m_size);
-        callback->put_parameter("crop_size", m_crop_size);
-        callback->put_parameter("crop_offset", m_crop_offset);
-        callback->put_parameter("high_quality_edges", m_high_quality_edges);
-        callback->put_object("filter", m_filter.get());
-    }
+    virtual std::string to_string() const override;
 
-    virtual std::string to_string() const override {
-        std::ostringstream oss;
-        oss << "Film[" << std::endl
-            << "  size = "        << m_size        << "," << std::endl
-            << "  crop_size = "   << m_crop_size   << "," << std::endl
-            << "  crop_offset = " << m_crop_offset << "," << std::endl
-            << "  high_quality_edges = " << m_high_quality_edges << "," << std::endl
-            << "  m_filter = " << m_filter << std::endl
-            << "]";
-        return oss.str();
-    }
 
 protected:
     /// Create a film
@@ -128,12 +95,10 @@ protected:
     /// Virtual destructor
     virtual ~Film();
 
-    /// Throws if the crop window specification is invalid.
-    void check_valid_crop_window() const;
-
 protected:
-    ScalarVector2i m_size, m_crop_size;
-    ScalarPoint2i  m_crop_offset;
+    ScalarVector2i m_size;
+    ScalarVector2i m_crop_size;
+    ScalarPoint2i m_crop_offset;
     bool m_high_quality_edges;
     ref<ReconstructionFilter> m_filter;
 };

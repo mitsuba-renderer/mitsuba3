@@ -4,8 +4,9 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Depth integrator (for debugging). Returns the distance from the
- * camera to the closest intersected object, or 0 if no intersection was found.
+ * \brief Example of one an extremely simple type of integrator that is also
+ * helpful for debugging: returns the distance from the camera to the closest
+ * intersected object, or 0 if no intersection was found.
  */
 template <typename Float, typename Spectrum>
 class DepthIntegrator final : public SamplingIntegrator<Float, Spectrum> {
@@ -14,12 +15,20 @@ public:
     MTS_IMPORT_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler)
 
-    DepthIntegrator(const Properties &props) : Base(props) {}
+    DepthIntegrator(const Properties &props) : Base(props) { }
 
-    std::pair<Spectrum, Mask> sample(const Scene *scene, Sampler * /*sampler*/,
-                                     const RayDifferential3f &ray, Mask active) const override {
+    std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                     Sampler * /* sampler */,
+                                     const RayDifferential3f &ray,
+                                     Float * /* aovs */,
+                                     Mask active) const override {
+        ScopedPhase sp(ProfilerPhase::SamplingIntegratorSample);
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
-        return { select(si.is_valid(), si.t, 0.f), si.is_valid() };
+
+        return {
+            select(si.is_valid(), si.t, 0.f),
+            si.is_valid()
+        };
     }
 };
 

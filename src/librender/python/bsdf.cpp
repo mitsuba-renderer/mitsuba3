@@ -37,11 +37,11 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
             .def(py::self == py::self)
             .def(py::self | py::self)
             .def("__pos__", [](const BSDFFlags &f) {
-                return static_cast<UInt32>(f);
+                return static_cast<uint32_t>(f);
             }, py::is_operator());
     }
 
-    m.def("has_flag", &has_flag<replace_scalar_t<Float, BSDFFlags>>);
+    m.def("has_flag", [](UInt32 flags, BSDFFlags f) { return has_flag(flags, f); });
 
     MTS_PY_CHECK_ALIAS(BSDFContext, m) {
         py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
@@ -72,8 +72,8 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
 }
 
 MTS_PY_EXPORT(BSDF) {
-    MTS_IMPORT_TYPES(BSDF)
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_TYPES(BSDF, BSDFPtr)
+
     MTS_PY_CHECK_ALIAS(BSDF, m) {
         auto bsdf = MTS_PY_CLASS(BSDF, Object)
             .def("sample", vectorize<Float>(&BSDF::sample),
