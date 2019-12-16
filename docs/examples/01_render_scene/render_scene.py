@@ -1,8 +1,10 @@
 import os
 import numpy as np
 
-from mitsuba.core import Bitmap, Struct, Thread
-from mitsuba.core.xml import load_file
+import mitsuba
+
+from mitsuba.packet_rgb.core  import Bitmap, Struct, Thread
+from mitsuba.packet_rgb.core .xml import load_file
 
 
 SCENE_DIR = '../../../resources/data/scenes/'
@@ -18,10 +20,11 @@ Thread.thread().file_resolver().append(directory_name)
 scene = load_file(filename)
 
 # Call the scene's integrator to render the loaded scene
-scene.integrator().render(scene)
+
+scene.integrator().render(scene, scene.sensors()[0])
 
 # After rendering, the rendered data is stored in the film
-film = scene.sensor().film()
+film = scene.sensors()[0].film()
 
 # Write out rendering as high dynamic range OpenEXR file (after converting to linear RGB space)
 film.bitmap().convert(Bitmap.ERGB, Struct.EFloat32, srgb_gamma=False).write('cbox.exr')
