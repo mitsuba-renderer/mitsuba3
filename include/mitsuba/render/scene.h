@@ -185,6 +185,12 @@ protected:
             callback->put_object(child->id(), child.get());
     }
 
+    void parameters_changed() override {
+        // update bsphere of environment emitter
+        if (m_environment)
+            m_environment->set_scene(this);
+    }
+
 protected:
     /// Acceleration data structure (type depends on implementation)
     void *m_accel = nullptr;

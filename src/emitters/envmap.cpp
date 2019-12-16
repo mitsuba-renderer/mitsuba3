@@ -77,6 +77,10 @@ public:
         m_d65 = Texture::D65(1.f);
     }
 
+    void parameters_changed() override {
+        // TODO update warp for better importance sampling when data has changed
+    }
+
     void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
         m_bsphere.radius = max(math::RayEpsilon<Float>,
@@ -161,10 +165,6 @@ public:
         callback->put_parameter("scale", m_scale);
         callback->put_parameter("data", m_data);
         callback->put_parameter("resolution", m_resolution);
-    }
-
-    void parameters_changed() override {
-        // TODO update warp
     }
 
     std::string to_string() const override {

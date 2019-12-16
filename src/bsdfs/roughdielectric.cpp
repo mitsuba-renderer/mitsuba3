@@ -47,6 +47,12 @@ public:
         m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | BSDFFlags::NonSymmetric | extra);
         m_flags = m_components[0] | m_components[1];
+
+        parameters_changed();
+    }
+
+    void parameters_changed() override {
+        m_inv_eta = 1.f / m_eta;
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -283,10 +289,6 @@ public:
         callback->put_parameter("eta", m_eta);
         callback->put_object("specular_reflectance", m_specular_reflectance.get());
         callback->put_object("specular_transmittance", m_specular_transmittance.get());
-    }
-
-    void parameters_changed() override {
-        m_inv_eta = 1.f / (m_eta);
     }
 
     std::string to_string() const override {
