@@ -56,8 +56,8 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
     ScalarVector2i source_size   = block->size() + 2 * block->border_size(),
                    target_size   =        size() + 2 *        border_size();
 
-    ScalarPoint2i  source_offset = block->offset() + block->border_size(),
-                   target_offset =        offset() +        border_size();
+    ScalarPoint2i  source_offset = block->offset() - block->border_size(),
+                   target_offset =        offset() -        border_size();
 
     if constexpr (is_cuda_array_v<Float> || is_diff_array_v<Float>) {
         accumulate_2d<Float &, const Float &>(
