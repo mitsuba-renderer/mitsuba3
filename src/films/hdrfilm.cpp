@@ -174,6 +174,13 @@ public:
         return true;
     }
 
+    Bitmap *bitmap() override {
+        return new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
+                                                 : Bitmap::PixelFormat::XYZAW,
+                          struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
+                          (uint8_t *) m_storage->data().managed().data());
+     };
+
     void develop() override {
         if (m_dest_file.empty())
             Throw("Destination file not specified, cannot develop.");

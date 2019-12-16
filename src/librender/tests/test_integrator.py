@@ -64,11 +64,12 @@ def check_scene(int_name, scene_name, mode_name, load_string_func = load_string_
 
     avg = SCENES[scene_name][integrator_type]
     film = sensor.film()
-    film.clear()
 
     status = integrator.render(scene, sensor)
     assert status, "Rendering ({}) failed".format(mode_name)
-    _save(film, int_name, suffix='_' + mode_name)
+
+    if False:
+        _save(film, int_name, suffix='_' + mode_name)
 
     converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     values    = np.array(converted, copy=False)
@@ -169,9 +170,7 @@ def make_reference_renders():
         for scene_name, props in SCENES.items():
             scene = props['factory'](spp=spp)
             sensor = scene.sensors()[0]
-
             film = sensor.film()
-            film.clear()
 
             status = integrator.render(scene, sensor)
 

@@ -656,7 +656,7 @@ Parameter ``size``:
 
 Parameter ``channel_count``:
     Channel count of the image. This parameter is only required when
-    ``pfmt`` = MultiChannel
+    ``pixel_format`` = PixelFormat::MultiChannel
 
 Parameter ``data``:
     External pointer to the image data. If set to ``nullptr``, the
@@ -712,7 +712,7 @@ Magic (ILM)
 
 The following is supported:
 
-* Loading and saving of Float16 / Float32/ EUInt32 bitmaps with all
+* Loading and saving of Float16 / Float32/ UInt32 bitmaps with all
 supported RGB/Luminance/Alpha combinations
 
 * Loading and saving of spectral bitmaps</tt>
@@ -801,8 +801,7 @@ Out-of-bounds regions are safely ignored. It is assumed that ``bitmap
 
 Remark:
     This function throws an exception when the bitmaps use different
-    component formats or channels, or when the component format is
-    EBitmask.)doc";
+    component formats or channels.)doc";
 
 static const char *__doc_mitsuba_Bitmap_accumulate_2 =
 R"doc(Accumulate the contents of another bitmap into the region with the
@@ -815,8 +814,7 @@ is assumed that ``bitmap != this``.
 
 Remark:
     This function throws an exception when the bitmaps use different
-    component formats or channels, or when the component format is
-    EBitmask.)doc";
+    component formats or channels.)doc";
 
 static const char *__doc_mitsuba_Bitmap_accumulate_3 =
 R"doc(Accumulate the contents of another bitmap into the region with the
@@ -829,8 +827,7 @@ regions are ignored. It is assumed that ``bitmap != this``.
 
 Remark:
     This function throws an exception when the bitmaps use different
-    component formats or channels, or when the component format is
-    EBitmask.)doc";
+    component formats or channels.)doc";
 
 static const char *__doc_mitsuba_Bitmap_buffer_size = R"doc(Return the bitmap size in bytes (excluding metadata))doc";
 
@@ -858,8 +855,8 @@ This function roughly does the following:
 normalized linear-space form (any gamma of the source bitmap is
 removed)
 
-* The multiplier and gamma correction specified in ``targetGamma`` is
-applied
+* gamma correction (sRGB ramp) is applied if ``srgb_gamma`` is
+``True``
 
 * The corrected value is clamped against the representable range of
 the desired component format.
@@ -1028,7 +1025,11 @@ etc.))doc";
 
 static const char *__doc_mitsuba_Bitmap_static_shutdown = R"doc(Free the resources used by static_initialization())doc";
 
-static const char *__doc_mitsuba_Bitmap_struct = R"doc(Return a ``Struct`` instance describing the contents of the bitmap)doc";
+static const char *__doc_mitsuba_Bitmap_struct =
+R"doc(Return a ``Struct`` instance describing the contents of the bitmap
+(const version))doc";
+
+static const char *__doc_mitsuba_Bitmap_struct_2 = R"doc(Return a ``Struct`` instance describing the contents of the bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_to_string = R"doc(Return a human-readable summary of this bitmap)doc";
 
@@ -2061,6 +2062,8 @@ static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
+static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object with the developed contents of the film)doc";
+
 static const char *__doc_mitsuba_Film_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_crop_offset = R"doc(Return the offset of the crop window)doc";
@@ -2915,6 +2918,8 @@ static const char *__doc_mitsuba_Mesh_m_face_struct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_m_faces_c = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_inv_surface_area = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
@@ -2922,6 +2927,20 @@ static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_normal_offset = R"doc(Byte offset of the normal data within the vertex buffer)doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_context = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_faces_buf = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_geometry = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_geometry_ready = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_vertex_normals_buf = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_vertex_positions_buf = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_optix_vertex_texcoords_buf = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_surface_area = R"doc()doc";
 
@@ -2931,13 +2950,21 @@ static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_m_vertex_normals_c = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_vertex_positions_c = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_vertex_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_m_vertex_texcoords_c = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_normal_derivative = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
@@ -4349,6 +4376,8 @@ static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_parameters_changed = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_pdf_emitter_direction =
 R"doc(Evaluate the probability density of the sample_emitter_direct()
 technique given an filled-in DirectionSample record.
@@ -4772,6 +4801,8 @@ static const char *__doc_mitsuba_Shape_operator_new_2 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
@@ -5221,29 +5252,17 @@ static const char *__doc_mitsuba_StructConverter_StructConverter =
 R"doc(Construct an optimized conversion routine going from ``source`` to
 ``target``)doc";
 
-static const char *__doc_mitsuba_StructConverter_Value = R"doc()doc";
-
-static const char *__doc_mitsuba_StructConverter_Value_flags = R"doc()doc";
-
-static const char *__doc_mitsuba_StructConverter_Value_type = R"doc()doc";
-
 static const char *__doc_mitsuba_StructConverter_class = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_convert = R"doc(Convert ``count`` elements. Returns ``True`` upon success)doc";
 
 static const char *__doc_mitsuba_StructConverter_convert_2d = R"doc()doc";
 
-static const char *__doc_mitsuba_StructConverter_linearize = R"doc()doc";
-
-static const char *__doc_mitsuba_StructConverter_load = R"doc()doc";
-
-static const char *__doc_mitsuba_StructConverter_m_dither = R"doc()doc";
+static const char *__doc_mitsuba_StructConverter_m_func = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_m_source = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_m_target = R"doc()doc";
-
-static const char *__doc_mitsuba_StructConverter_save = R"doc()doc";
 
 static const char *__doc_mitsuba_StructConverter_source = R"doc(Return the source ``Struct`` descriptor)doc";
 
@@ -6737,6 +6756,16 @@ R"doc(Writes a specified amount of data into the stream, compressing it
 first using ZLib. Throws an exception when not all data could be
 written.)doc";
 
+static const char *__doc_mitsuba_accumulate_2d =
+R"doc(Accumulate the contents of a source bitmap into a target bitmap with
+specified offsets for both.
+
+Out-of-bounds regions are safely ignored. It is assumed that ``source
+!= target``.
+
+The function supports `T` being a raw pointer or an arbitrary Enoki
+array that can potentially live on the GPU and/or be differentiable.)doc";
+
 static const char *__doc_mitsuba_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -7173,13 +7202,9 @@ refracted direction.)doc";
 
 static const char *__doc_mitsuba_function_traits = R"doc(Type trait to inspect the return and argument types of functions)doc";
 
-static const char *__doc_mitsuba_has_flag = R"doc(Check presence of a flag in a combined Struct::Flags)doc";
+static const char *__doc_mitsuba_has_flag = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_has_flag_3 = R"doc(Check presence of a flag in a combined BSDFFlag)doc";
-
-static const char *__doc_mitsuba_has_flag_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
@@ -7499,31 +7524,31 @@ Returns:
     The (implicitly defined) reference coordinate system basis for the
     Stokes vector travelling along w.)doc";
 
-static const char *__doc_mitsuba_operator_add =
-R"doc(Allows using unary `+` for conversion from Struct::Flags to the
-underlying type)doc";
+static const char *__doc_mitsuba_operator_add = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_2 = R"doc(Adding a vector to a point should always yield a point)doc";
 
-static const char *__doc_mitsuba_operator_add_3 =
-R"doc(Allows using unary `+` for conversion from BSDFFlags to the underlying
-type)doc";
+static const char *__doc_mitsuba_operator_add_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_add_4 = R"doc(Allows adding BSDFFlags)doc";
+static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_band = R"doc(Allows and-ing of Struct::Flags)doc";
+static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_band_2 = R"doc(Allows and-ing of BSDFFlags)doc";
+static const char *__doc_mitsuba_operator_band_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_band_3 = R"doc(Allows and-ing of BSDFFlags)doc";
+static const char *__doc_mitsuba_operator_band_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_bnot = R"doc(Allows not-ing of Struct::Flags)doc";
+static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_bnot_2 = R"doc(Allows not-ing of BSDFFlags)doc";
+static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_bor = R"doc(Allows or-ing of Flags)doc";
+static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_bor_2 = R"doc(Allows or-ing of BSDFFlags)doc";
+static const char *__doc_mitsuba_operator_bor_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
@@ -7848,6 +7873,10 @@ Returns:
     ``[0, 1)``)doc";
 
 static const char *__doc_mitsuba_sample_uniform_spectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_sample_wavelength =
+R"doc(Helper function to sample a wavelength (and a weight) given a random
+number)doc";
 
 static const char *__doc_mitsuba_scalar_cast =
 R"doc(Helper function to convert GPU array resulting from horizontal

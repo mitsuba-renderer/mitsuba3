@@ -99,7 +99,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                                                        film->reconstruction_filter(),
                                                        !has_aovs);
                 scoped_flush_denormals flush_denormals(true);
-                std::vector<Float> aovs(channels.size());
+                std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
 
                 // For each block
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
@@ -116,7 +116,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                     sampler->seed(seed);
 
                     render_block(scene, sensor, sampler, block,
-                                 aovs.data(), samples_per_pass);
+                                 aovs.get(), samples_per_pass);
 
                     film->put(block);
 

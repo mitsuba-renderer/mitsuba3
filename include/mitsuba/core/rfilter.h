@@ -77,7 +77,7 @@ protected:
 
 protected:
     ScalarFloat m_radius, m_scale_factor;
-    std::vector<Float> m_values;
+    std::vector<ScalarFloat> m_values;
     uint32_t m_border_size;
 };
 

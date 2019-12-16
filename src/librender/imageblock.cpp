@@ -54,24 +54,24 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
 
     if constexpr (is_cuda_array_v<Float> || is_diff_array_v<Float>) {
         accumulate_2d<Float &, const Float &>(
-            block->data(),
-                   data(),
-            block->offset() - block->border_size(),
-                   offset() -        border_size(),
-            block->size() + 2 * block->border_size(),
-                   size() + 2 *        border_size(),
-            block->size() + 2 * block->border_size(),
+            block->data(),                            // source
+                   data(),                            // target
+            block->offset() - block->border_size(),   // source_offset
+                   offset() -        border_size(),   // target_offset
+            block->size() + 2 * block->border_size(), // source_size
+                   size() + 2 *        border_size(), // target_size
+            block->size() + 2 * block->border_size(), // size
             channel_count()
         );
     } else {
         accumulate_2d(
-            block->data().data(),
-                   data().data(),
-            block->offset() - block->border_size(),
-                   offset() -        border_size(),
-            block->size() + 2 * block->border_size(),
-                   size() + 2 *        border_size(),
-            block->size() + 2 * block->border_size(),
+            block->data().data(),                     // source
+                   data().data(),                     // target
+            block->offset() - block->border_size(),   // source_offset
+                   offset() -        border_size(),   // target_offset
+            block->size() + 2 * block->border_size(), // source_size
+                   size() + 2 *        border_size(), // target_size
+            block->size() + 2 * block->border_size(), // size
             channel_count()
         );
     }
