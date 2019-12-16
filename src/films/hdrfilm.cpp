@@ -195,6 +195,11 @@ public:
 
         bool has_aovs = m_channels.size() != 5;
 
+        if constexpr (is_cuda_array_v<Float>) {
+            cuda_eval();
+            cuda_sync();
+        }
+
         ref<Bitmap> source = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : Bitmap::PixelFormat::XYZAW,
             struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
