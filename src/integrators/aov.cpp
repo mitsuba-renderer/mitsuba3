@@ -37,23 +37,23 @@ public:
                 m_aov_names.push_back(item[0]);
             } else if (item[1] == "position") {
                 m_aov_types.push_back(Type::Position);
-                m_aov_names.push_back(item[0] + ".x");
-                m_aov_names.push_back(item[0] + ".y");
-                m_aov_names.push_back(item[0] + ".z");
+                m_aov_names.push_back(item[0] + ".X");
+                m_aov_names.push_back(item[0] + ".Y");
+                m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "uv") {
                 m_aov_types.push_back(Type::UV);
-                m_aov_names.push_back(item[0] + ".u");
-                m_aov_names.push_back(item[0] + ".v");
+                m_aov_names.push_back(item[0] + ".U");
+                m_aov_names.push_back(item[0] + ".V");
             } else if (item[1] == "geo_normal") {
                 m_aov_types.push_back(Type::GeometricNormal);
-                m_aov_names.push_back(item[0] + ".x");
-                m_aov_names.push_back(item[0] + ".y");
-                m_aov_names.push_back(item[0] + ".z");
+                m_aov_names.push_back(item[0] + ".X");
+                m_aov_names.push_back(item[0] + ".Y");
+                m_aov_names.push_back(item[0] + ".Z");
             } else if (item[1] == "sh_normal") {
                 m_aov_types.push_back(Type::ShadingNormal);
-                m_aov_names.push_back(item[0] + ".x");
-                m_aov_names.push_back(item[0] + ".y");
-                m_aov_names.push_back(item[0] + ".z");
+                m_aov_names.push_back(item[0] + ".X");
+                m_aov_names.push_back(item[0] + ".Y");
+                m_aov_names.push_back(item[0] + ".Z");
             } else {
                 Throw("Invalid AOV type \"%s\"!", item[1]);
             }
@@ -68,10 +68,10 @@ public:
             for (auto name: aovs)
                 m_aov_names.push_back(kv.first + "." + name);
             m_integrators.push_back({ integrator, aovs.size() });
-            m_aov_names.push_back(kv.first + ".r");
-            m_aov_names.push_back(kv.first + ".g");
-            m_aov_names.push_back(kv.first + ".b");
-            m_aov_names.push_back(kv.first + ".a");
+            m_aov_names.push_back(kv.first + ".R");
+            m_aov_names.push_back(kv.first + ".G");
+            m_aov_names.push_back(kv.first + ".B");
+            m_aov_names.push_back(kv.first + ".A");
         }
 
         if (m_aov_names.empty())
