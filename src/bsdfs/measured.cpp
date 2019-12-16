@@ -24,6 +24,9 @@ public:
     using Warp2D3 = warp::Marginal2D<Float, 3>;
 
     Measured(const Properties &props) : Base(props) {
+        if constexpr (is_polarized_v<Spectrum>)
+            Throw("The measured BSDF model requires that rendering takes place in spectral mode!");
+
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0];
 
@@ -167,221 +170,206 @@ public:
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float /*sample1*/, const Point2f &sample2,
                                              Mask active) const override {
-        if constexpr (is_spectral_v<Spectrum>) {
-            BSDFSample3f bs;
-            Vector3f wi = si.wi;
-            active &= Frame3f::cos_theta(wi) > 0;
+        BSDFSample3f bs;
+        Vector3f wi = si.wi;
+        active &= Frame3f::cos_theta(wi) > 0;
 
-            if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
-                return { bs, 0.f };
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
+            return { bs, 0.f };
 
-            Float sx = -1.f, sy = -1.f;
+        Float sx = -1.f, sy = -1.f;
 
-            if (m_reduction >= 2) {
-                sy = wi.y();
-                sx = (m_reduction == 4) ? wi.x() : sy;
-                wi.x() = mulsign_neg(wi.x(), sx);
-                wi.y() = mulsign_neg(wi.y(), sy);
-            }
+        if (m_reduction >= 2) {
+            sy = wi.y();
+            sx = (m_reduction == 4) ? wi.x() : sy;
+            wi.x() = mulsign_neg(wi.x(), sx);
+            wi.y() = mulsign_neg(wi.y(), sy);
+        }
 
-            Float theta_i = elevation(wi),
-                phi_i   = atan2(wi.y(), wi.x());
+        Float theta_i = elevation(wi),
+            phi_i   = atan2(wi.y(), wi.x());
 
-            Float params[2] = { phi_i, theta_i };
-            Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
+        Float params[2] = { phi_i, theta_i };
+        Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
 
-            Vector2f sample;
+        Vector2f sample;
 
 #if MTS_SAMPLE_DIFFUSE == 0
-            sample = Vector2f(sample2.y(), sample2.x());
-            Float pdf = 1.f;
+        sample = Vector2f(sample2.y(), sample2.x());
+        Float pdf = 1.f;
 
-            #if MTS_SAMPLE_LUMINANCE == 1
-            std::tie(sample, pdf) = m_luminance.sample(sample, params, active);
-            #endif
+        #if MTS_SAMPLE_LUMINANCE == 1
+        std::tie(sample, pdf) = m_luminance.sample(sample, params, active);
+        #endif
 
-            auto [u_m, ndf_pdf] = m_vndf.sample(sample, params, active);
+        auto [u_m, ndf_pdf] = m_vndf.sample(sample, params, active);
 
-            Float phi_m   = u2phi(u_m.y()),
-                theta_m = u2theta(u_m.x());
+        Float phi_m   = u2phi(u_m.y()),
+            theta_m = u2theta(u_m.x());
 
-            if (m_isotropic)
-                phi_m += phi_i;
+        if (m_isotropic)
+            phi_m += phi_i;
 
-            // Spherical -> Cartesian coordinates
-            auto [sin_phi_m, cos_phi_m] = sincos(phi_m);
-            auto [sin_theta_m, cos_theta_m] = sincos(theta_m);
+        // Spherical -> Cartesian coordinates
+        auto [sin_phi_m, cos_phi_m] = sincos(phi_m);
+        auto [sin_theta_m, cos_theta_m] = sincos(theta_m);
 
-            Vector3f m(
-                cos_phi_m * sin_theta_m,
-                sin_phi_m * sin_theta_m,
-                cos_theta_m
-            );
+        Vector3f m(
+            cos_phi_m * sin_theta_m,
+            sin_phi_m * sin_theta_m,
+            cos_theta_m
+        );
 
-            Float jacobian = enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() *
-                                        sin_theta_m, 1e-6f) * 4.f * dot(wi, m);
+        Float jacobian = enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() *
+                                    sin_theta_m, 1e-6f) * 4.f * dot(wi, m);
 
-            bs.wo = fmsub(m, 2.f * dot(m, wi), wi);
-            bs.pdf = ndf_pdf * pdf / jacobian;
+        bs.wo = fmsub(m, 2.f * dot(m, wi), wi);
+        bs.pdf = ndf_pdf * pdf / jacobian;
 #else // MTS_SAMPLE_DIFFUSE
-            bs.wo = warp::square_to_cosine_hemisphere(sample2);
-            bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
+        bs.wo = warp::square_to_cosine_hemisphere(sample2);
+        bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
 
-            Vector3f m = normalize(bs.wo + wi);
+        Vector3f m = normalize(bs.wo + wi);
 
-            // Cartesian -> spherical coordinates
-            Float theta_m = elevation(m),
-                phi_m   = atan2(m.y(), m.x());
+        // Cartesian -> spherical coordinates
+        Float theta_m = elevation(m),
+            phi_m   = atan2(m.y(), m.x());
 
-            Vector2f u_m(theta2u(theta_m),
-                        phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
+        Vector2f u_m(theta2u(theta_m),
+                    phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-            u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - floor(u_m[1]);
 
-        std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
+    std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
 #endif // MTS_SAMPLE_DIFFUSE
 
-            bs.eta               = 1.f;
-            bs.sampled_type      = +BSDFFlags::GlossyReflection;
-            bs.sampled_component = 0;
+        bs.eta               = 1.f;
+        bs.sampled_type      = +BSDFFlags::GlossyReflection;
+        bs.sampled_component = 0;
 
-            Spectrum spec;
-            for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
-                Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
-                spec[i] = m_spectra.eval(sample, params_spec, active);
-            }
-
-            if (m_jacobian)
-                spec *= m_ndf.eval(u_m, params, active) /
-                        (4 * m_sigma.eval(u_wi, params, active));
-
-            bs.wo.x() = mulsign_neg(bs.wo.x(), sx);
-            bs.wo.y() = mulsign_neg(bs.wo.y(), sy);
-
-            active &= Frame3f::cos_theta(bs.wo) > 0;
-
-            return { bs, select(active, spec / bs.pdf, Spectrum(0.f)) };
-        } else {
-            /// TODO
-            Throw("Not implemented for non-spectral modes");
+        UnpolarizedSpectrum spec;
+        for (size_t i = 0; i < array_size_v<UnpolarizedSpectrum>; ++i) {
+            Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
+            spec[i] = m_spectra.eval(sample, params_spec, active);
         }
+
+        if (m_jacobian)
+            spec *= m_ndf.eval(u_m, params, active) /
+                    (4 * m_sigma.eval(u_wi, params, active));
+
+        bs.wo.x() = mulsign_neg(bs.wo.x(), sx);
+        bs.wo.y() = mulsign_neg(bs.wo.y(), sy);
+
+        active &= Frame3f::cos_theta(bs.wo) > 0;
+
+        return { bs, select(active, Spectrum(spec) / bs.pdf, Spectrum(0.f)) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
                   Mask active) const override {
-        if constexpr (is_spectral_v<Spectrum>) {
-            Vector3f wi = si.wi, wo = wo_;
+        Vector3f wi = si.wi, wo = wo_;
 
-            active &= Frame3f::cos_theta(wi) > 0.f &&
-                    Frame3f::cos_theta(wo) > 0.f;
+        active &= Frame3f::cos_theta(wi) > 0.f &&
+                Frame3f::cos_theta(wo) > 0.f;
 
-            if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
-                return Spectrum(0.f);
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
+            return Spectrum(0.f);
 
-            if (m_reduction >= 2) {
-                Float sy = wi.y(),
-                    sx = (m_reduction == 4) ? wi.x() : sy;
+        if (m_reduction >= 2) {
+            Float sy = wi.y(),
+                sx = (m_reduction == 4) ? wi.x() : sy;
 
-                wi.x() = mulsign_neg(wi.x(), sx);
-                wi.y() = mulsign_neg(wi.y(), sy);
-                wo.x() = mulsign_neg(wo.x(), sx);
-                wo.y() = mulsign_neg(wo.y(), sy);
-            }
-
-            Vector3f m = normalize(wo + wi);
-
-            // Cartesian -> spherical coordinates
-            Float theta_i = elevation(wi),
-                phi_i   = atan2(wi.y(), wi.x()),
-                theta_m = elevation(m),
-                phi_m   = atan2(m.y(), m.x());
-
-            // Spherical coordinates -> unit coordinate system
-            Vector2f u_wi(theta2u(theta_i), phi2u(phi_i)),
-                    u_m (theta2u(theta_m), phi2u(
-                        m_isotropic ? (phi_m - phi_i) : phi_m));
-
-            u_m[1] = u_m[1] - floor(u_m[1]);
-
-            Float params[2] = { phi_i, theta_i };
-            auto [sample, unused] = m_vndf.invert(u_m, params, active);
-
-            Spectrum spec;
-            for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
-                Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
-                spec[i] = m_spectra.eval(sample, params_spec, active);
-            }
-
-            if (m_jacobian)
-                spec *= m_ndf.eval(u_m, params, active) /
-                        (4 * m_sigma.eval(u_wi, params, active));
-
-            return spec & active;
-        } else {
-            /// TODO
-            Throw("Not implemented for non-spectral modes");
+            wi.x() = mulsign_neg(wi.x(), sx);
+            wi.y() = mulsign_neg(wi.y(), sy);
+            wo.x() = mulsign_neg(wo.x(), sx);
+            wo.y() = mulsign_neg(wo.y(), sy);
         }
+
+        Vector3f m = normalize(wo + wi);
+
+        // Cartesian -> spherical coordinates
+        Float theta_i = elevation(wi),
+            phi_i   = atan2(wi.y(), wi.x()),
+            theta_m = elevation(m),
+            phi_m   = atan2(m.y(), m.x());
+
+        // Spherical coordinates -> unit coordinate system
+        Vector2f u_wi(theta2u(theta_i), phi2u(phi_i)),
+                u_m (theta2u(theta_m), phi2u(
+                    m_isotropic ? (phi_m - phi_i) : phi_m));
+
+        u_m[1] = u_m[1] - floor(u_m[1]);
+
+        Float params[2] = { phi_i, theta_i };
+        auto [sample, unused] = m_vndf.invert(u_m, params, active);
+
+        UnpolarizedSpectrum spec;
+        for (size_t i = 0; i < array_size_v<UnpolarizedSpectrum>; ++i) {
+            Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
+            spec[i] = m_spectra.eval(sample, params_spec, active);
+        }
+
+        if (m_jacobian)
+            spec *= m_ndf.eval(u_m, params, active) /
+                    (4 * m_sigma.eval(u_wi, params, active));
+
+        return spec & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
               Mask active) const override {
-        if constexpr (is_spectral_v<Spectrum>) {
-            Vector3f wi = si.wi, wo = wo_;
+        Vector3f wi = si.wi, wo = wo_;
 
-            active &= Frame3f::cos_theta(wi) > 0.f &&
-                    Frame3f::cos_theta(wo) > 0.f;
+        active &= Frame3f::cos_theta(wi) > 0.f &&
+                Frame3f::cos_theta(wo) > 0.f;
 
-            if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
-                return 0.f;
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
+            return 0.f;
 
-            if (m_reduction >= 2) {
-                Float sy = wi.y(),
-                    sx = (m_reduction == 4) ? wi.x() : sy;
+        if (m_reduction >= 2) {
+            Float sy = wi.y(),
+                sx = (m_reduction == 4) ? wi.x() : sy;
 
-                wi.x() = mulsign_neg(wi.x(), sx);
-                wi.y() = mulsign_neg(wi.y(), sy);
-                wo.x() = mulsign_neg(wo.x(), sx);
-                wo.y() = mulsign_neg(wo.y(), sy);
-            }
+            wi.x() = mulsign_neg(wi.x(), sx);
+            wi.y() = mulsign_neg(wi.y(), sy);
+            wo.x() = mulsign_neg(wo.x(), sx);
+            wo.y() = mulsign_neg(wo.y(), sy);
+        }
 
 #if MTS_SAMPLE_DIFFUSE == 1
-            return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
+        return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
 #else // MTS_SAMPLE_DIFFUSE
-            Vector3f m = normalize(wo + wi);
+        Vector3f m = normalize(wo + wi);
 
-            // Cartesian -> spherical coordinates
-            Float theta_i = elevation(wi),
-                phi_i   = atan2(wi.y(), wi.x()),
-                theta_m = elevation(m),
-                phi_m   = atan2(m.y(), m.x());
+        // Cartesian -> spherical coordinates
+        Float theta_i = elevation(wi),
+            phi_i   = atan2(wi.y(), wi.x()),
+            theta_m = elevation(m),
+            phi_m   = atan2(m.y(), m.x());
 
-            // Spherical coordinates -> unit coordinate system
-            Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
-            Vector2f u_m (theta2u(theta_m),
-                        phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
+        // Spherical coordinates -> unit coordinate system
+        Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
+        Vector2f u_m (theta2u(theta_m),
+                    phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-            u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - floor(u_m[1]);
 
-            Float params[2] = { phi_i, theta_i };
-            auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
+        Float params[2] = { phi_i, theta_i };
+        auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
 
-            Float pdf = 1.f;
-            #if MTS_SAMPLE_LUMINANCE == 1
-            pdf = m_luminance.eval(sample, params, active);
-            #endif
+        Float pdf = 1.f;
+        #if MTS_SAMPLE_LUMINANCE == 1
+        pdf = m_luminance.eval(sample, params, active);
+        #endif
 
-            Float jacobian =
-                enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
-                dot(wi, m);
+        Float jacobian =
+            enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
+            dot(wi, m);
 
-            pdf = vndf_pdf * pdf / jacobian;
+        pdf = vndf_pdf * pdf / jacobian;
 
-            return select(active, pdf, 0.f);
+        return select(active, pdf, 0.f);
 #endif // MTS_SAMPLE_DIFFUSE
-        } else {
-            /// TODO
-            Throw("Not implemented for non-spectral modes");
-        }
     }
 
     std::string to_string() const override {
