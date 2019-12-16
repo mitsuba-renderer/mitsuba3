@@ -6,14 +6,11 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-// #if defined(ENOKI_X86_64)
-// #  define MTS_STRUCTCONVERTER_USE_JIT 1
-// #else
-// #  define MTS_STRUCTCONVERTER_USE_JIT 0
-// #endif
-
-// TODO: remove this
-#define MTS_STRUCTCONVERTER_USE_JIT 0
+ #if defined(ENOKI_X86_64)
+ #  define MTS_STRUCTCONVERTER_USE_JIT 1
+ #else
+ #  define MTS_STRUCTCONVERTER_USE_JIT 0
+ #endif
 
 /**
  * \brief Descriptor for specifying the contents and in-memory layout
@@ -25,8 +22,6 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_CORE Struct : public Object {
 public:
     MTS_DECLARE_CLASS(Struct, Object)
-
-    using Float = float;
 
     /// Type of a field in the \c Struct
     enum class Type : uint32_t {
@@ -369,7 +364,6 @@ class MTS_EXPORT_CORE StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
     MTS_DECLARE_CLASS(StructConverter, Object)
-    // TODO: is this right?
     using Float = float;
 
     /// Construct an optimized conversion routine going from \c source to \c target
@@ -420,7 +414,7 @@ protected:
         Struct::Type type;
         uint32_t flags;
         union {
-            Float f;
+            float f;
             float s;
             double d;
             int64_t i;

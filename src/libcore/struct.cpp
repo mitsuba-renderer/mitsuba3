@@ -58,10 +58,11 @@ public:
 
     template <typename T>
     X86Mem const_(T value) {
-        if constexpr (is_float_v<T>)
+        #if !defined(DOUBLE_PRECISION)
             return cc.newFloatConst(asmjit::kConstScopeGlobal, (float) value);
-        else
+        #else
             return cc.newDoubleConst(asmjit::kConstScopeGlobal, (double) value);
+        #endif
     }
 
     /// Floating point comparison
@@ -614,7 +615,7 @@ public:
     }
 
     std::pair<Key, Value> load_default(const Struct::Field &field) {
-        Key key { field.name, struct_type_v<float>, Struct::Flags::None };
+        Key key { field.name, struct_type_v<float>, +Struct::Flags::None };
         Value value;
         value.xmm = cc.newXmm();
         movs(value.xmm, const_(field.default_));
@@ -1455,6 +1456,8 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
 }
 
 void StructConverter::linearize(Value &value) const {
+    using Float = float;
+
     if (Struct::is_integer(value.type)) {
         if (Struct::is_unsigned(value.type))
             value.f = (Float) value.u;
@@ -1478,6 +1481,8 @@ void StructConverter::linearize(Value &value) const {
 }
 
 void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, size_t x, size_t y) const {
+    using Float = float;
+
     /* Is swapping needed */
     bool target_swap = m_target->byte_order() != Struct::host_byte_order();
 
@@ -1599,6 +1604,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
 
 bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, void *dest_) const {
     using namespace mitsuba::detail;
+    using Float = float;
 
     size_t source_size = m_source->size();
     size_t target_size = m_target->size();
