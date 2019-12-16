@@ -136,7 +136,7 @@ extern MTS_EXPORT_CORE const float *cie1931_z_data;
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
  * in nanometers
  */
-template <typename Float, typename Result = Array<Float, 3>>
+template <typename Float, typename Result = Color<Float, 3>>
 Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
     using Int32 = int32_array_t<Float>;
 
@@ -193,7 +193,7 @@ Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
 
 /// Spectral responses to XYZ.
 template <typename Float, size_t Size>
-Array<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
+Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
                                 const Spectrum<Float, Size> &wavelengths,
                                 mask_t<Float> active = true) {
     Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);

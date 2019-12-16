@@ -64,7 +64,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
     bool has_aovs = !channels.empty();
 
     // Insert default channels and set up the film
-    for (int i = 0; i < 5; ++i)
+    for (size_t i = 0; i < 5; ++i)
         channels.insert(channels.begin() + i, std::string(1, "XYZAW"[i]));
     film->prepare(channels);
 

@@ -7849,10 +7849,6 @@ Returns:
 
 static const char *__doc_mitsuba_sample_uniform_spectrum = R"doc()doc";
 
-static const char *__doc_mitsuba_sample_wavelength =
-R"doc(Helper function to sample a wavelength (and a weight) given a random
-number)doc";
-
 static const char *__doc_mitsuba_scalar_cast =
 R"doc(Helper function to convert GPU array resulting from horizontal
 operation to CPU scalar)doc";

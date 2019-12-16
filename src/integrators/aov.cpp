@@ -128,17 +128,18 @@ public:
 
                         UnpolarizedSpectrum spec_u = depolarize(result_sub.first);
 
-                        Color3f xyz;
+                        Color3f rgb;
                         if constexpr (is_monochromatic_v<Spectrum>) {
-                            xyz = spec_u.x();
+                            rgb = spec_u.x();
                         } else if constexpr (is_rgb_v<Spectrum>) {
-                            xyz = srgb_to_xyz(spec_u, active);
+                            rgb = spec_u;
                         } else {
                             static_assert(is_spectral_v<Spectrum>);
-                            xyz = spectrum_to_xyz(spec_u, ray.wavelengths, active);
+                            /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
+                            auto pdf = pdf_rgb_spectrum(ray.wavelengths);
+                            spec_u *= select(neq(pdf, 0.f), rcp(pdf), 0.f);
+                            rgb = xyz_to_srgb(spectrum_to_xyz(spec_u, ray.wavelengths, active));
                         }
-
-                        Color3f rgb = xyz_to_srgb(xyz);
 
                         *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();
                         *aovs++ = select(result_sub.second, Float(1.f), Float(0.f));
