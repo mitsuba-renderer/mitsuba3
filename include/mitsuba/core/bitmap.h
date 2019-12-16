@@ -631,19 +631,19 @@ public:
  */
 template <typename T, typename ConstT>
 void accumulate_2d(ConstT source,
+                   Vector<int, 2> source_size,
                    T target,
+                   Vector<int, 2> target_size,
                    Point<int, 2> source_offset,
                    Point<int, 2> target_offset,
-                   Vector<int, 2> source_size,
-                   Vector<int, 2> target_size,
                    Vector<int, 2> size,
                    int channel_count) {
     using Value = std::decay_t<T>;
 
     /// Clip against bounds of source and target image
-    Vector<int, 2> shift = target_offset - source_offset;
-    source_offset = max( shift, 0);
-    target_offset = max(-shift, 0);
+    Vector<int, 2> shift = max(0, max(-source_offset, -target_offset));
+    source_offset += shift;
+    target_offset += shift;
     size -= max(source_offset + size - source_size, 0);
     size -= max(target_offset + size - target_size, 0);
 

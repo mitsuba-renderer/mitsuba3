@@ -481,38 +481,33 @@ void Bitmap::accumulate(const Bitmap *source,
 
     switch (m_component_format) {
         case Struct::Type::UInt8:
-            accumulate_2d((const uint8_t *) source->data(), (uint8_t *) data(),
-                           source_offset, target_offset, source->size(), m_size, size,
-                           channel_count());
+            accumulate_2d((const uint8_t *) source->data(), source->size(), (uint8_t *) data(),
+                          m_size, source_offset, target_offset, size, channel_count());
             break;
 
         case Struct::Type::UInt16:
-            accumulate_2d((const uint16_t *) source->data(), (uint16_t *) data(),
-                          source_offset, target_offset, source->size(), m_size, size,
-                          channel_count());
+            accumulate_2d((const uint16_t *) source->data(), source->size(), (uint16_t *) data(),
+                          m_size, source_offset, target_offset, size, channel_count());
             break;
 
         case Struct::Type::UInt32:
-            accumulate_2d((const uint32_t *) source->data(), (uint32_t *) data(),
-                          source_offset, target_offset, source->size(), m_size, size,
-                          channel_count());
+            accumulate_2d((const uint32_t *) source->data(), source->size(), (uint32_t *) data(),
+                          m_size, source_offset, target_offset, size, channel_count());
             break;
 
         case Struct::Type::Float16:
-            accumulate_2d((const enoki::half *) source->data(),
-                          (enoki::half *) data(), source_offset, target_offset,
-                          source->size(), m_size, size, channel_count());
+            accumulate_2d((const enoki::half *) source->data(), source->size(), (enoki::half *) data(),
+                          m_size, source_offset, target_offset, size, channel_count());
             break;
 
         case Struct::Type::Float32:
-            accumulate_2d((const float *) source->data(), (float *) data(), source_offset,
-                          target_offset, source->size(), m_size, size, channel_count());
+            accumulate_2d((const float *) source->data(), source->size(), (float *) data(),
+                          m_size, source_offset, target_offset, size, channel_count());
             break;
 
         case Struct::Type::Float64:
-            accumulate_2d((const double *) source->data(), (double *) data(),
-                          source_offset, target_offset, source->size(), m_size, size,
-                          channel_count());
+            accumulate_2d((const double *) source->data(), source->size(), (double *) data(),
+                          m_size, source_offset, target_offset, size, channel_count());
             break;
 
         default:
