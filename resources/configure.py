@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import json
+import re
 import os
 from os.path import join, dirname, realpath
 try:
@@ -127,8 +128,8 @@ def write_python_config(f, enabled, float_types):
     w('')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    void python_export_%s_##name(py::module &m) {' % (name))
-        if float_.startswith("Packet"):
-            float_x = "DynamicArray<%s>" % float_
+        if float_.startswith('Packet'):
+            float_x = 'DynamicArray<%s>' % float_
             spectrum = spectrum.replace(float_, float_x)
             float_ = float_x
         w('        instantiate_##name<%s, %s>(m);' % (float_, spectrum))
@@ -164,7 +165,7 @@ def write_python_config(f, enabled, float_types):
     f.write('\n\n')
 
 def write_to_file_if_changed(filename, contents):
-    """Writes the given contents to file, only if they do not already match."""
+    '''Writes the given contents to file, only if they do not already match.'''
     if os.path.isfile(filename):
         with open(filename, 'r') as f:
             existing = f.read()
@@ -179,9 +180,11 @@ def write_to_file_if_changed(filename, contents):
 if __name__ == '__main__':
     root = realpath(dirname(dirname(__file__)))
 
-    with open(join(root, "mitsuba.conf"), "r") as conf:
-        # Load while preserving order of keys
-        configurations = json.load(conf, object_pairs_hook=OrderedDict)
+    with open(join(root, 'mitsuba.conf'), 'r') as conf:
+        # Strip comments
+        s = re.sub(re.compile(r'(?m)^ *#.*\n?'), '', conf.read())
+        # Load JSON
+        configurations = json.loads(s)
 
     # Let's start with some validation
     assert 'enabled' in configurations and 'default' in configurations
@@ -200,18 +203,17 @@ if __name__ == '__main__':
         enabled.append((name, item['float'], spectrum))
 
     if not enabled:
-        raise ValueError("There must be at least one enabled build configuration!")
+        raise ValueError('There must be at least one enabled build configuration!')
 
     # Use first configuration if default mode is not specified
     default_mode = configurations.get('default', enabled[0][0])
 
-
-    fname = realpath(join(root, "include/mitsuba/core/config.h"))
+    fname = realpath(join(root, 'include/mitsuba/core/config.h'))
     output = StringIO()
     write_core_config(output, enabled, default_mode)
     write_to_file_if_changed(fname, output.getvalue())
 
-    fname = realpath(join(root, "include/mitsuba/python/config.h"))
+    fname = realpath(join(root, 'include/mitsuba/python/config.h'))
     output = StringIO()
     write_python_config(output, enabled, float_types)
     write_to_file_if_changed(fname, output.getvalue())

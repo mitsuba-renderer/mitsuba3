@@ -118,7 +118,7 @@
 
 /// Cast any variants of a void pointer ('ptr') to the corresponding python object
 #define PY_CAST_VARIANTS(Type)                                                  \
-    PY_CAST(PYBIND11_TYPE(typename CoreAliases<Packet<float>>::Type))           \
     PY_CAST(PYBIND11_TYPE(typename CoreAliases<float>::Type))                   \
+    PY_CAST(PYBIND11_TYPE(typename CoreAliases<Packet<float>>::Type))           \
 
 
