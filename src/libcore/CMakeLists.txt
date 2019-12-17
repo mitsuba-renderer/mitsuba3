@@ -46,6 +46,7 @@ add_library(mitsuba-core-obj OBJECT
   properties.cpp       ${INC_DIR}/properties.h
   qmc.cpp              ${INC_DIR}/qmc.h
                        ${INC_DIR}/random.h
+                       ${INC_DIR}/ray.h
   rfilter.cpp          ${INC_DIR}/rfilter.h
   spectrum.cpp         ${INC_DIR}/spectrum.h
                        ${INC_DIR}/spline.h

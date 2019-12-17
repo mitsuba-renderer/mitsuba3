@@ -1,5 +1,4 @@
 #include <mitsuba/core/qmc.h>
-#include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(qmc) {

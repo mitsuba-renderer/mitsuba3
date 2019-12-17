@@ -1,5 +1,5 @@
-#include <mitsuba/core/ray.h>
 #include <mitsuba/render/fwd.h>
+#include <mitsuba/core/ray.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT_STRUCT(Ray) {

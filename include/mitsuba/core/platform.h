@@ -30,22 +30,11 @@
 #define MTS_MODULE_CORE   1
 #define MTS_MODULE_RENDER 2
 #define MTS_MODULE_UI     3
-#define MTS_MODULE_BIDIR  4
 
 #if MTS_BUILD_MODULE == MTS_MODULE_CORE
 #  define MTS_EXPORT_CORE MTS_EXPORT
 #else
 #  define MTS_EXPORT_CORE MTS_IMPORT
-#endif
-
-#if defined(_MSC_VER)
-#  if MTS_BUILD_MODULE == MTS_MODULE_CORE
-#    define MTS_EXPORT_CORE_TEMPLATE extern template struct
-#  else
-#    define MTS_EXPORT_CORE_TEMPLATE extern template struct MTS_IMPORT
-#endif
-#else
-#  define MTS_EXPORT_CORE_TEMPLATE extern template struct MTS_EXPORT_CORE
 #endif
 
 #if MTS_BUILD_MODULE == MTS_MODULE_RENDER
@@ -58,18 +47,6 @@
 #  define MTS_EXPORT_UI MTS_EXPORT
 #else
 #  define MTS_EXPORT_UI MTS_IMPORT
-#endif
-
-#if MTS_BUILD_MODULE == MTS_MODULE_HW
-#  define MTS_EXPORT_HW MTS_EXPORT
-#else
-#  define MTS_EXPORT_HW MTS_IMPORT
-#endif
-
-#if MTS_BUILD_MODULE == MTS_MODULE_BIDIR
-#  define MTS_EXPORT_BIDIR MTS_EXPORT
-#else
-#  define MTS_EXPORT_BIDIR MTS_IMPORT
 #endif
 
 /* A few macro helpers to enable overloading macros based on the number of parameters */

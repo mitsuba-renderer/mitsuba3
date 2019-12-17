@@ -486,10 +486,10 @@ DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spect
             Normal3fP m = std::get<0>(distr.sample(wi, node));
             Vector3fP wo = reflect(Vector3fP(wi), m);
             FloatP f = std::get<0>(fresnel(dot(wi, m), FloatP(eta)));
-            FloatP result = distr.smith_g1(wo, m) * f;
-            result[wo.z() <= 0.f || wi.z() <= 0.f] = 0.f;
+            FloatP smith = distr.smith_g1(wo, m) * f;
+            smith[wo.z() <= 0.f || wi.z() <= 0.f] = 0.f;
 
-            accum += result * hprod(weight);
+            accum += smith * hprod(weight);
         }
         slice(result, i) = hsum(accum) * .25f;
     }
