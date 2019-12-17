@@ -23,7 +23,7 @@ def get_modes_load_string_func():
 
     add_load_string('scalar_rgb')
     add_load_string('packet_rgb')
-    # add_load_string('gpu_rgb') # TODO fix this
+    add_load_string('gpu_rgb')
 
     return load_string_list
 

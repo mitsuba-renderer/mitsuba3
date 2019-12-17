@@ -137,7 +137,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     Point2f sample(sample_);
 
     DirectionSample3f ds;
-    Spectrum spec = 0.f;
+    Spectrum spec;
 
     if (likely(!m_emitters.empty())) {
         // Randomly pick an emitter
@@ -159,7 +159,10 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         // Account for the discrete probability of sampling this emitter
         ds.pdf *= emitter_pdf;
         spec *= rcp(emitter_pdf);
-    }
+    } else {
+        ds = zero<DirectionSample3f>();
+        spec = 0.f;
+     }
 
     return { ds, spec };
 }

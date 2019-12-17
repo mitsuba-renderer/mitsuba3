@@ -143,6 +143,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
             ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
                                                    film->reconstruction_filter(),
                                                    !has_aovs);
+            block->clear();
 
             UInt32 idx = arange<UInt32>(total_sample_count) / UInt32(samples_per_pass);
             Vector2f pos = Vector2f(Float(idx % int(film_size[0])),
