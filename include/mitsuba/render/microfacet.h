@@ -496,5 +496,4 @@ DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spect
     return result;
 }
 
-MTS_EXTERN_CLASS(MicrofacetDistribution)
 NAMESPACE_END(mitsuba)

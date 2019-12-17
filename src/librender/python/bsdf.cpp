@@ -36,9 +36,9 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
             .value("All", BSDFFlags::All, D(BSDFFlags, All))
             .def(py::self == py::self)
             .def(py::self | py::self)
-            .def(uint() | py::self)
+            .def(int() | py::self)
             .def(py::self & py::self)
-            .def(uint() & py::self)
+            .def(int() & py::self)
             .def(+py::self)
             .def(~py::self)
             .def("__pos__", [](const BSDFFlags &f) {

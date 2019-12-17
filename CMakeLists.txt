@@ -29,7 +29,7 @@ endif()
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
 if (MTS_ENABLE_OPTIX)
-  set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
+set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
 endif()
 
 # ----------------------------------
@@ -463,7 +463,7 @@ add_custom_command(
   OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
           ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/python/config.h
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
-  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

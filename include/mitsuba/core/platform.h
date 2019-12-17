@@ -33,14 +33,26 @@
 
 #if MTS_BUILD_MODULE == MTS_MODULE_CORE
 #  define MTS_EXPORT_CORE MTS_EXPORT
+#  define MTS_EXTERN_CORE extern
 #else
 #  define MTS_EXPORT_CORE MTS_IMPORT
+#  if defined(_MSC_VER)
+#    define MTS_EXTERN_CORE
+#  else
+#    define MTS_EXTERN_CORE extern
+#  endif
 #endif
 
 #if MTS_BUILD_MODULE == MTS_MODULE_RENDER
 #  define MTS_EXPORT_RENDER MTS_EXPORT
+#  define MTS_EXTERN_RENDER extern
 #else
 #  define MTS_EXPORT_RENDER MTS_IMPORT
+#  if defined(_MSC_VER)
+#    define MTS_EXTERN_RENDER
+#  else
+#    define MTS_EXTERN_RENDER extern
+#  endif
 #endif
 
 #if MTS_BUILD_MODULE == MTS_MODULE_UI

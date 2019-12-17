@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/core/transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
@@ -202,7 +203,7 @@ public:
 protected:
     virtual ~Texture3D() {}
 
-    Mask is_inside(const Interaction3f &it, Mask active) const;
+    virtual Mask is_inside(const Interaction3f &it, Mask active) const = 0;
 
     void update_bbox() {
         ScalarPoint3f a(0.f, 0.f, 0.f);
@@ -220,6 +221,6 @@ protected:
     ScalarBoundingBox3f m_bbox;
 };
 
-MTS_EXTERN_CLASS(Texture)
-//MTS_EXTERN_CLASS(Texture3D) // TODO
+MTS_EXTERN_CLASS_RENDER(Texture)
+MTS_EXTERN_CLASS_RENDER(Texture3D)
 NAMESPACE_END(mitsuba)

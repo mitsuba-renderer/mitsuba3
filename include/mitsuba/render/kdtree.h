@@ -2444,5 +2444,5 @@ protected:
     std::vector<Size> m_primitive_map;
 };
 
-MTS_EXTERN_CLASS(ShapeKDTree)
+MTS_EXTERN_CLASS_RENDER(ShapeKDTree)
 NAMESPACE_END(mitsuba)

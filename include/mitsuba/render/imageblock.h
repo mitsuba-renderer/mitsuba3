@@ -211,5 +211,5 @@ protected:
     bool m_normalize;
 };
 
-MTS_EXTERN_CLASS(ImageBlock)
+MTS_EXTERN_CLASS_RENDER(ImageBlock)
 NAMESPACE_END(mitsuba)

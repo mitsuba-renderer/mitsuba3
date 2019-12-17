@@ -212,7 +212,7 @@ protected:
     int m_rr_depth;
 };
 
-MTS_EXTERN_CLASS(Integrator)
-MTS_EXTERN_CLASS(SamplingIntegrator)
-MTS_EXTERN_CLASS(MonteCarloIntegrator)
+MTS_EXTERN_CLASS_RENDER(Integrator)
+MTS_EXTERN_CLASS_RENDER(SamplingIntegrator)
+MTS_EXTERN_CLASS_RENDER(MonteCarloIntegrator)
 NAMESPACE_END(mitsuba)

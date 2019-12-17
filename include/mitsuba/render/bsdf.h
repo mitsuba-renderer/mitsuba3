@@ -498,7 +498,7 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
 //! @}
 // -----------------------------------------------------------------------
 
-MTS_EXTERN_CLASS(BSDF)
+MTS_EXTERN_CLASS_RENDER(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

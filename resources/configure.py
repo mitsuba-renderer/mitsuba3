@@ -31,15 +31,43 @@ def write_core_config(f, enabled, default_mode):
     f.write('\n\n')
 
     f.write('/// Declare that a "struct" template is to be imported and not instantiated\n')
-    w('#define MTS_EXTERN_STRUCT(Name)')
+    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_CORE\n')
+    w('#  define MTS_EXTERN_STRUCT_CORE(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    extern template struct MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+        w('    MTS_EXTERN_CORE template struct MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n#else\n')
+    w('#  define MTS_EXTERN_STRUCT_CORE(Name)')
+    w('\n#endif\n')
     f.write('\n\n')
 
     f.write('/// Declare that a "class" template is to be imported and not instantiated\n')
-    w('#define MTS_EXTERN_CLASS(Name)')
+    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_CORE\n')
+    w('#  define MTS_EXTERN_CLASS_CORE(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    extern template class MTS_EXPORT Name<%s, %s>;' % (float_, spectrum))
+        w('    MTS_EXTERN_CORE template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n#else\n')
+    w('#  define MTS_EXTERN_CLASS_CORE(Name)')
+    w('\n#endif\n')
+    f.write('\n\n')
+
+    f.write('/// Declare that a "struct" template is to be imported and not instantiated\n')
+    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_RENDER\n')
+    w('#  define MTS_EXTERN_STRUCT_RENDER(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    MTS_EXTERN_RENDER template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n#else\n')
+    w('#  define MTS_EXTERN_STRUCT_RENDER(Name)')
+    w('\n#endif\n')
+    f.write('\n\n')
+
+    f.write('/// Declare that a "class" template is to be imported and not instantiated\n')
+    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_RENDER\n')
+    w('#  define MTS_EXTERN_CLASS_RENDER(Name)')
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        w('    MTS_EXTERN_RENDER template class MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
+    f.write('\n#else\n')
+    w('#  define MTS_EXTERN_CLASS_RENDER(Name)')
+    w('\n#endif\n')
     f.write('\n\n')
 
     f.write('/// Explicitly instantiate all variants of a "struct" template\n')

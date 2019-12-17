@@ -193,6 +193,6 @@ protected:
 /// Helper function to parse fov
 extern MTS_EXPORT_RENDER float parse_fov(const Properties &props, float aspect);
 
-MTS_EXTERN_CLASS(Sensor)
-MTS_EXTERN_CLASS(ProjectiveCamera)
+MTS_EXTERN_CLASS_RENDER(Sensor)
+MTS_EXTERN_CLASS_RENDER(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

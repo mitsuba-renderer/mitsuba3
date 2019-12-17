@@ -359,7 +359,7 @@ protected:
     tbb::spin_mutex m_mutex;
 };
 
-MTS_EXTERN_CLASS(Mesh)
+MTS_EXTERN_CLASS_RENDER(Mesh)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------

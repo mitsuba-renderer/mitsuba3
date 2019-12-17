@@ -52,5 +52,5 @@ protected:
     size_t m_sample_count;
 };
 
-MTS_EXTERN_CLASS(Sampler)
+MTS_EXTERN_CLASS_RENDER(Sampler)
 NAMESPACE_END(mitsuba)

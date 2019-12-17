@@ -405,5 +405,6 @@ private:
 extern MTS_EXPORT_CORE std::ostream &operator<<(std::ostream &os,
                                                 const FilterBoundaryCondition &value);
 
-MTS_EXTERN_CLASS(ReconstructionFilter)
+MTS_EXTERN_CLASS_CORE(ReconstructionFilter)
+
 NAMESPACE_END(mitsuba)

@@ -333,7 +333,7 @@ protected:
     std::string m_id;
 };
 
-MTS_EXTERN_CLASS(Shape)
+MTS_EXTERN_CLASS_RENDER(Shape)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
