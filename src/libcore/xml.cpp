@@ -247,14 +247,28 @@ ColorMode variant_to_color_mode() {
         static_assert(false_v<Float, Spectrum>, "This should never happen!");
 }
 
+template <typename Float, typename Spectrum>
+bool check_cuda() {
+    if constexpr (is_cuda_array_v<Float>)
+        return true;
+    else
+        return false;
+}
+
+
 struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
+    bool parallelize;
     ColorMode color_mode;
 
     XMLParseContext(const std::string &variant) : variant(variant) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
+
+        /* Don't load the scene in parallel when running in GPU mode
+           (The Enoki CUDA backend is currently not multi-threaded) */
+        parallelize = !MTS_INVOKE_VARIANT(variant, check_cuda);
     }
 
     std::string variant;
@@ -983,41 +997,49 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
     ThreadEnvironment env;
 
-    tbb::parallel_for(tbb::blocked_range<uint32_t>(
-        0u, (uint32_t) named_references.size(), 1),
-        [&](const tbb::blocked_range<uint32_t> &range) {
-            ScopedSetThreadEnvironment set_env(env);
-            for (uint32_t i = range.begin(); i != range.end(); ++i) {
-                auto &kv = named_references[i];
-                try {
-                    ref<Object> obj;
+    auto functor = [&](const tbb::blocked_range<uint32_t> &range) {
+        ScopedSetThreadEnvironment set_env(env);
+        for (uint32_t i = range.begin(); i != range.end(); ++i) {
+            auto &kv = named_references[i];
+            try {
+                ref<Object> obj;
+                auto instantiate_recursively = [&](){
+                    obj = instantiate_node(ctx, kv.second);
+                };
 
-                    // Isolate from parent talks to prevent deadlocks
-                    tbb::this_task_arena::isolate([&] {
-                        obj = instantiate_node(ctx, kv.second);
-                    });
+                // Potentially isolate from parent tasks to prevent deadlocks
+                if (ctx.parallelize)
+                    tbb::this_task_arena::isolate(instantiate_recursively);
+                else
+                    instantiate_recursively();
 
-                    // Give the object a chance to recursively expand into sub-objects
-                    std::vector<ref<Object>> children = obj->expand();
-                    if (children.empty()) {
-                        props.set_object(kv.first, obj, false);
-                    } else if (children.size() == 1) {
-                        props.set_object(kv.first, children[0], false);
-                    } else {
-                        int ctr = 0;
-                        for (auto c : children)
-                            props.set_object(kv.first + "_" + std::to_string(ctr++), children[0], false);
-                    }
-                } catch (const std::exception &e) {
-                    if (strstr(e.what(), "Error while loading") == nullptr)
-                        Throw("Error while loading \"%s\" (near %s): %s",
-                              inst.src_id, inst.offset(inst.location), e.what());
-                    else
-                        throw;
+                // Give the object a chance to recursively expand into sub-objects
+                std::vector<ref<Object>> children = obj->expand();
+                if (children.empty()) {
+                    props.set_object(kv.first, obj, false);
+                } else if (children.size() == 1) {
+                    props.set_object(kv.first, children[0], false);
+                } else {
+                    int ctr = 0;
+                    for (auto c : children)
+                        props.set_object(kv.first + "_" + std::to_string(ctr++), children[0], false);
                 }
+            } catch (const std::exception &e) {
+                if (strstr(e.what(), "Error while loading") == nullptr)
+                    Throw("Error while loading \"%s\" (near %s): %s",
+                          inst.src_id, inst.offset(inst.location), e.what());
+                else
+                    throw;
             }
         }
-    );
+    };
+
+    tbb::blocked_range<uint32_t> range(0u, (uint32_t) named_references.size(), 1);
+
+    if (ctx.parallelize)
+        tbb::parallel_for(range, functor);
+    else
+        functor(range);
 
     try {
         inst.object = PluginManager::instance()->create_object(props, inst.class_);
