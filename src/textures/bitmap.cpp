@@ -63,6 +63,14 @@ public:
         // Convert the image into the working floating point representation
         m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
 
+        if (any(m_bitmap->size() < 2)) {
+            Log(Warn, "Image must be at least 2x2 pixels in size, up-sampling..");
+            using ReconstructionFilter = Bitmap::ReconstructionFilter;
+            ref<ReconstructionFilter> rfilter =
+                PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
+            m_bitmap = m_bitmap->resample(max(m_bitmap->size(), 2), rfilter);
+        }
+
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
 
         double mean = 0.0;
