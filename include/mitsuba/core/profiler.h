@@ -100,11 +100,10 @@ private:
 
 class MTS_EXPORT_CORE Profiler : public Object {
 public:
-    MTS_DECLARE_CLASS(Profiler, Object)
-
     static void static_initialization();
     static void static_shutdown();
     static void print_report();
+    MTS_DECLARE_CLASS()
 private:
     Profiler() = delete;
 };
