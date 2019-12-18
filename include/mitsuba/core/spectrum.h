@@ -132,6 +132,9 @@ extern MTS_EXPORT_CORE const float *cie1931_x_data;
 extern MTS_EXPORT_CORE const float *cie1931_y_data;
 extern MTS_EXPORT_CORE const float *cie1931_z_data;
 
+/// Allocate GPU memory for the CIE 1931 tables
+extern MTS_EXPORT_CORE void cie_alloc();
+
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
  * in nanometers

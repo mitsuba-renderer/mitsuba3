@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
     Profiler::static_initialization();
+    cie_alloc();
 
     // Ensure that the mitsuba-render shared library is loaded
     librender_nop();

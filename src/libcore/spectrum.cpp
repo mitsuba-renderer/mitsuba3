@@ -84,28 +84,24 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
     Float(0.000000000000), Float(0.000000000000), Float(0.000000000000)
 };
 
-const Float *cie1931_x_data = nullptr;
-const Float *cie1931_y_data = nullptr;
-const Float *cie1931_z_data = nullptr;
+const Float *cie1931_x_data = cie1931_tbl;
+const Float *cie1931_y_data = cie1931_tbl + MTS_CIE_SAMPLES;
+const Float *cie1931_z_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
-static Float *cie_alloc() {
-    Float *src = (Float *) cie1931_tbl;
 
-// TODO
-// #if defined(MTS_ENABLE_OPTIX)
-//     const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
-//     src = (Float *) cuda_host_malloc(size);
-//     memcpy(src, cie1931_tbl, size);
-// #endif
+void cie_alloc() {
+#if defined(MTS_ENABLE_OPTIX)
+    const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
+    Float *src = (Float *) cuda_managed_malloc(size);
+    memcpy(src, cie1931_tbl, size);
 
     cie1931_x_data = src;
     cie1931_y_data = src + MTS_CIE_SAMPLES;
     cie1931_z_data = src + MTS_CIE_SAMPLES * 2;
-
-    return nullptr;
+#else
+    ;
+#endif
 }
-
-static const Float *cie1931_dummy = cie_alloc();
 
 //! @}
 // =======================================================================

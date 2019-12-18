@@ -94,6 +94,7 @@ PYBIND11_MODULE(mitsuba_core_ext, m_) {
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
+    cie_alloc();
 
     // libmitsuba-core
     MTS_PY_IMPORT(filesystem);
