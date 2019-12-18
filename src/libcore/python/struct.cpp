@@ -47,7 +47,7 @@ MTS_PY_EXPORT(Struct) {
             .value("Float16", Struct::Type::Float16, D(Struct, Type, Float16))
             .value("Float32", Struct::Type::Float32, D(Struct, Type, Float32))
             .value("Float64", Struct::Type::Float64, D(Struct, Type, Float64))
-            .value("Float", struct_type_v<Float>)
+            .value("Float",   sizeof(scalar_t<Float>) == 4 ? Struct::Type::Float32 : Struct::Type::Float64)
             .value("Invalid", Struct::Type::Invalid, D(Struct, Type, Invalid))
             .def(py::init([](py::dtype dt) {
                 Struct::Type value = Struct::Type::Int8;
