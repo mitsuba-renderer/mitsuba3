@@ -14,7 +14,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(RoughDielectric, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
@@ -305,6 +304,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
@@ -314,5 +314,6 @@ private:
     bool m_sample_visible;
 };
 
-MTS_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric");
+MTS_IMPLEMENT_CLASS_VARIANT(RoughDielectric, BSDF)
+MTS_EXPORT_PLUGIN(RoughDielectric, "Rough dielectric")
 NAMESPACE_END(mitsuba)

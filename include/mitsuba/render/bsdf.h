@@ -278,7 +278,6 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER BSDF : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BSDF, Object, "bsdf")
     MTS_IMPORT_TYPES();
 
     /**
@@ -443,6 +442,7 @@ public:
     ENOKI_CALL_SUPPORT_FRIEND()
     ENOKI_PINNED_OPERATOR_NEW(Float)
 
+    MTS_DECLARE_CLASS()
 protected:
     BSDF(const Properties &props);
     virtual ~BSDF();

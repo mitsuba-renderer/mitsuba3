@@ -7,7 +7,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Constant3D, Texture3D)
     MTS_IMPORT_BASE(Texture3D, m_world_to_local)
     MTS_IMPORT_TYPES(Texture)
 
@@ -63,9 +62,11 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_color;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(Constant3D, Texture3D)
 MTS_EXPORT_PLUGIN(Constant3D, "Constant 3D texture")
 NAMESPACE_END(mitsuba)

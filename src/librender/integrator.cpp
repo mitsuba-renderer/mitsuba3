@@ -276,6 +276,9 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pr
 
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
+MTS_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
+MTS_IMPLEMENT_CLASS_VARIANT(MonteCarloIntegrator, SamplingIntegrator)
 
 MTS_INSTANTIATE_CLASS(Integrator)
 MTS_INSTANTIATE_CLASS(SamplingIntegrator)

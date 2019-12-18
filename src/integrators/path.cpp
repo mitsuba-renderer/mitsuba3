@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
     MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
@@ -135,7 +134,10 @@ public:
         pdf_b *= pdf_b;
         return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), 0.f);
     }
+
+    MTS_DECLARE_CLASS()
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(PathIntegrator, MonteCarloIntegrator)
 MTS_EXPORT_PLUGIN(PathIntegrator, "Path Tracer integrator");
 NAMESPACE_END(mitsuba)

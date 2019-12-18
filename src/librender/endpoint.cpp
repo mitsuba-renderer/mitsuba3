@@ -48,5 +48,6 @@ MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f 
     NotImplementedError("eval");
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)
 MTS_INSTANTIATE_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

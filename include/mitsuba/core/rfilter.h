@@ -47,7 +47,6 @@ enum class FilterBoundaryCondition {
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_CORE ReconstructionFilter : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
     MTS_IMPORT_CORE_TYPES()
 
     /// Return the filter's width
@@ -65,6 +64,7 @@ public:
         return gather<Float>(m_values.data(), index, active);
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);

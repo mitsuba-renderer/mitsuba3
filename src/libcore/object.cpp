@@ -20,10 +20,6 @@ std::vector<ref<Object>> Object::expand() const {
     return { };
 }
 
-const Class *Object::class_() const {
-    return m_class;
-}
-
 void Object::traverse(TraversalCallback * /*callback*/) { }
 
 void Object::parameters_changed() { }
@@ -45,4 +41,5 @@ std::ostream& operator<<(std::ostream &os, const Object *object) {
     return os;
 }
 
+MTS_IMPLEMENT_CLASS(Object,)
 NAMESPACE_END(mitsuba)

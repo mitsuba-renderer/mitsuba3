@@ -194,5 +194,6 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
 
 void librender_nop() { }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
 MTS_INSTANTIATE_CLASS(Scene)
 NAMESPACE_END(mitsuba)

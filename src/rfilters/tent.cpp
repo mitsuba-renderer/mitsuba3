@@ -13,7 +13,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class TentFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(TentFilter, ReconstructionFilter)
     MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
     MTS_IMPORT_TYPES()
 
@@ -31,9 +30,11 @@ public:
         return tfm::format("TentFilter[radius=%f]", m_radius);
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarFloat m_inv_radius;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(TentFilter, ReconstructionFilter)
 MTS_EXPORT_PLUGIN(TentFilter, "Tent filter");
 NAMESPACE_END(mitsuba)

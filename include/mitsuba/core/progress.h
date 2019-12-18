@@ -14,8 +14,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE ProgressReporter : public Object {
 public:
-    MTS_DECLARE_CLASS(ProgressReporter, Object)
-
     /**
      * \brief Construct a new progress reporter.
      * \param label
@@ -28,6 +26,7 @@ public:
     /// Update the progress to \c progress (which should be in the range [0, 1])
     void update(float progress);
 
+    MTS_DECLARE_CLASS()
 protected:
     ~ProgressReporter();
 

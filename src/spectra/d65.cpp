@@ -27,7 +27,6 @@ const float data[95] = {
 template <typename Float, typename Spectrum>
 class D65Spectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(D65Spectrum, Texture)
     MTS_IMPORT_BASE(Texture)
 
     D65Spectrum(const Properties &props) {
@@ -65,9 +64,11 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     Float m_scale;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)
 MTS_EXPORT_PLUGIN(D65Spectrum, "CIE D65 Spectrum")
 NAMESPACE_END(mitsuba)

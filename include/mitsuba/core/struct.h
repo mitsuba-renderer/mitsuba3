@@ -21,7 +21,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Struct : public Object {
 public:
-    MTS_DECLARE_CLASS(Struct, Object)
 
     /// Type of a field in the \c Struct
     enum class Type : uint32_t {
@@ -271,6 +270,7 @@ public:
     /// Return the representable range of the given type
     static std::pair<double, double> range(Type type);
 
+    MTS_DECLARE_CLASS()
 protected:
     std::vector<Field> m_fields;
     bool m_pack;
@@ -279,11 +279,11 @@ protected:
 
 NAMESPACE_BEGIN(detail)
 template <typename T> struct struct_type {
-    static constexpr Struct::Type value = struct_type<scalar_t<T>>::value; \
+    static constexpr Struct::Type value = struct_type<scalar_t<T>>::value;
 };
 
-#define MTS_STRUCT_TYPE(type, entry) \
-    template <> struct struct_type<type> { \
+#define MTS_STRUCT_TYPE(type, entry)                               \
+    template <> struct struct_type<type> {                         \
         static constexpr Struct::Type value = Struct::Type::entry; \
     };
 
@@ -363,7 +363,6 @@ constexpr bool has_flag(uint32_t flags, Struct::Flags f)          { return (flag
 class MTS_EXPORT_CORE StructConverter : public Object {
     using FuncType = bool (*) (size_t, size_t, const void *, void *);
 public:
-    MTS_DECLARE_CLASS(StructConverter, Object)
     using Float = float;
 
     /// Construct an optimized conversion routine going from \c source to \c target
@@ -405,6 +404,7 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
+    MTS_DECLARE_CLASS()
 protected:
 
 #if MTS_STRUCTCONVERTER_USE_JIT == 0

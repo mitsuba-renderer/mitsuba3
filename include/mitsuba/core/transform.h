@@ -363,7 +363,6 @@ template <typename Point_> struct Transform {
  */
 class MTS_EXPORT_CORE AnimatedTransform : public Object {
 public:
-    MTS_DECLARE_CLASS(AnimatedTransform, Object)
     using Float = float;
     MTS_IMPORT_CORE_TYPES()
 
@@ -511,6 +510,7 @@ public:
     /// Return a human-readable summary of this bitmap
     virtual std::string to_string() const override;
 
+    MTS_DECLARE_CLASS()
 private:
     Transform4f m_transform;
     std::vector<Keyframe> m_keyframes;

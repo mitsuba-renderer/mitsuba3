@@ -20,7 +20,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Film : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Film, Object, "film")
     MTS_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
 
     /// Configure the film for rendering a specified set of channels
@@ -90,7 +89,7 @@ public:
 
     virtual std::string to_string() const override;
 
-
+    MTS_DECLARE_CLASS()
 protected:
     /// Create a film
     Film(const Properties &props);

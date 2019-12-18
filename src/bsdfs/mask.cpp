@@ -9,7 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(MaskBSDF, BSDF)
     MTS_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
     MTS_IMPORT_TYPES(BSDF, Texture)
 
@@ -116,10 +115,12 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_opacity;
     ref<BSDF> m_nested_bsdf;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)
 MTS_EXPORT_PLUGIN(MaskBSDF, "Mask material")
 NAMESPACE_END(mitsuba)

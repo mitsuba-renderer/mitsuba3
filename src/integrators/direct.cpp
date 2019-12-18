@@ -9,7 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
     MTS_IMPORT_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
@@ -145,6 +144,7 @@ public:
         return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Float(0.f));
     }
 
+    MTS_DECLARE_CLASS()
 private:
     size_t m_emitter_samples;
     size_t m_bsdf_samples;
@@ -152,5 +152,6 @@ private:
     ScalarFloat m_weight_bsdf, m_weight_lum;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(DirectIntegrator, SamplingIntegrator)
 MTS_EXPORT_PLUGIN(DirectIntegrator, "Direct integrator");
 NAMESPACE_END(mitsuba)

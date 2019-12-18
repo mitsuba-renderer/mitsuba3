@@ -43,4 +43,6 @@ void DummyStream::flush() { /* Nothing to do */ }
 bool DummyStream::can_write() const { return !is_closed(); }
 bool DummyStream::can_read() const { return false; }
 
+MTS_IMPLEMENT_CLASS(DummyStream, Stream)
+
 NAMESPACE_END(mitsuba)

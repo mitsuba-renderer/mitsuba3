@@ -176,5 +176,6 @@ MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed() {
         m_exterior_medium->parameters_changed();
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
 MTS_INSTANTIATE_CLASS(Shape)
 NAMESPACE_END(mitsuba)

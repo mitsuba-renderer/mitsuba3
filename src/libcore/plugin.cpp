@@ -162,4 +162,6 @@ void PluginManager::ensure_plugin_loaded(const std::string &name) {
     (void) d->plugin(name);
 }
 
+MTS_IMPLEMENT_CLASS(PluginManager, Object)
+
 NAMESPACE_END(mitsuba)

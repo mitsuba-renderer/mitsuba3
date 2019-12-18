@@ -184,7 +184,6 @@ describe a slightly absorbing piece of glass is shown below:
 template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SmoothDielectric, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture)
 
@@ -296,11 +295,13 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarFloat m_eta;
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(SmoothDielectric, BSDF)
 MTS_EXPORT_PLUGIN(SmoothDielectric, "Smooth dielectric")
 NAMESPACE_END(mitsuba)

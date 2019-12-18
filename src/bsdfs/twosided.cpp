@@ -81,7 +81,6 @@ The following snippet describes a two-sided diffuse material:
 template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(TwoSidedBRDF, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(BSDF)
 
@@ -211,9 +210,11 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<BSDF> m_brdf[2];
 };
 
-MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter");
+MTS_IMPLEMENT_CLASS_VARIANT(TwoSidedBRDF, BSDF)
+MTS_EXPORT_PLUGIN(TwoSidedBRDF, "Two-sided material adapter")
 NAMESPACE_END(mitsuba)

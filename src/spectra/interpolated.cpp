@@ -9,7 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class InterpolatedSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(InterpolatedSpectrum, Texture)
     MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES()
 
@@ -200,6 +199,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     FloatStorage m_data, m_cdf;
     uint32_t m_size_minus_2;
@@ -211,5 +211,6 @@ private:
     ScalarFloat m_normalization;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(InterpolatedSpectrum, Texture)
 MTS_EXPORT_PLUGIN(InterpolatedSpectrum, "Interpolated spectrum")
 NAMESPACE_END(mitsuba)

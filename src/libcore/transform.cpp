@@ -133,4 +133,6 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t) {
     return os;
 }
 
+MTS_IMPLEMENT_CLASS(AnimatedTransform, Object)
+
 NAMESPACE_END(mitsuba)

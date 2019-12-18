@@ -8,7 +8,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SRGBEmitterSpectrum, Texture)
     MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES(Texture)
 
@@ -50,6 +49,7 @@ public:
         callback->put_parameter("coeff", m_coeff);
     }
 
+    MTS_DECLARE_CLASS()
 private:
     /**
      * Depending on the compiled variant, this plugin either stores coefficients
@@ -61,5 +61,6 @@ private:
     ref<Texture> m_d65;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(SRGBEmitterSpectrum, Texture)
 MTS_EXPORT_PLUGIN(SRGBEmitterSpectrum, "sRGB x D65 spectrum")
 NAMESPACE_END(mitsuba)

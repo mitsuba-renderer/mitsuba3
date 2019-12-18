@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SmoothPlastic final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SmoothPlastic, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture)
 
@@ -184,6 +183,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
@@ -193,5 +193,6 @@ private:
     bool m_nonlinear;
 };
 
-MTS_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic");
+MTS_IMPLEMENT_CLASS_VARIANT(SmoothPlastic, BSDF)
+MTS_EXPORT_PLUGIN(SmoothPlastic, "Smooth plastic")
 NAMESPACE_END(mitsuba)

@@ -16,7 +16,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(RoughPlastic, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
@@ -267,6 +266,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
@@ -280,6 +280,6 @@ private:
     ScalarFloat m_internal_reflectance;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);
 MTS_EXPORT_PLUGIN(RoughPlastic, "Rough plastic");
-
 NAMESPACE_END(mitsuba)

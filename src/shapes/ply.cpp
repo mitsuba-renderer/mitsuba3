@@ -15,7 +15,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(PLYMesh, Shape)
     MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
                     m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
@@ -571,7 +570,10 @@ private:
         out->seek(0);
         return out;
     }
+
+    MTS_DECLARE_CLASS()
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(PLYMesh, Shape)
 MTS_EXPORT_PLUGIN(PLYMesh, "PLY Mesh")
 NAMESPACE_END(mitsuba)

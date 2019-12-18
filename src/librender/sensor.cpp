@@ -171,6 +171,9 @@ float parse_fov(const Properties &props, float aspect) {
     return result;
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
+MTS_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)
+
 MTS_INSTANTIATE_CLASS(Sensor)
 MTS_INSTANTIATE_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)

@@ -31,5 +31,6 @@ std::ostream &operator<<(std::ostream &os, const FilterBoundaryCondition &value)
     return os;
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(ReconstructionFilter, Object, "rfilter")
 MTS_INSTANTIATE_CLASS(ReconstructionFilter)
 NAMESPACE_END(mitsuba)

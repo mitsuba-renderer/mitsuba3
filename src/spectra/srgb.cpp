@@ -8,7 +8,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(SRGBSpectrum, Texture)
     MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES()
 
@@ -47,6 +46,7 @@ public:
         callback->put_parameter("coeff", m_coeff);
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     /**
      * Depending on the compiled variant, this plugin either stores coefficients
@@ -57,6 +57,6 @@ protected:
     Array<ScalarFloat, ChannelCount> m_coeff;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(SRGBSpectrum, Texture)
 MTS_EXPORT_PLUGIN(SRGBSpectrum, "sRGB spectrum")
-
 NAMESPACE_END(mitsuba)

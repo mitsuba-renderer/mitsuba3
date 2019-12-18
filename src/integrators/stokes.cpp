@@ -7,7 +7,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class StokesIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
     MTS_IMPORT_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler, SamplingIntegrator)
 
@@ -69,9 +68,11 @@ public:
         callback->put_object("integrator", m_integrator.get());
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ref<SamplingIntegrator> m_integrator;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)
 MTS_EXPORT_PLUGIN(StokesIntegrator, "Stokes integrator");
 NAMESPACE_END(mitsuba)

@@ -9,7 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BlendBSDF, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture, BSDF)
 
@@ -126,10 +125,12 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_weight;
     ref<BSDF> m_nested_bsdf[2];
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)
 MTS_EXPORT_PLUGIN(BlendBSDF, "BlendBSDF material")
 NAMESPACE_END(mitsuba)

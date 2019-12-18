@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE MemoryStream : public Stream {
 public:
-    MTS_DECLARE_CLASS(MemoryStream, Stream)
     using Stream::read;
     using Stream::write;
 
@@ -114,6 +113,7 @@ public:
     //! @}
     // =========================================================================
 
+    MTS_DECLARE_CLASS()
 protected:
 
     /// Protected destructor

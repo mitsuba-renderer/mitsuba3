@@ -16,7 +16,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BlackBodySpectrum, Texture)
     MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES()
 
@@ -172,12 +171,13 @@ public:
         callback->put_parameter("temperature", m_temperature);
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarFloat m_temperature;
     ScalarFloat m_integral_min;
     ScalarFloat m_integral;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(BlackBodySpectrum, Texture)
 MTS_EXPORT_PLUGIN(BlackBodySpectrum, "Black body spectrum")
-
 NAMESPACE_END(mitsuba)

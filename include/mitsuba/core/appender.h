@@ -10,8 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Appender : public Object {
 public:
-    MTS_DECLARE_CLASS(Appender, Object)
-
     /// Append a line of text with the given log level
     virtual void append(LogLevel level, const std::string &text) = 0;
 
@@ -29,6 +27,7 @@ public:
         const std::string &formatted, const std::string &eta,
         const void *ptr = nullptr) = 0;
 
+    MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Appender() = default;
@@ -39,8 +38,6 @@ protected:
  */
 class MTS_EXPORT_CORE StreamAppender : public Appender {
 public:
-    MTS_DECLARE_CLASS(StreamAppender, Appender)
-
     /**
      * Create a new stream appender
      * \remark This constructor is not exposed in the Python bindings
@@ -67,6 +64,7 @@ public:
     /// Return a string representation
     std::string to_string() const override;
 
+    MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~StreamAppender();

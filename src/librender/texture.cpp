@@ -77,6 +77,9 @@ Texture3D<Float, Spectrum>::max() const { NotImplementedError("max"); }
 //! @}
 // =======================================================================
 
+MTS_IMPLEMENT_CLASS_VARIANT(Texture, Object, "texture")
+MTS_IMPLEMENT_CLASS_VARIANT(Texture3D, Object, "texture3d")
+
 MTS_INSTANTIATE_CLASS(Texture)
 MTS_INSTANTIATE_CLASS(Texture3D)
 NAMESPACE_END(mitsuba)

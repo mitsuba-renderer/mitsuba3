@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
     MTS_IMPORT_BASE(Emitter)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
@@ -104,10 +103,12 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_radiance;
     ScalarBoundingSphere3f m_bsphere;
 };
 
-MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter");
+MTS_IMPLEMENT_CLASS_VARIANT(ConstantBackgroundEmitter, Emitter)
+MTS_EXPORT_PLUGIN(ConstantBackgroundEmitter, "Constant background emitter")
 NAMESPACE_END(mitsuba)

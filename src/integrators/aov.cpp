@@ -10,7 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(AOVIntegrator, SamplingIntegrator)
     MTS_IMPORT_BASE(SamplingIntegrator)
     MTS_IMPORT_TYPES(Scene, Sampler, SamplingIntegrator)
 
@@ -181,11 +180,13 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     std::vector<Type> m_aov_types;
     std::vector<std::string> m_aov_names;
     std::vector<std::pair<ref<SamplingIntegrator>, size_t>> m_integrators;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(AOVIntegrator, SamplingIntegrator)
 MTS_EXPORT_PLUGIN(AOVIntegrator, "AOV integrator");
 NAMESPACE_END(mitsuba)

@@ -136,5 +136,6 @@ std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     return os;
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(BSDF, Object, "bsdf")
 MTS_INSTANTIATE_CLASS(BSDF)
 NAMESPACE_END(mitsuba)

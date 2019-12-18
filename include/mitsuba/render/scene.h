@@ -10,8 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
-    /// Register this class with Mitsuba's RTTI system
-    MTS_DECLARE_CLASS_VARIANT(Scene, Object, "scene")
     MTS_IMPORT_TYPES(BSDF, Emitter, Film, Sampler, Shape, Sensor, Integrator)
 
     /// Instantiate a scene from a \ref Properties object
@@ -157,6 +155,7 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
+    MTS_DECLARE_CLASS()
 protected:
     /// Virtual destructor
     virtual ~Scene();

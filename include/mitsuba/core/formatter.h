@@ -9,8 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Formatter : public Object {
 public:
-    MTS_DECLARE_CLASS(Formatter, Object)
-
     /**
      * \brief Turn a log message into a human-readable format
      * \param level     The importance of the debug message
@@ -25,6 +23,7 @@ public:
                                const Thread *thread, const char *file, int line,
                                const std::string &msg) = 0;
 
+    MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor
     virtual ~Formatter() = default;
@@ -36,8 +35,6 @@ protected:
 class MTS_EXPORT_CORE DefaultFormatter : public Formatter {
     friend class Logger;
 public:
-    MTS_DECLARE_CLASS(DefaultFormatter, Formatter)
-
     /// Create a new default formatter
     DefaultFormatter();
 
@@ -65,6 +62,7 @@ public:
     /// \sa set_has_class
     bool has_class() { return m_has_class; }
 
+    MTS_DECLARE_CLASS()
 protected:
     bool m_has_date;
     bool m_has_log_level;

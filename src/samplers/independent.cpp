@@ -8,7 +8,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(IndependentSampler, Sampler)
     MTS_IMPORT_BASE(Sampler, m_sample_count)
     MTS_IMPORT_TYPES()
 
@@ -69,9 +68,11 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     std::unique_ptr<PCG32> m_rng;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)
 MTS_EXPORT_PLUGIN(IndependentSampler, "Independent Sampler");
 NAMESPACE_END(mitsuba)

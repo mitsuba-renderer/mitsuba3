@@ -29,7 +29,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Grid3D final : public Grid3DBase<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Grid3D, Grid3DBase)
     MTS_IMPORT_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
     MTS_IMPORT_TYPES()
 
@@ -203,10 +202,12 @@ public:
 
     size_t data_size() const override { return m_data.size(); }
 
+    MTS_DECLARE_CLASS()
 protected:
     DataBuffer m_data;
     bool m_fixed_max = false;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(Grid3D, Grid3DBase)
 MTS_EXPORT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
 NAMESPACE_END(mitsuba)

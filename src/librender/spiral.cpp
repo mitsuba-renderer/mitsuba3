@@ -68,4 +68,5 @@ std::pair<Spiral::Vector2i, Spiral::Vector2i> Spiral::next_block() {
     return { offset, size };
 }
 
+MTS_IMPLEMENT_CLASS(Spiral, Object)
 NAMESPACE_END(mitsuba)

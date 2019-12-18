@@ -28,7 +28,6 @@ void advance(const char **start_, const char *end, const char (&delim)[N]) {
 template <typename Float, typename Spectrum>
 class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(OBJMesh, Shape)
     MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
                     m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
@@ -300,7 +299,10 @@ public:
         if (is_emitter())
             emitter()->set_shape(this);
     }
+
+    MTS_DECLARE_CLASS()
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(OBJMesh, Shape)
 MTS_EXPORT_PLUGIN(OBJMesh, "OBJ Mesh")
 NAMESPACE_END(mitsuba)

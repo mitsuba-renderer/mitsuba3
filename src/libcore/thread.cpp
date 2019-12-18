@@ -61,12 +61,11 @@ namespace {
 /// Dummy class to associate a thread identity with the main thread
 class MainThread : public Thread {
 public:
-    MTS_DECLARE_CLASS(MainThread, Thread)
-
     MainThread() : Thread("main") { }
 
     virtual void run() override { Log(Error, "The main thread is already running!"); }
 
+    MTS_DECLARE_CLASS()
 protected:
     virtual ~MainThread() { }
 };
@@ -74,12 +73,11 @@ protected:
 /// Dummy class to associate a thread identity with a worker thread
 class WorkerThread : public Thread {
 public:
-    MTS_DECLARE_CLASS(WorkerThread, Thread)
-
     WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%02i", prefix, m_counter++)) { }
 
     virtual void run() override { Throw("The worker thread is already running!"); }
 
+    MTS_DECLARE_CLASS()
 protected:
     virtual ~WorkerThread() { }
     static std::atomic<uint32_t> m_counter;
@@ -584,5 +582,9 @@ ScopedSetThreadEnvironment::~ScopedSetThreadEnvironment() {
     *profiler_flags() = m_profiler_flags;
 #endif
 }
+
+MTS_IMPLEMENT_CLASS(Thread, Object)
+MTS_IMPLEMENT_CLASS(MainThread, Thread)
+MTS_IMPLEMENT_CLASS(WorkerThread, Thread)
 
 NAMESPACE_END(mitsuba)

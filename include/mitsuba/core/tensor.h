@@ -14,7 +14,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE TensorFile : public MemoryMappedFile {
 public:
-    MTS_DECLARE_CLASS(TensorFile, MemoryMappedFile)
 
     /// Information about the specified field
     struct Field {
@@ -43,6 +42,7 @@ public:
     /// Return a human-readable summary
     std::string to_string() const override;
 
+    MTS_DECLARE_CLASS()
 protected:
     /// Destructor
     ~TensorFile();

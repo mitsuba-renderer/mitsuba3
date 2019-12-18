@@ -15,7 +15,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Measured final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Measured, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES()
 
@@ -385,6 +384,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     template <typename Value> Value u2theta(Value u) const {
         return sqr(u) * (math::Pi<Float> / 2.f);
@@ -414,5 +414,6 @@ private:
     int m_reduction;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(Measured, BSDF)
 MTS_EXPORT_PLUGIN(Measured, "Measured material")
 NAMESPACE_END(mitsuba)

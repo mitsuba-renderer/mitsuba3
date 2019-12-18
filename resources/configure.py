@@ -30,44 +30,33 @@ def write_core_config(f, enabled, default_mode):
     w('#define MTS_DEFAULT_VARIANT "%s"' % default_mode)
     f.write('\n\n')
 
+    f.write('/// Lets you pass a type containing a `,` through a macro parameter without needing\n')
+    f.write('/// a separate typedef\n')
+    w('#define MTS_VARIANT_TYPE(...) __VA_ARGS__')
+    f.write('\n\n')
+
     f.write('/// Declare that a "struct" template is to be imported and not instantiated\n')
-    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_CORE\n')
-    w('#  define MTS_EXTERN_STRUCT_CORE(Name)')
+    w('#define MTS_EXTERN_STRUCT_CORE(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    MTS_EXTERN_CORE template struct MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
-    f.write('\n#else\n')
-    w('#  define MTS_EXTERN_STRUCT_CORE(Name)')
-    w('\n#endif\n')
     f.write('\n\n')
 
     f.write('/// Declare that a "class" template is to be imported and not instantiated\n')
-    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_CORE\n')
-    w('#  define MTS_EXTERN_CLASS_CORE(Name)')
+    w('#define MTS_EXTERN_CLASS_CORE(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    MTS_EXTERN_CORE template class MTS_EXPORT_CORE Name<%s, %s>;' % (float_, spectrum))
-    f.write('\n#else\n')
-    w('#  define MTS_EXTERN_CLASS_CORE(Name)')
-    w('\n#endif\n')
     f.write('\n\n')
 
     f.write('/// Declare that a "struct" template is to be imported and not instantiated\n')
-    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_RENDER\n')
-    w('#  define MTS_EXTERN_STRUCT_RENDER(Name)')
+    w('#define MTS_EXTERN_STRUCT_RENDER(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    MTS_EXTERN_RENDER template struct MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
-    f.write('\n#else\n')
-    w('#  define MTS_EXTERN_STRUCT_RENDER(Name)')
-    w('\n#endif\n')
     f.write('\n\n')
 
     f.write('/// Declare that a "class" template is to be imported and not instantiated\n')
-    f.write('#if MTS_BUILD_MODULE != MTS_MODULE_RENDER\n')
-    w('#  define MTS_EXTERN_CLASS_RENDER(Name)')
+    w('#define MTS_EXTERN_CLASS_RENDER(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         w('    MTS_EXTERN_RENDER template class MTS_EXPORT_RENDER Name<%s, %s>;' % (float_, spectrum))
-    f.write('\n#else\n')
-    w('#  define MTS_EXTERN_CLASS_RENDER(Name)')
-    w('\n#endif\n')
     f.write('\n\n')
 
     f.write('/// Explicitly instantiate all variants of a "struct" template\n')
@@ -177,7 +166,7 @@ def write_python_config(f, enabled, float_types):
     w('#define PY_CAST_OBJECT_VARIANTS(Name)')
     for index, (name, float_, spectrum) in enumerate(enabled):
         spectrum = spectrum.replace('Float', float_)
-        w('    PY_CAST_OBJECT(PYBIND11_TYPE(Name<%s, %s>))' % (float_, spectrum))
+        w('    PY_CAST_OBJECT(MTS_VARIANT_TYPE(Name<%s, %s>))' % (float_, spectrum))
     f.write('\n\n')
 
     f.write('/// Cast a void pointer (\'ptr\') to the corresponding python object given a std::type_info \'type\'\n')
@@ -189,7 +178,7 @@ def write_python_config(f, enabled, float_types):
     f.write('/// Cast any variants of a void pointer (\'ptr\') to the corresponding python object\n')
     w('#define PY_CAST_VARIANTS(Type)')
     for index, float_ in enumerate(float_types):
-        w('    PY_CAST(PYBIND11_TYPE(typename CoreAliases<%s>::Type))' % (float_))
+        w('    PY_CAST(MTS_VARIANT_TYPE(typename CoreAliases<%s>::Type))' % (float_))
     f.write('\n\n')
 
 def write_to_file_if_changed(filename, contents):

@@ -8,7 +8,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Checkerboard final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Checkerboard, Texture)
     MTS_IMPORT_TYPES(Texture)
 
     Checkerboard(const Properties &props) {
@@ -65,11 +64,13 @@ public:
         callback->put_object("color1", m_color1.get());
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_color0;
     ref<Texture> m_color1;
     ScalarTransform3f m_transform;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(Checkerboard, Texture)
 MTS_EXPORT_PLUGIN(Checkerboard, "Checkerboard texture")
 NAMESPACE_END(mitsuba)

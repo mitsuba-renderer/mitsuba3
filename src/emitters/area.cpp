@@ -10,7 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(AreaLight, Emitter)
     MTS_IMPORT_BASE(Emitter, m_shape, m_medium)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
@@ -96,11 +95,12 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_radiance;
     ScalarFloat m_area_times_pi = 0.f;
 };
 
-
-MTS_EXPORT_PLUGIN(AreaLight, "Point emitter");
+MTS_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
+MTS_EXPORT_PLUGIN(AreaLight, "Point emitter")
 NAMESPACE_END(mitsuba)

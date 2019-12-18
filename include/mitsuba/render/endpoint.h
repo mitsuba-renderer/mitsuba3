@@ -35,7 +35,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Endpoint, Object)
     MTS_IMPORT_TYPES(Medium, Scene, Shape)
 
     // =============================================================
@@ -222,6 +221,7 @@ public:
 
     ENOKI_PINNED_OPERATOR_NEW(Float)
 
+    MTS_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);
 

@@ -10,7 +10,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class UniformSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(UniformSpectrum, Texture)
     MTS_IMPORT_TYPES()
 
     UniformSpectrum(const Properties &props) {
@@ -63,10 +62,11 @@ public:
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarFloat m_value;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)
 MTS_EXPORT_PLUGIN(UniformSpectrum, "Uniform spectrum")
-
 NAMESPACE_END(mitsuba)

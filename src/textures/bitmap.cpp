@@ -17,7 +17,6 @@ class BitmapTextureImpl;
 template <typename Float, typename Spectrum>
 class BitmapTexture : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BitmapTexture, Texture)
     MTS_IMPORT_TYPES()
 
     BitmapTexture(const Properties &props) {
@@ -129,6 +128,7 @@ public:
         return { result };
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ref<Bitmap> m_bitmap;
     std::string m_name;
@@ -140,7 +140,6 @@ protected:
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class BitmapTextureImpl final : public Texture<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(BitmapTextureImpl, Texture)
     MTS_IMPORT_TYPES()
 
     BitmapTextureImpl(const Bitmap *bitmap,
@@ -293,6 +292,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     DynamicBuffer<Float> m_data;
     ScalarVector2u m_resolution;
@@ -301,5 +301,15 @@ protected:
     ScalarFloat m_mean;
 };
 
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class =
+new Class("BitmapTextureImpl", "Texture", nullptr, nullptr);
+
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
+    return m_class;
+}
+
+MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
 MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 NAMESPACE_END(mitsuba)

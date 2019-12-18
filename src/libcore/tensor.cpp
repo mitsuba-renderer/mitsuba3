@@ -102,4 +102,6 @@ std::string TensorFile::to_string() const {
     return oss.str();
 }
 
+MTS_IMPLEMENT_CLASS(TensorFile, MemoryMappedFile)
+
 NAMESPACE_END(mitsuba)

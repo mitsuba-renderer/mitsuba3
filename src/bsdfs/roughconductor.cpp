@@ -11,7 +11,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class RoughConductor final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(RoughConductor, BSDF);
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
@@ -175,6 +174,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
@@ -188,6 +188,6 @@ private:
     ref<Texture> m_k;
 };
 
-MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor");
-
+MTS_IMPLEMENT_CLASS_VARIANT(RoughConductor, BSDF)
+MTS_EXPORT_PLUGIN(RoughConductor, "Rough conductor")
 NAMESPACE_END(mitsuba)

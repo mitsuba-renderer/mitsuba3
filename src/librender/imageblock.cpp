@@ -177,5 +177,6 @@ MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(ImageBlock, Object)
 MTS_INSTANTIATE_CLASS(ImageBlock)
 NAMESPACE_END(mitsuba)

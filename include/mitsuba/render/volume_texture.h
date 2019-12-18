@@ -31,11 +31,8 @@ struct VolumeMetadata {
 template <typename Float, typename Spectrum>
 class Grid3DBase : public Texture3D<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Grid3DBase, Texture3D)
     MTS_IMPORT_TYPES()
     MTS_IMPORT_BASE(Texture3D, update_bbox, m_world_to_local)
-
-    explicit Grid3DBase(const Properties &props) : Base(props) {}
 
     void set_metadata(const VolumeMetadata &meta, bool use_grid_bbox) {
         m_metadata = meta;
@@ -82,6 +79,8 @@ public:
     }
 
 protected:
+    explicit Grid3DBase(const Properties &props) : Base(props) {}
+
     VolumeMetadata m_metadata;
     size_t m_size;
 };

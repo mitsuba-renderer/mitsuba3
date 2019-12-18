@@ -9,7 +9,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(ThinLensCamera, ProjectiveCamera)
     MTS_IMPORT_BASE(ProjectiveCamera, m_world_transform, m_needs_sample_3, m_film, m_sampler,
                     m_resolution, m_shutter_open, m_shutter_open_time, m_aspect, m_near_clip,
                     m_far_clip, m_focus_distance)
@@ -199,6 +198,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarTransform4f m_camera_to_sample;
     ScalarTransform4f m_sample_to_camera;
@@ -209,5 +209,6 @@ private:
     ScalarVector3f m_dx, m_dy;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(ThinLensCamera, ProjectiveCamera)
 MTS_EXPORT_PLUGIN(ThinLensCamera, "Thin Lens Camera");
 NAMESPACE_END(mitsuba)

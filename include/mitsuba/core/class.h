@@ -128,9 +128,20 @@ private:
  */
 #define MTS_CLASS(x) x::m_class
 
+extern MTS_EXPORT_CORE const Class* m_class;
+
 /**
- * \brief This macro should be used in the class declaration of (non-templated)
- * classes that directly or indirectly derive from \ref Object.
+ * \brief This macro should be invoked in the class declaration of classes
+ * that directly or indirectly derive from \ref Object.
+ */
+#define MTS_DECLARE_CLASS()                         \
+    virtual const Class *class_() const override;   \
+public:                                             \
+    static Class *m_class;
+
+/**
+ * \brief This macro should be invoked in the main implementation \c .cpp file of
+ * any (non-templated) class that derives from \ref Object.
  *
  * This is needed for the basic RTTI support provided by Mitsuba objects (see
  * \ref Class for details). A basic class definition might look as follows:
@@ -138,67 +149,56 @@ private:
  * \code
  * class MyObject : public Object {
  * public:
- *     /// Declare RTTI data structures
- *     MTS_DECLARE_CLASS(MyObject, Object)
  *
  *     MyObject();
  *
+ *     /// Declare RTTI data structures
+ *     MTS_DECLARE_CLASS()
  * protected:
  *     /// Important: declare a protected virtual destructor
  *     virtual ~MyObject();
  *
  * };
+ *
+ * /// in .cpp file
+ * /// Implement RTTI data structures
+ * MTS_IMPLEMENT_CLASS(MyObject, Object)
  * \endcode
  *
  * The virtual protected destructure ensures that instances can only be
  * deallocated using the reference counting wrapper \ref ref.
  *
- * \sa MTS_DECLARE_VARIANT
+ * \sa MTS_IMPLEMENT_CLASS
  */
-#define MTS_DECLARE_CLASS(Name, Parent, ...)                                                       \
-    inline static const Class *m_class = new Class(                                                \
+
+#define MTS_IMPLEMENT_CLASS(Name, Parent, ...)                                                     \
+    Class *Name::m_class = new Class(                                                              \
         #Name, #Parent, "",                                                                        \
         ::mitsuba::detail::get_construct_functor<Name>(),                                          \
         ::mitsuba::detail::get_unserialize_functor<Name>(),                                        \
          ## __VA_ARGS__);                                                                          \
-    const Class *class_() const override { return m_class; }
+    const Class *Name::class_() const { return m_class; }
 
 /*
- * \brief This macro should be used in the class declaration of templated
- * classes that directly or indirectly derive from \ref Object.
+ * \brief This macro should be invoked in the main implementation \c .cpp file of
+ * any (templated) class that derives from \ref Object.
  *
  * This is needed for the basic RTTI support provided by Mitsuba objects (see
- * \ref Class for details). A basic class definition might look as follows:
- *
- * \code
- * template <typename Float, typename Spectrum>
- * class MyEmitter : public Emitter<Float, Spectrum> {
- * public:
- *     /// Declare RTTI data structures
- *     MTS_DECLARE_CLASS_VARIANT(MyEmitter, Emitter)
- *
- *     MyEmitter();
- *
- * protected:
- *     /// Important: declare a protected virtual destructor
- *     virtual ~MyEmitter();
- *
- * };
- * \endcode
+ * \ref Class for details).
  *
  * The virtual protected destructure ensures that instances can only be
  * deallocated using the reference counting wrapper \ref ref.
  *
- * \sa MTS_DECLARE_CLASS
+ * \sa MTS_IMPLEMENT_CLASS_VARIANT
  */
-#define MTS_DECLARE_CLASS_VARIANT(Name, Parent, ...)                                               \
-    inline static const Class *m_class = new Class(                                                \
+#define MTS_IMPLEMENT_CLASS_VARIANT(Name, Parent, ...)                                             \
+    MTS_VARIANT Class *Name<Float, Spectrum>::m_class = new Class(                                 \
         #Name, #Parent,                                                                            \
         ::mitsuba::detail::get_variant<Float, Spectrum>(),                                         \
-        ::mitsuba::detail::get_construct_functor<Name>(),                                          \
-        ::mitsuba::detail::get_unserialize_functor<Name>(),                                        \
+        ::mitsuba::detail::get_construct_functor<Name<Float, Spectrum>>(),                         \
+        ::mitsuba::detail::get_unserialize_functor<Name<Float, Spectrum>>(),                       \
          ## __VA_ARGS__);                                                                          \
-    const Class *class_() const override { return m_class; }
+    MTS_VARIANT const Class *Name<Float, Spectrum>::class_() const { return m_class; }
 
 
 /// Instantiate and export a Mitsuba plugin
@@ -236,29 +236,22 @@ private:
     ENOKI_MAP_IMPORT(MTS_IMPORT_BASE_HELPER(__VA_ARGS__))
 
 NAMESPACE_BEGIN(detail)
-/// Replacement for std::is_constructible which also works when the destructor is not accessible
-template <typename T, typename... Args> struct is_constructible {
-private:
-    static std::false_type test(...);
-    template <typename T2 = T>
-    static std::true_type test(decltype(new T2(std::declval<Args>()...)) value);
-public:
-    static constexpr bool value = decltype(test(std::declval<T *>()))::value;
-};
+template <typename, typename Arg, typename = void>
+struct is_constructiblee : std::false_type { };
 
-template <typename T, typename... Args>
-constexpr bool is_constructible_v = is_constructible<T, Args...>::value;
+template <typename T, typename Arg>
+struct is_constructiblee<T, Arg, std::void_t<decltype(new T(std::declval<Arg>()))> > : std::true_type { };
 
-template <typename T, std::enable_if_t<is_constructible_v<T, const Properties &>, int> = 0>
-Class::ConstructFunctor get_construct_functor() { return [](const Properties &p) -> Object * { return new T(p); }; }
-template <typename T, std::enable_if_t<!is_constructible_v<T, const Properties &>, int> = 0>
+template <typename T, typename Arg>
+constexpr bool is_constructible_v = is_constructiblee<T, Arg>::value;
+
+template <typename T, std::enable_if_t<is_constructible_v<T, const Properties&>, int> = 0>
+Class::ConstructFunctor get_construct_functor() { return [](const Properties& p) -> Object* { return new T(p); }; }
+template <typename T, std::enable_if_t<!is_constructible_v<T, const Properties&>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return nullptr; }
-template <typename T, std::enable_if_t<is_constructible_v<T, Stream *>, int> = 0>
-Class::UnserializeFunctor get_unserialize_functor() { return [](Stream *s) -> Object * { return new T(s); }; }
-template <typename T, std::enable_if_t<!is_constructible_v<T, Stream *>, int> = 0>
+template <typename T, std::enable_if_t<is_constructible_v<T, Stream*>, int> = 0>
+Class::UnserializeFunctor get_unserialize_functor() { return [](Stream* s) -> Object* { return new T(s); }; }
+template <typename T, std::enable_if_t<!is_constructible_v<T, Stream*>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
 NAMESPACE_END(detail)
-
-extern MTS_EXPORT_CORE const Class *m_class;
-
 NAMESPACE_END(mitsuba)

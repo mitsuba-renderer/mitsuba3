@@ -14,7 +14,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
     MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
     MTS_IMPORT_TYPES()
 
@@ -39,9 +38,11 @@ public:
         return tfm::format("GaussianFilter[stddev=%.2f, radius=%.2f]", m_stddev, m_radius);
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     ScalarFloat m_stddev, m_alpha, m_bias;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(GaussianFilter, ReconstructionFilter)
 MTS_EXPORT_PLUGIN(GaussianFilter, "Gaussian reconstruction filter");
 NAMESPACE_END(mitsuba)

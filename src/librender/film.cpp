@@ -76,5 +76,6 @@ MTS_VARIANT std::string Film<Float, Spectrum>::to_string() const {
 }
 
 
+MTS_IMPLEMENT_CLASS_VARIANT(Film, Object, "film")
 MTS_INSTANTIATE_CLASS(Film)
 NAMESPACE_END(mitsuba)

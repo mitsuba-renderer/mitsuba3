@@ -708,5 +708,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback * /*callback*
     // TODO
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
 MTS_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)

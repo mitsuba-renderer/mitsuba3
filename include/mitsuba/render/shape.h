@@ -15,7 +15,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Shape, Object, "shape")
     MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor);
 
     // Use 32 bit indices to keep track of indices to conserve memory
@@ -318,6 +317,7 @@ public:
     ENOKI_CALL_SUPPORT_FRIEND()
     ENOKI_PINNED_OPERATOR_NEW(Float)
 
+    MTS_DECLARE_CLASS()
 protected:
     Shape(const Properties &props);
     inline Shape() { }

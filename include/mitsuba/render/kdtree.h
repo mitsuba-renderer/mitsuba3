@@ -98,8 +98,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename BoundingBox_, typename Index_, typename CostModel_,
           typename Derived_> class TShapeKDTree : public Object {
 public:
-    MTS_DECLARE_CLASS(TShapeKDTree, Object)
-
     using BoundingBox = BoundingBox_;
     using CostModel   = CostModel_;
     using Index       = Index_;
@@ -199,6 +197,7 @@ public:
     const Derived& derived() const { return (Derived&) *this; }
     Derived& derived() { return (Derived&) *this; }
 
+    MTS_DECLARE_CLASS()
 protected:
     /* ==================================================================== */
     /*                  Essential internal data structures                  */
@@ -1890,6 +1889,14 @@ protected:
     BoundingBox m_bbox;
 };
 
+template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
+Class * TShapeKDTree<BoundingBox, Index, CostModel, Derived>::m_class = new Class("TShapeKDTree", "Object", "", nullptr, nullptr);
+
+template <typename BoundingBox, typename Index, typename CostModel, typename Derived>
+const Class *TShapeKDTree<BoundingBox, Index, CostModel, Derived>::class_() const {
+    return m_class;
+}
+
 template <typename Float> class SurfaceAreaHeuristic3 {
 public:
     using Size          = uint32_t;
@@ -1994,7 +2001,6 @@ class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<scal
                                                           SurfaceAreaHeuristic3<scalar_t<Float>>,
                                                           ShapeKDTree<Float, Spectrum>> {
 public:
-    MTS_DECLARE_CLASS(ShapeKDTree, TShapeKDTree)
     MTS_IMPORT_TYPES(Shape, Mesh)
 
     using SurfaceAreaHeuristic3f = SurfaceAreaHeuristic3<ScalarFloat>;
@@ -2353,6 +2359,7 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
+    MTS_DECLARE_CLASS()
 protected:
     /**
      * \brief Map an abstract \ref TShapeKDTree primitive index to a specific

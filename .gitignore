@@ -61,5 +61,9 @@ __pycache__
 /src/libui/libui_resources.*
 /html
 
-#docs
+# Docs
 docs/generated/
+
+# Config
+include/mitsuba/core/config.h
+include/mitsuba/python/config.h

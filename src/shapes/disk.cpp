@@ -23,7 +23,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Disk, Shape)
     MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
     MTS_IMPORT_TYPES()
 
@@ -190,6 +189,7 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarTransform4f m_object_to_world;
     ScalarTransform4f m_world_to_object;
@@ -198,5 +198,6 @@ private:
     ScalarFloat m_inv_surface_area;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(Disk, Shape)
 MTS_EXPORT_PLUGIN(Disk, "Disk intersection primitive");
 NAMESPACE_END(mitsuba)

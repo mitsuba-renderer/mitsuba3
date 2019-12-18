@@ -10,5 +10,6 @@ MTS_VARIANT bool Emitter<Float, Spectrum>::is_environment() const {
     return false;
 }
 
+MTS_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")
 MTS_INSTANTIATE_CLASS(Emitter)
 NAMESPACE_END(mitsuba)

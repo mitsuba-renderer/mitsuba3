@@ -12,7 +12,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Mesh, Shape)
     MTS_IMPORT_TYPES()
     MTS_IMPORT_BASE(Shape, m_mesh)
 
@@ -305,6 +304,7 @@ protected:
             const_cast<Mesh *>(this)->prepare_sampling_table();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
     VertexHolder m_vertices;
     FaceHolder m_faces;

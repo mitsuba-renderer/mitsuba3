@@ -24,7 +24,6 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_RENDER Spiral : public Object {
 public:
-    MTS_DECLARE_CLASS(Spiral, Object)
     using Float = float;
     MTS_IMPORT_CORE_TYPES()
 
@@ -59,6 +58,7 @@ public:
      */
     std::pair<Vector2i, Vector2i> next_block();
 
+    MTS_DECLARE_CLASS()
 protected:
     enum class Direction {
         Right = 0,

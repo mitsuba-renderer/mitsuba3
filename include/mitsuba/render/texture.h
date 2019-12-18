@@ -22,7 +22,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Texture : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Texture, Object, "texture")
     MTS_IMPORT_TYPES()
 
     // =============================================================
@@ -145,6 +144,7 @@ public:
      */
     static ref<Texture> D65(ScalarFloat scale = 1.f);
 
+    MTS_DECLARE_CLASS()
 protected:
     virtual ~Texture();
 };
@@ -154,10 +154,7 @@ protected:
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Texture3D : public Object {
 public:
-    MTS_DECLARE_CLASS_VARIANT(Texture3D, Object)
     MTS_IMPORT_TYPES()
-
-    Texture3D(const Properties &props);
 
     // ======================================================================
     //! @{ \name 3D Texture interface
@@ -200,7 +197,9 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 protected:
+    Texture3D(const Properties &props);
     virtual ~Texture3D() {}
 
     virtual Mask is_inside(const Interaction3f &it, Mask active) const = 0;

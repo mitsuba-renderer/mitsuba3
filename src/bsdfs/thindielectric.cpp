@@ -11,7 +11,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
-    MTS_DECLARE_CLASS_VARIANT(ThinDielectric, BSDF)
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture)
 
@@ -110,11 +109,13 @@ public:
         return oss.str();
     }
 
+    MTS_DECLARE_CLASS()
 private:
     ScalarFloat m_eta;
     ref<Texture> m_specular_transmittance;
     ref<Texture> m_specular_reflectance;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(ThinDielectric, BSDF)
 MTS_EXPORT_PLUGIN(ThinDielectric, "Thin dielectric")
 NAMESPACE_END(mitsuba)
