@@ -303,7 +303,7 @@ protected:
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class =
-new Class("BitmapTextureImpl", "Texture", nullptr, nullptr);
+new Class("BitmapTextureImpl", "Texture", "", nullptr, nullptr);
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
