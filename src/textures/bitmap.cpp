@@ -15,11 +15,11 @@ class BitmapTextureImpl;
 
 /// Bilinearly interpolated bitmap texture.
 template <typename Float, typename Spectrum>
-class BitmapTexture : public Texture<Float, Spectrum> {
+class BitmapTexture final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
-    BitmapTexture(const Properties &props) {
+    BitmapTexture(const Properties &props) : Texture(props) {
         m_transform = props.transform("to_uv", ScalarTransform4f()).extract();
 
         FileResolver* fs = Thread::thread()->file_resolver();
@@ -106,18 +106,20 @@ public:
      */
     std::vector<ref<Object>> expand() const override {
         ref<Object> result;
+        Properties props;
+        props.set_id(this->id());
 
         switch (m_bitmap->channel_count()) {
             case 1:
                 result = m_raw
-                  ? (Object *) new Impl<1, true >(m_bitmap, m_name, m_transform, m_mean)
-                  : (Object *) new Impl<1, false>(m_bitmap, m_name, m_transform, m_mean);
+                  ? (Object *) new Impl<1, true >(props, m_bitmap, m_name, m_transform, m_mean)
+                  : (Object *) new Impl<1, false>(props, m_bitmap, m_name, m_transform, m_mean);
                 break;
 
             case 3:
                 result = m_raw
-                  ? (Object *) new Impl<3, true >(m_bitmap, m_name, m_transform, m_mean)
-                  : (Object *) new Impl<3, false>(m_bitmap, m_name, m_transform, m_mean);
+                  ? (Object *) new Impl<3, true >(props, m_bitmap, m_name, m_transform, m_mean)
+                  : (Object *) new Impl<3, false>(props, m_bitmap, m_name, m_transform, m_mean);
                 break;
 
             default:
@@ -140,14 +142,15 @@ protected:
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class BitmapTextureImpl final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
-    BitmapTextureImpl(const Bitmap *bitmap,
+    BitmapTextureImpl(const Properties &props,
+                      const Bitmap *bitmap,
                       const std::string &name,
                       const ScalarTransform3f &transform,
                       ScalarFloat mean)
-        : m_resolution(bitmap->size()), m_name(name),
-          m_transform(transform), m_mean(mean) {
+        : Texture(props), m_resolution(bitmap->size()),
+          m_name(name), m_transform(transform), m_mean(mean) {
         m_data = DynamicBuffer<Float>::copy(bitmap->data(),
             hprod(m_resolution) * Channels);
     }

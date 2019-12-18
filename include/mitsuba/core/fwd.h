@@ -200,11 +200,9 @@ template <typename Float_> struct CoreAliases {
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
      * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
      */
-    using Array1f  = Array<Float, 1>;
-    using Array3f  = Array<Float, 3>;
+    using Array1f        = Array<Float, 1>;
+    using Array3f        = Array<Float, 3>;
     using DynamicBuffer  = DynamicBuffer<Float>;
-    using DataBuffer1    = Vector<DynamicBuffer, 1>;
-    using DataBuffer3    = Vector<DynamicBuffer, 3>;
 };
 
 //! @}

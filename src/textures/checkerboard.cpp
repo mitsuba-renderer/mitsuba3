@@ -10,7 +10,7 @@ class Checkerboard final : public Texture<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Texture)
 
-    Checkerboard(const Properties &props) {
+    Checkerboard(const Properties &props) : Texture(props) {
         m_color0 = props.texture<Texture>("color0", .4f);
         m_color1 = props.texture<Texture>("color1", .2f);
         m_transform = props.transform("to_uv", ScalarTransform4f()).extract();

@@ -3,6 +3,7 @@
 #include <mitsuba/core/properties.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
 /**
  * \brief Spectrum that takes on a constant value between
  * \c MTS_WAVELENGTH_MIN * and \c MTS_WAVELENGTH_MAX
@@ -10,9 +11,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class UniformSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
-    UniformSpectrum(const Properties &props) {
+    UniformSpectrum(const Properties &props) : Texture(props) {
         m_value = props.float_("value");
     }
 
@@ -37,7 +38,7 @@ public:
             return select(active,
                 Wavelength(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Wavelength(0.f));
         } else {
-            Throw("Not implemented for non-spectral modes"); // TODO
+            NotImplementedError("pdf");
         }
     }
 
@@ -46,9 +47,9 @@ public:
                                                       Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             return { MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
-                     UnpolarizedSpectrum(m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)) };
+                     m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) };
         } else {
-            Throw("Not implemented for non-spectral modes"); // TODO
+            NotImplementedError("sample");
         }
     }
 

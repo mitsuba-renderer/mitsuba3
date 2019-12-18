@@ -16,8 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
     // A few natural constants
     constexpr static ScalarFloat c = ScalarFloat(2.99792458e+8);   /// Speed of light
@@ -28,7 +27,7 @@ public:
     constexpr static ScalarFloat c0 = 2 * h * c * c;
     constexpr static ScalarFloat c1 = h * c / k;
 
-    BlackBodySpectrum(const Properties &props) {
+    BlackBodySpectrum(const Properties &props) : Texture(props) {
         m_temperature = props.float_("temperature");
         m_integral_min = cdf_and_pdf(ScalarFloat(MTS_WAVELENGTH_MIN)).first;
         m_integral = cdf_and_pdf(ScalarFloat(MTS_WAVELENGTH_MAX)).first - m_integral_min;

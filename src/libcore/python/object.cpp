@@ -9,21 +9,21 @@ class PyTraversalCallback : public TraversalCallback {
 public:
     using TraversalCallback::TraversalCallback;
 
-    void put_parameter_impl(const std::string &name, const std::type_info &type,
+    void put_parameter_impl(const std::string &name,
+                            const std::type_info &type,
                             void *ptr) override {
         py::gil_scoped_acquire gil;
-        // Try to look up the overloaded method on the Python side.
         py::function overload = py::get_overload(this, "put_parameter");
 
         if (overload)
-            overload(name, py_cast(type, ptr));
+            overload(name, (void *) &type, ptr);
         else
             Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
+
     }
 
     void put_object(const std::string &name, Object *obj) override {
         py::gil_scoped_acquire gil;
-        // Try to look up the overloaded method on the Python side.
         py::function overload = py::get_overload(this, "put_object");
 
         if (overload)
@@ -43,6 +43,60 @@ MTS_PY_EXPORT(Object) {
         py::class_<TraversalCallback, PyTraversalCallback>(m, "TraversalCallback")
             .def(py::init<>());
     }
+
+    #define GET_ATTR(T)                                                  \
+        if (type == typeid(T))                                           \
+        return py::cast((T *) ptr, py::return_value_policy::reference)
+
+    #define SET_ATTR(T)                                                  \
+        if (type == typeid(T)) {                                         \
+            *((T *) ptr) = py::cast<T>(handle);                          \
+            return;                                                      \
+        }
+
+    m.def("get_property", [](const void *ptr, void *type_) -> py::object {
+        const std::type_info &type = *(const std::type_info *) type_;
+        GET_ATTR(DynamicBuffer<Float>);
+        GET_ATTR(Vector2i);
+        GET_ATTR(Vector2u);
+        GET_ATTR(Transform3f);
+        GET_ATTR(Transform4f);
+        GET_ATTR(Mask);
+
+        if constexpr (!std::is_same_v<Float, ScalarFloat>) {
+            GET_ATTR(ScalarVector2i);
+            GET_ATTR(ScalarVector2u);
+            GET_ATTR(ScalarTransform3f);
+            GET_ATTR(ScalarTransform4f);
+            GET_ATTR(ScalarMask);
+        }
+
+        std::string name(type.name());
+        py::detail::clean_type_id(name);
+        Throw("get_property(): unsupported type \"%s\"!", name);
+    }, "cpp_type"_a, "ptr"_a);
+
+    m.def("set_property", [](const void *ptr, void *type_, py::handle handle) {
+        const std::type_info &type = *(const std::type_info *) type_;
+        SET_ATTR(DynamicBuffer<Float>);
+        SET_ATTR(Vector2i);
+        SET_ATTR(Vector2u);
+        SET_ATTR(Transform3f);
+        SET_ATTR(Transform4f);
+        SET_ATTR(Mask);
+
+        if constexpr (!std::is_same_v<Float, ScalarFloat>) {
+            SET_ATTR(ScalarVector2i);
+            SET_ATTR(ScalarVector2u);
+            SET_ATTR(ScalarTransform3f);
+            SET_ATTR(ScalarTransform4f);
+            SET_ATTR(ScalarMask);
+        }
+
+        std::string name(type.name());
+        py::detail::clean_type_id(name);
+        Throw("set_property(): unsupported type \"%s\"!", name);
+    });
 
     MTS_PY_CHECK_ALIAS(Object, m) {
         py::class_<Object, ref<Object>>(m, "Object", D(Object))

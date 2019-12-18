@@ -9,8 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class InterpolatedSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
     using Index = replace_scalar_t<Wavelength, uint32_t>;
     using FloatStorage = host_vector<Float>;
@@ -32,7 +31,7 @@ public:
      *      Pointer to the sample values. The data is copied,
      *      hence there is no need to keep 'data' alive.
      */
-    InterpolatedSpectrum(const Properties &props) {
+    InterpolatedSpectrum(const Properties &props) : Texture(props) {
         m_lambda_min = props.float_("lambda_min");
         m_lambda_max = props.float_("lambda_max");
 

@@ -152,6 +152,12 @@ public:
     //! @}
     // =============================================================
 
+    /// Perform a custom traversal over the scene graph
+    void traverse(TraversalCallback *callback) override;
+
+    /// Update internal state following a parameter update
+    void parameters_changed() override;
+
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
@@ -178,17 +184,6 @@ protected:
     MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
-
-    void traverse(TraversalCallback *callback) override {
-        for (auto child : m_children)
-            callback->put_object(child->id(), child.get());
-    }
-
-    void parameters_changed() override {
-        // update bsphere of environment emitter
-        if (m_environment)
-            m_environment->set_scene(this);
-    }
 
 protected:
     /// Acceleration data structure (type depends on implementation)

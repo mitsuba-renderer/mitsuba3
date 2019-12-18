@@ -8,10 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
-    SRGBSpectrum(const Properties &props) {
+    SRGBSpectrum(const Properties &props) : Texture(props) {
         ScalarColor3f color = props.color("color");
 
         if (any(color < 0 || color > 1))

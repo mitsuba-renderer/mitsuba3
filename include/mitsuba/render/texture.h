@@ -139,14 +139,20 @@ public:
     //! @}
     // ======================================================================
 
-    /**
-     * Convenience method returning the standard D65 illuminant.
-     */
+    /// Convenience method returning the standard D65 illuminant.
     static ref<Texture> D65(ScalarFloat scale = 1.f);
 
+    /// Return a string identifier
+    std::string id() const override { return m_id; }
+
     MTS_DECLARE_CLASS()
+
 protected:
+    Texture(const Properties &);
     virtual ~Texture();
+
+protected:
+    std::string m_id;
 };
 
 

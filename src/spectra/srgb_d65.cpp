@@ -8,10 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture)
     MTS_IMPORT_TYPES(Texture)
 
-    SRGBEmitterSpectrum(const Properties &props) {
+    SRGBEmitterSpectrum(const Properties &props) : Texture(props) {
         ScalarColor3f color = props.color("color");
 
         if constexpr (is_spectral_v<Spectrum>) {

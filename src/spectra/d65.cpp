@@ -27,9 +27,9 @@ const float data[95] = {
 template <typename Float, typename Spectrum>
 class D65Spectrum final : public Texture<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture)
+    MTS_IMPORT_TYPES(Texture)
 
-    D65Spectrum(const Properties &props) {
+    D65Spectrum(const Properties &props) : Texture(props) {
         /* The default scale factor is set so that integrating
            the spectrum against the CIE curves & converting to
            sRGB yields a pixel value of (1, 1, 1) */
@@ -49,7 +49,7 @@ public:
         props.set_pointer("values", (const void *) &tmp[0]);
 
         PluginManager *pmgr = PluginManager::instance();
-        return { ref<Object>(pmgr->create_object<Base>(props)) };
+        return { ref<Object>(pmgr->create_object<Texture>(props)) };
     }
 
     void traverse(TraversalCallback *callback) override {

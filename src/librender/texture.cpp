@@ -10,6 +10,9 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Texture implementations
 // =======================================================================
 
+MTS_VARIANT Texture<Float, Spectrum>::Texture(const Properties &props)
+    : m_id(props.id()) { }
+
 MTS_VARIANT Texture<Float, Spectrum>::~Texture() { }
 
 MTS_VARIANT typename Texture<Float, Spectrum>::UnpolarizedSpectrum

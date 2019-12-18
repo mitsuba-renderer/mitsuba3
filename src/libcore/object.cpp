@@ -24,14 +24,12 @@ void Object::traverse(TraversalCallback * /*callback*/) { }
 
 void Object::parameters_changed() { }
 
-std::string Object::id() const {
+std::string Object::id() const { return std::string(); }
+
+std::string Object::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << (void *) this << "]";
     return oss.str();
-}
-
-std::string Object::to_string() const {
-    return id();
 }
 
 Object::~Object() { }

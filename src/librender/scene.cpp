@@ -177,6 +177,20 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
         (1.f / m_emitters.size());
 }
 
+MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    for (auto& child : m_children) {
+        std::string id = child->id();
+        if (id.empty() || string::starts_with(id, "_unnamed_"))
+            id = child->class_()->name();
+        callback->put_object(id, child.get());
+    }
+}
+
+MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed() {
+    if (m_environment)
+        m_environment->set_scene(this);
+}
+
 MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "Scene[" << std::endl
