@@ -2,22 +2,22 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-static nanogui::Texture::PixelFormat convert_pixel_format(PixelFormat pf) {
+static nanogui::Texture::PixelFormat convert_pixel_format(Bitmap::PixelFormat pf) {
     switch (pf) {
-        case PixelFormat::Y:    return nanogui::Texture::PixelFormat::R;
-        case PixelFormat::YA:   return nanogui::Texture::PixelFormat::RA;
-        case PixelFormat::RGB:  return nanogui::Texture::PixelFormat::RGB;
-        case PixelFormat::RGBA: return nanogui::Texture::PixelFormat::RGBA;
+        case Bitmap::PixelFormat::Y:    return nanogui::Texture::PixelFormat::R;
+        case Bitmap::PixelFormat::YA:   return nanogui::Texture::PixelFormat::RA;
+        case Bitmap::PixelFormat::RGB:  return nanogui::Texture::PixelFormat::RGB;
+        case Bitmap::PixelFormat::RGBA: return nanogui::Texture::PixelFormat::RGBA;
         default: Throw("Texture::Texture(): unsupported pixel format '%s'!", pf);
     }
 }
 
-static PixelFormat convert_pixel_format(nanogui::Texture::PixelFormat pf) {
+static Bitmap::PixelFormat convert_pixel_format(nanogui::Texture::PixelFormat pf) {
     switch (pf) {
-        case nanogui::Texture::PixelFormat::R:    return PixelFormat::Y;
-        case nanogui::Texture::PixelFormat::RA:   return PixelFormat::YA;
-        case nanogui::Texture::PixelFormat::RGB:  return PixelFormat::RGB;
-        case nanogui::Texture::PixelFormat::RGBA: return PixelFormat::RGBA;
+        case nanogui::Texture::PixelFormat::R:    return Bitmap::PixelFormat::Y;
+        case nanogui::Texture::PixelFormat::RA:   return Bitmap::PixelFormat::YA;
+        case nanogui::Texture::PixelFormat::RGB:  return Bitmap::PixelFormat::RGB;
+        case nanogui::Texture::PixelFormat::RGBA: return Bitmap::PixelFormat::RGBA;
         default: Throw("Texture::Texture(): unsupported pixel format '%i'!", (int) pf);
     }
 }

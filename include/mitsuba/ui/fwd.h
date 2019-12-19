@@ -8,6 +8,6 @@ NAMESPACE_BEGIN(mitsuba)
 namespace ng = nanogui;
 
 class MitsubaViewer;
-class Texture;
+class GUITexture;
 
 NAMESPACE_END(mitsuba)
