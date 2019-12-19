@@ -13,7 +13,6 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/texture.h>
 
-
 py::object py_cast_object(Object *o) {
     // Try casting, starting from the most precise types
     PY_CAST_OBJECT_VARIANTS(Scene);
@@ -41,29 +40,5 @@ py::object py_cast_object(Object *o) {
     PY_CAST_OBJECT_VARIANTS(Sampler);
 
     Log(Warn, "Unable to cast object pointer. Is your type registered in py_cast_object()?");
-    return py::none();
-}
-
-py::object py_cast(const std::type_info &type, void *ptr) {
-    PY_CAST_VARIANTS(Float)
-    PY_CAST_VARIANTS(Int32)
-    PY_CAST_VARIANTS(Mask)
-    PY_CAST_VARIANTS(Array1f)
-    PY_CAST_VARIANTS(Array3f)
-    PY_CAST_VARIANTS(Color3f)
-    PY_CAST_VARIANTS(Vector2i)
-    PY_CAST_VARIANTS(Vector2u)
-    PY_CAST_VARIANTS(Point3f)
-    PY_CAST_VARIANTS(Vector3f)
-    PY_CAST_VARIANTS(Normal3f)
-    PY_CAST_VARIANTS(Frame3f)
-    PY_CAST_VARIANTS(Matrix3f)
-    PY_CAST_VARIANTS(Matrix4f)
-    PY_CAST_VARIANTS(Transform3f)
-    PY_CAST_VARIANTS(Transform4f)
-    PY_CAST_VARIANTS(DynamicBuffer);
-    PY_CAST(AnimatedTransform)
-
-    Log(Warn, "Unable to cast void pointer. Is your type registered in py_cast()? (%s)", type.name());
     return py::none();
 }
