@@ -145,9 +145,7 @@ def test06_render_timeout(int_name):
     def wrapped_vector():
         assert integrator.render(scene, sensor) is True
 
-    sensor.film().clear()
     effective_s = timeit(wrapped_scalar, number=1)
-    sensor.film().clear()
     effective_v = timeit(wrapped_vector, number=1)
 
     # Check that timeout is respected +/- 0.5s.

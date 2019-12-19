@@ -4,6 +4,7 @@ from __future__ import division
 import numpy as np
 import mitsuba
 from mitsuba.scalar_rgb.core import float_dtype
+import pytest
 
 
 class ChiSquareTest(object):
@@ -116,7 +117,7 @@ class ChiSquareTest(object):
         try:
             from mitsuba.scalar_rgb.core import PCG32
         except ImportError:
-            pass
+            pytest.skip("scalar_rgb mode not enabled")
 
         # Generate a table of uniform variates
         samples_in = PCG32().next_float((self.sample_count, self.sample_dim))
@@ -407,7 +408,7 @@ def SpectrumAdapter(value):
         from mitsuba.packet_spectral.core import sample_shifted
         from mitsuba.packet_spectral.render import SurfaceInteraction3f as SurfaceInteraction3fX
     except ImportError:
-        pass
+        pytest.skip("packet_spectral mode not enabled")
 
     def instantiate(args):
         if hasattr(value, 'sample'):
@@ -445,7 +446,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
         from mitsuba.packet_rgb.core import PacketSize
         from mitsuba.packet_rgb.render import MicrofacetDistribution
     except ImportError:
-        pass
+        pytest.skip("packet_rgb mode not enabled")
 
     def instantiate(args):
         wi = [0, 0, 1]
@@ -484,7 +485,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
         from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
         from mitsuba.packet_rgb.core.xml import load_string
     except ImportError:
-        pass
+        pytest.skip("packet_rgb mode not enabled")
 
     def make_context(n):
         si = SurfaceInteraction3fX(n)
@@ -527,7 +528,7 @@ def InteractiveBSDFAdapter(bsdf_type, extra):
         from mitsuba.packet_rgb.render import BSDFContext, SurfaceInteraction3f as SurfaceInteraction3fX
         from mitsuba.packet_rgb.core.xml import load_string
     except ImportError:
-        pass
+        pytest.skip("packet_rgb mode not enabled")
 
     def make_context(n, theta, phi):
         theta *= np.pi / 180
@@ -583,7 +584,7 @@ def EnvironmentAdapter(emitter_type, extra):
         from mitsuba.packet_rgb.render import DirectionSample3f as DirectionSample3fX
         from mitsuba.packet_rgb.core.xml import load_string
     except ImportError:
-        pass
+        pytest.skip("packet_rgb mode not enabled")
 
     cache = [None, None]
 
