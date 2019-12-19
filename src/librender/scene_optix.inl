@@ -4,7 +4,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#define rt_check(err)  __rt_check (s.context, err, __FILE__, __LINE__)
+#define rt_check(err)  __rt_check(s.context, err, __FILE__, __LINE__)
 
 static void __rt_check(RTcontext context, RTresult errval, const char *file,
                        const int line) {

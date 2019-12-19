@@ -514,19 +514,7 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-#define rt_check(err)  __rt_check (m_optix_context, err, __FILE__, __LINE__)
-
-static void __rt_check(RTcontext context, RTresult errval, const char *file,
-                       const int line) {
-    if (errval != RT_SUCCESS) {
-        const char *message;
-        rtContextGetErrorString(context, errval, &message);
-        fprintf(stderr,
-                "rt_check(): OptiX API error = %04d (%s) in "
-                "%s:%i.\n", (int) errval, message, file, line);
-        exit(EXIT_FAILURE);
-    }
-}
+#define rt_check(err)  __rt_check(m_optix_context, err, __FILE__, __LINE__)
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
     if constexpr (is_cuda_array_v<Float>) {
