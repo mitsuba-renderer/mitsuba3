@@ -2,7 +2,7 @@ from docutils import nodes
 from sphinx.roles import XRefRole
 import figtable
 import subfig
-from backports import OrderedDict, OrderedSet
+from custombackports import OrderedDict, OrderedSet
 
 # Element classes
 
