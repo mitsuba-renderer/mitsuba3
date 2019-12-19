@@ -21,41 +21,39 @@ static void help(int thread_count) {
     std::cout << util::info_copyright() << std::endl;
     std::cout << util::info_features() << std::endl;
     std::cout << R"(
-Usage: mtsgui [options] <One or more scene XML files>
+Usage: mtsgui [options] <One or more scene XML files or images>
 
 Options:
 
-   -h, --help
-               Display this help text.
+    -h, --help
+        Display this help text.
 
-   -v, --verbose
-               Be more verbose. (can be specified multiple times)
+    -m, --mode
+        Rendering mode. Defines a combination of floating point
+        and color types.
 
-   -t <count>, --threads <count>
-               Render with the specified number of threads.
+        Default: )" MTS_DEFAULT_VARIANT R"(
 
-   -D <key>=<value>, --define <key>=<value>
-               Define a constant that can referenced as "$key"
-               within the scene description.
+        Available modes:
+              )" << string::indent(MTS_VARIANTS, 14) << R"(
+    -v, --verbose
+        Be more verbose. (can be specified multiple times)
 
-   -c <configuration>, --configuration <configuration>
-               Render using the specified configuration of Mitsuba.
-               The following are currently available:
+    -t <count>, --threads <count>
+        Render with the specified number of threads.
 
-                   'scalar-mono'
-                   'scalar-rgb'
-                   'scalar-spectral'
-                   'scalar-spectral-polarized'
-                   'packet-mono'
-                   'packet-rgb'
-                   'packet-spectral'
-                   'packet-spectral-polarized'
-                   'gpu-autodiff-mono'
-                   'gpu-autodiff-rgb'
-                   'gpu-autodiff-spectral'
-                   'gpu-autodiff-spectral-polarized'
+    -D <key>=<value>, --define <key>=<value>
+        Define a constant that can referenced as "$key"
+        within the scene description.
 
-               The default is 'scalar-spectral'.
+    -s <index>, --sensor <index>
+        Index of the sensor to render with (following the declaration
+        order in the scene file). Default value: 0.
+
+    -u, --update
+        When specified, Mitsuba will update the scene's
+        XML description to the latest version.
+
 )";
 }
 
@@ -66,17 +64,16 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
 
-    // Ensure that the mitsuba-render shared library is loaded
-    // TODO
-    // librender_nop();
+    librender_nop();
 
     ArgParser parser;
     using StringVec  = std::vector<std::string>;
     auto arg_threads = parser.add(StringVec{ "-t", "--threads" }, true);
     auto arg_verbose = parser.add(StringVec{ "-v", "--verbose" }, false);
     auto arg_define  = parser.add(StringVec{ "-D", "--define" }, true);
-    auto arg_config  = parser.add(StringVec{ "-c", "--configuration" }, false);
+    auto arg_mode    = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_help    = parser.add(StringVec{ "-h", "--help" });
+    auto arg_update  = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_extra   = parser.add("", true);
     xml::ParameterList params;
 
