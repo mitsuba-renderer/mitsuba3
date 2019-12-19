@@ -15,7 +15,6 @@ public:
     MTS_IMPORT_TYPES()
     MTS_IMPORT_BASE(Shape, m_mesh)
 
-    // TODO this should depend on the file format
     using InputFloat = float;
     using InputPoint3f  = Point<InputFloat, 3>;
     using InputVector2f = Vector<InputFloat, 2>;
@@ -82,75 +81,76 @@ public:
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
-    MTS_INLINE auto face_indices(Index index, const mask_t<Index> &active = true) const {
+    MTS_INLINE auto face_indices(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
         using Result = uint32_array_t<Index3>;
+
         if constexpr (!is_array_v<Index>) {
             return load<Result>(face(index));
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= scalar_t<Index>(m_face_size / sizeof(ScalarIndex));
+            index *= m_face_size / ScalarSize(sizeof(ScalarIndex));
             return gather<Result, sizeof(ScalarIndex)>(
                 m_faces.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarIndex)>(m_faces_c, index, active);
+            return gather<Result, sizeof(ScalarIndex)>(m_optix->faces, index, active);
         }
 #endif
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_position(Index index, const mask_t<Index> &active = true) const {
+    MTS_INLINE auto vertex_position(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
         using Result = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load<Result>(vertex(index));
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
+            index *= m_vertex_size / ScalarSize(sizeof(ScalarFloat));
             return gather<Result, sizeof(ScalarFloat)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarFloat)>(m_vertex_positions_c, index, active);
+            return gather<Result, sizeof(ScalarFloat)>(m_optix->vertex_positions, index, active);
         }
 #endif
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_normal(Index index, const mask_t<Index> &active = true) const {
+    MTS_INLINE auto vertex_normal(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
         using Result = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_normal_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
+            index *= m_vertex_size / ScalarSize(sizeof(ScalarFloat));
             return gather<Result, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarFloat)>(m_vertex_normals_c, index, active);
+            return gather<Result, sizeof(ScalarFloat)>(m_optix->vertex_normals, index, active);
         }
 #endif
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_texcoord(Index index, const mask_t<Index> &active = true) const {
+    MTS_INLINE auto vertex_texcoord(Index index, mask_t<Index> active = true) const {
         using Result = Point<replace_scalar_t<Index, ScalarFloat>, 2>;
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_texcoord_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= scalar_t<Index>(m_vertex_size / sizeof(ScalarFloat));
+            index *= m_vertex_size / ScalarSize(sizeof(ScalarFloat));
             return gather<Result, sizeof(ScalarFloat)>(
                 m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarFloat)>(m_vertex_texcoords_c, index, active);
+            return gather<Result, sizeof(ScalarFloat)>(m_optix->vertex_texcoords, index, active);
         }
 #endif
     }
@@ -196,7 +196,8 @@ public:
 
     virtual ScalarBoundingBox3f bbox(ScalarIndex index) const override;
 
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const override;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex index,
+                                     const ScalarBoundingBox3f &clip) const override;
 
     virtual ScalarSize primitive_count() const override;
 
@@ -260,14 +261,14 @@ public:
         return { active, u, v, t };
     }
 
+    void traverse(TraversalCallback *callback) override;
+
+    void parameters_changed() override;
+
 #if defined(MTS_USE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device) const override;
 #endif
-
-    void traverse(TraversalCallback *callback) override;
-
-    void parameters_changed() override;
 
 #if defined(MTS_ENABLE_OPTIX)
     /// Return the OptiX version of this shape
@@ -328,25 +329,28 @@ protected:
     ref<Struct> m_vertex_struct;
     ref<Struct> m_face_struct;
 
+#if defined(MTS_ENABLE_OPTIX)
+    struct OptixData {
+        /* GPU versions of the above */
+        Point3u  faces;
+        Point3f  vertex_positions;
+        Normal3f vertex_normals;
+        Point2f  vertex_texcoords;
+
+        RTcontext context = nullptr;
+        RTgeometrytriangles geometry = nullptr;
+        RTbuffer faces_buf = nullptr;
+        RTbuffer vertex_positions_buf = nullptr;
+        RTbuffer vertex_normals_buf = nullptr;
+        RTbuffer vertex_texcoords_buf = nullptr;
+        bool ready = false;
+    };
+
+    std::unique_ptr<OptixData> m_optix;
+#endif
+
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
-
-#if defined(MTS_ENABLE_OPTIX)
-    /* GPU versions of the above */
-    Point3u  m_faces_c;
-    Point3f  m_vertex_positions_c;
-    Normal3f m_vertex_normals_c;
-    Point2f  m_vertex_texcoords_c;
-
-    RTcontext m_optix_context = nullptr;
-    RTgeometrytriangles m_optix_geometry = nullptr;
-    RTbuffer m_optix_faces_buf = nullptr;
-    RTbuffer m_optix_vertex_positions_buf = nullptr;
-    RTbuffer m_optix_vertex_normals_buf = nullptr;
-    RTbuffer m_optix_vertex_texcoords_buf = nullptr;
-
-    bool m_optix_geometry_ready = false;
-#endif
 
     /**
      * Surface area distribution -- generated on demand when \ref
@@ -371,13 +375,6 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Mesh)
     ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(faces, m_faces, uint8_t*)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(vertices, m_vertices, uint8_t*)
-
-    // ENOKI_CALL_SUPPORT_METHOD(face)
-    // ENOKI_CALL_SUPPORT_METHOD(vertex)
-
-    // ENOKI_CALL_SUPPORT_METHOD(has_vertex_normals)
-    // ENOKI_CALL_SUPPORT_METHOD(vertex_position)
-    // ENOKI_CALL_SUPPORT_METHOD(vertex_normal)
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Mesh)
 
 //! @}

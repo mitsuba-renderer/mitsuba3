@@ -6,8 +6,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 #define rt_check(err)  __rt_check(s.context, err, __FILE__, __LINE__)
 
-static void __rt_check(RTcontext context, RTresult errval, const char *file,
-                       const int line) {
+void __rt_check(RTcontext context, RTresult errval, const char *file, const int line) {
     if (errval != RT_SUCCESS) {
         const char *message;
         rtContextGetErrorString(context, errval, &message);
