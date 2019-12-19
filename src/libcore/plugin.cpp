@@ -48,6 +48,7 @@ public:
         #endif
     }
 
+private:
     void *symbol(const std::string &name) const {
         #if defined(__WINDOWS__)
             void *ptr = GetProcAddress(m_handle, name.c_str());
@@ -63,6 +64,7 @@ public:
         return ptr;
     }
 
+public:
     const char *plugin_name  = nullptr;
     const char *plugin_descr = nullptr;
 
@@ -77,6 +79,7 @@ private:
 
 struct PluginManager::PluginManagerPrivate {
     std::unordered_map<std::string, Plugin *> m_plugins;
+    std::vector<std::string> m_python_plugins;
     std::mutex m_mutex;
 
     Plugin *plugin(const std::string &name) {
@@ -104,14 +107,14 @@ struct PluginManager::PluginManagerPrivate {
         if (fs::exists(resolved)) {
             Log(Info, "Loading plugin \"%s\" ..", filename.string());
             Plugin *plugin = new Plugin(resolved);
-            /* New classes must be registered within the class hierarchy */
+            // New classes must be registered within the class hierarchy
             Class::static_initialization();
-            ///Statistics::instance()->log_plugin(shortName, description()); XXX
+            // Statistics::instance()->log_plugin(shortName, description()); XXX
             m_plugins[name] = plugin;
             return plugin;
         }
 
-        /* Plugin not found! */
+        // Plugin not found!
         Throw("Plugin \"%s\" not found!", name.c_str());
     }
 };
@@ -126,13 +129,26 @@ PluginManager::~PluginManager() {
         delete pair.second;
 }
 
+void PluginManager::register_python_plugin(const std::string &plugin_name) {
+    d->m_python_plugins.push_back(plugin_name);
+    Class::static_initialization();
+}
+
 ref<Object> PluginManager::create_object(const Properties &props, const Class *class_) {
     Assert(class_ != nullptr);
     if (class_->name() == "Scene")
        return class_->construct(props);
 
-    const Plugin *plugin = d->plugin(props.plugin_name());
-    const Class *plugin_class = Class::for_name(plugin->plugin_name, class_->variant());
+    const Class *plugin_class;
+
+    auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(), props.plugin_name());
+    if (it != d->m_python_plugins.end()) {
+        plugin_class = Class::for_name(props.plugin_name(), class_->variant());
+    } else {
+        const Plugin *plugin = d->plugin(props.plugin_name());
+        plugin_class = Class::for_name(plugin->plugin_name, class_->variant());
+    }
+
     Assert(plugin_class != nullptr);
     ref<Object> object = plugin_class->construct(props);
 

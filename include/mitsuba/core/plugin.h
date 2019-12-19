@@ -58,6 +58,8 @@ public:
     /// Return the list of loaded plugins
     std::vector<std::string> loaded_plugins() const;
 
+    void register_python_plugin(const std::string &plugin_name);
+
     /**
      * \brief Instantiate a plugin, verify its type, and return the newly
      * created object instance.

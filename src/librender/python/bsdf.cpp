@@ -1,6 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/core/properties.h>
 
 MTS_PY_EXPORT_STRUCT(BSDFSample) {
     MTS_IMPORT_TYPES()
@@ -76,11 +77,51 @@ MTS_PY_EXPORT_STRUCT(BSDFSample) {
     }
 }
 
+/// Trampoline for derived types implemented in Python
+MTS_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
+public:
+    MTS_IMPORT_TYPES(BSDF)
+
+    PyBSDF(const Properties &p) : BSDF(p) { }
+
+    std::pair<BSDFSample3f, Spectrum>
+    sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+           Float sample1, const Point2f &sample2,
+           Mask active) const override {
+        using Return = std::pair<BSDFSample3f, Spectrum>;
+        PYBIND11_OVERLOAD_PURE(Return, BSDF, sample, ctx, si, sample1, sample2, active);
+    }
+
+    Spectrum eval(const BSDFContext &ctx,
+                  const SurfaceInteraction3f &si,
+                  const Vector3f &wo,
+                  Mask active = true) const override {
+        PYBIND11_OVERLOAD_PURE(Spectrum, BSDF, eval, ctx, si, wo, active);
+    }
+
+    Float pdf(const BSDFContext &ctx,
+              const SurfaceInteraction3f &si,
+              const Vector3f &wo,
+              Mask active = true) const override {
+        PYBIND11_OVERLOAD_PURE(Float, BSDF, pdf, ctx, si, wo, active);
+    }
+
+    std::string to_string() const override {
+        PYBIND11_OVERLOAD_PURE(std::string, BSDF, to_string,);
+    }
+
+    using BSDF::m_flags;
+    using BSDF::m_components;
+};
+
 MTS_PY_EXPORT(BSDF) {
     MTS_IMPORT_TYPES(BSDF, BSDFPtr)
 
+    using PyBSDF = PyBSDF<Float, Spectrum>;
+
     MTS_PY_CHECK_ALIAS(BSDF, m) {
-        auto bsdf = MTS_PY_CLASS(BSDF, Object)
+        auto bsdf = py::class_<BSDF, PyBSDF, Object, ref<BSDF>>(m, "BSDF", D(BSDF))
+            .def(py::init<const Properties&>())
             .def("sample", vectorize<Float>(&BSDF::sample),
                 "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
             .def("eval", vectorize<Float>(&BSDF::eval),
@@ -96,6 +137,8 @@ MTS_PY_EXPORT(BSDF) {
             .def_method(BSDF, needs_differentials, "active"_a = true)
             .def_method(BSDF, component_count, "active"_a = true)
             .def_method(BSDF, id)
+            .def_readwrite("m_flags",      &PyBSDF::m_flags)
+            .def_readwrite("m_components", &PyBSDF::m_components)
             .def("__repr__", &BSDF::to_string);
 
         if constexpr (is_cuda_array_v<Float>) {
@@ -133,4 +176,13 @@ MTS_PY_EXPORT(BSDF) {
                 D(BSDF, flags));
         }
     }
+
+    m.def("register_bsdf", [](const std::string &name,
+                              std::function<py::object(const Properties &)> &constr_) {
+        (void) new Class(
+            name, "BSDF", ::mitsuba::detail::get_variant<Float, Spectrum>(),
+            [=](const Properties &p) { return constr_(p).release().cast<ref<BSDF>>(); }, nullptr);
+
+        PluginManager::instance()->register_python_plugin(name);
+    });
 }

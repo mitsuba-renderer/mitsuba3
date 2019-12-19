@@ -22,8 +22,8 @@ NAMESPACE_BEGIN(mitsuba)
  */
 class MTS_EXPORT_CORE Class {
 public:
-    using ConstructFunctor   = Object *(*)(const Properties &props);
-    using UnserializeFunctor = Object *(*)(Stream *stream);
+    using ConstructFunctor   = std::function<Object *(const Properties &props)>;
+    using UnserializeFunctor = std::function<Object *(Stream *stream)>;
 
     /**
      * \brief Construct a new class descriptor
@@ -50,8 +50,8 @@ public:
     Class(const std::string &name,
           const std::string &parent,
           const std::string &variant = "",
-          ConstructFunctor construct = nullptr,
-          UnserializeFunctor unserialize = nullptr,
+          ConstructFunctor construct = {},
+          UnserializeFunctor unserialize = {},
           const std::string &alias = "");
 
     /// Return the name of the class
@@ -64,10 +64,10 @@ public:
     const std::string &alias() const { return m_alias; }
 
     /// Does the class support instantiation over RTTI?
-    bool is_constructible() const { return m_construct != nullptr; }
+    bool is_constructible() const { return (bool) m_construct; }
 
     /// Does the class support serialization?
-    bool is_serializable() const { return m_unserialize != nullptr; }
+    bool is_serializable() const { return (bool) m_unserialize; }
 
     /** \brief Return the Class object associated with the parent
      * class of nullptr if it does not have one.
@@ -248,10 +248,10 @@ constexpr bool is_constructible_v = is_constructiblee<T, Arg>::value;
 template <typename T, std::enable_if_t<is_constructible_v<T, const Properties&>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return [](const Properties& p) -> Object* { return new T(p); }; }
 template <typename T, std::enable_if_t<!is_constructible_v<T, const Properties&>, int> = 0>
-Class::ConstructFunctor get_construct_functor() { return nullptr; }
+Class::ConstructFunctor get_construct_functor() { return {}; }
 template <typename T, std::enable_if_t<is_constructible_v<T, Stream*>, int> = 0>
 Class::UnserializeFunctor get_unserialize_functor() { return [](Stream* s) -> Object* { return new T(s); }; }
 template <typename T, std::enable_if_t<!is_constructible_v<T, Stream*>, int> = 0>
-Class::UnserializeFunctor get_unserialize_functor() { return nullptr; }
+Class::UnserializeFunctor get_unserialize_functor() { return {}; }
 NAMESPACE_END(detail)
 NAMESPACE_END(mitsuba)
