@@ -22,30 +22,30 @@ public:
             if (scale != 0.f)
                 color /= scale;
 
-            m_coeff = srgb_model_fetch(color);
+            m_value = srgb_model_fetch(color);
 
             Properties props2("d65");
             props2.set_float("scale", props.float_("scale", 1.f) * scale);
             PluginManager *pmgr = PluginManager::instance();
             m_d65 = (Texture *) pmgr->create_object<Texture>(props2)->expand().at(0).get();
         } else if constexpr (is_rgb_v<Spectrum>) {
-            m_coeff = color;
+            m_value = color;
         } else {
             static_assert(is_monochromatic_v<Spectrum>);
-            m_coeff = luminance(color);
+            m_value = luminance(color);
         }
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         if constexpr (is_spectral_v<Spectrum>)
             return m_d65->eval(si, active) *
-                   srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
+                   srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
         else
-            return m_coeff;
+            return m_value;
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("coeff", m_coeff);
+        callback->put_parameter("value", m_value);
     }
 
     MTS_DECLARE_CLASS()
@@ -56,7 +56,7 @@ private:
      */
     static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
-    Array<ScalarFloat, ChannelCount> m_coeff;
+    Array<ScalarFloat, ChannelCount> m_value;
     ref<Texture> m_d65;
 };
 

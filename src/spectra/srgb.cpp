@@ -17,32 +17,32 @@ public:
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            m_coeff = srgb_model_fetch(color);
+            m_value = srgb_model_fetch(color);
         } else if constexpr (is_rgb_v<Spectrum>) {
-            m_coeff = color;
+            m_value = color;
         } else {
             static_assert(is_monochromatic_v<Spectrum>);
-            m_coeff = luminance(color);
+            m_value = luminance(color);
         }
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
+            return srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
         else
-            return m_coeff;
+            return m_value;
     }
 
     ScalarFloat mean() const override {
         if constexpr (is_spectral_v<Spectrum>) {
-            return srgb_model_mean(m_coeff);
+            return srgb_model_mean(m_value);
         } else {
-            return hmean(m_coeff);
+            return hmean(m_value);
         }
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("coeff", m_coeff);
+        callback->put_parameter("value", m_value);
     }
 
     MTS_DECLARE_CLASS()
@@ -53,7 +53,7 @@ protected:
      */
     static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
-    Array<ScalarFloat, ChannelCount> m_coeff;
+    Array<ScalarFloat, ChannelCount> m_value;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(SRGBSpectrum, Texture)

@@ -10,39 +10,42 @@ def traverse(node):
         set_property, get_property
 
     class SceneTraversal(TraversalCallback):
-        def __init__(self, node):
+        def __init__(self, node, parent=None, properties=None,
+                     hierarchy=None, prefixes=None, name=None, depth=0):
             TraversalCallback.__init__(self)
-            self.properties = dict()
-            self.hierarchy = dict()
-            self.prefixes = set()
-            self.name = ''
+            self.properties = dict() if properties is None else properties
+            self.hierarchy = dict() if hierarchy is None else hierarchy
+            self.prefixes = set() if prefixes is None else prefixes
+
+            if name is not None:
+                ctr, name_len = 1, len(name)
+                while name in self.prefixes:
+                    name = "%s_%i" % (name[:name_len], ctr)
+                    ctr += 1
+                self.prefixes.add(name)
+
+            self.name = name
             self.node = node
-            self.depth = 0
-            self.hierarchy[node] = (None, 0)
+            self.depth = depth
+            self.hierarchy[node] = (parent, depth)
 
         def put_parameter(self, name, cpptype, ptr):
-            name = self.name + '.' + name if len(self.name) > 0 else name
+            name = name if self.name is None else self.name + '.' + name
             self.properties[name] = (self.node, ptr, cpptype)
 
         def put_object(self, name, node):
             if node in self.hierarchy:
                 return
-            old_node = self.node
-            old_name = self.name
-            self.name = self.name + '.' + name if len(self.name) > 0 else name
-            ctr, name_len = 1, len(self.name)
-            while self.name in self.prefixes:
-                self.name = "%s_%i" % (self.name[:name_len], ctr)
-                ctr += 1
-            self.prefixes.add(self.name)
-            self.depth += 1
-            self.hierarchy[node] = (self.node, self.depth)
-            self.node = node
-            node.traverse(self)
-            self.node = old_node
-            self.name = old_name
-            self.depth -= 1
-
+            cb = SceneTraversal(
+                node=node,
+                parent=self.node,
+                properties=self.properties,
+                hierarchy=self.hierarchy,
+                prefixes=self.prefixes,
+                name=name if self.name is None else self.name + '.' + name,
+                depth=self.depth + 1
+            )
+            node.traverse(cb)
 
     cb = SceneTraversal(node)
     node.traverse(cb)
@@ -76,7 +79,7 @@ def traverse(node):
             return len(self.properties)
 
         def __repr__(self):
-            return 'ParameterMap' + repr(list(self.keys()))
+            return 'ParameterMap[\n    ' + ',\n    '.join(self.keys()) + '\n]'
 
         def keys(self):
             return self.properties.keys()
