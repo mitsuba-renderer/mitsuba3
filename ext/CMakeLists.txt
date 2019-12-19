@@ -36,6 +36,14 @@ set(NANOGUI_PYBIND11_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/pybind11")
 set(NANOGUI_ENOKI_DIR      "${CMAKE_CURRENT_SOURCE_DIR}/enoki" CACHE BOOL " " FORCE)
 add_subdirectory(nanogui)
 
+# Run the Enoki CMake script
+set(ENOKI_AUTODIFF ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
+set(ENOKI_CUDA     ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
+set(ENOKI_PYTHON   ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
+set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11"
+  CACHE STRING "Path containing the 'pybind11' library used to compile Enoki." FORCE)
+add_subdirectory(enoki)
+
 # Build embree
 if (MTS_USE_EMBREE)
   set(EMBREE_ISPC_SUPPORT           OFF CACHE BOOL " " FORCE)
@@ -48,9 +56,22 @@ if (MTS_USE_EMBREE)
   set(EMBREE_GEOMETRY_SUBDIVISION   OFF CACHE BOOL " " FORCE)
   set(EMBREE_GEOMETRY_INSTANCE      OFF CACHE BOOL " " FORCE)
   set(EMBREE_GEOMETRY_USER          OFF CACHE BOOL " " FORCE)
-  # TODO: set this automatically based on architecture  ("AVX2", "AVX512SKX")
-  set(EMBREE_MAX_ISA                "AVX512SKX" CACHE STRING " " FORCE)
-  set(EMBREE_TASKING_SYSTEM         "INTERNAL" CACHE STRING " " FORCE)
+
+  if (${ENOKI_NATIVE_FLAGS} MATCHES "SSE")
+    set(EMBREE_MAX_ISA "SSE4.2" CACHE STRING " " FORCE)
+  elseif(${ENOKI_NATIVE_FLAGS} MATCHES "AVX2")
+    set(EMBREE_MAX_ISA "AVX2" CACHE STRING " " FORCE)
+  elseif(${ENOKI_NATIVE_FLAGS} MATCHES "AVX")
+    set(EMBREE_MAX_ISA "AVX" CACHE STRING " " FORCE)
+  elseif(${ENOKI_NATIVE_FLAGS} MATCHES "KNL")
+    set(EMBREE_MAX_ISA "AVX512KNL" CACHE STRING " " FORCE)
+  elseif(${ENOKI_NATIVE_FLAGS} MATCHES "SKX")
+    set(EMBREE_MAX_ISA "AVX512SKX" CACHE STRING " " FORCE)
+  else()
+    set(EMBREE_MAX_ISA "DEFAULT" CACHE STRING " " FORCE)
+  endif()
+
+  set(EMBREE_TASKING_SYSTEM "INTERNAL" CACHE STRING " " FORCE)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
   endif()
@@ -58,13 +79,7 @@ if (MTS_USE_EMBREE)
   set(EMBREE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/embree/include" PARENT_SCOPE)
 endif()
 
-# Run the Enoki CMake script and update the compilation flags
-set(ENOKI_AUTODIFF ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
-set(ENOKI_CUDA     ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
-set(ENOKI_PYTHON   ${MTS_ENABLE_OPTIX} CACHE BOOL " " FORCE)
-set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11"
-  CACHE STRING "Path containing the 'pybind11' library used to compile Enoki." FORCE)
-add_subdirectory(enoki)
+# Update the compilation flags
 enoki_set_compile_flags()
 enoki_set_native_flags()
 get_directory_property(ENOKI_COMPILE_OPTIONS     COMPILE_OPTIONS)
