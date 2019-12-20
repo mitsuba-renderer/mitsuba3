@@ -95,14 +95,14 @@ public:
     Spectrum eval(const BSDFContext &ctx,
                   const SurfaceInteraction3f &si,
                   const Vector3f &wo,
-                  Mask active = true) const override {
+                  Mask active) const override {
         PYBIND11_OVERLOAD_PURE(Spectrum, BSDF, eval, ctx, si, wo, active);
     }
 
     Float pdf(const BSDFContext &ctx,
               const SurfaceInteraction3f &si,
               const Vector3f &wo,
-              Mask active = true) const override {
+              Mask active) const override {
         PYBIND11_OVERLOAD_PURE(Float, BSDF, pdf, ctx, si, wo, active);
     }
 
@@ -116,7 +116,6 @@ public:
 
 MTS_PY_EXPORT(BSDF) {
     MTS_IMPORT_TYPES(BSDF, BSDFPtr)
-
     using PyBSDF = PyBSDF<Float, Spectrum>;
 
     MTS_PY_CHECK_ALIAS(BSDF, m) {
@@ -177,12 +176,14 @@ MTS_PY_EXPORT(BSDF) {
         }
     }
 
-    m.def("register_bsdf", [](const std::string &name,
-                              std::function<py::object(const Properties &)> &constr_) {
-        (void) new Class(
-            name, "BSDF", ::mitsuba::detail::get_variant<Float, Spectrum>(),
-            [=](const Properties &p) { return constr_(p).release().cast<ref<BSDF>>(); }, nullptr);
+    m.def("register_bsdf",
+          [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {
+                (void) new Class(name, "BSDF", ::mitsuba::detail::get_variant<Float, Spectrum>(),
+                                [=](const Properties &p) {
+                                    return constructor(p).release().cast<ref<BSDF>>();
+                                },
+                                nullptr);
 
-        PluginManager::instance()->register_python_plugin(name);
-    });
+                PluginManager::instance()->register_python_plugin(name);
+          });
 }

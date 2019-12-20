@@ -1,11 +1,61 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/emitter.h>
+#include <mitsuba/core/properties.h>
+
+/// Trampoline for derived types implemented in Python
+MTS_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
+public:
+    MTS_IMPORT_TYPES(Emitter)
+
+    PyEmitter(const Properties &p) : Emitter(p) { }
+
+    std::pair<Ray3f, Spectrum>
+    sample_ray(Float time, Float sample1, const Point2f &sample2,
+           const Point2f &sample3, Mask active) const override {
+        using Return = std::pair<Ray3f, Spectrum>;
+        PYBIND11_OVERLOAD_PURE(Return, Emitter, sample_ray, time, sample1, sample2, sample3,
+                               active);
+    }
+
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &ref,
+                     const Point2f &sample,
+                     Mask active) const override {
+        using Return = std::pair<DirectionSample3f, Spectrum>;
+        PYBIND11_OVERLOAD_PURE(Return, Emitter, sample_direction, ref, sample, active);
+    }
+
+    Float pdf_direction(const Interaction3f &ref,
+                        const DirectionSample3f &ds,
+                        Mask active) const override {
+        PYBIND11_OVERLOAD_PURE(Float, Emitter, pdf_direction, ref, ds, active);
+    }
+
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        PYBIND11_OVERLOAD_PURE(Spectrum, Emitter, eval, si, active);
+    }
+
+    ScalarBoundingBox3f bbox() const override {
+        PYBIND11_OVERLOAD_PURE(ScalarBoundingBox3f, Emitter, bbox,);
+    }
+
+    bool is_environment() const override {
+        PYBIND11_OVERLOAD_PURE(bool, Emitter, is_environment,);
+    }
+
+    std::string to_string() const override {
+        PYBIND11_OVERLOAD_PURE(std::string, Emitter, to_string,);
+    }
+};
 
 MTS_PY_EXPORT(Emitter) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    using PyEmitter = PyEmitter<Float, Spectrum>;
+
     MTS_PY_CHECK_ALIAS(Emitter, m) {
-        auto emitter = MTS_PY_CLASS(Emitter, Endpoint)
+        auto emitter = py::class_<Emitter, PyEmitter, Object, ref<Emitter>>(m, "Emitter", D(Emitter))
+            .def(py::init<const Properties&>())
             .def_method(Emitter, is_environment);
 
         if constexpr (is_cuda_array_v<Float>)
@@ -41,4 +91,15 @@ MTS_PY_EXPORT(Emitter) {
                 "ptr"_a, "si"_a, "active"_a = true, D(Endpoint, eval));
         }
     }
+
+    m.def("register_emitter",
+        [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {
+            (void) new Class(name, "Emitter", ::mitsuba::detail::get_variant<Float, Spectrum>(),
+                            [=](const Properties &p) {
+                                return constructor(p).release().cast<ref<Emitter>>();
+                            },
+                            nullptr);
+
+            PluginManager::instance()->register_python_plugin(name);
+        });
 }
