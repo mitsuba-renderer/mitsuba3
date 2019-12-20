@@ -1,7 +1,8 @@
-#include <mitsuba/core/thread.h>
-#include <mitsuba/core/tls.h>
 #include <mitsuba/python/python.h>
 #include <mitsuba/render/integrator.h>
+#include <mitsuba/core/properties.h>
+#include <mitsuba/core/thread.h>
+#include <mitsuba/core/tls.h>
 
 #if defined(__APPLE__) || defined(__linux__)
 #  define MTS_HANDLE_SIGINT 1
@@ -19,9 +20,48 @@ static std::function<void()> sigint_handler;
 static void (*sigint_handler_prev)(int) = nullptr;
 #endif
 
+/// Trampoline for derived types implemented in Python
+MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
+public:
+    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
+
+    PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) { }
+
+    std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                     Sampler *sampler,
+                                     const RayDifferential3f &ray,
+                                     Float *aovs,
+                                     Mask active) const override {
+        py::gil_scoped_acquire gil;
+        py::function overload = py::get_overload(this, "sample");
+
+        if (overload) {
+            using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;
+            auto [spec, mask, aovs_]
+                = overload(scene, sampler, ray, active).template cast<PyReturn>();
+
+            std::memcpy(aovs, aovs_.data(), sizeof(Float) * aovs_.size());
+
+            return { spec, mask };
+        } else {
+            Throw("PySamplingIntegrator doesn't overload the method \"sample\"");
+        }
+    }
+
+    std::vector<std::string> aov_names() const override {
+        PYBIND11_OVERLOAD_PURE(std::vector<std::string>, SamplingIntegrator, aov_names, );
+    }
+
+    std::string to_string() const override {
+        PYBIND11_OVERLOAD_PURE(std::string, SamplingIntegrator, to_string,);
+    }
+};
+
 MTS_PY_EXPORT(Integrator) {
     MTS_IMPORT_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+    using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
+
     MTS_PY_CHECK_ALIAS(Integrator, m) {
         MTS_PY_CLASS(Integrator, Object)
             .def("render",
@@ -59,10 +99,12 @@ MTS_PY_EXPORT(Integrator) {
     }
 
     MTS_PY_CHECK_ALIAS(SamplingIntegrator, m) {
-        auto integrator = MTS_PY_CLASS(SamplingIntegrator, Integrator)
-            .def_method(SamplingIntegrator, aov_names)
-            .def_method(SamplingIntegrator, should_stop);
-
+        auto integrator =
+            py::class_<SamplingIntegrator, PySamplingIntegrator, Integrator,
+                       ref<SamplingIntegrator>>(m, "SamplingIntegrator", D(SamplingIntegrator))
+                .def(py::init<const Properties&>())
+                .def_method(SamplingIntegrator, aov_names)
+                .def_method(SamplingIntegrator, should_stop);
 
         if constexpr (is_dynamic_array_v<Float> || is_scalar_v<Float>) {
             integrator
@@ -115,6 +157,8 @@ MTS_PY_EXPORT(Integrator) {
 
         }
     }
+
+    MTS_PY_REGISTER_OBJECT("register_integrator", Integrator)
 
     MTS_PY_CHECK_ALIAS(MonteCarloIntegrator, m) {
         MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);

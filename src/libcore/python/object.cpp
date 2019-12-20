@@ -20,7 +20,6 @@ public:
             overload(name, (void *) &type, ptr);
         else
             Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
-
     }
 
     void put_object(const std::string &name, Object *obj) override {
