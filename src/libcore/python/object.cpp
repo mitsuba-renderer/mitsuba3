@@ -2,10 +2,9 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
 
-extern py::object py_cast(const std::type_info &type, void *ptr);
 extern py::object py_cast_object(Object *o);
 
-/* Trampoline for derived types implemented in Python */
+// Trampoline for derived types implemented in Python
 class PyTraversalCallback : public TraversalCallback {
 public:
     using TraversalCallback::TraversalCallback;
