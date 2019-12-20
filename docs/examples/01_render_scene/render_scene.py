@@ -27,11 +27,15 @@ scene.integrator().render(scene, scene.sensors()[0])
 # After rendering, the rendered data is stored in the film
 film = scene.sensors()[0].film()
 
-# Write out rendering as high dynamic range OpenEXR file (after converting to linear RGB space)
-film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False).write('cbox.exr')
-# Write out a tonemapped JPG of the same rendering
-film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True).write('cbox.jpg')
+# Write out rendering as high dynamic range OpenEXR file
+film.set_destination_file('cbox.exr')
+film.develop()
 
-# Get the pixel values as a numpy array for further processing
-image_np = np.array(film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False))
+# Write out a tonemapped JPG of the same rendering
+bmp = film.bitmap()
+bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True).write('cbox.jpg')
+
+# Get linear pixel values as a numpy array for further processing
+bmp_linear_rgb = bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False)
+image_np = np.array(bmp_linear_rgb)
 print(image_np.shape)

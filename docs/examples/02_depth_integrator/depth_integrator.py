@@ -48,19 +48,21 @@ surface_interaction = scene.ray_intersect(rays)
 # Given intersection, compute the final pixel values as the depth t
 # of the sampled surface interaction
 result = surface_interaction.t
-result[~surface_interaction.is_valid()] = 0 # set values to zero if no intersection occured
+
+ # set values to zero if no intersection occured
+result[~surface_interaction.is_valid()] = 0
 
 block = ImageBlock(film.crop_size(), 5, filter=film.reconstruction_filter(), border=False)
-block.clear() # Clear ImageBlock before accumulating into it
-result = np.stack([result, result, result], axis=1) # Imageblock expects RGB values (Array of size (n, 3))
+block.clear()
+result = np.stack([result, result, result], axis=1)
+# Imageblock expects RGB values (Array of size (n, 3))
 block.put(position_sample, rays.wavelengths, result, 1)
 
 # Write out the result from the ImageBlock
-# Internally, ImageBlock stores values in XYZAW format (color XYZ, alpha value A and weight W)
+# Internally, ImageBlock stores values in XYZAW format
+# (color XYZ, alpha value A and weight W)
 xyzaw_np = block.data().reshape([film_size[1], film_size[0], 5])
 
 # We then create a Bitmap from these values and save it out as EXR file
 bmp = Bitmap(xyzaw_np, Bitmap.PixelFormat.XYZAW)
 bmp.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, srgb_gamma=False).write('depth.exr')
-
-
