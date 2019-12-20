@@ -49,6 +49,18 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define MTS_PY_IMPORT_MODULE(Name, ModuleName) \
     auto Name = py::module::import(ModuleName); (void) m;
 
+/// Shorthand notation for defining object registration routine for trampoline objects
+#define MTS_PY_REGISTER_OBJECT(Function, Name)                                                     \
+    m.def(Function,                                                                                \
+        [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {  \
+            (void) new Class(name, #Name, ::mitsuba::detail::get_variant<Float, Spectrum>(),       \
+                            [=](const Properties &p) {                                             \
+                                return constructor(p).release().cast<ref<Name>>();                 \
+                            },                                                                     \
+                            nullptr);                                                              \
+            PluginManager::instance()->register_python_plugin(name);                               \
+        });                                                                                        \
+
 using namespace mitsuba;
 
 namespace py = pybind11;

@@ -7,7 +7,7 @@ MTS_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Emitter)
 
-    PyEmitter(const Properties &p) : Emitter(p) { }
+    PyEmitter(const Properties &props) : Emitter(props) { }
 
     std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float sample1, const Point2f &sample2,
@@ -54,7 +54,7 @@ MTS_PY_EXPORT(Emitter) {
     using PyEmitter = PyEmitter<Float, Spectrum>;
 
     MTS_PY_CHECK_ALIAS(Emitter, m) {
-        auto emitter = py::class_<Emitter, PyEmitter, Object, ref<Emitter>>(m, "Emitter", D(Emitter))
+        auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
             .def(py::init<const Properties&>())
             .def_method(Emitter, is_environment);
 
@@ -92,14 +92,5 @@ MTS_PY_EXPORT(Emitter) {
         }
     }
 
-    m.def("register_emitter",
-        [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {
-            (void) new Class(name, "Emitter", ::mitsuba::detail::get_variant<Float, Spectrum>(),
-                            [=](const Properties &p) {
-                                return constructor(p).release().cast<ref<Emitter>>();
-                            },
-                            nullptr);
-
-            PluginManager::instance()->register_python_plugin(name);
-        });
+    MTS_PY_REGISTER_OBJECT("register_emitter", Emitter)
 }

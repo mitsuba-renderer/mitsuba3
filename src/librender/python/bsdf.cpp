@@ -82,7 +82,7 @@ MTS_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(BSDF)
 
-    PyBSDF(const Properties &p) : BSDF(p) { }
+    PyBSDF(const Properties &props) : BSDF(props) { }
 
     std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -176,14 +176,5 @@ MTS_PY_EXPORT(BSDF) {
         }
     }
 
-    m.def("register_bsdf",
-          [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {
-                (void) new Class(name, "BSDF", ::mitsuba::detail::get_variant<Float, Spectrum>(),
-                                [=](const Properties &p) {
-                                    return constructor(p).release().cast<ref<BSDF>>();
-                                },
-                                nullptr);
-
-                PluginManager::instance()->register_python_plugin(name);
-          });
+    MTS_PY_REGISTER_OBJECT("register_bsdf", BSDF)
 }
