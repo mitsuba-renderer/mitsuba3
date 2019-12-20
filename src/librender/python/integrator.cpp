@@ -40,8 +40,7 @@ public:
             auto [spec, mask, aovs_]
                 = overload(scene, sampler, ray, active).template cast<PyReturn>();
 
-            std::memcpy(aovs, aovs_.data(), sizeof(Float) * aovs_.size());
-
+            std::copy(aovs_.begin(), aovs_.end(), aovs);
             return { spec, mask };
         } else {
             Throw("PySamplingIntegrator doesn't overload the method \"sample\"");
