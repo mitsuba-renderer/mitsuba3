@@ -2,10 +2,26 @@
 
 import sys
 
-try:
-    import numpy
-except ImportError:
-    raise ImportError("NumPy could not be found! (To install it, run %s -m pip install numpy)" % sys.executable)
+def set_variant(variant):
+    imp_orig = __builtins__.__import__
+
+    if hasattr(imp_orig, 'metadata'):
+        imp_orig.metadata.variant = variant
+        return
+
+    def mitsuba_import(name, *args, **kwargs):
+        prefix_old = 'mitsuba.'
+        if name.startswith(prefix_old):
+            prefix_new = prefix_old + mitsuba_import.metadata.variant + '.'
+            if not name.startswith(prefix_new):
+                name = prefix_new + name[len(prefix_old):]
+        return imp_orig(name, *args, **kwargs)
+
+    import threading
+    mitsuba_import.metadata = threading.local()
+    mitsuba_import.metadata.variant = variant
+
+    __builtins__.__import__ = mitsuba_import
 
 try:
     from . import core, render
