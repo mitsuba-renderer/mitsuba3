@@ -1,11 +1,11 @@
 import os
 import numpy as np
 
-from mitsuba.core import Bitmap, Struct, Thread
-from mitsuba.core.xml import load_file
+import mitsuba
+from mitsuba.packet_rgb.core import Bitmap, Struct, Thread
+from mitsuba.packet_rgb.core.xml import load_file
+from mitsuba.packet_rgb.render import ImageBlock
 
-from mitsuba.core import Bitmap
-from mitsuba.render import RadianceSample3fX, ImageBlock
 
 SCENE_DIR = '../../../resources/data/scenes/'
 filename = os.path.join(SCENE_DIR, 'cbox/cbox.xml')
@@ -21,7 +21,7 @@ scene = load_file(filename)
 
 # Instead of calling the scene's integrator, we build our own small integrator
 # This integrator simply computes the depth values per pixel
-sensor = scene.sensor()
+sensor = scene.sensors()[0]
 film = sensor.film()
 film_size = film.crop_size()
 spp = 32
@@ -50,13 +50,17 @@ surface_interaction = scene.ray_intersect(rays)
 result = surface_interaction.t
 result[~surface_interaction.is_valid()] = 0 # set values to zero if no intersection occured
 
-
-# Accumulate values into an image block
-rfilter = film.reconstruction_filter()
-block = ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False, filter=rfilter, border=False)
-result = np.stack([result, result, result, result], axis=1) # Workaround since ImageBlock assumes 4 values
+block = ImageBlock(film.crop_size(), 5, filter=film.reconstruction_filter(), border=False)
+block.clear() # Clear ImageBlock before accumulating into it
+result = np.stack([result, result, result], axis=1) # Imageblock expects RGB values (Array of size (n, 3))
 block.put(position_sample, rays.wavelengths, result, 1)
 
 # Write out the result from the ImageBlock
-block.bitmap().convert(Bitmap.EY, Struct.EFloat32, srgb_gamma=False).write('depth.exr')
+# Internally, ImageBlock stores values in XYZAW format (color XYZ, alpha value A and weight W)
+xyzaw_np = block.data().reshape([film_size[1], film_size[0], 5])
+
+# We then create a Bitmap from these values and save it out as EXR file
+bmp = Bitmap(xyzaw_np, Bitmap.PixelFormat.XYZAW)
+bmp.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, srgb_gamma=False).write('depth.exr')
+
 
