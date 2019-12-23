@@ -11,12 +11,12 @@ include_directories(
 add_custom_target(mitsuba-python)
 set_target_properties(mitsuba-python PROPERTIES FOLDER mitsuba-python)
 
-function(add_mitsuba_python_library TARGET_NAME NAME)
-  set(TARGET_NAME mitsuba_${NAME}_ext)
+function(add_mitsuba_python_library TARGET_NAME)
   add_library(${TARGET_NAME}-obj OBJECT
     # Common dependencies
     ${PROJECT_SOURCE_DIR}/include/mitsuba/python/python.h
     ${PROJECT_SOURCE_DIR}/include/mitsuba/python/docstr.h
+
     # Dependencies declared by the module
     ${ARGN}
   )
@@ -28,8 +28,10 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
   add_dependencies(mitsuba-python ${TARGET_NAME})
 
   # The prefix and extension are provided by FindPythonLibsNew.cmake
-  set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}")
-  set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX "${PYTHON_MODULE_EXTENSION}")
+  set_target_properties(${TARGET_NAME} PROPERTIES
+    PREFIX "${PYTHON_MODULE_PREFIX}"
+    SUFFIX "${PYTHON_MODULE_EXTENSION}"
+  )
 
   if (WIN32)
     if (MSVC)
@@ -74,12 +76,12 @@ function(add_mitsuba_python_library TARGET_NAME NAME)
   endif()
 
   # Copy lib${TARGET_NAME} binary to the 'dist/python/mitsuba/${NAME}' directory
-  add_dist(python/mitsuba/${NAME}/${TARGET_NAME})
+  add_dist(python/mitsuba/${TARGET_NAME})
 
   if (APPLE)
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../../..")
+    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path/../..")
   elseif(UNIX)
-    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../../..")
+    set_target_properties(${TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
   endif()
 
   set_target_properties(${TARGET_NAME} ${TARGET_NAME}-obj PROPERTIES FOLDER mitsuba-python)
@@ -95,15 +97,13 @@ endif()
 set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # Copy enoki python library to 'dist' folder
-if (MTS_ENABLE_OPTIX)
-  add_dist(python/enoki-python)
-  if (APPLE)
-    set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "@loader_path/..")
-  elseif(UNIX)
-    set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
-  endif()
-  set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+add_dist(python/enoki-python)
+if (APPLE)
+  set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "@loader_path/..")
+elseif(UNIX)
+  set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
 endif()
+set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # docstring generation support
 include("cmake/docstrings.cmake")

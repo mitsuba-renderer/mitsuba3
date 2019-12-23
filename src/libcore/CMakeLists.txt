@@ -64,7 +64,6 @@ add_library(mitsuba-core-obj OBJECT
 
   dither-matrix256.cpp
 )
-add_dependencies(mitsuba-core-obj mitsuba-conf-header)
 
 set_property(
   SOURCE util.cpp
@@ -106,7 +105,9 @@ endif()
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq)
 
 # Python bindings
-add_subdirectory(python)
+if (MTS_ENABLE_PYTHON)
+  add_subdirectory(python)
+endif()
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

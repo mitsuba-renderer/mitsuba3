@@ -171,7 +171,7 @@ scalar_t<T> scalar_cast(const T &v) {
         if (slices(v) != 1)
             Throw("scalar_cast(): array should be of size 1!");
 #endif
-        return v[0];
+        return v.coeff(0);
     } else {
         return v;
     }

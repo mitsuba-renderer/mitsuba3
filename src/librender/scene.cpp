@@ -6,13 +6,13 @@
 #include <mitsuba/render/integrator.h>
 #include <enoki/stl.h>
 
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
 #  include "scene_embree.inl"
 #else
 #  include "scene_native.inl"
 #endif
 
-#if defined(MTS_USE_OPTIX)
+#if defined(MTS_ENABLE_OPTIX)
 #  include "scene_optix.inl"
 #endif
 
@@ -111,7 +111,7 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const {
-#if !defined(MTS_USE_EMBREE)
+#if !defined(MTS_ENABLE_EMBREE)
     if constexpr (!is_cuda_array_v<Float>)
         return ray_intersect_naive_cpu(ray, active);
 #endif

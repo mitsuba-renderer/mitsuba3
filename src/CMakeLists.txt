@@ -1,4 +1,4 @@
-if (PYTHONLIBS_FOUND)
+if (MTS_ENABLE_PYTHON)
   # Python bindings (need to include it first so that some required CMake
   # functions are defined).
   include("cmake/libpython.cmake")
@@ -25,8 +25,9 @@ add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
 
-if (PYTHONLIBS_FOUND)
+if (MTS_ENABLE_PYTHON)
   add_subdirectory(python)
+
   # Test support
   include("cmake/tests.cmake")
 endif()

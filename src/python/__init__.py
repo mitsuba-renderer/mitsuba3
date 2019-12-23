@@ -1,32 +1,101 @@
 """ Mitsuba Python extension library """
 
 import sys
+import types
+
+#def set_variant(variant):
+#    '''
+#    Mitsuba 2 can be compiled to a great variety of different variants
+#    (e.g. 'scalar_rgb', 'gpu_autodiff_spectral_polarized') that each
+#    have their own Python bindings.
+#
+#    Writing this prefix many times in import statements such as
+#
+#       import mitsuba.gpu_autodiff_spectral_polarized.render import Integrator
+#
+#    can get rather tiring. This convenience function modifies Python's
+#    import statement so that it automatically inserts the variant name
+#    into any later import statements from the mitsuba package.
+#
+#        import mitsuba
+#        mitsuba.set_variant('gpu_autodiff_spectral_polarized')
+#
+#        import mitsuba.render import Integrator
+#
+#    The variant name can be changed at any time and only applies
+#    to the current thread.
+#    '''
+#
+#    tls.variant = variant
+#
+#    __import__("mitsuba.core_")
+
+class MitsubaModule(types.ModuleType):
+    def __init__(self, name, doc=None):
+        super().__init__(name=name, doc=doc)
+
+        from importlib.machinery import ModuleSpec
+        import threading
+
+        tls = threading.local()
+        tls.modules = ()
+        self.__tls__ = tls
+        self.__spec__ = ModuleSpec(name, None)
+        self.__package__ = name
+
+    def __getattribute__(self, key):
+        modules = super().__getattribute__('__tls__').modules
+
+        if key == '__dict__':
+            result = super().__getattribute__('__dict__')
+            for m in modules:
+                result.update(getattr(m, '__dict__'))
+            return result
+
+        try:
+            return super().__getattribute__(key)
+        except:
+            pass
+
+        for m in modules:
+            if hasattr(m, key):
+                return getattr(m, key)
+
+        raise AttributeError('module has no attribute %s' % key)
+
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+
+    def set_variant(self, variant):
+        import importlib
+        modules = (
+            importlib.import_module(self.__name__ + '_ext'),
+            importlib.import_module(self.__name__ + '_' + variant + '_ext')
+        )
+
+        self.__tls__.modules = modules
+
+core = MitsubaModule('mitsuba.core')
+# render = MitsubaModule('mitsuba.render')
 
 def set_variant(variant):
-    imp_orig = __builtins__.__import__
+    core.set_variant(variant)
+    # render.set_variant(variant)
 
-    if hasattr(imp_orig, 'metadata'):
-        imp_orig.metadata.variant = variant
-        return
+sys.modules['mitsuba.core'] = core
+# sys.modules['mitsuba.render'] = render
 
-    def mitsuba_import(name, *args, **kwargs):
-        prefix_old = 'mitsuba.'
-        if name.startswith(prefix_old):
-            prefix_new = prefix_old + mitsuba_import.metadata.variant + '.'
-            if not name.startswith(prefix_new):
-                name = prefix_new + name[len(prefix_old):]
-        return imp_orig(name, *args, **kwargs)
+# Cleanup
 
-    import threading
-    mitsuba_import.metadata = threading.local()
-    mitsuba_import.metadata.variant = variant
-
-    __builtins__.__import__ = mitsuba_import
+del types
+del sys
+del MitsubaModule
 
 try:
-    from . import core, render
+    pass
 except ImportError as e:
     from .config import PYTHON_EXECUTABLE
+    import sys
 
     if PYTHON_EXECUTABLE != sys.executable:
         extra_msg = ("You're likely trying to use Mitsuba within a Python "

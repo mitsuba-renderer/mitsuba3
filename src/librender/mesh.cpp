@@ -8,7 +8,7 @@
 #include <mitsuba/render/records.h>
 #include <mutex>
 
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
 
@@ -499,7 +499,7 @@ MTS_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     return oss.str();
 }
 
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
 MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) const {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 

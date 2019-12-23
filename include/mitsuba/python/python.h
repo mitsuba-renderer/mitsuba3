@@ -5,19 +5,24 @@
 #endif
 
 #include <mitsuba/mitsuba.h>
-#include <mitsuba/python/config.h>
+#include <mitsuba/core/object.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
-#include <tbb/tbb.h>
-#include "docstr.h"
-#include <mitsuba/core/object.h>
-#include <enoki/python.h>
 #include <enoki/stl.h>
 
+#if MTS_VARIANT_VECTORIZE == 1
+#  include <enoki/dynamic.h>
+#endif
+
+#include "docstr.h"
+
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
+
+#define MTS_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
+#define MTS_MODULE_NAME(lib, variant) MTS_MODULE_NAME_1(lib, variant)
 
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
@@ -67,30 +72,30 @@ namespace py = pybind11;
 
 using namespace py::literals;
 
-extern py::dtype dtype_for_struct(const Struct *s);
+//extern py::dtype dtype_for_struct(const Struct *s);
 
-template <typename VectorClass, typename ScalarClass, typename ClassBinding>
-void bind_slicing_operators(ClassBinding &c) {
-    using Float = typename VectorClass::Float;
-    if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>) {
-        c.def(py::init([](size_t n) -> VectorClass {
-            return zero<VectorClass>(n);
-        }))
-        .def("__getitem__", [](VectorClass &r, size_t i) {
-            if (i >= slices(r))
-                throw py::index_error();
-            return ScalarClass(enoki::slice(r, i));
-        })
-        .def("__setitem__", [](VectorClass &r, size_t i, const ScalarClass &r2) {
-            if (i >= slices(r))
-                throw py::index_error();
-            enoki::slice(r, i) = r2;
-        })
-        .def("__len__", [](const VectorClass &r) {
-            return slices(r);
-        });
-    }
-}
+//template <typename VectorClass, typename ScalarClass, typename ClassBinding>
+//void bind_slicing_operators(ClassBinding &c) {
+    //using Float = typename VectorClass::Float;
+    //if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>) {
+        //c.def(py::init([](size_t n) -> VectorClass {
+            //return zero<VectorClass>(n);
+        //}))
+        //.def("__getitem__", [](VectorClass &r, size_t i) {
+            //if (i >= slices(r))
+                //throw py::index_error();
+            //return ScalarClass(enoki::slice(r, i));
+        //})
+        //.def("__setitem__", [](VectorClass &r, size_t i, const ScalarClass &r2) {
+            //if (i >= slices(r))
+                //throw py::index_error();
+            //enoki::slice(r, i) = r2;
+        //})
+        //.def("__len__", [](const VectorClass &r) {
+            //return slices(r);
+        //});
+    //}
+//}
 
 template <typename Source, typename Target> void pybind11_type_alias() {
     auto &types = pybind11::detail::get_internals().registered_types_cpp;
@@ -104,16 +109,27 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
-#define MTS_PY_CHECK_ALIAS(Name, Module)              \
-    if (auto h = get_type_handle<Name>(); h) {        \
-        Module.attr(#Name) = h;                       \
-    }                                                 \
-    else
+#define MTS_PY_IMPORT_TYPES()                                                                      \
+    using Float    = MTS_VARIANT_FLOAT;                                                            \
+    using Spectrum = MTS_VARIANT_SPECTRUM;                                                         \
+                                                                                                   \
+    MTS_IMPORT_TYPES()
 
-template<typename Float, typename Func>
-auto vectorize(Func func) {
-    if constexpr (is_array_v<Float> && !is_dynamic_v<Float>)
-        return enoki::vectorize_wrapper(func);
-    else
-        return func;
+#define MTS_PY_IMPORT_TYPES_DYNAMIC()                                                              \
+    using Float = std::conditional_t<is_static_array_v<MTS_VARIANT_FLOAT>,                         \
+                                     make_dynamic_t<MTS_VARIANT_FLOAT>, MTS_VARIANT_FLOAT>;        \
+                                                                                                   \
+    using Spectrum =                                                                               \
+        std::conditional_t<is_static_array_v<MTS_VARIANT_FLOAT>,                                   \
+                           make_dynamic_t<MTS_VARIANT_SPECTRUM>, MTS_VARIANT_SPECTRUM>;            \
+                                                                                                   \
+    MTS_IMPORT_TYPES()
+
+template <typename Func>
+decltype(auto) vectorize(const Func &func) {
+#if MTS_VARIANT_VECTORIZE == 1
+    return enoki::vectorize_wrapper(func);
+#else
+    return func;
+#endif
 }

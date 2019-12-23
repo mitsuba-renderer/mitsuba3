@@ -64,8 +64,6 @@ add_library(mitsuba-render-obj OBJECT
   srgb.cpp         ${INC_DIR}/srgb.h
   ${LIBRENDER_EXTRA_SRC}
 )
-add_dependencies(mitsuba-render-obj mitsuba-conf-header)
-
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
 set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-render-obj mitsuba-render PROPERTIES FOLDER mitsuba-render)
@@ -83,7 +81,7 @@ target_link_libraries(mitsuba-render PRIVATE tbb ${LIBRENDER_EXTRA_LIB})
 target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
 
 # Link to Embree
-if (MTS_USE_EMBREE)
+if (MTS_ENABLE_EMBREE)
   if (APPLE)
       target_link_libraries(mitsuba-render PRIVATE $<TARGET_FILE:embree>)
   else()
@@ -96,7 +94,9 @@ endif()
 add_dist(mitsuba-render)
 
 # Python bindings
-add_subdirectory(python)
+if (MTS_ENABLE_PYTHON)
+  #add_subdirectory(python)
+endif()
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

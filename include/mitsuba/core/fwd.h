@@ -290,14 +290,14 @@ namespace fs = filesystem;
 NAMESPACE_END(mitsuba)
 
 extern "C" {
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
     // Forward declarations for Embree
     typedef struct RTCDeviceTy* RTCDevice;
     typedef struct RTCSceneTy* RTCScene;
     typedef struct RTCGeometryTy* RTCGeometry;
 #endif
 
-#if defined(MTS_USE_OPTIX)
+#if defined(MTS_ENABLE_OPTIX)
     // Forward declarations for OptiX
     typedef struct RTcontext_api *RTcontext;
     typedef struct RTgeometrytriangles_api *RTgeometrytriangles;

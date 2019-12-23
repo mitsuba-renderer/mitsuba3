@@ -8,7 +8,7 @@
 
 MTS_PY_EXPORT(ShapeKDTree) {
     MTS_IMPORT_TYPES(ShapeKDTree, Shape, Mesh)
-#if !defined(MTS_USE_EMBREE)
+#if !defined(MTS_ENABLE_EMBREE)
     MTS_PY_CHECK_ALIAS(ShapeKDTree, m) {
         MTS_PY_CLASS(ShapeKDTree, Object)
             .def(py::init<const Properties &>(), D(ShapeKDTree, ShapeKDTree))
@@ -47,7 +47,7 @@ MTS_PY_EXPORT(Scene) {
             .def("ray_test",
                 vectorize<Float>(&Scene::ray_test),
                 "ray"_a, "active"_a = true)
-#if !defined(MTS_USE_EMBREE)
+#if !defined(MTS_ENABLE_EMBREE)
             .def("ray_intersect_naive",
                 vectorize<Float>(&Scene::ray_intersect_naive),
                 "ray"_a, "active"_a = true)

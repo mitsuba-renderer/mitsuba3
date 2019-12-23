@@ -1,10 +1,12 @@
 # This is the main CMake build file used to compile Mitsuba
 cmake_minimum_required (VERSION 3.2.0)
 project(mitsuba)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 
 # ---------- User options ----------
-option(MTS_USE_EMBREE            "Use Embree for ray tracing operations?" OFF)
-option(MTS_ENABLE_OPTIX          "Enable the use of Optix for ray tracing in GPU mode?" OFF)
+option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
+option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" OFF)
+option(MTS_ENABLE_OPTIX   "Enable the use of Optix for ray tracing in GPU mode?" OFF)
 
 if (UNIX)
   option(MTS_ENABLE_PROFILER     "Enable sampling profiler" ON)
@@ -29,7 +31,7 @@ endif()
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
 if (MTS_ENABLE_OPTIX)
-set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
+  set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
 endif()
 
 # ----------------------------------
@@ -162,22 +164,21 @@ include_directories(include
   ${TBB_INCLUDE_DIRS}
 )
 
-if (MTS_USE_EMBREE)
+if (MTS_ENABLE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})
-  add_definitions(-DMTS_USE_EMBREE=1)
+  add_definitions(-DMTS_ENABLE_EMBREE=1)
   message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
 else()
   message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
 endif()
 
 if (MTS_ENABLE_OPTIX)
-    if(NOT EXISTS "${MTS_OPTIX_PATH}/include/optix.h")
-      message(FATAL_ERROR "optix.h not found, run CMake with -DMTS_OPTIX_PATH=...")
-    endif()
+  if(NOT EXISTS "${MTS_OPTIX_PATH}/include/optix.h")
+    message(FATAL_ERROR "optix.h not found, run CMake with -DMTS_OPTIX_PATH=...")
+  endif()
   message(STATUS "Mitsuba: using OptiX for GPU ray tracing.")
   include_directories(${MTS_OPTIX_PATH}/include)
   link_directories(${MTS_OPTIX_PATH}/lib64)
-  add_definitions(-DMTS_USE_OPTIX=1)
   add_definitions(-DMTS_ENABLE_OPTIX=1)
 endif()
 
@@ -432,7 +433,6 @@ function(add_plugin)
   set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_property(TARGET ${TARGET}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
   set_target_properties(${TARGET} PROPERTIES PREFIX "")
-  add_dependencies(${TARGET}-obj mitsuba-conf-header)
   target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render tbb)
   add_dist(plugins/${TARGET})
   set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET})
@@ -452,23 +452,15 @@ elseif (UNIX)
 endif()
 
 # Generate the config.h headers from the configuration
-add_custom_target(
-  mitsuba-conf-header ALL
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/python/config.h
-)
-add_custom_command(
-  OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
-          ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/python/config.h
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
+execute_process(
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT_VARIABLE MTS_VARIANTS
+  ERROR_VARIABLE MTS_VARIANTS_ERR
 )
-
-set_source_files_properties(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/core/config.h
-  PROPERTIES GENERATED TRUE
-)
+if (ERROR_VARIABLE)
+  mesage(FATAL_ERROR "Could not run resources/configure.py script: %{MTS_VARIANTS_ERR}")
+endif()
 
 # Register the Mitsuba codebase
 add_subdirectory(src)
@@ -515,7 +507,7 @@ add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2s
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
 set_property(TARGET dist-copy PROPERTY FOLDER misc)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resources")
+# Documentation
 find_package(Sphinx)
 if (Sphinx_FOUND)
   set(SPHINX_INPUT_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/docs")

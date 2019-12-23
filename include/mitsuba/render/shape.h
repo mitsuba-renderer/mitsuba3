@@ -297,12 +297,12 @@ public:
      */
     virtual ScalarSize effective_primitive_count() const;
 
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device) const;
 #endif
 
-#if defined(MTS_USE_OPTIX)
+#if defined(MTS_ENABLE_OPTIX)
     /// Return the OptiX version of this shape
     virtual RTgeometrytriangles optix_geometry(RTcontext context);
 #endif

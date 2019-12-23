@@ -47,13 +47,13 @@ MTS_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & 
     NotImplementedError("pdf_position");
 }
 
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
 MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice) const {
     NotImplementedError("embree_geometry");
 }
 #endif
 
-#if defined(MTS_USE_OPTIX)
+#if defined(MTS_ENABLE_OPTIX)
 MTS_VARIANT RTgeometrytriangles Shape<Float, Spectrum>::optix_geometry(RTcontext) {
     NotImplementedError("optix_geometry");
 }

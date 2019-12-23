@@ -265,7 +265,7 @@ public:
 
     void parameters_changed() override;
 
-#if defined(MTS_USE_EMBREE)
+#if defined(MTS_ENABLE_EMBREE)
     /// Return the Embree version of this shape
     virtual RTCGeometry embree_geometry(RTCDevice device) const override;
 #endif
