@@ -63,6 +63,7 @@ __pycache__
 
 # Docs
 docs/generated/
+docs/_build/
 
 # Config
 include/mitsuba/core/config.h
