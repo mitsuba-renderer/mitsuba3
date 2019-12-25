@@ -24,6 +24,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     python_bindings/rendering_scene
     python_bindings/depth_integrator
     python_bindings/direct_integrator
+    python_bindings/diffuse_bsdf
 
 
 .. toctree::
