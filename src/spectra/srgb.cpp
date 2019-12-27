@@ -6,14 +6,14 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class SRGBSpectrum final : public Texture<Float, Spectrum> {
+class SRGBReflectanceSpectrum final : public Texture<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Texture)
 
-    SRGBSpectrum(const Properties &props) : Texture(props) {
+    SRGBReflectanceSpectrum(const Properties &props) : Texture(props) {
         ScalarColor3f color = props.color("color");
 
-        if (any(color < 0 || color > 1))
+        if (any(color < 0 || color > 1) && !props.bool_("unbounded", false))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 
         if constexpr (is_spectral_v<Spectrum>) {
@@ -56,6 +56,6 @@ protected:
     Array<ScalarFloat, ChannelCount> m_value;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(SRGBSpectrum, Texture)
-MTS_EXPORT_PLUGIN(SRGBSpectrum, "sRGB spectrum")
+MTS_IMPLEMENT_CLASS_VARIANT(SRGBReflectanceSpectrum, Texture)
+MTS_EXPORT_PLUGIN(SRGBReflectanceSpectrum, "sRGB spectrum")
 NAMESPACE_END(mitsuba)

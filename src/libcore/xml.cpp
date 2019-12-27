@@ -738,8 +738,18 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     }
 
                     if (!within_spectrum) {
+                        std::string name = node.attribute("name").value();
+
+                        /// Spectral IOR values are unbounded and require special handling
+                        bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
+                                      name == "ext_ior";
+
                         Properties props2(within_emitter ? "srgb_d65" : "srgb");
                         props2.set_color("color", col);
+
+                        if (!within_emitter && is_ior)
+                            props2.set_bool("unbounded", true);
+
                         ref<Object> obj = PluginManager::instance()->create_object(
                             props2, Class::for_name("Texture", ctx.variant));
                         props.set_object(node.attribute("name").value(), obj);
@@ -874,8 +884,17 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 props3 = Properties("uniform");
                                 props3.set_float("value", luminance(color));
                             } else {
+                                std::string name = node.attribute("name").value();
+
+                                /// Spectral IOR values are unbounded and require special handling
+                                bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
+                                              name == "ext_ior";
+
                                 props3 = Properties(within_emitter ? "srgb_d65" : "srgb");
                                 props3.set_color("color", color);
+
+                                if (!within_emitter && is_ior)
+                                    props3.set_bool("unbounded", true);
                             }
 
                             obj = PluginManager::instance()->create_object(
