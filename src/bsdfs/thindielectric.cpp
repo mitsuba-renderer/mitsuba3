@@ -8,6 +8,89 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _bsdf-thindielectric:
+
+Thin dielectric material (:monosp:`thindielectric`)
+-------------------------------------------
+
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - int_ior
+   - |float| or |string|
+   - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+ * - ext_ior
+   - |float| or |string|
+   - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+ * - specular_reflectance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+ * - specular_transmittance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+
+ * - reflectance
+   - |spectrum| or |texture|
+   - Specifies the diffuse albedo of the material (Default: 0.5)
+
+This plugin models a **thin** dielectric material that is embedded inside another
+dielectric---for instance, glass surrounded by air. The interior of the material
+is assumed to be so thin that its effect on transmitted rays is negligible,
+Hence, light exits such a material without any form of angular deflection
+(though there is still specular reflection).
+This model should be used for things like glass windows that were modeled using only a
+single sheet of triangles or quads. On the other hand, when the window consists of
+proper closed geometry, :ref:`dielectric` is the right choice. This is illustrated below:
+
+.. subfigstart::
+.. _fig-dielectric_figure:
+
+.. figure:: ../../resources/data/docs/images/bsdf/dielectric_figure.svg
+    :alt: The :ref:`dielectric` plugin models a single transition from one index of refraction to another
+    :width: 95%
+    :align: center
+
+    The :ref:`dielectric` plugin models a single transition from one index of refraction to another
+
+.. _fig-thindielectric_figure:
+
+.. figure:: ../../resources/data/docs/images/bsdf/thindielectric_figure.svg
+    :alt: The :ref:`thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
+    :width: 95%
+    :align: center
+
+    The :ref:`thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
+
+.. _fig-thindielectric_figure:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_thindielectric.jpg
+    :alt: Windows modeled using a single sheet of geometry are the most frequent application of this BSDF
+    :width: 95%
+    :align: center
+
+    Windows modeled using a single sheet of geometry are the most frequent application of this BSDF
+
+.. subfigend::
+    :width: 0.49
+    :alt: An illustration of the difference between the :ref:`dielectric` and :ref:`thindielectric` plugins
+    :label: fig-thindielectric-diff
+
+
+The implementation correctly accounts for multiple internal reflections
+inside the thin dielectric at **no significant extra cost**, i.e. paths
+of the type :math:`R, TRT, TR^3T, ..` for reflection and :math:`TT, TR^2, TR^4T, ..` for
+refraction, where :math:`T` and :math:`R` denote individual reflection and refraction
+events, respectively.
+ */
+
 template <typename Float, typename Spectrum>
 class ThinDielectric final : public BSDF<Float, Spectrum> {
 public:
