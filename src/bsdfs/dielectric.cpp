@@ -112,7 +112,7 @@ describe a slightly absorbing piece of glass is shown below:
 
 
 .. figtable::
-    :label: table-list
+    :label: ior-table-list
     :caption: This table lists all supported material names
        along with along with their associated index of re-fraction at standard conditions.
        These material names can be used with the plugins :ref:`dielectric <bsdf-dielectric>`,

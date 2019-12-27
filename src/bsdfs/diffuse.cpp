@@ -71,7 +71,7 @@ whose reflectance is specified as an sRGB color:
     :name: diffuse-srgb
 
     <bsdf type="diffuse">
-        <srgb name="reflectance" value="0.2, 0.25, 0.7"/>
+        <rgb name="reflectance" value="0.2, 0.25, 0.7"/>
     </bsdf>
 
 

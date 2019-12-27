@@ -46,6 +46,9 @@ rst_prolog = r"""
 .. |spectrum| replace:: :paramtype:`spectrum`
 .. |texture| replace:: :paramtype:`texture`
 .. |float| replace:: :paramtype:`float`
+.. |bool| replace:: :paramtype:`bool`
+.. |false| replace:: :monosp:`false`
+.. |true| replace:: :monosp:`true`
 .. |string| replace:: :paramtype:`string`
 .. |bsdf| replace:: :paramtype:`bsdf`
 

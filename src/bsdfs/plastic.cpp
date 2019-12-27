@@ -9,6 +9,193 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+.. _bsdf-plastic:
+
+Smooth plastic material (:monosp:`plastic`)
+-------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - int_ior
+   - |float| or |string|
+   - Interior index of refraction specified numerically or using a known material name.
+     (Default: polypropylene / 1.49)
+ * - ext_ior
+   - |float| or |string|
+   - Exterior index of refraction specified numerically or using a known material name.
+     (Default: air / 1.000277)
+ * - specular_reflectance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection component. Note that for
+     physical realism, this parameter should never be touched. (Default: 1.0)
+ * - diffuse_reflectance
+   - |spectrum| or |texture|
+   - Optional factor used to modulate the diffuse reflection component. (Default: 0.5)
+ * - nonlinear
+   - |bool|
+   - Account for nonlinear color shifts due to internal scattering? See the main text for details..
+     (Default: Don't account for them and preserve the texture colors, i.e. |false|)
+
+.. subfigstart::
+.. _fig-plastic_default:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_default.jpg
+    :alt: A rendering with the default parameters
+    :width: 95%
+    :align: center
+
+    A rendering with the default parameters
+
+.. _fig-plastic_shiny:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_shiny.jpg
+    :alt: A rendering with custom parameters
+    :width: 95%
+    :align: center
+
+    A rendering with custom parameters
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example diffuse appearances
+    :label: fig-diffuse-bsdf
+
+This plugin describes a smooth plastic-like material with internal scattering. It uses the Fresnel
+reflection and transmission coefficients to provide direction-dependent specular and diffuse
+components. Since it is simple, realistic, and fast, this model is often a better choice than the
+:ref:`phong`, :ref:`ward`, and :ref:`roughplastic` plugins when rendering smooth plastic-like
+materials. For convenience, this model allows to specify IOR values either numerically, or based on
+a list of known materials (see :ref:`ior-table-list` for an overview).
+Note that this plugin is quite similar to what one would get by applying the :ref:`coating` plugin
+to the :ref:`diffuse` material. The main difference is that this plugin is significantly faster,
+while at the same time causing less variance. Furthermore, it accounts for multiple interreflections
+inside the material (read on for details), which avoids a serious energy loss problem of the
+aforementioned plugin combination.
+
+The following XML snippet describes a shiny material whose diffuse reflectance is specified using
+sRGB:
+
+.. code-block:: xml
+    :name: plastic-shiny
+
+    <bsdf type="plastic">
+		<rgb name="diffuse_reflectance" value="0.1, 0.27, 0.36"/>
+        <float name="int_ior" value="1.9"/>
+    </bsdf>
+
+.. subfigstart::
+.. _fig-plastic_diffuse:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_diffuse.jpg
+    :alt: Diffuse textured rendering
+    :width: 95%
+    :align: center
+
+    Diffuse textured rendering
+
+.. _fig-plastic_preserve:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_preserve.jpg
+    :alt: Plastic model, :code:`nonlinear=false`
+    :width: 95%
+    :align: center
+
+    Plastic model, :code:`nonlinear=false`
+
+.. _fig-plastic_nopreserve:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_nopreserve.jpg
+    :alt: Plastic model, :code:`nonlinear=true`
+    :width: 95%
+    :align: center
+
+    Plastic model, :code:`nonlinear=true`
+
+.. subfigend::
+    :width: 0.49
+    :alt: An illustration of the scattering events that are internally handled by this plugin
+    :label: plastic-nonlinear
+
+When asked to do so, this model can account for subtle nonlinear color shifts due to internal
+scattering processes. The above images show a textured object first rendered using :ref:`diffuse`,
+then :ref:`plastic` with the default parameters, and finally using :ref:`plastic` and support for
+nonlinear color shifts.
+
++++++++++++++++++++
+Internal scattering
++++++++++++++++++++
+
+Internally, this is model simulates the interaction of light with a diffuse
+base surface coated by a thin dielectric layer. This is a convenient
+abstraction rather than a restriction. In other words, there are many
+materials that can be rendered with this model, even if they might not
+fit this description perfectly well.
+
+.. subfigstart::
+.. _fig-plastic-intscat_a:
+
+.. figure:: ../../resources/data/docs/images/bsdf/plastic_intscat_1.svg
+    :alt: At the boundary, incident illumination is partly *reflected* and refracted
+    :width: 95%
+    :align: center
+
+    At the boundary, incident illumination is partly *reflected* and refracted
+
+.. _fig-plastic-intscat_b:
+
+.. figure:: ../../resources/data/docs/images/bsdf/plastic_intscat_2.svg
+    :alt: The refracted portion scatters diffusely at the base layer
+    :width: 95%
+    :align: center
+
+    The refracted portion scatters diffusely at the base layer
+
+.. _fig-plastic-intscat_c:
+
+.. figure:: ../../resources/data/docs/images/bsdf/plastic_intscat_3.svg
+    :alt: An illustration of the scattering events that are internally handled by this plugin
+    :width: 95%
+    :align: center
+
+    An illustration of the scattering events that are internally handled by this plugin
+
+.. subfigend::
+    :width: 0.49
+    :alt: An illustration of the scattering events that are internally handled by this plugin
+    :label: fig-plastic-intscat
+
+Given illumination that is incident upon such a material, a portion
+of the illumination is specularly reflected at the material
+boundary, which results in a sharp reflection in the mirror direction
+(:ref:`plastic-intscat_a`).
+The remaining illumination refracts into the material, where it
+scatters from the diffuse base layer. (:ref:`plastic-intscat_b`).
+While some of the diffusely scattered illumination is able to
+directly refract outwards again, the remainder is reflected from the
+interior side of the dielectric boundary and will in fact remain
+trapped inside the material for some number of internal scattering
+events until it is finally able to escape (:ref:`plastic-intscat_c`).
+Due to the mathematical simplicity of this setup, it is possible to work
+out the correct form of the model without actually having to simulate
+the potentially large number of internal scattering events.
+Note that due to the internal scattering, the diffuse color of the
+material is in practice slightly different from the color of the
+base layer on its own---in particular, the material color will tend to shift towards
+darker colors with higher saturation. Since this can be counter-intuitive when
+using bitmap textures, these color shifts are disabled by default. Specify
+the parameter :code:`nonlinear=true` to enable them. :ref:`plastic-nonlinear`
+illustrates the resulting change. This effect is also seen in real life,
+for instance a piece of wood will look slightly darker after coating it
+with a layer of varnish.
+*/
+
 template <typename Float, typename Spectrum>
 class SmoothPlastic final : public BSDF<Float, Spectrum> {
 public:
