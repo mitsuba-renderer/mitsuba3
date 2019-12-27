@@ -305,8 +305,9 @@ protected:
 };
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class =
-new Class("BitmapTextureImpl", "Texture", "", nullptr, nullptr);
+Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class =
+    new Class("BitmapTextureImpl", "Texture", ::mitsuba::detail::get_variant<Float, Spectrum>(),
+              nullptr, nullptr);
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
