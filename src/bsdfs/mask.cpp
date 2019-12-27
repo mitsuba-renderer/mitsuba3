@@ -6,6 +6,81 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+.. _bsdf-mask:
+
+Opacity mask (:monosp:`mask`)
+-------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - opacity
+   - |spectrum| or |texture|
+   - Specifies the opacity (where 1=completely opaque) (Default: 0.5)
+ * - *(Nested plugin)*
+   - |bsdf|
+   - A base BSDF model that represents the non-transparent portion of the scattering
+
+.. subfigstart::
+.. _fig-mask-plain:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_mask_before.jpg
+    :alt: Rendering without an opacity mask
+    :width: 95%
+    :align: center
+
+    Rendering without an opacity mask
+
+.. _fig-mask-textured:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_mask_after.jpg
+    :alt: Rendering with an opacity mask
+    :width: 95%
+    :align: center
+
+    Rendering **with** an opacity mask
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example mask application
+    :label: fig-mask-bsdf
+
+This plugin applies an opacity mask to add nested BSDF instance. It interpolates
+between perfectly transparent and completely opaque based on the :monosp:`opacity` parameter.
+
+The transparency is internally implemented as a forward-facing Dirac delta distribution.
+Note that the standard :ref:`path` tracer does not have a good sampling strategy to deal with this,
+but the volumetric path tracer (:ref:`volpath`) does. It may thus be preferable when rendering
+scenes that contain the :ref:`mask` plugin, even if there is nothing *volumetric* in the scene.
+
+The following XML snippet describes a material configuration for a transparent leaf:
+
+.. code-block:: xml
+    :name: mask-leaf
+
+    <bsdf type="mask">
+        <!-- Base material: a two-sided textured diffuse BSDF -->
+        <bsdf type="twosided">
+            <bsdf type="diffuse">
+                <texture name="reflectance" type="bitmap">
+                    <string name="filename" value="leaf.png"/>
+                </texture>
+            </bsdf>
+        </bsdf>
+
+        <!-- Fetch the opacity mask from a monochromatic texture -->
+        <texture type="bitmap" name="opacity">
+            <string name="filename" value="leaf_mask.png"/>
+        </texture>
+    </bsdf>
+*/
+
 template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
@@ -13,6 +88,9 @@ public:
     MTS_IMPORT_TYPES(BSDF, Texture)
 
     MaskBSDF(const Properties &props) : Base(props) {
+        // Scalar-typed opacity texture
+        m_opacity = props.texture<Texture>("opacity", 0.5f);
+
         for (auto &kv : props.objects()) {
             auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
             if (bsdf) {
@@ -23,9 +101,6 @@ public:
         }
         if (!m_nested_bsdf)
            Throw("Child BSDF not specified");
-
-        // Scalar-typed opacity texture
-        m_opacity = props.texture<Texture>("opacity", 0.5f);
 
         parameters_changed();
     }
@@ -116,7 +191,7 @@ public:
     }
 
     MTS_DECLARE_CLASS()
-protected:
+private:
     ref<Texture> m_opacity;
     ref<BSDF> m_nested_bsdf;
 };
