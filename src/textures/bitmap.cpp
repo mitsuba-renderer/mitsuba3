@@ -304,16 +304,16 @@ protected:
     ScalarFloat m_mean;
 };
 
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class =
-    new Class("BitmapTextureImpl", "Texture", ::mitsuba::detail::get_variant<Float, Spectrum>(),
-              nullptr, nullptr);
+MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
+MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
     return m_class;
 }
 
-MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
-MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class
+    = BitmapTexture<Float, Spectrum>::m_class;
+
 NAMESPACE_END(mitsuba)
