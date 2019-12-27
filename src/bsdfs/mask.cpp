@@ -28,7 +28,7 @@ Opacity mask (:monosp:`mask`)
    - A base BSDF model that represents the non-transparent portion of the scattering
 
 .. subfigstart::
-.. _fig-mask-plain:
+.. _fig-mask-before:
 
 .. figure:: ../../resources/data/docs/images/render/bsdf_mask_before.jpg
     :alt: Rendering without an opacity mask
@@ -37,7 +37,7 @@ Opacity mask (:monosp:`mask`)
 
     Rendering without an opacity mask
 
-.. _fig-mask-textured:
+.. _fig-mask-after:
 
 .. figure:: ../../resources/data/docs/images/render/bsdf_mask_after.jpg
     :alt: Rendering with an opacity mask

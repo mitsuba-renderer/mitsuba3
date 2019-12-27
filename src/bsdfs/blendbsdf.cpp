@@ -6,6 +6,70 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+.. _bsdf-blendbsdf:
+
+Blended material (:monosp:`blendbsdf`)
+-------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - weight
+   - |float| or |texture|
+   - A floating point value or texture with values between zero and one. The extreme values zero and
+     one activate the first and second nested BSDF respectively, and inbetween values interpolate
+     accordingly. (Default: 0.5)
+ * - *(Nested plugin)*
+   - |bsdf|
+   - Two nested BSDF instances that should be mixed according to the specified blending weight
+
+.. subfigstart::
+.. _fig-mask-plain:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_blendbsdf.jpg
+    :alt: A material created by blending between rough plastic and smooth metal based on a binary bitmap texture
+    :width: 95%
+    :align: center
+
+    A material created by blending between rough plastic and smooth metal based on a binary bitmap texture
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example blended materials
+    :label: fig-mask-bsdf
+
+This plugin implements a *blend* material, which represents
+linear combinations of two BSDF instances. It is conceptually very similar
+to the :ref:`mixturebsdf` plugin. The main difference is that
+:ref:`blendbsdf` can interpolate based on a texture rather than a set
+of constants.
+Any surface scattering model in Mitsuba (be it smooth, rough, reflecting, or
+transmitting) can be mixed with others in this manner to synthesize new models.
+
+The following XML snippet describes the material shown above:
+
+.. code-block:: xml
+    :name: blendbsdf
+
+    <bsdf type="blendbsdf">
+        <texture name="weight" type="bitmap">
+            <string name="filename" value="pattern.png"/>
+        </texture>
+        <bsdf type="conductor">
+            <spectrum name="specular_reflectance" value="1"/>
+        </bsdf>
+        <bsdf type="roughplastic">
+            <spectrum name="diffuse_reflectance" value="0.1"/>
+        </bsdf>
+    </bsdf>
+ */
+
 template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
