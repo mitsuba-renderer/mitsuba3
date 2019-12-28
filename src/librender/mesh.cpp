@@ -177,22 +177,19 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
         m_bbox.expand(vertex_position(i));
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::prepare_sampling_table() {
+MTS_VARIANT void Mesh<Float, Spectrum>::area_distr_build() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
     std::lock_guard<tbb::spin_mutex> lock(m_mutex);
-    if (m_surface_area < 0) {
-        // Generate a PDF for sampling wrt. the area of each face.
-        m_area_distribution.reserve(m_face_count);
-        for (ScalarIndex i = 0; i < m_face_count; i++) {
-            ScalarFloat area = face_area(i);
-            Assert(area >= 0);
-            m_area_distribution.append(area);
-        }
-        m_surface_area = m_area_distribution.normalize();
-        m_inv_surface_area = 1.f / m_surface_area;
-    }
+    std::unique_ptr<ScalarFloat[]> table(new ScalarFloat[m_face_count]);
+    for (ScalarIndex i = 0; i < m_face_count; i++)
+        table[i] = face_area(i);
+
+    m_area_distr = DiscreteDistribution<Float>(
+        table.get(),
+        m_face_count
+    );
 }
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarSize
@@ -202,17 +199,18 @@ Mesh<Float, Spectrum>::primitive_count() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarFloat
 Mesh<Float, Spectrum>::surface_area() const {
-    ensure_table_ready();
-    return m_surface_area;
+    area_distr_ensure();
+    return m_area_distr.sum();
 }
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
+    area_distr_ensure();
+
     using Index = replace_scalar_t<Float, ScalarIndex>;
     Index face_idx;
     Point2f sample = sample_;
-    ensure_table_ready();
-    std::tie(face_idx, sample.y()) = m_area_distribution.sample_reuse(sample.y(), active);
+    std::tie(face_idx, sample.y()) = m_area_distr.sample_reuse(sample.y(), active);
 
     Array<Index, 3> fi = face_indices(face_idx, active);
 
@@ -226,7 +224,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     PositionSample3f ps;
     ps.p     = p0 + e0 * b.x() + e1 * b.y();
     ps.time  = time;
-    ps.pdf   = m_inv_surface_area;
+    ps.pdf   = m_area_distr.normalization();
     ps.delta = false;
 
     if (has_vertex_texcoords()) {
@@ -253,8 +251,8 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
 }
 
 MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
-    ensure_table_ready();
-    return m_inv_surface_area;
+    area_distr_ensure();
+    return m_area_distr.normalization();
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/,
@@ -494,7 +492,7 @@ MTS_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
         << "  face_count = " << m_face_count << "," << std::endl
         << "  faces = [" << util::mem_string(m_face_size * m_face_count) << " of face data]," << std::endl
         << "  disable_vertex_normals = " << m_disable_vertex_normals << "," << std::endl
-        << "  surface_area = " << m_surface_area << std::endl
+        << "  surface_area = " << m_area_distr.sum() << std::endl
         << "]";
     return oss.str();
 }
@@ -586,6 +584,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
             rt_check(rtVariableGetUserData(accel_var, sizeof(void *), (void *) &accel));
             rt_check(rtAccelerationMarkDirty(accel));
         }
+
+        if (m_area_distr.empty())
+            area_distr_build();
     }
 }
 

@@ -56,18 +56,19 @@ template <typename> class AtomicFloat;
 //! @{ \name Common type aliases
 // =============================================================
 
-template <typename Value, size_t Size>       struct Vector;
-template <typename Value, size_t Size>       struct Point;
-template <typename Value, size_t Size>       struct Normal;
-template <typename Value, size_t Size>       struct Color;
-template <typename Value, size_t Size>       struct Spectrum;
-template <typename Point>                    struct Transform;
-template <typename Point, typename Spectrum> struct Ray;
-template <typename Point, typename Spectrum> struct RayDifferential;
-template <typename Point>                    struct BoundingBox;
-template <typename Point>                    struct BoundingSphere;
-template <typename Vector>                   struct Frame;
-template <typename Value>                    class DiscreteDistribution;
+template <typename Value, size_t Size>          struct Vector;
+template <typename Value, size_t Size>          struct Point;
+template <typename Value, size_t Size>          struct Normal;
+template <typename Value, size_t Size>          struct Color;
+template <typename Value, size_t Size>          struct Spectrum;
+template <typename Point>                       struct Transform;
+template <typename Point, typename Spectrum>    struct Ray;
+template <typename Point, typename Spectrum>    struct RayDifferential;
+template <typename Point>                       struct BoundingBox;
+template <typename Point>                       struct BoundingSphere;
+template <typename Vector>                      struct Frame;
+template <typename Float>                       struct DiscreteDistribution;
+template <typename Float>                       struct ContinuousDistribution;
 
 template <typename Spectrum> using StokesVector  = enoki::Array<Spectrum, 4, true>;
 template <typename Spectrum> using MuellerMatrix = enoki::Matrix<Spectrum, 4, true>;
@@ -191,8 +192,6 @@ template <typename Float_> struct CoreAliases {
     using Transform3f      = Transform<Point3f>;
     using Transform4f      = Transform<Point4f>;
 
-    using DiscreteDistribution = DiscreteDistribution<Float>;
-
     using Color1f             = Color<Float, 1>;
     using Color3f             = Color<Float, 3>;
 
@@ -272,7 +271,6 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
     using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
     using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
-    using prefix ## DiscreteDistribution = typename prefix ## CoreAliases::DiscreteDistribution;   \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;
 

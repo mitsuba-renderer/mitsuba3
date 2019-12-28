@@ -20,10 +20,10 @@ private:
 
 public:
     /// Initialize the AtomicFloat with a given floating point value
-    explicit AtomicFloat(Type v = 0) { m_bits = memcpy_cast<Storage>(v); }
+    explicit AtomicFloat(Type v = 0.f) { m_bits = memcpy_cast<Storage>(v); }
 
     /// Convert the AtomicFloat into a normal floating point value
-    operator Type() const { return memcpy_cast<Type>(m_bits); }
+    operator Type() const { return memcpy_cast<Type>(m_bits.load(std::memory_order_relaxed)); }
 
     /// Overwrite the AtomicFloat with a floating point value
     AtomicFloat &operator=(Type v) { m_bits = memcpy_cast<Storage>(v); return *this; }
@@ -43,10 +43,10 @@ public:
 protected:
     /// Apply a FP operation atomically (verified that this will be nicely inlined in the above operators)
     template <typename Func> AtomicFloat& do_atomic(Func func) {
-        Storage oldBits = m_bits, newBits;
+        Storage old_bits = m_bits, new_bits;
         do {
-            newBits = memcpy_cast<Storage>(func(memcpy_cast<Type>(oldBits)));
-        } while (!m_bits.compare_exchange_weak(oldBits, newBits));
+            new_bits = memcpy_cast<Storage>(func(memcpy_cast<Type>(old_bits)));
+        } while (!m_bits.compare_exchange_weak(old_bits, new_bits));
         return *this;
     }
 

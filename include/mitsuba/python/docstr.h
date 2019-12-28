@@ -42,10 +42,6 @@ R"doc(Generate a single precision floating point value on the interval [0,
 
 static const char *__doc_enoki_PCG32_next_float32_2 = R"doc(Masked version of next_float32)doc";
 
-static const char *__doc_enoki_PCG32_next_float32_3 =
-R"doc(Sparse version of next_float32 (only advances a subset of an array of
-RNGs))doc";
-
 static const char *__doc_enoki_PCG32_next_float64 =
 R"doc(Generate a double precision floating point value on the interval [0,
 1)
@@ -58,27 +54,15 @@ Remark:
 
 static const char *__doc_enoki_PCG32_next_float64_2 = R"doc(Masked version of next_float64)doc";
 
-static const char *__doc_enoki_PCG32_next_float64_3 =
-R"doc(Sparse version of next_float64 (only advances a subset of an array of
-RNGs))doc";
-
 static const char *__doc_enoki_PCG32_next_uint32 = R"doc(Generate a uniformly distributed unsigned 32-bit random number)doc";
 
 static const char *__doc_enoki_PCG32_next_uint32_2 = R"doc(Masked version of next_uint32)doc";
-
-static const char *__doc_enoki_PCG32_next_uint32_3 =
-R"doc(Sparse version of next_uint32 (only advances a subset of an array of
-RNGs))doc";
 
 static const char *__doc_enoki_PCG32_next_uint32_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
 
 static const char *__doc_enoki_PCG32_next_uint64 = R"doc(Generate a uniformly distributed unsigned 64-bit random number)doc";
 
 static const char *__doc_enoki_PCG32_next_uint64_2 = R"doc(Masked version of next_uint64)doc";
-
-static const char *__doc_enoki_PCG32_next_uint64_3 =
-R"doc(Sparse version of next_uint64 (only advances a subset of an array of
-RNGs))doc";
 
 static const char *__doc_enoki_PCG32_next_uint64_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
 
@@ -1425,6 +1409,109 @@ static const char *__doc_mitsuba_Color_r = R"doc()doc";
 
 static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_ContinuousDistribution =
+R"doc(Continuous 1D probability distribution
+
+This data structure represents a continuous 1D probability
+distribution that is defined as a linear interpolant of a uniformly
+discretized signal. The class provides various routines for
+transforming uniformly distributed samples so that they follow the
+stored distribution. Note that unnormalized probability density
+functions (PDFs) will automatically be normalized during
+initialization. The associated scale factor can be retrieved using the
+function normalization().)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution = R"doc(Create an unitialized ContinuousDistribution instance)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution_2 = R"doc(Initialize from a given density function on the interval ``range``)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution_3 = R"doc(Initialize from a given density function (rvalue version))doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_ContinuousDistribution_4 = R"doc(Initialize from a given floating point array)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_cdf =
+R"doc(Return the unnormalized discrete cumulative distribution function over
+intervals)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_cdf_2 =
+R"doc(Return the unnormalized discrete cumulative distribution function over
+intervals (const version))doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_empty = R"doc(Is the distribution object empty/uninitialized?)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_eval_cdf =
+R"doc(Evaluate the unnormalized cumulative distribution function (CDF) at
+position ``p``)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_eval_cdf_normalized =
+R"doc(Evaluate the unnormalized cumulative distribution function (CDF) at
+position ``p``)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_eval_pdf =
+R"doc(Evaluate the unnormalized probability mass function (PDF) at position
+``x``)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_eval_pdf_normalized =
+R"doc(Evaluate the normalized probability mass function (PDF) at position
+``x``)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_integral = R"doc(Return the original integral of PDF entries before normalization)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_integral = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_interval_size = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_inv_interval_size = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_normalization = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_pdf = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_range = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_m_valid = R"doc()doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_normalization = R"doc(Return the normalization factor (i.e. the inverse of sum()))doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_pdf = R"doc(Return the unnormalized discretized probability density function)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_pdf_2 =
+R"doc(Return the unnormalized discretized probability density function
+(const version))doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_range = R"doc(Return the range of the distribution)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_range_2 = R"doc(Return the range of the distribution (const version))doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_sample =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
+
+Returns:
+    The sampled position.)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_sample_pdf =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
+
+Returns:
+    A tuple consisting of
+
+1. the sampled position. 2. the normalized probability density of the
+sample.)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_size = R"doc(Return the number of discretizations)doc";
+
+static const char *__doc_mitsuba_ContinuousDistribution_update =
+R"doc(Update the internal state. Must be invoked when changing the pdf or
+range.)doc";
+
 static const char *__doc_mitsuba_DefaultFormatter =
 R"doc(The default formatter used to turn log messages into a human-readable
 form)doc";
@@ -1535,80 +1622,83 @@ Parameter ``si``:
 \note Defined in scene.h)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution =
-R"doc(Discrete probability distribution
+R"doc(Discrete 1D probability distribution
 
-This data structure can be used to transform uniformly distributed
-samples to a stored discrete probability distribution.)doc";
+This data structure represents a discrete 1D probability distribution
+and provides various routines for transforming uniformly distributed
+samples so that they follow the stored distribution. Note that
+unnormalized probability mass functions (PMFs) will automatically be
+normalized during initialization. The associated scale factor can be
+retrieved using the function normalization().)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Reserve memory for a distribution with the given number of entries)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Create an unitialized DiscreteDistribution instance)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution_2 = R"doc(Initialize the distribution with the given data)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution_2 = R"doc(Initialize from a given probability mass function)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_append =
-R"doc(Append an entry with the specified discrete probability.
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution_3 = R"doc(Initialize from a given probability mass function (rvalue version))doc";
 
-Remark:
-    ``pdf_value`` must be non-negative.)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution_4 = R"doc(Initialize from a given floating point array)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_cdf =
-R"doc(Return the cdf entries.
+static const char *__doc_mitsuba_DiscreteDistribution_cdf = R"doc(Return the unnormalized cumulative distribution function)doc";
 
-Note that if n values have been appended, there will be (n+1) entries
-in this CDF (the first one being 0).)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_cdf_2 =
+R"doc(Return the unnormalized cumulative distribution function (const
+version))doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_clear = R"doc(Clear all entries)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_empty = R"doc(Is the distribution object empty/uninitialized?)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_eval = R"doc(Access an entry by its index)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_eval_cdf =
+R"doc(Evaluate the unnormalized cumulative distribution function (CDF) at
+index ``index``)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_eval_cdf_normalized =
+R"doc(Evaluate the normalized cumulative distribution function (CDF) at
+index ``index``)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_eval_pmf =
+R"doc(Evaluate the unnormalized probability mass function (PMF) at index
+``index``)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_eval_pmf_normalized =
+R"doc(Evaluate the normalized probability mass function (PMF) at index
+``index``)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_m_cdf = R"doc()doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_m_normalization = R"doc()doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_m_normalized = R"doc()doc";
-
-static const char *__doc_mitsuba_DiscreteDistribution_m_range_end = R"doc()doc";
-
-static const char *__doc_mitsuba_DiscreteDistribution_m_range_start = R"doc()doc";
+static const char *__doc_mitsuba_DiscreteDistribution_m_pmf = R"doc()doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_m_sum = R"doc()doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_normalization =
-R"doc(Return the normalization factor (i.e. the inverse of get_sum())
+static const char *__doc_mitsuba_DiscreteDistribution_m_valid = R"doc()doc";
 
-This assumes that normalize() has previously been called)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_normalization = R"doc(Return the normalization factor (i.e. the inverse of sum()))doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_normalize =
-R"doc(Normalize the distribution
+static const char *__doc_mitsuba_DiscreteDistribution_pmf = R"doc(Return the unnormalized probability mass function)doc";
 
-Throws an exception when the distribution contains no elements. The
-distribution is not considered to be normalized if the sum of
-probabilities equals zero.
-
-Returns:
-    Sum of the (previously unnormalized) entries)doc";
-
-static const char *__doc_mitsuba_DiscreteDistribution_normalized = R"doc(Have the probability densities been normalized?)doc";
-
-static const char *__doc_mitsuba_DiscreteDistribution_reserve = R"doc(Reserve memory for a certain number of entries)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_pmf_2 = R"doc(Return the unnormalized probability mass function (const version))doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_sample =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``sample_value``:
-    A uniformly distributed sample on [0,1]
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
 
 Returns:
     The discrete index associated with the sample)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_sample_pdf =
+static const char *__doc_mitsuba_DiscreteDistribution_sample_pmf =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
 
-Parameter ``sample_value``:
-    A uniformly distributed sample on [0,1]
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
 
 Returns:
-    A pair with (the discrete index associated with the sample,
-    probability value of the sample).)doc";
+    A tuple consisting of
+
+1. the discrete index associated with the sample, and 2. the
+normalized probability value of the sample.)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse =
 R"doc(%Transform a uniformly distributed sample to the stored distribution
@@ -1616,34 +1706,35 @@ R"doc(%Transform a uniformly distributed sample to the stored distribution
 The original sample is value adjusted so that it can be reused as a
 uniform variate.
 
-Parameter ``sample_value``:
-    A uniformly distributed sample on [0,1]
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
 
 Returns:
-    The discrete index associated with the sample and the re-scaled
-    sample value)doc";
+    A tuple consisting of
 
-static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse_pdf =
+1. the discrete index associated with the sample, and 2. the re-scaled
+sample value.)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_sample_reuse_pmf =
 R"doc(%Transform a uniformly distributed sample to the stored distribution.
 
 The original sample is value adjusted so that it can be reused as a
 uniform variate.
 
-Parameter ``sample_value``:
-    A uniformly distributed sample on [0,1]
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
 
 Returns:
     A tuple containing
 
-1. the discrete index associated with the sample 2. the probability
-value of the sample 3. the re-scaled sample value)doc";
+1. the discrete index associated with the sample 2. the normalized
+probability value of the sample 3. the re-scaled sample value)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries so far)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries)doc";
 
-static const char *__doc_mitsuba_DiscreteDistribution_sum =
-R"doc(Return the original (unnormalized) sum of all PDF entries
+static const char *__doc_mitsuba_DiscreteDistribution_sum = R"doc(Return the original sum of PMF entries before normalization)doc";
 
-This assumes that normalize() has previously been called.)doc";
+static const char *__doc_mitsuba_DiscreteDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pmf.)doc";
 
 static const char *__doc_mitsuba_DummyStream =
 R"doc(Stream implementation that never writes to disk, but keeps track of
@@ -2062,7 +2153,7 @@ static const char *__doc_mitsuba_Film_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
-static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object with the developed contents of the film)doc";
+static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
 
 static const char *__doc_mitsuba_Film_class = R"doc()doc";
 
@@ -2273,8 +2364,6 @@ R"doc(Base class for 3D textures based on trilinearly interpolated volume
 data.)doc";
 
 static const char *__doc_mitsuba_Grid3DBase_Grid3DBase = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_class = R"doc()doc";
 
 static const char *__doc_mitsuba_Grid3DBase_data_size = R"doc()doc";
 
@@ -2856,6 +2945,14 @@ static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_area_distr_build =
+R"doc(Build internal tables for sampling uniformly wrt. area.
+
+Computes the surface area and sets up m_area_distribution. Thread-
+safe, since it uses a mutex.)doc";
+
+static const char *__doc_mitsuba_Mesh_area_distr_ensure = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_bbox = R"doc(//! @{ \name Shape interface implementation)doc";
 
 static const char *__doc_mitsuba_Mesh_bbox_2 = R"doc()doc";
@@ -2863,11 +2960,6 @@ static const char *__doc_mitsuba_Mesh_bbox_2 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_bbox_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_class = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_ensure_table_ready =
-R"doc(Ensures that the sampling table is ready. This function is not really
-const, but only makes (thread-safe) writes to m_area_distribution,
-m_surface_area, and m_inv_surface_area.)doc";
 
 static const char *__doc_mitsuba_Mesh_face = R"doc(Return a pointer (or packet of pointers) to a specific face)doc";
 
@@ -2897,10 +2989,7 @@ static const char *__doc_mitsuba_Mesh_has_vertex_normals = R"doc(Does this mesh 
 
 static const char *__doc_mitsuba_Mesh_has_vertex_texcoords = R"doc(Does this mesh have per-vertex texture coordinates?)doc";
 
-static const char *__doc_mitsuba_Mesh_m_area_distribution =
-R"doc(Surface area distribution -- generated on demand when
-prepare_sampling_table() is first called. The value of m_surface_area
-is negative until this has taken place.)doc";
+static const char *__doc_mitsuba_Mesh_m_area_distr = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc()doc";
 
@@ -2918,31 +3007,11 @@ static const char *__doc_mitsuba_Mesh_m_face_struct = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_faces_c = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_inv_surface_area = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_normal_offset = R"doc(Byte offset of the normal data within the vertex buffer)doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_context = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_faces_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_geometry = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_geometry_ready = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_normals_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_positions_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_optix_vertex_texcoords_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_surface_area = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_texcoord_offset = R"doc(Byte offset of the texture coordinate data within the vertex buffer)doc";
 
@@ -2950,31 +3019,17 @@ static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_normals_c = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_vertex_positions_c = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_vertex_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_m_vertex_texcoords_c = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_normal_derivative = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
-
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_prepare_sampling_table =
-R"doc(Prepare internal tables for sampling uniformly wrt. area.
-
-Computes the surface area and sets up m_area_distribution. Thread-
-safe, since it uses a mutex.)doc";
 
 static const char *__doc_mitsuba_Mesh_primitive_count = R"doc()doc";
 
@@ -3057,18 +3112,6 @@ Distribution" by Wenzel Jakob
 An improvement of the GGX model sampling routine is discussed in "A
 Simpler and Exact Sampling Routine for the GGX Distribution of Visible
 Normals" by Eric Heitz)doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_MicrofacetDistribution_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution_G = R"doc(Smith's separable shadowing-masking approximation)doc";
 
@@ -3333,7 +3376,7 @@ simply returns ``MyObject[<address of 'this' pointer>]``, where
 static const char *__doc_mitsuba_Object_traverse =
 R"doc(Traverse the attributes and object graph of this instance
 
-Implementing this function enable s recursive traversal of C++ scene
+Implementing this function enables recursive traversal of C++ scene
 graphs. It is e.g. used to determine the set of differentiable
 parameters when using Mitsuba for optimization.
 
@@ -3409,6 +3452,8 @@ static const char *__doc_mitsuba_PluginManager_ensure_plugin_loaded = R"doc(Ensu
 static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
 static const char *__doc_mitsuba_PluginManager_loaded_plugins = R"doc(Return the list of loaded plugins)doc";
+
+static const char *__doc_mitsuba_PluginManager_register_python_plugin = R"doc()doc";
 
 static const char *__doc_mitsuba_Point = R"doc()doc";
 
@@ -4376,7 +4421,7 @@ static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_parameters_changed = R"doc()doc";
+static const char *__doc_mitsuba_Scene_parameters_changed = R"doc(Update internal state following a parameter update)doc";
 
 static const char *__doc_mitsuba_Scene_pdf_emitter_direction =
 R"doc(Evaluate the probability density of the sample_emitter_direct()
@@ -4472,7 +4517,7 @@ static const char *__doc_mitsuba_Scene_shapes_2 = R"doc(Return the list of shape
 
 static const char *__doc_mitsuba_Scene_to_string = R"doc(Return a human-readable string representation of the scene contents.)doc";
 
-static const char *__doc_mitsuba_Scene_traverse = R"doc()doc";
+static const char *__doc_mitsuba_Scene_traverse = R"doc(Perform a custom traversal over the scene graph)doc";
 
 static const char *__doc_mitsuba_ScopedPhase = R"doc()doc";
 
@@ -4801,8 +4846,6 @@ static const char *__doc_mitsuba_Shape_operator_new_2 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_operator_new_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
@@ -6140,6 +6183,18 @@ static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D = R"doc(Abstract base class for spatially-varying 3D textures.)doc";
 
+static const char *__doc_mitsuba_Texture3D_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture3D_Texture3D = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D_bbox = R"doc(Returns the bounding box of the 3d texture)doc";
@@ -6175,6 +6230,8 @@ static const char *__doc_mitsuba_Texture3D_to_string = R"doc(Returns a human-rea
 static const char *__doc_mitsuba_Texture3D_update_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
+
+static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_class = R"doc()doc";
 
@@ -6217,6 +6274,10 @@ Parameter ``si``:
 
 Returns:
     An trichromatic intensity or reflectance value)doc";
+
+static const char *__doc_mitsuba_Texture_id = R"doc(Return a string identifier)doc";
+
+static const char *__doc_mitsuba_Texture_m_id = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_mean =
 R"doc(Return the mean value of the spectrum over the support
@@ -6783,6 +6844,10 @@ static const char *__doc_mitsuba_cie1931_y =
 R"doc(Evaluate the CIE 1931 Y color matching function given a wavelength in
 nanometers)doc";
 
+static const char *__doc_mitsuba_cie_alloc = R"doc(Allocate GPU memory for the CIE 1931 tables)doc";
+
+static const char *__doc_mitsuba_class = R"doc()doc";
+
 static const char *__doc_mitsuba_comparator = R"doc()doc";
 
 static const char *__doc_mitsuba_comparator_operator_call = R"doc()doc";
@@ -6823,13 +6888,7 @@ static const char *__doc_mitsuba_detail_get_variant =
 R"doc(Convert a <Float, Spectrum> type pair into one of the strings in
 MTS_VARIANT)doc";
 
-static const char *__doc_mitsuba_detail_is_constructible =
-R"doc(Replacement for std::is_constructible which also works when the
-destructor is not accessible)doc";
-
-static const char *__doc_mitsuba_detail_is_constructible_test = R"doc()doc";
-
-static const char *__doc_mitsuba_detail_is_constructible_test_2 = R"doc()doc";
+static const char *__doc_mitsuba_detail_is_constructiblee = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_serialization_helper =
 R"doc(The serialization_helper<T> implementations for new types should in
@@ -7560,29 +7619,29 @@ static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string repres
 
 static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Return a string representation of a frame)doc";
+static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of a frame)doc";
 
 static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Return a string representation of the ray)doc";
 
 static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_12 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_13 = R"doc(//! @{ \name Printing)doc";
+static const char *__doc_mitsuba_operator_lshift_13 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_14 = R"doc(//! @{ \name Printing)doc";
 
 static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_16 = R"doc(//! @{ \name Misc implementations)doc";
+static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_17 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
 
@@ -7597,6 +7656,8 @@ static const char *__doc_mitsuba_operator_lshift_22 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_23 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 

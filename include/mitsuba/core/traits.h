@@ -31,7 +31,7 @@ struct spectrum_traits<Color<Float, 1>> {
 template <typename Float>
 struct spectrum_traits<Color<Float, 3>> {
     using Scalar                             = Color<scalar_t<Float>, 3>;
-    using Wavelength                         = Color<Float, 3>; // TODO don't bother storing a wavelength
+    using Wavelength                         = Color<Float, 0>;
     using Unpolarized                        = Color<Float, 3>;
     static constexpr bool is_monochromatic   = false;
     static constexpr bool is_rgb             = true;

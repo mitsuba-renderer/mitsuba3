@@ -64,7 +64,7 @@ public:
     /**
      * \brief Traverse the attributes and object graph of this instance
      *
-     * Implementing this function enable s recursive traversal of C++ scene
+     * Implementing this function enables recursive traversal of C++ scene
      * graphs. It is e.g. used to determine the set of differentiable
      * parameters when using Mitsuba for optimization.
      *
@@ -72,7 +72,7 @@ public:
      *
      * \sa TraversalCallback
      */
-    virtual void traverse(TraversalCallback *callback);
+    virtual void traverse(TraversalCallback *cb);
 
     /**
      * \brief Update internal state after applying changes to parameters

@@ -82,58 +82,6 @@ def test07_legendre_pd_diff():
     assert np.allclose(legendre_pd_diff(4, 0.1), np.array(legendre_pd(4+1, 0.1)) - np.array(legendre_pd(4-1, 0.1)))
 
 
-def test08_find_interval():
-    values = np.array([0.0, 0.25, 0.5, 0.75, 1.0])
-    # Normal queries
-    assert np.allclose(find_interval(values, 0.05), 0)
-    assert np.allclose(find_interval(values, 0.45), 1)
-    assert np.allclose(find_interval(values, 0.55), 2)
-    assert np.allclose(find_interval(values, 0.85), 3)
-    assert np.allclose(find_interval(values, 0.75), 3)
-
-    # Out-of-range or border queries
-    assert np.allclose(find_interval(values, -1), 0)
-    assert np.allclose(find_interval(values,  0), 0)
-    assert np.allclose(find_interval(values, 1.75),  3)
-
-    # Repeated item in the nodes: the last occurence should be selected.
-    values_r = np.array([0.0, 0.25, 0.25, 0.5, 0.75, 0.75, 1.0])
-    assert np.allclose(find_interval(values_r, 0.45), 2)
-    assert np.allclose(find_interval(values_r, 0.25), 2)
-    assert np.allclose(find_interval(values_r, 0.75), 5)
-
-
-def test09_find_interval_edge_cases():
-    """Tests for predicates that are never true (resp. false) on the given
-    values. find_interval should clamp to [left, right-2]."""
-    always_true = lambda _: True
-    always_false = lambda _: False
-
-    # Empty interval
-    assert find_interval(0, 0, always_true) == 0
-    assert find_interval(0, 0, always_false) == 0
-    # Singleton
-    assert find_interval(0, 1, always_true) == 0
-    assert find_interval(0, 1, always_false) == 0
-    # More elements
-    assert find_interval(0, 2, always_true) == 0
-    assert find_interval(0, 2, always_false) == 0
-    assert find_interval(0, 11, always_true) == 9
-    assert find_interval(0, 11, always_false) == 0
-
-
-def test10_find_interval_bruteforce():
-    rng = PCG32()
-    for size in range(2, 20):
-        for i in range(1, 50):
-            tbl = rng.next_uint32_bounded(i, (size,))
-            tbl.sort()
-            for x in range(52):
-                r = find_interval(tbl, x)
-                assert((tbl[r] <= x or r == 0) and
-                       (tbl[r + 1] > x or (r == size - 2)))
-
-
 def test10_morton2():
     from mitsuba.scalar_rgb.core.math import morton_encode2, morton_decode2
     v0 = [123, 456]

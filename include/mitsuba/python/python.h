@@ -6,9 +6,9 @@
 
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/object.h>
+#include <mitsuba/render/fwd.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
-#include <pybind11/complex.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 #include <enoki/stl.h>
@@ -20,9 +20,6 @@
 #include "docstr.h"
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
-
-#define MTS_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
-#define MTS_MODULE_NAME(lib, variant) MTS_MODULE_NAME_1(lib, variant)
 
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
@@ -109,11 +106,18 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
+#define MTS_PY_DECLARE(name) extern void python_export_##name(py::module &m)
+#define MTS_PY_EXPORT(name) void python_export_##name(py::module &m)
+#define MTS_PY_IMPORT(name) python_export_##name(m)
+
+#define MTS_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
+#define MTS_MODULE_NAME(lib, variant) MTS_MODULE_NAME_1(lib, variant)
+
 #define MTS_PY_IMPORT_TYPES()                                                                      \
     using Float    = MTS_VARIANT_FLOAT;                                                            \
     using Spectrum = MTS_VARIANT_SPECTRUM;                                                         \
-                                                                                                   \
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES()                                                                             \
+    MTS_IMPORT_OBJECT_TYPES()
 
 #define MTS_PY_IMPORT_TYPES_DYNAMIC()                                                              \
     using Float = std::conditional_t<is_static_array_v<MTS_VARIANT_FLOAT>,                         \
@@ -123,7 +127,8 @@ template <typename Type> pybind11::handle get_type_handle() {
         std::conditional_t<is_static_array_v<MTS_VARIANT_FLOAT>,                                   \
                            make_dynamic_t<MTS_VARIANT_SPECTRUM>, MTS_VARIANT_SPECTRUM>;            \
                                                                                                    \
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES()                                                                             \
+    MTS_IMPORT_OBJECT_TYPES()
 
 template <typename Func>
 decltype(auto) vectorize(const Func &func) {

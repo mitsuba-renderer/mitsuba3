@@ -95,7 +95,7 @@ add_dist(mitsuba-render)
 
 # Python bindings
 if (MTS_ENABLE_PYTHON)
-  #add_subdirectory(python)
+  add_subdirectory(python)
 endif()
 
 # Register the test directory

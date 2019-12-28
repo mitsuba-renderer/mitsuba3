@@ -1,11 +1,11 @@
 #pragma once
 
-#include <mitsuba/core/ddistr.h>
-#include <mitsuba/core/struct.h>
-#include <mitsuba/core/transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
-#include <tbb/tbb.h>
+#include <mitsuba/core/struct.h>
+#include <mitsuba/core/transform.h>
+#include <mitsuba/core/distr.h>
+#include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -288,21 +288,17 @@ protected:
     virtual ~Mesh();
 
     /**
-     * \brief Prepare internal tables for sampling uniformly wrt. area.
+     * \brief Build internal tables for sampling uniformly wrt. area.
      *
      * Computes the surface area and sets up \ref m_area_distribution.
      * Thread-safe, since it uses a mutex.
      */
-    void prepare_sampling_table();
+    void area_distr_build();
 
-    /**
-     * Ensures that the sampling table is ready. This function is not really
-     * const, but only makes (thread-safe) writes to \ref m_area_distribution,
-     * \ref m_surface_area, and \ref m_inv_surface_area.
-     */
-    ENOKI_INLINE void ensure_table_ready() const {
-        if (unlikely(m_surface_area < 0))
-            const_cast<Mesh *>(this)->prepare_sampling_table();
+    // Ensures that the sampling table are ready.
+    ENOKI_INLINE void area_distr_ensure() const {
+        if (unlikely(m_area_distr.empty()))
+            const_cast<Mesh *>(this)->area_distr_build();
     }
 
     MTS_DECLARE_CLASS()
@@ -352,14 +348,9 @@ protected:
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
 
-    /**
-     * Surface area distribution -- generated on demand when \ref
-     * prepare_sampling_table() is first called. The value of \ref
-     * m_surface_area is negative until this has taken place.
-     */
-    DiscreteDistribution m_area_distribution;
-    ScalarFloat m_surface_area = -1.f;
-    ScalarFloat m_inv_surface_area = -1.f;
+    /* Surface area distribution -- generated on demand when \ref
+       prepare_area_distr() is first called. */
+    DiscreteDistribution<Float> m_area_distr;
     tbb::spin_mutex m_mutex;
 };
 

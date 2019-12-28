@@ -5,8 +5,7 @@ import pytest
 from mitsuba import DEBUG as is_debug
 from mitsuba.scalar_rgb.core import DiscreteDistribution
 
-eps = 1e-6
-def approx(v):
+def approx(v, eps=1e-6):
     return pytest.approx(v, abs=eps)
 
 

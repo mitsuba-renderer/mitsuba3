@@ -1,7 +1,8 @@
 #include <mitsuba/python/python.h>
+#include <mitsuba/core/vector.h>
 
-#include <mitsuba/core/ray.h>
-#include <mitsuba/render/fwd.h>
+MTS_PY_DECLARE(Ray);
+MTS_PY_DECLARE(DiscreteDistribution);
 
 #define MODULE_NAME MTS_MODULE_NAME(core, MTS_VARIANT_NAME)
 
@@ -44,6 +45,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("Color3f") = m.attr("Vector3f");
     m.attr("Vector1f") = enoki.attr(("Vector1f" + suffix).c_str());
 
+    if constexpr (is_cuda_array_v<Float> && is_diff_array_v<Float>)
+        m.attr("PCG32") = enoki.attr("PCG32C");
+    else
+        m.attr("PCG32") = enoki.attr(("PCG32" + suffix).c_str());
+
     pybind11_type_alias<Array<Float, 1>, Vector1f>();
     pybind11_type_alias<Array<Float, 1>, Point1f>();
     pybind11_type_alias<Array<Float, 1>, Color1f>();
@@ -81,30 +87,14 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         }
     }
 
+    if constexpr (is_array_v<Float>)
+        pybind11_type_alias<UInt64, replace_scalar_t<Float, const Object *>>();
+
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
     m.attr("Spectrum") = get_type_handle<Spectrum>();
 
-    py::class_<Ray3f>(m, "Ray3f", D(Ray))
-        .def(py::init<>(), "Create an unitialized ray")
-        .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)
-        .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
-            D(Ray, Ray, 5), "o"_a, "d"_a, "time"_a, "wavelengths"_a)
-        .def(py::init<Point3f, Vector3f, Float, Float, Float, const Wavelength &>(),
-            D(Ray, Ray, 6), "o"_a, "d"_a, "mint"_a, "maxt"_a, "time"_a, "wavelengths"_a)
-        .def(py::init<const Ray3f &, Float, Float>(),
-            D(Ray, Ray, 7), "other"_a, "mint"_a, "maxt"_a)
-        .def("update", &Ray3f::update, D(Ray, update))
-        .def("__call__", &Ray3f::operator(), D(Ray, operator, call))
-        .def_field(Ray3f, o,           D(Ray, o))
-        .def_field(Ray3f, d,           D(Ray, d))
-        .def_field(Ray3f, d_rcp,       D(Ray, d_rcp))
-        .def_field(Ray3f, mint,        D(Ray, mint))
-        .def_field(Ray3f, maxt,        D(Ray, maxt))
-        .def_field(Ray3f, time,        D(Ray, time))
-        .def_field(Ray3f, wavelengths, D(Ray, wavelengths))
-        .def_repr(Ray3f);
-
-    //m.def("test", vectorize([](Float x) { return x * 2; }));
+    MTS_PY_IMPORT(Ray);
+    MTS_PY_IMPORT(DiscreteDistribution);
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);
