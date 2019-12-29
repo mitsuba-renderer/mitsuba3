@@ -178,7 +178,7 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
 }
 
 using Float32X = DynamicArray<Packet<float>>;
-using Float64X = DynamicArray<Packet<double>>;
+using Float64X = DynamicArray<Packet<double, array_default_size<float>>>;
 
 template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_legendre<Float32X>(int n);
 template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_lobatto<Float32X>(int n);
