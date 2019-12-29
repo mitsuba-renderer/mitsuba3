@@ -122,13 +122,13 @@ template <typename Type> pybind11::handle get_type_handle() {
 #define MTS_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
 #define MTS_MODULE_NAME(lib, variant) MTS_MODULE_NAME_1(lib, variant)
 
-#define MTS_PY_IMPORT_TYPES()                                                                      \
+#define MTS_PY_IMPORT_TYPES(...)                                                                   \
     using Float    = MTS_VARIANT_FLOAT;                                                            \
     using Spectrum = MTS_VARIANT_SPECTRUM;                                                         \
-    MTS_IMPORT_TYPES()                                                                             \
+    MTS_IMPORT_TYPES(__VA_ARGS__)                                                                  \
     MTS_IMPORT_OBJECT_TYPES()
 
-#define MTS_PY_IMPORT_TYPES_DYNAMIC()                                                              \
+#define MTS_PY_IMPORT_TYPES_DYNAMIC(...)                                                           \
     using Float = std::conditional_t<is_static_array_v<MTS_VARIANT_FLOAT>,                         \
                                      make_dynamic_t<MTS_VARIANT_FLOAT>, MTS_VARIANT_FLOAT>;        \
                                                                                                    \
@@ -136,7 +136,7 @@ template <typename Type> pybind11::handle get_type_handle() {
         std::conditional_t<is_static_array_v<MTS_VARIANT_FLOAT>,                                   \
                            make_dynamic_t<MTS_VARIANT_SPECTRUM>, MTS_VARIANT_SPECTRUM>;            \
                                                                                                    \
-    MTS_IMPORT_TYPES()                                                                             \
+    MTS_IMPORT_TYPES(__VA_ARGS__)                                                                  \
     MTS_IMPORT_OBJECT_TYPES()
 
 template <typename Func>

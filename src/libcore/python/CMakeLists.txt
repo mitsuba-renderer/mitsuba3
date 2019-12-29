@@ -38,7 +38,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     "-DMTS_VARIANT_VECTORIZE=${MTS_VARIANT_VECTORIZE}"
   )
 
-  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core mitsuba-render tbb)
+  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core tbb)
 
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
     target_link_libraries(${TARGET_NAME} PRIVATE asmjit)

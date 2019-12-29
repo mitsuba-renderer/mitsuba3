@@ -2,7 +2,7 @@
 #include <mitsuba/render/mueller.h>
 
 MTS_PY_EXPORT(mueller) {
-    MTS_IMPORT_TYPES()
+    MTS_PY_IMPORT_TYPES()
 
     auto mueller = m.def_submodule("mueller");
 
@@ -39,6 +39,5 @@ MTS_PY_EXPORT(mueller) {
             D(mueller, rotate_mueller_basis_collinear))
         .def("unit_angle", [](const Vector3f &a, const Vector3f &b) {
                     return unit_angle(a, b);
-        }, "a"_a, "b"_a)
-    ;
+        }, "a"_a, "b"_a);
 }

@@ -25,7 +25,7 @@ MTS_PY_EXPORT(Ray) {
         .def_repr(Ray3f);
 
     using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
-    // bind_slicing_operators<Ray3f, mitsuba::Ray<ScalarPoint3f, ScalarSpectrum>>(ray);
+    bind_slicing_operators<Ray3f, mitsuba::Ray<ScalarPoint3f, ScalarSpectrum>>(ray);
 
     py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
         .def(py::init<const Ray3f &>(), "ray"_a)

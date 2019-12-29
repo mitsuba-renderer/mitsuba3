@@ -58,28 +58,24 @@ public:
 };
 
 MTS_PY_EXPORT(Sensor) {
-    MTS_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
+    MTS_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
     using PySensor = PySensor<Float, Spectrum>;
 
-    MTS_PY_CHECK_ALIAS(Sensor, m) {
-        py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
-            .def(py::init<const Properties&>())
-            .def("sample_ray_differential", vectorize<Float>(&Sensor::sample_ray_differential),
-                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
-            .def_method(Sensor, shutter_open)
-            .def_method(Sensor, shutter_open_time)
-            .def_method(Sensor, needs_aperture_sample)
-            .def_method(Sensor, set_crop_window, "crop_size"_a, "crop_offset"_a)
-            .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
-            .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
-    }
+    py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
+        .def(py::init<const Properties&>())
+        .def("sample_ray_differential", vectorize(&Sensor::sample_ray_differential),
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
+        .def_method(Sensor, shutter_open)
+        .def_method(Sensor, shutter_open_time)
+        .def_method(Sensor, needs_aperture_sample)
+        .def_method(Sensor, set_crop_window, "crop_size"_a, "crop_offset"_a)
+        .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
+        .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
 
     MTS_PY_REGISTER_OBJECT("register_sensor", Sensor)
 
-    MTS_PY_CHECK_ALIAS(ProjectiveCamera, m) {
-        MTS_PY_CLASS(ProjectiveCamera, Sensor)
-            .def_method(ProjectiveCamera, near_clip)
-            .def_method(ProjectiveCamera, far_clip)
-            .def_method(ProjectiveCamera, focus_distance);
-    }
+    MTS_PY_CLASS(ProjectiveCamera, Sensor)
+        .def_method(ProjectiveCamera, near_clip)
+        .def_method(ProjectiveCamera, far_clip)
+        .def_method(ProjectiveCamera, focus_distance);
 }
