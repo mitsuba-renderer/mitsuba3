@@ -43,18 +43,76 @@ public:
             std::copy(aovs_.begin(), aovs_.end(), aovs);
             return { spec, mask };
         } else {
-            Throw("PySamplingIntegrator doesn't overload the method \"sample\"");
+            Throw("SamplingIntegrator doesn't overload the method \"sample\"");
         }
     }
 
     std::vector<std::string> aov_names() const override {
-        PYBIND11_OVERLOAD_PURE(std::vector<std::string>, SamplingIntegrator, aov_names, );
+        PYBIND11_OVERLOAD(std::vector<std::string>, SamplingIntegrator, aov_names, );
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERLOAD_PURE(std::string, SamplingIntegrator, to_string,);
+        PYBIND11_OVERLOAD(std::string, SamplingIntegrator, to_string, );
     }
 };
+
+template <typename Float, typename Spectrum, typename Class,
+          enable_if_t<!is_static_array_v<Float>> = 0>
+void bind_integrator_sample(Class &integrator) {
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+
+    /// Python compatibility wrapper around SamplingIntegrator::sample(), default case
+    integrator.def(
+        "sample",
+        [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
+           const RayDifferential3f &ray, Mask active) {
+            std::vector<Float> aovs(integrator->aov_names().size(), 0.f);
+            auto [spec, mask] = integrator->sample(scene, sampler, ray, aovs.data(), active);
+            return std::make_tuple(spec, mask, aovs);
+        },
+        "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample));
+}
+
+template <typename FloatP, typename SpectrumP, typename Class,
+          enable_if_t<is_static_array_v<FloatP>> = 0>
+void bind_integrator_sample(Class &integrator) {
+    /// Python compatibility wrapper around SamplingIntegrator::sample(), packet tracing
+    using Float = make_dynamic_t<FloatP>;
+    using Spectrum = make_dynamic_t<SpectrumP>;
+    MTS_IMPORT_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+
+    /// Python compatibility wrapper around SamplingIntegrator::sample(), default case
+    integrator.def(
+        "sample",
+        [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
+           const RayDifferential3f &ray, Mask active) {
+            std::vector<Float> result_aovs(integrator->aov_names().size());
+            std::vector<FloatP> aovs_packet(result_aovs.size());
+            Spectrum result_spec;
+            Mask result_mask;
+
+            set_slices(result_spec, slices(ray));
+            set_slices(result_mask, slices(ray));
+            set_slices(active, slices(ray));
+            for (size_t j = 0; j < result_aovs.size(); ++j)
+                set_slices(result_aovs[j], slices(ray));
+
+            for (size_t i = 0; i < packets(ray); ++i) {
+                auto [spec, mask] = integrator->sample(scene, sampler, packet(ray, i),
+                                                       aovs_packet.data(),
+                                                       packet(active, i));
+                packet(result_spec, i) = spec;
+                packet(result_mask, i) = mask;
+                for (size_t j = 0; j < result_aovs.size(); ++i)
+                    packet(result_aovs[j], i) = aovs_packet[j];
+            }
+
+            return std::make_tuple(result_spec, result_mask, result_aovs);
+        },
+        "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample));
+}
 
 MTS_PY_EXPORT(Integrator) {
     MTS_PY_IMPORT_TYPES()
@@ -101,56 +159,7 @@ MTS_PY_EXPORT(Integrator) {
             .def_method(SamplingIntegrator, aov_names)
             .def_method(SamplingIntegrator, should_stop);
 
-    if constexpr (is_dynamic_array_v<Float> || is_scalar_v<Float>) {
-        integrator
-            .def("sample",
-                    [](const SamplingIntegrator *integrator,
-                    const Scene *scene, Sampler *sampler,
-                    const RayDifferential3f &ray, Mask active) {
-                        std::vector<Float> aovs(integrator->aov_names().size(), 0.f);
-                        auto [spec, mask] = integrator->sample(scene, sampler,
-                                                                ray, aovs.data(), active);
-                        return std::make_tuple(spec, mask, aovs);
-                    },
-                    "scene"_a, "sampler"_a, "ray"_a, "active"_a = true,
-                    D(SamplingIntegrator, sample));
-    } else {
-        using FloatX = make_dynamic_t<Float>;
-        using SpectrumX = make_dynamic_t<Spectrum>;
-        using MaskX = make_dynamic_t<Mask>;
-        using RayDifferential3fX = make_dynamic_t<RayDifferential3f>;
-
-        integrator
-            .def("sample",
-                    [](const SamplingIntegrator *integrator,
-                    const Scene *scene, Sampler *sampler,
-                    const RayDifferential3fX &ray,
-                    MaskX active) {
-                        std::vector<FloatX> result_aovs(integrator->aov_names().size());
-                        std::vector<Float> aovs_packet(result_aovs.size());
-                        SpectrumX result_spec;
-                        MaskX result_mask;
-                        set_slices(result_spec, slices(ray));
-                        set_slices(result_mask, slices(ray));
-                        set_slices(active, slices(ray));
-                        for (size_t j = 0; j < result_aovs.size(); ++j)
-                        set_slices(result_aovs[j], slices(ray));
-
-                        for (size_t i = 0; i < packets(ray); ++i) {
-                            auto [spec, mask] =
-                                integrator->sample(scene, sampler, packet(ray, i),
-                                                    aovs_packet.data(), packet(active, i));
-                            packet(result_spec, i) = spec;
-                            packet(result_mask, i) = mask;
-                            for (size_t j = 0; j < result_aovs.size(); ++i)
-                                packet(result_aovs[j], i) = aovs_packet[j];
-                        }
-                        return std::make_tuple(result_spec, result_mask, result_aovs);
-                    },
-                    "scene"_a, "sampler"_a, "ray"_a, "active"_a = true,
-                    D(SamplingIntegrator, sample));
-
-    }
+    bind_integrator_sample<Float, Spectrum>(integrator);
 
     MTS_PY_REGISTER_OBJECT("register_integrator", Integrator)
 

@@ -16,12 +16,12 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     n--;
 
     if (n == 0) {
-        nodes[0] = 0.f;
-        weights[0] = 2.f;
+        nodes[0] = (Float) 0;
+        weights[0] = (Float) 2;
     } else if (n == 1) {
         nodes[0] = (Float) -std::sqrt(1.0 / 3.0);
         nodes[1] = -nodes[0];
-        weights[0] = weights[1] = 1.f;
+        weights[0] = weights[1] = (Float) 1;
     }
 
     int m = (n + 1) / 2;

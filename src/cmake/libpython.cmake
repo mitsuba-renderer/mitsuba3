@@ -94,7 +94,7 @@ set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 # Copy enoki python library to 'dist' folder
 set(ENOKI_LIBS core scalar dynamic)
 if (MTS_ENABLE_OPTIX)
-  set(ENOKI_LIBS ${ENOKI_LIBS} cuda cuda_autodiff)
+  set(ENOKI_LIBS ${ENOKI_LIBS} cuda cuda-autodiff)
 endif()
 
 foreach(SUFFIX IN ITEMS ${ENOKI_LIBS})

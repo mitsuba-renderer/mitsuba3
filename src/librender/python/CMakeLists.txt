@@ -1,5 +1,4 @@
 foreach (MTS_VARIANT ${MTS_VARIANTS})
-  message(STATUS " ${MTS_VARIANT}")
   string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
   list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
   list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
@@ -21,7 +20,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     fresnel_v.cpp
     imageblock_v.cpp
     interaction_v.cpp
-    # integrator_v.cpp
+    integrator_v.cpp
     mueller_v.cpp
     microfacet_v.cpp
     records_v.cpp

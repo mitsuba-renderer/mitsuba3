@@ -58,7 +58,8 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
         [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {  \
             (void) new Class(name, #Name, ::mitsuba::detail::get_variant<Float, Spectrum>(),       \
                             [=](const Properties &p) {                                             \
-                                return constructor(p).release().cast<ref<Name>>();                 \
+                                py::object o = constructor(p);                                     \
+                                return o.cast<ref<Name>>();                                        \
                             },                                                                     \
                             nullptr);                                                              \
             PluginManager::instance()->register_python_plugin(name);                               \
