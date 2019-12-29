@@ -107,7 +107,7 @@ MTS_PY_EXPORT(AnimatedTransform) {
     using ScalarVector3f     = typename AnimatedTransform::Vector3f;
     using ScalarTransform4f  = typename AnimatedTransform::Transform4f;
 
-    auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
+    auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object, py::module_local());
 
     py::class_<Keyframe>(atrafo, "Keyframe", py::module_local())
         .def(py::init<float, ScalarMatrix3f, ScalarQuaternion4f, ScalarVector3f>())

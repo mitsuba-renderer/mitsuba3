@@ -122,14 +122,14 @@ enum class BSDFFlags : uint32_t {
     All          = Diffuse | Glossy | Delta | Delta1D
 };
 
-constexpr uint32_t operator |(BSDFFlags f1, BSDFFlags f2) { return (uint32_t) f1 | (uint32_t) f2; }
+constexpr uint32_t operator |(BSDFFlags f1, BSDFFlags f2)     { return (uint32_t) f1 | (uint32_t) f2; }
 constexpr uint32_t operator |(uint32_t f1, BSDFFlags f2)      { return f1 | (uint32_t) f2; }
-constexpr uint32_t operator &(BSDFFlags f1, BSDFFlags f2) { return (uint32_t) f1 & (uint32_t) f2; }
+constexpr uint32_t operator &(BSDFFlags f1, BSDFFlags f2)     { return (uint32_t) f1 & (uint32_t) f2; }
 constexpr uint32_t operator &(uint32_t f1, BSDFFlags f2)      { return f1 & (uint32_t) f2; }
 constexpr uint32_t operator ~(BSDFFlags f1)                   { return ~(uint32_t) f1; }
 constexpr uint32_t operator +(BSDFFlags e)                    { return (uint32_t) e; }
 template <typename UInt32>
-constexpr auto has_flag(UInt32 flags, BSDFFlags f)            { return neq(flags & (uint32_t) f, 0u); }
+constexpr auto has_flag(UInt32 flags, BSDFFlags f)            { return neq(flags & (uint32_t) f, 0); }
 
 /**
  * \brief Context data structure for BSDF evaluation and sampling

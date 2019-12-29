@@ -202,6 +202,7 @@ MTS_PY_EXPORT(warp) {
         "v"_a, D(warp, square_to_std_normal_pdf));
 
     // --------------------------------------------------------------------
+#if 0
 
     using FloatArray = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
 
@@ -210,7 +211,9 @@ MTS_PY_EXPORT(warp) {
     using Marginal2D2 = warp::Marginal2D<Float, 2>;
     using Marginal2D3 = warp::Marginal2D<Float, 3>;
 
-    py::class_<Marginal2D0>(warp, "Marginal2D0", D(warp, Marginal2D), py::module_local())
+    printf("Binding Marginal2D0\n");
+
+    py::class_<Marginal2D0>(warp, "Marginal2D0", py::module_local(), D(warp, Marginal2D))
         .def(py::init([](FloatArray data, bool normalize, bool build_cdf) {
                 if (data.ndim() != 2)
                     throw std::domain_error("data array has incorrect dimension");
@@ -513,4 +516,5 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
             D(warp, Hierarchical2D, eval))
         .def("__repr__", &Hierarchical2D3::to_string);
+#endif
 }
