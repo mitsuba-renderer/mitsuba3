@@ -21,6 +21,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     math_v.cpp
     object_v.cpp
     qmc_v.cpp
+    random_v.cpp
     ray_v.cpp
     rfilter_v.cpp
     spectrum_v.cpp

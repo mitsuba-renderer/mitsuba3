@@ -11,10 +11,11 @@ MTS_PY_DECLARE(ContinuousDistribution);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(rfilter);
+MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(Transform);
-//MTS_PY_DECLARE(AnimatedTransform);
+MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(vector);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(xml);
@@ -194,6 +195,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     else
         m.attr("float_dtype") = py::dtype("f");
 
+    // make the python module aware of enoki dynamic arrays
+    if constexpr (!is_cuda_array_v<Float>)
+        py::module::import("enoki.dynamic");
+
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(BoundingBox);
     MTS_PY_IMPORT(BoundingSphere);
@@ -202,12 +207,13 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(ContinuousDistribution);
     MTS_PY_IMPORT(math);
-    MTS_PY_IMPORT(qmc);
+    // MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(rfilter);
+    MTS_PY_IMPORT(sample_tea);
     MTS_PY_IMPORT(spline);
     MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(Transform);
-    //MTS_PY_IMPORT(AnimatedTransform);
+    MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(xml);

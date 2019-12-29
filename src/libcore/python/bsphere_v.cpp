@@ -4,7 +4,7 @@
 
 MTS_PY_EXPORT(BoundingSphere) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
-    py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere))
+    py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere), py::module_local())
         .def(py::init<>(), D(BoundingSphere, BoundingSphere))
         .def(py::init<Point3f, Float>(), D(BoundingSphere, BoundingSphere, 2))
         .def(py::init<const BoundingSphere3f &>())

@@ -6,7 +6,7 @@
 MTS_PY_EXPORT(Transform) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
 
-    auto trans3 = py::class_<Transform3f>(m, "Transform3f", D(Transform))
+    auto trans3 = py::class_<Transform3f>(m, "Transform3f", D(Transform), py::module_local())
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform3f &>(), "Copy constructor")
         .def(py::init([](py::array a) {
@@ -43,7 +43,7 @@ MTS_PY_EXPORT(Transform) {
 
     // bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3); // TODO
 
-    auto trans4 = py::class_<Transform4f>(m, "Transform4f", D(Transform))
+    auto trans4 = py::class_<Transform4f>(m, "Transform4f", D(Transform), py::module_local())
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform4f &>(), "Copy constructor")
         .def(py::init([](py::array a) {
@@ -98,7 +98,6 @@ MTS_PY_EXPORT(Transform) {
     py::implicitly_convertible<py::array, Transform4f>();
 }
 
-#if 0
 MTS_PY_EXPORT(AnimatedTransform) {
     MTS_PY_IMPORT_TYPES()
     using Keyframe           = typename AnimatedTransform::Keyframe;
@@ -110,7 +109,7 @@ MTS_PY_EXPORT(AnimatedTransform) {
 
     auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
-    py::class_<Keyframe>(atrafo, "Keyframe")
+    py::class_<Keyframe>(atrafo, "Keyframe", py::module_local())
         .def(py::init<float, ScalarMatrix3f, ScalarQuaternion4f, ScalarVector3f>())
         .def_readwrite("time",  &Keyframe::time,  D(AnimatedTransform, Keyframe, time))
         .def_readwrite("scale", &Keyframe::scale, D(AnimatedTransform, Keyframe, scale))
@@ -135,4 +134,3 @@ MTS_PY_EXPORT(AnimatedTransform) {
             "time"_a, "unused"_a = true, D(AnimatedTransform, eval))
         .def_method(AnimatedTransform, translation_bounds);
 }
-#endif

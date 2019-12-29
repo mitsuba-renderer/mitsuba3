@@ -210,7 +210,7 @@ MTS_PY_EXPORT(warp) {
     using Marginal2D2 = warp::Marginal2D<Float, 2>;
     using Marginal2D3 = warp::Marginal2D<Float, 3>;
 
-    py::class_<Marginal2D0>(warp, "Marginal2D0", D(warp, Marginal2D))
+    py::class_<Marginal2D0>(warp, "Marginal2D0", D(warp, Marginal2D), py::module_local())
         .def(py::init([](FloatArray data, bool normalize, bool build_cdf) {
                 if (data.ndim() != 2)
                     throw std::domain_error("data array has incorrect dimension");
@@ -236,7 +236,7 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "active"_a = true, D(warp, Marginal2D, eval))
         .def("__repr__", &Marginal2D0::to_string);
 
-    py::class_<Marginal2D1>(warp, "Marginal2D1")
+    py::class_<Marginal2D1>(warp, "Marginal2D1", py::module_local())
         .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                         bool normalize, bool build_cdf) {
                 if (data.ndim() != 3)
@@ -274,7 +274,7 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, eval))
         .def("__repr__", &Marginal2D1::to_string);
 
-    py::class_<Marginal2D2>(warp, "Marginal2D2")
+    py::class_<Marginal2D2>(warp, "Marginal2D2", py::module_local())
         .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                         bool normalize, bool build_cdf) {
                 if (data.ndim() != 4)
@@ -313,7 +313,7 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, eval))
         .def("__repr__", &Marginal2D2::to_string);
 
-    py::class_<Marginal2D3>(warp, "Marginal2D3")
+    py::class_<Marginal2D3>(warp, "Marginal2D3", py::module_local())
         .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                         bool normalize, bool build_cdf) {
                 if (data.ndim() != 5)
@@ -365,7 +365,7 @@ MTS_PY_EXPORT(warp) {
     using Hierarchical2D2 = warp::Hierarchical2D<Float, 2>;
     using Hierarchical2D3 = warp::Hierarchical2D<Float, 3>;
 
-    py::class_<Hierarchical2D0>(warp, "Hierarchical2D0", D(warp, Hierarchical2D))
+    py::class_<Hierarchical2D0>(warp, "Hierarchical2D0", D(warp, Hierarchical2D), py::module_local())
         .def(py::init([](FloatArray data, bool normalize, bool build_hierarchy) {
                 if (data.ndim() != 2)
                     throw std::domain_error("data array has incorrect dimension");
@@ -391,7 +391,7 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("__repr__", &Hierarchical2D0::to_string);
 
-    py::class_<Hierarchical2D1>(warp, "Hierarchical2D1")
+    py::class_<Hierarchical2D1>(warp, "Hierarchical2D1", py::module_local())
         .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                         bool normalize, bool build_hierarchy) {
                 if (data.ndim() != 3)
@@ -429,7 +429,7 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("__repr__", &Hierarchical2D1::to_string);
 
-    py::class_<Hierarchical2D2>(warp, "Hierarchical2D2")
+    py::class_<Hierarchical2D2>(warp, "Hierarchical2D2", py::module_local())
         .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                         bool normalize, bool build_hierarchy) {
                 if (data.ndim() != 4)
@@ -469,7 +469,7 @@ MTS_PY_EXPORT(warp) {
             "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
         .def("__repr__", &Hierarchical2D2::to_string);
 
-    py::class_<Hierarchical2D3>(warp, "Hierarchical2D3")
+    py::class_<Hierarchical2D3>(warp, "Hierarchical2D3", py::module_local())
         .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
                         bool normalize, bool build_hierarchy) {
                 if (data.ndim() != 5)

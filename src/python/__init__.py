@@ -81,8 +81,8 @@ def set_variant(variant):
         import mitsuba
         mitsuba.set_variant('gpu_autodiff_spectral_polarized')
 
-        import mitsuba.render import Integrator
-        import mitsuba.core import FileStream
+        from mitsuba.render import Integrator
+        from mitsuba.core import FileStream
 
     The variant name can be changed at any time and will only apply to future
     imports. The variant name is a per-thread property, hence multiple

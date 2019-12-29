@@ -3,7 +3,7 @@
 
 MTS_PY_EXPORT(Frame) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
-    auto f = py::class_<Frame3f>(m, "Frame3f", D(Frame))
+    auto f = py::class_<Frame3f>(m, "Frame3f", D(Frame), py::module_local())
         .def(py::init<>(), D(Frame, Frame))
         .def(py::init<const Frame3f &>(), "Copy constructor")
         .def(py::init<Vector3f, Vector3f, Vector3f>(), D(Frame, Frame, 3))

@@ -8,7 +8,7 @@ MTS_PY_EXPORT(qmc) {
     auto qmc = m.def_submodule("qmc", "Quasi Monte-Carlo sampling routines");
 
      py::class_<RadicalInverse, Object, ref<RadicalInverse>>(qmc, "RadicalInverse",
-                                                            D(RadicalInverse))
+                                                            D(RadicalInverse), py::module_local())
           .def(py::init<size_t, int>(), "max_base"_a = 8161, "scramble"_a = -1)
           .def("base", &RadicalInverse::base, D(RadicalInverse, base))
           .def("bases", &RadicalInverse::bases, D(RadicalInverse, bases))

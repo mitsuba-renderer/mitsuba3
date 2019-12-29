@@ -4,7 +4,7 @@
 
 MTS_PY_EXPORT(BoundingBox) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
-    py::class_<BoundingBox3f>(m, "BoundingBox3f", D(BoundingBox))
+    py::class_<BoundingBox3f>(m, "BoundingBox3f", D(BoundingBox), py::module_local())
         .def(py::init<>(), D(BoundingBox, BoundingBox))
         .def(py::init<Point3f>(), D(BoundingBox, BoundingBox, 2))
         .def(py::init<Point3f, Point3f>(), D(BoundingBox, BoundingBox, 3))
