@@ -1,22 +1,7 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/logger.h>
 
-using Caster = py::object(*)(mitsuba::Object *, py::handle parent);
-
-static std::vector<void *> casters;
-
-py::object cast_object(Object *o, py::handle parent) {
-    for (auto caster : casters) {
-        py::object po = ((Caster) caster)(o, parent);
-        if (po)
-            return po;
-    }
-
-    py::return_value_policy rvp = parent ? py::return_value_policy::reference_internal
-                                         : py::return_value_policy::take_ownership;
-
-    return py::cast(o, rvp, parent);
-}
+extern py::object cast_object(Object *o, py::handle parent);
 
 // Trampoline for derived types implemented in Python
 class PyTraversalCallback : public TraversalCallback {
@@ -74,6 +59,4 @@ MTS_PY_EXPORT(Object) {
         .def_property_readonly("ptr", [](Object *self){ return (uintptr_t) self; })
         .def("class_", &Object::class_, py::return_value_policy::reference, D(Object, class))
         .def("__repr__", &Object::to_string, D(Object, to_string));
-
-    m.attr("casters") = py::cast((void *) &casters);
 }

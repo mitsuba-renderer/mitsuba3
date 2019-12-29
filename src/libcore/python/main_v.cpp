@@ -1,9 +1,23 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/vector.h>
 
+MTS_PY_DECLARE(Object);
+MTS_PY_DECLARE(BoundingBox);
+MTS_PY_DECLARE(BoundingSphere);
+MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(ContinuousDistribution);
+MTS_PY_DECLARE(math);
+MTS_PY_DECLARE(qmc);
+MTS_PY_DECLARE(rfilter);
+MTS_PY_DECLARE(spline);
+MTS_PY_DECLARE(Spectrum);
+MTS_PY_DECLARE(Transform);
+MTS_PY_DECLARE(AnimatedTransform);
+MTS_PY_DECLARE(vector);
+MTS_PY_DECLARE(warp);
+MTS_PY_DECLARE(xml);
 
 #define MODULE_NAME MTS_MODULE_NAME(core, MTS_VARIANT_NAME)
 
@@ -14,6 +28,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     py::module enoki = py::module::import("enoki");
 
     MTS_PY_IMPORT_TYPES_DYNAMIC()
+
+    if constexpr (is_double_v<Float>)
+        m.attr("float_dtype") = py::dtype("d");
+    else
+        m.attr("float_dtype") = py::dtype("f");
 
     // Create aliases of Enoki types in the Mitsuba namespace
     std::string suffix = "";
@@ -160,9 +179,23 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
     m.attr("Spectrum") = get_type_handle<Spectrum>();
 
+    MTS_PY_IMPORT(Object);
+    MTS_PY_IMPORT(BoundingBox);
+    MTS_PY_IMPORT(BoundingSphere);
+    MTS_PY_IMPORT(Frame);
     MTS_PY_IMPORT(Ray);
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(ContinuousDistribution);
+    MTS_PY_IMPORT(math);
+    MTS_PY_IMPORT(qmc);
+    MTS_PY_IMPORT(rfilter);
+    MTS_PY_IMPORT(spline);
+    MTS_PY_IMPORT(Spectrum);
+    MTS_PY_IMPORT(Transform);
+    MTS_PY_IMPORT(AnimatedTransform);
+    MTS_PY_IMPORT(vector);
+    MTS_PY_IMPORT(warp);
+    MTS_PY_IMPORT(xml);
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);

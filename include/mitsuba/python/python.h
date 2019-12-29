@@ -11,6 +11,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 #include <enoki/stl.h>
 
 #if MTS_VARIANT_VECTORIZE == 1

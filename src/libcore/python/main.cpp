@@ -8,7 +8,27 @@
 
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(filesystem);
+MTS_PY_DECLARE(quad);
 MTS_PY_DECLARE(Object);
+MTS_PY_DECLARE(Cast);
+MTS_PY_DECLARE(Struct);
+MTS_PY_DECLARE(Properties);
+MTS_PY_DECLARE(Appender);
+MTS_PY_DECLARE(ArgParser);
+MTS_PY_DECLARE(Bitmap);
+MTS_PY_DECLARE(Formatter);
+MTS_PY_DECLARE(FileResolver);
+MTS_PY_DECLARE(Logger);
+MTS_PY_DECLARE(MemoryMappedFile);
+MTS_PY_DECLARE(Stream);
+MTS_PY_DECLARE(DummyStream);
+MTS_PY_DECLARE(FileStream);
+MTS_PY_DECLARE(MemoryStream);
+MTS_PY_DECLARE(ZStream);
+MTS_PY_DECLARE(ProgressReporter);
+MTS_PY_DECLARE(rfilter);
+MTS_PY_DECLARE(Thread);
+MTS_PY_DECLARE(util);
 
 PYBIND11_MODULE(core_ext, m) {
     // Temporarily change the module name (for pydoc)
@@ -72,9 +92,29 @@ PYBIND11_MODULE(core_ext, m) {
         "execution of Mitsuba code. Defaults to -1 (automatic).");
 
     // Register python modules
-    MTS_PY_IMPORT(filesystem);
     MTS_PY_IMPORT(atomic);
+    MTS_PY_IMPORT(filesystem);
+    MTS_PY_IMPORT(quad);
     MTS_PY_IMPORT(Object);
+    MTS_PY_IMPORT(Cast);
+    MTS_PY_IMPORT(Struct);
+    MTS_PY_IMPORT(Properties);
+    MTS_PY_IMPORT(Appender);
+    MTS_PY_IMPORT(ArgParser);
+    MTS_PY_IMPORT(rfilter);
+    MTS_PY_IMPORT(Bitmap);
+    MTS_PY_IMPORT(Formatter);
+    MTS_PY_IMPORT(FileResolver);
+    MTS_PY_IMPORT(Logger);
+    MTS_PY_IMPORT(MemoryMappedFile);
+    MTS_PY_IMPORT(Stream);
+    MTS_PY_IMPORT(DummyStream);
+    MTS_PY_IMPORT(FileStream);
+    MTS_PY_IMPORT(MemoryStream);
+    MTS_PY_IMPORT(ZStream);
+    MTS_PY_IMPORT(ProgressReporter);
+    MTS_PY_IMPORT(Thread);
+    MTS_PY_IMPORT(util);
 
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */

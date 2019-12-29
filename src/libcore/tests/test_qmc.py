@@ -1,5 +1,4 @@
 from mitsuba.scalar_rgb.core.qmc import RadicalInverse
-from mitsuba.scalar_rgb.core import PacketSize
 from mitsuba.scalar_rgb.core.math import OneMinusEpsilon
 import numpy as np
 import pytest

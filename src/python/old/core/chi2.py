@@ -443,7 +443,6 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     """
 
     try:
-        from mitsuba.packet_rgb.core import PacketSize
         from mitsuba.packet_rgb.render import MicrofacetDistribution
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
@@ -453,7 +452,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
         if len(args) == 1:
             angle = args[0] * np.pi / 180
             wi = [np.sin(angle), 0, np.cos(angle)]
-        return MicrofacetDistribution(md_type, [alpha] * PacketSize, sample_visible), wi
+        return MicrofacetDistribution(md_type, alpha, sample_visible), wi
 
     def sample_functor(sample, *args):
         dist, wi = instantiate(args)

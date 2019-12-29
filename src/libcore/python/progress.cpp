@@ -74,7 +74,7 @@ public:
         m_display(vbox);
     }
 private:
-    /* Imports */
+    // Imports
     py::object m_float_progress;
     py::object m_html;
     py::object m_layout;
@@ -83,7 +83,7 @@ private:
     py::object m_vbox;
     py::object m_flush;
 
-    /* Progress bar*/
+    // Progress bar
     py::object m_bar;
     py::object m_label;
 };

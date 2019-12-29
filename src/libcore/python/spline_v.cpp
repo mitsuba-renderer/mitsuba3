@@ -2,7 +2,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(spline) {
-    MTS_IMPORT_CORE_TYPES()
+    MTS_PY_IMPORT_TYPES()
 
     if constexpr (!is_cuda_array_v<Float>) {
         // Create dedicated submodule
@@ -16,7 +16,7 @@ MTS_PY_EXPORT(spline) {
         .def("eval_spline_i", spline::eval_spline_i<ScalarFloat>,
             "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_i))
         .def("eval_1d",
-            vectorize<Float>([](ScalarFloat min, ScalarFloat max,
+            vectorize([](ScalarFloat min, ScalarFloat max,
                                 const py::array_t<ScalarFloat> &values, Float x) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
@@ -24,7 +24,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "min"_a, "max"_a, "values"_a, "x"_a, D(spline, eval_1d))
         .def("eval_1d",
-            vectorize<Float>([](const py::array_t<ScalarFloat> &nodes,
+            vectorize([](const py::array_t<ScalarFloat> &nodes,
                                 const py::array_t<ScalarFloat> &values, Float x) {
                 if (nodes.ndim() != 1 || values.ndim() != 1)
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
@@ -56,7 +56,7 @@ MTS_PY_EXPORT(spline) {
             },
             "nodes"_a, "values"_a, D(spline, integrate_1d, 2))
         .def("invert_1d",
-            vectorize<Float>([](ScalarFloat min, ScalarFloat max,
+            vectorize([](ScalarFloat min, ScalarFloat max,
                                 const py::array_t<ScalarFloat> &values, Float y, ScalarFloat eps) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
@@ -64,7 +64,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "min"_a, "max_"_a, "values"_a, "y"_a, "eps"_a = 1e-6f, D(spline, invert_1d))
         .def("invert_1d",
-            vectorize<Float>([](const py::array_t<ScalarFloat> &nodes,
+            vectorize([](const py::array_t<ScalarFloat> &nodes,
                                 const py::array_t<ScalarFloat> &values, Float y, ScalarFloat eps) {
                 if (nodes.ndim() != 1 || values.ndim() != 1)
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
@@ -75,7 +75,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "nodes"_a, "values"_a, "y"_a, "eps"_a = 1e-6f, D(spline, invert_1d, 2))
         .def("sample_1d",
-            vectorize<Float>([](ScalarFloat min, ScalarFloat max,
+            vectorize([](ScalarFloat min, ScalarFloat max,
                                 const py::array_t<ScalarFloat> &values,
                                 const py::array_t<ScalarFloat> &cdf, Float sample, ScalarFloat eps) {
                 if (values.ndim() != 1)
@@ -89,7 +89,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "min"_a, "max"_a, "values"_a, "cdf"_a, "sample"_a, "eps"_a = 1e-6f, D(spline, sample_1d))
         .def("sample_1d",
-            vectorize<Float>([](const py::array_t<ScalarFloat> &nodes,
+            vectorize([](const py::array_t<ScalarFloat> &nodes,
                                 const py::array_t<ScalarFloat> &values,
                                 const py::array_t<ScalarFloat> &cdf, Float sample, ScalarFloat eps) {
                 if (values.ndim() != 1)
@@ -103,7 +103,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "nodes"_a, "values"_a, "cdf"_a, "sample"_a, "eps"_a = 1e-6f, D(spline, sample_1d, 2))
         .def("eval_spline_weights",
-            vectorize<Float>([](ScalarFloat min, ScalarFloat max, uint32_t size, Float x) {
+            vectorize([](ScalarFloat min, ScalarFloat max, uint32_t size, Float x) {
                 py::array_t<Float, 4> weight;
                 auto [result, offset] = spline::eval_spline_weights(
                     min, max, size, x, weight.mutable_data());
@@ -111,7 +111,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "min"_a, "max"_a, "size"_a, "x"_a, D(spline, eval_spline_weights))
         .def("eval_spline_weights",
-            vectorize<Float>([](const py::array_t<ScalarFloat> &nodes, Float x) {
+            vectorize([](const py::array_t<ScalarFloat> &nodes, Float x) {
                 py::array_t<Float, 4> weight;
                 auto [result, offset] = spline::eval_spline_weights(
                     nodes.data(), (uint32_t) nodes.shape(0), x, weight.mutable_data());
@@ -119,7 +119,7 @@ MTS_PY_EXPORT(spline) {
             }),
             "nodes"_a, "x"_a, D(spline, eval_spline_weights, 2))
         .def("eval_2d",
-            vectorize<Float>([](const py::array_t<ScalarFloat> &nodes1,
+            vectorize([](const py::array_t<ScalarFloat> &nodes1,
                                 const py::array_t<ScalarFloat> &nodes2,
                                 const py::array_t<ScalarFloat> &values, Float x, Float y) {
                 return spline::eval_2d(nodes1.data(), (uint32_t) nodes1.shape(0),

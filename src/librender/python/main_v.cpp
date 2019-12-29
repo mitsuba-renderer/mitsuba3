@@ -10,7 +10,7 @@
 
 #define MODULE_NAME MTS_MODULE_NAME(render, MTS_VARIANT_NAME)
 
-#define PY_TRY_CAST(Type)                                            \
+#define PY_TRY_CAST(Type)                                         \
     if (auto tmp = dynamic_cast<Type *>(o); tmp)                  \
         return py::cast(tmp, rvp, parent);
 

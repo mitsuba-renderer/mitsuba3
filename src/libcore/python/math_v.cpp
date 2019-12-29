@@ -6,7 +6,7 @@
 #include <bitset>
 
 MTS_PY_EXPORT(math) {
-    MTS_IMPORT_CORE_TYPES()
+    MTS_PY_IMPORT_TYPES()
 
     // Create dedicated submodule
     auto math = m.def_submodule("math", "Mathematical routines, special functions, etc.");
@@ -40,16 +40,16 @@ MTS_PY_EXPORT(math) {
 
     math.def("i0e", enoki::i0e<ScalarFloat>, "x"_a)
         .def("legendre_p",
-            vectorize<Float>(py::overload_cast<int, Float>(math::legendre_p<Float>)),
+            vectorize(py::overload_cast<int, Float>(math::legendre_p<Float>)),
             "l"_a, "x"_a, D(math, legendre_p))
         .def("legendre_p",
-            vectorize<Float>(py::overload_cast<int, int, Float>(math::legendre_p<Float>)),
+            vectorize(py::overload_cast<int, int, Float>(math::legendre_p<Float>)),
             "l"_a, "m"_a, "x"_a, D(math, legendre_p))
         .def("legendre_pd",
-            vectorize<Float>(math::legendre_pd<Float>),
+            vectorize(math::legendre_pd<Float>),
             "l"_a, "x"_a, D(math, legendre_pd))
         .def("legendre_pd_diff",
-            vectorize<Float>(math::legendre_pd_diff<Float>),
+            vectorize(math::legendre_pd_diff<Float>),
             "l"_a, "x"_a, D(math, legendre_pd_diff))
 
         .def("ulpdiff", &math::ulpdiff<ScalarFloat>, D(math, ulpdiff))
@@ -58,10 +58,10 @@ MTS_PY_EXPORT(math) {
         .def("round_to_power_of_two", &math::round_to_power_of_two<ScalarUInt64>,
             D(math, round_to_power_of_two))
         .def("linear_to_srgb",
-            vectorize<Float>([](Float &c) { return linear_to_srgb(c); }),
+            vectorize([](Float &c) { return linear_to_srgb(c); }),
             "Applies the sRGB gamma curve to the given argument.")
         .def("srgb_to_linear",
-            vectorize<Float>([](Float &c) { return srgb_to_linear(c); }),
+            vectorize([](Float &c) { return srgb_to_linear(c); }),
             "Applies the inverse sRGB gamma curve to the given argument.")
 
         .def("find_interval", [](size_t start, size_t end, const std::function<bool(size_t)> &pred){
@@ -85,11 +85,11 @@ MTS_PY_EXPORT(math) {
         }, D(math, chi2))
 
         .def("solve_quadratic",
-            vectorize<Float>(&math::solve_quadratic<Float>),
+            vectorize(&math::solve_quadratic<Float>),
             "a"_a, "b"_a, "c"_a, D(math, solve_quadratic))
 
-        .def("morton_decode2", vectorize<Float>(&enoki::morton_decode<Array<UInt32, 2>>), "m"_a)
-        .def("morton_decode3", vectorize<Float>(&enoki::morton_decode<Array<UInt32, 3>>), "m"_a)
-        .def("morton_encode2", vectorize<Float>(&enoki::morton_encode<Array<UInt32, 2>>), "v"_a)
-        .def("morton_encode3", vectorize<Float>(&enoki::morton_encode<Array<UInt32, 3>>), "v"_a);
+        .def("morton_decode2", vectorize(&enoki::morton_decode<Array<UInt32, 2>>), "m"_a)
+        .def("morton_decode3", vectorize(&enoki::morton_decode<Array<UInt32, 3>>), "m"_a)
+        .def("morton_encode2", vectorize(&enoki::morton_encode<Array<UInt32, 2>>), "v"_a)
+        .def("morton_encode3", vectorize(&enoki::morton_encode<Array<UInt32, 3>>), "v"_a);
 }

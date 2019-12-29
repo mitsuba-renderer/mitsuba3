@@ -123,7 +123,6 @@ def example_shape_vec(filename = "data/triangle.ply", has_emitter = True):
 def test04_area_sample_direction_vec():
     try:
         from mitsuba.packet_rgb.render import Interaction3f as Interaction3fX
-        from mitsuba.packet_rgb.core import PacketSize
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
 
