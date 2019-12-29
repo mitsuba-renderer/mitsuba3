@@ -1,8 +1,12 @@
-from mitsuba.scalar_rgb.core import ArgParser
 import pytest
+import mitsuba
 
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
-def test01_short_args():
+def test01_short_args(variant):
+    from mitsuba.core import ArgParser
     ap = ArgParser()
     a = ap.add("-a")
     b = ap.add("-b")
@@ -21,7 +25,8 @@ def test01_short_args():
     assert ap.executable_name() == "mitsuba"
 
 
-def test02_parameter_value():
+def test02_parameter_value(variant):
+    from mitsuba.core import ArgParser
     ap = ArgParser()
     a = ap.add("-a", True)
     ap.parse(['mitsuba', '-a', 'abc', '-axyz'])
@@ -33,14 +38,16 @@ def test02_parameter_value():
     assert a.next().as_string() == 'xyz'
 
 
-def test03_parameter_missing():
+def test03_parameter_missing(variant):
+    from mitsuba.core import ArgParser
     ap = ArgParser()
     ap.add("-a", True)
     with pytest.raises(RuntimeError):
         ap.parse(['mitsuba', '-a'])
 
 
-def test04_parameter_float_and_extra_args():
+def test04_parameter_float_and_extra_args(variant):
+    from mitsuba.core import ArgParser
     ap = ArgParser()
     f = ap.add("-f", True)
     other = ap.add("", True)
@@ -51,7 +58,8 @@ def test04_parameter_float_and_extra_args():
     assert other.count() == 2
 
 
-def test05_long_parameters_failure():
+def test05_long_parameters_failure(variant):
+    from mitsuba.core import ArgParser
     ap = ArgParser()
     i = ap.add("--int", True)
     with pytest.raises(RuntimeError):

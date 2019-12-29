@@ -1,8 +1,10 @@
-from mitsuba.scalar_rgb.core.qmc import RadicalInverse
-from mitsuba.scalar_rgb.core.math import OneMinusEpsilon
-import numpy as np
+import enoki as ek
 import pytest
+import mitsuba
 
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
 def r_inv(divisor, index):
     factor = 1
@@ -33,7 +35,9 @@ def gen_primes():
         q += 1
 
 
-def test01_radical_inverse():
+def test01_radical_inverse(variant):
+    from mitsuba.core.qmc import RadicalInverse
+
     v = RadicalInverse()
     assert(v.eval(0, 0) == 0)
     assert(v.eval(0, 1) == 0.5)
@@ -44,30 +48,37 @@ def test01_radical_inverse():
         if index >= 1024:
             break
         for i in range(10):
-            assert np.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
+            assert ek.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
-def test02_radical_inverse_vectorized():
+def test02_radical_inverse_vectorized(variant):
+    from mitsuba.core.qmc import RadicalInverse
+
     v = RadicalInverse()
     for index, prime in enumerate(gen_primes()):
         if index >= 1024:
             break
-        result = v.eval(index, np.arange(10, dtype=np.uint64))
+        result = v.eval(index, ek.arange(10, dtype=ek.uint64))
         for i in range(len(result)):
-            assert np.abs(r_inv(prime, i) - result[i]) < 1e-7
+            assert ek.abs(r_inv(prime, i) - result[i]) < 1e-7
 
 
-def test03_faure_permutations():
+def test03_faure_permutations(variant):
+    from mitsuba.core.qmc import RadicalInverse
+
     p = RadicalInverse()
-    assert np.all(p.permutation(0) == [0, 1])
-    assert np.all(p.permutation(1) == [0, 1, 2])
-    assert np.all(p.permutation(2) == [0, 3, 2, 1, 4])
-    assert np.all(p.permutation(3) == [0, 2, 5, 3, 1, 4, 6])
+    assert (p.permutation(0) == [0, 1]).all()
+    assert (p.permutation(1) == [0, 1, 2]).all()
+    assert (p.permutation(2) == [0, 3, 2, 1, 4]).all()
+    assert (p.permutation(3) == [0, 2, 5, 3, 1, 4, 6]).all()
 
 
-def test04_scrambled_radical_inverse():
+def test04_scrambled_radical_inverse(variant):
+    from mitsuba.core.qmc import RadicalInverse
+    from mitsuba.core.math import OneMinusEpsilon
+
     p = RadicalInverse(10, -1)
-    assert np.all(p.permutation(0) == [0, 1])
+    assert (p.permutation(0) == [0, 1]).all()
 
     values = [
         0.0, 0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875, 0.0625, 0.5625,
@@ -78,7 +89,7 @@ def test04_scrambled_radical_inverse():
         assert(p.eval_scrambled(0, i) == values[i])
 
     p = RadicalInverse(10, 3)
-    assert np.all(p.permutation(0) == [1, 0])
+    assert (p.permutation(0) == [1, 0]).all()
 
     values_scrambled = [
         OneMinusEpsilon,
@@ -90,7 +101,9 @@ def test04_scrambled_radical_inverse():
         assert(p.eval_scrambled(0, i) == values_scrambled[i])
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
-def test02_radical_inverse_vectorized():
+def test02_radical_inverse_vectorized(variant):
+    from mitsuba.core.qmc import RadicalInverse
+
     try:
         from mitsuba.packet_rgb.core.qmc import RadicalInverseP
     except ImportError:
@@ -99,6 +112,6 @@ def test02_radical_inverse_vectorized():
     v   = RadicalInverse()
     v_p = RadicalInverseP()
     for index in range(1024):
-        result = v_p.eval_scrambled(index, np.arange(10, dtype=np.uint64))
+        result = v_p.eval_scrambled(index, ek.arange(10, dtype=ek.uint64))
         for i in range(len(result)):
-            assert np.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7
+            assert ek.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7

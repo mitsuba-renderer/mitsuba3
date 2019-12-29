@@ -1,7 +1,11 @@
-from mitsuba.scalar_rgb.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32, FilterBoundaryCondition)
-from mitsuba.scalar_rgb.core.xml import load_string
 import numpy as np
 import os
+
+import mitsuba
+mitsuba.set_variant('scalar_rgb')
+
+from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32, FilterBoundaryCondition)
+from mitsuba.core.xml import load_string
 
 def find_resource(fname):
     path = os.path.dirname(os.path.realpath(__file__))

@@ -1,7 +1,9 @@
-from mitsuba.scalar_rgb.core import MemoryMappedFile
 import numpy as np
 import os
 
+import mitsuba
+mitsuba.set_variant('scalar_rgb')
+from mitsuba.core import MemoryMappedFile
 
 def test01_open_read_only(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "mmap_test")

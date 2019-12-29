@@ -7,7 +7,10 @@ def approx(v, eps=1e-6):
 
 @pytest.fixture()
 def variant():
-    mitsuba.set_variant('packet_rgb')
+    try:
+        mitsuba.set_variant('packet_rgb')
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
 
 def test01_discr_empty(variant):
     from mitsuba.core import DiscreteDistribution

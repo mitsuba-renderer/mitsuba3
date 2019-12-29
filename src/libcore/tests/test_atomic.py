@@ -1,8 +1,15 @@
-from mitsuba.scalar_rgb.core import AtomicFloat
 from threading import Thread
 
+import pytest
+import mitsuba
 
-def test01_add():
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
+
+def test01_add(variant):
+    from mitsuba.core import AtomicFloat
+
     f = AtomicFloat(5)
     threads = []
 

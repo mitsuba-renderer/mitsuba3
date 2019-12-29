@@ -1,7 +1,14 @@
-from mitsuba.scalar_rgb.core import Thread, Appender, Formatter, Log, LogLevel
+import enoki as ek
+import pytest
+import mitsuba
 
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
-def test01_custom():
+def test01_custom(variant):
+    from mitsuba.core import Thread, Appender, Formatter, Log, LogLevel
+
     # Install a custom formatter and appender and process a log message
     messages = []
 

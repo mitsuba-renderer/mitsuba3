@@ -1,8 +1,13 @@
 import platform
 import re
+import enoki as ek
+import pytest
+import mitsuba
 
-from mitsuba.scalar_rgb.core import filesystem as fs
-from mitsuba.scalar_rgb.core.filesystem import preferred_separator as sep
+mitsuba.set_variant('scalar_rgb')
+
+from mitsuba.core import filesystem as fs
+from mitsuba.core.filesystem import preferred_separator as sep
 
 path_here_relative = fs.path("." + sep)
 path_here = fs.current_path()

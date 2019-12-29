@@ -1,6 +1,11 @@
-from mitsuba.scalar_rgb.core import Properties as Prop
-import numpy as np
+import enoki as ek
+import pytest
+import mitsuba
 
+
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
 def fill_properties(p):
     """Sets up some properties with various types"""
@@ -10,7 +15,9 @@ def fill_properties(p):
     p['prop_4'] = 3.14
 
 
-def test01_name_and_id():
+def test01_name_and_id(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     p.set_id("magic")
     p.set_plugin_name("unicorn")
@@ -21,20 +28,24 @@ def test01_name_and_id():
     assert p.plugin_name() == p2.plugin_name()
 
 
-def test02_type_is_preserved():
+def test02_type_is_preserved(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     fill_properties(p)
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
     assert p['prop_3'] == False
-    assert np.abs(p['prop_4']-3.14) < 1e-6
+    assert ek.abs(p['prop_4']-3.14) < 1e-6
 
     # Updating an existing property but using a different type
     p['prop_2'] = 2
     assert p['prop_2'] == 2
 
 
-def test03_management_of_properties():
+def test03_management_of_properties(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     fill_properties(p)
     # Existence
@@ -51,7 +62,9 @@ def test03_management_of_properties():
     assert not p.has_property('prop_1')
 
 
-def test04_queried_properties():
+def test04_queried_properties(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     fill_properties(p)
     # Make some queries
@@ -69,7 +82,9 @@ def test04_queried_properties():
     assert p.unqueried() == ['prop_4']
 
 
-def test05_copy_and_merge():
+def test05_copy_and_merge(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     fill_properties(p)
 
@@ -89,7 +104,9 @@ def test05_copy_and_merge():
     assert p2['hello'] == 'world' # p3 unchanged
 
 
-def test06_equality():
+def test06_equality(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     fill_properties(p)
 
@@ -112,7 +129,9 @@ def test06_equality():
     assert p == p2
 
 
-def test07_printing():
+def test07_printing(variant):
+    from mitsuba.core import Properties as Prop
+
     p = Prop()
     p.set_plugin_name('some_plugin')
     p.set_id('some_id')
@@ -130,9 +149,9 @@ def test07_printing():
 ]
 """
 
-def test08_animated_transforms():
+def test08_animated_transforms(variant):
     """An AnimatedTransform can be built from a given Transform."""
-    from mitsuba.scalar_rgb.core import Transform4f, AnimatedTransform
+    from mitsuba.core import Properties as Prop, Transform4f, AnimatedTransform
 
     p = Prop()
     p["trafo"] = Transform4f.translate([1, 2, 3])

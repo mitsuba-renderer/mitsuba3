@@ -1,8 +1,14 @@
-from mitsuba.scalar_rgb.core import BoundingBox3f as BBox
-import numpy as np
+import enoki as ek
+import pytest
+import mitsuba
 
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
-def test01_basics():
+def test01_basics(variant):
+    from mitsuba.core import BoundingBox3f as BBox
+
     bbox1 = BBox()
     bbox2 = BBox([0, 1, 2])
     bbox3 = BBox([1, 2, 3], [2, 3, 5])
@@ -17,31 +23,31 @@ def test01_basics():
     assert bbox2.volume() == 0
     assert bbox2.major_axis() == 0
     assert bbox2.minor_axis() == 0
-    assert (bbox2.center() == [0, 1, 2]).all()
-    assert (bbox2.extents() == [0, 0, 0]).all()
+    assert (bbox2.center() == [0, 1, 2])
+    assert (bbox2.extents() == [0, 0, 0])
     assert bbox2.surface_area() == 0
     assert bbox3.volume() == 2
     assert bbox3.surface_area() == 10
-    assert (bbox3.center() == [1.5, 2.5, 4]).all()
-    assert (bbox3.extents() == [1, 1, 2]).all()
+    assert (bbox3.center() == [1.5, 2.5, 4])
+    assert (bbox3.extents() == [1, 1, 2])
     assert bbox3.major_axis() == 2
     assert bbox3.minor_axis() == 0
-    assert (bbox3.min == [1, 2, 3]).all()
-    assert (bbox3.max == [2, 3, 5]).all()
-    assert (bbox3.corner(0) == [1, 2, 3]).all()
-    assert (bbox3.corner(1) == [2, 2, 3]).all()
-    assert (bbox3.corner(2) == [1, 3, 3]).all()
-    assert (bbox3.corner(3) == [2, 3, 3]).all()
-    assert (bbox3.corner(4) == [1, 2, 5]).all()
-    assert (bbox3.corner(5) == [2, 2, 5]).all()
-    assert (bbox3.corner(6) == [1, 3, 5]).all()
-    assert (bbox3.corner(7) == [2, 3, 5]).all()
+    assert (bbox3.min == [1, 2, 3])
+    assert (bbox3.max == [2, 3, 5])
+    assert (bbox3.corner(0) == [1, 2, 3])
+    assert (bbox3.corner(1) == [2, 2, 3])
+    assert (bbox3.corner(2) == [1, 3, 3])
+    assert (bbox3.corner(3) == [2, 3, 3])
+    assert (bbox3.corner(4) == [1, 2, 5])
+    assert (bbox3.corner(5) == [2, 2, 5])
+    assert (bbox3.corner(6) == [1, 3, 5])
+    assert (bbox3.corner(7) == [2, 3, 5])
     assert str(bbox1) == "BoundingBox3f[invalid]"
     assert str(bbox3) == "BoundingBox3f[\n  min = [1, 2, 3],\n" \
                          "  max = [2, 3, 5]\n]"
     bbox4 = BBox.merge(bbox2, bbox3)
-    assert (bbox4.min == [0, 1, 2]).all()
-    assert (bbox4.max == [2, 3, 5]).all()
+    assert (bbox4.min == [0, 1, 2])
+    assert (bbox4.max == [2, 3, 5])
     bbox3.reset()
     assert not bbox3.valid()
     bbox3.expand([0, 0, 0])
@@ -54,7 +60,9 @@ def test01_basics():
     assert bbox2 == bbox3
 
 
-def test02_contains_variants():
+def test02_contains_variants(variant):
+    from mitsuba.core import BoundingBox3f as BBox
+
     bbox = BBox([1, 2, 3], [2, 3, 5])
     assert bbox.contains([1.5, 2.5, 3.5])
     assert bbox.contains([1.5, 2.5, 3.5], strict=True)
@@ -74,12 +82,14 @@ def test02_contains_variants():
                              strict=True)
 
 
-def test03_distance():
+def test03_distance(variant):
+    from mitsuba.core import BoundingBox3f as BBox
+
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([4, 2, 3], [5, 3, 5])) == 2
 
-    assert np.abs(BBox([1, 2, 3], [2, 3, 5]).distance(
-        BBox([3, 4, 6], [7, 7, 7])) - np.sqrt(3)) < 1e-6
+    assert ek.abs(BBox([1, 2, 3], [2, 3, 5]).distance(
+        BBox([3, 4, 6], [7, 7, 7])) - ek.sqrt(3)) < 1e-6
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance(
         BBox([1.1, 2.2, 3.3], [1.8, 2.8, 3.8])) == 0

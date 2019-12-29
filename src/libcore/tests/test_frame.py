@@ -1,60 +1,70 @@
-from mitsuba.scalar_rgb.core import Frame3f
-import numpy as np
+import enoki as ek
+import pytest
+import mitsuba
+
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
 
-def test01_construction():
+def test01_construction(variant):
+    from mitsuba.core import Frame3f
+
     # Uninitialized frame
     _ = Frame3f()
 
     # Frame3f from the 3 vectors: no normalization should be performed
     f1 = Frame3f([0.005, 50, -6], [0.01, -13.37, 1], [0.5, 0, -6.2])
-    assert np.allclose(f1.s, [0.005, 50, -6])
-    assert np.allclose(f1.t, [0.01, -13.37, 1])
-    assert np.allclose(f1.n, [0.5, 0, -6.2])
+    assert ek.allclose(f1.s, [0.005, 50, -6])
+    assert ek.allclose(f1.t, [0.01, -13.37, 1])
+    assert ek.allclose(f1.n, [0.5, 0, -6.2])
 
     # Frame3f from the Normal component only
     f2 = Frame3f([0, 0, 1])
-    assert np.allclose(f2.s, [1, 0, 0])
-    assert np.allclose(f2.t, [0, 1, 0])
-    assert np.allclose(f2.n, [0, 0, 1])
+    assert ek.allclose(f2.s, [1, 0, 0])
+    assert ek.allclose(f2.t, [0, 1, 0])
+    assert ek.allclose(f2.n, [0, 0, 1])
 
     # Copy constructor
     f3 = Frame3f(f2)
     assert f2 == f3
 
 
-def test02_unit_frame():
-    for theta in [30 * np.pi / 180, 95 * np.pi / 180]:
-        phi = 73 * np.pi / 180
-        sin_theta, cos_theta = np.sin(theta), np.cos(theta)
-        sin_phi, cos_phi = np.sin(phi), np.cos(phi)
+def test02_unit_frame(variant):
+    from mitsuba.core import Frame3f, Vector2f, Vector3f
 
-        v = np.array([
+    for theta in [30 * mitsuba.core.math.Pi / 180, 95 * mitsuba.core.math.Pi / 180]:
+        phi = 73 * mitsuba.core.math.Pi / 180
+        sin_theta, cos_theta = ek.sin(theta), ek.cos(theta)
+        sin_phi, cos_phi = ek.sin(phi), ek.cos(phi)
+
+        v = Vector3f(
             cos_phi * sin_theta,
             sin_phi * sin_theta,
             cos_theta
-        ])
-        f = Frame3f(np.array([1.0, 2.0, 3.0]) / np.sqrt(14))
+        )
+        f = Frame3f(Vector3f(1.0, 2.0, 3.0) / ek.sqrt(14))
 
         v2 = f.to_local(v)
         v3 = f.to_world(v2)
 
-        assert np.allclose(v3, v)
+        assert ek.allclose(v3, v)
 
-        assert np.allclose(Frame3f.cos_theta(v), cos_theta)
-        assert np.allclose(Frame3f.sin_theta(v), sin_theta)
-        assert np.allclose(Frame3f.cos_phi(v), cos_phi)
-        assert np.allclose(Frame3f.sin_phi(v), sin_phi)
-        assert np.allclose(Frame3f.cos_theta_2(v), cos_theta * cos_theta)
-        assert np.allclose(Frame3f.sin_theta_2(v), sin_theta * sin_theta)
-        assert np.allclose(Frame3f.cos_phi_2(v), cos_phi * cos_phi)
-        assert np.allclose(Frame3f.sin_phi_2(v), sin_phi * sin_phi)
-        assert np.allclose(Frame3f.sincos_phi(v), [sin_phi, cos_phi])
-        assert np.allclose(Frame3f.sincos_phi_2(v), [sin_phi * sin_phi,
-                                                   cos_phi * cos_phi])
+        assert ek.allclose(Frame3f.cos_theta(v), cos_theta)
+        assert ek.allclose(Frame3f.sin_theta(v), sin_theta)
+        assert ek.allclose(Frame3f.cos_phi(v), cos_phi)
+        assert ek.allclose(Frame3f.sin_phi(v), sin_phi)
+        assert ek.allclose(Frame3f.cos_theta_2(v), cos_theta * cos_theta)
+        assert ek.allclose(Frame3f.sin_theta_2(v), sin_theta * sin_theta)
+        assert ek.allclose(Frame3f.cos_phi_2(v), cos_phi * cos_phi)
+        assert ek.allclose(Frame3f.sin_phi_2(v), sin_phi * sin_phi)
+        assert ek.allclose(Vector2f(Frame3f.sincos_phi(v)), [sin_phi, cos_phi])
+        assert ek.allclose(Vector2f(Frame3f.sincos_phi_2(v)), [sin_phi * sin_phi, cos_phi * cos_phi])
 
 
-def test03_frame_equality():
+def test03_frame_equality(variant):
+    from mitsuba.core import Frame3f
+
     f1 = Frame3f([1, 0, 0], [0, 1, 0], [0, 0, 1])
     f2 = Frame3f([0, 0, 1])
     f3 = Frame3f([0, 0, 1], [0, 1, 0], [1, 0, 0])
