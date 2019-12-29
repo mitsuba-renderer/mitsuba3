@@ -206,6 +206,9 @@ protected:
 #if defined(_MSC_VER)
 #  pragma pack(push)
 #  pragma pack(1)
+#elif defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wbitfield-width"
 #endif
 
     /// kd-tree node in 8 bytes.
@@ -320,6 +323,8 @@ protected:
 
 #if defined(_MSC_VER)
 #  pragma pack(pop)
+#elif defined(__clang__)
+#  pragma clang diagnostic pop
 #endif
 
     static_assert(sizeof(KDNode) == sizeof(Size) + sizeof(Scalar),

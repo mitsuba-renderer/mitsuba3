@@ -84,7 +84,7 @@ template <typename Value>
 using DynamicBuffer = std::conditional_t<
     is_dynamic_array_v<Value>,
     Value,
-    DynamicArray<Packet<scalar_t<Value>>>
+    DynamicArray<Packet<scalar_t<Value>, array_default_size<float>>>
 >;
 
 //! @}
