@@ -7,21 +7,18 @@ MTS_PY_EXPORT(DiscreteDistribution) {
     using DiscreteDistribution = mitsuba::DiscreteDistribution<Float>;
     using FloatStorage = DynamicBuffer<Float>;
 
-    MTS_PY_STRUCT(DiscreteDistribution)
-        .def(py::init<FloatStorage>(), "pmf"_a,
-             D(DiscreteDistribution, DiscreteDistribution))
+    MTS_PY_STRUCT(DiscreteDistribution, py::module_local())
+        .def(py::init<>(), D(DiscreteDistribution))
+        .def(py::init<const DiscreteDistribution &>(), "Copy constructor")
+        .def(py::init<const FloatStorage &>(), "pmf"_a,
+             D(DiscreteDistribution, DiscreteDistribution, 2))
         .def("__len__", &DiscreteDistribution::size)
+        .def("size", &DiscreteDistribution::size, D(DiscreteDistribution, size))
         .def("empty", &DiscreteDistribution::empty, D(DiscreteDistribution, empty))
-        .def_property("pmf",
-             [](DiscreteDistribution &d) { return d.pmf(); },
-             [](DiscreteDistribution &d, const FloatStorage &v) { d.pmf() = v; },
-             D(DiscreteDistribution, pmf),
-             py::return_value_policy::reference_internal)
-        .def_property("cdf",
-             [](DiscreteDistribution &d) { return d.cdf(); },
-             [](DiscreteDistribution &d, const FloatStorage &v) { d.cdf() = v; },
-             D(DiscreteDistribution, cdf),
-             py::return_value_policy::reference_internal)
+        .def("pmf", py::overload_cast<>(&DiscreteDistribution::pmf),
+             D(DiscreteDistribution, pmf), py::return_value_policy::reference_internal)
+        .def("cdf", py::overload_cast<>(&DiscreteDistribution::cdf),
+             D(DiscreteDistribution, cdf), py::return_value_policy::reference_internal)
         .def("eval_pmf", vectorize(&DiscreteDistribution::eval_pmf),
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_pmf))
         .def("eval_pmf_normalized", vectorize(&DiscreteDistribution::eval_pmf_normalized),
@@ -46,4 +43,44 @@ MTS_PY_EXPORT(DiscreteDistribution) {
             vectorize(&DiscreteDistribution::sample_reuse_pmf),
             "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
         .def_repr(DiscreteDistribution);
+}
+
+MTS_PY_EXPORT(ContinuousDistribution) {
+    MTS_PY_IMPORT_TYPES()
+
+    using ContinuousDistribution = mitsuba::ContinuousDistribution<Float>;
+    using FloatStorage = DynamicBuffer<Float>;
+
+    MTS_PY_STRUCT(ContinuousDistribution, py::module_local())
+        .def(py::init<>(), D(ContinuousDistribution))
+        .def(py::init<const ContinuousDistribution &>(), "Copy constructor")
+        .def(py::init<const ScalarVector2f &, const FloatStorage &>(),
+             "range"_a, "pdf"_a, D(ContinuousDistribution, ContinuousDistribution, 2))
+        .def("__len__", &ContinuousDistribution::size)
+        .def("size", &ContinuousDistribution::size, D(ContinuousDistribution, size))
+        .def("empty", &ContinuousDistribution::empty, D(ContinuousDistribution, empty))
+        .def("range", py::overload_cast<>(&ContinuousDistribution::range),
+             D(ContinuousDistribution, range), py::return_value_policy::reference_internal)
+        .def("pdf", py::overload_cast<>(&ContinuousDistribution::pdf),
+             D(ContinuousDistribution, pdf), py::return_value_policy::reference_internal)
+        .def("cdf", py::overload_cast<>(&ContinuousDistribution::cdf),
+             D(ContinuousDistribution, cdf), py::return_value_policy::reference_internal)
+        .def("eval_pdf", vectorize(&ContinuousDistribution::eval_pdf),
+             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf))
+        .def("eval_pdf_normalized", vectorize(&ContinuousDistribution::eval_pdf_normalized),
+             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf_normalized))
+        .def("eval_cdf", vectorize(&ContinuousDistribution::eval_cdf),
+             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_cdf))
+        .def("eval_cdf_normalized", vectorize(&ContinuousDistribution::eval_cdf_normalized),
+             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_cdf_normalized))
+        .def_method(ContinuousDistribution, update)
+        .def_method(ContinuousDistribution, integral)
+        .def_method(ContinuousDistribution, normalization)
+        .def("sample",
+            vectorize(&ContinuousDistribution::sample),
+            "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
+        .def("sample_pdf",
+            vectorize(&ContinuousDistribution::sample_pdf),
+            "value"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
+        .def_repr(ContinuousDistribution);
 }

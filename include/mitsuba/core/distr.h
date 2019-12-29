@@ -1,7 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/simd.h>
+#include <mitsuba/core/vector.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -47,6 +47,10 @@ public:
     /// Update the internal state. Must be invoked when changing the pmf.
     void update() {
         size_t size = m_pmf.size();
+
+        if (size == 0)
+            Throw("DiscreteDistribution: empty distribution!");
+
         if (m_cdf.size() != size)
             m_cdf = enoki::empty<FloatStorage>(size);
 
@@ -278,10 +282,14 @@ public:
 
     /// Update the internal state. Must be invoked when changing the pdf or range.
     void update() {
+        size_t size = m_pdf.size();
+
+        if (size < 2)
+            Throw("ContinuousDistribution: needs at least two entries!");
+
         if (!(m_range.x() < m_range.y()))
             Throw("ContinuousDistribution: invalid range!");
 
-        size_t size = m_pdf.size();
         if (m_cdf.size() != size - 1)
             m_cdf = enoki::empty<FloatStorage>(size - 1);
 
@@ -295,7 +303,7 @@ public:
         m_valid = (uint32_t) -1;
 
         double range = double(m_range.y()) - double(m_range.x()),
-               interval_size = .5 * range / (size - 1),
+               interval_size = range / (size - 1),
                integral = 0.;
 
         for (size_t i = 0; i < size - 1; ++i) {
@@ -303,6 +311,7 @@ public:
                    y1 = (double) pdf_ptr[1];
 
             double value = 0.5 * interval_size * (y0 + y1);
+            std::cout << "Integral[" << i << "] = " << value << std::endl;
 
             integral += value;
             *cdf_ptr++ = (ScalarFloat) integral;
@@ -379,9 +388,9 @@ public:
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    Float eval_cdf(Float x, Mask active = true) const {
-        active &= x >= m_range.x() && x <= m_range.y();
-        x = (x - m_range.x()) * m_inv_interval_size;
+    Float eval_cdf(Float x_, Mask active = true) const {
+        active &= x_ >= m_range.x();
+        Float x = (x_ - m_range.x()) * m_inv_interval_size;
 
         Index index = clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
@@ -392,7 +401,11 @@ public:
 
         Float t = x - Float(index);
 
-        return c0 + t * (f0 + .5f * t * (f1 - f0)) * m_interval_size;
+        return select(
+            x_ > m_range.y(),
+            Float(m_integral),
+            c0 + t * (f0 + .5f * t * (f1 - f0)) * m_interval_size
+        );
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
@@ -411,7 +424,9 @@ public:
      *     The sampled position.
      */
     Float sample(Float value, Mask active = true) const {
+        std::cout << "Searching for sample pos = " << value << std::endl;
         value *= m_integral;
+        std::cout << " -> sample pos = " << value << std::endl;
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
@@ -420,16 +435,31 @@ public:
             },
             active
         );
+        std::cout << " -> got index = " << index << std::endl;
 
         Float f0 = gather<Float>(m_pdf, index,      active),
               f1 = gather<Float>(m_pdf, index + 1u, active);
 
+        Float c0 = gather<Float>(m_cdf, index- 1u, active && index > 0),
+              c1 = gather<Float>(m_cdf, index, active);
+
+        std::cout << " -> pos0 = " << (index * m_interval_size + m_range.x()) << std::endl;
+        std::cout << " -> pos1 = " << ((index+1) * m_interval_size + m_range.x()) << std::endl;
+        std::cout << " -> pdf0 = " << f0 << std::endl;
+        std::cout << " -> pdf1 = " << f1 << std::endl;
+        std::cout << " -> cdf0 = " << value-c0 << std::endl;
+        std::cout << " -> cdf1 = " << value-c1 << std::endl;
+        std::cout << " -> cdf_diff = " << c1-c0 << std::endl;
+        std::cout << " -> integral = " << (f0+f1)*0.5f * m_interval_size << std::endl;
+
         value -= gather<Float>(m_cdf, index - 1u, active && index > 0);
+        std::cout << " -> adjusted value = " << value << std::endl;
         value *= m_inv_interval_size;
 
         Float t_linear = (f0 - safe_sqrt(sqr(f0) + 2.f * value * (f1 - f0))) / (f0 - f1),
               t_const  = value / f0,
               t        = select(eq(f0, f1), t_const, t_linear);
+        std::cout << "prediction: const=" << t_const << ", linear=" << t_linear << std::endl;
 
         return fmadd(Float(index) + t, m_interval_size, m_range.x());
     }

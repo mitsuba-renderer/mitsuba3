@@ -23,68 +23,6 @@
 #endif
 
 
-static const char *__doc_enoki_PCG32 = R"doc(PCG32 pseudorandom number generator proposed by Melissa O'Neill)doc";
-
-static const char *__doc_enoki_PCG32_PCG32 = R"doc(Initialize the pseudorandom number generator with the seed() function)doc";
-
-static const char *__doc_enoki_PCG32_advance =
-R"doc(Multi-step advance function (jump-ahead, jump-back)
-
-The method used here is based on Brown, "Random Number Generation with
-Arbitrary Stride", Transactions of the American Nuclear Society (Nov.
-1994). The algorithm is very similar to fast exponentiation.)doc";
-
-static const char *__doc_enoki_PCG32_inc = R"doc()doc";
-
-static const char *__doc_enoki_PCG32_next_float32 =
-R"doc(Generate a single precision floating point value on the interval [0,
-1))doc";
-
-static const char *__doc_enoki_PCG32_next_float32_2 = R"doc(Masked version of next_float32)doc";
-
-static const char *__doc_enoki_PCG32_next_float64 =
-R"doc(Generate a double precision floating point value on the interval [0,
-1)
-
-Remark:
-    Since the underlying random number generator produces 32 bit
-    output, only the first 32 mantissa bits will be filled (however,
-    the resolution is still finer than in next_float(), which only
-    uses 23 mantissa bits))doc";
-
-static const char *__doc_enoki_PCG32_next_float64_2 = R"doc(Masked version of next_float64)doc";
-
-static const char *__doc_enoki_PCG32_next_uint32 = R"doc(Generate a uniformly distributed unsigned 32-bit random number)doc";
-
-static const char *__doc_enoki_PCG32_next_uint32_2 = R"doc(Masked version of next_uint32)doc";
-
-static const char *__doc_enoki_PCG32_next_uint32_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
-
-static const char *__doc_enoki_PCG32_next_uint64 = R"doc(Generate a uniformly distributed unsigned 64-bit random number)doc";
-
-static const char *__doc_enoki_PCG32_next_uint64_2 = R"doc(Masked version of next_uint64)doc";
-
-static const char *__doc_enoki_PCG32_next_uint64_bounded = R"doc(Generate a uniformly distributed integer r, where 0 <= r < bound)doc";
-
-static const char *__doc_enoki_PCG32_operator_eq = R"doc(Equality operator)doc";
-
-static const char *__doc_enoki_PCG32_operator_ne = R"doc(Inequality operator)doc";
-
-static const char *__doc_enoki_PCG32_operator_sub = R"doc(Compute the distance between two PCG32 pseudorandom number generators)doc";
-
-static const char *__doc_enoki_PCG32_seed =
-R"doc(Seed the pseudorandom number generator
-
-Specified in two parts: a state initializer and a sequence selection
-constant (a.k.a. stream id))doc";
-
-static const char *__doc_enoki_PCG32_shuffle =
-R"doc(Draw uniformly distributed permutation and permute the given container
-
-From: Knuth, TAoCP Vol. 2 (3rd 3d), Section 3.4.2)doc";
-
-static const char *__doc_enoki_PCG32_state = R"doc()doc";
-
 static const char *__doc_enoki_operator_lshift = R"doc(Prints the canonical representation of a PCG32 object.)doc";
 
 static const char *__doc_mitsuba_AnimatedTransform =
@@ -1725,10 +1663,10 @@ Parameter ``value``:
     A uniformly distributed sample on the interval [0, 1].
 
 Returns:
-    A tuple containing
+    A tuple consisting of
 
-1. the discrete index associated with the sample 2. the normalized
-probability value of the sample 3. the re-scaled sample value)doc";
+1. the discrete index associated with the sample 2. the re-scaled
+sample value 3. the normalized probability value of the sample)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries)doc";
 

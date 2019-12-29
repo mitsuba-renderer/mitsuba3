@@ -196,11 +196,6 @@ else()
     # Quench inlining-related remarks
     add_compile_options("-wd11074" "-wd11076")
   endif()
-  file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf" MTS_CONFIG_FILE)
-  if (NOT "${MTS_CONFIG_FILE}" MATCHES "double")
-    # Be extra noisy about unintended float->double conversions
-    add_compile_options("-Wdouble-promotion")
-  endif()
 endif()
 
 # Language and optimization flags that are used to compile Mitsuba
@@ -460,6 +455,11 @@ execute_process(
 )
 if (ERROR_VARIABLE)
   mesage(FATAL_ERROR "Could not run resources/configure.py script: %{MTS_VARIANTS_ERR}")
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "double")
+  # Be extra noisy about unintended float->double conversions
+  add_compile_options("-Wdouble-promotion")
 endif()
 
 # Register the Mitsuba codebase

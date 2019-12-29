@@ -4,7 +4,7 @@
 MTS_PY_EXPORT(Ray) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
 
-    py::class_<Ray3f>(m, "Ray3f", D(Ray))
+    auto ray = py::class_<Ray3f>(m, "Ray3f", D(Ray))
         .def(py::init<>(), "Create an unitialized ray")
         .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)
         .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
@@ -23,6 +23,9 @@ MTS_PY_EXPORT(Ray) {
         .def_field(Ray3f, time,        D(Ray, time))
         .def_field(Ray3f, wavelengths, D(Ray, wavelengths))
         .def_repr(Ray3f);
+
+    using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
+    bind_slicing_operators<Ray3f, mitsuba::Ray<ScalarPoint3f, ScalarSpectrum>>(ray);
 
     py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
         .def(py::init<const Ray3f &>(), "ray"_a)

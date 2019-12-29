@@ -69,30 +69,38 @@ namespace py = pybind11;
 
 using namespace py::literals;
 
-//extern py::dtype dtype_for_struct(const Struct *s);
+template <typename Class, typename ScalarClass, typename PyClass>
+void bind_slicing_operators(PyClass &cl) {
+    using Float = typename Class::Float;
 
-//template <typename VectorClass, typename ScalarClass, typename ClassBinding>
-//void bind_slicing_operators(ClassBinding &c) {
-    //using Float = typename VectorClass::Float;
-    //if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>) {
-        //c.def(py::init([](size_t n) -> VectorClass {
-            //return zero<VectorClass>(n);
-        //}))
-        //.def("__getitem__", [](VectorClass &r, size_t i) {
-            //if (i >= slices(r))
-                //throw py::index_error();
-            //return ScalarClass(enoki::slice(r, i));
-        //})
-        //.def("__setitem__", [](VectorClass &r, size_t i, const ScalarClass &r2) {
-            //if (i >= slices(r))
-                //throw py::index_error();
-            //enoki::slice(r, i) = r2;
-        //})
-        //.def("__len__", [](const VectorClass &r) {
-            //return slices(r);
-        //});
-    //}
-//}
+    if constexpr (is_dynamic_v<Float>) {
+        cl.def("__getitem__", [](Class &c, size_t i) -> ScalarClass {
+              if (i >= slices(c))
+                  throw py::index_error();
+              return slice(c, i);
+          })
+          .def("__setitem__", [](Class &c, size_t i, const ScalarClass &c2) {
+              if (i >= slices(c))
+                  throw py::index_error();
+              slice(c, i) = c2;
+          })
+          .def("__setitem__", [](Class &c, const mask_t<Float> &mask, const Class &c2) {
+              masked(c, mask) = c2;
+          })
+          .def("__len__", [](const Class &c) {
+              return slices(c);
+          });
+    }
+
+    cl.def_static("zero", [](size_t size) {
+            if constexpr (!is_dynamic_v<Float>) {
+                if (size != 1)
+                    throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
+            }
+            return zero<Class>(size);
+        }, "size"_a = 1
+    );
+}
 
 template <typename Source, typename Target> void pybind11_type_alias() {
     auto &types = pybind11::detail::get_internals().registered_types_cpp;
