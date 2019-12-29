@@ -102,8 +102,6 @@ def write_to_file_if_changed(filename, contents):
 
     with open(filename, 'w') as f:
         f.write(contents)
-    print('Generated configuration header: ' + filename)
-
 
 if __name__ == '__main__':
     root = realpath(dirname(dirname(__file__)))

@@ -448,21 +448,21 @@ MTS_PY_EXPORT(warp) {
             D(warp, Hierarchical2D))
         .def("sample",
             vectorize([](const Hierarchical2D2 *lw, const Vector2f &sample, Float param1,
-                                Float param2, Mask active) {
+                         Float param2, Mask active) {
                 Float params[2] = { param1, param2 };
                 return lw->sample(sample, params, active);
             }),
             "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
         .def("invert",
             vectorize([](const Hierarchical2D2 *lw, const Vector2f &invert, Float param1,
-                                Float param2, Mask active) {
+                         Float param2, Mask active) {
                 Float params[2] = { param1, param2 };
                 return lw->invert(invert, params, active);
             }),
             "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
         .def("eval",
             vectorize([](const Hierarchical2D2 *lw, const Vector2f &pos, Float param1,
-                                Float param2, Mask active) {
+                         Float param2, Mask active) {
                 Float params[2] = { param1, param2 };
                 return lw->eval(pos, params, active);
             }),
@@ -490,7 +490,7 @@ MTS_PY_EXPORT(warp) {
             D(warp, Hierarchical2D))
         .def("invert",
             vectorize([](const Hierarchical2D3 *lw, const Vector2f &invert, Float param1,
-                                Float param2, Float param3, Mask active) {
+                         Float param2, Float param3, Mask active) {
                 Float params[3] = { param1, param2, param3 };
                 return lw->invert(invert, params, active);
             }),
@@ -498,7 +498,7 @@ MTS_PY_EXPORT(warp) {
             D(warp, Hierarchical2D, invert))
         .def("sample",
             vectorize([](const Hierarchical2D3 *lw, const Vector2f &sample, Float param1,
-                                Float param2, Float param3, Mask active) {
+                         Float param2, Float param3, Mask active) {
                 Float params[3] = { param1, param2, param3 };
                 return lw->sample(sample, params, active);
             }),
@@ -506,7 +506,7 @@ MTS_PY_EXPORT(warp) {
             D(warp, Hierarchical2D, sample))
         .def("eval",
             vectorize([](const Hierarchical2D3 *lw, const Vector2f &pos, Float param1,
-                                Float param2, Float param3, Mask active) {
+                         Float param2, Float param3, Mask active) {
                 Float params[3] = { param1, param2, param3 };
                 return lw->eval(pos, params, active);
             }),

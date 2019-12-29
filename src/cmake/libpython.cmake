@@ -1,10 +1,5 @@
 include_directories(
   ${PYBIND11_INCLUDE_DIRS}
-#  ${EIGEN_INCLUDE_DIRS}
-#  ${TINYFORMAT_INCLUDE_DIRS}
-#  ${ASMJIT_INCLUDE_DIRS}
-#  ${ZLIB_INCLUDE_DIR}
-#  ${NANOGUI_INCLUDE_DIRS}
 )
 
 # The mitsuba-python target depends on all the mitsuba_*_ext
@@ -97,13 +92,32 @@ endif()
 set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # Copy enoki python library to 'dist' folder
-add_dist(python/enoki-python)
-if (APPLE)
-  set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "@loader_path/..")
-elseif(UNIX)
-  set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+set(ENOKI_LIBS core scalar dynamic)
+if (MTS_ENABLE_OPTIX)
+  set(ENOKI_LIBS ${ENOKI_LIBS} cuda cuda_autodiff)
 endif()
-set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+
+foreach(SUFFIX IN ITEMS ${ENOKI_LIBS})
+  add_dist(python/enoki/enoki-python-${SUFFIX})
+  if (APPLE)
+    set_target_properties(enoki-python-${SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../..")
+  elseif(UNIX)
+    set_target_properties(enoki-python-${SUFFIX} PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
+  endif()
+  set_target_properties(enoki-python-${SUFFIX} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+endforeach()
+
+add_custom_command(
+  OUTPUT ${CMAKE_BINARY_DIR}/dist/python/enoki/__init__.py
+  COMMAND ${CMAKE_COMMAND} -E copy
+  ${PROJECT_SOURCE_DIR}/ext/enoki/resources/__init__.py
+  ${CMAKE_BINARY_DIR}/dist/python/enoki/__init__.py
+)
+
+add_custom_target(
+  mitsuba-enoki-python-init
+  ALL DEPENDS ${CMAKE_BINARY_DIR}/dist/python/enoki/__init__.py
+)
 
 # docstring generation support
 include("cmake/docstrings.cmake")

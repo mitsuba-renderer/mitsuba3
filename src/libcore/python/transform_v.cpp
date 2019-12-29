@@ -98,6 +98,7 @@ MTS_PY_EXPORT(Transform) {
     py::implicitly_convertible<py::array, Transform4f>();
 }
 
+#if 0
 MTS_PY_EXPORT(AnimatedTransform) {
     MTS_PY_IMPORT_TYPES()
     using Keyframe           = typename AnimatedTransform::Keyframe;
@@ -134,3 +135,4 @@ MTS_PY_EXPORT(AnimatedTransform) {
             "time"_a, "unused"_a = true, D(AnimatedTransform, eval))
         .def_method(AnimatedTransform, translation_bounds);
 }
+#endif

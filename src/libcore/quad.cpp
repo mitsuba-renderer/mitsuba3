@@ -177,11 +177,18 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     return { nodes, weights };
 }
 
-using FloatX = DynamicArray<Packet<float>>;
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre<FloatX>(int n);
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto<FloatX>(int n);
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson<FloatX>(int n);
-template MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson_38<FloatX>(int n);
+using Float32X = DynamicArray<Packet<float>>;
+using Float64X = DynamicArray<Packet<double>>;
+
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_legendre<Float32X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_lobatto<Float32X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson<Float32X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson_38<Float32X>(int n);
+
+template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_legendre<Float64X>(int n);
+template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_lobatto<Float64X>(int n);
+template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson<Float64X>(int n);
+template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson_38<Float64X>(int n);
 
 NAMESPACE_END(quad)
 NAMESPACE_END(mitsuba)

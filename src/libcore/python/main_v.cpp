@@ -14,7 +14,7 @@ MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(Transform);
-MTS_PY_DECLARE(AnimatedTransform);
+//MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(vector);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(xml);
@@ -22,63 +22,73 @@ MTS_PY_DECLARE(xml);
 #define MODULE_NAME MTS_MODULE_NAME(core, MTS_VARIANT_NAME)
 
 PYBIND11_MODULE(MODULE_NAME, m) {
+    MTS_PY_IMPORT_TYPES_DYNAMIC()
+
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.core";
 
-    py::module enoki = py::module::import("enoki");
-
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
-
-    if constexpr (is_double_v<Float>)
-        m.attr("float_dtype") = py::dtype("d");
-    else
-        m.attr("float_dtype") = py::dtype("f");
-
-    // Create aliases of Enoki types in the Mitsuba namespace
-    std::string suffix = "";
+    // Import the right variant of Enoki
+    const char *enoki_pkg = nullptr;
     if constexpr (is_cuda_array_v<Float> &&
                   is_diff_array_v<Float>)
-        suffix = "D";
+        enoki_pkg = "enoki.cuda_autodiff";
     else if constexpr (is_cuda_array_v<Float>)
-        suffix = "C";
+        enoki_pkg = "enoki.cuda";
     else if constexpr (is_array_v<Float>)
-        suffix = "X";
+        enoki_pkg = "enoki.dynamic";
+    else
+        enoki_pkg = "enoki.scalar";
+
+    py::module enoki        = py::module::import(enoki_pkg);
+    py::module enoki_scalar = py::module::import("enoki.scalar");
 
     // Basic type aliases in the Enoki module (scalar + vectorized)
-    m.attr("ScalarFloat")  = enoki.attr("Float");
-    m.attr("ScalarMask")   = enoki.attr("Mask");
-    m.attr("ScalarInt32")  = enoki.attr("Int32");
-    m.attr("ScalarInt64")  = enoki.attr("Int64");
-    m.attr("ScalarUInt32") = enoki.attr("UInt32");
-    m.attr("ScalarUInt64") = enoki.attr("UInt64");
+    m.attr("Float32") = enoki.attr("Float32");
+    m.attr("Float64") = enoki.attr("Float64");
+    m.attr("Mask")    = enoki.attr("Mask");
+    m.attr("Int32")   = enoki.attr("Int32");
+    m.attr("Int64")   = enoki.attr("Int64");
+    m.attr("UInt32")  = enoki.attr("UInt32");
+    m.attr("UInt64")  = enoki.attr("UInt64");
 
-    m.attr("Float")  = enoki.attr(("Float" + suffix).c_str());
-    m.attr("Mask")   = enoki.attr(("Mask" + suffix).c_str());
-    m.attr("Int32")  = enoki.attr(("Int32" + suffix).c_str());
-    m.attr("Int64")  = enoki.attr(("Int64" + suffix).c_str());
-    m.attr("UInt32") = enoki.attr(("UInt32" + suffix).c_str());
-    m.attr("UInt64") = enoki.attr(("UInt64" + suffix).c_str());
+    m.attr("ScalarFloat32") = enoki_scalar.attr("Float32");
+    m.attr("ScalarFloat64") = enoki_scalar.attr("Float64");
+    m.attr("ScalarMask")    = enoki_scalar.attr("Mask");
+    m.attr("ScalarInt32")   = enoki_scalar.attr("Int32");
+    m.attr("ScalarInt64")   = enoki_scalar.attr("Int64");
+    m.attr("ScalarUInt32")  = enoki_scalar.attr("UInt32");
+    m.attr("ScalarUInt64")  = enoki_scalar.attr("UInt64");
 
-    // Vector type aliases
-    for (int dim = 2; dim < 4; ++dim) {
-        for (int i = 0; i < 3; ++i) {
-            std::string v_name = "Vector" + std::to_string(dim) + "fiu"[i],
-                        p_name = "Point" + std::to_string(dim) + "fiu"[i];
-            py::handle h = enoki.attr((v_name + suffix).c_str());
-            m.attr(v_name.c_str()) = h;
-            m.attr(p_name.c_str()) = h;
-
-            h = enoki.attr(v_name.c_str());
-            m.attr(("Scalar" + v_name).c_str()) = h;
-            m.attr(("Scalar" + p_name).c_str()) = h;
-        }
+    if constexpr (std::is_same_v<float, ScalarFloat>) {
+        m.attr("Float") = enoki.attr("Float32");
+        m.attr("ScalarFloat") = enoki_scalar.attr("Float32");
+    } else {
+        m.attr("Float") = enoki.attr("Float64");
+        m.attr("ScalarFloat") = enoki_scalar.attr("Float64");
     }
 
-    m.attr("Vector1f")       = enoki.attr(("Vector1f" + suffix).c_str());
-    m.attr("ScalarVector1f") = enoki.attr("Vector1f");
+    // Vector type aliases
+    for (int dim = 0; dim < 4; ++dim) {
+        for (int i = 0; i < 3; ++i) {
+            std::string name, mts_v_name, mts_p_name;
 
-    m.attr("Point1f")        = m.attr("Vector1f");
-    m.attr("ScalarPoint1f")  = m.attr("ScalarVector1f");
+            if constexpr (std::is_same_v<float, ScalarFloat>)
+                name = "Vector" + std::to_string(dim) + "fiu"[i];
+            else
+                name = "Vector" + std::to_string(dim) + "diu"[i];
+
+            mts_v_name = "Vector" + std::to_string(dim) + "fiu"[i];
+            mts_p_name = "Point" + std::to_string(dim) + "fiu"[i];
+
+            py::handle h = enoki.attr(name.c_str());
+            m.attr(mts_v_name.c_str()) = h;
+            m.attr(mts_p_name.c_str()) = h;
+
+            h = enoki_scalar.attr(name.c_str());
+            m.attr(("Scalar" + mts_v_name).c_str()) = h;
+            m.attr(("Scalar" + mts_p_name).c_str()) = h;
+        }
+    }
 
     m.attr("Normal3f")       = m.attr("Vector3f");
     m.attr("ScalarNormal3f") = m.attr("ScalarVector3f");
@@ -90,9 +100,9 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("ScalarColor1f")  = m.attr("ScalarVector1f");
 
     if constexpr (is_cuda_array_v<Float> && is_diff_array_v<Float>)
-        m.attr("PCG32") = enoki.attr("PCG32C");
+        m.attr("PCG32") = py::module::import("enoki.cuda").attr("PCG32");
     else
-        m.attr("PCG32") = enoki.attr(("PCG32" + suffix).c_str());
+        m.attr("PCG32") = enoki.attr("PCG32");
 
     /* After importing the 'enoki' module, pybind11 is aware
        of various Enoki array types (e.g. Array<Float, 3>), etc.
@@ -179,6 +189,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
     m.attr("Spectrum") = get_type_handle<Spectrum>();
 
+    if constexpr (is_double_v<ScalarFloat>)
+        m.attr("float_dtype") = py::dtype("d");
+    else
+        m.attr("float_dtype") = py::dtype("f");
+
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(BoundingBox);
     MTS_PY_IMPORT(BoundingSphere);
@@ -192,7 +207,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(spline);
     MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(Transform);
-    MTS_PY_IMPORT(AnimatedTransform);
+    //MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(xml);

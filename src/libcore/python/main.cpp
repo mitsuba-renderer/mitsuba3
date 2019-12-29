@@ -50,15 +50,15 @@ PYBIND11_MODULE(core_ext, m) {
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-    m.attr("ENABLE_OPTIX") = true;
+    m.attr("MTS_ENABLE_OPTIX") = true;
 #else
-    m.attr("ENABLE_OPTIX") = false;
+    m.attr("MTS_ENABLE_OPTIX") = false;
 #endif
 
 #if defined(MTS_ENABLE_EMBREE)
-    m.attr("ENABLE_EMBREE") = true;
+    m.attr("MTS_ENABLE_EMBREE") = true;
 #else
-    m.attr("ENABLE_EMBREE") = false;
+    m.attr("MTS_ENABLE_EMBREE") = false;
 #endif
 
     Jit::static_initialization();
