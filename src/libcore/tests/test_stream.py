@@ -1,9 +1,12 @@
 import numpy as np
 import os
+import enoki as ek
 import pytest
+import mitsuba
 
-from mitsuba.scalar_rgb.core import Stream, DummyStream, FileStream, \
-                         MemoryStream, ZStream
+mitsuba.set_variant('scalar_rgb')
+
+from mitsuba.core import Stream, DummyStream, FileStream, MemoryStream, ZStream
 from mitsuba.test.util import tmpfile, make_tmpfile
 
 parameters = [

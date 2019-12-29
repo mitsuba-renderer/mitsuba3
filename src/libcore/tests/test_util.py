@@ -1,8 +1,15 @@
-from mitsuba.scalar_rgb.core.util import time_string, mem_string
 import sys
+import pytest
+import mitsuba
+
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
 
-def test01_time_string():
+def test01_time_string(variant):
+    from mitsuba.core.util import time_string
+
     assert time_string(1, precise=True) == '1ms'
     assert time_string(2010, precise=True) == '2.01s'
     assert time_string(2 * 1000 * 60, precise=True) == '2m'
@@ -13,7 +20,9 @@ def test01_time_string():
                       precise=True) == '2y'
 
 
-def test01_mem_string():
+def test01_mem_string(variant):
+    from mitsuba.core.util import mem_string
+
     assert mem_string(2, precise=True) == '2 B'
     assert mem_string(2 * 1024, precise=True) == '2 KiB'
     assert mem_string(2 * 1024 ** 2, precise=True) == '2 MiB'

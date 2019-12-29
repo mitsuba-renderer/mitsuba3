@@ -1,27 +1,39 @@
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import Scene
-from mitsuba.scalar_rgb.core import Thread, LogLevel
+import enoki as ek
 import pytest
+import mitsuba
+
+@pytest.fixture
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
 
-def test01_invalid_xml():
+def test01_invalid_xml(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception):
         load_string('<?xml version="1.0"?>')
 
 
-def test02_invalid_root_node():
+def test02_invalid_root_node(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception):
         load_string('<?xml version="1.0"?><invalid></invalid>')
 
 
-def test03_invalid_root_node():
+def test03_invalid_root_node(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string('<?xml version="1.0"?><integer name="a" '
                    'value="10"></integer>')
     e.match('root element "integer" must be an object')
 
 
-def test04_valid_root_node():
+def test04_valid_root_node(variant):
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import Scene
+
     obj1 = load_string('<?xml version="1.0"?>\n<scene version="2.0.0">'
                       '</scene>')
     obj2 = load_string('<scene version="2.0.0"></scene>')
@@ -29,7 +41,9 @@ def test04_valid_root_node():
     assert type(obj2) is Scene
 
 
-def test05_duplicate_id():
+def test05_duplicate_id(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""
         <scene version="2.0.0">
@@ -42,7 +56,9 @@ def test05_duplicate_id():
         ' col 14\\)')
 
 
-def test06_reserved_id():
+def test06_reserved_id(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string('<scene version="2.0.0">' +
                    '<shape type="ply" id="_test"/></scene>')
@@ -50,7 +66,9 @@ def test06_reserved_id():
         'are reserved for internal identifiers.')
 
 
-def test06_reserved_name():
+def test06_reserved_name(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string('<scene version="2.0.0">' +
                    '<shape type="ply">' +
@@ -59,7 +77,9 @@ def test06_reserved_name():
         'leading underscores are reserved for internal identifiers.')
 
 
-def test06_incorrect_nesting():
+def test06_incorrect_nesting(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply">
@@ -69,7 +89,9 @@ def test06_incorrect_nesting():
     e.match('node "shape" cannot occur as child of a property')
 
 
-def test07_incorrect_nesting():
+def test07_incorrect_nesting(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply">
@@ -79,7 +101,9 @@ def test07_incorrect_nesting():
     e.match('node "float" cannot occur as child of a property')
 
 
-def test08_incorrect_nesting():
+def test08_incorrect_nesting(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply">
@@ -88,7 +112,9 @@ def test08_incorrect_nesting():
     e.match('transform operations can only occur in a transform node')
 
 
-def test09_incorrect_nesting():
+def test09_incorrect_nesting(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply">
@@ -99,7 +125,9 @@ def test09_incorrect_nesting():
     e.match('transform nodes can only contain transform operations')
 
 
-def test10_unknown_id():
+def test10_unknown_id(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <ref id="unknown"/>
@@ -107,7 +135,9 @@ def test10_unknown_id():
     e.match('reference to unknown object "unknown"')
 
 
-def test11_unknown_attribute():
+def test11_unknown_attribute(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply" param2="abc">
@@ -115,14 +145,19 @@ def test11_unknown_attribute():
     e.match('unexpected attribute "param2" in element "shape".')
 
 
-def test12_missing_attribute():
+def test12_missing_attribute(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <integer name="a"/></scene>""")
     e.match('missing attribute "value" in element "integer".')
 
 
-def test13_duplicate_parameter():
+def test13_duplicate_parameter(variant):
+    from mitsuba.core.xml import load_string
+    from mitsuba.core import Thread, LogLevel
+
     logger = Thread.thread().logger()
     l = logger.error_level()
     try:
@@ -137,7 +172,9 @@ def test13_duplicate_parameter():
     e.match('Property "a" was specified multiple times')
 
 
-def test14_missing_parameter():
+def test14_missing_parameter(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply"/>
@@ -145,7 +182,9 @@ def test14_missing_parameter():
     e.match('Property "filename" has not been specified')
 
 
-def test15_incorrect_parameter_type():
+def test15_incorrect_parameter_type(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <shape type="ply">
@@ -155,7 +194,9 @@ def test15_incorrect_parameter_type():
             ' \\(expected <string>\\).')
 
 
-def test16_invalid_integer():
+def test16_invalid_integer(variant):
+    from mitsuba.core.xml import load_string
+
     def test_input(value, valid):
         expected = (r'.*unreferenced property ."test_number".*' if valid
                     else r'could not parse integer value "{}".'.format(value))
@@ -176,7 +217,9 @@ def test16_invalid_integer():
     test_input("  50    ", True)
 
 
-def test17_invalid_float():
+def test17_invalid_float(variant):
+    from mitsuba.core.xml import load_string
+
     def test_input(value, valid):
         expected = (r'.*unreferenced property ."test_number".*' if valid
                     else r'could not parse floating point value "{}".'.format(value))
@@ -198,7 +241,9 @@ def test17_invalid_float():
     test_input("1e+12", True)
 
 
-def test18_invalid_boolean():
+def test18_invalid_boolean(variant):
+    from mitsuba.core.xml import load_string
+
     with pytest.raises(Exception) as e:
         load_string("""<scene version="2.0.0">
                    <boolean name="10" value="a"/>
@@ -207,7 +252,9 @@ def test18_invalid_boolean():
             ' -- must be "true" or "false".')
 
 
-def test19_invalid_vector():
+def test19_invalid_vector(variant):
+    from mitsuba.core.xml import load_string
+
     err_str = 'could not parse floating point value "a"'
     err_str2 = '"value" attribute must have exactly 1 or 3 elements'
     err_str3 = 'can\'t mix and match "value" and "x"/"y"/"z" attributes'
