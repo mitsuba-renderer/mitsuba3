@@ -60,33 +60,33 @@ MTS_PY_EXPORT(Emitter) {
         pybind11_type_alias<UInt64, EmitterPtr>();
 
     if constexpr (is_array_v<Float>) {
-        emitter.def_static(
-            "sample_ray_vec",
-            vectorize([](const EmitterPtr &ptr, Float time, Float sample1,
-                                const Point2f &sample2, const Point2f &sample3, Mask active) {
-                return ptr->sample_ray(time, sample1, sample2, sample3, active);
-            }),
-            "ptr"_a, "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
-            D(Endpoint, sample_ray));
+        emitter.def_static("sample_ray_vec",
+                            vectorize([](const EmitterPtr &ptr, Float time, Float sample1,
+                                         const Point2f &sample2, const Point2f &sample3,
+                                         Mask active) {
+                                 return ptr->sample_ray(time, sample1, sample2, sample3, active);
+                            }),
+                            "ptr"_a, "time"_a, "sample1"_a, "sample2"_a, "sample3"_a,
+                            "active"_a = true,
+                            D(Endpoint, sample_ray));
         emitter.def_static("sample_direction_vec",
                             vectorize([](const EmitterPtr &ptr, const Interaction3f &it,
-                                                const Point2f &sample, Mask active) {
+                                         const Point2f &sample, Mask active) {
                                 return ptr->sample_direction(it, sample, active);
                             }),
                             "ptr"_a, "it"_a, "sample"_a, "active"_a = true,
                             D(Endpoint, sample_direction));
         emitter.def_static("pdf_direction_vec",
                             vectorize([](const EmitterPtr &ptr, const Interaction3f &it,
-                                                const DirectionSample3f &ds, Mask active) {
+                                         const DirectionSample3f &ds, Mask active) {
                                 return ptr->pdf_direction(it, ds, active);
                             }),
                             "ptr"_a, "it"_a, "ds"_a, "active"_a = true,
                             D(Endpoint, pdf_direction));
-        emitter.def_static(
-            "eval_vec",
-            vectorize([](const EmitterPtr &ptr, const SurfaceInteraction3f &si,
-                                Mask active) { return ptr->eval(si, active); }),
-            "ptr"_a, "si"_a, "active"_a = true, D(Endpoint, eval));
+        emitter.def_static("eval_vec",
+                           vectorize([](const EmitterPtr &ptr, const SurfaceInteraction3f &si,
+                                        Mask active) { return ptr->eval(si, active); }),
+                           "ptr"_a, "si"_a, "active"_a = true, D(Endpoint, eval));
     }
 
     MTS_PY_REGISTER_OBJECT("register_emitter", Emitter)

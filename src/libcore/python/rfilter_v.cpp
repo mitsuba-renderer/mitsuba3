@@ -2,8 +2,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(rfilter) {
-    MTS_PY_IMPORT_TYPES()
-    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Spectrum>;
+    MTS_PY_IMPORT_TYPES(ReconstructionFilter)
 
     MTS_PY_CLASS(ReconstructionFilter, Object)
         .def_method(ReconstructionFilter, border_size)

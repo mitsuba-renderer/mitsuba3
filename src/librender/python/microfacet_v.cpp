@@ -5,10 +5,6 @@
 MTS_PY_EXPORT(MicrofacetDistribution) {
     MTS_PY_IMPORT_TYPES(MicrofacetDistribution)
 
-    py::enum_<MicrofacetType>(m, "MicrofacetType", D(MicrofacetType), py::arithmetic())
-        .value("Beckmann", MicrofacetType::Beckmann, D(MicrofacetType, Beckmann))
-        .value("GGX",      MicrofacetType::GGX, D(MicrofacetType, GGX));
-
     py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         // TODO is this needed?
         .def(py::init([](MicrofacetType t, ScalarFloat alpha, bool sv) {
@@ -46,7 +42,7 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
 
     m.def("eval_reflectance",
         [](MicrofacetType type, float alpha_u, float alpha_v,
-           const Vector<DynamicArray<Packet<float>>, 3> & wi_,
+           const Vector<DynamicArray<Packet<float>>, 3> &wi_,
            float eta) {
             mitsuba::MicrofacetDistribution<Packet<float>, Spectrum> d(type, alpha_u, alpha_v);
             return eval_reflectance(d, wi_, eta);

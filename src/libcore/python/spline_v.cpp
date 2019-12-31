@@ -17,7 +17,7 @@ MTS_PY_EXPORT(spline) {
             "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_i))
         .def("eval_1d",
             vectorize([](ScalarFloat min, ScalarFloat max,
-                                const py::array_t<ScalarFloat> &values, Float x) {
+                         const py::array_t<ScalarFloat> &values, Float x) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
                 return spline::eval_1d(min, max, values.data(), (uint32_t) values.shape(0), x);
@@ -25,7 +25,7 @@ MTS_PY_EXPORT(spline) {
             "min"_a, "max"_a, "values"_a, "x"_a, D(spline, eval_1d))
         .def("eval_1d",
             vectorize([](const py::array_t<ScalarFloat> &nodes,
-                                const py::array_t<ScalarFloat> &values, Float x) {
+                         const py::array_t<ScalarFloat> &values, Float x) {
                 if (nodes.ndim() != 1 || values.ndim() != 1)
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
                 if (nodes.shape(0) != values.shape(0))
@@ -37,9 +37,10 @@ MTS_PY_EXPORT(spline) {
             [](ScalarFloat min, ScalarFloat max, const py::array_t<ScalarFloat> &values) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
-                py::array_t<ScalarFloat> result(values.size());
+                DynamicArray<Packet<ScalarFloat>> result;
+                set_slices(result, values.size());
                 spline::integrate_1d(min, max, values.data(),
-                                    (uint32_t) values.size(), result.mutable_data());
+                                    (uint32_t) values.size(), result.data());
                 return result;
             },
             "min"_a, "max"_a, "values"_a, D(spline, integrate_1d))
@@ -49,15 +50,16 @@ MTS_PY_EXPORT(spline) {
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
                 if (nodes.shape(0) != values.shape(0))
                     throw std::runtime_error("'nodes' and 'values' must have a matching size!");
-                py::array_t<ScalarFloat> result(values.size());
+                DynamicArray<Packet<ScalarFloat>> result;
+                set_slices(result, values.size());
                 spline::integrate_1d(nodes.data(), values.data(),
-                                    (uint32_t) values.size(), result.mutable_data());
+                                    (uint32_t) values.size(), result.data());
                 return result;
             },
             "nodes"_a, "values"_a, D(spline, integrate_1d, 2))
         .def("invert_1d",
             vectorize([](ScalarFloat min, ScalarFloat max,
-                                const py::array_t<ScalarFloat> &values, Float y, ScalarFloat eps) {
+                         const py::array_t<ScalarFloat> &values, Float y, ScalarFloat eps) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
                 return spline::invert_1d(min, max, values.data(), (uint32_t) values.shape(0), y, eps);
@@ -65,7 +67,7 @@ MTS_PY_EXPORT(spline) {
             "min"_a, "max_"_a, "values"_a, "y"_a, "eps"_a = 1e-6f, D(spline, invert_1d))
         .def("invert_1d",
             vectorize([](const py::array_t<ScalarFloat> &nodes,
-                                const py::array_t<ScalarFloat> &values, Float y, ScalarFloat eps) {
+                         const py::array_t<ScalarFloat> &values, Float y, ScalarFloat eps) {
                 if (nodes.ndim() != 1 || values.ndim() != 1)
                     throw std::runtime_error("'nodes' and 'values' must be a one-dimensional array!");
                 if (nodes.shape(0) != values.shape(0))
@@ -76,8 +78,8 @@ MTS_PY_EXPORT(spline) {
             "nodes"_a, "values"_a, "y"_a, "eps"_a = 1e-6f, D(spline, invert_1d, 2))
         .def("sample_1d",
             vectorize([](ScalarFloat min, ScalarFloat max,
-                                const py::array_t<ScalarFloat> &values,
-                                const py::array_t<ScalarFloat> &cdf, Float sample, ScalarFloat eps) {
+                         const py::array_t<ScalarFloat> &values,
+                         const py::array_t<ScalarFloat> &cdf, Float sample, ScalarFloat eps) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
                 if (cdf.ndim() != 1)
@@ -90,8 +92,8 @@ MTS_PY_EXPORT(spline) {
             "min"_a, "max"_a, "values"_a, "cdf"_a, "sample"_a, "eps"_a = 1e-6f, D(spline, sample_1d))
         .def("sample_1d",
             vectorize([](const py::array_t<ScalarFloat> &nodes,
-                                const py::array_t<ScalarFloat> &values,
-                                const py::array_t<ScalarFloat> &cdf, Float sample, ScalarFloat eps) {
+                         const py::array_t<ScalarFloat> &values,
+                         const py::array_t<ScalarFloat> &cdf, Float sample, ScalarFloat eps) {
                 if (values.ndim() != 1)
                     throw std::runtime_error("'values' must be a one-dimensional array!");
                 if (cdf.ndim() != 1)
@@ -120,8 +122,8 @@ MTS_PY_EXPORT(spline) {
             "nodes"_a, "x"_a, D(spline, eval_spline_weights, 2))
         .def("eval_2d",
             vectorize([](const py::array_t<ScalarFloat> &nodes1,
-                                const py::array_t<ScalarFloat> &nodes2,
-                                const py::array_t<ScalarFloat> &values, Float x, Float y) {
+                         const py::array_t<ScalarFloat> &nodes2,
+                         const py::array_t<ScalarFloat> &values, Float x, Float y) {
                 return spline::eval_2d(nodes1.data(), (uint32_t) nodes1.shape(0),
                                     nodes2.data(), (uint32_t) nodes2.shape(0),
                                     values.data(), x, y);

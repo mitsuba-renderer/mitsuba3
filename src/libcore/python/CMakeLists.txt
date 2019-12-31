@@ -26,7 +26,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     rfilter_v.cpp
     spectrum_v.cpp
     spline_v.cpp
-    #transform_v.cpp
+    transform_v.cpp
     vector_v.cpp
     warp_v.cpp
     xml_v.cpp
