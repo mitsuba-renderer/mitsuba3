@@ -311,7 +311,6 @@ public:
                    y1 = (double) pdf_ptr[1];
 
             double value = 0.5 * interval_size * (y0 + y1);
-            std::cout << "Integral[" << i << "] = " << value << std::endl;
 
             integral += value;
             *cdf_ptr++ = (ScalarFloat) integral;
@@ -424,9 +423,7 @@ public:
      *     The sampled position.
      */
     Float sample(Float value, Mask active = true) const {
-        std::cout << "Searching for sample pos = " << value << std::endl;
         value *= m_integral;
-        std::cout << " -> sample pos = " << value << std::endl;
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
@@ -435,31 +432,16 @@ public:
             },
             active
         );
-        std::cout << " -> got index = " << index << std::endl;
 
         Float f0 = gather<Float>(m_pdf, index,      active),
-              f1 = gather<Float>(m_pdf, index + 1u, active);
+              f1 = gather<Float>(m_pdf, index + 1u, active),
+              c0 = gather<Float>(m_cdf, index- 1u, active && index > 0);
 
-        Float c0 = gather<Float>(m_cdf, index- 1u, active && index > 0),
-              c1 = gather<Float>(m_cdf, index, active);
-
-        std::cout << " -> pos0 = " << (index * m_interval_size + m_range.x()) << std::endl;
-        std::cout << " -> pos1 = " << ((index+1) * m_interval_size + m_range.x()) << std::endl;
-        std::cout << " -> pdf0 = " << f0 << std::endl;
-        std::cout << " -> pdf1 = " << f1 << std::endl;
-        std::cout << " -> cdf0 = " << value-c0 << std::endl;
-        std::cout << " -> cdf1 = " << value-c1 << std::endl;
-        std::cout << " -> cdf_diff = " << c1-c0 << std::endl;
-        std::cout << " -> integral = " << (f0+f1)*0.5f * m_interval_size << std::endl;
-
-        value -= gather<Float>(m_cdf, index - 1u, active && index > 0);
-        std::cout << " -> adjusted value = " << value << std::endl;
-        value *= m_inv_interval_size;
+        value = (value - c0) * m_inv_interval_size;
 
         Float t_linear = (f0 - safe_sqrt(sqr(f0) + 2.f * value * (f1 - f0))) / (f0 - f1),
               t_const  = value / f0,
               t        = select(eq(f0, f1), t_const, t_linear);
-        std::cout << "prediction: const=" << t_const << ", linear=" << t_linear << std::endl;
 
         return fmadd(Float(index) + t, m_interval_size, m_range.x());
     }
@@ -489,10 +471,10 @@ public:
         );
 
         Float f0 = gather<Float>(m_pdf, index,      active),
-              f1 = gather<Float>(m_pdf, index + 1u, active);
+              f1 = gather<Float>(m_pdf, index + 1u, active),
+              c0 = gather<Float>(m_cdf, index- 1u, active && index > 0);
 
-        value -= gather<Float>(m_cdf, index - 1u, active && index > 0);
-        value *= m_inv_interval_size;
+        value = (value - c0) * m_inv_interval_size;
 
         Float t_linear = (f0 - safe_sqrt(sqr(f0) + 2.f * value * (f1 - f0))) / (f0 - f1),
               t_const  = value / f0,

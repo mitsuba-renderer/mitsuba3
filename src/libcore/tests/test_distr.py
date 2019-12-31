@@ -2,9 +2,6 @@ import mitsuba
 import pytest
 import enoki as ek
 
-def approx(v, eps=1e-6):
-    return pytest.approx(v, abs=eps)
-
 @pytest.fixture()
 def variant():
     try:
@@ -26,14 +23,14 @@ def test02_discr_zero_prob(variant):
     from mitsuba.core import DiscreteDistribution
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = DiscreteDistribution([0, 0, 0])
+        DiscreteDistribution([0, 0, 0])
     assert "no probability mass found" in str(excinfo.value)
 
 def test03_discr_neg_prob(variant):
     from mitsuba.core import DiscreteDistribution
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = DiscreteDistribution([1, -1, 1])
+        DiscreteDistribution([1, -1, 1])
     assert "entries must be non-negative" in str(excinfo.value)
 
 def test04_discr_basic(variant):
@@ -43,13 +40,13 @@ def test04_discr_basic(variant):
     assert len(x) == 3
 
     assert x.sum() == 6
-    assert x.normalization() == approx(1.0 / 6.0)
+    assert ek.allclose(x.normalization(), 1.0 / 6.0)
     assert x.pmf() == [1, 3, 2]
     assert x.cdf() == [1, 4, 6]
     assert x.eval_pmf([1, 2, 0]) == [3, 2, 1]
 
-    assert x.eval_pmf_normalized([1, 2, 0]) == approx(Float([3, 2, 1]) / 6.0)
-    assert x.eval_cdf_normalized([1, 2, 0]) == approx(Float([4, 6, 1]) / 6.0)
+    assert ek.allclose(x.eval_pmf_normalized([1, 2, 0]), Float([3, 2, 1]) / 6.0)
+    assert ek.allclose(x.eval_cdf_normalized([1, 2, 0]), Float([4, 6, 1]) / 6.0)
 
     assert repr(x) == 'DiscreteDistribution[size=3, sum=6, pmf=[1, 3, 2]]'
 
@@ -57,7 +54,7 @@ def test04_discr_basic(variant):
     x.update()
     assert x.cdf() == [1, 2, 3]
     assert x.sum() == 3
-    assert x.normalization() == approx(1.0 / 3.0)
+    assert ek.allclose(x.normalization(), 1.0 / 3.0)
 
 def test05_discr_sample(variant):
     from mitsuba.core import DiscreteDistribution, Float
@@ -68,30 +65,31 @@ def test05_discr_sample(variant):
     assert x.sample([1/6.0 - eps, 1/6.0 + eps]) == [0, 1]
     assert x.sample([4/6.0 - eps, 4/6.0 + eps]) == [1, 2]
 
-    assert x.sample_pmf([-1, 0, 1, 2]) == (
-            [0, 0, 2, 2],
-            approx(Float([1, 1, 2, 2]) / 6)
+    assert ek.allclose(
+        x.sample_pmf([-1, 0, 1, 2]),
+        ([0, 0, 2, 2], Float([1, 1, 2, 2]) / 6)
     )
 
-    assert x.sample_pmf([1/6.0 - eps, 1/6.0 + eps]) == (
-            [0, 1],
-            approx(Float([1, 3]) / 6)
+    assert ek.allclose(
+        x.sample_pmf([1/6.0 - eps, 1/6.0 + eps]),
+        ([0, 1], Float([1, 3]) / 6)
     )
 
-    assert x.sample_pmf([4/6.0 - eps, 4/6.0 + eps]) == (
-            [1, 2],
-            approx(Float([3, 2]) / 6)
+    assert ek.allclose(
+        x.sample_pmf([4/6.0 - eps, 4/6.0 + eps]),
+        ([1, 2], Float([3, 2]) / 6)
     )
 
-    assert x.sample_reuse([0, 1/12.0, 1/6.0 - eps, 1/6.0 + eps]) == (
-            [0, 0, 0, 1],
-            approx(Float([0, .5, 1, 0]))
+    assert ek.allclose(
+        x.sample_reuse([0, 1/12.0, 1/6.0 - eps, 1/6.0 + eps]),
+        ([0, 0, 0, 1], Float([0, .5, 1, 0])),
+        atol=3*eps
     )
 
-    assert x.sample_reuse_pmf([0, 1/12.0, 1/6.0 - eps, 1/6.0 + eps]) == (
-            [0, 0, 0, 1],
-            approx(Float([0, .5, 1, 0])),
-            approx(Float([1, 1, 1, 3]) / 6),
+    assert ek.allclose(
+        x.sample_reuse_pmf([0, 1/12.0, 1/6.0 - eps, 1/6.0 + eps]),
+        ([0, 0, 0, 1], Float([0, .5, 1, 0]), Float([1, 1, 1, 3]) / 6),
+        atol=3*eps
     )
 
 def test06_discr_bruteforce(variant):
@@ -132,33 +130,33 @@ def test08_cont_empty(variant):
     assert 'needs at least two entries' in str(excinfo.value)
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = ContinuousDistribution([1, 2], [1])
+        ContinuousDistribution([1, 2], [1])
     assert 'needs at least two entries' in str(excinfo.value)
 
 def test09_cont_empty_invalid_range(variant):
     from mitsuba.core import ContinuousDistribution
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = ContinuousDistribution([1, 1], [1, 1])
+        ContinuousDistribution([1, 1], [1, 1])
     assert 'invalid range' in str(excinfo.value)
 
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = ContinuousDistribution([2, 1], [1, 1])
+        ContinuousDistribution([2, 1], [1, 1])
     assert 'invalid range' in str(excinfo.value)
 
 def test10_cont_zero_prob(variant):
     from mitsuba.core import ContinuousDistribution
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = ContinuousDistribution([1, 2], [0, 0, 0])
+        ContinuousDistribution([1, 2], [0, 0, 0])
     assert "no probability mass found" in str(excinfo.value)
 
 def test11_cont_neg_prob(variant):
     from mitsuba.core import ContinuousDistribution
 
     with pytest.raises(RuntimeError) as excinfo:
-        d = ContinuousDistribution([1, 2], [1, -1, 1])
+        ContinuousDistribution([1, 2], [1, -1, 1])
     assert "entries must be non-negative" in str(excinfo.value)
 
 def test12_cont_eval(variant):
@@ -166,33 +164,33 @@ def test12_cont_eval(variant):
     d = ContinuousDistribution([2, 3], [1, 2])
     eps = 1e-6
 
-    assert d.integral() == approx(3.0/2.0)
-    assert d.normalization() == approx(2.0/3.0)
-    assert d.eval_pdf_normalized([1, 2-eps, 2, 2.5, 3, 3+eps, 4]) == \
-        approx([0, 0, 2.0/3.0, 3.0/3.0, 4.0/3.0, 0, 0])
-    assert d.eval_cdf_normalized([1, 2, 2.5, 3, 4]) == approx([0, 0, 5.0/12.0, 1, 1])
+    assert ek.allclose(d.integral(), 3.0/2.0)
+    assert ek.allclose(d.normalization(), 2.0/3.0)
+    assert ek.allclose(
+        d.eval_pdf_normalized([1, 2-eps, 2, 2.5, 3, 3+eps, 4]),
+        [0, 0, 2.0/3.0, 3.0/3.0, 4.0/3.0, 0, 0]
+    )
+    assert ek.allclose(
+        d.eval_cdf_normalized([1, 2, 2.5, 3, 4]),
+        [0, 0, 5.0/12.0, 1, 1]
+    )
 
     assert d.sample([0, 1]) == [2, 3]
     x, pdf = d.sample_pdf([0, 0.5, 1])
-    dx =  (ek.sqrt(10) - 2) / 2
+    dx = (ek.sqrt(10) - 2) / 2
     assert x == [2, 2+dx, 3]
-    assert pdf == approx([2.0/3.0, (4*dx + 2*(1-dx)) / 3.0, 4.0/3.0])
+    assert ek.allclose(
+        pdf,
+        [2.0/3.0, (4*dx + 2*(1-dx)) / 3.0, 4.0/3.0]
+    )
 
 def test13_cont_func(variant):
     from mitsuba.core import ContinuousDistribution, Float
 
-    import numpy as np
-    x = np.linspace(-2, 2, 15110)
-    y = np.sin(x)
-    y = y*y
-    y = Float(y)
-
-    # x = Float.linspace(-2, 2, 51201)
-    # y = ek.sqr(ek.sin(Float(np.float32(x))))
+    x = Float.linspace(-2, 2, 513)
+    y = ek.exp(-ek.sqr(x))
 
     d = ContinuousDistribution([-2, 2], y)
-    assert d.integral() == approx(2 - ek.sin(4) / 2, 1e-5)
-    assert d.eval_pdf([1]) == approx(ek.sqr(ek.sin(Float(1))), 1e-5)
-    print(d.cdf())
-    # assert d.sample([0, 0.5, 1]) == [-2, 0, 2]
-    assert d.sample([0.5]) == [0]
+    assert ek.allclose(d.integral(), ek.sqrt(ek.pi) * ek.erf(2.0))
+    assert ek.allclose(d.eval_pdf([1]), [ek.exp(-1)])
+    assert ek.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])

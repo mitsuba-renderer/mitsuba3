@@ -53,7 +53,7 @@ MTS_PY_EXPORT(math) {
             "l"_a, "x"_a, D(math, legendre_pd_diff))
 
         .def("ulpdiff", &math::ulpdiff<ScalarFloat>, D(math, ulpdiff))
-        .def("log2i", [](ScalarUInt64 v) { return enoki::log2i<ScalarUInt64>(v); } )
+
         .def("is_power_of_two", &math::is_power_of_two<ScalarUInt64>, D(math, is_power_of_two))
         .def("round_to_power_of_two", &math::round_to_power_of_two<ScalarUInt64>,
             D(math, round_to_power_of_two))
