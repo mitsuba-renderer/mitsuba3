@@ -2,6 +2,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/stream.h>
 #include <mitsuba/python/python.h>
+#include <pybind11/numpy.h>
 
 MTS_PY_EXPORT(Bitmap) {
     using Float = typename Bitmap::Float;

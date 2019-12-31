@@ -6,6 +6,7 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
+#include <pybind11/numpy.h>
 
 MTS_PY_EXPORT(Shape) {
     MTS_PY_IMPORT_TYPES(Shape, Mesh)

@@ -14,8 +14,8 @@ MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
-MTS_PY_DECLARE(Transform);
-MTS_PY_DECLARE(AnimatedTransform);
+//MTS_PY_DECLARE(Transform);
+//MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(vector);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(xml);
@@ -42,6 +42,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     py::module enoki        = py::module::import(enoki_pkg);
     py::module enoki_scalar = py::module::import("enoki.scalar");
+
+    // Ensure that 'enoki.dynamic' is loaded in CPU mode (needed for DynamicArray<> casts)
+    if constexpr (!is_cuda_array_v<Float>)
+        py::module::import("enoki.dynamic");
 
     // Basic type aliases in the Enoki module (scalar + vectorized)
     m.attr("Float32") = enoki.attr("Float32");
@@ -190,14 +194,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
     m.attr("Spectrum") = get_type_handle<Spectrum>();
 
-    if constexpr (is_double_v<ScalarFloat>)
-        m.attr("float_dtype") = py::dtype("d");
-    else
-        m.attr("float_dtype") = py::dtype("f");
-
-    // make the python module aware of enoki dynamic arrays
-    if constexpr (!is_cuda_array_v<Float>)
-        py::module::import("enoki.dynamic");
+    m.attr("float_dtype") = is_float_v<ScalarFloat> ? "f" : "d";
 
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(BoundingBox);
@@ -212,8 +209,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(sample_tea);
     MTS_PY_IMPORT(spline);
     MTS_PY_IMPORT(Spectrum);
-    MTS_PY_IMPORT(Transform);
-    MTS_PY_IMPORT(AnimatedTransform);
+    //MTS_PY_IMPORT(Transform);
+    //MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(xml);

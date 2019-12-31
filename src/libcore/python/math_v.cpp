@@ -64,24 +64,11 @@ MTS_PY_EXPORT(math) {
             vectorize([](Float &c) { return srgb_to_linear(c); }),
             "Applies the inverse sRGB gamma curve to the given argument.")
 
-        .def("find_interval", [](size_t start, size_t end, const std::function<bool(size_t)> &pred){
-            return math::find_interval(start, end, pred);
-        }, D(math, find_interval))
-
-        .def("find_interval", [](const py::array_t<ScalarFloat> &arr, ScalarFloat x){
-            if (arr.ndim() != 1)
-                throw std::runtime_error("'arr' must be a one-dimensional array!");
-            return math::find_interval(arr.shape(0),
-                [&](size_t idx) {
-                    return arr.at(idx) <= x;
-                }
-            );
-        })
-
-        .def("chi2", [](py::array_t<double> obs, py::array_t<double> exp, double thresh){
-            if (obs.ndim() != 1 || exp.ndim() != 1 || exp.shape(0) != obs.shape(0))
+        .def("chi2", [](const DynamicBuffer<double> &obs,
+                        const DynamicBuffer<double> &exp, double thresh){
+            if (exp.size() != obs.size())
                 throw std::runtime_error("Unsupported input dimensions");
-            return math::chi2(obs.data(), exp.data(), thresh, obs.shape(0));
+            return math::chi2(obs.data(), exp.data(), thresh, obs.size());
         }, D(math, chi2))
 
         .def("solve_quadratic",
