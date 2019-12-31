@@ -446,6 +446,13 @@ elseif (UNIX)
   SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
 
+# We want CMake to re-run whenever 'mitsuba.conf' changes because the build
+# system dynamically adds or removes build targets based on this file. There
+# unfortunately isn't a nice way of specifying such dependencies in CMake, but
+# it turns out that one can abuse the 'configure_file' mechanism to this end
+# (we simply ignore the output file created by it.)
+configure_file(mitsuba.conf ${CMAKE_CURRENT_BINARY_DIR}/ext_build/unused)
+
 # Generate the config.h headers from the configuration
 execute_process(
   COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
@@ -453,9 +460,20 @@ execute_process(
   OUTPUT_VARIABLE MTS_VARIANTS
   ERROR_VARIABLE MTS_VARIANTS_ERR
 )
-if (ERROR_VARIABLE)
-  mesage(FATAL_ERROR "Could not run resources/configure.py script: %{MTS_VARIANTS_ERR}")
+if (MTS_VARIANTS_ERR)
+  message(FATAL_ERROR "Could not run resources/configure.py script: ${MTS_VARIANTS_ERR}")
 endif()
+
+list(LENGTH MTS_VARIANTS MTS_VARIANTS_COUNT)
+
+message(STATUS "Building the following variants of Mitsuba:")
+foreach (MTS_VARIANT ${MTS_VARIANTS})
+  string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
+  list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
+  list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
+  list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
+  message(STATUS " * ${MTS_VARIANT_NAME}")
+endforeach()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "double")
   # Be extra noisy about unintended float->double conversions
