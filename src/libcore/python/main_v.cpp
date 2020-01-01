@@ -8,6 +8,7 @@ MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(ContinuousDistribution);
+MTS_PY_DECLARE(IrregularContinuousDistribution);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(rfilter);
@@ -21,6 +22,9 @@ MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(xml);
 
 #define MODULE_NAME MTS_MODULE_NAME(core, MTS_VARIANT_NAME)
+
+using Caster = py::object(*)(mitsuba::Object *);
+Caster cast_object = nullptr;
 
 PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
@@ -203,6 +207,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Ray);
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(ContinuousDistribution);
+    MTS_PY_IMPORT(IrregularContinuousDistribution);
     MTS_PY_IMPORT(math);
     MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(rfilter);
@@ -214,6 +219,9 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(xml);
+
+    py::object core_ext = py::module::import("mitsuba.core_ext");
+    cast_object = (Caster) (void *)((py::capsule) core_ext.attr("cast_object"));
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);

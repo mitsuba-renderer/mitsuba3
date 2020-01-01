@@ -12,12 +12,9 @@
 
 #define PY_TRY_CAST(Type)                                         \
     if (auto tmp = dynamic_cast<Type *>(o); tmp)                  \
-        return py::cast(tmp, rvp, parent);
+        return py::cast(tmp);
 
-static py::object caster(Object *o, py::handle parent) {
-    py::return_value_policy rvp = parent ? py::return_value_policy::reference_internal
-                                         : py::return_value_policy::take_ownership;
-
+static py::object caster(Object *o) {
     MTS_PY_IMPORT_TYPES()
 
     // Try casting, starting from the most precise types
@@ -72,7 +69,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.render";
 
-    auto casters = (std::vector<void *> *) (py::capsule)(py::module::import("mitsuba.core_ext").attr("casters"));
+    auto casters = (std::vector<void *> *) (py::capsule)(
+        py::module::import("mitsuba.core_ext").attr("casters"));
     casters->push_back((void *) caster);
 
     MTS_PY_IMPORT(BSDFSample);

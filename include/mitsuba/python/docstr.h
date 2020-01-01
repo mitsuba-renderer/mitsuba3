@@ -265,14 +265,6 @@ static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
 
@@ -1348,10 +1340,11 @@ static const char *__doc_mitsuba_Color_r = R"doc()doc";
 static const char *__doc_mitsuba_Color_r_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution =
-R"doc(Continuous 1D probability distribution
+R"doc(Continuous 1D probability distribution defined in terms of a regularly
+sampled linear interpolant
 
 This data structure represents a continuous 1D probability
-distribution that is defined as a linear interpolant of a uniformly
+distribution that is defined as a linear interpolant of a regularly
 discretized signal. The class provides various routines for
 transforming uniformly distributed samples so that they follow the
 stored distribution. Note that unnormalized probability density
@@ -1732,14 +1725,6 @@ static const char *__doc_mitsuba_Emitter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Emitter_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Emitter_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
@@ -1777,14 +1762,6 @@ may be set to ``nullptr`` when it is surrounded by vacuum).)doc";
 static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
 
@@ -2081,14 +2058,6 @@ static const char *__doc_mitsuba_Film_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
 static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
@@ -2341,14 +2310,6 @@ static const char *__doc_mitsuba_ImageBlock_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a new image block of the requested properties
 
@@ -2513,14 +2474,6 @@ static const char *__doc_mitsuba_Integrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_Integrator_cancel =
@@ -2561,6 +2514,110 @@ static const char *__doc_mitsuba_Interaction_t = R"doc(Distance traveled along t
 static const char *__doc_mitsuba_Interaction_time = R"doc(Time value associated with the interaction)doc";
 
 static const char *__doc_mitsuba_Interaction_wavelengths = R"doc(Wavelengths associated with the ray that produced this interaction)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution =
+R"doc(Continuous 1D probability distribution defined in terms of an
+*irregularly* sampled linear interpolant
+
+This data structure represents a continuous 1D probability
+distribution that is defined as a linear interpolant of an irregularly
+discretized signal. The class provides various routines for
+transforming uniformly distributed samples so that they follow the
+stored distribution. Note that unnormalized probability density
+functions (PDFs) will automatically be normalized during
+initialization. The associated scale factor can be retrieved using the
+function normalization().)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution = R"doc(Create an unitialized IrregularContinuousDistribution instance)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution_2 =
+R"doc(Initialize from a given density function discretized on nodes
+``nodes``)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution_3 = R"doc(Initialize from a given density function (rvalue version))doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_IrregularContinuousDistribution_4 = R"doc(Initialize from a given floating point array)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_cdf =
+R"doc(Return the unnormalized discrete cumulative distribution function over
+intervals)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_cdf_2 =
+R"doc(Return the unnormalized discrete cumulative distribution function over
+intervals (const version))doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_empty = R"doc(Is the distribution object empty/uninitialized?)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_eval_cdf =
+R"doc(Evaluate the unnormalized cumulative distribution function (CDF) at
+position ``p``)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_eval_cdf_normalized =
+R"doc(Evaluate the unnormalized cumulative distribution function (CDF) at
+position ``p``)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_eval_pdf =
+R"doc(Evaluate the unnormalized probability mass function (PDF) at position
+``x``)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_eval_pdf_normalized =
+R"doc(Evaluate the normalized probability mass function (PDF) at position
+``x``)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_integral = R"doc(Return the original integral of PDF entries before normalization)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_integral = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_nodes = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_normalization = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_pdf = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_range = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_m_valid = R"doc()doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_nodes = R"doc(Return the nodes of the underlying discretization)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_nodes_2 = R"doc(Return the nodes of the underlying discretization (const version))doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_normalization = R"doc(Return the normalization factor (i.e. the inverse of sum()))doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_pdf = R"doc(Return the unnormalized discretized probability density function)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_pdf_2 =
+R"doc(Return the unnormalized discretized probability density function
+(const version))doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_sample =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
+
+Returns:
+    The sampled position.)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_sample_pdf =
+R"doc(%Transform a uniformly distributed sample to the stored distribution
+
+Parameter ``value``:
+    A uniformly distributed sample on the interval [0, 1].
+
+Returns:
+    A tuple consisting of
+
+1. the sampled position. 2. the normalized probability density of the
+sample.)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_size = R"doc(Return the number of discretizations)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_update =
+R"doc(Update the internal state. Must be invoked when changing the pdf or
+range.)doc";
 
 static const char *__doc_mitsuba_Jit = R"doc()doc";
 
@@ -2699,14 +2756,6 @@ static const char *__doc_mitsuba_Medium = R"doc()doc";
 static const char *__doc_mitsuba_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
@@ -2868,14 +2917,6 @@ static const char *__doc_mitsuba_Mesh = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -3192,14 +3233,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator = R"doc()doc";
 static const char *__doc_mitsuba_MonteCarloIntegrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
@@ -3578,14 +3611,6 @@ rendered using the traditional OpenGL pipeline.)doc";
 static const char *__doc_mitsuba_ProjectiveCamera_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -4040,14 +4065,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -4169,14 +4186,6 @@ static const char *__doc_mitsuba_Sampler_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sampler_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sampler_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
@@ -4218,14 +4227,6 @@ this estimator to compute all pixels of the image.)doc";
 static const char *__doc_mitsuba_SamplingIntegrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
@@ -4310,14 +4311,6 @@ static const char *__doc_mitsuba_Scene = R"doc()doc";
 static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -4491,14 +4484,6 @@ static const char *__doc_mitsuba_Sensor_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sensor_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -4597,27 +4582,11 @@ static const char *__doc_mitsuba_Shape_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -6111,27 +6080,11 @@ static const char *__doc_mitsuba_Texture_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_7 = R"doc()doc";
-
 static const char *__doc_mitsuba_Texture3D = R"doc(Abstract base class for spatially-varying 3D textures.)doc";
 
 static const char *__doc_mitsuba_Texture3D_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_5 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_6 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D_Texture3D = R"doc()doc";
 
@@ -7559,29 +7512,29 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of a frame)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of a frame)doc";
 
 static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_11 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Return a string representation of the ray)doc";
 
 static const char *__doc_mitsuba_operator_lshift_12 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_13 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_14 = R"doc(//! @{ \name Printing)doc";
+static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_15 = R"doc(//! @{ \name Printing)doc";
 
 static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_17 = R"doc(//! @{ \name Misc implementations)doc";
+static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
 
@@ -7596,6 +7549,8 @@ static const char *__doc_mitsuba_operator_lshift_23 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_26 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 

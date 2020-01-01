@@ -1,6 +1,8 @@
 """ Mitsuba Python extension library """
 
 import types
+import sys
+
 
 class MitsubaModule(types.ModuleType):
     '''
@@ -17,6 +19,7 @@ class MitsubaModule(types.ModuleType):
 
         tls = threading.local()
         tls.modules = ()
+        tls.variant = None
         self.__tls__ = tls
         self.__spec__ = ModuleSpec(name, None)
         self.__package__ = name
@@ -32,7 +35,7 @@ class MitsubaModule(types.ModuleType):
 
         try:
             return super().__getattribute__(key)
-        except:
+        except Exception:
             pass
 
         for m in modules:
@@ -44,22 +47,28 @@ class MitsubaModule(types.ModuleType):
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
 
+    def variant(self):
+        return self.__tls__.variant
+
     def set_variant(self, variant):
+        if self.__tls__.variant == variant:
+            return
         import importlib
         modules = (
             importlib.import_module(self.__name__ + '_ext'),
             importlib.import_module(self.__name__ + '_' + variant + '_ext')
         )
         self.__tls__.modules = modules
+        self.__tls__.variant = variant
+
 
 # Register the modules
-import sys
-
 core = MitsubaModule('mitsuba.core')
 render = MitsubaModule('mitsuba.render')
 
 sys.modules['mitsuba.core'] = core
 sys.modules['mitsuba.render'] = render
+
 
 def set_variant(variant):
     '''
@@ -110,6 +119,24 @@ def set_variant(variant):
         exc.__cause__ = e
 
         raise exc
+
+
+def variant():
+    return core.variant()
+
+
+def variants():
+    import pkgutil
+    import mitsuba
+
+    variants = []
+    for importer, modname, ispkg in pkgutil.iter_modules(mitsuba.__path__):
+        if len(modname) > 8 and modname.startswith('core_') and \
+           modname.endswith('_ext'):
+            variants.append(modname[5:-4])
+
+    return variants
+
 
 # Cleanup
 del sys

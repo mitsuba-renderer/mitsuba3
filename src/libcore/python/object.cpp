@@ -1,13 +1,11 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/logger.h>
 
-extern py::object cast_object(Object *o, py::handle parent);
+extern py::object cast_object(Object *o);
 
 // Trampoline for derived types implemented in Python
 class PyTraversalCallback : public TraversalCallback {
 public:
-    PyTraversalCallback(py::object object) : m_object(object) { }
-
     void put_parameter_impl(const std::string &name,
                             const std::type_info &type,
                             void *ptr) override {
@@ -25,20 +23,16 @@ public:
         py::function overload = py::get_overload(this, "put_object");
 
         if (overload)
-            overload(name, cast_object(obj, m_object));
+            overload(name, cast_object(obj));
         else
             Throw("TraversalCallback doesn't overload the method \"put_object\"");
     }
-
-private:
-    py::object m_object;
 };
 
 MTS_PY_EXPORT(Object) {
     py::class_<Class>(m, "Class", D(Class));
 
-    py::class_<TraversalCallback, PyTraversalCallback>(m, "TraversalCallback")
-        .def(py::init<py::object>());
+    py::class_<TraversalCallback, PyTraversalCallback>(m, "TraversalCallback");
 
     py::class_<Object, ref<Object>>(m, "Object", D(Object))
         .def(py::init<>(), D(Object, Object))
@@ -51,7 +45,7 @@ MTS_PY_EXPORT(Object) {
             auto result = o.expand();
             py::list l;
             for (Object *o2: result)
-                l.append(cast_object(o2, py::handle()));
+                l.append(cast_object(o2));
             return l;
         }, D(Object, expand))
         .def_method(Object, traverse, "cb"_a)

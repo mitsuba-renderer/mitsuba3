@@ -13,7 +13,6 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
 
   add_mitsuba_python_library(${TARGET_NAME}
     main_v.cpp
-    cast.cpp
     bbox_v.cpp
     bsphere_v.cpp
     distr_v.cpp

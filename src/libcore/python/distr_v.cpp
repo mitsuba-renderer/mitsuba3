@@ -84,3 +84,43 @@ MTS_PY_EXPORT(ContinuousDistribution) {
             "value"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
         .def_repr(ContinuousDistribution);
 }
+
+MTS_PY_EXPORT(IrregularContinuousDistribution) {
+    MTS_PY_IMPORT_TYPES()
+
+    using IrregularContinuousDistribution = mitsuba::IrregularContinuousDistribution<Float>;
+    using FloatStorage = DynamicBuffer<Float>;
+
+    MTS_PY_STRUCT(IrregularContinuousDistribution, py::module_local())
+        .def(py::init<>(), D(IrregularContinuousDistribution))
+        .def(py::init<const IrregularContinuousDistribution &>(), "Copy constructor")
+        .def(py::init<const FloatStorage &, const FloatStorage &>(),
+             "nodes"_a, "pdf"_a, D(IrregularContinuousDistribution, IrregularContinuousDistribution, 2))
+        .def("__len__", &IrregularContinuousDistribution::size)
+        .def("size", &IrregularContinuousDistribution::size, D(IrregularContinuousDistribution, size))
+        .def("empty", &IrregularContinuousDistribution::empty, D(IrregularContinuousDistribution, empty))
+        .def("nodes", py::overload_cast<>(&IrregularContinuousDistribution::nodes),
+             D(IrregularContinuousDistribution, nodes), py::return_value_policy::reference_internal)
+        .def("pdf", py::overload_cast<>(&IrregularContinuousDistribution::pdf),
+             D(IrregularContinuousDistribution, pdf), py::return_value_policy::reference_internal)
+        .def("cdf", py::overload_cast<>(&IrregularContinuousDistribution::cdf),
+             D(IrregularContinuousDistribution, cdf), py::return_value_policy::reference_internal)
+        .def("eval_pdf", vectorize(&IrregularContinuousDistribution::eval_pdf),
+             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf))
+        .def("eval_pdf_normalized", vectorize(&IrregularContinuousDistribution::eval_pdf_normalized),
+             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf_normalized))
+        .def("eval_cdf", vectorize(&IrregularContinuousDistribution::eval_cdf),
+             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_cdf))
+        .def("eval_cdf_normalized", vectorize(&IrregularContinuousDistribution::eval_cdf_normalized),
+             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_cdf_normalized))
+        .def_method(IrregularContinuousDistribution, update)
+        .def_method(IrregularContinuousDistribution, integral)
+        .def_method(IrregularContinuousDistribution, normalization)
+        .def("sample",
+            vectorize(&IrregularContinuousDistribution::sample),
+            "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
+        .def("sample_pdf",
+            vectorize(&IrregularContinuousDistribution::sample_pdf),
+            "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample_pdf))
+        .def_repr(IrregularContinuousDistribution);
+}

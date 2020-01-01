@@ -7,28 +7,12 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Linear interpolant of a regularly sampled spectrum
 template <typename Float, typename Spectrum>
-class InterpolatedSpectrum final : public Texture<Float, Spectrum> {
+class RegularSpectrum final : public Texture<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Texture)
 
 public:
-    /**
-     * \brief Construct a linearly interpolated spectrum
-     *
-     * \param lambda_min
-     *      Lowest wavelength value associated with a sample
-     *
-     * \param lambda_max
-     *      Largest wavelength value associated with a sample
-     *
-     * \param size
-     *      Number of sample values
-     *
-     * \param values
-     *      Pointer to the sample values. The data is copied,
-     *      hence there is no need to keep 'data' alive.
-     */
-    InterpolatedSpectrum(const Properties &props) : Texture(props) {
+    RegularSpectrum(const Properties &props) : Texture(props) {
         ScalarVector2f wavelength_range(
             props.float_("lambda_min"),
             props.float_("lambda_max")
@@ -62,8 +46,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("values", m_distr.pdf());
         callback->put_parameter("range", m_distr.range());
+        callback->put_parameter("values", m_distr.pdf());
     }
 
     void parameters_changed() override {
@@ -99,11 +83,8 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "InterpolatedSpectrum[" << std::endl
-            << "  distr = " << m_distr << "," << std::endl
-            << "  lambda_min = " << m_distr.range().x() << "," << std::endl
-            << "  lambda_max = " << m_distr.range().y() << "," << std::endl
-            << "  integral = " << m_distr.integral() << std::endl
+        oss << "RegularSpectrum[" << std::endl
+            << "  distr = " << string::indent(m_distr) << std::endl
             << "]";
         return oss.str();
     }
@@ -113,6 +94,6 @@ private:
     ContinuousDistribution<Wavelength> m_distr;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(InterpolatedSpectrum, Texture)
-MTS_EXPORT_PLUGIN(InterpolatedSpectrum, "Interpolated spectrum")
+MTS_IMPLEMENT_CLASS_VARIANT(RegularSpectrum, Texture)
+MTS_EXPORT_PLUGIN(RegularSpectrum, "Regular interpolated spectrum")
 NAMESPACE_END(mitsuba)

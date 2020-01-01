@@ -180,6 +180,6 @@ NAMESPACE_END(detail)
 
 /// Throw an exception reporting that the given function is not implemented
 #define NotImplementedError(funcName) \
-    Throw("%s::" funcName "(): Not implemented!", class_()->name());
+    Throw("%s::" funcName "(): not implemented!", class_()->name());
 
 NAMESPACE_END(mitsuba)

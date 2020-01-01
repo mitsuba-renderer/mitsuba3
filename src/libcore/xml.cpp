@@ -827,11 +827,21 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         if (!is_regular)
                             Throw("Not implemented yet: irregularly sampled spectra.");
 
-                        Properties props2("interpolated");
-                        props2.set_float("lambda_min", wavelengths.front());
-                        props2.set_float("lambda_max", wavelengths.back());
-                        props2.set_long("size", wavelengths.size());
-                        props2.set_pointer("values", values.data());
+                        Properties props2;
+
+                        if (is_regular) {
+                            props2.set_plugin_name("regular");
+                            props2.set_long("size", wavelengths.size());
+                            props2.set_float("lambda_min", wavelengths.front());
+                            props2.set_float("lambda_max", wavelengths.back());
+                            props2.set_pointer("values", values.data());
+                        } else {
+                            props2.set_plugin_name("irregular");
+                            props2.set_long("size", wavelengths.size());
+                            props2.set_pointer("wavelengths", wavelengths.data());
+                            props2.set_pointer("values", values.data());
+                        }
+
                         ref<Object> obj = PluginManager::instance()->create_object(
                             props2, Class::for_name("Texture", ctx.variant));
 
