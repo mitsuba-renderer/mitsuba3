@@ -9,6 +9,8 @@ MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(DiscreteDistribution);
 MTS_PY_DECLARE(ContinuousDistribution);
 MTS_PY_DECLARE(IrregularContinuousDistribution);
+MTS_PY_DECLARE(Hierarchical2D);
+MTS_PY_DECLARE(Marginal2D);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(rfilter);
@@ -216,6 +218,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Spectrum);
     //MTS_PY_IMPORT(Transform);
     //MTS_PY_IMPORT(AnimatedTransform);
+    MTS_PY_IMPORT(Hierarchical2D);
+    MTS_PY_IMPORT(Marginal2D);
     MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT(warp);
     MTS_PY_IMPORT(xml);

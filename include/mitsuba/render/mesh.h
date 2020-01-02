@@ -4,7 +4,7 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/transform.h>
-#include <mitsuba/core/distr.h>
+#include <mitsuba/core/distr_1d.h>
 #include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)

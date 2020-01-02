@@ -1,4 +1,4 @@
-#include <mitsuba/core/distr.h>
+#include <mitsuba/core/distr_1d.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(DiscreteDistribution) {

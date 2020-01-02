@@ -1,7 +1,7 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/distr.h>
+#include <mitsuba/core/distr_1d.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

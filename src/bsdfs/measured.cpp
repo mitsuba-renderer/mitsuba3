@@ -1,6 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/tensor.h>
+#include <mitsuba/core/distr_2d.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
 
@@ -18,9 +19,9 @@ public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES()
 
-    using Warp2D0 = warp::Marginal2D<Float, 0>;
-    using Warp2D2 = warp::Marginal2D<Float, 2>;
-    using Warp2D3 = warp::Marginal2D<Float, 3>;
+    using Warp2D0 = Marginal2D<Float, 0>;
+    using Warp2D2 = Marginal2D<Float, 2>;
+    using Warp2D3 = Marginal2D<Float, 3>;
 
     Measured(const Properties &props) : Base(props) {
         if constexpr (is_polarized_v<Spectrum>)

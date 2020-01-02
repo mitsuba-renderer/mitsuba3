@@ -2,7 +2,7 @@
 #include <mitsuba/core/bsphere.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
-#include <mitsuba/core/warp.h>
+#include <mitsuba/core/distr_2d.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
@@ -16,7 +16,7 @@ public:
     MTS_IMPORT_BASE(Emitter, m_world_transform)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
-    using Warp = warp::Marginal2D<Float, 0>;
+    using Warp = Hierarchical2D<Float, 0>;
 
     EnvironmentMapEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information

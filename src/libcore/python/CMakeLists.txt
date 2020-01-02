@@ -15,7 +15,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     main_v.cpp
     bbox_v.cpp
     bsphere_v.cpp
-    distr_v.cpp
+    distr_1d_v.cpp
+    distr_2d_v.cpp
     frame_v.cpp
     math_v.cpp
     object_v.cpp
