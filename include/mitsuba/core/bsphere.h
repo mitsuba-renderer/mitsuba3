@@ -24,12 +24,14 @@ template <typename Point_> struct BoundingSphere {
 
     /// Equality test against another bounding sphere
     bool operator==(const BoundingSphere &bsphere) const {
-        return all_nested(all(eq(center, bsphere.center)) && eq(radius, bsphere.radius));
+        return all_nested(eq(center, bsphere.center) &&
+                          eq(radius, bsphere.radius));
     }
 
     /// Inequality test against another bounding sphere
     bool operator!=(const BoundingSphere &bsphere) const {
-        return any_nested(any(neq(center, bsphere.center)) || neq(radius, bsphere.radius));
+        return any_nested(neq(center, bsphere.center) ||
+                          neq(radius, bsphere.radius));
     }
 
     /// Return whether this bounding sphere has a radius of zero or less.
@@ -55,7 +57,7 @@ template <typename Point_> struct BoundingSphere {
      */
     template <bool Strict = false>
     Mask contains(const Point &p) const {
-        if (Strict)
+        if constexpr (Strict)
             return squared_norm(p - center) < radius*radius;
         else
             return squared_norm(p - center) <= radius*radius;
@@ -64,12 +66,12 @@ template <typename Point_> struct BoundingSphere {
     /// Check if a ray intersects a bounding box
     template <typename Ray>
     MTS_INLINE auto ray_intersect(const Ray &ray) const {
-        auto o = ray.o - center;
+        typename Ray::Vector o = ray.o - center;
 
         return math::solve_quadratic(
             squared_norm(ray.d),
             2.f * dot(o, ray.d),
-            squared_norm(o) - radius * radius
+            squared_norm(o) - sqr(radius)
         );
     }
 };

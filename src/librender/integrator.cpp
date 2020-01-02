@@ -83,7 +83,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
         ThreadEnvironment env;
         ref<ProgressReporter> progress = new ProgressReporter("Rendering");
-        tbb::spin_mutex mutex;
+        std::mutex mutex;
 
         // Total number of blocks to be handled, including multiple passes.
         size_t total_blocks = spiral.block_count() * n_passes,
@@ -109,11 +109,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                     block->set_offset(offset);
 
                     // Ensure that the sample generation is fully deterministic
-                    size_t seed = (size_t) offset.x() +
-                                  (size_t) offset.y() * (size_t) film_size.x();
-                    if (n_passes > 1)
-                        seed += i * hprod(film_size);
-                    sampler->seed(seed);
+                    sampler->seed(i);
 
                     render_block(scene, sensor, sampler, block,
                                  aovs.get(), samples_per_pass);
@@ -121,7 +117,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                     film->put(block);
 
                     /* Critical section: update progress bar */ {
-                        tbb::spin_mutex::scoped_lock lock(mutex);
+                        std::lock_guard<std::mutex> lock(mutex);
                         blocks_done++;
                         progress->update(blocks_done / (ScalarFloat) total_blocks);
                     }

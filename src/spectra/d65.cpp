@@ -39,7 +39,7 @@ public:
 
     std::vector<ref<Object>> expand() const override {
         // This plugin recursively expands into an instance of 'interpolated'
-        Properties props("interpolated");
+        Properties props("regular");
         props.set_float("lambda_min", 360);
         props.set_float("lambda_max", 830);
         props.set_int("size", 95);

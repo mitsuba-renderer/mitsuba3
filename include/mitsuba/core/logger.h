@@ -179,7 +179,7 @@ NAMESPACE_END(detail)
 #endif  // !defined(NDEBUG)
 
 /// Throw an exception reporting that the given function is not implemented
-#define NotImplementedError(funcName) \
-    Throw("%s::" funcName "(): not implemented!", class_()->name());
+#define NotImplementedError(Name) \
+    Throw("%s::" Name "(): not implemented!", class_()->name());
 
 NAMESPACE_END(mitsuba)

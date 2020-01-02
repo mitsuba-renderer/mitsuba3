@@ -21,19 +21,19 @@ NAMESPACE_BEGIN(mitsuba)
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
 template <typename Point_> struct BoundingBox {
-    static constexpr size_t Size = array_size_v<Point_>;
-    using Point                  = Point_;
-    using Value                  = value_t<Point>;
-    using Vector                 = typename Point::Vector;
-    using UInt32                 = uint32_array_t<Value>;
-    using Mask                   = mask_t<Value>;
+    static constexpr size_t Dimension = array_size_v<Point_>;
+    using Point                       = Point_;
+    using Value                       = value_t<Point>;
+    using Scalar                      = scalar_t<Point>;
+    using Vector                      = typename Point::Vector;
+    using UInt32                      = uint32_array_t<Value>;
+    using Mask                        = mask_t<Value>;
 
     /**
      * \brief Create a new invalid bounding box
      *
-     * Initializes the components of the minimum
-     * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
-     * respectively.
+     * Initializes the components of the minimum and maximum position to
+     * \f$\infty\f$ and \f$-\infty\f$, respectively.
      */
     BoundingBox() { reset(); }
 
@@ -81,13 +81,13 @@ template <typename Point_> struct BoundingBox {
     /// Return the dimension index with the index associated side length
     UInt32 major_axis() const {
         Vector d = max - min;
-        UInt32 index(0);
-        expr_t<Value> value = d[0];
+        UInt32 index = 0;
+        Value value = d[0];
 
-        for (uint32_t i = 1; i < Size; ++i) {
+        for (uint32_t i = 1; i < Dimension; ++i) {
             auto mask = d[i] > value;
-            index = select(mask, i, index);
-            value = select(mask, d[i], value);
+            masked(index, mask) = i;
+            masked(value, mask) = d[i];
         }
 
         return index;
@@ -99,10 +99,10 @@ template <typename Point_> struct BoundingBox {
         UInt32 index(0);
         Value value = d[0];
 
-        for (uint32_t i = 1; i < Size; ++i) {
+        for (uint32_t i = 1; i < Dimension; ++i) {
             Mask mask = d[i] < value;
-            index = select(mask, i, index);
-            value = select(mask, d[i], value);
+            masked(index, mask) = i;
+            masked(value, mask) = d[i];
         }
 
         return index;
@@ -110,7 +110,7 @@ template <typename Point_> struct BoundingBox {
 
     /// Return the center point
     Point center() const {
-        return (max + min) * Value(0.5);
+        return (max + min) * Scalar(.5f);
     }
 
     /**
@@ -122,8 +122,8 @@ template <typename Point_> struct BoundingBox {
     /// Return the position of a bounding box corner
     Point corner(size_t index) const {
         Point result;
-        for (int i = 0; i < int(Size); ++i)
-            result[i] = ((int) index & (1 << i)) ? max[i] : min[i];
+        for (uint32_t i = 0; i < uint32_t(Dimension); ++i)
+            result[i] = ((uint32_t) index & (1 << i)) ? max[i] : min[i];
         return result;
     }
 
@@ -131,29 +131,27 @@ template <typename Point_> struct BoundingBox {
     Value volume() const { return hprod(max - min); }
 
     /// Calculate the 2-dimensional surface area of a 3D bounding box
-    template <typename T = Point, typename std::enable_if<T::Size == 3, int>::type = 0>
     Value surface_area() const {
-        Vector d = max - min;
-        return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Value(2);
-    }
+        if constexpr (Dimension == 3) {
+            /// Fast path for n = 3
+            Vector d = max - min;
+            return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Scalar(2);
+        } else {
+            /// Generic case
+            Vector d = max - min;
 
-    /// General case: calculate the n-1 dimensional volume of the boundary
-    template <typename T = Point, typename std::enable_if<T::Size != 3, int>::type = 0>
-    Value surface_area() const {
-        /* Generic implementation for Size != 3 */
-        Vector d = max - min;
-
-        Value result = Value(0);
-        for (size_t i = 0; i <  Size; ++i) {
-            Value term = Value(1);
-            for (size_t j = 0; j < Size; ++j) {
-                if (i == j)
-                    continue;
-                term *= d[j];
+            Value result = Scalar(0);
+            for (size_t i = 0; i < Dimension; ++i) {
+                Value term = Scalar(1);
+                for (size_t j = 0; j < Dimension; ++j) {
+                    if (i == j)
+                        continue;
+                    term *= d[j];
+                }
+                result += term;
             }
-            result += term;
+            return result * Scalar(2);
         }
-        return Value(2) * result;
     }
 
     /**
@@ -302,26 +300,26 @@ template <typename Point_> struct BoundingBox {
      */
     template <typename Ray>
     MTS_INLINE auto ray_intersect(const Ray &ray) const {
-        using Value  = expr_t<typename Ray::Float>;
-        using Vector = expr_t<typename Ray::Vector>;
+        using Float  = typename Ray::Float;
+        using Vector = typename Ray::Vector;
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
         auto active = all(neq(ray.d, zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
-        /* Compute intersection intervals for each axis */
+        // Compute intersection intervals for each axis
         Vector t1 = (min - ray.o) * ray.d_rcp,
                t2 = (max - ray.o) * ray.d_rcp;
 
-        /* Ensure proper ordering */
+        // Ensure proper ordering
         Vector t1p = enoki::min(t1, t2),
                t2p = enoki::max(t1, t2);
 
-        /* Intersect intervals */
-        Value mint = hmax(t1p),
+        // Intersect intervals
+        Float mint = hmax(t1p),
               maxt = hmin(t2p);
 
-        active = active && (maxt >= mint);
+        active = active && maxt >= mint;
 
         return std::make_tuple(active, mint, maxt);
     }

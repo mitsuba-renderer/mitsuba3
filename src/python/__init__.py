@@ -3,6 +3,9 @@
 import types
 import sys
 
+if sys.version_info < (3, 5):
+    raise ImportError("Mitsuba requires Python 3.5 or greater.")
+
 
 class MitsubaModule(types.ModuleType):
     '''
@@ -25,7 +28,8 @@ class MitsubaModule(types.ModuleType):
         self.__package__ = name
 
     def __getattribute__(self, key):
-        modules = super().__getattribute__('__tls__').modules
+        tls = super().__getattribute__('__tls__')
+        modules = tls.modules
 
         if key == '__dict__':
             result = super().__getattribute__('__dict__')
@@ -42,7 +46,15 @@ class MitsubaModule(types.ModuleType):
             if hasattr(m, key):
                 return getattr(m, key)
 
-        raise AttributeError('module has no attribute %s' % key)
+        if tls.variant is None:
+            raise AttributeError('Before importing any packages, you must '
+                'specify the desired variant of Mitsuba using '
+                '\"mitsuba.set_variant(..)\".\nThe following variants are '
+                'available: %s.' % (", ".join(variants())))
+        else:
+            name = super().__getattribute__('__name__')
+            raise AttributeError('Module \"%s\" has no attribute \"%s\"!' % (name, key))
+
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
