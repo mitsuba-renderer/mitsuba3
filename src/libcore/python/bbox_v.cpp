@@ -6,7 +6,7 @@ template <typename BBox> auto bind_bbox(py::module &m, const char *name) {
     using Point = typename BBox::Point;
     using Float = typename BBox::Value;
 
-    auto bbox = py::class_<BBox>(m, name, D(BoundingBox), py::module_local())
+    auto bbox = py::class_<BBox>(m, name, py::module_local(), D(BoundingBox))
         .def(py::init<>(), D(BoundingBox, BoundingBox))
         .def(py::init<Point>(), D(BoundingBox, BoundingBox, 2), "p"_a)
         .def(py::init<Point, Point>(), D(BoundingBox, BoundingBox, 3), "min"_a, "max"_a)
@@ -79,8 +79,10 @@ MTS_PY_EXPORT(BoundingBox) {
         .def("ray_intersect", &BoundingBox3f::template ray_intersect<Ray3f>,
              D(BoundingBox, ray_intersect));
 
-    bind_bbox<ScalarBoundingBox2f>(m, "ScalarBoundingBox2f");
-    bind_bbox<ScalarBoundingBox3f>(m, "ScalarBoundingBox3f")
-        .def("ray_intersect", &ScalarBoundingBox3f::template ray_intersect<Ray3f>,
-             D(BoundingBox, ray_intersect));
+    if constexpr (!std::is_same_v<Float, ScalarFloat>) {
+        bind_bbox<ScalarBoundingBox2f>(m, "ScalarBoundingBox2f");
+        bind_bbox<ScalarBoundingBox3f>(m, "ScalarBoundingBox3f")
+            .def("ray_intersect", &ScalarBoundingBox3f::template ray_intersect<Ray3f>,
+                 D(BoundingBox, ray_intersect));
+    }
 }

@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
  * The mapping is constructed from a sequence of <tt>log2(hmax(res))</tt>
  * hierarchical sample warping steps, where <tt>res</tt> is the input array
  * resolution. It is bijective and generally very well-behaved (i.e. low
- * distortion), which makes it an ideal choice for structured point sets such
+ * distortion), which makes it a good choice for structured point sets such
  * as the Halton or Sobol sequence.
  *
  * The implementation also supports <em>conditional distributions</em>, i.e. 2D
@@ -40,18 +40,14 @@ NAMESPACE_BEGIN(mitsuba)
  * class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2 for data
  * that depends on 0, 1, and 2 parameters, respectively.
  */
-template <typename Float, size_t Dimension = 0> class Hierarchical2D {
-private:
-    MTS_IMPORT_CORE_TYPES()
-    using FloatStorage = DynamicBuffer<Float>;
-
-#if !defined(_MSC_VER)
-    static constexpr size_t ArraySize = Dimension;
-#else
-    static constexpr size_t ArraySize = (Dimension != 0) ? Dimension : 1;
-#endif
-
+template <typename Float_, size_t Dimension_ = 0> class Hierarchical2D {
 public:
+    using Float                       = Float_;
+    static constexpr size_t Dimension = Dimension_;
+    using FloatStorage                = DynamicBuffer<Float>;
+
+    MTS_IMPORT_CORE_TYPES()
+
     Hierarchical2D() = default;
 
     /**
@@ -73,7 +69,8 @@ public:
      * can still be called without triggering undefined behavior, but they
      * will not return meaningful results.
      */
-    Hierarchical2D(const ScalarVector2u &size, const ScalarFloat *data,
+    Hierarchical2D(const ScalarFloat *data,
+                   const ScalarVector2u &size,
                    std::array<uint32_t, Dimension> param_res = { },
                    std::array<const ScalarFloat *, Dimension> param_values = { },
                    bool normalize = true,
@@ -91,12 +88,9 @@ public:
             if (param_res[i] < 1)
                 Throw("Hierarchical2D(): parameter resolution must be >= 1!");
 
-            m_param_size[i] = param_res[i];
-            m_param_values[i].resize(param_res[i]);
-            memcpy(m_param_values[i].data(), param_values[i],
-                   sizeof(ScalarFloat) * param_res[i]);
+            m_param_values[i] = FloatStorage::copy(param_values[i], param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? slices : 0;
-            slices *= m_param_size[i];
+            slices *= param_res[i];
         }
 
         m_patch_size = 1.f / n_patches;
@@ -188,33 +182,29 @@ public:
      *
      * Returns the warped sample and associated probability density.
      */
-    template <typename Vector2f, typename Value = value_t<Vector2f>>
-    std::pair<Vector2f, Value> sample(Vector2f sample, const Value *param = nullptr,
-                                      mask_t<Value> active = true) const {
-        using Vector2u = uint32_array_t<Vector2f>;
-        using UInt32 = value_t<Vector2u>;
-        using Mask = mask_t<Value>;
-
+    std::pair<Vector2f, Float> sample(Vector2f sample,
+                                      const Float *param = nullptr,
+                                      Mask active = true) const {
         // Look up parameter-related indices and weights (if Dimension != 0)
-        Value param_weight[2 * ArraySize];
+        Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
-            if (unlikely(m_param_size[dim] == 1)) {
+            if (unlikely(m_param_values[dim].size() == 1)) {
                 param_weight[2 * dim] = 1.f;
                 param_weight[2 * dim + 1] = 0.f;
                 continue;
             }
 
             UInt32 param_index = math::find_interval(
-                m_param_size[dim],
+                (uint32_t) m_param_values[dim].size(),
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].data(), idx,
+                    return gather<Float>(m_param_values[dim], idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
+            Float p0 = gather<Float>(m_param_values[dim], param_index, active),
+                  p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -234,35 +224,35 @@ public:
             if (Dimension != 0)
                 offset_i += slice_offset * level.size;
 
-            Value v00 = level.template lookup<Dimension>(
+            Float v00 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
             offset_i += 1u;
 
-            Value v10 = level.template lookup<Dimension>(
+            Float v10 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
             offset_i += 1u;
 
-            Value v01 = level.template lookup<Dimension>(
+            Float v01 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
             offset_i += 1u;
 
-            Value v11 = level.template lookup<Dimension>(
+            Float v11 = level.template lookup<Dimension>(
                 offset_i, m_param_strides, param_weight, active);
 
             // Avoid issues with roundoff error
             sample = clamp(sample, 0.f, 1.f);
 
             // Select the row
-            Value r0 = v00 + v10,
+            Float r0 = v00 + v10,
                   r1 = v01 + v11;
             sample.y() *= r0 + r1;
-            mask_t<Value> mask = sample.y() > r0;
+            mask_t<Float> mask = sample.y() > r0;
             masked(offset.y(), mask) += 1;
             masked(sample.y(), mask) -= r0;
             sample.y() /= select(mask, r1, r0);
 
             // Select the column
-            Value c0 = select(mask, v01, v00),
+            Float c0 = select(mask, v01, v00),
                   c1 = select(mask, v11, v10);
             sample.x() *= c0 + c1;
             mask = sample.x() > c0;
@@ -278,19 +268,19 @@ public:
             offset_i += slice_offset * level0.size;
 
         // Fetch corners of bilinear patch
-        Value v00 = level0.template lookup<Dimension>(
+        Float v00 = level0.template lookup<Dimension>(
             offset_i, m_param_strides, param_weight, active);
 
-        Value v10 = level0.template lookup<Dimension>(
+        Float v10 = level0.template lookup<Dimension>(
             offset_i + 1, m_param_strides, param_weight, active);
 
-        Value v01 = level0.template lookup<Dimension>(
+        Float v01 = level0.template lookup<Dimension>(
             offset_i + level0.width, m_param_strides, param_weight, active);
 
-        Value v11 = level0.template lookup<Dimension>(
+        Float v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
-        Value r0   = v00 + v10,
+        Float r0   = v00 + v10,
               r1   = v01 + v11,
               r0_2 = r0 * r0,
               r1_2 = r1 * r1;
@@ -300,7 +290,7 @@ public:
             (r0 - safe_sqrt(r0_2 + sample.y() * (r1_2 - r0_2))) / (r0 - r1);
 
         // Invert conditional CDF in the 'x' parameter
-        Value c0   = fmadd(1.f - sample.y(), v00, sample.y() * v01),
+        Float c0   = fmadd(1.f - sample.y(), v00, sample.y() * v01),
               c1   = fmadd(1.f - sample.y(), v10, sample.y() * v11),
               c0_2 = c0 * c0,
               c1_2 = c1 * c1;
@@ -316,36 +306,30 @@ public:
     }
 
     /// Inverse of the mapping implemented in \c sample()
-    template <typename Vector2f, typename Value = value_t<Vector2f>>
-    std::pair<Vector2f, Value> invert(Vector2f sample, const Value *param = nullptr,
-                                      mask_t<Value> active = true) const {
-        using Vector2u = uint32_array_t<Vector2f>;
-        using Vector2i = int32_array_t<Vector2f>;
-        using UInt32 = value_t<Vector2u>;
-        using Mask = mask_t<Value>;
-
+    std::pair<Vector2f, Float> invert(Vector2f sample, const Float *param = nullptr,
+                                      mask_t<Float> active = true) const {
         const Level &level0 = m_levels[0];
 
         // Look up parameter-related indices and weights (if Dimension != 0)
-        Value param_weight[2 * ArraySize];
+        Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
-            if (unlikely(m_param_size[dim] == 1)) {
+            if (unlikely((uint32_t) m_param_values[dim].size() == 1)) {
                 param_weight[2 * dim] = 1.f;
                 param_weight[2 * dim + 1] = 0.f;
                 continue;
             }
 
             UInt32 param_index = math::find_interval(
-                m_param_size[dim],
+                (uint32_t) m_param_values[dim].size(),
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].data(), idx,
+                    return gather<Float>(m_param_values[dim], idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
+            Float p0 = gather<Float>(m_param_values[dim], param_index, active),
+                  p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -360,23 +344,23 @@ public:
         if (Dimension != 0)
             offset_i += slice_offset * level0.size;
 
-        Value v00 = level0.template lookup<Dimension>(
+        Float v00 = level0.template lookup<Dimension>(
             offset_i, m_param_strides, param_weight, active);
 
-        Value v10 = level0.template lookup<Dimension>(
+        Float v10 = level0.template lookup<Dimension>(
             offset_i + 1, m_param_strides, param_weight, active);
 
-        Value v01 = level0.template lookup<Dimension>(
+        Float v01 = level0.template lookup<Dimension>(
             offset_i + level0.width, m_param_strides, param_weight, active);
 
-        Value v11 = level0.template lookup<Dimension>(
+        Float v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
         sample -= Vector2f(Vector2i(offset));
 
         Vector2f w1 = sample, w0 = 1.f - w1;
 
-        Value c0   = fmadd(w0.y(), v00, w1.y() * v01),
+        Float c0   = fmadd(w0.y(), v00, w1.y() * v01),
               c1   = fmadd(w0.y(), v10, w1.y() * v11),
               pdf  = fmadd(w0.x(), c0, w1.x() * c1),
               r0   = v00 + v10,
@@ -441,34 +425,28 @@ public:
      * \brief Evaluate the density at position \c pos. The distribution is
      * parameterized by \c param if applicable.
      */
-    template <typename Vector2f, typename Value = value_t<Vector2f>>
-    Value eval(Vector2f pos, const Value *param = nullptr,
-               mask_t<Value> active = true) const {
-        using Vector2u = uint32_array_t<Vector2f>;
-        using Vector2i = int32_array_t<Vector2f>;
-        using UInt32 = value_t<Vector2u>;
-        using Mask = mask_t<Value>;
-
+    Float eval(Vector2f pos, const Float *param = nullptr,
+               mask_t<Float> active = true) const {
         // Look up parameter-related indices and weights (if Dimension != 0)
-        Value param_weight[2 * ArraySize];
+        Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
-            if (unlikely(m_param_size[dim] == 1)) {
+            if (unlikely((uint32_t) m_param_values[dim].size() == 1)) {
                 param_weight[2 * dim] = 1.f;
                 param_weight[2 * dim + 1] = 0.f;
                 continue;
             }
 
             UInt32 param_index = math::find_interval(
-                m_param_size[dim],
+                (uint32_t) m_param_values[dim].size(),
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].data(), idx,
+                    return gather<Float>(m_param_values[dim], idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
+            Float p0 = gather<Float>(m_param_values[dim], param_index, active),
+                  p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -487,16 +465,16 @@ public:
         if (Dimension != 0)
             offset_i += slice_offset * level0.size;
 
-        Value v00 = level0.template lookup<Dimension>(
+        Float v00 = level0.template lookup<Dimension>(
             offset_i, m_param_strides, param_weight, active);
 
-        Value v10 = level0.template lookup<Dimension>(
+        Float v10 = level0.template lookup<Dimension>(
             offset_i + 1, m_param_strides, param_weight, active);
 
-        Value v01 = level0.template lookup<Dimension>(
+        Float v01 = level0.template lookup<Dimension>(
             offset_i + level0.width, m_param_strides, param_weight, active);
 
-        Value v11 = level0.template lookup<Dimension>(
+        Float v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
         return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
@@ -515,8 +493,8 @@ public:
             for (size_t i = 0; i<Dimension; ++i) {
                 if (i != 0)
                     oss << ", ";
-                oss << m_param_size[i];
-                n_slices *= m_param_size[i];
+                oss << m_param_values[i].size();
+                n_slices *= m_param_values[i].size();
             }
             oss << "]," << std::endl
                 << "  param_strides = [";
@@ -543,10 +521,9 @@ private:
         FloatStorage data;
 
         Level() { }
-        Level(ScalarVector2u res, uint32_t slices) : size(hprod(res)), width(res.x()) {
-            uint32_t alloc_size = size  * slices;
-            data.resize(alloc_size);
-            memset(data.data(), 0, alloc_size * sizeof(ScalarFloat));
+        Level(ScalarVector2u res, uint32_t slices)
+            : size(hprod(res)), width(res.x()), data(zero<FloatStorage>(hprod(res) * slices)) {
+            data.managed();
         }
 
         /**
@@ -565,33 +542,38 @@ private:
         MTS_INLINE ScalarFloat *ptr(const ScalarVector2i &p) {
             return data.data() + index(p);
         }
+
         MTS_INLINE const ScalarFloat *ptr(const ScalarVector2i &p) const {
             return data.data() + index(p);
         }
 
-        template <size_t Dim, typename Index, typename Value,
-                  std::enable_if_t<Dim != 0, int> = 0>
-        MTS_INLINE Value lookup(Index i0,
+        template <size_t Dim>
+        MTS_INLINE Float lookup(const UInt32 &i0,
                                 const uint32_t *param_strides,
-                                const Value *param_weight,
-                                mask_t<Value> active) const {
-            Index i1 = i0 + param_strides[Dim - 1] * size;
+                                const Float *param_weight,
+                                const mask_t<Float> &active) const {
+            if constexpr (Dim != 0) {
+                UInt32 i1 = i0 + param_strides[Dim - 1] * size;
 
-            Value w0 = param_weight[2 * Dim - 2],
-                  w1 = param_weight[2 * Dim - 1],
-                  v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
-                  v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
+                Float w0 = param_weight[2 * Dim - 2],
+                      w1 = param_weight[2 * Dim - 1],
+                      v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
+                      v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
 
-            return fmadd(v0, w0, v1 * w1);
-        }
-
-        template <size_t Dim, typename Index, typename Value,
-                  std::enable_if_t<Dim == 0, int> = 0>
-        MTS_INLINE Value lookup(Index index, const uint32_t *,
-                                const Value *, mask_t<Value> active) const {
-            return gather<Value>(data.data(), index, active);
+                return fmadd(v0, w0, v1 * w1);
+            } else {
+                ENOKI_MARK_USED(param_strides);
+                ENOKI_MARK_USED(param_weight);
+                return gather<Float>(data, i0, active);
+            }
         }
     };
+
+#if !defined(_MSC_VER)
+    static constexpr size_t DimensionInt = Dimension;
+#else
+    static constexpr size_t DimensionInt = (Dimension != 0) ? Dimension : 1;
+#endif
 
     /// MIP hierarchy over linearly interpolated patches
     std::vector<Level> m_levels;
@@ -608,17 +590,13 @@ private:
     /// Number of bilinear patches in the X/Y dimension - 1
     ScalarVector2u m_max_patch_index;
 
-    /// Resolution of each parameter (optional)
-    uint32_t m_param_size[ArraySize];
-
     /// Stride per parameter in units of sizeof(ScalarFloat)
-    uint32_t m_param_strides[ArraySize];
+    uint32_t m_param_strides[DimensionInt];
 
     /// Discretization of each parameter domain
-    FloatStorage m_param_values[ArraySize];
+    FloatStorage m_param_values[DimensionInt];
 };
 
-#if 0
 /**
  * \brief Implements a marginal sample warping scheme for 2D distributions
  * with linear interpolation and an optional dependence on additional parameters
@@ -647,18 +625,14 @@ private:
  * class named Marginal2D0, Marginal2D1, and Marginal2D2 for data that depends
  * on 0, 1, and 2 parameters, respectively.
  */
-template <typename Float, size_t Dimension = 0> class Marginal2D {
-private:
-    MTS_IMPORT_CORE_TYPES()
-    using FloatStorage = host_vector<Float>;
-
-#if !defined(_MSC_VER)
-    static constexpr size_t ArraySize = Dimension;
-#else
-    static constexpr size_t ArraySize = (Dimension != 0) ? Dimension : 1;
-#endif
-
+template <typename Float_, size_t Dimension_ = 0> class Marginal2D {
 public:
+    using Float                       = Float_;
+    static constexpr size_t Dimension = Dimension_;
+    using FloatStorage                = DynamicBuffer<Float>;
+
+    MTS_IMPORT_CORE_TYPES()
+
     Marginal2D() = default;
 
     /**
@@ -678,7 +652,8 @@ public:
      * this functionality is not needed (e.g. if only the interpolation in \c
      * eval() is used).
      */
-    Marginal2D(const ScalarVector2u &size, const ScalarFloat *data,
+    Marginal2D(const ScalarFloat *data,
+               const ScalarVector2u &size,
                std::array<uint32_t, Dimension> param_res = { },
                std::array<const ScalarFloat *, Dimension> param_values = { },
                bool normalize = true, bool build_cdf = true)
@@ -697,25 +672,26 @@ public:
             if (param_res[i] < 1)
                 Throw("Marginal2D(): parameter resolution must be >= 1!");
 
-            m_param_size[i] = param_res[i];
-            m_param_values[i].resize(param_res[i]);
-            memcpy(m_param_values[i].data(), param_values[i],
-                   sizeof(ScalarFloat) * param_res[i]);
+            m_param_values[i] = FloatStorage::copy(param_values[i], param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? slices : 0;
-            slices *= m_param_size[i];
+            slices *= param_res[i];
         }
 
         uint32_t n_values = hprod(size);
 
-        m_data.resize(slices * n_values);
+        m_data = empty<FloatStorage>(slices * n_values);
+        m_data.managed();
 
         if (build_cdf) {
-            m_marginal_cdf.resize(slices * m_size.y());
-            m_conditional_cdf.resize(slices * n_values);
+            m_marginal_cdf = empty<FloatStorage>(slices * m_size.y());
+            m_marginal_cdf.managed();
 
-            ScalarFloat *marginal_cdf = m_marginal_cdf.data(),
-                  *conditional_cdf = m_conditional_cdf.data(),
-                  *data_out = m_data.data();
+            m_conditional_cdf = empty<FloatStorage>(slices * n_values);
+            m_conditional_cdf.managed();
+
+            ScalarFloat *marginal_cdf    = m_marginal_cdf.data(),
+                        *conditional_cdf = m_conditional_cdf.data(),
+                        *data_out = m_data.data();
 
             for (uint32_t slice = 0; slice < slices; ++slice) {
                 // Construct conditional CDF
@@ -782,43 +758,38 @@ public:
         }
     }
 
-
     /**
      * \brief Given a uniformly distributed 2D sample, draw a sample from the
      * distribution (parameterized by \c param if applicable)
      *
      * Returns the warped sample and associated probability density.
      */
-    template <typename Vector2f, typename Value = value_t<Vector2f>>
-    std::pair<Vector2f, Value> sample(Vector2f sample, const Value *param = nullptr,
-                                      mask_t<Value> active = true) const {
-        using Vector2u = uint32_array_t<Vector2f>;
-        using UInt32 = value_t<Vector2u>;
-        using Mask = mask_t<Value>;
+    std::pair<Vector2f, Float> sample(Vector2f sample, const Float *param = nullptr,
+                                      mask_t<Float> active = true) const {
 
         // Avoid degeneracies at the extrema
-        sample = clamp(sample, math::Epsilon<Value>, math::OneMinusEpsilon<Value>);
+        sample = clamp(sample, math::Epsilon<Float>, math::OneMinusEpsilon<Float>);
 
         // Look up parameter-related indices and weights (if Dimension != 0)
-        Value param_weight[2 * ArraySize];
+        Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
-            if (unlikely(m_param_size[dim] == 1)) {
+            if (unlikely((uint32_t) m_param_values[dim].size() == 1)) {
                 param_weight[2 * dim] = 1.f;
                 param_weight[2 * dim + 1] = 0.f;
                 continue;
             }
 
             UInt32 param_index = math::find_interval(
-                m_param_size[dim],
+                (uint32_t) m_param_values[dim].size(),
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].data(), idx,
+                    return gather<Float>(m_param_values[dim], idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
+            Float p0 = gather<Float>(m_param_values[dim], param_index, active),
+                  p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -831,7 +802,7 @@ public:
         if (Dimension != 0)
             offset = slice_offset * m_size.y();
 
-        auto fetch_marginal = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Value {
+        auto fetch_marginal = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Float {
             return lookup<Dimension>(m_marginal_cdf.data(), offset + idx,
                                      m_size.y(), param_weight, active_);
         };
@@ -850,7 +821,7 @@ public:
         if (Dimension != 0)
             offset += slice_offset * slice_size;
 
-        Value r0 = lookup<Dimension>(m_conditional_cdf.data(),
+        Float r0 = lookup<Dimension>(m_conditional_cdf.data(),
                                      offset + m_size.x() - 1, slice_size,
                                      param_weight, active),
               r1 = lookup<Dimension>(m_conditional_cdf.data(),
@@ -865,8 +836,8 @@ public:
         // Sample the column next
         sample.x() *= (1.f - sample.y()) * r0 + sample.y() * r1;
 
-        auto fetch_conditional = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Value {
-            Value v0 = lookup<Dimension>(m_conditional_cdf.data(), offset + idx,
+        auto fetch_conditional = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Float {
+            Float v0 = lookup<Dimension>(m_conditional_cdf.data(), offset + idx,
                                          slice_size, param_weight, active_),
                   v1 = lookup<Dimension>(m_conditional_cdf.data() + m_size.x(),
                                          offset + idx, slice_size, param_weight, active_);
@@ -885,7 +856,7 @@ public:
 
         offset += col;
 
-        Value v00 = lookup<Dimension>(m_data.data(), offset, slice_size,
+        Float v00 = lookup<Dimension>(m_data.data(), offset, slice_size,
                                       param_weight, active),
               v10 = lookup<Dimension>(m_data.data() + 1, offset, slice_size,
                                       param_weight, active),
@@ -899,7 +870,7 @@ public:
         is_const = abs(c0 - c1) < 1e-4f * (c0 + c1);
         sample.x() = select(is_const, 2.f * sample.x(),
             c0 - safe_sqrt(c0 * c0 - 2.f * sample.x() * (c0 - c1)));
-        Value divisor = select(is_const, c0 + c1, c0 - c1);
+        Float divisor = select(is_const, c0 + c1, c0 - c1);
         masked(sample.x(), neq(divisor, 0.f)) /= divisor;
 
         return {
@@ -909,34 +880,28 @@ public:
     }
 
     /// Inverse of the mapping implemented in \c sample()
-    template <typename Vector2f, typename Value = value_t<Vector2f>>
-    std::pair<Vector2f, Value> invert(Vector2f sample, const Value *param = nullptr,
-                                      mask_t<Value> active = true) const {
-        using Vector2u = uint32_array_t<Vector2f>;
-        using Vector2i = int32_array_t<Vector2f>;
-        using UInt32 = value_t<Vector2u>;
-        using Mask = mask_t<Value>;
-
+    std::pair<Vector2f, Float> invert(Vector2f sample, const Float *param = nullptr,
+                                      mask_t<Float> active = true) const {
         // Look up parameter-related indices and weights (if Dimension != 0)
-        Value param_weight[2 * ArraySize];
+        Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
-            if (unlikely(m_param_size[dim] == 1)) {
+            if (unlikely((uint32_t) m_param_values[dim].size() == 1)) {
                 param_weight[2 * dim] = 1.f;
                 param_weight[2 * dim + 1] = 0.f;
                 continue;
             }
 
             UInt32 param_index = math::find_interval(
-                m_param_size[dim],
+                (uint32_t) m_param_values[dim].size(),
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].data(), idx,
+                    return gather<Float>(m_param_values[dim], idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
+            Float p0 = gather<Float>(m_param_values[dim], param_index, active),
+                  p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -955,7 +920,7 @@ public:
             offset += slice_offset * slice_size;
 
         // Invert the X component
-        Value v00 = lookup<Dimension>(m_data.data(), offset, slice_size,
+        Float v00 = lookup<Dimension>(m_data.data(), offset, slice_size,
                                       param_weight, active),
               v10 = lookup<Dimension>(m_data.data() + 1, offset, slice_size,
                                       param_weight, active),
@@ -966,13 +931,13 @@ public:
 
         Vector2f w1 = sample, w0 = 1.f - w1;
 
-        Value c0  = fmadd(w0.y(), v00, w1.y() * v01),
+        Float c0  = fmadd(w0.y(), v00, w1.y() * v01),
               c1  = fmadd(w0.y(), v10, w1.y() * v11),
               pdf = fmadd(w0.x(), c0, w1.x() * c1);
 
         sample.x() *= c0 + .5f * sample.x() * (c1 - c0);
 
-        Value v0 = lookup<Dimension>(m_conditional_cdf.data(), offset,
+        Float v0 = lookup<Dimension>(m_conditional_cdf.data(), offset,
                                      slice_size, param_weight, active),
               v1 = lookup<Dimension>(m_conditional_cdf.data() + m_size.x(),
                                      offset, slice_size, param_weight, active);
@@ -983,7 +948,7 @@ public:
         if (Dimension != 0)
             offset += slice_offset * slice_size;
 
-        Value r0 = lookup<Dimension>(m_conditional_cdf.data(),
+        Float r0 = lookup<Dimension>(m_conditional_cdf.data(),
                                      offset + m_size.x() - 1, slice_size,
                                      param_weight, active),
               r1 = lookup<Dimension>(m_conditional_cdf.data(),
@@ -1009,34 +974,28 @@ public:
      * \brief Evaluate the density at position \c pos. The distribution is
      * parameterized by \c param if applicable.
      */
-    template <typename Vector2f, typename Value = value_t<Vector2f>>
-    Value eval(Vector2f pos, const Value *param = nullptr,
-               mask_t<Value> active = true) const {
-        using Vector2u = uint32_array_t<Vector2f>;
-        using Vector2i = int32_array_t<Vector2f>;
-        using UInt32 = value_t<Vector2u>;
-        using Mask = mask_t<Value>;
-
+    Float eval(Vector2f pos, const Float *param = nullptr,
+               mask_t<Float> active = true) const {
         // Look up parameter-related indices and weights (if Dimension != 0)
-        Value param_weight[2 * ArraySize];
+        Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = zero<UInt32>();
         for (size_t dim = 0; dim < Dimension; ++dim) {
-            if (unlikely(m_param_size[dim] == 1)) {
+            if (unlikely((uint32_t) m_param_values[dim].size() == 1)) {
                 param_weight[2 * dim] = 1.f;
                 param_weight[2 * dim + 1] = 0.f;
                 continue;
             }
 
             UInt32 param_index = math::find_interval(
-                m_param_size[dim],
+                (uint32_t) m_param_values[dim].size(),
                 [&](UInt32 idx, Mask active_) {
-                    return gather<Value>(m_param_values[dim].data(), idx,
+                    return gather<Float>(m_param_values[dim], idx,
                                          active_) <= param[dim];
                 },
                 active);
 
-            Value p0 = gather<Value>(m_param_values[dim].data(), param_index, active),
-                  p1 = gather<Value>(m_param_values[dim].data(), param_index + 1, active);
+            Float p0 = gather<Float>(m_param_values[dim], param_index, active),
+                  p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
 
             param_weight[2 * dim + 1] =
                 clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
@@ -1056,7 +1015,7 @@ public:
         if (Dimension != 0)
             index += slice_offset * size;
 
-        Value v00 = lookup<Dimension>(m_data.data(), index, size,
+        Float v00 = lookup<Dimension>(m_data.data(), index, size,
                                       param_weight, active),
               v10 = lookup<Dimension>(m_data.data() + 1, index, size,
                                       param_weight, active),
@@ -1079,8 +1038,8 @@ public:
             for (size_t i = 0; i<Dimension; ++i) {
                 if (i != 0)
                     oss << ", ";
-                oss << m_param_size[i];
-                n_slices *= m_param_size[i];
+                oss << m_param_values[i].size();
+                n_slices *= m_param_values[i].size();
             }
             oss << "]," << std::endl
                 << "  param_strides = [";
@@ -1100,27 +1059,31 @@ public:
     }
 
 private:
-        template <size_t Dim, typename Index, typename Value,
-                  std::enable_if_t<Dim != 0, int> = 0>
-        MTS_INLINE Value lookup(const ScalarFloat *data, Index i0,
+#if !defined(_MSC_VER)
+    static constexpr size_t DimensionInt = Dimension;
+#else
+    static constexpr size_t DimensionInt = (Dimension != 0) ? Dimension : 1;
+#endif
+
+        template <size_t Dim>
+        MTS_INLINE Float lookup(const ScalarFloat *data,
+                                UInt32 i0,
                                 uint32_t size,
-                                const Value *param_weight,
-                                mask_t<Value> active) const {
-            Index i1 = i0 + m_param_strides[Dim - 1] * size;
+                                const Float *param_weight,
+                                mask_t<Float> active) const {
+            if constexpr (Dim != 0) {
+                UInt32 i1 = i0 + m_param_strides[Dim - 1] * size;
 
-            Value w0 = param_weight[2 * Dim - 2],
-                  w1 = param_weight[2 * Dim - 1],
-                  v0 = lookup<Dim - 1>(data, i0, size, param_weight, active),
-                  v1 = lookup<Dim - 1>(data, i1, size, param_weight, active);
+                Float w0 = param_weight[2 * Dim - 2],
+                      w1 = param_weight[2 * Dim - 1],
+                      v0 = lookup<Dim - 1>(data, i0, size, param_weight, active),
+                      v1 = lookup<Dim - 1>(data, i1, size, param_weight, active);
 
-            return fmadd(v0, w0, v1 * w1);
-        }
-
-        template <size_t Dim, typename Index, typename Value,
-                  std::enable_if_t<Dim == 0, int> = 0>
-        MTS_INLINE Value lookup(const ScalarFloat *data, Index index, uint32_t,
-                                const Value *, mask_t<Value> active) const {
-            return gather<Value>(data, index, active);
+                return fmadd(v0, w0, v1 * w1);
+            } else {
+                ENOKI_MARK_USED(param_weight);
+                return gather<Float>(data, i0, active);
+            }
         }
 
 private:
@@ -1130,14 +1093,11 @@ private:
     /// Size of a bilinear patch in the unit square
     ScalarVector2f m_patch_size, m_inv_patch_size;
 
-    /// Resolution of each parameter (optional)
-    uint32_t m_param_size[ArraySize];
-
     /// Stride per parameter in units of sizeof(ScalarFloat)
-    uint32_t m_param_strides[ArraySize];
+    uint32_t m_param_strides[DimensionInt];
 
     /// Discretization of each parameter domain
-    FloatStorage m_param_values[ArraySize];
+    FloatStorage m_param_values[DimensionInt];
 
     /// Density values
     FloatStorage m_data;
@@ -1146,7 +1106,6 @@ private:
     FloatStorage m_marginal_cdf;
     FloatStorage m_conditional_cdf;
 };
-#endif
 
 //! @}
 // =======================================================================

@@ -1,327 +1,81 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/distr_2d.h>
+#include <pybind11/numpy.h>
 #include <enoki/stl.h>
+
+template <typename Warp> void bind_warp(py::module &m, const char *name) {
+    using Float                = typename Warp::Float;
+    using FloatStorage         = typename Warp::FloatStorage;
+    using ScalarFloat          = scalar_t<Float>;
+    using NumPyArray           = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
+    using Vector2f             = enoki::Array<Float, 2>;
+    using ScalarVector2u       = enoki::Array<uint32_t, 2>;
+    using Mask                 = mask_t<Float>;
+
+    py::object zero = py::cast(enoki::zero<Array<ScalarFloat, Warp::Dimension>>());
+
+    py::class_<Warp>(m, name, py::module_local())
+        .def(py::init([](const NumPyArray &data,
+                         const std::array<FloatStorage, Warp::Dimension> &param_values_in,
+                         bool normalize, bool build_hierarchy) {
+                 if (data.ndim() != Warp::Dimension + 2)
+                     throw std::domain_error("'data' array has incorrect dimension");
+
+                 std::array<uint32_t, Warp::Dimension> param_res;
+                 std::array<const ScalarFloat *, Warp::Dimension> param_values;
+
+                 for (size_t i = 0; i < Warp::Dimension; ++i) {
+                     if (param_values_in[i].size() != (size_t) data.shape(i))
+                         throw std::domain_error("'param_values' array has incorrect dimension");
+                     param_values[i] = param_values_in[i].data();
+                     param_res[i] = param_values_in[i].size();
+                 }
+
+                 return Warp(data.data(),
+                             ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
+                                            (uint32_t) data.shape(data.ndim() - 2)),
+                             param_res, param_values, normalize, build_hierarchy);
+             }),
+             "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
+             D(warp, Hierarchical2D))
+        .def("sample",
+            vectorize([](const Warp *w, const Vector2f &sample,
+                         const Array<Float, Warp::Dimension> &param,
+                         Mask active) {
+                return w->sample(sample, param.data(), active);
+            }),
+            "sample"_a, "param"_a = zero, "active"_a = true, D(warp, Hierarchical2D, sample))
+        .def("invert",
+            vectorize([](const Warp *w, const Vector2f &sample,
+                         const Array<Float, Warp::Dimension> &param,
+                         Mask active) {
+                return w->invert(sample, param.data(), active);
+            }),
+            "sample"_a, "param"_a = zero, "active"_a = true, D(warp, Hierarchical2D, invert))
+        .def("eval",
+            vectorize([](const Warp *w, const Vector2f &pos,
+                         const Array<Float, Warp::Dimension> &param,
+                         Mask active) {
+                return w->eval(pos, param.data(), active);
+            }),
+            "pos"_a, "param"_a = zero, "active"_a = true, D(warp, Hierarchical2D, eval))
+        .def("__repr__", &Warp::to_string);
+}
 
 MTS_PY_EXPORT(Hierarchical2D) {
     MTS_PY_IMPORT_TYPES()
+
+    bind_warp<Hierarchical2D<Float, 0>>(m, "Hierarchical2D0");
+    bind_warp<Hierarchical2D<Float, 1>>(m, "Hierarchical2D1");
+    bind_warp<Hierarchical2D<Float, 2>>(m, "Hierarchical2D2");
+    bind_warp<Hierarchical2D<Float, 3>>(m, "Hierarchical2D3");
 }
 
 MTS_PY_EXPORT(Marginal2D) {
     MTS_PY_IMPORT_TYPES()
+
+    bind_warp<Marginal2D<Float, 0>>(m, "Marginal2D0");
+    bind_warp<Marginal2D<Float, 1>>(m, "Marginal2D1");
+    bind_warp<Marginal2D<Float, 2>>(m, "Marginal2D2");
+    bind_warp<Marginal2D<Float, 3>>(m, "Marginal2D3");
 }
-
-#if 0
-
-    using FloatArray = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
-
-    using Marginal2D0 = warp::Marginal2D<Float, 0>;
-    using Marginal2D1 = warp::Marginal2D<Float, 1>;
-    using Marginal2D2 = warp::Marginal2D<Float, 2>;
-    using Marginal2D3 = warp::Marginal2D<Float, 3>;
-
-    printf("Binding Marginal2D0\n");
-
-    py::class_<Marginal2D0>(warp, "Marginal2D0", py::module_local(), D(warp, Marginal2D))
-        .def(py::init([](FloatArray data, bool normalize, bool build_cdf) {
-                if (data.ndim() != 2)
-                    throw std::domain_error("data array has incorrect dimension");
-                return Marginal2D0(
-                    ScalarVector2u((uint32_t) data.shape(1), (uint32_t) data.shape(0)),
-                    data.data(), {}, {}, normalize, build_cdf);
-            }),
-            "data"_a, "normalize"_a = true, "build_cdf"_a = true)
-        .def("sample",
-            vectorize([](const Marginal2D0 *lw, const Vector2f &sample, Mask active) {
-                return lw->sample(sample, (const Float *) nullptr, active);
-            }),
-            "sample"_a, "active"_a = true, D(warp, Marginal2D, sample))
-        .def("invert",
-            vectorize([](const Marginal2D0 *lw, const Vector2f &invert, Mask active) {
-                return lw->invert(invert, (const Float *) nullptr, active);
-            }),
-            "sample"_a, "active"_a = true, D(warp, Marginal2D, invert))
-        .def("eval",
-            vectorize([](const Marginal2D0 *lw, const Vector2f &pos, Mask active) {
-                return lw->eval(pos, (const Float *) nullptr, active);
-            }),
-            "pos"_a, "active"_a = true, D(warp, Marginal2D, eval))
-        .def("__repr__", &Marginal2D0::to_string);
-
-    py::class_<Marginal2D1>(warp, "Marginal2D1", py::module_local())
-        .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
-                        bool normalize, bool build_cdf) {
-                if (data.ndim() != 3)
-                    throw std::domain_error("data array has incorrect dimension");
-                if (param_values.size() == 1 ||
-                    (uint32_t) param_values[0].size() != (uint32_t) data.shape(0))
-                    throw std::domain_error("param_values array has incorrect dimension");
-                return Marginal2D1(
-                    ScalarVector2u((uint32_t) data.shape(2), (uint32_t) data.shape(1)),
-                    data.data(), { { (uint32_t) param_values[0].size() } },
-                    { { param_values[0].data() } }, normalize, build_cdf);
-            }),
-            "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true,
-            D(warp, Marginal2D))
-        .def("sample",
-            vectorize(
-                [](const Marginal2D1 *lw, const Vector2f &sample, Float param1, Mask active) {
-                    Float params[1] = { param1 };
-                    return lw->sample(sample, params, active);
-                }),
-            "sample"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, sample))
-        .def("invert",
-            vectorize(
-                [](const Marginal2D1 *lw, const Vector2f &invert, Float param1, Mask active) {
-                    Float params[1] = { param1 };
-                    return lw->invert(invert, params, active);
-                }),
-            "sample"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, invert))
-        .def("eval",
-            vectorize(
-                [](const Marginal2D1 *lw, const Vector2f &pos, Float param1, Mask active) {
-                    Float params[1] = { param1 };
-                    return lw->eval(pos, params, active);
-                }),
-            "pos"_a, "param1"_a, "active"_a = true, D(warp, Marginal2D, eval))
-        .def("__repr__", &Marginal2D1::to_string);
-
-    py::class_<Marginal2D2>(warp, "Marginal2D2", py::module_local())
-        .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
-                        bool normalize, bool build_cdf) {
-                if (data.ndim() != 4)
-                    throw std::domain_error("data array has incorrect dimension");
-                if (param_values.size() != 2 ||
-                    (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
-                    (uint32_t) param_values[1].size() != (uint32_t) data.shape(1))
-                    throw std::domain_error("param_values array has incorrect dimension");
-                return Marginal2D2(
-                    ScalarVector2u((uint32_t) data.shape(3), (uint32_t) data.shape(2)), data.data(),
-                    { { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() } },
-                    { { param_values[0].data(), param_values[1].data() } }, normalize, build_cdf);
-            }),
-            "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true,
-            D(warp, Marginal2D))
-        .def("sample",
-            vectorize([](const Marginal2D2 *lw, const Vector2f &sample, Float param1,
-                                Float param2, Mask active) {
-                Float params[2] = { param1, param2 };
-                return lw->sample(sample, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, sample))
-        .def("invert",
-            vectorize([](const Marginal2D2 *lw, const Vector2f &invert, Float param1,
-                                Float param2, Mask active) {
-                Float params[2] = { param1, param2 };
-                return lw->invert(invert, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, invert))
-        .def("eval",
-            vectorize([](const Marginal2D2 *lw, const Vector2f &pos, Float param1,
-                                Float param2, Mask active) {
-                Float params[2] = { param1, param2 };
-                return lw->eval(pos, params, active);
-            }),
-            "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Marginal2D, eval))
-        .def("__repr__", &Marginal2D2::to_string);
-
-    py::class_<Marginal2D3>(warp, "Marginal2D3", py::module_local())
-        .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
-                        bool normalize, bool build_cdf) {
-                if (data.ndim() != 5)
-                    throw std::domain_error("data array has incorrect dimension");
-                if (param_values.size() != 3 ||
-                    (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
-                    (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
-                    (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
-                    throw std::domain_error("param_values array has incorrect dimension");
-                return Marginal2D3(
-                    ScalarVector2u((uint32_t) data.shape(4), (uint32_t) data.shape(3)), data.data(),
-                    { { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size(),
-                        (uint32_t) param_values[2].size() } },
-                    { { param_values[0].data(), param_values[1].data(), param_values[2].data() } },
-                    normalize, build_cdf);
-            }),
-            "data"_a, "param_values"_a, "normalize"_a = true, "build_cdf"_a = true,
-            D(warp, Marginal2D))
-        .def("invert",
-            vectorize([](const Marginal2D3 *lw, const Vector2f &invert, Float param1,
-                                Float param2, Float param3, Mask active) {
-                Float params[3] = { param1, param2, param3 };
-                return lw->invert(invert, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
-            D(warp, Marginal2D, invert))
-        .def("sample",
-            vectorize([](const Marginal2D3 *lw, const Vector2f &sample, Float param1,
-                                Float param2, Float param3, Mask active) {
-                Float params[3] = { param1, param2, param3 };
-                return lw->sample(sample, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
-            D(warp, Marginal2D, sample))
-        .def("eval",
-            vectorize([](const Marginal2D3 *lw, const Vector2f &pos, Float param1,
-                                Float param2, Float param3, Mask active) {
-                Float params[3] = { param1, param2, param3 };
-                return lw->eval(pos, params, active);
-            }),
-            "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
-            D(warp, Marginal2D, eval))
-        .def("__repr__", &Marginal2D3::to_string);
-
-    // --------------------------------------------------------------------
-
-    using Hierarchical2D0 = warp::Hierarchical2D<Float, 0>;
-    using Hierarchical2D1 = warp::Hierarchical2D<Float, 1>;
-    using Hierarchical2D2 = warp::Hierarchical2D<Float, 2>;
-    using Hierarchical2D3 = warp::Hierarchical2D<Float, 3>;
-
-    py::class_<Hierarchical2D0>(warp, "Hierarchical2D0", D(warp, Hierarchical2D), py::module_local())
-        .def(py::init([](FloatArray data, bool normalize, bool build_hierarchy) {
-                if (data.ndim() != 2)
-                    throw std::domain_error("data array has incorrect dimension");
-                return Hierarchical2D0(
-                    ScalarVector2u((uint32_t) data.shape(1), (uint32_t) data.shape(0)),
-                    data.data(), {}, {}, normalize, build_hierarchy);
-            }),
-            "data"_a, "normalize"_a = true, "build_hierarchy"_a = true)
-        .def("sample",
-            vectorize([](const Hierarchical2D0 *lw, const Vector2f &sample, Mask active) {
-                return lw->sample(sample, (const Float *) nullptr, active);
-            }),
-            "sample"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
-        .def("invert",
-            vectorize([](const Hierarchical2D0 *lw, const Vector2f &invert, Mask active) {
-                return lw->invert(invert, (const Float *) nullptr, active);
-            }),
-            "sample"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
-        .def("eval",
-            vectorize([](const Hierarchical2D0 *lw, const Vector2f &pos, Mask active) {
-                return lw->eval(pos, (const Float *) nullptr, active);
-            }),
-            "pos"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
-        .def("__repr__", &Hierarchical2D0::to_string);
-
-    py::class_<Hierarchical2D1>(warp, "Hierarchical2D1", py::module_local())
-        .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
-                        bool normalize, bool build_hierarchy) {
-                if (data.ndim() != 3)
-                    throw std::domain_error("data array has incorrect dimension");
-                if (param_values.size() == 1 ||
-                    (uint32_t) param_values[0].size() != (uint32_t) data.shape(0))
-                    throw std::domain_error("param_values array has incorrect dimension");
-                return Hierarchical2D1(
-                    ScalarVector2u((uint32_t) data.shape(2), (uint32_t) data.shape(1)), data.data(),
-                    { { (uint32_t) param_values[0].size() } }, { { param_values[0].data() } },
-                    normalize, build_hierarchy);
-            }),
-            "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
-            D(warp, Hierarchical2D))
-        .def("sample",
-            vectorize(
-                [](const Hierarchical2D1 *lw, const Vector2f &sample, Float param1, Mask active) {
-                    Float params[1] = { param1 };
-                    return lw->sample(sample, params, active);
-                }),
-            "sample"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
-        .def("invert",
-            vectorize(
-                [](const Hierarchical2D1 *lw, const Vector2f &invert, Float param1, Mask active) {
-                    Float params[1] = { param1 };
-                    return lw->invert(invert, params, active);
-                }),
-            "sample"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
-        .def("eval",
-            vectorize(
-                [](const Hierarchical2D1 *lw, const Vector2f &pos, Float param1, Mask active) {
-                    Float params[1] = { param1 };
-                    return lw->eval(pos, params, active);
-                }),
-            "pos"_a, "param1"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
-        .def("__repr__", &Hierarchical2D1::to_string);
-
-    py::class_<Hierarchical2D2>(warp, "Hierarchical2D2", py::module_local())
-        .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
-                        bool normalize, bool build_hierarchy) {
-                if (data.ndim() != 4)
-                    throw std::domain_error("data array has incorrect dimension");
-                if (param_values.size() != 2 ||
-                    (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
-                    (uint32_t) param_values[1].size() != (uint32_t) data.shape(1))
-                    throw std::domain_error("param_values array has incorrect dimension");
-                return Hierarchical2D2(
-                    ScalarVector2u((uint32_t) data.shape(3), (uint32_t) data.shape(2)), data.data(),
-                    { { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size() } },
-                    { { param_values[0].data(), param_values[1].data() } }, normalize,
-                    build_hierarchy);
-            }),
-            "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
-            D(warp, Hierarchical2D))
-        .def("sample",
-            vectorize([](const Hierarchical2D2 *lw, const Vector2f &sample, Float param1,
-                         Float param2, Mask active) {
-                Float params[2] = { param1, param2 };
-                return lw->sample(sample, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, sample))
-        .def("invert",
-            vectorize([](const Hierarchical2D2 *lw, const Vector2f &invert, Float param1,
-                         Float param2, Mask active) {
-                Float params[2] = { param1, param2 };
-                return lw->invert(invert, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, invert))
-        .def("eval",
-            vectorize([](const Hierarchical2D2 *lw, const Vector2f &pos, Float param1,
-                         Float param2, Mask active) {
-                Float params[2] = { param1, param2 };
-                return lw->eval(pos, params, active);
-            }),
-            "pos"_a, "param1"_a, "param2"_a, "active"_a = true, D(warp, Hierarchical2D, eval))
-        .def("__repr__", &Hierarchical2D2::to_string);
-
-    py::class_<Hierarchical2D3>(warp, "Hierarchical2D3", py::module_local())
-        .def(py::init([](FloatArray data, std::vector<std::vector<ScalarFloat>> param_values,
-                        bool normalize, bool build_hierarchy) {
-                if (data.ndim() != 5)
-                    throw std::domain_error("data array has incorrect dimension");
-                if (param_values.size() != 3 ||
-                    (uint32_t) param_values[0].size() != (uint32_t) data.shape(0) ||
-                    (uint32_t) param_values[1].size() != (uint32_t) data.shape(1) ||
-                    (uint32_t) param_values[2].size() != (uint32_t) data.shape(2))
-                    throw std::domain_error("param_values array has incorrect dimension");
-                return Hierarchical2D3(
-                    ScalarVector2u((uint32_t) data.shape(4), (uint32_t) data.shape(3)), data.data(),
-                    { { (uint32_t) param_values[0].size(), (uint32_t) param_values[1].size(),
-                        (uint32_t) param_values[2].size() } },
-                    { { param_values[0].data(), param_values[1].data(), param_values[2].data() } },
-                    normalize, build_hierarchy);
-            }),
-            "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
-            D(warp, Hierarchical2D))
-        .def("invert",
-            vectorize([](const Hierarchical2D3 *lw, const Vector2f &invert, Float param1,
-                         Float param2, Float param3, Mask active) {
-                Float params[3] = { param1, param2, param3 };
-                return lw->invert(invert, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
-            D(warp, Hierarchical2D, invert))
-        .def("sample",
-            vectorize([](const Hierarchical2D3 *lw, const Vector2f &sample, Float param1,
-                         Float param2, Float param3, Mask active) {
-                Float params[3] = { param1, param2, param3 };
-                return lw->sample(sample, params, active);
-            }),
-            "sample"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
-            D(warp, Hierarchical2D, sample))
-        .def("eval",
-            vectorize([](const Hierarchical2D3 *lw, const Vector2f &pos, Float param1,
-                         Float param2, Float param3, Mask active) {
-                Float params[3] = { param1, param2, param3 };
-                return lw->eval(pos, params, active);
-            }),
-            "pos"_a, "param1"_a, "param2"_a, "param3"_a, "active"_a = true,
-            D(warp, Hierarchical2D, eval))
-        .def("__repr__", &Hierarchical2D3::to_string);
-#endif

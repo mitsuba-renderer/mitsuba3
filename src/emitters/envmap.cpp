@@ -72,7 +72,7 @@ public:
         m_data = DynamicBuffer<Float>::copy(bitmap->data(), hprod(m_resolution) * 4);
 
         m_scale = props.float_("scale", 1.f);
-        m_warp = Warp(m_resolution, luminance.get());
+        m_warp = Warp(luminance.get(), m_resolution);
         m_d65 = Texture::D65(1.f);
     }
 

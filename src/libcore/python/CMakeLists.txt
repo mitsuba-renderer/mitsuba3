@@ -1,3 +1,10 @@
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel"
+    AND NOT U_CMAKE_BUILD_TYPE MATCHES REL)
+  # Default symbol visibility = hidden even in debug mode
+  # (Otherwise module-local pybind11 exports don't work)
+  add_compile_options(${TARGET_NAME} -fvisibility=hidden)
+endif()
+
 foreach (MTS_VARIANT ${MTS_VARIANTS})
   string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
   list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
@@ -68,5 +75,9 @@ add_mitsuba_python_library(core_ext
   thread.cpp
   util.cpp
 )
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
+  target_compile_options(core_ext PRIVATE -fvisibility=hidden)
+endif()
 
 target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render tbb)
