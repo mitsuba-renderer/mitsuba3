@@ -31,7 +31,7 @@ Caster cast_object = nullptr;
 // Helper macros for temporaly changing submodule name (for pydoc)
 #define CHANGE_SUBMODULE_NAME(Name) Name.attr("__name__") = "mitsuba.core." #Name;
 #define CHANGE_BACK_SUBMODULE_NAME(Name) \
-    Name.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MTS_MODULE_NAME(core.Name, MTS_VARIANT_NAME));
+    Name.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME) "." #Name;
 
 PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
