@@ -22,7 +22,6 @@ class MTS_EXPORT_CORE Bitmap : public Object {
 public:
     using Float = float;
     MTS_IMPORT_CORE_TYPES()
-    using Vector2s = Vector<size_t, 2>;
     using ReconstructionFilter = ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
@@ -194,7 +193,7 @@ public:
      */
     Bitmap(PixelFormat pixel_format,
            Struct::Type component_format,
-           const Vector2s &size,
+           const Vector2u &size,
            size_t channel_count = 0,
            uint8_t *data = nullptr);
 
@@ -245,16 +244,16 @@ public:
     const uint8_t *uint8_data() const { return m_data.get(); }
 
     /// Return the bitmap dimensions in pixels
-    const Vector2s &size() const { return m_size; }
+    const Vector2u &size() const { return m_size; }
 
     /// Return the bitmap's width in pixels
-    size_t width() const { return m_size.x(); }
+    uint32_t width() const { return m_size.x(); }
 
     /// Return the bitmap's height in pixels
-    size_t height() const { return m_size.y(); }
+    uint32_t height() const { return m_size.y(); }
 
     /// Return the total number of pixels
-    size_t pixel_count() const { return hprod(m_size); }
+    size_t pixel_count() const { return m_size.x() * (size_t) m_size.y(); }
 
     /// Return the number of channels used by this bitmap
     size_t channel_count() const { return m_struct->field_count(); }
@@ -368,7 +367,7 @@ public:
      * out-of-range values that are created by the resampling process.
      *
      * The optional \c temp parameter can be used to pass an image of
-     * resolution <tt>Vector2s(target->width(), this->height())</tt> to avoid
+     * resolution <tt>Vector2u(target->width(), this->height())</tt> to avoid
      * intermediate memory allocations.
      *
      * \param target
@@ -422,7 +421,7 @@ public:
      *     Filtered image pixels will be clamped to the following
      *     range. Default: -infinity..infinity (i.e. no clamping is used)
      */
-    ref<Bitmap> resample(const Vector2s &res,
+    ref<Bitmap> resample(const Vector2u &res,
                          const ReconstructionFilter *rfilter = nullptr,
                          const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                              { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
@@ -610,7 +609,7 @@ public:
      std::unique_ptr<uint8_t[]> m_data;
      PixelFormat m_pixel_format;
      Struct::Type m_component_format;
-     Vector2s m_size;
+     Vector2u m_size;
      ref<Struct> m_struct;
      bool m_srgb_gamma;
      bool m_owns_data;

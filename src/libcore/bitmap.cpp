@@ -57,7 +57,7 @@ extern "C" {
 NAMESPACE_BEGIN(mitsuba)
 
 Bitmap::Bitmap(PixelFormat pixel_format, Struct::Type component_format,
-               const Vector2s &size, size_t channel_count, uint8_t *data)
+               const Vector2u &size, size_t channel_count, uint8_t *data)
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
@@ -169,7 +169,7 @@ void Bitmap::rebuild_struct(size_t channel_count) {
 }
 
 size_t Bitmap::buffer_size() const {
-    return hprod(m_size) * bytes_per_pixel();
+    return pixel_count() * bytes_per_pixel();
 }
 
 size_t Bitmap::bytes_per_pixel() const {
@@ -211,7 +211,7 @@ resample(Bitmap *target, const Bitmap *source,
          const ReconstructionFilter *rfilter_,
          const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> bc,
          const std::pair<Scalar, Scalar> &clamp, ref<Bitmap> temp) {
-    using Vector2s = typename Bitmap::Vector2s;
+    using Vector2u = typename Bitmap::Vector2u;
 
     ref<const ReconstructionFilter> rfilter(rfilter_);
 
@@ -232,8 +232,7 @@ resample(Bitmap *target, const Bitmap *source,
 
     if (source->width() != target->width() || Filter) {
         // Re-sample horizontally
-        Resampler<Scalar> r(rfilter, (uint32_t) source->width(),
-                                     (uint32_t) target->width());
+        Resampler<Scalar> r(rfilter, source->width(), target->width());
         r.set_boundary_condition(bc.first);
         r.set_clamp(clamp);
 
@@ -246,7 +245,7 @@ resample(Bitmap *target, const Bitmap *source,
                 // otherwise: write to a temporary bitmap
                 temp = new Bitmap(
                     source->pixel_format(), source->component_format(),
-                    Vector2s(target->width(), source->height()), channels);
+                    Vector2u(target->width(), source->height()), channels);
             }
         }
 
@@ -255,9 +254,9 @@ resample(Bitmap *target, const Bitmap *source,
             [&](const tbb::blocked_range<size_t> &range) {
                 for (auto y = range.begin(); y != range.end(); ++y) {
                     const Scalar *s = (const Scalar *) source->uint8_data() +
-                                      y * source->width() * channels;
+                                      y * (size_t) source->width() * channels;
                     Scalar *t       = (Scalar *) temp->uint8_data() +
-                                      y * target->width() * channels;
+                                      y * (size_t) target->width() * channels;
                     r.resample(s, 1, t, 1, (uint32_t) channels);
                 }
             }
@@ -269,8 +268,7 @@ resample(Bitmap *target, const Bitmap *source,
 
     if (source->height() != target->height() || Filter) {
         // Re-sample vertically
-        Resampler<Scalar> r(rfilter, (uint32_t) source->height(),
-                                     (uint32_t) target->height());
+        Resampler<Scalar> r(rfilter, source->height(), target->height());
         r.set_boundary_condition(bc.second);
         r.set_clamp(clamp);
 
@@ -282,8 +280,7 @@ resample(Bitmap *target, const Bitmap *source,
                                       x * channels;
                     Scalar *t       = (Scalar *) target->uint8_data() +
                                       x * channels;
-                    r.resample(s, (uint32_t) source->width(), t,
-                                  (uint32_t) target->width(), (uint32_t) channels);
+                    r.resample(s, source->width(), t, target->width(), (uint32_t) channels);
                 }
             }
         );
@@ -301,7 +298,7 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
     if (temp && (pixel_format() != temp->pixel_format() ||
                  component_format() != temp->component_format() ||
                  channel_count() != temp->channel_count() ||
-                 temp->size() != Vector2s(target->width(), height())))
+                 temp->size() != Vector2u(target->width(), height())))
         Throw("Bitmap::resample(): Incompatible temporary bitmap specified!");
 
     switch (m_component_format) {
@@ -325,7 +322,7 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
     }
 }
 
-ref<Bitmap> Bitmap::resample(const Vector2s &res, const ReconstructionFilter *rfilter,
+ref<Bitmap> Bitmap::resample(const Vector2u &res, const ReconstructionFilter *rfilter,
                              const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
                              const std::pair<Float, Float> &bound) const {
     ref<Bitmap> result =
@@ -1003,13 +1000,13 @@ void Bitmap::read_openexr(Stream *stream) {
     };
 
     Imath::Box2i data_window = file.header().dataWindow();
-    m_size = Vector2s(data_window.max.x - data_window.min.x + 1,
+    m_size = Vector2u(data_window.max.x - data_window.min.x + 1,
                       data_window.max.y - data_window.min.y + 1);
 
     // Compute pixel / row strides
     size_t pixel_stride = bytes_per_pixel(),
            row_stride = pixel_stride * m_size.x(),
-           pixel_count = hprod(m_size);
+           pixel_count = this->pixel_count();
 
     // Finally, allocate memory for it
     m_data = std::unique_ptr<uint8_t[]>(new uint8_t[row_stride * m_size.y()]);
@@ -1034,14 +1031,13 @@ void Bitmap::read_openexr(Stream *stream) {
                                pixel_stride, row_stride);
         } else {
             // Uh oh, this is a sub-sampled channel. We will need to scale it
-            Vector2s channel_size = m_size / sampling;
+            Vector2u channel_size = m_size / sampling;
 
-            ref<Bitmap> bitmap = new Bitmap(PixelFormat::Y,
-                                            m_component_format, channel_size);
+            ref<Bitmap> bitmap = new Bitmap(PixelFormat::Y, m_component_format, channel_size);
 
             uint8_t *ptr_nested = bitmap->uint8_data() -
                 (data_window.min.x / sampling.x() +
-                 data_window.min.y / sampling.y() * channel_size.x()) * field.size;
+                 data_window.min.y / sampling.y() * (size_t) channel_size.x()) * field.size;
 
             slice = Imf::Slice(pixel_type, (char *) ptr_nested, field.size,
                                field.size * channel_size.x(), sampling.x(),
@@ -1420,7 +1416,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     jpeg_read_header(&cinfo, TRUE);
     jpeg_start_decompress(&cinfo);
 
-    m_size = Vector2s(cinfo.output_width, cinfo.output_height);
+    m_size = Vector2u(cinfo.output_width, cinfo.output_height);
     m_component_format = Struct::Type::UInt8;
     m_srgb_gamma = true;
 
@@ -1595,7 +1591,7 @@ void Bitmap::read_png(Stream *stream) {
     png_read_update_info(png_ptr, info_ptr);
     png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
         &color_type, &interlace_type, &compression_type, &filter_type);
-    m_size = Vector2i(width, height);
+    m_size = Vector2u(width, height);
 
     switch (color_type) {
         case PNG_COLOR_TYPE_GRAY: m_pixel_format = PixelFormat::Y; break;
@@ -1775,7 +1771,7 @@ void Bitmap::read_ppm(Stream *stream) {
             Throw("read_ppm(): unable to parse the file header!");
     }
 
-    m_size = Vector2s(int_values[0], int_values[1]);
+    m_size = Vector2u(int_values[0], int_values[1]);
     m_pixel_format = PixelFormat::RGB;
     m_srgb_gamma = true;
     m_component_format = int_values[2] <= 0xFF ? Struct::Type::UInt8 : Struct::Type::UInt16;
@@ -1912,8 +1908,8 @@ void Bitmap::read_rgbe(Stream *stream) {
         } else {
             auto tokens = string::tokenize(line);
             if (tokens.size() == 4 && tokens[0] == "-Y" && tokens[2] == "+X") {
-                m_size.y() = (size_t) std::stoull(tokens[1]);
-                m_size.x() = (size_t) std::stoull(tokens[3]);
+                m_size.y() = (uint32_t) std::stoull(tokens[1]);
+                m_size.x() = (uint32_t) std::stoull(tokens[3]);
                 break;
             }
         }
@@ -1937,7 +1933,7 @@ void Bitmap::read_rgbe(Stream *stream) {
 
     if (m_size.x() < 8 || m_size.x() > 0x7fff) {
         // Run length encoding is not allowed, so write uncompressed contents
-        rgbe_read_pixels(stream, data, hprod(m_size));
+        rgbe_read_pixels(stream, data, pixel_count());
         return;
     }
 
@@ -1951,7 +1947,7 @@ void Bitmap::read_rgbe(Stream *stream) {
         if (rgbe[0] != 2 || rgbe[1] != 2 || rgbe[2] & 0x80) {
             // this file is not run length encoded
             rgbe_to_float(rgbe, data);
-            rgbe_read_pixels(stream, data + 3, hprod(m_size) - 1);
+            rgbe_read_pixels(stream, data + 3, pixel_count() - 1);
             return;
         }
 
@@ -2030,7 +2026,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
     if (m_size.x() < 8 || m_size.x() > 0x7fff) {
         // Run length encoding is not allowed, so write uncompressed contents
         uint8_t rgbe[4];
-        for (size_t i = 0, size = hprod(m_size); i < size; ++i) {
+        for (size_t i = 0, size = pixel_count(); i < size; ++i) {
             rgbe_from_float(data, rgbe);
             data += (m_pixel_format == PixelFormat::RGB) ? 3 : 4;
             stream->write(rgbe, 4);
@@ -2205,7 +2201,7 @@ void Bitmap::read_bmp(Stream *stream) {
         if (compression_type != 0)
             Throw("read_bmp(): Compressed files are currently not supported!");
 
-        m_size = Vector2s((size_t) width, (size_t) std::abs(height));
+        m_size = Vector2u(width, std::abs(height));
         m_component_format = Struct::Type::UInt8;
         m_srgb_gamma = true;
 
@@ -2276,7 +2272,7 @@ void Bitmap::read_tga(Stream *stream) {
         stream->read(descriptor);
         stream->skip(header_size);
 
-        m_size = Vector2s((size_t) width, (size_t) height);
+        m_size = Vector2u((uint32_t) width, (uint32_t) height);
         m_srgb_gamma = true;
         m_component_format = Struct::Type::UInt8;
 

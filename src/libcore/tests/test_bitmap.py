@@ -2,10 +2,16 @@ import numpy as np
 import os
 
 import mitsuba
+import pytest
+import enoki as ek
+
 mitsuba.set_variant('scalar_rgb')
 
-from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, PCG32, FilterBoundaryCondition)
+from mitsuba.core import (Bitmap, Struct, ReconstructionFilter, float_dtype, FilterBoundaryCondition)
+from mitsuba.core import Matrix4f, Vector3f
 from mitsuba.core.xml import load_string
+
+from enoki.dynamic import PCG32
 
 def find_resource(fname):
     path = os.path.dirname(os.path.realpath(__file__))
@@ -47,8 +53,8 @@ def test_read_write_complex_exr(tmpdir):
     meta["str_prop"] = "value"
     meta["int_prop"] = 15
     meta["dbl_prop"] = 30.0
-    meta["vec3_prop"] = np.array([1.0, 2.0, 3.0])
-    meta["mat_prop"] = np.arange(16, dtype=float_dtype).reshape((4, 4)) + np.eye(4, dtype=float_dtype)
+    meta["vec3_prop"] = [1.0, 2.0, 3.0]
+    # meta["mat_prop"] = Matrix4f(np.arange(16, dtype=float_dtype).reshape((4, 4)) + np.eye(4, dtype=float_dtype)) # TODO enable this when Transform4f bindings are fixed
 
     assert b2.shape == (5, 4, 6)
     assert b2.dtype == np.float32
@@ -106,14 +112,14 @@ def test_read_write_jpeg(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(PCG32().next_float((10, 10))*255)
+    ref = np.uint8(PCG32().next_float32((10, 10))*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file, quality=50)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) / (10*10*255) < 0.07
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(PCG32().next_float((10, 10, 3))*255)
+    ref = np.uint8(PCG32().next_float32((10, 10, 3))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file, quality=100)
     b2 = Bitmap(tmp_file)
@@ -125,14 +131,14 @@ def test_read_write_png(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.png")
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(PCG32().next_float((10, 10))*255)
+    ref = np.uint8(PCG32().next_float32((10, 10))*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) == 0
 
     b = Bitmap(Bitmap.PixelFormat.RGBA, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(PCG32().next_float((10, 10, 4))*255)
+    ref = np.uint8(PCG32().next_float32((10, 10, 4))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file)
     b2 = Bitmap(tmp_file)
@@ -142,7 +148,7 @@ def test_read_write_png(tmpdir):
 
 def test_read_write_hdr(tmpdir):
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
-    ref = PCG32().next_float32((20, 10, 3))
+    ref = np.float32(PCG32().next_float32((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.hdr")
     b.write(tmp_file)
@@ -152,7 +158,7 @@ def test_read_write_hdr(tmpdir):
 
 def test_read_write_pfm(tmpdir):
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
-    ref = np.float32(PCG32().next_float((20, 10, 3)))
+    ref = np.float32(PCG32().next_float32((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.pfm")
     b.write(tmp_file)
@@ -162,7 +168,7 @@ def test_read_write_pfm(tmpdir):
 
 def test_read_write_ppm(tmpdir):
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 20])
-    ref = np.uint8(PCG32().next_float((20, 10, 3))*255)
+    ref = np.uint8(PCG32().next_float32((20, 10, 3))*255)
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.ppm")
     b.write(tmp_file)

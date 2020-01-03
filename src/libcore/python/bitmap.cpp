@@ -7,7 +7,6 @@
 MTS_PY_EXPORT(Bitmap) {
     using Float = typename Bitmap::Float;
     MTS_IMPORT_CORE_TYPES()
-    using Vector2s = typename Bitmap::Vector2s;
     using ReconstructionFilter = typename Bitmap::ReconstructionFilter;
 
     auto bitmap = MTS_PY_CLASS(Bitmap, Object);
@@ -34,7 +33,7 @@ MTS_PY_EXPORT(Bitmap) {
         .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
         .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
 
-    bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2s &, size_t>(),
+    bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2u &, size_t>(),
             "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,
             D(Bitmap, Bitmap))
 
@@ -60,7 +59,7 @@ MTS_PY_EXPORT(Bitmap) {
                 pixel_format = pixel_format_.cast<Bitmap::PixelFormat>();
 
             obj = py::array::ensure(obj, py::array::c_style);
-            Vector2s size(obj.shape()[1], obj.shape()[0]);
+            Vector2u size(obj.shape()[1], obj.shape()[0]);
             auto bitmap = new Bitmap(pixel_format, component_format, size, channel_count);
             memcpy(bitmap->data(), obj.data(), bitmap->buffer_size());
             return bitmap;
@@ -91,7 +90,7 @@ MTS_PY_EXPORT(Bitmap) {
             "temp"_a = py::none(),
             D(Bitmap, resample)
         )
-        .def("resample", py::overload_cast<const Vector2s &, const ReconstructionFilter *,
+        .def("resample", py::overload_cast<const Vector2u &, const ReconstructionFilter *,
             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &,
             const std::pair<Float, Float> &>(&Bitmap::resample, py::const_),
             "res"_a, "rfilter"_a = py::none(),
