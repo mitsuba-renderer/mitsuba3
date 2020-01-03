@@ -63,12 +63,11 @@ protected:
                 continue;
             }
 
-            UInt32 param_index = enoki::binary_search(
-                1u, (uint32_t) m_param_values[dim].size() - 1,
-                [&](UInt32 idx, Mask active_) {
-                    return gather<Float>(m_param_values[dim], idx,
-                                         active_) <= param[dim];
-                }, active) - 1;
+            UInt32 param_index = math::find_interval(
+                (uint32_t) m_param_values[dim].size(),
+                [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+                    return gather<Float>(m_param_values[dim], idx, active) < param[dim];
+                });
 
             Float p0 = gather<Float>(m_param_values[dim], param_index, active),
                   p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
@@ -780,19 +779,18 @@ public:
         if (Dimension != 0)
             offset = slice_offset * m_size.y();
 
-        auto fetch_marginal = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Float {
+        auto fetch_marginal = [&](UInt32 idx) ENOKI_INLINE_LAMBDA -> Float {
             return lookup<Dimension>(m_marginal_cdf.data(), offset + idx,
-                                     m_size.y(), param_weight, active_);
+                                     m_size.y(), param_weight, active);
         };
 
-        UInt32 row = enoki::binary_search(
-            1u, m_size.y() - 1u,
-            [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Mask {
-                return fetch_marginal(idx, active_) < sample.y();
-            },
-            active) - 1;
+        UInt32 row = math::find_interval(
+            m_size.y(),
+            [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+                return fetch_marginal(idx) < sample.y();
+            });
 
-        sample.y() -= fetch_marginal(row, active);
+        sample.y() -= fetch_marginal(row);
 
         uint32_t slice_size = hprod(m_size);
         offset = row * m_size.x();
@@ -814,23 +812,22 @@ public:
         // Sample the column next
         sample.x() *= (1.f - sample.y()) * r0 + sample.y() * r1;
 
-        auto fetch_conditional = [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Float {
+        auto fetch_conditional = [&](UInt32 idx) ENOKI_INLINE_LAMBDA -> Float {
             Float v0 = lookup<Dimension>(m_conditional_cdf.data(), offset + idx,
-                                         slice_size, param_weight, active_),
+                                         slice_size, param_weight, active),
                   v1 = lookup<Dimension>(m_conditional_cdf.data() + m_size.x(),
-                                         offset + idx, slice_size, param_weight, active_);
+                                         offset + idx, slice_size, param_weight, active);
 
             return (1.f - sample.y()) * v0 + sample.y() * v1;
         };
 
-        UInt32 col = enoki::binary_search(
-            1u, m_size.x() - 1u,
-            [&](UInt32 idx, Mask active_) ENOKI_INLINE_LAMBDA -> Mask {
-                return fetch_conditional(idx, active_) < sample.x();
-            },
-            active) - 1u;
+        UInt32 col = math::find_interval(
+            m_size.x(),
+            [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+                return fetch_conditional(idx) < sample.x();
+            });
 
-        sample.x() -= fetch_conditional(col, active);
+        sample.x() -= fetch_conditional(col);
 
         offset += col;
 

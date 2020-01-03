@@ -146,10 +146,9 @@ public:
 
         return enoki::binary_search(
             m_valid.x(), m_valid.y(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_cdf, index, active) < value;
-            },
-            active
+            }
         );
     }
 
@@ -425,10 +424,9 @@ public:
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_cdf, index, active) < value;
-            },
-            active
+            }
         );
 
         Float y0 = gather<Float>(m_pdf, index,      active),
@@ -462,10 +460,9 @@ public:
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_cdf, index, active) < value;
-            },
-            active
+            }
         );
 
         Float y0 = gather<Float>(m_pdf, index,      active),
@@ -640,10 +637,9 @@ public:
 
         Index index = enoki::binary_search(
             0, (uint32_t) m_nodes.size(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_nodes, index, active) < x;
-            },
-            active
+            }
         );
 
         index = enoki::max(enoki::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
@@ -667,10 +663,9 @@ public:
     Float eval_cdf(Float x, Mask active = true) const {
         Index index = enoki::binary_search(
             0, (uint32_t) m_nodes.size(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_nodes, index, active) < x;
-            },
-            active
+            }
         );
 
         index = enoki::max(enoki::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
@@ -679,7 +674,7 @@ public:
               x1 = gather<Float>(m_nodes, index + 1u, active),
               y0 = gather<Float>(m_pdf,   index,      active),
               y1 = gather<Float>(m_pdf,   index + 1u, active),
-              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0u);
+              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0u);
 
         Float w   = x1 - x0,
               t   = clamp((x - x0) / w, 0.f, 1.f),
@@ -708,10 +703,9 @@ public:
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_cdf, index, active) < value;
-            },
-            active
+            }
         );
 
         Float x0 = gather<Float>(m_nodes, index,      active),
@@ -748,10 +742,9 @@ public:
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
-            [&](Index index, Mask active) ENOKI_INLINE_LAMBDA {
+            [&](Index index) ENOKI_INLINE_LAMBDA {
                 return gather<Float>(m_cdf, index, active) < value;
-            },
-            active
+            }
         );
 
         Float x0 = gather<Float>(m_nodes, index,      active),

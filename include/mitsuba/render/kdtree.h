@@ -2376,10 +2376,9 @@ protected:
     MTS_INLINE Index find_shape(Index &i) const {
         Assert(i < primitive_count());
 
-        Index shape_index = (Index) math::find_interval(
-            Size(0),
+        Index shape_index = math::find_interval(
             Size(m_primitive_map.size()),
-            [&](Index k) {
+            [&](Index k) ENOKI_INLINE_LAMBDA {
                 return m_primitive_map[k] <= i;
             }
         );

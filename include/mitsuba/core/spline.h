@@ -283,10 +283,9 @@ Value eval_1d(const Float *nodes, const Float *values,
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) {
-            return gather<Value>(nodes, idx, active) <= x;
-        },
-        mask_valid
+        [&](Index idx) {
+            return gather<Value>(nodes, idx, mask_valid) <= x;
+        }
     );
 
     GET_SPLINE_NONUNIFORM(idx);
@@ -420,10 +419,9 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) {
-            return gather<Value>(values, idx, active) <= y;
-        },
-        in_bounds
+        [&](Index idx) {
+            return gather<Value>(values, idx, in_bounds) <= y;
+        }
     );
 
     const Float width = Float(max - min) / (size - 1);
@@ -512,10 +510,9 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) {
-            return gather<Value>(values, idx, active) <= y;
-        },
-        in_bounds
+        [&](Index idx) {
+            return gather<Value>(values, idx, in_bounds) <= y;
+        }
     );
 
     GET_SPLINE_NONUNIFORM(idx);
@@ -607,10 +604,9 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) {
-            return gather<Value>(cdf, idx, active) <= sample;
-        },
-        Mask(true)
+        [&](Index idx) {
+            return gather<Value>(cdf, idx) <= sample;
+        }
     );
 
     GET_SPLINE_UNIFORM(idx);
@@ -703,10 +699,9 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) {
-            return gather<Value>(cdf, idx, active) <= sample;
-        },
-        Mask(true)
+        [&](Index idx) {
+            return gather<Value>(cdf, idx) <= sample;
+        }
     );
 
     GET_SPLINE_NONUNIFORM(idx);
@@ -889,10 +884,9 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval(size,
-        [&](Index idx, Mask active) {
-            return gather<Value>(nodes, idx, active) <= x;
-        },
-        mask_valid
+        [&](Index idx) {
+            return gather<Value>(nodes, idx, mask_valid) <= x;
+        }
     );
 
     Value x0 = gather<Value>(nodes, idx),

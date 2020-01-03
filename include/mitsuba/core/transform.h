@@ -440,11 +440,10 @@ public:
             // Look up the interval containing 'time'
             Index idx0 = math::find_interval(
                 (uint32_t) size(),
-                [&](Index idx, mask_t<T> active) {
+                [&](Index idx) {
                     constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr variable in lambda scope :(
-                    return gather<Value, Stride_>(m_keyframes.data(), idx, active) <= time;
-                },
-                active);
+                    return gather<Value, Stride_>(m_keyframes.data(), idx, active) < time;
+                });
 
             Index idx1 = idx0 + 1;
 

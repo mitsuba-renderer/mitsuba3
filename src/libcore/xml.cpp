@@ -860,7 +860,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                                 // Find interval containing 'x'
                                 UInt32 index = math::find_interval(
-                                    wavelengths.size(),
+                                    (uint32_t) wavelengths.size(),
                                     [&](uint32_t idx) {
                                         return wavelengths[idx] <= x;
                                     });

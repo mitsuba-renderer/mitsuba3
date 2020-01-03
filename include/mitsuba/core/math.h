@@ -238,147 +238,41 @@ template <typename T> T log2i_ceil(T value) {
 /**
  * \brief Find an interval in an ordered set
  *
- * This function is very similar to <tt>std::upper_bound</tt>, but it uses a
- * functor rather than an actual array to permit working with procedurally
- * defined data. It returns the index \c i such that pred(i) is \c true and
- * <tt>pred(i+1)</tt> is \c false.
+ * This function performs a binary search to find an index \c i such that
+ * <tt>pred(i)<tt? is \c true and <tt>pred(i+1)</tt> is \c false, where \c pred
+ * is a user-specified predicate that monotonically decreases over this range
+ * (i.e. max one \c true -> \c false transition).
  *
- * This function is primarily used to locate an interval (i, i+1) for linear
- * interpolation, hence its name. To avoid issues with out of bounds accesses,
- * and to deal with predicates that evaluate to \c true or \c false on the
- * entire domain, the returned left interval index is clamped to the range
- * <tt>[left, right-2]</tt>.
+ * The predicate will be evaluated exactly <tt>floor(log2(size)) + 1<tt> times.
+ * Note that the template parameter \c Index is automatically inferred from the
+ * supplied predicate, which takes an index or an index vector of type \c Index
+ * as input argument and can (optionally) take a mask argument as well. In the
+ * vectorized case, each vector lane can use different predicate.
+ * When \c pred is \c false for all entries, the function returns \c 0, and
+ * when it is \c true for all cases, it returns <tt>size-2<tt>.
  *
- * In particular:
- * (i)  If there is no index such that pred(i) is true, we return (left).
- * (ii) If there is no index such that pred(i+1) is false, we return (right-2).
+ * The main use case of this function is to locate an interval (i, i+1)
+ * in an ordered list.
+ *
+ * \code
+ * float my_list[] = { 1, 1.5f, 4.f, ... };
+ *
+ * UInt32 index = find_interval(
+ *     sizeof(my_list) / sizeof(float),
+ *     [](UInt32 index, mask_t<UInt32> active) {
+ *         return gather<Float>(my_list, index, active) < x;
+ *     }
+ * );
+ * \endcode
  */
-template <typename Size, typename Predicate,
-          typename Args  = typename function_traits<Predicate>::Args,
+template <typename Predicate,
+          typename Args = typename function_traits<Predicate>::Args,
           typename Index = std::decay_t<std::tuple_element_t<0, Args>>>
-static Index find_interval(Size start, Size end, const Predicate &pred) {
-    using SignedIndex = int_array_t<Index>;
-
-    Index pos = (Index) start,
-          last_interval = (Index) end - 2,
-          size = last_interval - pos;
-
-    mask_t<Index> active(true);
-
-    Size iterations = 0;
-    if constexpr (is_dynamic_v<Index>)
-        iterations = end - start < 2 ? 0 : (log2i(end - start - 2) + 1);
-    ENOKI_MARK_USED(iterations);
-
-    while (true) {
-        if constexpr (!is_dynamic_v<Index>) {
-            // Disable converged entries, stop when all done.
-            active &= SignedIndex(size) > 0;
-            if (none_nested(active))
-                break;
-        } else {
-            if (iterations-- == 0)
-                break;
-        }
-
-        Index half     = sr<1>(size),
-              half_p_1 = half + 1,
-              middle   = pos + half_p_1;
-
-        // Evaluate the predicate
-        mask_t<Index> mask = pred(Index(middle)) && active;
-
-        // .. and recurse into the left or right
-        masked(pos, mask) = middle;
-
-        // Update the remaining interval size
-        size = select(mask, size - half_p_1, half);
-    }
-
-    return Index(max(SignedIndex(start),
-                     min(SignedIndex(pos), SignedIndex(last_interval))));
-}
-
-/**
- * \brief Find an interval in an ordered set
- *
- * This function is very similar to <tt>std::upper_bound</tt>, but it uses a
- * functor rather than an actual array to permit working with procedurally
- * defined data. It returns the index \c i such that pred(i) is \c true and
- * <tt>pred(i+1)</tt> is \c false.
- *
- * This function is primarily used to locate an interval (i, i+1) for linear
- * interpolation, hence its name. To avoid issues with out of bounds accesses,
- * and to deal with predicates that evaluate to \c true or \c false on the
- * entire domain, the returned left interval index is clamped to the range
- * <tt>[left, right-2]</tt>.
- *
- * In particular:
- * (i)  If there is no index such that pred(i) is true, we return (left).
- * (ii) If there is no index such that pred(i+1) is false, we return (right-2).
- *
- * \remark This function is intended for vectorized predicatesand additionally
- * accepts a mask as an input. This mask can be used to disable some of the
- * computations done in the predicate, which receives it as its second parameter.
- */
-template <typename Size, typename Predicate,
-          typename Args  = typename function_traits<Predicate>::Args,
-          typename Index = std::decay_t<std::tuple_element_t<0, Args>>,
-          typename Mask>
-static Index find_interval(Size start,
-                           Size end,
-                           const Predicate &pred,
-                           Mask active_) {
-    using SignedIndex = int_array_t<Index>;
-
-    Index pos = (Index) start,
-          last_interval = (Index) end - 2,
-          size = last_interval - pos;
-
-    mask_t<Index> active(active_);
-
-    Size iterations = 0;
-    if constexpr (is_dynamic_v<Index>)
-        iterations = end - start < 2 ? 0 : (log2i(end - start - 2) + 1);
-    ENOKI_MARK_USED(iterations);
-
-    while (true) {
-        if constexpr (!is_dynamic_v<Index>) {
-            // Disable converged entries, stop when all done.
-            active &= SignedIndex(size) > 0;
-            if (none_nested(active))
-                break;
-        } else {
-            if (iterations-- == 0)
-                break;
-        }
-
-        Index half     = sr<1>(size),
-              half_p_1 = half + 1,
-              middle   = pos + half_p_1;
-
-        // Evaluate the predicate
-        mask_t<Index> mask = pred(Index(middle), active) && active;
-
-        // .. and recurse into the left or right
-        masked(pos, mask) = middle;
-
-        // Update the remaining interval size
-        size = select(mask, size - half_p_1, half);
-    }
-
-    return Index(max(SignedIndex(start),
-                     min(SignedIndex(pos), SignedIndex(last_interval))));
-}
-
-template <typename Size, typename Predicate>
-MTS_INLINE auto find_interval(Size size, const Predicate &pred) {
-    return find_interval(Size(0), size, pred);
-}
-
-template <typename Size, typename Predicate, typename Mask>
-MTS_INLINE auto find_interval(Size size, const Predicate &pred, Mask active) {
-    return find_interval(Size(0), size, pred, active);
+MTS_INLINE Index find_interval(scalar_t<Index> size,
+                 const Predicate &pred) {
+    using ScalarIndex = scalar_t<Index>;
+    return enoki::binary_search(ScalarIndex(1), size - ScalarIndex(1), pred) -
+           ScalarIndex(1);
 }
 
 /**
