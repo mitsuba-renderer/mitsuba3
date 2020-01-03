@@ -110,7 +110,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;                     \
     using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;                      \
     using BSDFSample3f         = typename RenderAliases::BSDFSample3f;                             \
-    ENOKI_MAP_USING(MTS_IMPORT_TYPES_HELPER(__VA_ARGS__))
+    ENOKI_USING_TYPES(MTS_IMPORT_TYPES_HELPER(__VA_ARGS__))
 
 #define MTS_IMPORT_OBJECT_TYPES()                                                                  \
     using Scene                  = typename RenderAliases::Scene;                                  \

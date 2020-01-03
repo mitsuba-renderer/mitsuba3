@@ -233,7 +233,7 @@ public:                                             \
  */
 #define MTS_IMPORT_BASE(Name, ...)                                                                 \
     using Base = Name<Float, Spectrum>;                                                            \
-    ENOKI_MAP_IMPORT(MTS_IMPORT_BASE_HELPER(__VA_ARGS__))
+    ENOKI_USING_MEMBERS(MTS_IMPORT_BASE_HELPER(__VA_ARGS__))
 
 NAMESPACE_BEGIN(detail)
 template <typename, typename Arg, typename = void>
