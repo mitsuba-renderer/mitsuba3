@@ -51,6 +51,8 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define MTS_PY_IMPORT_MODULE(Name, ModuleName) \
     auto Name = py::module::import(ModuleName); (void) m;
 
+#define MTS_PY_DEF_SUBMODULE(Name, Doc) auto Name = m.def_submodule(#Name, Doc);
+
 /// Shorthand notation for defining object registration routine for trampoline objects
 #define MTS_PY_REGISTER_OBJECT(Function, Name)                                                     \
     m.def(Function,                                                                                \
@@ -115,9 +117,10 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
-#define MTS_PY_DECLARE(name) extern void python_export_##name(py::module &m)
-#define MTS_PY_EXPORT(name) void python_export_##name(py::module &m)
-#define MTS_PY_IMPORT(name) python_export_##name(m)
+#define MTS_PY_DECLARE(Name) extern void python_export_##Name(py::module &m)
+#define MTS_PY_EXPORT(Name) void python_export_##Name(py::module &m)
+#define MTS_PY_IMPORT(Name) python_export_##Name(m)
+#define MTS_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 
 #define MTS_MODULE_NAME_1(lib, variant) lib##_##variant##_ext
 #define MTS_MODULE_NAME(lib, variant) MTS_MODULE_NAME_1(lib, variant)

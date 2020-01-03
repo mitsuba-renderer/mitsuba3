@@ -28,11 +28,27 @@ MTS_PY_DECLARE(xml);
 using Caster = py::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
+// Helper macros for temporaly changing submodule name (for pydoc)
+#define CHANGE_SUBMODULE_NAME(Name) Name.attr("__name__") = "mitsuba.core." #Name;
+#define CHANGE_BACK_SUBMODULE_NAME(Name) \
+    Name.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MTS_MODULE_NAME(core.Name, MTS_VARIANT_NAME));
+
 PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
 
+    // Create sub-modules
+    MTS_PY_DEF_SUBMODULE(math, "Mathematical routines, special functions, etc.")
+    MTS_PY_DEF_SUBMODULE(spline, "Functions for evaluating and sampling Catmull-Rom splines")
+    MTS_PY_DEF_SUBMODULE(warp, "Common warping techniques that map from the unit square to other "
+                               "domains, such as spheres, hemispheres, etc.")
+    MTS_PY_DEF_SUBMODULE(xml, "Mitsuba scene XML parser")
+
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.core";
+    CHANGE_SUBMODULE_NAME(math)
+    CHANGE_SUBMODULE_NAME(spline)
+    CHANGE_SUBMODULE_NAME(warp)
+    CHANGE_SUBMODULE_NAME(xml)
 
     // Import the right variant of Enoki
     const char *enoki_pkg = nullptr;
@@ -210,23 +226,30 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(ContinuousDistribution);
     MTS_PY_IMPORT(IrregularContinuousDistribution);
-    MTS_PY_IMPORT(math);
+    MTS_PY_IMPORT_SUBMODULE(math);
     MTS_PY_IMPORT(qmc);
     MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(sample_tea);
-    MTS_PY_IMPORT(spline);
+    MTS_PY_IMPORT_SUBMODULE(spline);
     MTS_PY_IMPORT(Spectrum);
     //MTS_PY_IMPORT(Transform);
     //MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(Hierarchical2D);
     MTS_PY_IMPORT(Marginal2D);
     MTS_PY_IMPORT(vector);
-    MTS_PY_IMPORT(warp);
-    MTS_PY_IMPORT(xml);
+    MTS_PY_IMPORT_SUBMODULE(warp);
+    MTS_PY_IMPORT_SUBMODULE(xml);
 
     py::object core_ext = py::module::import("mitsuba.core_ext");
     cast_object = (Caster) (void *)((py::capsule) core_ext.attr("cast_object"));
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);
+    CHANGE_BACK_SUBMODULE_NAME(math)
+    CHANGE_BACK_SUBMODULE_NAME(spline)
+    CHANGE_BACK_SUBMODULE_NAME(warp)
+    CHANGE_BACK_SUBMODULE_NAME(xml)
 }
+
+#undef CHANGE_SUBMODULE_NAME
+#undef CHANGE_BACK_SUBMODULE_NAME

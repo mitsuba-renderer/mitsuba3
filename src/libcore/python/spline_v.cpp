@@ -5,13 +5,9 @@ MTS_PY_EXPORT(spline) {
     MTS_PY_IMPORT_TYPES()
 
     if constexpr (!is_cuda_array_v<Float>) {
-        // Create dedicated submodule
-        auto spline =
-            m.def_submodule("spline", "Functions for evaluating and sampling Catmull-Rom splines");
-
         using FloatBuffer = DynamicBuffer<Float>;
 
-        spline.def("eval_spline", spline::eval_spline<ScalarFloat>,
+        m.def("eval_spline", spline::eval_spline<ScalarFloat>,
             "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline))
         .def("eval_spline_d", spline::eval_spline_d<ScalarFloat>,
             "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline_d))
