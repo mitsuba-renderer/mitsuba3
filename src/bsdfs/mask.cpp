@@ -115,8 +115,10 @@ public:
         m_flags = m_nested_bsdf->flags() | m_components.back();
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                             Float sample1, const Point2f &sample2,
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float sample1,
+                                             const Point2f &sample2,
                                              Mask active) const override {
         uint32_t null_index = (uint32_t) component_count() - 1;
 

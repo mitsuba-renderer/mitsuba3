@@ -82,8 +82,10 @@ public:
         }
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                             Float sample1, const Point2f &sample2,
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float sample1,
+                                             const Point2f &sample2,
                                              Mask active) const override {
         bool has_specular = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -136,8 +138,8 @@ public:
         return { bs, select(active, result / bs.pdf, 0.f) };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo, Mask active) const override {
         bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
 
@@ -202,8 +204,8 @@ public:
         return w0 * v0 + w1 * v1;
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo, Mask active) const override {
         bool has_specular = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
 

@@ -54,9 +54,11 @@ public:
         m_inv_eta = 1.f / m_eta;
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                           Float sample1, const Point2f &sample2,
-                                           Mask active) const override {
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float sample1,
+                                             const Point2f &sample2,
+                                             Mask active) const override {
         // Determine the type of interaction
         bool has_reflection    = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_transmission  = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
@@ -159,8 +161,8 @@ public:
         return { bs, select(active, weight, 0.f) };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo, Mask active) const override {
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
@@ -226,8 +228,8 @@ public:
         return result;
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo, Mask active) const override {
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 

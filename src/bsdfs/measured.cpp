@@ -167,8 +167,10 @@ public:
         return 2.f * safe_asin(.5f * dist);
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                             Float /*sample1*/, const Point2f &sample2,
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float /*sample1*/,
+                                             const Point2f &sample2,
                                              Mask active) const override {
         BSDFSample3f bs;
         Vector3f wi = si.wi;
@@ -265,8 +267,8 @@ public:
         return { bs, select(active, Spectrum(spec) / bs.pdf, Spectrum(0.f)) };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo_, Mask active) const override {
         Vector3f wi = si.wi, wo = wo_;
 
         active &= Frame3f::cos_theta(wi) > 0.f &&
@@ -316,8 +318,8 @@ public:
         return spec & active;
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo_,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo_, Mask active) const override {
         Vector3f wi = si.wi, wo = wo_;
 
         active &= Frame3f::cos_theta(wi) > 0.f &&

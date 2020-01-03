@@ -118,9 +118,11 @@ public:
         m_flags = m_components[0] | m_components[1];
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                           Float sample1, const Point2f & /*sample2*/,
-                                           Mask active) const override {
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float sample1,
+                                             const Point2f & /* sample2 */,
+                                             Mask active) const override {
 
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);

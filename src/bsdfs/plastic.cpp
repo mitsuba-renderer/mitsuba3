@@ -241,8 +241,10 @@ public:
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                             Float sample1, const Point2f &sample2,
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float sample1,
+                                             const Point2f &sample2,
                                              Mask active) const override {
         bool has_specular = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
@@ -300,8 +302,8 @@ public:
         return { bs, result };
     }
 
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Vector3f &wo, Mask active) const override {
         bool has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
@@ -325,8 +327,8 @@ public:
         return select(active, diff, zero<Spectrum>());
     }
 
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si, const Vector3f &wo,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+              const Vector3f &wo, Mask active) const override {
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 

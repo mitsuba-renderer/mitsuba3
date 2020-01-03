@@ -116,8 +116,10 @@ public:
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
-                                             const SurfaceInteraction3f &si_, Float sample1,
-                                             const Point2f &sample2, Mask active) const override {
+                                             const SurfaceInteraction3f &si_,
+                                             Float sample1,
+                                             const Point2f &sample2,
+                                             Mask active) const override {
         using Result = std::pair<BSDFSample3f, Spectrum>;
 
         SurfaceInteraction3f si(si_);
@@ -144,8 +146,8 @@ public:
         return result;
     }
 
-    Spectrum eval(const BSDFContext &ctx_, const SurfaceInteraction3f &si_, const Vector3f &wo_,
-                  Mask active) const override {
+    Spectrum eval(const BSDFContext &ctx_, const SurfaceInteraction3f &si_,
+                  const Vector3f &wo_, Mask active) const override {
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
         Vector3f wo(wo_);
@@ -170,8 +172,8 @@ public:
         return result;
     }
 
-    Float pdf(const BSDFContext &ctx_, const SurfaceInteraction3f &si_, const Vector3f &wo_,
-              Mask active) const override {
+    Float pdf(const BSDFContext &ctx_, const SurfaceInteraction3f &si_,
+              const Vector3f &wo_, Mask active) const override {
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
         Vector3f wo(wo_);

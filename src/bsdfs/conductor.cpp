@@ -22,9 +22,11 @@ public:
         m_k   = props.texture<Texture>("k",   1.f);
     }
 
-    std::pair<BSDFSample3f, Spectrum>
-    sample(const BSDFContext &ctx, const SurfaceInteraction3f &si, Float /*sample1*/,
-           const Point2f & /*sample2*/, Mask active) const override {
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float /* sample1 */,
+                                             const Point2f &/* sample2 */,
+                                             Mask active) const override {
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
