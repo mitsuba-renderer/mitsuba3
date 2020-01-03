@@ -48,11 +48,6 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define def_repr(Class) \
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
 
-#define MTS_PY_IMPORT_MODULE(Name, ModuleName) \
-    auto Name = py::module::import(ModuleName); (void) m;
-
-#define MTS_PY_DEF_SUBMODULE(Name, Doc) auto Name = m.def_submodule(#Name, Doc);
-
 /// Shorthand notation for defining object registration routine for trampoline objects
 #define MTS_PY_REGISTER_OBJECT(Function, Name)                                                     \
     m.def(Function,                                                                                \
@@ -150,3 +145,11 @@ decltype(auto) vectorize(const Func &func) {
     return func;
 #endif
 }
+
+inline py::module create_submodule(py::module &m, const char *name) {
+    std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;
+    py::module module = py::reinterpret_steal<py::module>(PyModule_New(full_name.c_str()));
+    m.attr(name) = module;
+    return module;
+}
+

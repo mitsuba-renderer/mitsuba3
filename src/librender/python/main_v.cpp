@@ -14,6 +14,7 @@
     if (auto tmp = dynamic_cast<Type *>(o); tmp)                  \
         return py::cast(tmp);
 
+/// Helper routine to cast Mitsuba plugins to their underlying interfaces
 static py::object caster(Object *o) {
     MTS_PY_IMPORT_TYPES()
 
@@ -69,9 +70,9 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.render";
 
-    auto casters = (std::vector<void *> *) (py::capsule)(
-        py::module::import("mitsuba.core_ext").attr("casters"));
-    casters->push_back((void *) caster);
+    // Create sub-modules
+    py::module mueller = create_submodule(m, "mueller");
+    mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
     MTS_PY_IMPORT(BSDFSample);
     MTS_PY_IMPORT(BSDF);
@@ -83,7 +84,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Interaction);
     MTS_PY_IMPORT(SurfaceInteraction);
-    MTS_PY_IMPORT(mueller);
+    MTS_PY_IMPORT_SUBMODULE(mueller);
     MTS_PY_IMPORT(MicrofacetDistribution);
     MTS_PY_IMPORT(PositionSample);
     MTS_PY_IMPORT(DirectionSample);
@@ -95,6 +96,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(srgb);
     MTS_PY_IMPORT(Texture);
     // MTS_PY_IMPORT(Texture3D);
+
+    /// Register the variant-specific caster with the 'core_ext' module
+    auto casters = (std::vector<void *> *) (py::capsule)(
+        py::module::import("mitsuba.core_ext").attr("casters"));
+    casters->push_back((void *) caster);
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);

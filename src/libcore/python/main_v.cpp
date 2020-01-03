@@ -28,27 +28,23 @@ MTS_PY_DECLARE(xml);
 using Caster = py::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
-// Helper macros for temporaly changing submodule name (for pydoc)
-#define CHANGE_SUBMODULE_NAME(Name) Name.attr("__name__") = "mitsuba.core." #Name;
-#define CHANGE_BACK_SUBMODULE_NAME(Name) \
-    Name.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME) "." #Name;
-
 PYBIND11_MODULE(MODULE_NAME, m) {
+    // Temporarily change the module name (for pydoc)
+    m.attr("__name__") = "mitsuba.core";
+
     MTS_PY_IMPORT_TYPES_DYNAMIC()
 
     // Create sub-modules
-    MTS_PY_DEF_SUBMODULE(math, "Mathematical routines, special functions, etc.")
-    MTS_PY_DEF_SUBMODULE(spline, "Functions for evaluating and sampling Catmull-Rom splines")
-    MTS_PY_DEF_SUBMODULE(warp, "Common warping techniques that map from the unit square to other "
-                               "domains, such as spheres, hemispheres, etc.")
-    MTS_PY_DEF_SUBMODULE(xml, "Mitsuba scene XML parser")
+    py::module math   = create_submodule(m, "math"),
+               spline = create_submodule(m, "spline"),
+               warp   = create_submodule(m, "warp"),
+               xml    = create_submodule(m, "xml");
 
-    // Temporarily change the module name (for pydoc)
-    m.attr("__name__") = "mitsuba.core";
-    CHANGE_SUBMODULE_NAME(math)
-    CHANGE_SUBMODULE_NAME(spline)
-    CHANGE_SUBMODULE_NAME(warp)
-    CHANGE_SUBMODULE_NAME(xml)
+    math.doc()   = "Mathematical routines, special functions, etc.";
+    spline.doc() = "Functions for evaluating and sampling Catmull-Rom splines";
+    warp.doc()   = "Common warping techniques that map from the unit square to other "
+                   "domains, such as spheres, hemispheres, etc.";
+    xml.doc()    = "Mitsuba scene XML parser";
 
     // Import the right variant of Enoki
     const char *enoki_pkg = nullptr;
@@ -245,10 +241,6 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);
-    CHANGE_BACK_SUBMODULE_NAME(math)
-    CHANGE_BACK_SUBMODULE_NAME(spline)
-    CHANGE_BACK_SUBMODULE_NAME(warp)
-    CHANGE_BACK_SUBMODULE_NAME(xml)
 }
 
 #undef CHANGE_SUBMODULE_NAME

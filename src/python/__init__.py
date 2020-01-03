@@ -6,6 +6,27 @@ import sys
 if sys.version_info < (3, 5):
     raise ImportError("Mitsuba requires Python 3.5 or greater.")
 
+try:
+    __import__('mitsuba.core_ext')
+except ImportError as e:
+    from .config import PYTHON_EXECUTABLE
+    import sys
+
+    extra_msg = ""
+
+    if 'Symbol not found' in str(e):
+        pass
+    elif PYTHON_EXECUTABLE != sys.executable:
+        extra_msg = ("You're likely trying to use Mitsuba within a Python "
+        "binary (%s) that is different from the one for which the native "
+        "module was compiled (%s).") % (sys.executable, PYTHON_EXECUTABLE)
+
+    exc = ImportError("The 'mitsuba' native modules could not be "
+                      "imported. %s" % extra_msg)
+    exc.__cause__ = e
+
+    raise exc
+
 
 class MitsubaModule(types.ModuleType):
     '''
@@ -53,8 +74,8 @@ class MitsubaModule(types.ModuleType):
                 'available: %s.' % (", ".join(variants())))
         else:
             name = super().__getattribute__('__name__')
-            raise AttributeError('Module \"%s\" has no attribute \"%s\"!' % (name, key))
-
+            raise AttributeError('Module \"%s\" has no attribute \"%s\"!' %
+                                 (name, key))
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -110,27 +131,8 @@ def set_variant(variant):
     independent threads can execute code in separate variants.
     '''
 
-    try:
-        core.set_variant(variant)
-        render.set_variant(variant)
-    except ImportError as e:
-        from .config import PYTHON_EXECUTABLE
-        import sys
-
-        extra_msg = ""
-
-        if 'Symbol not found' in str(e):
-            pass
-        elif PYTHON_EXECUTABLE != sys.executable:
-            extra_msg = ("You're likely trying to use Mitsuba within a Python "
-            "binary (%s) that is different from the one for which the native "
-            "module was compiled (%s).") % (sys.executable, PYTHON_EXECUTABLE)
-
-        exc = ImportError("The 'mitsuba' native modules could not be "
-                          "imported. %s" % extra_msg)
-        exc.__cause__ = e
-
-        raise exc
+    core.set_variant(variant)
+    render.set_variant(variant)
 
 
 def variant():
