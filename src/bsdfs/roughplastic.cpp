@@ -67,7 +67,7 @@ public:
 
 
         /* Precompute rough reflectance (vectorized) */ {
-            using FloatP    = Packet<ScalarFloat, array_default_size<float>>;
+            using FloatP    = Packet<ScalarFloat>;
             using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
 
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);

@@ -70,8 +70,8 @@ template <typename Vector>                      struct Frame;
 template <typename Float>                       struct DiscreteDistribution;
 template <typename Float>                       struct ContinuousDistribution;
 
-template <typename Spectrum> using StokesVector  = enoki::Array<Spectrum, 4, true>;
-template <typename Spectrum> using MuellerMatrix = enoki::Matrix<Spectrum, 4, true>;
+template <typename Spectrum> using StokesVector  = enoki::Array<Spectrum, 4>;
+template <typename Spectrum> using MuellerMatrix = enoki::Matrix<Spectrum, 4>;
 
 //! @}
 // =============================================================
@@ -84,7 +84,7 @@ template <typename Value>
 using DynamicBuffer = std::conditional_t<
     is_dynamic_array_v<Value>,
     Value,
-    DynamicArray<Packet<scalar_t<Value>, array_default_size<float>>>
+    DynamicArray<Packet<scalar_t<Value>>>
 >;
 
 //! @}
@@ -169,12 +169,12 @@ template <typename Float_> struct CoreAliases {
     using Normal3f = Normal<Float, 3>;
     using Normal3d = Normal<Float64, 3>;
 
-    using Matrix2f = Matrix<Float, 2, true>;
-    using Matrix2d = Matrix<Float64, 2, true>;
-    using Matrix3f = Matrix<Float, 3, true>;
-    using Matrix3d = Matrix<Float64, 3, true>;
-    using Matrix4f = Matrix<Float, 4, true>;
-    using Matrix4d = Matrix<Float64, 4, true>;
+    using Matrix2f = Matrix<Float, 2>;
+    using Matrix2d = Matrix<Float64, 2>;
+    using Matrix3f = Matrix<Float, 3>;
+    using Matrix3d = Matrix<Float64, 3>;
+    using Matrix4f = Matrix<Float, 4>;
+    using Matrix4d = Matrix<Float64, 4>;
 
     using Quaternion4f = Quaternion<Float>;
     using Quaternion4d = Quaternion<Float64>;

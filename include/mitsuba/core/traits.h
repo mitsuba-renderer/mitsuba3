@@ -11,8 +11,6 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Color mode traits
 // =============================================================
 
-template <typename Value> using MuellerMatrix = enoki::Matrix<Value, 4, true>;
-
 NAMESPACE_BEGIN(detail)
 
 template <typename Spectrum> struct spectrum_traits { };

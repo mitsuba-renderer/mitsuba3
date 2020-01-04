@@ -25,21 +25,14 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 3>
-struct Color
-    : enoki::StaticArrayImpl<Value_, Size_,
-                             enoki::array_approx_v<Value_>,
-                             RoundingMode::Default, false, Color<Value_, Size_>> {
-
-    static constexpr bool Approx = enoki::array_approx_v<Value_>;
-
-    using Base = enoki::StaticArrayImpl<Value_, Size_, Approx, RoundingMode::Default,
-                                        false, Color<Value_, Size_>>;
+struct Color : enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
+    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Color<T, Size_>;
 
     using ArrayType = Color;
-    using MaskType = enoki::Mask<Value_, Size_, Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value_, Size_>;
 
     decltype(auto) r() const { return Base::x(); }
     decltype(auto) r() { return Base::x(); }
@@ -60,25 +53,18 @@ struct Color
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Data types for discretized spectral data
+//! @{ \name Data types for spectral quantities with sampled wavelengths
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 4>
-struct Spectrum
-    : enoki::StaticArrayImpl<Value_, Size_,
-                             enoki::array_approx_v<Value_>,
-                             RoundingMode::Default, false, Spectrum<Value_>> {
-
-    static constexpr bool Approx = enoki::array_approx_v<Value_>;
-
-    using Base = enoki::StaticArrayImpl<Value_, Size_, Approx,
-                                        RoundingMode::Default, false, Spectrum<Value_>>;
+struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>> {
+    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Spectrum<T, Size_>;
 
     using ArrayType = Spectrum;
-    using MaskType = enoki::Mask<Value_, Size_, Approx, RoundingMode::Default>;
+    using MaskType = enoki::Mask<Value_, Size_>;
 
     ENOKI_ARRAY_IMPORT(Base, Spectrum)
 };
@@ -101,16 +87,18 @@ constexpr depolarize_t<T> depolarize(const T& spectrum) {
 // =======================================================================
 
 template <typename Value_, size_t Size_>
-struct Color<enoki::detail::MaskedArray<Value_>, Size_> : enoki::detail::MaskedArray<Color<Value_, Size_>> {
+struct Color<enoki::detail::MaskedArray<Value_>, Size_>
+    : enoki::detail::MaskedArray<Color<Value_, Size_>> {
     using Base = enoki::detail::MaskedArray<Color<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Color(const Base &b) : Base(b) { }
 };
 
-template <typename Value_>
-struct Spectrum<enoki::detail::MaskedArray<Value_>> : enoki::detail::MaskedArray<Spectrum<Value_>> {
-    using Base = enoki::detail::MaskedArray<Spectrum<Value_>>;
+template <typename Value_, size_t Size_>
+struct Spectrum<enoki::detail::MaskedArray<Value_>, Size_>
+    : enoki::detail::MaskedArray<Spectrum<Value_, Size_>> {
+    using Base = enoki::detail::MaskedArray<Spectrum<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Spectrum(const Base &b) : Base(b) { }

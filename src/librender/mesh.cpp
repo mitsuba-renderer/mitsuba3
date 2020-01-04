@@ -134,11 +134,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                            vertex_position(idx[2]) };
 
         InputVector3f side_0 = v[1] - v[0],
-                       side_1 = v[2] - v[0];
+                      side_1 = v[2] - v[0];
         InputNormal3f n = cross(side_0, side_1);
         InputFloat length_sqr = squared_norm(n);
         if (likely(length_sqr > 0)) {
-            n *= rsqrt<InputVector3f::Approx>(length_sqr);
+            n *= rsqrt(length_sqr);
 
             // Use Enoki to compute the face angles at the same time
             auto side1 = transpose(Array<Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
@@ -432,7 +432,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
 
     // Reserve room for some additional vertices
     ScalarPoint3d vertices1[max_vertices], vertices2[max_vertices];
-    size_t nVertices = 3;
+    size_t n_vertices = 3;
 
     Assert(index <= m_face_count);
 
@@ -456,24 +456,17 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
     vertices1[2] = ScalarPoint3d(v2);
 
     for (int axis = 0; axis < 3; ++axis) {
-        nVertices = sutherland_hodgman(vertices1, nVertices, vertices2, axis,
-                                      (double) clip.min[axis], true);
-        nVertices = sutherland_hodgman(vertices2, nVertices, vertices1, axis,
-                                      (double) clip.max[axis], false);
+        n_vertices = sutherland_hodgman(vertices1, n_vertices, vertices2, axis,
+                                        (double) clip.min[axis], true);
+        n_vertices = sutherland_hodgman(vertices2, n_vertices, vertices1, axis,
+                                        (double) clip.max[axis], false);
     }
 
     ScalarBoundingBox3f result;
-    for (size_t i = 0; i < nVertices; ++i) {
-        if (std::is_same<Float, float>::value) {
-            /* Convert back into floats (with conservative custom rounding modes) */
-            Array<double, 3, false, RoundingMode::Up>   p1_up  (vertices1[i]);
-            Array<double, 3, false, RoundingMode::Down> p1_down(vertices1[i]);
-            result.min = min(result.min, ScalarPoint3f(p1_down));
-            result.max = max(result.max, ScalarPoint3f(p1_up));
-        } else {
-            result.min = min(result.min, ScalarPoint3f(prev_float(vertices1[i])));
-            result.max = max(result.max, ScalarPoint3f(next_float(vertices1[i])));
-        }
+    for (size_t i = 0; i < n_vertices; ++i) {
+        ScalarPoint3d p = vertices1[i];
+        result.min = min(result.min, ScalarPoint3f(prev_float(p)));
+        result.max = max(result.max, ScalarPoint3f(next_float(p)));
     }
     result.clip(clip);
 
