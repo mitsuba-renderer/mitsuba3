@@ -19,9 +19,9 @@ public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES()
 
-    using Warp2D0 = Marginal2D<Float, 0>;
-    using Warp2D2 = Marginal2D<Float, 2>;
-    using Warp2D3 = Marginal2D<Float, 3>;
+    using Warp2D0 = Marginal2D<Float, 0, true>;
+    using Warp2D2 = Marginal2D<Float, 2, true>;
+    using Warp2D3 = Marginal2D<Float, 3, true>;
 
     Measured(const Properties &props) : Base(props) {
         if constexpr (is_polarized_v<Spectrum>)
