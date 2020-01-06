@@ -32,8 +32,8 @@ def test01_coordinate_system(variant):
     assert ek.allclose(
         coordinate_system([ek.sqrt(0.5), 0, ek.sqrt(0.5)]), (a, b), atol=1e-6)
 
-    for u in Float.linspace(0, 1, 10):
-        for v in Float.linspace(0, 1, 10):
+    for u in ek.linspace(Float, 0, 1, 10):
+        for v in ek.linspace(Float, 0, 1, 10):
             n = square_to_uniform_sphere([u, v])
             s1, t1 = branchless_onb(n)
             s2, t2 = coordinate_system(n)

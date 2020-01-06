@@ -2,6 +2,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
+#include <pybind11/numpy.h>
 
 MTS_PY_EXPORT(Transform) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
@@ -14,6 +15,15 @@ MTS_PY_EXPORT(Transform) {
                 return new Transform3f(py::cast<ScalarMatrix3f>(a));
             else
                 return new Transform3f(py::cast<Matrix3f>(a));
+        }))
+        .def(py::init([](const py::list &list) {
+            size_t size = list.size();
+            if (size != 3)
+                throw py::reference_cast_error();
+            ScalarMatrix3f m;
+            for (size_t i = 0; i < size; ++i)
+                m[i] = py::cast<ScalarVector3f>(list[i]);
+            return new Transform3f(transpose(m));
         }))
         .def(py::init<Matrix3f>(), D(Transform, Transform))
         .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
@@ -51,6 +61,15 @@ MTS_PY_EXPORT(Transform) {
                 return new Transform4f(py::cast<ScalarMatrix4f>(a));
             else
                 return new Transform4f(py::cast<Matrix4f>(a));
+        }))
+        .def(py::init([](const py::list &list) {
+            size_t size = list.size();
+            if (size != 4)
+                throw py::reference_cast_error();
+            ScalarMatrix4f m;
+            for (size_t i = 0; i < size; ++i)
+                m[i] = py::cast<ScalarVector4f>(list[i]);
+            return new Transform4f(transpose(m));
         }))
         .def(py::init<Matrix4f>(), D(Transform, Transform))
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")

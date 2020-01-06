@@ -17,7 +17,7 @@ MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
-//MTS_PY_DECLARE(Transform);
+MTS_PY_DECLARE(Transform);
 //MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(vector);
 MTS_PY_DECLARE(warp);
@@ -111,6 +111,24 @@ PYBIND11_MODULE(MODULE_NAME, m) {
             m.attr(("Scalar" + mts_v_name).c_str()) = h;
             m.attr(("Scalar" + mts_p_name).c_str()) = h;
         }
+    }
+
+    // Matrix type aliases
+    for (int dim = 2; dim < 5; ++dim) {
+        std::string name, mts_d_name;
+
+        if constexpr (std::is_same_v<float, ScalarFloat>)
+            name = "Matrix" + std::to_string(dim) + "f";
+        else
+            name = "Matrix" + std::to_string(dim) + "d";
+
+        mts_d_name = "Matrix" + std::to_string(dim) + "f";
+
+        py::handle h = enoki.attr(name.c_str());
+        m.attr(mts_d_name.c_str()) = h;
+
+        h = enoki_scalar.attr(name.c_str());
+        m.attr(("Scalar" + mts_d_name).c_str()) = h;
     }
 
     m.attr("Normal3f")       = m.attr("Vector3f");
@@ -228,7 +246,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(sample_tea);
     MTS_PY_IMPORT_SUBMODULE(spline);
     MTS_PY_IMPORT(Spectrum);
-    //MTS_PY_IMPORT(Transform);
+    MTS_PY_IMPORT(Transform);
     //MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(Hierarchical2D);
     MTS_PY_IMPORT(Marginal2D);

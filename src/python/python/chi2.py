@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import mitsuba
 import enoki as ek
 from .math import rlgamma

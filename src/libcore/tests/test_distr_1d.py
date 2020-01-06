@@ -118,7 +118,7 @@ def test06_discr_bruteforce(variant):
                 continue
             ddistr = DiscreteDistribution(density)
 
-            x = Float.linspace(0, 1, 20)
+            x = ek.linspace(Float, 0, 1, 20)
             y = ddistr.sample(x)
             z = ek.gather(ddistr.cdf(), y - 1, y > 0)
             x *= ddistr.sum()
@@ -207,7 +207,7 @@ def test12_cont_eval(variant):
 def test13_cont_func(variant):
     from mitsuba.core import ContinuousDistribution, Float
 
-    x = Float.linspace(-2, 2, 513)
+    x = ek.linspace(Float, -2, 2, 513)
     y = ek.exp(-ek.sqr(x))
 
     d = ContinuousDistribution([-2, 2], y)
@@ -280,13 +280,13 @@ def test18_irrcont_simple_function(variant):
     )
 
     assert ek.allclose(
-        d.sample(Float.linspace(0, 1, 11)),
+        d.sample(ek.linspace(Float, 0, 1, 11)),
         [1., 1.21368, 1.35622, 1.47111, 1.58552, 2.49282,
          3.35949, 3.8938, 4.31714, 4.67889, 5.]
     )
 
     assert ek.allclose(
-        d.sample_pdf(Float.linspace(0, 1, 11)),
+        d.sample_pdf(ek.linspace(Float, 0, 1, 11)),
         ([1., 1.21368, 1.35622, 1.47111, 1.58552, 2.49282,
           3.35949, 3.8938, 4.31714, 4.67889, 5.],
          Float([1., 1.85472, 2.42487, 2.88444, 2.14476, 0.216506,

@@ -26,11 +26,11 @@ def test02_gauss_legendre(variant):
 def test03_composite_simpson(variant):
     from mitsuba.core.quad import composite_simpson
 
-    assert ek.allclose(composite_simpson(3), [Float.linspace(-1, 1, 3), [1.0/3.0, 4.0/3.0, 1.0/3.0]])
-    assert ek.allclose(composite_simpson(5), [Float.linspace(-1, 1, 5), [.5/3.0, 2/3.0, 1/3.0, 2/3.0, .5/3.0]])
+    assert ek.allclose(composite_simpson(3), [ek.linspace(Float, -1, 1, 3), [1.0/3.0, 4.0/3.0, 1.0/3.0]])
+    assert ek.allclose(composite_simpson(5), [ek.linspace(Float, -1, 1, 5), [.5/3.0, 2/3.0, 1/3.0, 2/3.0, .5/3.0]])
 
 def test04_composite_simpson_38(variant):
     from mitsuba.core.quad import composite_simpson_38
 
-    assert ek.allclose(composite_simpson_38(4), [Float.linspace(-1, 1, 4), [0.25, 0.75, 0.75, 0.25]])
-    assert ek.allclose(composite_simpson_38(7), [Float.linspace(-1, 1, 7), [0.125, 0.375, 0.375, 0.25 , 0.375, 0.375, 0.125]], atol=1e-6)
+    assert ek.allclose(composite_simpson_38(4), [ek.linspace(Float, -1, 1, 4), [0.25, 0.75, 0.75, 0.25]])
+    assert ek.allclose(composite_simpson_38(7), [ek.linspace(Float, -1, 1, 7), [0.125, 0.375, 0.375, 0.25 , 0.375, 0.375, 0.125]], atol=1e-6)
