@@ -122,11 +122,11 @@ functionality from both languages looks natural.
 
 Debugging
 ---------
-When debugging Mitsuba using `LLDB
-<https://lldb.llvm.org/>`_, the stringified versions of vectors and spectra are
-needlessly verbose and reveal various private implementation details of the
-Enoki library. For instance, printing a simple statically sized 3D vector like
-``Array<float, 3>(1, 2, 3)`` yields
+When debugging Mitsuba using `LLDB <https://lldb.llvm.org/>`_ or `GDB
+<https://www.gnu.org/software/gdb/>`_, the stringified versions of vectors and
+spectra are needlessly verbose and reveal various private implementation
+details of the Enoki library. For instance, printing a simple statically sized
+3D vector like ``Array<float, 3>(1, 2, 3)`` in LLDB yields
 
 .. code-block:: text
 
@@ -157,17 +157,28 @@ obscured behind a pointer:
       }
     }
 
-To improve readability, Enoki includes a script that improves LLDB's
+To improve readability, Enoki includes a script that improves GDB and LLDB's
 understanding of its types. With this script, both of the above turn into
 
 .. code-block:: text
 
     $0 = [1, 2, 3]
 
-To install it, copy the file ``ext/enoki/resources/enoki_lldb.py`` to ``~/.lldb``
-(creating the directory, if not present) and then apppend the following line to
-the file ``~/.lldbinit`` (again, creating it if, not already present):
+To install it in LLDB, copy the file ``ext/enoki/resources/enoki_lldb.py`` to
+``~/.lldb`` (creating the directory, if not present) and then apppend the
+following line to the file ``~/.lldbinit`` (again, creating it if, not already
+present):
 
 .. code-block:: text
 
-   command script import ~/.lldb/enoki_lldb.py
+    command script import ~/.lldb/enoki_lldb.py
+
+To install it in GDB, copy the file ``ext/enoki/resources/enoki_gdb.py`` to
+``~/.gdb`` (creating the directory, if not present) and then apppend the
+following two lines to the file ``~/.gdbinit`` (again, creating it if, not
+already present):
+
+.. code-block:: text
+
+    set print pretty
+    source ~/.gdb/enoki_gdb.py
