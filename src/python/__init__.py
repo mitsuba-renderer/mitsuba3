@@ -2,12 +2,16 @@
 
 import types
 import sys
+import threading
+from importlib import import_module as _import_module
 
 if sys.version_info < (3, 5):
     raise ImportError("Mitsuba requires Python 3.5 or greater.")
 
 try:
-    __import__('mitsuba.core_ext')
+    _import_module('mitsuba.core_ext')
+    _import_module('mitsuba.render_ext')
+    _tls = threading.local()
 except ImportError as e:
     from .config import PYTHON_EXECUTABLE
     import sys
@@ -39,41 +43,50 @@ class MitsubaModule(types.ModuleType):
         super().__init__(name=name, doc=doc)
 
         from importlib.machinery import ModuleSpec
-        import threading
-
-        tls = threading.local()
-        tls.modules = ()
-        tls.variant = None
-        self.__tls__ = tls
         self.__spec__ = ModuleSpec(name, None)
         self.__package__ = name
+        self.__path__ = __path__
 
     def __getattribute__(self, key):
-        tls = super().__getattribute__('__tls__')
-        modules = tls.modules
-
-        if key == '__dict__':
-            result = super().__getattribute__('__dict__')
-            for m in modules:
-                result.update(getattr(m, '__dict__'))
-            return result
-
+        global _tls
+        # Try default lookup first
         try:
-            return super().__getattribute__(key)
+            if not key == '__dict__':
+                return super().__getattribute__(key)
         except Exception:
             pass
 
-        for m in modules:
-            if hasattr(m, key):
-                return getattr(m, key)
-
-        if tls.variant is None:
-            raise AttributeError('Before importing any packages, you must '
-                'specify the desired variant of Mitsuba using '
-                '\"mitsuba.set_variant(..)\".\nThe following variants are '
-                'available: %s.' % (", ".join(variants())))
-        else:
+        try:
             name = super().__getattribute__('__name__')
+            modules = _tls.modules.get(name, ())
+
+            if key != '__dict__':
+                if modules:
+                    # Walk through loaded extension modules
+                    for m in modules:
+                        result = getattr(m, key, None)
+                        if result is not None:
+                            return result
+                else:
+                    item = _import__('mitsuba')
+                    for n in (name + '.' + key).split('.')[1:]:
+                        item = getattr(item, n)
+                    return item
+            else:
+                # Stitch together a dictionary, needed for pydoc
+                result = super().__getattribute__('__dict__')
+                for m in modules:
+                    result.update(getattr(m, '__dict__'))
+                return result
+        except Exception as e:
+            pass
+
+        if not hasattr(_tls, 'variant'):
+            raise AttributeError('Before importing any packages, you '
+                'must specify the desired variant of Mitsuba using '
+                '\"mitsuba.set_variant(..)\".\nThe following variants '
+                'are available: %s.' % (", ".join(variants())))
+        else:
             raise AttributeError('Module \"%s\" has no attribute \"%s\"!' %
                                  (name, key))
 
@@ -81,29 +94,25 @@ class MitsubaModule(types.ModuleType):
         super().__setattr__(key, value)
 
     def variant(self):
-        return self.__tls__.variant
-
-    def set_variant(self, variant):
-        if self.__tls__.variant == variant:
-            return
-        import importlib
-        modules = (
-            importlib.import_module(self.__name__ + '_ext'),
-            importlib.import_module(self.__name__ + '_' + variant + '_ext')
-        )
-        self.__tls__.modules = modules
-        self.__tls__.variant = variant
+        return self._tls.variant
 
 
 # Register the modules
-core = MitsubaModule('mitsuba.core')
+core   = MitsubaModule('mitsuba.core')
 render = MitsubaModule('mitsuba.render')
 
 sys.modules['mitsuba.core'] = core
 sys.modules['mitsuba.render'] = render
 
+# Submodules
+sys.modules['mitsuba.core.xml'] = MitsubaModule('mitsuba.core.xml')
+sys.modules['mitsuba.core.warp'] = MitsubaModule('mitsuba.core.warp')
+sys.modules['mitsuba.core.math'] = MitsubaModule('mitsuba.core.math')
+sys.modules['mitsuba.core.spline'] = MitsubaModule('mitsuba.core.spline')
+sys.modules['mitsuba.render.mueller'] = MitsubaModule('mitsuba.render.mueller')
 
-def set_variant(variant):
+
+def set_variant(value):
     '''
     Mitsuba 2 can be compiled to a great variety of different variants (e.g.
     'scalar_rgb', 'gpu_autodiff_spectral_polarized', etc.) that each have their
@@ -131,15 +140,25 @@ def set_variant(variant):
     independent threads can execute code in separate variants.
     '''
 
-    core.set_variant(variant)
-    render.set_variant(variant)
+    if variant() == value:
+        return
+
+    _tls.modules = {
+        'mitsuba.core': (_import_module('mitsuba.core_ext'),
+                         _import_module('mitsuba.core_' + value + '_ext')),
+        'mitsuba.render': (_import_module('mitsuba.render_ext'),
+                           _import_module('mitsuba.render_' + value + '_ext'))
+    }
+    _tls.variant = value
 
 
 def variant():
-    return core.variant()
+    'Returns the currently active variant'
+    return getattr(_tls, 'variant', None)
 
 
 def variants():
+    'Returns a list of all variants that have been compiled'
     import pkgutil
     import mitsuba
 
@@ -156,3 +175,4 @@ def variants():
 del sys
 del MitsubaModule
 del types
+del threading
