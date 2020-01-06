@@ -6,7 +6,7 @@ import mitsuba
 mitsuba.set_variant('scalar_rgb')
 
 from mitsuba.core import Stream, DummyStream, FileStream, MemoryStream, ZStream
-from mitsuba.test.util import tmpfile, make_tmpfile
+from mitsuba.python.test.util import tmpfile, make_tmpfile
 
 parameters = [
     'class_,args',

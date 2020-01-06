@@ -1,5 +1,3 @@
-# from mitsuba.core import Transform4f, AnimatedTransform
-# from mitsuba.core import PCG32
 import numpy as np
 import numpy.linalg as la
 

@@ -1,9 +1,16 @@
-from mitsuba.scalar_rgb.core import Struct, StructConverter
 import struct
 import numpy as np
 import pytest
 import itertools
 import sys
+
+import mitsuba
+import pytest
+import enoki as ek
+
+mitsuba.set_variant('scalar_rgb')
+
+from mitsuba.core import Struct, StructConverter
 
 
 # List of supported conversions
@@ -361,7 +368,7 @@ def test14_weight(param):
 
 
 def test15_test_dither():
-    from mitsuba.scalar_rgb.core import Bitmap
+    from mitsuba.core import Bitmap
     import numpy.linalg as la
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.Float32, [10, 256])

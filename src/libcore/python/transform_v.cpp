@@ -115,6 +115,7 @@ MTS_PY_EXPORT(Transform) {
     bind_slicing_operators<Transform4f, ScalarTransform4f>(trans4);
 
     py::implicitly_convertible<py::array, Transform4f>();
+    py::implicitly_convertible<Matrix4f, Transform4f>();
 }
 
 MTS_PY_EXPORT(AnimatedTransform) {
