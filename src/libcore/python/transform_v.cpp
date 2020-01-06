@@ -51,7 +51,7 @@ MTS_PY_EXPORT(Transform) {
         .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
         .def_repr(Transform3f);
 
-    // bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3); // TODO
+    bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3);
 
     auto trans4 = py::class_<Transform4f>(m, "Transform4f", D(Transform), py::module_local())
         .def(py::init<>(), "Initialize with the identity matrix")
@@ -112,7 +112,7 @@ MTS_PY_EXPORT(Transform) {
         .def_readwrite("inverse_transpose", &Transform4f::inverse_transpose)
         .def_repr(Transform4f);
 
-    // bind_slicing_operators<Transform4f, ScalarTransform4f>(trans4); // TODO
+    bind_slicing_operators<Transform4f, ScalarTransform4f>(trans4);
 
     py::implicitly_convertible<py::array, Transform4f>();
 }

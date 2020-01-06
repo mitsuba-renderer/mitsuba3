@@ -3,6 +3,16 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 
+template<typename Class, typename PyClass>
+void bind_set_object(PyClass &cl) {
+    using Float = typename Class::Float;
+    using UInt64  =  uint64_array_t<Float>;
+    using ObjectPtr = replace_scalar_t<Float, const Object *>;
+
+    if constexpr (is_array_v<Float>)
+        cl.def("set_object", [](Class& ps, UInt64 ptr){ ps.object = static_cast<ObjectPtr>(ptr); });
+}
+
 MTS_PY_EXPORT(PositionSample) {
     MTS_PY_IMPORT_TYPES_DYNAMIC(ObjectPtr)
     auto pos = py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample))
@@ -19,11 +29,9 @@ MTS_PY_EXPORT(PositionSample) {
         .def_readwrite("object", &PositionSample3f::object, D(PositionSample, object))
         .def_repr(PositionSample3f);
 
-    // TODO is that needed?
-    // if constexpr (is_array_v<Float>)
-        // pos.def("set_object", [](PositionSample3f& ps, UInt64 ptr){ ps.object = static_cast<ObjectPtr>(ptr); });
+    bind_set_object<PositionSample3f>(pos);
 
-    // bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos); // TODO
+    bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
 }
 
 MTS_PY_EXPORT(DirectionSample) {
@@ -43,5 +51,5 @@ MTS_PY_EXPORT(DirectionSample) {
         .def_readwrite("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_repr(DirectionSample3f);
-    // bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos); // TODO
+    bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
 }

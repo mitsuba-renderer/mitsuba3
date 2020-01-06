@@ -82,9 +82,10 @@ void bind_slicing_operators(PyClass &cl) {
                   throw py::index_error();
               slice(c, i) = c2;
           })
-          .def("__setitem__", [](Class &c, const mask_t<Float> &mask, const Class &c2) {
-              masked(c, mask) = c2;
-          })
+          // TODO enabled this when ENOKI_STRUCT_SUPPORT is fixed for structs containing Matrix
+          // .def("__setitem__", [](Class &c, const mask_t<Float> &mask, const Class &c2) {
+          //     masked(c, mask) = c2;
+          // })
           .def("__len__", [](const Class &c) {
               return slices(c);
           });
