@@ -56,7 +56,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Copy a ray, but change the [mint, maxt] interval
     Ray(const Ray &r, Float mint, Float maxt)
         : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(mint), maxt(maxt),
-          time(r.time) { }
+          time(r.time), wavelengths(r.wavelengths) { }
 
     /// Update the reciprocal ray directions after changing 'd'
     void update() { d_rcp = rcp(d); }
