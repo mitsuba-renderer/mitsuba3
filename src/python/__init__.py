@@ -68,7 +68,7 @@ class MitsubaModule(types.ModuleType):
                         if result is not None:
                             return result
                 else:
-                    item = _import__('mitsuba')
+                    item = __import__('mitsuba')
                     for n in (name + '.' + key).split('.')[1:]:
                         item = getattr(item, n)
                     return item
@@ -97,20 +97,14 @@ class MitsubaModule(types.ModuleType):
         return self._tls.variant
 
 
-# Register the modules
-core   = MitsubaModule('mitsuba.core')
-render = MitsubaModule('mitsuba.render')
+# Register the modules and submodules
+for name in ['core', 'render', 'core.xml', 'core.warp', 'core.math',
+             'core.spline', 'render.mueller']:
+    name = 'mitsuba.' + name
+    sys.modules[name] = MitsubaModule(name)
 
-sys.modules['mitsuba.core'] = core
-sys.modules['mitsuba.render'] = render
-
-# Submodules
-sys.modules['mitsuba.core.xml'] = MitsubaModule('mitsuba.core.xml')
-sys.modules['mitsuba.core.warp'] = MitsubaModule('mitsuba.core.warp')
-sys.modules['mitsuba.core.math'] = MitsubaModule('mitsuba.core.math')
-sys.modules['mitsuba.core.spline'] = MitsubaModule('mitsuba.core.spline')
-sys.modules['mitsuba.render.mueller'] = MitsubaModule('mitsuba.render.mueller')
-
+core = sys.modules['mitsuba.core']
+render = sys.modules['mitsuba.render']
 
 def set_variant(value):
     '''
