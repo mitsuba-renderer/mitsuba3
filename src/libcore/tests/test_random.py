@@ -1,11 +1,11 @@
 import enoki as ek
-from enoki.dynamic import UInt32
 import pytest
 import mitsuba
 
 @pytest.fixture
 def variant():
     mitsuba.set_variant('scalar_rgb')
+
 
 def test_tea_float32(variant):
     from mitsuba.core import sample_tea_float32
@@ -36,20 +36,20 @@ def test_tea_float64(variant):
 def test_tea_vectorized():
     try:
         mitsuba.set_variant("packet_rgb")
-        from mitsuba.core import sample_tea_float32, sample_tea_float64
+        from mitsuba.core import sample_tea_float32, sample_tea_float64, UInt32
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
 
     count = 100
 
     result = sample_tea_float32(
-        UInt32.full(count, 1),
+        UInt32.full(1, count),
         UInt32.arange(count), 4)
     for i in range(count):
         assert result[i] == sample_tea_float32(1, i, 4)
 
     result = sample_tea_float64(
-        UInt32.full(count, 1),
+        UInt32.full(1, count),
         UInt32.arange(count), 4)
     for i in range(count):
         assert result[i] == sample_tea_float64(1, i, 4)

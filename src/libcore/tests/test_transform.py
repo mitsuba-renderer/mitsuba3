@@ -9,6 +9,7 @@ import mitsuba
 def variant():
     mitsuba.set_variant('scalar_rgb')
 
+
 def test01_basics(variant):
     from mitsuba.core import Transform4f, Matrix4f
 
@@ -47,6 +48,7 @@ def test01_basics(variant):
 
     assert la.norm(trafo.matrix - m2) < 1e-5
     assert la.norm(trafo.inverse_transpose - la.inv(m2).T) < 1e-5
+
 
 def test02_inverse(variant):
     from mitsuba.core import Transform4f, Matrix4f
@@ -115,6 +117,7 @@ def test02_inverse(variant):
         res = trafo.inverse().transform_point(trafo.transform_point(p))
         assert la.norm(res - p, 2) < 5e-3
 
+
 def test03_matmul(variant):
     from mitsuba.core import Transform4f, Matrix4f
 
@@ -124,6 +127,7 @@ def test03_matmul(variant):
     Bt = Transform4f(B)
     assert ek.allclose(np.dot(A, B), (At*Bt).matrix)
     assert ek.allclose(np.dot(B, A), (Bt*At).matrix)
+
 
 def test04_transform_point(variant):
     from mitsuba.core import Transform4f
@@ -139,6 +143,7 @@ def test04_transform_point(variant):
         return
 
     assert ek.allclose(Transform4fX(A).transform_point([[2, 4], [4, 6], [6, 8]]), [[1, 2], [2, 3], [3, 4]])
+
 
 def test05_transform_vector(variant):
     from mitsuba.core import Transform4f
@@ -157,6 +162,7 @@ def test05_transform_vector(variant):
     assert ek.allclose(
         Transform4fX(A).transform_vector([[2, 4], [4, 6], [6, 8]]), [[2, 4], [2, 3], [6, 8]])
 
+
 def test06_transform_normal(variant):
     from mitsuba.core import Transform4f
 
@@ -174,6 +180,7 @@ def test06_transform_normal(variant):
 
     assert ek.allclose(
         Transform4fX(A).transform_normal([[2, 4], [4, 6], [6, 8]]), [[2, 4], [8, 12], [2, 2]])
+
 
 # def test07_transform_has_scale(variant):
 #     try:
@@ -213,6 +220,7 @@ def test06_transform_normal(variant):
 #         [41, 1e3, 0,   1]
 #     ]))) < 1e-5
 
+
 # def test08_atransform_construct(variant):
 #     t = Transform4f.rotate([1, 0, 0], 30)
 #     a = AnimatedTransform(t)
@@ -223,6 +231,7 @@ def test06_transform_normal(variant):
 #     # Animation is constant over time
 #     for v in [10, 200, 1e5]:
 #         assert np.all(t0 == a.eval(v))
+
 
 # def test10_atransform_interpolate_rotation(variant):
 #     a = AnimatedTransform()
@@ -238,6 +247,7 @@ def test06_transform_normal(variant):
 #     assert ek.allclose(a.eval(-10).matrix, trafo0.matrix)
 #     assert ek.allclose(a.eval(2.5).matrix, trafo_mid.matrix)
 #     assert ek.allclose(a.eval( 10).matrix, trafo1.matrix)
+
 
 # def test11_atransform_interpolate_scale(variant):
 #     a = AnimatedTransform()

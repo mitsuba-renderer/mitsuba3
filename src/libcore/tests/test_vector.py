@@ -7,6 +7,7 @@ import mitsuba
 def variant():
     mitsuba.set_variant('scalar_rgb')
 
+
 def test01_coordinate_system(variant):
     from mitsuba.core import coordinate_system, warp
 

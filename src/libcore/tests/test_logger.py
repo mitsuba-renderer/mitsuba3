@@ -6,6 +6,7 @@ import mitsuba
 def variant():
     mitsuba.set_variant('scalar_rgb')
 
+
 def test01_custom(variant):
     from mitsuba.core import Thread, Appender, Formatter, Log, LogLevel
 

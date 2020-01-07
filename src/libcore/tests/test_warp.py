@@ -75,6 +75,7 @@ def test_square_to_uniform_disk_concentric(variant):
 
     check_vectorization("square_to_uniform_disk_concentric")
 
+
 def test_square_to_uniform_triangle(variant):
     from mitsuba.core import warp
 
@@ -87,6 +88,7 @@ def test_square_to_uniform_triangle(variant):
 
     check_inverse(warp.square_to_uniform_triangle, warp.uniform_triangle_to_square)
     check_vectorization("square_to_uniform_triangle")
+
 
 def test_interval_to_tent(variant):
     from mitsuba.core import warp
@@ -114,6 +116,7 @@ def test_square_to_tent(variant):
     check_inverse(warp.square_to_tent, warp.tent_to_square)
     check_vectorization("square_to_tent")
 
+
 def test_square_to_uniform_sphere_vec(variant):
     from mitsuba.core import warp
 
@@ -124,6 +127,7 @@ def test_square_to_uniform_sphere_vec(variant):
     check_inverse(warp.square_to_uniform_sphere, warp.uniform_sphere_to_square)
     check_vectorization("square_to_uniform_sphere")
 
+
 def test_square_to_uniform_hemisphere(variant):
     from mitsuba.core import warp
 
@@ -133,6 +137,7 @@ def test_square_to_uniform_hemisphere(variant):
     check_inverse(warp.square_to_uniform_hemisphere, warp.uniform_hemisphere_to_square)
     check_vectorization("square_to_uniform_hemisphere")
 
+
 def test_square_to_cosine_hemisphere(variant):
     from mitsuba.core import warp
 
@@ -141,6 +146,7 @@ def test_square_to_cosine_hemisphere(variant):
 
     check_inverse(warp.square_to_cosine_hemisphere, warp.cosine_hemisphere_to_square)
     check_vectorization("square_to_cosine_hemisphere")
+
 
 def test_square_to_uniform_cone(variant):
     from mitsuba.core import warp

@@ -6,6 +6,7 @@ import mitsuba
 def variant():
     mitsuba.set_variant('scalar_rgb')
 
+
 def test01_basics(variant):
     from mitsuba.core import BoundingBox3f as BBox
 

@@ -38,6 +38,7 @@ def test_read_convert_yc(tmpdir):
     os.remove(tmp_file)
     assert np.allclose(np.mean(b, axis=(0, 1)), ref, atol=1e-5)
 
+
 def test_read_write_complex_exr(tmpdir):
     # Tests reading and writing of complex multi-channel images with custom properties
     b1 = Bitmap(Bitmap.PixelFormat.MultiChannel, Struct.Type.Float32, [4, 5], 6)
@@ -104,6 +105,7 @@ def test_convert_rgb_y_gamma(tmpdir):
     b3 = np.array(b1.convert(Bitmap.PixelFormat.Y, Struct.Type.UInt8, True)).ravel()
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
+
 def test_read_write_jpeg(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
 
@@ -122,6 +124,7 @@ def test_read_write_jpeg(tmpdir):
     assert np.sum(np.abs(np.float32(np.array(b2))-ref)) / (3*10*10*255) < 0.2
 
     os.remove(tmp_file)
+
 
 def test_read_write_png(tmpdir):
     tmp_file = os.path.join(str(tmpdir), "out.png")
@@ -142,6 +145,7 @@ def test_read_write_png(tmpdir):
 
     os.remove(tmp_file)
 
+
 def test_read_write_hdr(tmpdir):
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
     ref = np.float32(np.random.random((20, 10, 3)))
@@ -151,6 +155,7 @@ def test_read_write_hdr(tmpdir):
     b2 = Bitmap(tmp_file)
     assert np.abs(np.mean(np.array(b2)-ref)) < 1e-2
     os.remove(tmp_file)
+
 
 def test_read_write_pfm(tmpdir):
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
@@ -162,6 +167,7 @@ def test_read_write_pfm(tmpdir):
     assert np.abs(np.mean(np.array(b2)-ref)) == 0
     os.remove(tmp_file)
 
+
 def test_read_write_ppm(tmpdir):
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 20])
     ref = np.uint8(np.random.random((20, 10, 3))*255)
@@ -172,15 +178,18 @@ def test_read_write_ppm(tmpdir):
     assert np.abs(np.mean(np.array(b2)-ref)) == 0
     os.remove(tmp_file)
 
+
 def test_read_bmp():
     b = Bitmap(find_resource('ext/zeromq/branding.bmp'))
     ref = [ 255., 145.02502924, 144.45052632]
     assert np.allclose(np.mean(b, axis=(0, 1)), ref)
 
+
 def test_read_tga():
     b1 = Bitmap(find_resource('resources/data/tests/bitmap/tga_uncompressed.tga'))
     b2 = Bitmap(find_resource('resources/data/tests/bitmap/tga_compressed.tga'))
     assert b1 == b2
+
 
 def test_accumulate():
     # ----- Accumulate the whole bitmap

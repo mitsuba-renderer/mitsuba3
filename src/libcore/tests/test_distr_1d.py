@@ -2,7 +2,6 @@ import mitsuba
 import pytest
 import enoki as ek
 
-
 @pytest.fixture()
 def variant():
     try:

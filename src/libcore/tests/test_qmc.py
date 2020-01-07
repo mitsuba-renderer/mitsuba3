@@ -36,7 +36,7 @@ def gen_primes():
 
 
 def test01_radical_inverse(variant):
-    from mitsuba.core.qmc import RadicalInverse
+    from mitsuba.core import RadicalInverse
 
     v = RadicalInverse()
     assert(v.eval(0, 0) == 0)
@@ -52,7 +52,7 @@ def test01_radical_inverse(variant):
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 def test02_radical_inverse_vectorized(variant):
-    from mitsuba.core.qmc import RadicalInverse
+    from mitsuba.core import RadicalInverse
 
     v = RadicalInverse()
     for index, prime in enumerate(gen_primes()):
@@ -64,7 +64,7 @@ def test02_radical_inverse_vectorized(variant):
 
 
 def test03_faure_permutations(variant):
-    from mitsuba.core.qmc import RadicalInverse
+    from mitsuba.core import RadicalInverse
 
     p = RadicalInverse()
     assert (p.permutation(0) == [0, 1]).all()
@@ -74,8 +74,8 @@ def test03_faure_permutations(variant):
 
 
 def test04_scrambled_radical_inverse(variant):
-    from mitsuba.core.qmc import RadicalInverse
-    from mitsuba.core.math import OneMinusEpsilon
+    from mitsuba.core import RadicalInverse
+    from mitsuba.core import math
 
     p = RadicalInverse(10, -1)
     assert (p.permutation(0) == [0, 1]).all()
@@ -92,7 +92,7 @@ def test04_scrambled_radical_inverse(variant):
     assert (p.permutation(0) == [1, 0]).all()
 
     values_scrambled = [
-        OneMinusEpsilon,
+        math.OneMinusEpsilon,
         0.5, 0.75, 0.25, 0.875, 0.375, 0.625, 0.125, 0.9375, 0.4375,
         0.6875, 0.1875, 0.8125, 0.3125, 0.5625
     ]
@@ -102,7 +102,7 @@ def test04_scrambled_radical_inverse(variant):
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
 def test02_radical_inverse_vectorized(variant):
-    from mitsuba.core.qmc import RadicalInverse
+    from mitsuba.core import RadicalInverse
 
     try:
         from mitsuba.packet_rgb.core.qmc import RadicalInverseP
