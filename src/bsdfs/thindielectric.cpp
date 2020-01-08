@@ -149,6 +149,15 @@ public:
         return 0.f;
     }
 
+    Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
+                                Mask active) const override {
+
+        Float r = std::get<0>(fresnel(abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
+        // Account for internal reflections: r' = r + trt + tr^3t + ..
+        r *= 2.f / (1.f + r);
+        return m_specular_transmittance->eval(si, active) * (1 - r);
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("eta", m_eta);
         callback->put_object("specular_transmittance", m_specular_transmittance.get());
