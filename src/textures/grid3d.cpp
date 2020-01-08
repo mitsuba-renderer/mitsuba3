@@ -213,6 +213,7 @@ protected:
     bool m_fixed_max = false;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(Grid3DBase, Texture3D)
 MTS_IMPLEMENT_CLASS_VARIANT(Grid3D, Grid3DBase)
 MTS_EXPORT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
 NAMESPACE_END(mitsuba)

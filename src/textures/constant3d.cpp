@@ -34,9 +34,8 @@ public:
     template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, const Mask &active) const {
         Spectrum result = 0.f;
-        // TODO: actual implementation
-        //result[inside] = m_color->eval(it, inside);
-        result[active && is_inside(it, active)] = 0.f;
+        Mask inside    = active && is_inside(it, active);
+        result = m_color->eval(it, active);
 
         if constexpr (with_gradient)
             return std::make_pair(result, zero<Vector3f>());
