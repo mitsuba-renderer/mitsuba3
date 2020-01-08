@@ -27,26 +27,26 @@ MTS_PY_EXPORT(Interaction) {
 template<typename Class, typename PyClass>
 void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
     using Float = typename Class::Float;
-    if constexpr (is_dynamic_v<Float>) {
+    if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>) { // TODO could we enable this for CUDA?
         cl.def("__getitem__", [](Class &si, size_t i) {
             if (i >= slices(si))
                 throw py::index_error();
 
             Class res = zero<Class>(1);
-            res.t           = enoki::slice(si.t, i);
-            res.time        = enoki::slice(si.time, i);
-            res.wavelengths = enoki::slice(si.wavelengths, i);
-            res.p           = enoki::slice(si.p, i);
+            res.t           = slice(si.t, i);
+            res.time        = slice(si.time, i);
+            res.wavelengths = slice(si.wavelengths, i);
+            res.p           = slice(si.p, i);
             res.shape       = si.shape[i];
-            res.uv          = enoki::slice(si.uv, i);
-            res.n           = enoki::slice(si.n, i);
-            res.sh_frame    = enoki::slice(si.sh_frame, i);
-            res.dp_du       = enoki::slice(si.dp_du, i);
-            res.dp_dv       = enoki::slice(si.dp_dv, i);
-            res.duv_dx      = enoki::slice(si.duv_dx, i);
-            res.duv_dy      = enoki::slice(si.duv_dy, i);
-            res.wi          = enoki::slice(si.wi, i);
-            res.prim_index  = enoki::slice(si.prim_index, i);
+            res.uv          = slice(si.uv, i);
+            res.n           = slice(si.n, i);
+            res.sh_frame    = slice(si.sh_frame, i);
+            res.dp_du       = slice(si.dp_du, i);
+            res.dp_dv       = slice(si.dp_dv, i);
+            res.duv_dx      = slice(si.duv_dx, i);
+            res.duv_dy      = slice(si.duv_dy, i);
+            res.wi          = slice(si.wi, i);
+            res.prim_index  = slice(si.prim_index, i);
             res.instance    = si.instance[i];
             return res;
         })
@@ -58,21 +58,21 @@ void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
             if (slices(r2) != 1)
                 throw py::index_error();
 
-            enoki::slice(r.t, i)           = enoki::slice(r2.t, 0);
-            enoki::slice(r.time, i)        = enoki::slice(r2.time, 0);
-            enoki::slice(r.wavelengths, i) = enoki::slice(r2.wavelengths, 0);
-            enoki::slice(r.p, i)           = enoki::slice(r2.p, 0);
-            r.shape[i]                     = enoki::slice(r2.shape, 0);
-            enoki::slice(r.uv, i)          = enoki::slice(r2.uv, 0);
-            enoki::slice(r.n, i)           = enoki::slice(r2.n, 0);
-            enoki::slice(r.sh_frame, i)    = enoki::slice(r2.sh_frame, 0);
-            enoki::slice(r.dp_du, i)       = enoki::slice(r2.dp_du, 0);
-            enoki::slice(r.dp_dv, i)       = enoki::slice(r2.dp_dv, 0);
-            enoki::slice(r.duv_dx, i)      = enoki::slice(r2.duv_dx, 0);
-            enoki::slice(r.duv_dy, i)      = enoki::slice(r2.duv_dy, 0);
-            enoki::slice(r.wi, i)          = enoki::slice(r2.wi, 0);
-            enoki::slice(r.prim_index, i)  = enoki::slice(r2.prim_index, 0);
-            r.instance[i]                  = enoki::slice(r2.instance, 0);
+            slice(r.t, i)           = slice(r2.t, 0);
+            slice(r.time, i)        = slice(r2.time, 0);
+            slice(r.wavelengths, i) = slice(r2.wavelengths, 0);
+            slice(r.p, i)           = slice(r2.p, 0);
+            r.shape[i]                     = slice(r2.shape, 0);
+            slice(r.uv, i)          = slice(r2.uv, 0);
+            slice(r.n, i)           = slice(r2.n, 0);
+            slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
+            slice(r.dp_du, i)       = slice(r2.dp_du, 0);
+            slice(r.dp_dv, i)       = slice(r2.dp_dv, 0);
+            slice(r.duv_dx, i)      = slice(r2.duv_dx, 0);
+            slice(r.duv_dy, i)      = slice(r2.duv_dy, 0);
+            slice(r.wi, i)          = slice(r2.wi, 0);
+            slice(r.prim_index, i)  = slice(r2.prim_index, 0);
+            r.instance[i]                  = slice(r2.instance, 0);
         })
         .def("__len__", [](const Class &r) {
             return slices(r);

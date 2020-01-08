@@ -2,10 +2,10 @@
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
 
-MTS_PY_EXPORT(spline) {
+template<typename Float_>
+void bind_spline(py::module &m) {
     MTS_PY_IMPORT_TYPES()
-
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!is_cuda_array_v<Float_>) {
         m.def("eval_spline", spline::eval_spline<ScalarFloat>,
             "f0"_a, "f1"_a, "d0"_a, "d1"_a, "t"_a, D(spline, eval_spline))
         .def("eval_spline_d", spline::eval_spline_d<ScalarFloat>,
@@ -127,4 +127,9 @@ MTS_PY_EXPORT(spline) {
             }),
             "nodes1"_a, "nodes2"_a, "values"_a, "x"_a, "y"_a, D(spline, eval_2d));
     }
+}
+
+MTS_PY_EXPORT(spline) {
+    MTS_PY_IMPORT_TYPES()
+    bind_spline<Float>(m);
 }

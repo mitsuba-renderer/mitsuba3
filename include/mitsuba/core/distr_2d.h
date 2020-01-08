@@ -184,7 +184,7 @@ public:
         ScalarVector2u n_patches = size - 1u;
 
         // Keep track of the dependence on additional parameters (optional)
-        uint32_t max_level   = math::log2i_ceil(hmax(n_patches));
+        uint32_t max_level = math::log2i_ceil(hmax(n_patches));
 
         m_max_patch_index = n_patches - 1u;
 
@@ -203,7 +203,7 @@ public:
                     scale = hprod(n_patches) / (ScalarFloat) sum;
                 }
                 for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                    m_levels[0].data[offset + i] = data[offset + i] * scale;
+                    m_levels[0].data_ptr[offset + i] = data[offset + i] * scale;
             }
 
             return;
@@ -242,9 +242,9 @@ public:
             // Copy and normalize fine resolution interpolant
             ScalarFloat scale = normalize ? (hprod(n_patches) / (ScalarFloat) sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                m_levels[0].data[offset0 + i] = data[offset0 + i] * scale;
+                m_levels[0].data_ptr[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
-                m_levels[1].data[offset1 + i] *= scale;
+                m_levels[1].data_ptr[offset1 + i] *= scale;
 
             // Build a MIP hierarchy
             level_size = n_patches;
@@ -547,11 +547,13 @@ protected:
         uint32_t size;
         uint32_t width;
         FloatStorage data;
+        ScalarFloat *data_ptr;
 
         Level() { }
         Level(ScalarVector2u res, uint32_t slices)
             : size(hprod(res)), width(res.x()), data(zero<FloatStorage>(hprod(res) * slices)) {
             data.managed();
+            data_ptr = data.data();
         }
 
         /**
@@ -568,11 +570,11 @@ protected:
         }
 
         MTS_INLINE ScalarFloat *ptr(const ScalarVector2u &p) {
-            return data.data() + index(p);
+            return data_ptr + index(p);
         }
 
         MTS_INLINE const ScalarFloat *ptr(const ScalarVector2u &p) const {
-            return data.data() + index(p);
+            return data_ptr + index(p);
         }
 
         template <size_t Dim>

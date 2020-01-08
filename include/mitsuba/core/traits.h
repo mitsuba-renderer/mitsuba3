@@ -124,18 +124,4 @@ template <typename T> using underlying_t = typename detail::underlying<T>::type;
 /// A variable that always evaluates to false (useful for static_assert)
 template <typename... > constexpr bool false_v = false;
 
-/// Helper function to convert GPU array resulting from horizontal operation to CPU scalar
-template <typename T>
-scalar_t<T> scalar_cast(const T &v) {
-    if constexpr (is_cuda_array_v<T>) {
-#if !defined(NDEBUG)
-        if (slices(v) != 1)
-            Throw("scalar_cast(): array should be of size 1!");
-#endif
-        return v.coeff(0);
-    } else {
-        return v;
-    }
-}
-
 NAMESPACE_END(mitsuba)
