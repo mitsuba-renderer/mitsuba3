@@ -8,8 +8,8 @@ MTS_VARIANT BSDF<Float, Spectrum>::BSDF(const Properties &props)
 
 MTS_VARIANT BSDF<Float, Spectrum>::~BSDF() { }
 
-MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_tr(const SurfaceInteraction3f & /* si */,
-                                                    Mask /* active */) const {
+MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
+    const SurfaceInteraction3f & /* si */, Mask /* active */) const {
     return 0.f;
 }
 

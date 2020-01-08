@@ -345,6 +345,65 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     )
 };
 
+
+/// Stores information related to a medium scattering interaction
+template <typename Float_, typename Spectrum_>
+struct MediumInteraction : Interaction<Float_, Spectrum_> {
+
+    // =============================================================
+    //! @{ \name Type declarations
+    // =============================================================
+    using Float    = Float_;
+    using Spectrum = Spectrum_;
+    MTS_IMPORT_RENDER_BASIC_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+    using Index            = typename CoreAliases::UInt32;
+
+    // Make parent fields/functions visible
+    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, is_valid)
+    //! @}
+    // =============================================================
+
+
+    // =============================================================
+    //! @{ \name Fields
+    // =============================================================
+
+    /// Pointer to the associated medium
+    MediumPtr medium = nullptr;
+
+    /// Shading frame
+    Frame3f sh_frame;
+
+    /// Incident direction in the local shading frame
+    Vector3f wi;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Methods
+    // =============================================================
+
+
+    /// Convert a local shading-space vector into world space
+    Vector3f to_world(const Vector3f &v) const {
+        return sh_frame.to_world(v);
+    }
+
+    /// Convert a world-space vector into local shading coordinates
+    Vector3f to_local(const Vector3f &v) const {
+        return sh_frame.to_local(v);
+    }
+
+    ENOKI_DERIVED_STRUCT(MediumInteraction, Base,
+        ENOKI_BASE_FIELDS(t, time, wavelengths, p),
+        ENOKI_DERIVED_FIELDS(medium, sh_frame, wi)
+    )
+
+};
+
+
 // -----------------------------------------------------------------------------
 
 template <typename Float, typename Spectrum>
@@ -391,6 +450,25 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
     return os;
 }
 
+
+template <typename Float, typename Spectrum>
+std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectrum> &it) {
+    if (none(it.is_valid())) {
+        os << "MediumInteraction[invalid]";
+    } else {
+        os << "MediumInteraction[" << std::endl
+           << "  t = " << it.t << "," << std::endl
+           << "  time = " << it.time << "," << std::endl
+           << "  wavelengths = " << it.wavelengths << "," << std::endl
+           << "  p = " << string::indent(it.p, 6) << "," << std::endl
+           << "  medium = " << string::indent(it.medium, 2) << "," << std::endl
+           << "  sh_frame = " << string::indent(it.sh_frame, 2) << "," << std::endl
+           << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
+           << "]";
+    }
+    return os;
+}
+
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
@@ -402,6 +480,9 @@ ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p)
 ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
                      shape, uv, n, sh_frame, dp_du, dp_dv, duv_dx, duv_dy, wi,
                      prim_index, instance)
+
+ENOKI_STRUCT_SUPPORT(mitsuba::MediumInteraction, t, time, wavelengths, p,
+                     medium, sh_frame, wi)
 
 //! @}
 // -----------------------------------------------------------------------

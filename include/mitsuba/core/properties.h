@@ -339,7 +339,7 @@ public:  // Type-specific getters and setters ----------------------------------
         if (!object) {
             Properties props("constant3d");
             ref<Object> obj
-                = this->texture<typename Texture3D::Base>("__default_spectrum", def_val).get();
+                = this->texture<typename Texture3D::Texture>("__default_spectrum", def_val).get();
             props.set_object("color", obj);
             return (Texture3D *) PluginManager::instance()
                 ->create_object<Texture3D>(props).get();

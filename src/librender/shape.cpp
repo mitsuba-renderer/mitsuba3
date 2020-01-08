@@ -12,6 +12,7 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
     for (auto &kv : props.objects()) {
         Emitter *emitter = dynamic_cast<Emitter *>(kv.second.get());
         BSDF *bsdf = dynamic_cast<BSDF *>(kv.second.get());
+        Medium *medium = dynamic_cast<Medium *>(kv.second.get());
 
         if (emitter) {
             if (m_emitter)
@@ -21,6 +22,16 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
             if (m_bsdf)
                 Throw("Only a single BSDF child object can be specified per shape.");
             m_bsdf = bsdf;
+        } else if (medium) {
+            if (kv.first == "interior") {
+                if (m_interior_medium)
+                    Throw("Only a single interior medium can be specified per shape.");
+                m_interior_medium = medium;
+            } else if (kv.first == "exterior") {
+                if (m_exterior_medium)
+                    Throw("Only a single exterior medium can be specified per shape.");
+                m_exterior_medium = medium;
+            }
         } else {
             Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
         }

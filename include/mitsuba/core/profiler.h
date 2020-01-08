@@ -30,6 +30,10 @@ enum class ProfilerPhase : int {
     ImageBlockPut,              /* ImageBlock::put() */
     BSDFEvaluate,               /* BSDF::eval() and BSDF::pdf() */
     BSDFSample,                 /* BSDF::sample() */
+    PhaseFunctionEvaluate,      /* PhaseFunction::eval() and PhaseFunction::pdf() */
+    PhaseFunctionSample,        /* PhaseFunction::sample() */
+    MediumEvaluate,             /* Medium::eval() and Medium::pdf() */
+    MediumSample,               /* Medium::sample() */
     EndpointEvaluate,           /* Endpoint::eval() and Endpoint::pdf() */
     EndpointSampleRay,          /* Endpoint::sample_ray() */
     EndpointSampleDirection,    /* Endpoint::sample_direction() */
@@ -54,6 +58,10 @@ constexpr const char
         "ImageBlock::put()",
         "BSDF::eval(), pdf()",
         "BSDF::sample()",
+        "PhaseFunction::eval(), pdf()",
+        "PhaseFunction::sample()",
+        "Medium::eval(), pdf()",
+        "Medium::sample()",
         "Endpoint::eval(), pdf()",
         "Endpoint::sample_ray()",
         "Endpoint::sample_direction()",

@@ -24,6 +24,7 @@ template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
 template <typename Float, typename Spectrum> class Sensor;
+template <typename Float, typename Spectrum> class PhaseFunction;
 template <typename Float, typename Spectrum> class ProjectiveCamera;
 template <typename Float, typename Spectrum> class Shape;
 template <typename Float, typename Spectrum> class ShapeKDTree;
@@ -76,6 +77,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Emitter                = mitsuba::Emitter<FloatU, SpectrumU>;
     using Endpoint               = mitsuba::Endpoint<FloatU, SpectrumU>;
     using Medium                 = mitsuba::Medium<FloatU, SpectrumU>;
+    using PhaseFunction          = mitsuba::PhaseFunction<FloatU, SpectrumU>;
     using Film                   = mitsuba::Film<FloatU, SpectrumU>;
     using ImageBlock             = mitsuba::ImageBlock<FloatU, SpectrumU>;
     using ReconstructionFilter   = mitsuba::ReconstructionFilter<FloatU, SpectrumU>;
@@ -128,6 +130,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Emitter                = typename RenderAliases::Emitter;                                \
     using Endpoint               = typename RenderAliases::Endpoint;                               \
     using Medium                 = typename RenderAliases::Medium;                                 \
+    using PhaseFunction          = typename RenderAliases::PhaseFunction;                          \
     using Film                   = typename RenderAliases::Film;                                   \
     using ImageBlock             = typename RenderAliases::ImageBlock;                             \
     using ReconstructionFilter   = typename RenderAliases::ReconstructionFilter;                   \

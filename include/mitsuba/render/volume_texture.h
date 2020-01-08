@@ -77,6 +77,7 @@ public:
             << "]";
         return oss.str();
     }
+    MTS_DECLARE_CLASS()
 
 protected:
     explicit Grid3DBase(const Properties &props) : Base(props) {}

@@ -404,7 +404,7 @@ public:
      *     surface position. The incident direction is obtained from
      *     the field <tt>si.wi</tt>.
      */
-    virtual Spectrum eval_tr(const SurfaceInteraction3f &si,
+    virtual Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
                              Mask active = true) const;
 
     // -----------------------------------------------------------------------
@@ -518,6 +518,7 @@ ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
 ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
     ENOKI_CALL_SUPPORT_METHOD(sample)
     ENOKI_CALL_SUPPORT_METHOD(eval)
+    ENOKI_CALL_SUPPORT_METHOD(eval_null_transmission)
     ENOKI_CALL_SUPPORT_METHOD(pdf)
     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
 
