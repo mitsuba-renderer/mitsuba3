@@ -272,6 +272,9 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pr
     m_max_depth = props.int_("max_depth", -1);
     if (m_max_depth < 0 && m_max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
+
+    /// Disable direct visibility of emitters if needed
+    m_hide_emitters = props.bool_("hide_emitters", false);
 }
 
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }

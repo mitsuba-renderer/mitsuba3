@@ -210,6 +210,7 @@ protected:
 protected:
     int m_max_depth;
     int m_rr_depth;
+    bool m_hide_emitters;
 };
 
 MTS_EXTERN_CLASS_RENDER(Integrator)
