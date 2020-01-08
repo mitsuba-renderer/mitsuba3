@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
-    MTS_IMPORT_TYPES(BSDF, Emitter, Film, Sampler, Shape, Sensor, Integrator)
+    MTS_IMPORT_TYPES(BSDF, Emitter, Film, Sampler, Shape, Sensor, Integrator, Medium, MediumPtr)
 
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
@@ -97,6 +97,41 @@ public:
                              const Point2f &sample,
                              bool test_visibility = true,
                              Mask active = true) const;
+
+    /**
+     * \brief Direct illumination sampling routine
+     *
+     * Given an arbitrary reference point in the scene, this method samples a
+     * direction from the reference point to towards an emitter.
+     *
+     * Ideally, the implementation should importance sample the product of the
+     * emission profile and the geometry term between the reference point and
+     * the position on the emitter.
+     *
+     * \param ref
+     *    A reference point somewhere within the scene
+     *
+     * \param sample
+     *    A uniformly distributed 2D vector
+     *
+     * \param test_visibility
+     *    When set to \c true, a shadow ray will be cast to ensure that the
+     *    sampled emitter position and the reference point are mutually visible.
+     *
+     * \return
+     *    Radiance received along the sampled ray divided by the sample
+     *    probability.
+     */
+    std::pair<DirectionSample3f, Spectrum>
+    sample_emitter_direction_attenuated(const Interaction3f &ref, bool is_medium_interaction,
+                                        const MediumPtr medium, Sampler *sampler,
+                                        bool test_visibility = true, Mask active = true) const;
+
+
+    Spectrum eval_transmittance(const Point3f &p1, Mask p1_on_surface, const Point3f &p2, Mask p2_on_surface,
+                               Float time, Wavelength wavelengths, MediumPtr medium,
+                               int max_interactions, Sampler *sampler, Mask active) const;
+
 
     /**
      * \brief Evaluate the probability density of the  \ref
