@@ -110,16 +110,12 @@ public:
             ScalarFloat step_size      = get_step_size();
             ScalarFloat half_step_size = 0.5f * step_size;
 
-            ScalarVector3f diag   = m_density_aabb.max - m_density_aabb.min;
-            ScalarFloat diag_norm = norm(diag);
-
-            Float desired_density = -enoki::log(1 - sample.x());
-
-            int max_steps = diag_norm / step_size + 1;
-
+            ScalarVector3f diag      = m_density_aabb.max - m_density_aabb.min;
+            int max_steps            = norm(diag) / step_size + 1;
+            Float desired_density    = max(0.f, -enoki::log(1 - sample.x()));
             Float t_a                = mint;
             Float f_a                = density(ray, t_a, active) * mean_sigmat;
-            Float maxt               = enoki::min(maxt, si.t);
+            maxt                     = enoki::min(maxt, si.t);
             Float integrated_density = zero<Float>();
             Mask reached_density     = false;
 
@@ -145,6 +141,9 @@ public:
                 masked(integrated_density, active) = new_density;
                 masked(t_a, active)                = t_b;
                 masked(f_a, active)                = f_b;
+
+                if (none_or<false>(active))
+                    break;
             }
 
             // Solve quadratic equation to get exact intersection location
@@ -152,10 +151,17 @@ public:
             Float b = f_a;
             Float c = (integrated_density - desired_density) * rcp(t_b - t_a);
             auto [has_solution, solution1, solution2] = math::solve_quadratic(a, b, c);
-            Assert(none(active && reached_density && !has_solution));
+
+            // solve_quadratic does not check if a == b == c == 0, therefore we check here
+            has_solution |= reached_density && eq(desired_density, 0.f);
+            masked(solution1, reached_density && eq(desired_density, 0.f)) = 0.f;
+
+            Assert(none(reached_density && !has_solution));
             Float interp   = select(solution1 >= 0.f && solution1 <= 1.f, solution1, solution2);
+            interp         = clamp(interp, 0.f, 1.f);
             Float sampledt = t_a + (t_b - t_a) * interp;
-            Assert(none(active && reached_density && (interp < 0.f || interp > 1.f)));
+            Assert(none(reached_density && (interp < 0.f || interp > 1.f)));
+
             Float f_c = (1 - interp) * f_a + interp * f_b;
 
             // Update integrated_density for rays which do not interact with the medium
@@ -167,7 +173,6 @@ public:
 
             // Record medium interaction if the generated "t" is within the range of valid "t"
             Mask valid_mi = reached_density && (sampledt <= maxt);
-            Assert(none(valid_mi && f_c <= 0.f));
 
             // Compute transmittance
             Float tr                             = exp(-integrated_density);
@@ -230,23 +235,25 @@ public:
 
         Spectrum tr(1.0f);
         if (m_use_raymarching) {
-            ScalarFloat step_size = get_step_size();
-            ScalarVector3f diag   = m_density_aabb.max - m_density_aabb.min;
-            ScalarFloat diag_norm = norm(diag);
-            int max_steps         = diag_norm / step_size + 1;
-            Float t_a             = mint;
-            Float f_a             = density(ray, t_a, active) * mean_sigmat;
-            Float t_b;
+            ScalarFloat step_size    = get_step_size();
+            ScalarVector3f diag      = m_density_aabb.max - m_density_aabb.min;
+            ScalarFloat diag_norm    = norm(diag);
+            int max_steps            = diag_norm / step_size + 1;
+            Float t_a                = mint;
+            Float f_a                = density(ray, t_a, active) * mean_sigmat;
             Float integrated_density = zero<Float>();
             for (int i = 1; i < max_steps; ++i) {
-                t_b                       = fmadd(i, step_size, mint);
+                Float t_b                 = fmadd(i, step_size, mint);
                 Mask reached_maxt         = active && (t_b >= maxt);
                 masked(t_b, reached_maxt) = maxt;
                 Float f_b                 = density(ray, t_b, active) * mean_sigmat;
-                integrated_density += 0.5f * (f_a + f_b) * (t_b - t_a);
+                integrated_density += select(active, 0.5f * (f_a + f_b) * (t_b - t_a), 0.f);
+
                 active &= !reached_maxt;
                 t_a = t_b;
                 f_a = f_b;
+                if (none_or<false>(active))
+                    break;
             }
             return Spectrum(enoki::exp(-integrated_density));
         }
