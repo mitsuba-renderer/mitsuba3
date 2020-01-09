@@ -42,9 +42,8 @@ NAMESPACE_END(detail)
  */
 // TODO: document data format.
 // TODO: what if Float is a GPU array, should we upload to it directly?
-template <typename Float, size_t expected_channels>
-VolumeMetadata read_binary_volume_data(const std::string &filename,
-                                       Vector<DynamicBuffer<Float>, expected_channels> *data) {
+template <typename Float>
+std::pair<VolumeMetadata, DynamicBuffer<Float>> read_binary_volume_data(const std::string &filename) {
     MTS_IMPORT_CORE_TYPES()
 
     VolumeMetadata meta;
@@ -75,28 +74,26 @@ VolumeMetadata read_binary_volume_data(const std::string &filename,
               meta.shape.x(), meta.shape.y(), meta.shape.z());
 
     meta.channel_count = detail::read<int32_t>(f);
-    if (meta.channel_count != expected_channels)
-        Throw("Expected %d channel in volume data, found %d", expected_channels,
-              meta.channel_count);
 
     // Transform specified in the volume file
     float dims[6];
     f.read(reinterpret_cast<char *>(dims), sizeof(float) * 6);
-    meta.bbox =
-        ScalarBoundingBox3f(ScalarPoint3f(dims[0], dims[1], dims[2]),
+    meta.bbox = ScalarBoundingBox3f(ScalarPoint3f(dims[0], dims[1], dims[2]),
                             ScalarPoint3f(dims[3], dims[4], dims[5]));
     meta.transform = detail::bbox_transform(meta.bbox);
 
-    for (size_t i = 0; i < expected_channels; ++i)
-        set_slices((*data)[i], size);
+    DynamicBuffer<Float> data;
+    set_slices(data, size * meta.channel_count);
     meta.mean = 0.;
     meta.max  = -math::Infinity<float>;
+    size_t k = 0;
     for (size_t i = 0; i < size; ++i) {
-        for (size_t j = 0; j < expected_channels; ++j) {
+        for (size_t j = 0; j < meta.channel_count; ++j) {
             auto val = detail::read<float>(f);
-            slice((*data)[j], i) = val;
+            slice(data, k) = val;
             meta.mean += (double) val;
             meta.max = std::max(meta.max, val);
+            ++k;
         }
     }
     meta.mean /= double(size * meta.channel_count);
@@ -104,7 +101,7 @@ VolumeMetadata read_binary_volume_data(const std::string &filename,
     Log(Debug, "Loaded grid volume data from file %s: dimensions %s, mean value %f, max value %f",
         filename, meta.shape, meta.mean, meta.max);
 
-    return meta;
+    return { meta, data };
 }
 
 NAMESPACE_END(mitsuba)

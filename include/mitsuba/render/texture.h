@@ -167,13 +167,13 @@ public:
     // ======================================================================
 
     /// Evaluate the texture at the given surface interaction, with color processing.
-    virtual Spectrum eval(const Interaction3f &it, Mask active = true) const = 0;
+    virtual Spectrum eval(const Interaction3f &si, Mask active = true) const;
 
     /// Evaluate this texture as a single-channel quantity.
-    virtual Float eval_1(const Interaction3f &it, Mask active = true) const = 0;
+    virtual Float eval_1(const Interaction3f &si, Mask active = true) const;
 
     /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
-    virtual Vector3f eval_3(const Interaction3f &it, Mask active = true) const = 0;
+    virtual Vector3f eval_3(const Interaction3f &si, Mask active = true) const;
 
     /**
      * Evaluate the texture at the given surface interaction,

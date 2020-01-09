@@ -18,14 +18,6 @@ public:
         return eval_impl<false>(it, active);
     }
 
-    Vector3f eval_3(const Interaction3f & /*it*/, Mask  /*active*/) const override {
-        NotImplementedError("eval3");
-    }
-
-    Float eval_1(const Interaction3f & /*it*/, Mask  /*active*/) const override {
-        NotImplementedError("eval1");
-    }
-
     std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
                                                 Mask active) const override {
         return eval_impl<true>(it, active);
@@ -33,9 +25,13 @@ public:
 
     template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, const Mask &active) const {
-        Spectrum result = 0.f;
         Mask inside    = active && is_inside(it, active);
-        result = m_color->eval(it, active);
+
+        SurfaceInteraction3f si;
+        si.uv          = Point2f(0.f, 0.f);
+        si.wavelengths = it.wavelengths;
+        si.time        = it.time;
+        auto result = m_color->eval(si, active);
 
         if constexpr (with_gradient)
             return std::make_pair(result, zero<Vector3f>());

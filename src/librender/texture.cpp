@@ -68,6 +68,19 @@ MTS_VARIANT Texture3D<Float, Spectrum>::Texture3D(const Properties &props) {
     update_bbox();
 }
 
+MTS_VARIANT Spectrum Texture3D<Float, Spectrum>::eval(const Interaction3f &, Mask) const {
+    NotImplementedError("eval");
+}
+
+MTS_VARIANT Float Texture3D<Float, Spectrum>::eval_1(const Interaction3f &, Mask) const {
+    NotImplementedError("eval_1");
+}
+
+MTS_VARIANT typename Texture3D<Float, Spectrum>::Vector3f
+Texture3D<Float, Spectrum>::eval_3(const Interaction3f &, Mask) const {
+    NotImplementedError("eval_3");
+}
+
 MTS_VARIANT std::pair<Spectrum, typename Texture3D<Float, Spectrum>::Vector3f>
 Texture3D<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/,
                                           Mask /*active*/) const {

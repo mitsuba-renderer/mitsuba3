@@ -74,7 +74,7 @@ public:
         return 0.f;
     }
 
-    Spectrum eval_tr(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval_null_transmission(const SurfaceInteraction3f &si, Mask active) const override {
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
             UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
