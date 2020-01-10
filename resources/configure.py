@@ -122,17 +122,20 @@ if __name__ == '__main__':
     float_types = set()
     for name in configurations['enabled']:
         if name not in configurations:
-            raise ValueError('"enabled" refers to an unknown configuration "%s"' % name)
+            raise ValueError('mitsuba.conf: "enabled" refers to an unknown configuration "%s"' % name)
         item = configurations[name]
         spectrum = item['spectrum'].replace('Float', item['float'])
         float_types.add(item['float'])
         enabled.append((name, item['float'], spectrum))
 
     if not enabled:
-        raise ValueError('There must be at least one enabled build configuration!')
+        raise ValueError('mitsuba.conf: there must be at least one enabled build configuration!')
 
     # Use first configuration if default mode is not specified
     default_mode = configurations.get('default', enabled[0][0])
+
+    if default_mode not in configurations['enabled']:
+        raise ValueError('mitsuba.conf: the "default" mode is not part of "enabled" list!')
 
     fname = realpath(join(root, 'include/mitsuba/core/config.h'))
     output = StringIO()
