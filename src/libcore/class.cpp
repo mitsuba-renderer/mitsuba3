@@ -84,7 +84,12 @@ void Class::initialize_once(Class *class_) {
 
     std::cerr << "Critical error during the static RTTI initialization: " << std::endl
               << "Could not locate the base class '" << key_generic << "' while initializing '"
-              << class_->name() << "'!" << std::endl;
+              << class_->name() << "'";
+
+    if (!class_->variant().empty())
+        std::cerr << " with variant '" << class_->variant() << "'";
+
+    std::cerr << "!" << std::endl;
 }
 
 ref<Object> Class::construct(const Properties &props) const {
