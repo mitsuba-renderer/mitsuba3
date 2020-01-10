@@ -463,11 +463,12 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
     }
 
     ScalarBoundingBox3f result;
-    for (size_t i = 0; i < n_vertices; ++i) {
-        ScalarPoint3d p = vertices1[i];
-        result.min = min(result.min, ScalarPoint3f(prev_float(p)));
-        result.max = max(result.max, ScalarPoint3f(next_float(p)));
-    }
+    for (size_t i = 0; i < n_vertices; ++i)
+        result.expand(ScalarPoint3f(vertices1[i]));
+
+    result.min = prev_float(result.min);
+    result.max = next_float(result.max);
+
     result.clip(clip);
 
     return result;
