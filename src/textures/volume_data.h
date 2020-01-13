@@ -1,9 +1,14 @@
 #pragma once
 
+#include <fstream>
+#include <sstream>
+
 /// @file Helper functions for volume data handling.
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/render/volume_texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -13,14 +18,6 @@ template <typename T> T read(std::ifstream &f) {
     T v;
     f.read(reinterpret_cast<char *>(&v), sizeof(v));
     return v;
-}
-
-template <typename Float>
-MTS_INLINE auto stof(const std::string &s) {
-    if constexpr (is_double_v<Float>)
-        return std::stod(s);
-    else
-        return std::stof(s);
 }
 
 /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
@@ -43,7 +40,8 @@ NAMESPACE_END(detail)
 // TODO: document data format.
 // TODO: what if Float is a GPU array, should we upload to it directly?
 template <typename Float>
-std::pair<VolumeMetadata, DynamicBuffer<Float>> read_binary_volume_data(const std::string &filename) {
+std::pair<VolumeMetadata, DynamicBuffer<Float>>
+read_binary_volume_data(const std::string &filename) {
     MTS_IMPORT_CORE_TYPES()
 
     VolumeMetadata meta;
@@ -78,25 +76,27 @@ std::pair<VolumeMetadata, DynamicBuffer<Float>> read_binary_volume_data(const st
     // Transform specified in the volume file
     float dims[6];
     f.read(reinterpret_cast<char *>(dims), sizeof(float) * 6);
-    meta.bbox = ScalarBoundingBox3f(ScalarPoint3f(dims[0], dims[1], dims[2]),
-                            ScalarPoint3f(dims[3], dims[4], dims[5]));
+    meta.bbox      = ScalarBoundingBox3f(ScalarPoint3f(dims[0], dims[1], dims[2]),
+                                    ScalarPoint3f(dims[3], dims[4], dims[5]));
     meta.transform = detail::bbox_transform(meta.bbox);
+    meta.mean      = 0.;
+    meta.max       = -math::Infinity<ScalarFloat>;
 
-    DynamicBuffer<Float> data;
-    set_slices(data, size * meta.channel_count);
-    meta.mean = 0.;
-    meta.max  = -math::Infinity<float>;
-    size_t k = 0;
+    auto raw_data = std::unique_ptr<float[]>(new float[size * meta.channel_count]);
+    size_t k      = 0;
     for (size_t i = 0; i < size; ++i) {
         for (size_t j = 0; j < meta.channel_count; ++j) {
-            auto val = detail::read<float>(f);
-            slice(data, k) = val;
+            auto val    = detail::read<float>(f);
+            raw_data[k] = val;
             meta.mean += (double) val;
             meta.max = std::max(meta.max, val);
             ++k;
         }
     }
     meta.mean /= double(size * meta.channel_count);
+
+    // Copy loaded data to an Enoki array (e.g. on the GPU)
+    auto data = DynamicBuffer<Float>::copy(raw_data.get(), size * meta.channel_count);
 
     Log(Debug, "Loaded grid volume data from file %s: dimensions %s, mean value %f, max value %f",
         filename, meta.shape, meta.mean, meta.max);

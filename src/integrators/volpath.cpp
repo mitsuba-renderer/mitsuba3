@@ -91,7 +91,7 @@ public:
                 Mask active_e = active_medium && sample_emitters;
                 if (any_or<true>(active_e)) {
                     auto [ds, emitter_val] = scene->sample_emitter_direction_attenuated(
-                        mi, true, medium, sampler, true, active_e);
+                        mi, true, medium, sampler->next_2d(active_e), sampler, true, active_e);
                     active_e &= neq(ds.pdf, 0.f);
                     Float phase_val =
                         mi.medium->phase_function()->eval(mi.to_local(ds.d), active_e);
@@ -121,7 +121,7 @@ public:
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth);
                 if (likely(any_or<true>(active_e))) {
                     auto [ds, emitter_val] = scene->sample_emitter_direction_attenuated(
-                        si, false, medium, sampler, true, active_e);
+                        si, false, medium, sampler->next_2d(active_e), sampler, true, active_e);
                     active_e &= neq(ds.pdf, 0.f);
 
                     // Query the BSDF for that emitter-sampled direction

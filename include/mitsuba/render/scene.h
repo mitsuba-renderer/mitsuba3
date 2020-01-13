@@ -124,7 +124,7 @@ public:
      */
     std::pair<DirectionSample3f, Spectrum>
     sample_emitter_direction_attenuated(const Interaction3f &ref, bool is_medium_interaction,
-                                        const MediumPtr medium, Sampler *sampler,
+                                        const MediumPtr medium, const Point2f &sample_, Sampler *sampler,
                                         bool test_visibility = true, Mask active = true) const;
 
 

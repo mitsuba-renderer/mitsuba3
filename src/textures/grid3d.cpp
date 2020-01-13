@@ -1,15 +1,13 @@
-#include <fstream>
-#include <sstream>
+#include <enoki/stl.h>
 
-#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/core/thread.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume_texture.h>
+
 #include "volume_data.h"
 
 NAMESPACE_BEGIN(mitsuba)
@@ -38,8 +36,7 @@ public:
     MTS_IMPORT_TYPES()
 
     explicit Grid3D(const Properties &props) : Base(props), m_props(props) {
-        std::tie(m_metadata, m_data) =
-            read_binary_volume_data<ScalarFloat>(props.string("filename"));
+        std::tie(m_metadata, m_data) = read_binary_volume_data<Float>(props.string("filename"));
 
         // Mark values which are only used in the implementation class as queried
         props.mark_queried("use_grid_bbox");
@@ -253,10 +250,12 @@ public:
             m_size = new_size;
         }
 
-        auto acc        = hsum(hsum(detach(m_data)));
-        m_metadata.mean = (double) acc / (double) (m_size * 3);
-        if (!m_fixed_max)
-            m_metadata.max = hmax(hmax(m_data));
+        auto sum = hsum(hsum(detach(m_data)));
+        m_metadata.mean = (double) enoki::slice(sum, 0) / (double) (m_size * 3);
+        if (!m_fixed_max) {
+            auto maximum = hmax(hmax(m_data));
+            m_metadata.max = slice(maximum, 0);
+        }
     }
 
     std::string to_string() const override {

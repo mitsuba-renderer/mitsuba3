@@ -244,18 +244,18 @@ Spectrum Scene<Float, Spectrum>::eval_transmittance(const Point3f &p1, Mask p1_o
 
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction_attenuated(const Interaction3f &ref, bool is_medium_interaction,
-                                                            const MediumPtr medium, Sampler *sampler,
-                                                            bool test_visibility, Mask active) const {
+                                                            const MediumPtr medium, const Point2f &sample_,
+                                                            Sampler *sampler, bool test_visibility, Mask active) const {
     using EmitterPtr = replace_scalar_t<Float, Emitter *>;
 
     ScopedPhase sp(ProfilerPhase::SampleEmitterDirection);
     DirectionSample3f ds;
     Spectrum spec = 0.f;
+    Point2f sample(sample_);
 
     int max_interactions = 10;
     if (likely(!m_emitters.empty())) {
         // Randomly pick an emitter according to the precomputed emitter distribution
-        Point2f sample          = sampler->next_2d();
         UInt32 index            = min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()),
                            (uint32_t) m_emitters.size() - 1);
         ScalarFloat emitter_pdf = 1.f / m_emitters.size();
