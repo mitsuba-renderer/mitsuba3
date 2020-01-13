@@ -28,8 +28,8 @@ public:
                                      Mask active) const override {
 
 
-        // All rays are valid if emitters are visible and there is an env map
-        // Otherwise, valid_ray depends on whether a valid interaction is sampled
+        // If there is an environment emitter and emitters are visible: all rays will be valid
+        // Otherwise, it will depend on whether a valid interaction is sampled
         Mask valid_ray = !m_hide_emitters && neq(scene->environment(), nullptr);
 
         Ray3f ray = ray_; // For now, ignore ray differentials
@@ -151,14 +151,12 @@ public:
                 valid_ray |= non_null_bsdf;
 
                 specular_chain |= non_null_bsdf && has_flag(bs.sampled_type, BSDFFlags::Delta);
-                specular_chain &= !active_surface || !has_flag(bs.sampled_type, BSDFFlags::Smooth);
+                specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
 
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
                                    any(neq(depolarize(throughput), 0.f));
-                // handle the case when m_max_depth is negative
-                int max_intersections = m_max_depth < 0
-                                            ? std::numeric_limits<int>::max() - depth - 1
-                                            : m_max_depth - depth - 1;
+
+                uint32_t max_intersections = (uint32_t) m_max_depth - (uint32_t) depth - 1;
                 auto [emitted, emitter_pdf] =
                     ray_intersect_and_look_for_emitter(si, scene, sampler, medium, ray,
                                                        max_intersections, add_emitter);
@@ -176,12 +174,12 @@ public:
     std::pair<Spectrum, Float>
     ray_intersect_and_look_for_emitter(const SurfaceInteraction3f &si_ref, const Scene *scene,
                                        Sampler *sampler, MediumPtr medium, RayDifferential3f ray,
-                                       int maxInteractions, Mask active) const {
+                                       uint32_t maxInteractions, Mask active) const {
         using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
         Spectrum value(0.0f);
         Spectrum transmittance(1.0f);
         Float emitter_pdf(0.0f);
-        int interactions = 0;
+        uint32_t interactions = 0;
         EmitterPtr emitter;
         while (any(active) && interactions < maxInteractions) {
 

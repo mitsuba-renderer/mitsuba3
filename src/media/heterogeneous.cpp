@@ -277,8 +277,6 @@ public:
         return tr;
     }
 
-    bool is_homogeneous() const override { return false; }
-
     void traverse(TraversalCallback *callback) override {
         callback->put_object("density", m_density.get());
         callback->put_object("albedo", m_albedo.get());

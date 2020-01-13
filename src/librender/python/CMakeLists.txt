@@ -21,8 +21,10 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     imageblock_v.cpp
     interaction_v.cpp
     integrator_v.cpp
+    medium_v.cpp
     mueller_v.cpp
     microfacet_v.cpp
+    phase_v.cpp
     records_v.cpp
     sampler_v.cpp
     scene_v.cpp

@@ -93,8 +93,6 @@ public:
         return enoki::exp(-(ray.maxt - ray.mint) * eval_sigmat(mi));
     }
 
-    bool is_homogeneous() const override { return true; }
-
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("density", m_density);
         callback->put_object("albedo", m_albedo.get());

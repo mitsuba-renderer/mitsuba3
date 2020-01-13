@@ -87,6 +87,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ObjectPtr              = replace_scalar_t<Float, const Object *>;
     using BSDFPtr                = replace_scalar_t<Float, const BSDF *>;
     using MediumPtr              = replace_scalar_t<Float, const Medium *>;
+    using PhaseFunctionPtr       = replace_scalar_t<Float, const PhaseFunction *>;
     using ShapePtr               = replace_scalar_t<Float, const Shape *>;
     using EmitterPtr             = replace_scalar_t<Float, const Emitter *>;
 };

@@ -143,3 +143,71 @@ MTS_PY_EXPORT(SurfaceInteraction) {
     // Manually bind the slicing operators to handle ShapePtr properly
     bind_slicing_operator_surfaceinteraction<SurfaceInteraction3f>(inter);
 }
+
+template<typename Class, typename PyClass>
+void bind_slicing_operator_mediuminteraction(PyClass &cl) {
+    using Float = typename Class::Float;
+    if constexpr (is_dynamic_v<Float> && !is_cuda_array_v<Float>) { // TODO could we enable this for CUDA?
+        cl.def("__getitem__", [](Class &mi, size_t i) {
+            if (i >= slices(mi))
+                throw py::index_error();
+
+            Class res = zero<Class>(1);
+            res.t           = slice(mi.t, i);
+            res.time        = slice(mi.time, i);
+            res.wavelengths = slice(mi.wavelengths, i);
+            res.p           = slice(mi.p, i);
+            res.medium      = mi.medium[i];
+            res.sh_frame    = slice(mi.sh_frame, i);
+            res.wi          = slice(mi.wi, i);
+            return res;
+        })
+        .def("__setitem__", [](Class &r, size_t i,
+                                const Class &r2) {
+            if (i >= slices(r))
+                throw py::index_error();
+
+            if (slices(r2) != 1)
+                throw py::index_error();
+
+            slice(r.t, i)           = slice(r2.t, 0);
+            slice(r.time, i)        = slice(r2.time, 0);
+            slice(r.wavelengths, i) = slice(r2.wavelengths, 0);
+            slice(r.p, i)           = slice(r2.p, 0);
+            r.medium[i]             = slice(r2.medium, 0);
+            slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
+            slice(r.wi, i)          = slice(r2.wi, 0);
+        })
+        .def("__len__", [](const Class &r) {
+            return slices(r);
+        });
+    }
+    cl.def_static("zero", [](size_t size) {
+            if constexpr (!is_dynamic_v<Float>) {
+                if (size != 1)
+                    throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
+            }
+            return zero<Class>(size);
+        }, "size"_a = 1
+    );
+}
+
+MTS_PY_EXPORT(MediumInteraction) {
+    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    auto inter =
+        py::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
+                                                        D(MediumInteraction))
+        // Members
+        .def_field(MediumInteraction3f, medium,   D(MediumInteraction, medium))
+        .def_field(MediumInteraction3f, sh_frame,   D(MediumInteraction, sh_frame))
+        .def_field(MediumInteraction3f, wi,         D(MediumInteraction, wi))
+
+        // Methods
+        .def(py::init<>(), D(MediumInteraction, MediumInteraction))
+        .def("to_world", &MediumInteraction3f::to_world, D(MediumInteraction, to_world))
+        .def("to_local", &MediumInteraction3f::to_local, D(MediumInteraction, to_local))
+        .def_repr(MediumInteraction3f);
+
+    // Manually bind the slicing operators to handle ShapePtr properly
+    bind_slicing_operator_mediuminteraction<MediumInteraction3f>(inter);
+}

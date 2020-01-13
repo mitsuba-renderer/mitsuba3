@@ -5,6 +5,8 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/medium.h>
+#include <mitsuba/render/phase.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/python/python.h>
 
@@ -40,6 +42,9 @@ static py::object caster(Object *o) {
 
     PY_TRY_CAST(Sampler);
 
+    PY_TRY_CAST(PhaseFunction);
+    PY_TRY_CAST(Medium);
+
     return py::object();
 }
 
@@ -53,9 +58,12 @@ MTS_PY_DECLARE(ImageBlock);
 MTS_PY_DECLARE(Integrator);
 MTS_PY_DECLARE(Interaction);
 MTS_PY_DECLARE(SurfaceInteraction);
+MTS_PY_DECLARE(MediumInteraction);
+MTS_PY_DECLARE(Medium);
 MTS_PY_DECLARE(mueller);
 MTS_PY_DECLARE(MicrofacetDistribution);
 MTS_PY_DECLARE(PositionSample);
+MTS_PY_DECLARE(PhaseFunction);
 MTS_PY_DECLARE(DirectionSample);
 MTS_PY_DECLARE(Sampler);
 MTS_PY_DECLARE(Scene);
@@ -84,10 +92,13 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Interaction);
     MTS_PY_IMPORT(SurfaceInteraction);
+    MTS_PY_IMPORT(MediumInteraction);
+    MTS_PY_IMPORT(Medium);
     MTS_PY_IMPORT_SUBMODULE(mueller);
     MTS_PY_IMPORT(MicrofacetDistribution);
     MTS_PY_IMPORT(PositionSample);
     MTS_PY_IMPORT(DirectionSample);
+    MTS_PY_IMPORT(PhaseFunction);
     MTS_PY_IMPORT(Sampler);
     MTS_PY_IMPORT(Scene);
     MTS_PY_IMPORT(Sensor);

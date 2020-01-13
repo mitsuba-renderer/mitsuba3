@@ -58,9 +58,6 @@ public:
     /// Return the phase function of this medium
     MTS_INLINE const PhaseFunction *phase_function() const { return m_phase_function.get(); }
 
-    /// Determine whether the medium is homogeneous
-    virtual bool is_homogeneous() const = 0;
-
     /// Returns whether this specific medium instance uses emitter sampling
     MTS_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
