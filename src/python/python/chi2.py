@@ -479,6 +479,52 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     return sample_functor, pdf_functor
 
 
+def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
+    """
+    Adapter which permits testing phase function distributions using the Chi^2 test.
+
+    Parameters
+    ----------
+    phase_type: string
+        Name of the phase function plugin to instantiate.
+    extra: string
+        Additional XML used to specify the phase function's parameters.
+    wi: array(3,)
+        Incoming direction, in local coordinates.
+    """
+    from mitsuba.render import MediumInteraction3f
+    from mitsuba.core import Float
+    from mitsuba.core.xml import load_string
+
+    def make_context(n):
+        mi = MediumInteraction3f(n)
+        mi.wi = wi
+        ek.set_slices(mi.wi, n)
+        mi.wavelengths = []
+        return mi
+
+    def instantiate(args):
+        xml = """<phase version="2.0.0" type="%s">
+            %s
+        </phase>""" % (phase_type, extra)
+        return load_string(xml % args)
+
+    def sample_functor(sample, *args):
+        n = ek.slices(sample)
+        plugin = instantiate(args)
+        mi = make_context(n)
+        wo = plugin.sample(mi, [sample[0], sample[1]])
+        return wo, np.ones(n)
+
+    def pdf_functor(wo, *args):
+        n = wo.shape[0]
+        plugin = instantiate(args)
+        mi = make_context(n)
+        return plugin.eval(wo)
+
+    return sample_functor, pdf_functor
+
+
 if __name__ == '__main__':
     mitsuba.set_variant('packet_rgb')
 

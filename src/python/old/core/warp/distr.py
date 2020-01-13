@@ -36,7 +36,7 @@ from mitsuba.scalar_rgb.core import float_dtype
 from mitsuba.core.chi2 import SphericalDomain, PlanarDomain, LineDomain
 from mitsuba.core.chi2 import (
     SpectrumAdapter, BSDFAdapter, MicrofacetAdapter,
-    InteractiveBSDFAdapter, EnvironmentAdapter)
+    InteractiveBSDFAdapter, EnvironmentAdapter, PhaseFunctionAdapter)
 from mitsuba.scalar_rgb.render import MicrofacetDistribution, MicrofacetType
 from mitsuba.scalar_rgb.core import Bitmap, Thread
 from mitsuba.test.util import fresolver_append_path
@@ -48,6 +48,7 @@ def deg2rad(value):
 
 DEFAULT_SETTINGS   = {'sample_dim': 2, 'ires': 10, 'res': 101, 'parameters': []}
 DEFAULT_SETTINGS_1 = dict(DEFAULT_SETTINGS, sample_dim=1)
+DEFAULT_SETTINGS_2 = dict(DEFAULT_SETTINGS, sample_dim=2)
 DEFAULT_SETTINGS_3 = dict(DEFAULT_SETTINGS, sample_dim=3)
 
 
@@ -291,7 +292,14 @@ try:
         ('Environment map (museum)', SphericalDomain(),
         EnvironmentAdapter("envmap", """
             <string name="filename" value="resources/data/envmap/museum.exr"/>
-        """), DEFAULT_SETTINGS)
+        """), DEFAULT_SETTINGS),
+
+        ('Isotropic phase function', SphericalDomain(),
+        PhaseFunctionAdapter("isotropic", ''), DEFAULT_SETTINGS_2),
+        ('HG phase function - isotropic', SphericalDomain(),
+        PhaseFunctionAdapter("hg", '<float name="g" value="0.0"/>'), DEFAULT_SETTINGS_2),
+        ('HG phase function - anisotropic', SphericalDomain(),
+        PhaseFunctionAdapter("hg", '<float name="g" value="0.6"/>'), DEFAULT_SETTINGS_2)
     ]
 
     @fresolver_append_path
