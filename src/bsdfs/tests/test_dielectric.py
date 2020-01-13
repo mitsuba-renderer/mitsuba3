@@ -1,10 +1,15 @@
-import numpy as np
+import mitsuba
 import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
 
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import BSDF, BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
+@pytest.fixture()
+def variant():
+    mitsuba.set_variant('scalar_rgb')
+
 
 def example_bsdf(reflectance=0.3, transmittance=0.6):
+    from mitsuba.core.xml import load_string
     return load_string("""<bsdf version="2.0.0" type="dielectric">
             <spectrum name="specular_reflectance" value="{}"/>
             <spectrum name="specular_transmittance" value="{}"/>
@@ -13,7 +18,10 @@ def example_bsdf(reflectance=0.3, transmittance=0.6):
         </bsdf>""".format(reflectance, transmittance))
 
 
-def test01_create():
+def test01_create(variant):
+    from mitsuba.render import BSDFFlags
+    from mitsuba.core.xml import load_string
+
     b = load_string("<bsdf version='2.0.0' type='dielectric'></bsdf>")
     assert b is not None
     assert b.component_count() == 2
@@ -30,7 +38,10 @@ def test01_create():
             </bsdf>""")
 
 
-def test02_sample():
+def test02_sample(variant):
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
+    from mitsuba.core.xml import load_string
+
     si = SurfaceInteraction3f()
     si.wi = [0, 0, 1]
     bsdf = example_bsdf()
@@ -40,27 +51,29 @@ def test02_sample():
 
         # Sample reflection
         bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-        assert np.allclose(spec, [0.3] * 3)
-        assert np.allclose(bs.pdf, 0.04)
-        assert np.allclose(bs.eta, 1.0)
-        assert np.allclose(bs.wo, [0, 0, 1])
+        assert ek.allclose(spec, [0.3] * 3)
+        assert ek.allclose(bs.pdf, 0.04)
+        assert ek.allclose(bs.eta, 1.0)
+        assert ek.allclose(bs.wo, [0, 0, 1])
         assert bs.sampled_component == 0
         assert bs.sampled_type == +BSDFFlags.DeltaReflection
 
         # Sample refraction
         bs, spec = bsdf.sample(ctx, si, 0.05, [0, 0])
         if i == 0:
-            assert np.allclose(spec, [0.6] * 3)
+            assert ek.allclose(spec, [0.6] * 3)
         else:
-            assert np.allclose(spec, [0.6 / 1.5**2] * 3)
-        assert np.allclose(bs.pdf, 1 - 0.04)
-        assert np.allclose(bs.eta, 1.5)
-        assert np.allclose(bs.wo, [0, 0, -1])
+            assert ek.allclose(spec, [0.6 / 1.5**2] * 3)
+        assert ek.allclose(bs.pdf, 1 - 0.04)
+        assert ek.allclose(bs.eta, 1.5)
+        assert ek.allclose(bs.wo, [0, 0, -1])
         assert bs.sampled_component == 1
         assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
 
-def test03_sample_reverse():
+def test03_sample_reverse(variant):
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
+
     si = SurfaceInteraction3f()
     si.wi = [0, 0, -1]
     bsdf = example_bsdf()
@@ -70,33 +83,35 @@ def test03_sample_reverse():
 
         # Sample reflection
         bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-        assert np.allclose(spec, [0.3] * 3)
-        assert np.allclose(bs.pdf, 0.04)
-        assert np.allclose(bs.eta, 1.0)
-        assert np.allclose(bs.wo, [0, 0, -1])
+        assert ek.allclose(spec, [0.3] * 3)
+        assert ek.allclose(bs.pdf, 0.04)
+        assert ek.allclose(bs.eta, 1.0)
+        assert ek.allclose(bs.wo, [0, 0, -1])
         assert bs.sampled_component == 0
         assert bs.sampled_type == +BSDFFlags.DeltaReflection
 
         # Sample refraction
         bs, spec = bsdf.sample(ctx, si, 0.05, [0, 0])
         if i == 0:
-            assert np.allclose(spec, [0.6] * 3)
+            assert ek.allclose(spec, [0.6] * 3)
         else:
-            assert np.allclose(spec, [0.6 * 1.5**2] * 3)
-        assert np.allclose(bs.pdf, 1 - 0.04)
-        assert np.allclose(bs.eta, 1 / 1.5)
-        assert np.allclose(bs.wo, [0, 0, 1])
+            assert ek.allclose(spec, [0.6 * 1.5**2] * 3)
+        assert ek.allclose(bs.pdf, 1 - 0.04)
+        assert ek.allclose(bs.eta, 1 / 1.5)
+        assert ek.allclose(bs.wo, [0, 0, 1])
         assert bs.sampled_component == 1
         assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
 
-def test04_sample_specific_component():
+def test04_sample_specific_component(variant):
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
+
     si = SurfaceInteraction3f()
     si.wi = [0, 0, 1]
     bsdf = example_bsdf()
 
     for i in range(2):
-        for sample in np.linspace(0, 1, 3):
+        for sample in ek.linspace(Float, 0, 1, 3):
             for sel_type in range(2):
                 ctx = BSDFContext(TransportMode.Importance if i == 0 else TransportMode.Radiance)
 
@@ -106,10 +121,10 @@ def test04_sample_specific_component():
                 else:
                     ctx.component = 0
                 bs, spec = bsdf.sample(ctx, si, sample, [0, 0])
-                assert np.allclose(spec, [0.3 * 0.04] * 3)
-                assert np.allclose(bs.pdf, 1.0)
-                assert np.allclose(bs.eta, 1.0)
-                assert np.allclose(bs.wo, [0, 0, 1])
+                assert ek.allclose(spec, [0.3 * 0.04] * 3)
+                assert ek.allclose(bs.pdf, 1.0)
+                assert ek.allclose(bs.eta, 1.0)
+                assert ek.allclose(bs.wo, [0, 0, 1])
                 assert bs.sampled_component == 0
                 assert bs.sampled_type == +BSDFFlags.DeltaReflection
 
@@ -120,39 +135,41 @@ def test04_sample_specific_component():
                     ctx.component = 1
                 bs, spec = bsdf.sample(ctx, si, sample, [0, 0])
                 if i == 0:
-                    assert np.allclose(spec, [0.6 * (1 - 0.04)] * 3)
+                    assert ek.allclose(spec, [0.6 * (1 - 0.04)] * 3)
                 else:
-                    assert np.allclose(spec, [0.6 * (1 - 0.04) / 1.5**2] * 3)
-                assert np.allclose(bs.pdf, 1.0)
-                assert np.allclose(bs.eta, 1.5)
-                assert np.allclose(bs.wo, [0, 0, -1])
+                    assert ek.allclose(spec, [0.6 * (1 - 0.04) / 1.5**2] * 3)
+                assert ek.allclose(bs.pdf, 1.0)
+                assert ek.allclose(bs.eta, 1.5)
+                assert ek.allclose(bs.wo, [0, 0, -1])
                 assert bs.sampled_component == 1
                 assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
     ctx = BSDFContext()
     ctx.component = 3
     bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-    assert np.all(spec == [0] * 3)
+    assert ek.all(spec == [0] * 3)
 
 
-def test05_spot_check():
-    angle = 80 * np.pi / 180
+def test05_spot_check(variant):
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f
+
+    angle = 80 * ek.pi / 180
     ctx = BSDFContext()
     si = SurfaceInteraction3f()
-    wi = [np.sin(angle), 0, np.cos(angle)]
+    wi = [ek.sin(angle), 0, ek.cos(angle)]
     si.wi = wi
     bsdf = example_bsdf()
 
     bs, spec = bsdf.sample(ctx, si, 0, [0, 0])
-    assert np.allclose(bs.pdf, 0.387704354691473)
-    assert np.allclose(bs.wo, [-np.sin(angle), 0, np.cos(angle)])
+    assert ek.allclose(bs.pdf, 0.387704354691473)
+    assert ek.allclose(bs.wo, [-ek.sin(angle), 0, ek.cos(angle)])
 
     bs, spec = bsdf.sample(ctx, si, 1, [0, 0])
-    angle = 41.03641052520335 * np.pi / 180
-    assert np.allclose(bs.pdf, 1 - 0.387704354691473)
-    assert np.allclose(bs.wo, [-np.sin(angle), 0, -np.cos(angle)])
+    angle = 41.03641052520335 * ek.pi / 180
+    assert ek.allclose(bs.pdf, 1 - 0.387704354691473)
+    assert ek.allclose(bs.wo, [-ek.sin(angle), 0, -ek.cos(angle)])
 
     si.wi = bs.wo
     bs, spec = bsdf.sample(ctx, si, 1, [0, 0])
-    assert np.allclose(bs.pdf, 1 - 0.387704354691473)
-    assert np.allclose(bs.wo, wi)
+    assert ek.allclose(bs.pdf, 1 - 0.387704354691473)
+    assert ek.allclose(bs.wo, wi)

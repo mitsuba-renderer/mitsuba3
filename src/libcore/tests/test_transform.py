@@ -1,16 +1,13 @@
+
+import pytest
+import enoki as ek
+import mitsuba
+from mitsuba.python.test import variant_scalar, variant_packet
+
 import numpy as np
 import numpy.linalg as la
 
-import enoki as ek
-import pytest
-import mitsuba
-
-@pytest.fixture
-def variant():
-    mitsuba.set_variant('scalar_rgb')
-
-
-def test01_basics(variant):
+def test01_basics(variant_scalar):
     from mitsuba.core import Transform4f, Matrix4f
 
     assert(ek.allclose(Transform4f().matrix, Transform4f(Matrix4f.identity()).matrix))
@@ -50,7 +47,7 @@ def test01_basics(variant):
     assert la.norm(trafo.inverse_transpose - la.inv(m2).T) < 1e-5
 
 
-def test02_inverse(variant):
+def test02_inverse(variant_scalar):
     from mitsuba.core import Transform4f, Matrix4f
 
     p = [1, 2, 3]
@@ -118,7 +115,7 @@ def test02_inverse(variant):
         assert la.norm(res - p, 2) < 5e-3
 
 
-def test03_matmul(variant):
+def test03_matmul(variant_scalar):
     from mitsuba.core import Transform4f, Matrix4f
 
     A = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
@@ -129,7 +126,7 @@ def test03_matmul(variant):
     assert ek.allclose(np.dot(B, A), (Bt*At).matrix)
 
 
-def test04_transform_point(variant):
+def test04_transform_point(variant_scalar):
     from mitsuba.core import Transform4f
 
     A = np.eye(4)
@@ -145,7 +142,7 @@ def test04_transform_point(variant):
     assert ek.allclose(Transform4fX(A).transform_point([[2, 4], [4, 6], [6, 8]]), [[1, 2], [2, 3], [3, 4]])
 
 
-def test05_transform_vector(variant):
+def test05_transform_vector(variant_scalar):
     from mitsuba.core import Transform4f
 
     A = np.eye(4)
@@ -163,7 +160,7 @@ def test05_transform_vector(variant):
         Transform4fX(A).transform_vector([[2, 4], [4, 6], [6, 8]]), [[2, 4], [2, 3], [6, 8]])
 
 
-def test06_transform_normal(variant):
+def test06_transform_normal(variant_scalar):
     from mitsuba.core import Transform4f
 
     A = np.eye(4)
@@ -182,7 +179,7 @@ def test06_transform_normal(variant):
         Transform4fX(A).transform_normal([[2, 4], [4, 6], [6, 8]]), [[2, 4], [8, 12], [2, 2]])
 
 
-# def test07_transform_has_scale(variant):
+# def test07_transform_has_scale(variant_scalar):
 #     try:
 #         from mitsuba.packet_rgb.core import Transform4f as Transform4fX
 #     except:
@@ -221,7 +218,7 @@ def test06_transform_normal(variant):
 #     ]))) < 1e-5
 
 
-# def test08_atransform_construct(variant):
+# def test08_atransform_construct(variant_scalar):
 #     t = Transform4f.rotate([1, 0, 0], 30)
 #     a = AnimatedTransform(t)
 
@@ -233,7 +230,7 @@ def test06_transform_normal(variant):
 #         assert np.all(t0 == a.eval(v))
 
 
-# def test10_atransform_interpolate_rotation(variant):
+# def test10_atransform_interpolate_rotation(variant_scalar):
 #     a = AnimatedTransform()
 #     axis = np.array([1.0, 2.0, 3.0])
 #     axis /= la.norm(axis)
@@ -249,7 +246,7 @@ def test06_transform_normal(variant):
 #     assert ek.allclose(a.eval( 10).matrix, trafo1.matrix)
 
 
-# def test11_atransform_interpolate_scale(variant):
+# def test11_atransform_interpolate_scale(variant_scalar):
 #     a = AnimatedTransform()
 #     trafo0 = Transform4f.scale([1,2,3])
 #     trafo1 = Transform4f.scale([4,5,6])

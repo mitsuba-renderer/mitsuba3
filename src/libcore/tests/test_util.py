@@ -1,13 +1,10 @@
 import sys
 import pytest
 import mitsuba
-
-@pytest.fixture
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar, variant_packet
 
 
-def test01_time_string(variant):
+def test01_time_string(variant_scalar):
     from mitsuba.core.util import time_string
 
     assert time_string(1, precise=True) == '1ms'
@@ -20,7 +17,7 @@ def test01_time_string(variant):
                       precise=True) == '2y'
 
 
-def test01_mem_string(variant):
+def test01_mem_string(variant_scalar):
     from mitsuba.core.util import mem_string
 
     assert mem_string(2, precise=True) == '2 B'

@@ -2,12 +2,10 @@ import enoki as ek
 import pytest
 import mitsuba
 
-@pytest.fixture
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar
 
 
-def test01_construction(variant):
+def test01_construction(variant_scalar):
     from mitsuba.core import Frame3f
 
     # Uninitialized frame
@@ -30,7 +28,7 @@ def test01_construction(variant):
     assert f2 == f3
 
 
-def test02_unit_frame(variant):
+def test02_unit_frame(variant_scalar):
     from mitsuba.core import Frame3f, Vector2f, Vector3f
 
     for theta in [30 * mitsuba.core.math.Pi / 180, 95 * mitsuba.core.math.Pi / 180]:
@@ -62,7 +60,7 @@ def test02_unit_frame(variant):
         assert ek.allclose(Vector2f(Frame3f.sincos_phi_2(v)), [sin_phi * sin_phi, cos_phi * cos_phi])
 
 
-def test03_frame_equality(variant):
+def test03_frame_equality(variant_scalar):
     from mitsuba.core import Frame3f
 
     f1 = Frame3f([1, 0, 0], [0, 1, 0], [0, 0, 1])

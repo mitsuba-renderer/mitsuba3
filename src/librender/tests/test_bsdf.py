@@ -1,8 +1,14 @@
-from mitsuba.scalar_rgb.render import BSDF, BSDFSample3f, BSDFContext, BSDFFlags, TransportMode
+import mitsuba
+import pytest
+import enoki as ek
 import numpy as np
 
+@pytest.fixture()
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
-def test01_ctx_construct():
+def test01_ctx_construct(variant):
+    from mitsuba.render import BSDFContext, BSDFFlags, TransportMode
     ctx = BSDFContext()
     assert ctx.type_mask == +BSDFFlags.All
     assert ctx.component == np.uint32(-1)
@@ -17,10 +23,11 @@ def test01_ctx_construct():
     assert ctx.is_enabled(BSDFFlags.Glossy, 10)
 
 
-def test02_bs_construct():
+def test02_bs_construct(variant):
+    from mitsuba.render import BSDFSample3f
     wo = [1, 0, 0]
     bs = BSDFSample3f(wo)
-    assert np.allclose(bs.wo, wo)
-    assert np.allclose(bs.pdf, 0.0)
-    assert np.allclose(bs.eta, 1.0)
+    assert ek.allclose(bs.wo, wo)
+    assert ek.allclose(bs.pdf, 0.0)
+    assert ek.allclose(bs.eta, 1.0)
     assert bs.sampled_type == 0

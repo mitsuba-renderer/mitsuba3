@@ -2,12 +2,10 @@ import enoki as ek
 import pytest
 import mitsuba
 
-@pytest.fixture
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar
 
 
-def test01_custom(variant):
+def test01_custom(variant_scalar):
     from mitsuba.core import Thread, Appender, Formatter, Log, LogLevel
 
     # Install a custom formatter and appender and process a log message

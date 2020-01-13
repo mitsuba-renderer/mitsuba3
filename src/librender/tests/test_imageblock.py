@@ -1,11 +1,12 @@
 import math
 import numpy as np
 import os
-import pytest
 
-from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, float_dtype, srgb_to_xyz
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import ImageBlock
+import pytest
+import enoki as ek
+import mitsuba
+from mitsuba.python.test import variant_scalar, variant_packet, variant_spectral
+
 
 def check_value(im, arr, atol=1e-9):
     vals = np.array(im.data(), copy=False).reshape([im.height() + 2 * im.border_size(),
@@ -16,18 +17,21 @@ def check_value(im, arr, atol=1e-9):
 
     # Easier to read in case of assert failure
     for k in range(vals.shape[2]):
-        assert np.allclose(vals[:, :, k], ref[:, :, k], atol=atol), \
+        assert ek.allclose(vals[:, :, k], ref[:, :, k], atol=atol), \
                'Channel %d:\n' % (k) + str(vals[:, :, k]) \
                               + '\n\n' + str(ref[:, :, k])
 
-def test01_construct():
+def test01_construct(variant_scalar):
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import ImageBlock
+
     im = ImageBlock([33, 12], 4)
     assert im is not None
-    assert np.all(im.offset() == 0)
+    assert ek.all(im.offset() == 0)
     im.set_offset([10, 20])
-    assert np.all(im.offset() == [10, 20])
+    assert ek.all(im.offset() == [10, 20])
 
-    assert np.all(im.size() == [33, 12])
+    assert ek.all(im.size() == [33, 12])
     assert im.warn_invalid()
     assert im.border_size() == 0  # Since there's no reconstruction filter
     assert im.channel_count() == 4
@@ -45,7 +49,10 @@ def test01_construct():
     assert im is not None
     im.channel_count() == 6
 
-def test02_put_image_block():
+def test02_put_image_block(variant_scalar):
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import ImageBlock
+
     rfilter = load_string("""<rfilter version="2.0.0" type="box"/>""")
     # TODO: test with varying `offset` values
     im = ImageBlock([10, 5], 4, filter=rfilter)
@@ -67,7 +74,11 @@ def test02_put_image_block():
         im.put(im2)
         check_value(im, (i+1) * ref)
 
-def test03_put_values_basic():
+def test03_put_values_basic(variant_scalar):
+    from mitsuba.core import srgb_to_xyz
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import ImageBlock
+
     # Recall that we must pass a reconstruction filter to use the `put` methods.
     rfilter = load_string("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
@@ -80,29 +91,32 @@ def test03_put_values_basic():
     ref = np.zeros(shape=(im.height() + 2 * border, im.width() + 2 * border, 3 + 1 + 1))
     for i in range(border, im.height() + border):
         for j in range(border, im.width() + border):
-            wavelengths = np.random.uniform(size=(3,), low=350, high=750)
             spectrum = np.random.uniform(size=(3,))
             ref[i, j, :3] = srgb_to_xyz(spectrum)
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight
             # To avoid the effects of the reconstruction filter (simpler test),
             # we'll just add one sample right in the center of each pixel.
-            im.put([j + 0.5, i + 0.5], wavelengths, spectrum, alpha=1.0)
+            im.put([j + 0.5, i + 0.5], [], spectrum, alpha=1.0)
 
     check_value(im, ref, atol=1e-6)
 
-def test04_put_packets_basic():
+def test04_put_packets_basic(variant_scalar):
+    from mitsuba.core import srgb_to_xyz
+
     try:
-        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
-        from mitsuba.packet_rgb.render import ImageBlock as ImageBlockP
+        mitsuba.set_variant("packet_rgb")
+        from mitsuba.core.xml import load_string
+        from mitsuba.render import ImageBlock
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
 
+
     # Recall that we must pass a reconstruction filter to use the `put` methods.
-    rfilter = load_string_packet("""<rfilter version="2.0.0" type="box">
+    rfilter = load_string("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlockP([10, 8], 5, filter=rfilter)
+    im = ImageBlock([10, 8], 5, filter=rfilter)
     im.clear()
 
     n = 29
@@ -114,7 +128,6 @@ def test04_put_packets_basic():
     # the same pixel receives several values
     positions[-3:, :] = positions[:3, :]
 
-    wavelengths = np.random.uniform(size=(n, 3), low=350, high=750)
     spectra = np.arange(n * 3).reshape((n, 3))
     alphas = np.ones(shape=(n,))
 
@@ -127,18 +140,23 @@ def test04_put_packets_basic():
         ref[int(y), int(x),  4] += 1  # Weight
 
     # Vectorized `put`
-    im.put(positions + 0.5, wavelengths, spectra, alphas)
+    im.put(positions + 0.5, [], spectra, alphas)
 
     check_value(im, ref, atol=1e-6)
 
-def test05_put_with_filter():
+def test05_put_with_filter(variant_scalar):
+    from mitsuba.core import srgb_to_xyz
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import ImageBlock
+
     """The previous tests used a very simple box filter, parametrized so that
     it essentially had no effect. In this test, we use a more realistic
     Gaussian reconstruction filter, with non-zero radius."""
 
     try:
-        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
-        from mitsuba.packet_rgb.render import ImageBlock as ImageBlockP
+        mitsuba.set_variant("packet_rgb")
+        from mitsuba.core.xml import load_string as load_string_packet
+        from mitsuba.render import ImageBlock as ImageBlockP
     except ImportError:
         pytest.skip("packet_rgb mode not enabled")
 
@@ -161,7 +179,6 @@ def test05_put_with_filter():
     n = positions.shape[0]
     positions += np.random.uniform(size=positions.shape, low=0, high=0.95)
 
-    wavelengths = np.random.uniform(size=(n, 3), low=350, high=750)
     spectra = np.arange(n * 3).reshape((n, 3))
     alphas = np.ones(shape=(n,))
 
@@ -171,7 +188,7 @@ def test05_put_with_filter():
 
     for i in range(n):
         # -- Scalar `put`
-        im2.put(positions[i, :], wavelengths[i, :], spectra[i, :], alpha=1.0)
+        im2.put(positions[i, :], [], spectra[i, :], alpha=1.0)
 
         # Fractional part of the position
         offset = positions[i, :] - positions[i, :].astype(np.int)
@@ -198,25 +215,22 @@ def test05_put_with_filter():
                 ref[r_pos[1], r_pos[0],  4] += weight * 1  # Weight
 
     # -- Vectorized `put`
-    im.put(positions, wavelengths, spectra, alphas)
+    im.put(positions, [], spectra, alphas)
 
     check_value(im, ref, atol=1e-6)
     check_value(im2, ref, atol=1e-6)
 
 
-def test06_put_values_basic():
-    try:
-        from mitsuba.scalar_spectral.core.xml import load_string as load_string_spectral
-        from mitsuba.scalar_spectral.core import spectrum_to_xyz, MTS_WAVELENGTH_SAMPLES
-        from mitsuba.scalar_spectral.render import ImageBlock as ImageBlockS
-    except ImportError:
-        pytest.skip("scalar_spectral mode not enabled")
+def test06_put_values_basic(variant_spectral):
+    from mitsuba.core import spectrum_to_xyz, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import ImageBlock
 
     # Recall that we must pass a reconstruction filter to use the `put` methods.
-    rfilter = load_string_spectral("""<rfilter version="2.0.0" type="box">
+    rfilter = load_string("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlockS([10, 8], 5, filter=rfilter)
+    im = ImageBlock([10, 8], 5, filter=rfilter)
     im.clear()
 
     # From a spectrum & alpha value

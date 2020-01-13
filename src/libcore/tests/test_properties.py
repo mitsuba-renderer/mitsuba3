@@ -2,9 +2,7 @@ import enoki as ek
 import pytest
 import mitsuba
 
-@pytest.fixture
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar
 
 
 def fill_properties(p):
@@ -15,7 +13,7 @@ def fill_properties(p):
     p['prop_4'] = 3.14
 
 
-def test01_name_and_id(variant):
+def test01_name_and_id(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -28,7 +26,7 @@ def test01_name_and_id(variant):
     assert p.plugin_name() == p2.plugin_name()
 
 
-def test02_type_is_preserved(variant):
+def test02_type_is_preserved(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -43,7 +41,7 @@ def test02_type_is_preserved(variant):
     assert p['prop_2'] == 2
 
 
-def test03_management_of_properties(variant):
+def test03_management_of_properties(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -62,7 +60,7 @@ def test03_management_of_properties(variant):
     assert not p.has_property('prop_1')
 
 
-def test04_queried_properties(variant):
+def test04_queried_properties(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -82,7 +80,7 @@ def test04_queried_properties(variant):
     assert p.unqueried() == ['prop_4']
 
 
-def test05_copy_and_merge(variant):
+def test05_copy_and_merge(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -104,7 +102,7 @@ def test05_copy_and_merge(variant):
     assert p2['hello'] == 'world' # p3 unchanged
 
 
-def test06_equality(variant):
+def test06_equality(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -129,7 +127,7 @@ def test06_equality(variant):
     assert p == p2
 
 
-def test07_printing(variant):
+def test07_printing(variant_scalar):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -151,7 +149,7 @@ def test07_printing(variant):
 
 
 @pytest.mark.skip("TODO fix AnimatedTransform")
-def test08_animated_transforms(variant):
+def test08_animated_transforms(variant_scalar):
     """An AnimatedTransform can be built from a given Transform."""
     from mitsuba.core import Properties as Prop, Transform4f, AnimatedTransform
 

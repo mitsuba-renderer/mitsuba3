@@ -1,84 +1,72 @@
-import numpy as np
-import pytest
-
 import mitsuba
+import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
 
-def test01_cie1931():
-    """CIE 1931 observer"""
-    XYZw = mitsuba.scalar_rgb.core.cie1931_xyz(600)
-    assert np.allclose(XYZw[0], 1.0622)
-    assert np.allclose(XYZw[1], 0.631)
-    assert np.allclose(XYZw[2], 0.0008)
+@pytest.fixture()
+def variant_rgb():
+    mitsuba.set_variant('scalar_rgb')
 
-    Y = mitsuba.scalar_rgb.core.cie1931_y(600)
-    assert np.allclose(Y, 0.631)
-
-def test02_interpolated():
-    """interpolated: Check the interpolated spectrum (using D64 spectrum values)"""
-
+@pytest.fixture()
+def variant_spectral():
     try:
-        from mitsuba.scalar_spectral.core.xml import load_string
-        from mitsuba.scalar_spectral.render import PositionSample3f
-        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
+        mitsuba.set_variant('scalar_spectral')
     except:
         pytest.skip("scalar_spectral mode not enabled")
 
-    d65 = load_string("""<spectrum version='2.0.0' type='interpolated'>
-        <string name="values" value='46.6383, 49.3637, 52.0891, 51.0323, 49.9755, 52.3118, 54.6482, 68.7015, 82.7549, 87.1204, 91.486, 92.4589, 93.4318, 90.057, 86.6823, 95.7736, 104.865, 110.936, 117.008, 117.41, 117.812, 116.336, 114.861, 115.392, 115.923, 112.367, 108.811, 109.082, 109.354, 108.578, 107.802, 106.296, 104.79, 106.239, 107.689, 106.047, 104.405, 104.225, 104.046, 102.023, 100.0, 98.1671, 96.3342, 96.0611, 95.788, 92.2368, 88.6856, 89.3459, 90.0062, 89.8026, 89.5991, 88.6489, 87.6987, 85.4936, 83.2886, 83.4939, 83.6992, 81.863, 80.0268, 80.1207, 80.2146, 81.2462, 82.2778, 80.281, 78.2842, 74.0027, 69.7213, 70.6652, 71.6091, 72.979, 74.349, 67.9765, 61.604, 65.7448, 69.8856, 72.4863, 75.087, 69.3398, 63.5927, 55.0054, 46.4182, 56.6118, 66.8054, 65.0941, 63.3828, 63.8434, 64.304, 61.8779, 59.4519, 55.7054, 51.959, 54.6998, 57.4406, 58.8765, 60.3125'/>
-        <float name='lambda_min' value='360'/>
-        <float name='lambda_max' value='830'/>
-    </spectrum>
-    """)
 
-    ps = PositionSample3f()
-    assert np.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])), [0, 117.49, 71.6091, 0])
+def test01_cie1931(variant_rgb):
+    """CIE 1931 observer"""
+    XYZw = mitsuba.core.cie1931_xyz(600)
+    assert ek.allclose(XYZw[0], 1.0622)
+    assert ek.allclose(XYZw[1], 0.631)
+    assert ek.allclose(XYZw[2], 0.0008)
 
-def test04_d65():
+    Y = mitsuba.core.cie1931_y(600)
+    assert ek.allclose(Y, 0.631)
+
+
+def test04_d65(variant_spectral):
     """d65: Spot check the model in a few places, the chi^2 test will ensure
     that sampling works."""
 
-    try:
-        from mitsuba.scalar_spectral.core.xml import load_string
-        from mitsuba.scalar_spectral.render import PositionSample3f
-        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
-    except:
-        pytest.skip("scalar_spectral mode not enabled")
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import PositionSample3f
+    from mitsuba.render import SurfaceInteraction3f
 
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
     ps = PositionSample3f()
 
-    assert np.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
-                       np.array([0, 117.49, 71.6091, 0]) / 10568.0)
+    assert ek.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
+                       ek.scalar.Vector4f([0, 117.49, 71.6091, 0]) / 10568.0)
 
-def test05_blackbody():
+
+def test05_blackbody(variant_spectral):
     """blackbody: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
-    try:
-        from mitsuba.scalar_spectral.core.xml import load_string
-        from mitsuba.scalar_spectral.render import PositionSample3f
-        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
-    except:
-        pytest.skip("scalar_spectral mode not enabled")
+    from mitsuba.core.xml import load_string
+    from mitsuba.render import PositionSample3f
+    from mitsuba.render import SurfaceInteraction3f
 
     bb = load_string("""<spectrum version='2.0.0' type='blackbody'>
         <float name='temperature' value='5000'/>
     </spectrum>""")
     ps = PositionSample3f()
-    assert np.allclose(bb.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
+    assert ek.allclose(bb.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
                        [0, 10997.9, 11812, 0])
 
-def test06_srgb_d65():
+
+def test06_srgb_d65(variant_spectral):
     """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
     with intensity factored out when evaluating the sRGB model."""
 
-    try:
-        from mitsuba.scalar_spectral.core.xml import load_string
-        from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_SAMPLES
-        from mitsuba.scalar_spectral.render import PositionSample3f
-        from mitsuba.scalar_spectral.render import SurfaceInteraction3f
-    except:
-        pytest.skip("scalar_spectral mode not enabled")
+    from mitsuba.core.xml import load_string
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
+    from mitsuba.render import PositionSample3f
+    from mitsuba.render import SurfaceInteraction3f
+    import numpy as np
+
 
     np.random.seed(12345)
     wavelengths = np.linspace(300, 800, MTS_WAVELENGTH_SAMPLES)
@@ -106,25 +94,23 @@ def test06_srgb_d65():
         """.format(', '.join(map(str, normalized))))
 
 
-        assert np.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
+        assert ek.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
                            d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)))
 
-def test07_sample_rgb_spectrum():
+
+def test07_sample_rgb_spectrum(variant_spectral):
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
-    try:
-        from mitsuba.scalar_spectral.core import sample_rgb_spectrum, pdf_rgb_spectrum
-        from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX
-    except ImportError:
-        pytest.skip("scalar_spectral mode not enabled")
+    from mitsuba.core import sample_rgb_spectrum, pdf_rgb_spectrum
+    from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX
 
     def spot_check(sample, expected_wav, expected_weight):
         wav, weight = sample_rgb_spectrum(sample)
         pdf         = pdf_rgb_spectrum(wav)
-        assert np.allclose(wav, expected_wav)
-        assert np.allclose(weight, expected_weight)
-        assert np.allclose(pdf, 1.0 / weight)
+        assert ek.allclose(wav, expected_wav)
+        assert ek.allclose(weight, expected_weight)
+        assert ek.allclose(pdf, 1.0 / weight)
 
     if (MTS_WAVELENGTH_MIN == 360 and MTS_WAVELENGTH_MAX == 830):
         spot_check(0.1, 424.343, 465.291)
@@ -134,12 +120,10 @@ def test07_sample_rgb_spectrum():
         assert pdf_rgb_spectrum(MTS_WAVELENGTH_MIN - 10.0) == 0.0
         assert pdf_rgb_spectrum(MTS_WAVELENGTH_MAX + 0.5)  == 0.0
 
-def test08_rgb2spec_fetch_eval_mean():
-    try:
-        from mitsuba.scalar_spectral.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
-        from mitsuba.scalar_spectral.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES
-    except ImportError:
-        pytest.skip("scalar_spectral mode not enabled")
+
+def test08_rgb2spec_fetch_eval_mean(variant_spectral):
+    from mitsuba.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
+    from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES
 
     rgb_values = np.array([
         [0, 0, 0],
@@ -164,7 +148,7 @@ def test08_rgb2spec_fetch_eval_mean():
 
     for i in range(rgb_values.shape[0]):
         rgb = rgb_values[i, :]
-        assert np.all((rgb >= 0.0) & (rgb <= 1.0)), "Invalid RGB attempted"
+        assert ek.all((rgb >= 0.0) & (rgb <= 1.0)), "Invalid RGB attempted"
         coeff = srgb_model_fetch(rgb)
         mean  = srgb_model_mean(coeff)
         value = srgb_model_eval(coeff, wavelengths)

@@ -3,24 +3,8 @@ import pytest
 import enoki as ek
 import numpy as np
 
-@pytest.fixture()
-def variant_scalar():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar, variant_packet, variants_vec
 
-@pytest.fixture()
-def variant_packet():
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
-
-@pytest.fixture(params = ['packet_rgb', 'gpu_rgb'])
-def variants(request):
-    try:
-        mitsuba.set_variant(request.param)
-    except:
-        pytest.skip("%s mode not enabled" % request.param)
-    return request.param
 
 @pytest.fixture(params = ['Hierarchical2D', 'Marginal2DDiscrete', 'Marginal2DContinuous'])
 # @pytest.fixture(params = ['Hierarchical2D'])
@@ -35,14 +19,14 @@ samples = np.array([x.ravel(), y.ravel()]).T
 samples_cout = sample_res**2
 
 
-def test01_constructors(variants, warps):
+def test01_constructors(variants_vec, warps):
     assert warps[0](np.ones((16, 16)),          [])
     assert warps[1](np.ones((4, 16, 16)),       [np.arange(4)])
     assert warps[2](np.ones((4, 4, 16, 16)),    [np.arange(4), np.arange(4)])
     assert warps[3](np.ones((4, 4, 4, 16, 16)), [np.arange(4), np.arange(4), np.arange(4)])
 
 
-def test02_interpolation_eval(variants, warps):
+def test02_interpolation_eval(variants_vec, warps):
     data_res = 8
     # Build a data grid of shape [2 x res x res]. The first level is set to a ramp with values going
     # from 0.0 to 1.0. The second level is set to a ramp with values going from 1.0 to 0.0. This way,
@@ -66,7 +50,7 @@ def test02_interpolation_eval(variants, warps):
             assert ek.allclose(distr.eval(samples, [p]), interp_distr.eval(samples))
 
 
-def test03_sample_match_eval_invert(variants, warps):
+def test03_sample_match_eval_invert(variants_vec, warps):
     for i in range(5):
         np.random.seed(123456 + i)
         distr0 = warps[0](np.random.random((16, 16)), [])
@@ -106,7 +90,7 @@ def invert_marginal_cdf(points, sample):
     return [x, y], (1.0 - x) * c0 + x * c1
 
 
-def test04_hierarchical2D_sample(variants):
+def test04_hierarchical2D_sample(variants_vec):
     from mitsuba.core import Hierarchical2D0, Vector2f
 
     data = np.array([[0.0,  0.0,  0.6],
@@ -135,7 +119,7 @@ def test04_hierarchical2D_sample(variants):
                        (Vector2f(invert_marginal_cdf([0.0, 0.1, 0.1, 0.0], [0.5, 3.0/4.0])[0]) + [0, 0]) / 3.0)
 
 
-def test04_marginal2Ddiscrete_sample(variants):
+def test04_marginal2Ddiscrete_sample(variants_vec):
     from mitsuba.core import Marginal2DDiscrete0, Vector2f
 
     data = np.array([[0.1,  0.1,  0.5],

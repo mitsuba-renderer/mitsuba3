@@ -1,24 +1,28 @@
-import numpy as np
+import mitsuba
 import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
+import numpy as np
 
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import Spiral
+@pytest.fixture()
+def variant():
+    mitsuba.set_variant('scalar_rgb')
 
-@pytest.fixture(scope="module")
-def film():
-    return make_film()
 def make_film(width = 156, height = 232):
+    from mitsuba.core.xml import load_string
+
     f = load_string("""<film type="hdrfilm" version="2.0.0">
             <integer name="width" value="{}"/>
             <integer name="height" value="{}"/>
         </film>""".format(width, height))
     assert f is not None
-    assert np.all(f.size() == [width, height])
+    assert ek.all(f.size() == [width, height])
     return f
 
 def extract_blocks(spiral, max_blocks = 1000):
     blocks = []
     b = spiral.next_block()
+
     while np.prod(b[1]) > 0:
         blocks.append(b)
         b = spiral.next_block()
@@ -31,27 +35,34 @@ def check_first_blocks(blocks, expected, n_total = None):
     n_total = n_total or len(expected)
     assert len(blocks) == n_total
     for i in range(len(expected)):
-        assert np.all(blocks[i][0] == expected[i][0])
-        assert np.all(blocks[i][1] == expected[i][1])
+        assert ek.all(blocks[i][0] == expected[i][0])
+        assert ek.all(blocks[i][1] == expected[i][1])
 
 
-def test01_construct(film):
+def test01_construct(variant):
+    from mitsuba.render import Spiral
+    film = make_film()
     s = Spiral(film.size(), film.crop_offset())
     assert s is not None
     assert s.max_block_size() == 32
 
-def test02_small_film():
+
+def test02_small_film(variant):
+    from mitsuba.render import Spiral
+
     f = make_film(15, 12)
     s = Spiral(f.size(), f.crop_offset())
 
     (bo, bs) = s.next_block()
-    assert np.all(bo == [0, 0])
-    assert np.all(bs == [15, 12])
+    assert ek.all(bo == [0, 0])
+    assert ek.all(bs == [15, 12])
     # The whole image is covered by a single block
-    assert np.all(s.next_block()[1] == 0)
+    assert ek.all(s.next_block()[1] == 0)
 
 
-def test03_normal_film():
+def test03_normal_film(variant):
+    from mitsuba.render import Spiral
+
     # Check the first few blocks' size and location
     center = np.array([160, 160])
     w = 32

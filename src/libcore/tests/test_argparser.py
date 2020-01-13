@@ -1,11 +1,9 @@
 import pytest
 import mitsuba
 
-@pytest.fixture
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar
 
-def test01_short_args(variant):
+def test01_short_args(variant_scalar):
     from mitsuba.core import ArgParser
     ap = ArgParser()
     a = ap.add("-a")
@@ -25,7 +23,7 @@ def test01_short_args(variant):
     assert ap.executable_name() == "mitsuba"
 
 
-def test02_parameter_value(variant):
+def test02_parameter_value(variant_scalar):
     from mitsuba.core import ArgParser
     ap = ArgParser()
     a = ap.add("-a", True)
@@ -38,7 +36,7 @@ def test02_parameter_value(variant):
     assert a.next().as_string() == 'xyz'
 
 
-def test03_parameter_missing(variant):
+def test03_parameter_missing(variant_scalar):
     from mitsuba.core import ArgParser
     ap = ArgParser()
     ap.add("-a", True)
@@ -46,7 +44,7 @@ def test03_parameter_missing(variant):
         ap.parse(['mitsuba', '-a'])
 
 
-def test04_parameter_float_and_extra_args(variant):
+def test04_parameter_float_and_extra_args(variant_scalar):
     from mitsuba.core import ArgParser
     ap = ArgParser()
     f = ap.add("-f", True)
@@ -58,7 +56,7 @@ def test04_parameter_float_and_extra_args(variant):
     assert other.count() == 2
 
 
-def test05_long_parameters_failure(variant):
+def test05_long_parameters_failure(variant_scalar):
     from mitsuba.core import ArgParser
     ap = ArgParser()
     i = ap.add("--int", True)

@@ -1,162 +1,161 @@
-import numpy as np
+import mitsuba
 import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
+import numpy as np
 
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import MicrofacetDistribution, MicrofacetType
+from mitsuba.python.test import variant_scalar, variant_packet
 
 
-def test01_construct():
+def test01_construct(variant_scalar):
+    from mitsuba.render import MicrofacetDistribution, MicrofacetType
+
     md = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, True)
     assert md.type() == MicrofacetType.Beckmann
-    assert np.allclose(md.alpha_u(), 0.1)
-    assert np.allclose(md.alpha_v(), 0.1)
+    assert ek.allclose(md.alpha_u(), 0.1)
+    assert ek.allclose(md.alpha_v(), 0.1)
     assert md.sample_visible()
 
 
-def test02_eval_pdf_beckmann():
-    try:
-        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
-    except:
-        pytest.skip("packet_rgb mode not enabled")
+def test02_eval_pdf_beckmann(variant_packet):
+    from mitsuba.core import Vector3f
+    from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf   = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, False)
+    mdf   = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
     assert not mdf.is_isotropic()
     assert mdf.is_anisotropic()
     assert mdf_i.is_isotropic()
     assert not mdf_i.is_anisotropic()
 
     steps = 20
-    theta = np.linspace(0, np.pi, steps)
-    phi = np.full(steps, np.pi / 2)
-    cos_theta, sin_theta = np.cos(theta), np.sin(theta)
-    cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-    v = np.column_stack([cos_phi * sin_theta, sin_phi * sin_theta, cos_theta])
-    wi = np.tile([0, 0, 1], (steps, 1))
+    theta = ek.linspace(Float, 0, ek.pi, steps)
+    phi = Float.full(ek.pi / 2, steps)
+    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
+    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert np.allclose(mdf.eval(v),
-     np.array([  1.06103287e+01,   8.22650051e+00,   3.57923722e+00,
+    wi = Vector3f(0, 0, 1)
+    ek.set_slices(wi, steps)
+
+    assert ek.allclose(mdf.eval(v),
+              [  1.06103287e+01,   8.22650051e+00,   3.57923722e+00,
                  6.84863329e-01,   3.26460004e-02,   1.01964230e-04,
                  5.87322635e-10,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-                 0.00000000e+00,   0.00000000e+00]))
+                 0.00000000e+00,   0.00000000e+00])
 
-    assert np.allclose(mdf.pdf(wi, v),
-     np.array([  1.06103287e+01,   8.11430168e+00,   3.38530421e+00,
+    assert ek.allclose(mdf.pdf(wi, v),
+               [  1.06103287e+01,   8.11430168e+00,   3.38530421e+00,
                  6.02319300e-01,   2.57622823e-02,   6.90584930e-05,
                  3.21235011e-10,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
-                -0.00000000e+00,  -0.00000000e+00]))
+                -0.00000000e+00,  -0.00000000e+00])
 
-    assert np.allclose(mdf_i.eval(v),
-     np.array([  3.18309879e+01,   2.07673073e+00,   3.02855828e-04,
+    assert ek.allclose(mdf_i.eval(v),
+               [  3.18309879e+01,   2.07673073e+00,   3.02855828e-04,
                  1.01591990e-11,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
-                 0.00000000e+00,   0.00000000e+00]))
+                 0.00000000e+00,   0.00000000e+00])
 
-    assert np.allclose(mdf_i.pdf(wi, v),
-     np.array([  3.18309879e+01,   2.04840684e+00,   2.86446273e-04,
+    assert ek.allclose(mdf_i.pdf(wi, v),
+               [  3.18309879e+01,   2.04840684e+00,   2.86446273e-04,
                  8.93474877e-12,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                  0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
                 -0.00000000e+00,  -0.00000000e+00,  -0.00000000e+00,
-                -0.00000000e+00,  -0.00000000e+00]))
+                -0.00000000e+00,  -0.00000000e+00])
 
-    theta = np.full(steps, 0.1)
-    phi = np.linspace(0, 2*np.pi, steps)
-    cos_theta, sin_theta = np.cos(theta), np.sin(theta)
-    cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-    v = np.column_stack([cos_phi * sin_theta, sin_phi * sin_theta, cos_theta])
+    theta = Float.full(0.1, steps)
+    phi = ek.linspace(Float, 0, 2*ek.pi, steps)
+    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
+    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert np.allclose(mdf.eval(v),
-     np.array([ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
+    assert ek.allclose(mdf.eval(v),
+               [ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
                 9.62056446,  8.37803268,  6.42071199,  4.84459257,  4.05276537,
                 4.05276537,  4.84459257,  6.42071199,  8.37803268,  9.62056446,
-                9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706]))
+                9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706])
 
-    assert np.allclose(mdf.pdf(wi, v),
-     np.array([ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
+    assert ek.allclose(mdf.pdf(wi, v),
+               Float([ 3.95569706,  4.34706259,  5.54415846,  7.4061389 ,  9.17129803,
                 9.62056446,  8.37803268,  6.42071199,  4.84459257,  4.05276537,
                 4.05276537,  4.84459257,  6.42071199,  8.37803268,  9.62056446,
-                9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706]) * np.cos(0.1))
+                9.17129803,  7.4061389 ,  5.54415846,  4.34706259,  3.95569706]) * ek.cos(0.1))
 
-    assert np.allclose(mdf_i.eval(v), np.full(steps, 11.86709118))
-    assert np.allclose(mdf_i.pdf(wi, v), np.full(steps, 11.86709118 * np.cos(0.1)))
+    assert ek.allclose(mdf_i.eval(v), Float.full(11.86709118, steps))
+    assert ek.allclose(mdf_i.pdf(wi, v), Float.full(11.86709118 * ek.cos(0.1), steps))
 
-def test03_smith_g1_beckmann():
-    try:
-        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
-    except:
-        pytest.skip("packet_rgb mode not enabled")
+
+def test03_smith_g1_beckmann(variant_packet):
+    from mitsuba.core import Vector3f
+    from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf   = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, False)
+    mdf   = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, False)
     steps = 20
-    theta = np.linspace(np.pi/3, np.pi/2, steps)
-    phi = np.full(steps, np.pi/2)
-    cos_theta, sin_theta = np.cos(theta), np.sin(theta)
-    cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-    v = np.column_stack([cos_phi * sin_theta, sin_phi * sin_theta, cos_theta])
-    wi = np.tile([0, 0, 1], (steps, 1))
+    theta = ek.linspace(Float, ek.pi/3, ek.pi/2, steps)
+
+    phi = Float.full(ek.pi/2, steps)
+    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
+    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
+    wi = Vector3f(0, 0, 1)
+    ek.set_slices(wi, steps)
 
     assert np.allclose(mdf.smith_g1(v, wi),
-      np.array([  1.00000000e+00,   1.00000000e+00,   1.00000000e+00,
-                  1.00005233e+00,   9.99414802e-01,   9.97577667e-01,
-                  9.94203031e-01,   9.88845885e-01,   9.80915368e-01,
-                  9.69617903e-01,   9.53877807e-01,   9.32221234e-01,
-                  9.02605236e-01,   8.62168074e-01,   8.06861639e-01,
-                  7.30917037e-01,   6.26097679e-01,   4.80744094e-01,
-                  2.78839469e-01,   7.21521140e-16]))
+                       [1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000523e+00, 9.9941480e-01,
+                        9.9757767e-01, 9.9420297e-01, 9.8884594e-01, 9.8091525e-01, 9.6961778e-01,
+                        9.5387781e-01, 9.3222123e-01, 9.0260512e-01, 8.6216795e-01, 8.0686140e-01,
+                        7.3091686e-01, 6.2609726e-01, 4.8074335e-01, 2.7883825e-01, 1.9197471e-06])
 
-    assert np.allclose(mdf_i.smith_g1(v, wi),
-      np.array([  1.00000000e+00,   1.00000000e+00,   1.00000000e+00,
-                  1.00000000e+00,   1.00000000e+00,   1.00000000e+00,
-                  1.00000000e+00,   1.00000000e+00,   1.00000000e+00,
-                  1.00000000e+00,   1.00000000e+00,   1.00000000e+00,
-                  1.00000000e+00,   1.00000000e+00,   9.98284459e-01,
-                  9.86272812e-01,   9.50881779e-01,   8.59897316e-01,
-                  6.25353634e-01,   2.16456326e-15]))
+    assert ek.allclose(mdf_i.smith_g1(v, wi),
+               [1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00,
+                1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00,
+                1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 1.0000000e+00, 9.9828446e-01,
+                9.8627287e-01, 9.5088160e-01, 8.5989666e-01, 6.2535185e-01, 5.7592310e-06])
 
     steps = 20
-    theta = np.full(steps, np.pi / 2 * 0.98)
-    phi = np.linspace(0, 2 * np.pi, steps)
-    cos_theta, sin_theta = np.cos(theta), np.sin(theta)
-    cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-    v = np.column_stack([cos_phi * sin_theta, sin_phi * sin_theta, cos_theta])
+    theta = Float.full(ek.pi / 2 * 0.98, steps)
+    phi = ek.linspace(Float, 0, 2 * ek.pi, steps)
+    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
+    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert np.allclose(mdf.smith_g1(v, wi),
-      np.array([ 0.67333597,  0.56164336,  0.42798978,  0.35298213,  0.31838724,
+    assert ek.allclose(mdf.smith_g1(v, wi),
+               [ 0.67333597,  0.56164336,  0.42798978,  0.35298213,  0.31838724,
                  0.31201753,  0.33166203,  0.38421196,  0.48717275,  0.63746351,
                  0.63746351,  0.48717275,  0.38421196,  0.33166203,  0.31201753,
-                 0.31838724,  0.35298213,  0.42798978,  0.56164336,  0.67333597]))
+                 0.31838724,  0.35298213,  0.42798978,  0.56164336,  0.67333597])
 
-    assert np.allclose(mdf_i.smith_g1(v, wi), np.full(steps, 0.67333597))
+    assert ek.allclose(mdf_i.smith_g1(v, wi), Float.full(0.67333597, steps))
 
 
-def test04_sample_beckmann():
-    try:
-        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
-    except:
-        pytest.skip("packet_rgb mode not enabled")
+def test04_sample_beckmann(variant_packet):
+    from mitsuba.core import Vector3f
+    from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
-    mdf = MicrofacetDistributionP(MicrofacetType.Beckmann, 0.1, 0.3, False)
+    mdf = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
-    u = np.linspace(0, 1, steps)
-    u1, u2 = np.meshgrid(u, u, indexing='xy')
-    u = np.column_stack((u1.ravel(), u2.ravel()))
-    wi = np.tile([0, 0, 1], (steps * steps, 1))
+    u = ek.linspace(Float, 0, 1, steps)
+    u1, u2 = ek.meshgrid(u, u)
+    u = [u1, u2]
+    wi = Vector3f(0, 0, 1)
+    ek.set_slices(wi, steps * steps)
+
     result = mdf.sample(wi, u)
 
     ref = (np.array([[  0.00000000e+00,   0.00000000e+00,   1.00000000e+00],
@@ -205,73 +204,61 @@ def test04_sample_beckmann():
              2.55768657,   0.        ,  10.61032867,   8.51669121,
              6.41503906,   4.302598  ,   2.17350101,   0.        ]))
 
-    assert np.allclose(ref[0], result[0], atol=5e-4)
-    assert np.allclose(ref[1], result[1], atol=1e-4)
+    assert ek.allclose(ref[0], result[0], atol=5e-4)
+    assert ek.allclose(ref[1], result[1], atol=1e-4)
 
 
-def test03_smith_g1_ggx():
-    try:
-        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
-    except:
-        pytest.skip("packet_rgb mode not enabled")
+def test03_smith_g1_ggx(variant_packet):
+    from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
-    mdf   = MicrofacetDistributionP(MicrofacetType.GGX, 0.1, 0.3, False)
-    mdf_i = MicrofacetDistributionP(MicrofacetType.GGX, 0.1, False)
+    mdf   = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
+    mdf_i = MicrofacetDistribution(MicrofacetType.GGX, 0.1, False)
     steps = 20
-    theta = np.linspace(np.pi/3, np.pi/2, steps)
-    phi = np.full(steps, np.pi/2)
-    cos_theta, sin_theta = np.cos(theta), np.sin(theta)
-    cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-    v = np.column_stack([cos_phi * sin_theta, sin_phi * sin_theta, cos_theta])
+    theta = ek.linspace(Float, ek.pi/3, ek.pi/2, steps)
+    phi = Float.full(ek.pi/2, steps)
+    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
+    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
     wi = np.tile([0, 0, 1], (steps, 1))
 
-    assert np.allclose(mdf.smith_g1(v, wi),
-      np.array([  9.40316856e-01,   9.33107972e-01,   9.24850941e-01,
-                 9.15348530e-01,   9.04358625e-01,   8.91582191e-01,
-                 8.76648903e-01,   8.59097540e-01,   8.38352323e-01,
-                 8.13693404e-01,   7.84219384e-01,   7.48803258e-01,
-                 7.06040680e-01,   6.54192448e-01,   5.91125309e-01,
-                 5.14257669e-01,   4.20519054e-01,   3.06336224e-01,
-                 1.67654604e-01,   4.08215618e-16]))
+    assert ek.allclose(mdf.smith_g1(v, wi),
+                       [9.4031686e-01, 9.3310797e-01, 9.2485082e-01, 9.1534841e-01, 9.0435863e-01,
+                        8.9158219e-01, 8.7664890e-01, 8.5909742e-01, 8.3835226e-01, 8.1369340e-01,
+                        7.8421932e-01, 7.4880326e-01, 7.0604056e-01, 6.5419233e-01, 5.9112519e-01,
+                        5.1425743e-01, 4.2051861e-01, 3.0633566e-01, 1.6765384e-01, 1.0861372e-06])
 
-    assert np.allclose(mdf_i.smith_g1(v, wi),
-      np.array([  9.92610395e-01,   9.91606474e-01,   9.90424097e-01,
-                  9.89019334e-01,   9.87333655e-01,   9.85288322e-01,
-                  9.82775033e-01,   9.79642451e-01,   9.75673318e-01,
-                  9.70549047e-01,   9.63787496e-01,   9.54635978e-01,
-                  9.41873908e-01,   9.23440576e-01,   8.95694196e-01,
-                  8.51893902e-01,   7.79029906e-01,   6.51447296e-01,
-                  4.19893295e-01,   1.22464680e-15]))
+    assert ek.allclose(mdf_i.smith_g1(v, wi),
+                       [9.9261039e-01, 9.9160647e-01, 9.9042398e-01, 9.8901933e-01, 9.8733366e-01,
+                        9.8528832e-01, 9.8277503e-01, 9.7964239e-01, 9.7567332e-01, 9.7054905e-01,
+                        9.6378750e-01, 9.5463598e-01, 9.4187391e-01, 9.2344058e-01, 8.9569420e-01,
+                        8.5189372e-01, 7.7902949e-01, 6.5144652e-01, 4.1989169e-01, 3.2584082e-06])
 
-    theta = np.full(steps, np.pi / 2 * 0.98)
-    phi = np.linspace(0, 2 * np.pi, steps)
-    cos_theta, sin_theta = np.cos(theta), np.sin(theta)
-    cos_phi, sin_phi = np.cos(phi), np.sin(phi)
-    v = np.column_stack([cos_phi * sin_theta, sin_phi * sin_theta, cos_theta])
+    theta = Float.full(ek.pi / 2 * 0.98, steps)
+    phi = ek.linspace(Float, 0, 2 * ek.pi, steps)
+    cos_theta, sin_theta = ek.cos(theta), ek.sin(theta)
+    cos_phi, sin_phi = ek.cos(phi), ek.sin(phi)
+    v = [cos_phi * sin_theta, sin_phi * sin_theta, cos_theta]
 
-    assert np.allclose(mdf.smith_g1(v, wi),
-      np.array([ 0.46130955,  0.36801264,  0.26822716,  0.21645154,  0.19341162,
+    assert ek.allclose(mdf.smith_g1(v, wi),
+      [ 0.46130955,  0.36801264,  0.26822716,  0.21645154,  0.19341162,
                  0.18922243,  0.20219423,  0.23769052,  0.31108665,  0.43013984,
                  0.43013984,  0.31108665,  0.23769052,  0.20219423,  0.18922243,
-                 0.19341162,  0.21645154,  0.26822716,  0.36801264,  0.46130955]))
+                 0.19341162,  0.21645154,  0.26822716,  0.36801264,  0.46130955])
 
-    assert np.allclose(mdf_i.smith_g1(v, wi), np.full(steps, 0.46130955))
+    assert ek.allclose(mdf_i.smith_g1(v, wi), Float.full(0.46130955, steps))
 
 
-def test05_sample_ggx():
-    try:
-        from mitsuba.packet_rgb.render import MicrofacetDistribution as MicrofacetDistributionP
-    except:
-        pytest.skip("packet_rgb mode not enabled")
+def test05_sample_ggx(variant_packet):
+    from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
-    mdf = MicrofacetDistributionP(MicrofacetType.GGX, 0.1, 0.3, False)
+    mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
     steps = 6
-    u = np.linspace(0, 1, steps)
-    u1, u2 = np.meshgrid(u, u, indexing='xy')
-    u = np.column_stack((u1.ravel(), u2.ravel()))
+    u = ek.linspace(Float, 0, 1, steps)
+    u1, u2 = ek.meshgrid(u, u)
+    u = [u1, u2]
     wi = np.tile([0, 0, 1], (steps * steps, 1))
     result = mdf.sample(wi, u)
     ref = ((np.array([[  0.00000000e+00,   0.00000000e+00,   1.00000000e+00],
@@ -320,7 +307,7 @@ def test05_sample_ggx():
              0.65056866,   0.        ,  10.61032867,   6.81609201,
              3.85797882,   1.73599267,   0.45013079,   0.        ])))
 
-    assert np.allclose(ref[0], result[0], atol=5e-4)
-    assert np.allclose(ref[1], result[1], atol=1e-4)
+    assert ek.allclose(ref[0], result[0], atol=5e-4)
+    assert ek.allclose(ref[1], result[1], atol=1e-4)
 
 
