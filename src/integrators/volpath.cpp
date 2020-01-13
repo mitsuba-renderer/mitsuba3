@@ -27,7 +27,10 @@ public:
                                      Float * /* aovs */,
                                      Mask active) const override {
 
-        Mask valid_ray = false;
+
+        // All rays are valid if emitters are visible and there is an env map
+        // Otherwise, valid_ray depends on whether a valid interaction is sampled
+        Mask valid_ray = !m_hide_emitters && neq(scene->environment(), nullptr);
 
         Ray3f ray = ray_; // For now, ignore ray differentials
 
