@@ -98,6 +98,7 @@ functionality from both languages looks natural.
 
 Compiling from scratch requires CMake and a recent version of XCode on Mac,
 Visual Studio 2017 on Windows, or Clang on Linux.
+The minimum supported Python version is **Python 3.6**. 
 
 On Linux and MacOS, compiling should be as simple as
 
