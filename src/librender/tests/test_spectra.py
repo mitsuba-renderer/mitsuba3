@@ -3,19 +3,10 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-@pytest.fixture()
-def variant_rgb():
-    mitsuba.set_variant('scalar_rgb')
-
-@pytest.fixture()
-def variant_spectral():
-    try:
-        mitsuba.set_variant('scalar_spectral')
-    except:
-        pytest.skip("scalar_spectral mode not enabled")
+from mitsuba.python.test import variant_scalar, variant_spectral
 
 
-def test01_cie1931(variant_rgb):
+def test01_cie1931(variant_scalar):
     """CIE 1931 observer"""
     XYZw = mitsuba.core.cie1931_xyz(600)
     assert ek.allclose(XYZw[0], 1.0622)
@@ -26,7 +17,7 @@ def test01_cie1931(variant_rgb):
     assert ek.allclose(Y, 0.631)
 
 
-def test04_d65(variant_spectral):
+def test02_d65(variant_spectral):
     """d65: Spot check the model in a few places, the chi^2 test will ensure
     that sampling works."""
 
@@ -41,7 +32,7 @@ def test04_d65(variant_spectral):
                        ek.scalar.Vector4f([0, 117.49, 71.6091, 0]) / 10568.0)
 
 
-def test05_blackbody(variant_spectral):
+def test03_blackbody(variant_spectral):
     """blackbody: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
@@ -57,7 +48,7 @@ def test05_blackbody(variant_spectral):
                        [0, 10997.9, 11812, 0])
 
 
-def test06_srgb_d65(variant_spectral):
+def test04_srgb_d65(variant_spectral):
     """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
     with intensity factored out when evaluating the sRGB model."""
 
@@ -76,7 +67,7 @@ def test06_srgb_d65(variant_spectral):
     ps = PositionSample3f()
     d65_eval = d65.eval(SurfaceInteraction3f(ps, wavelengths))
 
-    for color in [[0, 0, 0], [1, 1, 1], [0.1, 0.2, 0.3], [34, 0.1, 62],
+    for color in [[1, 1, 1], [0.1, 0.2, 0.3], [34, 0.1, 62],
                   [0.001, 0.02, 11.4]]:
         intensity  = (np.max(color) * 2.0) or 1.0
         normalized = np.array(color) / intensity
@@ -98,7 +89,7 @@ def test06_srgb_d65(variant_spectral):
                            d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)))
 
 
-def test07_sample_rgb_spectrum(variant_spectral):
+def test05_sample_rgb_spectrum(variant_spectral):
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
@@ -121,9 +112,10 @@ def test07_sample_rgb_spectrum(variant_spectral):
         assert pdf_rgb_spectrum(MTS_WAVELENGTH_MAX + 0.5)  == 0.0
 
 
-def test08_rgb2spec_fetch_eval_mean(variant_spectral):
+def test06_rgb2spec_fetch_eval_mean(variant_spectral):
     from mitsuba.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
     from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES
+    import numpy as np
 
     rgb_values = np.array([
         [0, 0, 0],
@@ -148,11 +140,11 @@ def test08_rgb2spec_fetch_eval_mean(variant_spectral):
 
     for i in range(rgb_values.shape[0]):
         rgb = rgb_values[i, :]
-        assert ek.all((rgb >= 0.0) & (rgb <= 1.0)), "Invalid RGB attempted"
+        assert np.all((rgb >= 0.0) & (rgb <= 1.0)), "Invalid RGB attempted"
         coeff = srgb_model_fetch(rgb)
         mean  = srgb_model_mean(coeff)
         value = srgb_model_eval(coeff, wavelengths)
 
-        assert not np.any(np.isnan(coeff)), "{} => coeff = {}".format(rgb, coeff)
-        assert not np.any(np.isnan(mean)),  "{} => mean = {}".format(rgb, mean)
-        assert not np.any(np.isnan(value)), "{} => value = {}".format(rgb, value)
+        assert not ek.any(ek.isnan(coeff)), "{} => coeff = {}".format(rgb, coeff)
+        assert not ek.any(ek.isnan(mean)),  "{} => mean = {}".format(rgb, mean)
+        assert not ek.any(ek.isnan(value)), "{} => value = {}".format(rgb, value)

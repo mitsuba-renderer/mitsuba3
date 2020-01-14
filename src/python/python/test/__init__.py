@@ -22,6 +22,14 @@ def variant_spectral():
         pytest.skip("scalar_spectral mode not enabled")
 
 
+@pytest.fixture()
+def variant_polarized():
+    try:
+        mitsuba.set_variant('scalar_spectral_polarized')
+    except:
+        pytest.skip("scalar_spectral_polarized mode not enabled")
+
+
 @pytest.fixture(params = ['packet_rgb', 'gpu_rgb'])
 def variants_vec(request):
     try:

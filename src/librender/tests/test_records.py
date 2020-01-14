@@ -9,16 +9,7 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 import numpy as np
 
-@pytest.fixture()
-def variant_scalar():
-    mitsuba.set_variant('scalar_rgb')
-
-@pytest.fixture()
-def variant_packet():
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
+from mitsuba.python.test import variant_scalar, variant_packet
 
 
 def test01_position_sample_construction_single(variant_scalar):
@@ -160,7 +151,7 @@ def test04_direction_sample_construction_single(variant_scalar):
     ref = Interaction3f()
     ref.p = [1.6, -2, 35]
     record = DirectionSample3f(its, ref)
-    d = (its.p - ref.p) / np.linalg.norm(its.p - ref.p)
+    d = (its.p - ref.p) / ek.norm(its.p - ref.p)
     assert ek.allclose(record.d, d)
 
 def test05_direction_sample_construction_dynamic_and_slicing(variant_packet):

@@ -8,6 +8,7 @@ from functools import wraps
 from inspect import getframeinfo, stack
 
 import pytest
+import mitsuba
 
 def fresolver_append_path(func):
     """Function decorator that adds the mitsuba project root
@@ -17,6 +18,8 @@ def fresolver_append_path(func):
     The file resolver is restored to its previous state once the test's
     execution has finished.
     """
+    if mitsuba.variant() == None:
+        mitsuba.set_variant('scalar_rgb')
 
     from mitsuba.core import Thread, FileResolver
     par = os.path.dirname

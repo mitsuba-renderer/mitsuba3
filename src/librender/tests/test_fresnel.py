@@ -3,11 +3,9 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar, variant_packet
 
-def test01_fresnel(variant):
+def test01_fresnel(variant_scalar):
     from mitsuba.render import fresnel
 
     ct_crit = -ek.sqrt(1 - 1 / 1.5**2)
@@ -42,35 +40,29 @@ def test01_fresnel(variant):
     assert ek.allclose(F, F_ref)
 
 
-def test02_fresnel_polarized(variant):
+def test02_fresnel_polarized(variant_scalar):
     from mitsuba.render import fresnel_polarized
 
     # Brewster's angle
     angle = ek.cos(56.3099 * ek.pi / 180)
 
     a_s, a_p, cos_theta_t, _, scale = fresnel_polarized(angle, 1.5)
-    assert ek.allclose(a_s*a_s, 0.3846150939598947**2)
-    assert ek.allclose(a_p*a_p, 0)
 
-    try:
-        mitsuba.set_variant("packet_rgb")
-        from mitsuba.render import fresnel
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
+    assert ek.allclose(ek.real(a_s*a_s), 0.3846150939598947**2)
+    assert ek.allclose(ek.real(a_p*a_p), 0)
+
+
+def test02_fresnel_polarized_packet(variant_packet):
+    from mitsuba.render import fresnel
 
     cos_theta_i = ek.linspace(Float, -1, 1, 20)
     F, cos_theta_t, _, scale = fresnel(cos_theta_i, 1)
-    assert ek.all(F == np.zeros(20))
+    assert ek.all(F == Float.zero(20))
     assert ek.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
-def test03_fresnel_conductor(variant):
-    from mitsuba.render import fresnel, fresnel_polarized, fresnel_conductor
-
-    try:
-        from mitsuba.render import fresnel, fresnel_conductor
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
+def test03_fresnel_conductor(variant_packet):
+    from mitsuba.render import fresnel, fresnel_conductor
 
     # The conductive and diel. variants should agree given a real-valued IOR
     cos_theta_i = ek.cos(ek.linspace(Float, 0, ek.pi / 2, 20))
@@ -84,62 +76,58 @@ def test03_fresnel_conductor(variant):
     assert ek.allclose(r, r_2)
 
 
-def test04_snell(variant):
-    from mitsuba.render import fresnel, fresnel_polarized, fresnel_conductor
+def test04_snell(variant_packet):
+    from mitsuba.render import fresnel
 
-    try:
-        from mitsuba.packet_rgb.render import fresnel
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
     # Snell's law
     theta_i = ek.linspace(Float, 0, ek.pi / 2, 20)
     F, cos_theta_t, _, _ = fresnel(ek.cos(theta_i), 1.5)
-    theta_t = np.arccos(cos_theta_t)
-    ek.allclose(ek.sin(theta_i) - ek.sin(theta_t) * 1.5, 0.0)
+    theta_t = ek.acos(cos_theta_t)
+
+    assert ek.allclose(ek.sin(theta_i) - 1.5 * ek.sin(theta_t), Float.zero(20), atol=1e-5)
 
 
-def test05_phase(variant):
-    import numpy as np
+def test05_phase(variant_scalar):
     from mitsuba.render import fresnel_polarized
 
     # 180 deg phase shift for perpendicularly arriving light (air -> glass)
     a_s, a_p, _, _, _ = fresnel_polarized(1, 1.5)
-    assert np.real(a_s) < 0 and np.real(a_p) < 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+    assert ek.real(a_s) < 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
 
     # 180 deg phase shift only for s-polarized light below brewster's angle (air -> glass)
     a_s, a_p, _, _, _ = fresnel_polarized(.1, 1.5)
-    assert np.real(a_s) < 0 and np.real(a_p) > 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+    assert ek.real(a_s) < 0 and ek.real(a_p) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
 
     # No phase shift for perpendicularly arriving light (glass -> air)
     a_s, a_p, _, _, _ = fresnel_polarized(1, 1/1.5)
-    assert np.real(a_s) > 0 and np.real(a_p) > 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+    assert ek.real(a_s) > 0 and ek.real(a_p) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
 
     # 180 deg phase shift only for s-polarized light below brewster's angle (glass -> air)
-    b = np.arctan(1/1.5)
+    b = ek.atan(1/1.5)
     a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(b+0.01), 1/1.5)
-    assert np.real(a_s) > 0 and np.real(a_p) < 0 and np.imag(a_s) == 0 and np.imag(a_p) == 0
+    assert ek.real(a_s) > 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
 
 
-def test06_phase_tir(variant):
+def test06_phase_tir(variant_scalar):
     import numpy as np
     from mitsuba.render import fresnel_polarized
 
     eta = 1/1.5
     # Check phase shift at critical angle (total internal reflection case)
-    crit = np.arcsin(eta)
+    crit = ek.asin(eta)
     a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(crit), eta)
 
-    assert ek.allclose(np.angle(a_s), 0)
-    assert ek.allclose(np.angle(a_p), ek.pi) or ek.allclose(np.angle(a_p), -ek.pi)
+    assert ek.allclose(ek.arg(a_s), 0.0)
+    assert ek.allclose(ek.arg(a_p), ek.pi) or ek.allclose(ek.arg(a_p), -ek.pi)
 
     # Check phase shift at grazing angle (total internal reflection case)
-    a_s, a_p, _, _, _ = fresnel_polarized(0, eta)
+    a_s, a_p, _, _, _ = fresnel_polarized(0.0, eta)
 
-    assert ek.allclose(np.angle(a_s), ek.pi) or ek.allclose(np.angle(a_s), -ek.pi)
-    assert ek.allclose(np.angle(a_p), 0)
+    assert ek.allclose(ek.arg(a_s), ek.pi) or ek.allclose(ek.arg(a_s), -ek.pi)
+    assert ek.allclose(ek.arg(a_p), 0.0)
 
     # Location of minimum phase difference
     cos_theta_min = ek.sqrt((1 - eta**2) / (1 + eta**2))
-    phi_delta = 4*np.arctan(eta)
+    phi_delta = 4*ek.atan(eta)
     a_s, a_p, _, _, _ = fresnel_polarized(cos_theta_min, eta)
-    assert ek.allclose(np.angle(a_s) - np.angle(a_p), phi_delta)
+    assert ek.allclose(ek.arg(a_s) - ek.arg(a_p), phi_delta)

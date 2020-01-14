@@ -3,11 +3,9 @@ import pytest
 import enoki as ek
 import numpy as np
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar
 
-def test01_ctx_construct(variant):
+def test01_ctx_construct(variant_scalar):
     from mitsuba.render import BSDFContext, BSDFFlags, TransportMode
     ctx = BSDFContext()
     assert ctx.type_mask == +BSDFFlags.All
@@ -23,7 +21,7 @@ def test01_ctx_construct(variant):
     assert ctx.is_enabled(BSDFFlags.Glossy, 10)
 
 
-def test02_bs_construct(variant):
+def test02_bs_construct(variant_scalar):
     from mitsuba.render import BSDFSample3f
     wo = [1, 0, 0]
     bs = BSDFSample3f(wo)

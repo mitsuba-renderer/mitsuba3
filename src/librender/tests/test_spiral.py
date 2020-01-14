@@ -4,9 +4,8 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 import numpy as np
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar
+
 
 def make_film(width = 156, height = 232):
     from mitsuba.core.xml import load_string
@@ -18,6 +17,7 @@ def make_film(width = 156, height = 232):
     assert f is not None
     assert ek.all(f.size() == [width, height])
     return f
+
 
 def extract_blocks(spiral, max_blocks = 1000):
     blocks = []
@@ -31,6 +31,7 @@ def extract_blocks(spiral, max_blocks = 1000):
                "Too many blocks produced, implementation is probably wrong."
     return blocks
 
+
 def check_first_blocks(blocks, expected, n_total = None):
     n_total = n_total or len(expected)
     assert len(blocks) == n_total
@@ -39,7 +40,7 @@ def check_first_blocks(blocks, expected, n_total = None):
         assert ek.all(blocks[i][1] == expected[i][1])
 
 
-def test01_construct(variant):
+def test01_construct(variant_scalar):
     from mitsuba.render import Spiral
     film = make_film()
     s = Spiral(film.size(), film.crop_offset())
@@ -47,7 +48,7 @@ def test01_construct(variant):
     assert s.max_block_size() == 32
 
 
-def test02_small_film(variant):
+def test02_small_film(variant_scalar):
     from mitsuba.render import Spiral
 
     f = make_film(15, 12)
@@ -60,7 +61,7 @@ def test02_small_film(variant):
     assert ek.all(s.next_block()[1] == 0)
 
 
-def test03_normal_film(variant):
+def test03_normal_film(variant_scalar):
     from mitsuba.render import Spiral
 
     # Check the first few blocks' size and location

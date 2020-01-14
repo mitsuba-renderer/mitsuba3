@@ -1,13 +1,15 @@
-from mitsuba.scalar_rgb.core import Thread, FileResolver, Struct, float_dtype, Properties
-from mitsuba.scalar_rgb.render import ShapeKDTree, Mesh
+import mitsuba
 
-import numpy as np
+if mitsuba.variant() == None:
+    mitsuba.set_variant('scalar_rgb')
+
+from mitsuba.core import Struct
 
 # Some helper functions to generate simple meshes
 vertex_struct = Struct() \
-    .append("x", float_dtype) \
-    .append("y", float_dtype) \
-    .append("z", float_dtype)
+    .append("x", Struct.Type.Float32) \
+    .append("y", Struct.Type.Float32) \
+    .append("z", Struct.Type.Float32)
 vdt = vertex_struct.dtype()
 
 index_struct = Struct() \
@@ -18,6 +20,8 @@ idt = vertex_struct.dtype()
 
 
 def create_single_triangle():
+    from mitsuba.render import Mesh
+
     m = Mesh("tri", vertex_struct, 3, index_struct, 1)
     v = m.vertices()
     f = m.faces()
@@ -30,6 +34,8 @@ def create_single_triangle():
 
 
 def create_regular_tetrahedron():
+    from mitsuba.render import Mesh
+
     m = Mesh("tetrahedron", vertex_struct, 4, index_struct, 4)
     v = m.vertices()
     f = m.faces()
@@ -50,6 +56,8 @@ def create_regular_tetrahedron():
 
 # Generate stairs in a 1x1x1 bbox, going up the Z axis along the X axis
 def create_stairs(num_steps):
+    from mitsuba.render import Mesh
+
     size_step = 1.0 / num_steps
 
     m = Mesh("stairs", vertex_struct, 4 * num_steps,
@@ -77,16 +85,16 @@ def create_stairs(num_steps):
     m.recompute_bbox()
     return m
 
+
 # Generate stairs in a 1x1x1 bbox, going up the Z axis along the X axis
 def create_stairs_packet(num_steps):
-    try:
-        from mitsuba.packet_rgb.render import Mesh as MeshX
-    except ImportError:
-        pass
+    assert mitsuba.variant() == 'packet_rgb'
+
+    from mitsuba.render import Mesh
 
     size_step = 1.0 / num_steps
 
-    m = MeshX("stairs", vertex_struct, 4 * num_steps,
+    m = Mesh("stairs", vertex_struct, 4 * num_steps,
              index_struct, 4 * num_steps - 2)
     v = m.vertices()
     f = m.faces()

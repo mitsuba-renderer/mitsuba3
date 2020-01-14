@@ -1,17 +1,20 @@
-import numpy as np
+import mitsuba
 import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
 
-from mitsuba.scalar_rgb.core import Struct, float_dtype
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import Mesh
-from mitsuba.test.util import fresolver_append_path
+from mitsuba.python.test import variant_scalar
+from mitsuba.python.test.util import fresolver_append_path
 
 
-def test01_create_mesh():
+def test01_create_mesh(variant_scalar):
+    from mitsuba.core import Struct, float_dtype
+    from mitsuba.render import Mesh
+
     vertex_struct = Struct() \
-        .append("x", float_dtype) \
-        .append("y", float_dtype) \
-        .append("z", float_dtype)
+        .append("x", Struct.Type.Float32) \
+        .append("y", Struct.Type.Float32) \
+        .append("z", Struct.Type.Float32)
 
     index_struct = Struct() \
         .append("i0", Struct.Type.UInt32) \
@@ -24,7 +27,7 @@ def test01_create_mesh():
     v[2] = (0.0, 1.0, 0.0)
     m.recompute_bbox()
 
-    if float_dtype == np.float32:
+    if float_dtype == 'f':
         assert str(m) == """Mesh[
   name = "MyMesh",
   bbox = BoundingBox3f[
@@ -46,7 +49,7 @@ def test01_create_mesh():
   face_count = 2,
   faces = [24 B of face data],
   disable_vertex_normals = 0,
-  surface_area = -1
+  surface_area = 0
 ]"""
     else:
         assert str(m) == """Mesh[
@@ -70,12 +73,15 @@ def test01_create_mesh():
   face_count = 2,
   faces = [24 B of face data],
   disable_vertex_normals = 0,
-  surface_area = -1
+  surface_area = 0
 ]"""
 
 
 @fresolver_append_path
-def test02_ply_triangle():
+def test02_ply_triangle(variant_scalar):
+    from mitsuba.core import UInt32, Vector3f
+    from mitsuba.core.xml import load_string
+
     shape = load_string("""
         <shape type="ply" version="0.5.0">
             <string name="filename" value="data/triangle.ply"/>
@@ -87,17 +93,20 @@ def test02_ply_triangle():
     assert not shape.has_vertex_normals()
     assert vertices.ndim == 1
     assert vertices.shape == (3, )
-    assert np.all(vertices['x'] == np.float32([0, 0, 0]))
-    assert np.all(vertices['y'] == np.float32([0, 0, 1]))
-    assert np.all(vertices['z'] == np.float32([0, 1, 0]))
+    assert ek.allclose(vertices['x'], [0, 0, 0])
+    assert ek.allclose(vertices['y'], [0, 0, 1])
+    assert ek.allclose(vertices['z'], [0, 1, 0])
     assert faces.ndim == 1
     assert faces.shape == (1, )
-    assert faces[0]['i0'] == np.uint32(0)
-    assert faces[0]['i1'] == np.uint32(1)
-    assert faces[0]['i2'] == np.uint32(2)
+    assert faces[0]['i0'] == UInt32(0)
+    assert faces[0]['i1'] == UInt32(1)
+    assert faces[0]['i2'] == UInt32(2)
 
 @fresolver_append_path
-def test03_ply_computed_normals():
+def test03_ply_computed_normals(variant_scalar):
+    from mitsuba.core import Vector3f
+    from mitsuba.core.xml import load_string
+
     """Checks(automatic) vertex normal computation for a PLY file that
     doesn't have them."""
     shape = load_string("""
@@ -108,20 +117,24 @@ def test03_ply_computed_normals():
     vertices = shape.vertices()
     assert shape.has_vertex_normals()
     # Normals are stored in half precision
-    assert np.allclose(vertices['nx'], np.float32([-1, -1, -1]))
-    assert np.allclose(vertices['ny'], np.float32([0, 0, 0]))
-    assert np.allclose(vertices['nz'], np.float32([0, 0, 0]))
+    assert ek.allclose(vertices['nx'], [-1, -1, -1])
+    assert ek.allclose(vertices['ny'], [0, 0, 0])
+    assert ek.allclose(vertices['nz'], [0, 0, 0])
 
 
-def test04_normal_weighting_scheme():
+def test04_normal_weighting_scheme(variant_scalar):
+    from mitsuba.core import Struct, float_dtype, Vector3f
+    from mitsuba.render import Mesh
+    import numpy as np
+
     """Tests the weighting scheme that is used to compute surface normals."""
     vertex_struct = Struct() \
-        .append("x", float_dtype) \
-        .append("y", float_dtype) \
-        .append("z", float_dtype) \
-        .append("nx", float_dtype) \
-        .append("ny", float_dtype) \
-        .append("nz", float_dtype)
+        .append("x", Struct.Type.Float32) \
+        .append("y", Struct.Type.Float32) \
+        .append("z", Struct.Type.Float32) \
+        .append("nx", Struct.Type.Float32) \
+        .append("ny", Struct.Type.Float32) \
+        .append("nz", Struct.Type.Float32)
 
     index_struct = Struct() \
         .append("i0", Struct.Type.UInt32) \
@@ -132,29 +145,31 @@ def test04_normal_weighting_scheme():
     v = m.vertices()
 
     a, b = 1.0, 0.5
-    v['x'] = np.array([0, -a, a, -b, b], dtype=float_dtype)
-    v['y'] = np.array([0,  1, 1,  0, 0], dtype=float_dtype)
-    v['z'] = np.array([0,  0, 0,  1, 1], dtype=float_dtype)
+    v['x'] = Float([0, -a, a, -b, b])
+    v['y'] = Float([0,  1, 1,  0, 0])
+    v['z'] = Float([0,  0, 0,  1, 1])
 
-    n0 = np.array([0.0, 0.0, -1.0])
-    n1 = np.array([0.0, 1.0, 0.0])
-    angle_0 = np.pi / 2.0
-    angle_1 = np.arccos(3.0 / 5.0)
+    n0 = Vector3f(0.0, 0.0, -1.0)
+    n1 = Vector3f(0.0, 1.0, 0.0)
+    angle_0 = ek.pi / 2.0
+    angle_1 = ek.acos(3.0 / 5.0)
     n2 = n0 * angle_0 + n1 * angle_1
-    n2 /= np.linalg.norm(n2)
+    n2 /= ek.norm(n2)
     n = np.vstack([n2, n0, n0, n1, n1])
 
     f = m.faces()
     f[0] = (0, 1, 2)
     f[1] = (0, 3, 4)
     m.recompute_vertex_normals()
-    assert np.allclose(v['nx'], n[:, 0], 5e-4)
-    assert np.allclose(v['ny'], n[:, 1], 5e-4)
-    assert np.allclose(v['nz'], n[:, 2], 5e-4)
+    assert ek.allclose(v['nx'], n[:, 0], 5e-4)
+    assert ek.allclose(v['ny'], n[:, 1], 5e-4)
+    assert ek.allclose(v['nz'], n[:, 2], 5e-4)
 
 
 @fresolver_append_path
-def test05_load_simple_mesh():
+def test05_load_simple_mesh(variant_scalar):
+    from mitsuba.core.xml import load_string
+
     """Tests the OBJ and PLY loaders on a simple example."""
     for mesh_format in ["obj", "ply"]:
         shape = load_string("""
@@ -169,18 +184,20 @@ def test05_load_simple_mesh():
         assert vertices.shape == (24,)
         assert faces.ndim == 1
         assert faces.shape == (12,)
-        assert np.all(np.array(faces[2].tolist()) == [4, 5, 6])
-        assert np.allclose(vertices[0].tolist(), [130, 165, 65, 0, 1, 0], atol=1e-3)
-        assert np.allclose(vertices[4].tolist(), [290, 0, 114, 0.9534, 0, 0.301709], atol=1e-3)
+        assert ek.allclose(faces[2], [4, 5, 6])
+        assert ek.allclose(vertices[0].tolist(), [130, 165, 65, 0, 1, 0], atol=1e-3)
+        assert ek.allclose(vertices[4].tolist(), [290, 0, 114, 0.9534, 0, 0.301709], atol=1e-3)
 
 
 @pytest.mark.parametrize('mesh_format', ['obj', 'ply', 'serialized'])
 @pytest.mark.parametrize('features', ['normals', 'uv', 'normals_uv'])
 @pytest.mark.parametrize('face_normals', [True, False])
-def test06_load_various_features(mesh_format, features, face_normals):
+def test06_load_various_features(variant_scalar, mesh_format, features, face_normals):
     """Tests the OBJ & PLY loaders with combinations of vertex / face normals,
     presence and absence of UVs, etc.
     """
+    from mitsuba.core.xml import load_string
+
     def test():
         shape = load_string("""
             <shape type="{0}" version="2.0.0">
@@ -193,22 +210,22 @@ def test06_load_various_features(mesh_format, features, face_normals):
         vertices = shape.vertices()
         (v0, v2, v3) = [vertices[i].tolist() for i in [0, 2, 3]]
 
-        assert np.allclose(v0[:3], [-2.85, 0.0, -7.600000], atol=1e-3)
-        assert np.allclose(v2[:3], [ 2.85, 0.0,  0.599999], atol=1e-3)
-        assert np.allclose(v3[:3], [ 2.85, 0.0, -7.600000], atol=1e-3)
+        assert ek.allclose(v0[:3], [-2.85, 0.0, -7.600000], atol=1e-3)
+        assert ek.allclose(v2[:3], [ 2.85, 0.0,  0.599999], atol=1e-3)
+        assert ek.allclose(v3[:3], [ 2.85, 0.0, -7.600000], atol=1e-3)
         if 'uv' in features:
             assert shape.has_vertex_texcoords()
             # For OBJs (and .serialized generated from OBJ), UV.y is flipped.
             if mesh_format in ['obj', 'serialized']:
-                assert np.allclose(v0[-2:], [0.950589, 1-0.988416], atol=1e-3)
-                assert np.allclose(v2[-2:], [0.025105, 1-0.689127], atol=1e-3)
-                assert np.allclose(v3[-2:], [0.950589, 1-0.689127], atol=1e-3)
+                assert ek.allclose(v0[-2:], [0.950589, 1-0.988416], atol=1e-3)
+                assert ek.allclose(v2[-2:], [0.025105, 1-0.689127], atol=1e-3)
+                assert ek.allclose(v3[-2:], [0.950589, 1-0.689127], atol=1e-3)
             else:
-                assert np.allclose(v0[-2:], [0.950589, 0.988416], atol=1e-3)
-                assert np.allclose(v2[-2:], [0.025105, 0.689127], atol=1e-3)
-                assert np.allclose(v3[-2:], [0.950589, 0.689127], atol=1e-3)
+                assert ek.allclose(v0[-2:], [0.950589, 0.988416], atol=1e-3)
+                assert ek.allclose(v2[-2:], [0.025105, 0.689127], atol=1e-3)
+                assert ek.allclose(v3[-2:], [0.950589, 0.689127], atol=1e-3)
         if shape.has_vertex_normals():
             for v in [v0, v2, v3]:
-                assert np.allclose(v[3:6], [0.0, 1.0, 0.0])
+                assert ek.allclose(v[3:6], [0.0, 1.0, 0.0])
 
     return fresolver_append_path(test)()

@@ -1,15 +1,19 @@
-import numpy as np
+import mitsuba
 import pytest
+import enoki as ek
 
-from mitsuba.scalar_rgb.render import SurfaceInteraction3f
-from mitsuba.scalar_rgb.core   import Frame3f, Ray3f, RayDifferential3f
+from mitsuba.python.test import variant_scalar, variant_polarized
 
-def test01_intersection_construction():
+
+def test01_intersection_construction(variant_scalar):
+    from mitsuba.core import Frame3f
+    from mitsuba.render import SurfaceInteraction3f
+
     si = SurfaceInteraction3f()
     si.shape = None
     si.t = 1
     si.time = 2
-    si.wavelengths = [0, 0, 0]
+    si.wavelengths = []
     si.p = [1, 2, 3]
     si.n = [4, 5, 6]
     si.uv = [7, 8]
@@ -28,7 +32,7 @@ def test01_intersection_construction():
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
-  wavelengths = [0, 0, 0],
+  wavelengths = [],
   p = [1, 2, 3],
   shape = nullptr,
   uv = [7, 8],
@@ -48,26 +52,29 @@ def test01_intersection_construction():
 ]"""
 
 
-def test02_intersection_partials():
+def test02_intersection_partials(variant_scalar):
+    from mitsuba.core import Frame3f, Ray3f, RayDifferential3f
+    from mitsuba.render import SurfaceInteraction3f
+
     # Test the texture partial computation with some random data
 
-    o = np.array([0.44650541, 0.16336525, 0.74225088])
-    d = np.array([0.2956123, 0.67325977, 0.67774232])
+    o = [0.44650541, 0.16336525, 0.74225088]
+    d = [0.2956123, 0.67325977, 0.67774232]
     time = 0.5
-    w = np.array([500, 600, 750])
+    w = []
     r = RayDifferential3f(o, d, time, w)
-    r.o_x = r.o + np.array([0.1, 0, 0])
-    r.o_y = r.o + np.array([0, 0.1, 0])
+    r.o_x = r.o + [0.1, 0, 0]
+    r.o_y = r.o + [0, 0.1, 0]
     r.d_x = r.d
     r.d_y = r.d
     r.has_differentials = True
 
     si = SurfaceInteraction3f()
     si.p = r(10)
-    si.dp_du = np.array([0.5514372, 0.84608955, 0.41559092])
-    si.dp_dv = np.array([0.14551054, 0.54917541, 0.39286475])
-    si.n = np.cross(si.dp_du, si.dp_dv)
-    si.n /= np.linalg.norm(si.n)
+    si.dp_du = [0.5514372, 0.84608955, 0.41559092]
+    si.dp_dv = [0.14551054, 0.54917541, 0.39286475]
+    si.n = ek.cross(si.dp_du, si.dp_dv)
+    si.n /= ek.norm(si.n)
     si.t = 0
 
     si.compute_partials(r)
@@ -78,28 +85,28 @@ def test02_intersection_partials():
 
     # Manually
     px2 = r.o_x + r.d_x * \
-        ((np.dot(si.n, si.p) - np.dot(si.n, r.o_x)) / np.dot(si.n, r.d_x))
+        ((ek.dot(si.n, si.p) - ek.dot(si.n, r.o_x)) / ek.dot(si.n, r.d_x))
     py2 = r.o_y + r.d_y * \
-        ((np.dot(si.n, si.p) - np.dot(si.n, r.o_y)) / np.dot(si.n, r.d_y))
+        ((ek.dot(si.n, si.p) - ek.dot(si.n, r.o_y)) / ek.dot(si.n, r.d_y))
     px2 -= si.p
     py2 -= si.p
 
-    assert(np.allclose(px1, px2))
-    assert(np.allclose(py1, py2))
+    assert(ek.allclose(px1, px2))
+    assert(ek.allclose(py1, py2))
 
-    si.dp_du = np.array([0, 0, 0])
+    si.dp_du = [0, 0, 0]
     si.compute_partials(r)
 
-    assert(np.allclose(px1, px2))
-    assert(np.allclose(py1, py2))
+    assert(ek.allclose(px1, px2))
+    assert(ek.allclose(py1, py2))
 
     si.compute_partials(r)
 
-    assert(np.allclose(si.duv_dx, [0, 0]))
-    assert(np.allclose(si.duv_dy, [0, 0]))
+    assert(ek.allclose(si.duv_dx, [0, 0]))
+    assert(ek.allclose(si.duv_dy, [0, 0]))
 
 
-def test03_mueller_to_world_to_local():
+def test03_mueller_to_world_to_local(variant_polarized):
     """
     At a few places, coordinate changes between local BSDF reference frame and
     world coordinates need to take place. This change also needs to be applied
@@ -112,16 +119,14 @@ def test03_mueller_to_world_to_local():
     for some arbitrary incident/outgoing directions in world coordinates and
     compute the round trip going to local frame and back again.
     """
-    try:
-        from mitsuba.scalar_spectral_polarized.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
-        from mitsuba.scalar_spectral_polarized.render.mueller import linear_polarizer
-        from mitsuba.scalar_spectral_polarized.render import SurfaceInteraction3f as SurfaceInteraction3fM
-    except ImportError:
-        pytest.skip("scalar_spectral_polarized mode not enabled")
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
+    from mitsuba.render.mueller import linear_polarizer
+    from mitsuba.render import SurfaceInteraction3f
+    import numpy as np
 
-    si = SurfaceInteraction3fM()
+    si = SurfaceInteraction3f()
     n = [1.0, 1.0, 1.0]
-    n /= np.linalg.norm(n)
+    n /= ek.norm(n)
     si.sh_frame = Frame3f(n)
 
     M_monochromatic = linear_polarizer(1)
@@ -131,10 +136,10 @@ def test03_mueller_to_world_to_local():
         M[i, :, :] = M_monochromatic
 
     # Random incident and outgoing directions
-    wi_world = np.array([0.2, 0.0, 1.0])
-    wi_world /= np.linalg.norm(wi_world)
-    wo_world = np.array([0.0, -0.8, 1.0])
-    wo_world /= np.linalg.norm(wo_world)
+    wi_world = [0.2, 0.0, 1.0]
+    wi_world /= ek.norm(wi_world)
+    wo_world = [0.0, -0.8, 1.0]
+    wo_world /= ek.norm(wo_world)
 
     wi_local = si.to_local(wi_world)
     wo_local = si.to_local(wo_world)
@@ -142,4 +147,4 @@ def test03_mueller_to_world_to_local():
     M_local = si.to_local_mueller(M, wi_world, wo_world)
     M_world = si.to_world_mueller(M_local, wi_local, wo_local)
 
-    assert np.allclose(M, M_world, atol=1e-5)
+    assert ek.allclose(M, M_world, atol=1e-5)
