@@ -4,6 +4,36 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _phase-hg:
+
+Henyey-Greenstein phase function (:monosp:`hg`)
+-----------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - g
+   - |float|
+   - This parameter must be somewhere in the range -1 to 1
+     (but not equal to -1 or 1). It denotes the *mean cosine* of scattering
+     interactions. A value greater than zero indicates that medium interactions
+     predominantly scatter incident light into a similar direction (i.e. the
+     medium is *forward-scattering*), whereas values smaller than zero cause
+     the medium to be scatter more light in the opposite direction.
+
+This plugin implements the phase function model proposed by
+Henyey and Greenstein |nbsp| :cite:`Henyey1941Diffuse`. It is
+parameterizable from backward- (g<0) through
+isotropic- (g=0) to forward (g>0) scattering.
+
+*/
 template <typename Float, typename Spectrum>
 class HGPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:

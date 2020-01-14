@@ -99,10 +99,11 @@ public:
                              Mask active = true) const;
 
     /**
-     * \brief Direct illumination sampling routine
+     * \brief Attenuated direct illumination sampling routine
      *
      * Given an arbitrary reference point in the scene, this method samples a
      * direction from the reference point to towards an emitter.
+     * This method accounts for attenuation due to participating media
      *
      * Ideally, the implementation should importance sample the product of the
      * emission profile and the geometry term between the reference point and
@@ -111,12 +112,22 @@ public:
      * \param ref
      *    A reference point somewhere within the scene
      *
+     * \param is_medium_interaction
+     *    This should be set to \c true if the reference point is inside a medium
+     *
+     * \param medium
+     *    A pointer to the current participating medium containing the reference point
+     *    This pointer should be \c null if the reference point is not inside a medium.
+     *
      * \param sample
      *    A uniformly distributed 2D vector
      *
+     * \param sampler
+     *    A pointer to a sampler object
+     *
      * \param test_visibility
-     *    When set to \c true, a shadow ray will be cast to ensure that the
-     *    sampled emitter position and the reference point are mutually visible.
+     *    When set to \c true, the transmittance between the sampled emitter
+     *    position and and reference point is evaluated
      *
      * \return
      *    Radiance received along the sampled ray divided by the sample
@@ -128,6 +139,44 @@ public:
                                         bool test_visibility = true, Mask active = true) const;
 
 
+
+    /**
+     * \brief Evaluates the transmittance between two 3D points
+     *
+     * Given two points, this method will compute the fraction of radiance which
+     * reaches one point starting from the other.
+     *
+     * \param p1
+     *    A reference point somewhere within the scene
+     *
+     * \param p1_on_surface
+     *    This should be set to \c true if \c p1 lies on a surface
+     *
+     * \param p2
+     *    A second point somewhere within the scene
+     *
+     * \param p2_on_surface
+     *    This should be set to \c true if \c p2 lies on a surface
+     *
+     * \param time
+     *    The current time parameter
+     *
+     * \param wavelengths
+     *    The sampled wavelengths
+     *
+     * \param medium
+     *    A pointer to the current participating medium containing the reference point \c p1
+     *    This pointer should be \c null if the reference point is not inside a medium.
+     *
+     * \param max_interactions
+     *    The maximum number of null interfaces which will be traversed between \c p1 and \c p2
+     *
+     * \param sampler
+     *    A pointer to a sampler object
+     *
+     * \return
+     *    Transmittance between \c p1 and \c p2
+     */
     Spectrum eval_transmittance(const Point3f &p1, Mask p1_on_surface, const Point3f &p2, Mask p2_on_surface,
                                Float time, Wavelength wavelengths, MediumPtr medium,
                                int max_interactions, Sampler *sampler, Mask active) const;

@@ -4,6 +4,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _phase-isotropic:
+
+Isotropic phase function (:monosp:`isotropic`)
+-----------------------------------------------
+
+This phase function simulates completely uniform scattering,
+where all directionality is lost after a single scattering
+interaction. It does not have any parameters.
+
+*/
+
+
 template <typename Float, typename Spectrum>
 class IsotropicPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
