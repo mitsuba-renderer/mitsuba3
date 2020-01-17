@@ -6,7 +6,8 @@ import mitsuba
 from mitsuba.scalar_rgb.core import math, warp, Bitmap, Struct
 from mitsuba.scalar_rgb.core.math import Pi
 from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import (PhaseFunction, register_phasefunction)
+from mitsuba.scalar_rgb.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
+                                       MediumInteraction3f, register_phasefunction, has_flag)
 from mitsuba.test.util import fresolver_append_path
 
 
@@ -15,11 +16,14 @@ def create_phasefunction():
     class MyIsotropicPhaseFunction(PhaseFunction):
         def __init__(self, props):
             PhaseFunction.__init__(self, props)
+            self.m_flags = PhaseFunctionFlags.Isotropic
 
-        def sample(self, mi, sample1, active=True):
-            return warp.square_to_uniform_sphere(sample1)
+        def sample(self, ctx, mi, sample1, active=True):
+            wo = warp.square_to_uniform_sphere(sample1)
+            pdf = warp.square_to_uniform_sphere_pdf(wo)
+            return (wo, pdf)
 
-        def eval(self, wo, active=True):
+        def eval(self, ctx, mi, wo, active=True):
             return warp.square_to_uniform_sphere_pdf(wo)
 
         def to_string(self):
@@ -71,10 +75,16 @@ def test01_create_and_eval(create_phasefunction):
     p = load_string("<phase version='2.0.0' type='myisotropic'/>")
     assert p is not None
 
+    assert has_flag(p.m_flags, PhaseFunctionFlags.Isotropic)
+    assert not has_flag(p.m_flags, PhaseFunctionFlags.Anisotropic)
+    assert not has_flag(p.m_flags, PhaseFunctionFlags.Microflake)
+
+    ctx = PhaseFunctionContext(None)
+    mi = MediumInteraction3f()
     for theta in np.linspace(0, np.pi / 2, 4):
         for ph in np.linspace(0, np.pi, 4):
             wo = [np.sin(theta), 0, np.cos(theta)]
-            v_eval = p.eval(wo)
+            v_eval = p.eval(ctx, mi, wo)
             assert np.allclose(v_eval, 1.0 / (4 * Pi))
 
 
