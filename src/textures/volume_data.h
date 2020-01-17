@@ -40,7 +40,7 @@ NAMESPACE_END(detail)
 // TODO: document data format.
 // TODO: what if Float is a GPU array, should we upload to it directly?
 template <typename Float>
-std::pair<VolumeMetadata, DynamicBuffer<Float>>
+std::pair<VolumeMetadata, std::unique_ptr<scalar_t<Float>[]>>
 read_binary_volume_data(const std::string &filename) {
     MTS_IMPORT_CORE_TYPES()
 
@@ -82,7 +82,7 @@ read_binary_volume_data(const std::string &filename) {
     meta.mean      = 0.;
     meta.max       = -math::Infinity<ScalarFloat>;
 
-    auto raw_data = std::unique_ptr<float[]>(new float[size * meta.channel_count]);
+    auto raw_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * meta.channel_count]);
     size_t k      = 0;
     for (size_t i = 0; i < size; ++i) {
         for (size_t j = 0; j < meta.channel_count; ++j) {
@@ -95,13 +95,10 @@ read_binary_volume_data(const std::string &filename) {
     }
     meta.mean /= double(size * meta.channel_count);
 
-    // Copy loaded data to an Enoki array (e.g. on the GPU)
-    auto data = DynamicBuffer<Float>::copy(raw_data.get(), size * meta.channel_count);
-
     Log(Debug, "Loaded grid volume data from file %s: dimensions %s, mean value %f, max value %f",
         filename, meta.shape, meta.mean, meta.max);
 
-    return { meta, data };
+    return { meta, std::move(raw_data) };
 }
 
 NAMESPACE_END(mitsuba)

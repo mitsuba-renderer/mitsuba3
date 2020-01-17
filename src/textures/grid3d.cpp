@@ -36,7 +36,19 @@ public:
     MTS_IMPORT_TYPES()
 
     explicit Grid3D(const Properties &props) : Base(props), m_props(props) {
-        std::tie(m_metadata, m_data) = read_binary_volume_data<Float>(props.string("filename"));
+
+        auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
+        m_metadata = metadata;
+
+        bool raw = props.bool_("raw", false);
+
+        size_t size = hprod(m_metadata.shape);
+        m_data = DynamicBuffer<Float>::copy(raw_data.get(), size * m_metadata.channel_count);
+
+        // Apply spectral conversion if necessary
+        // if (is_spectral_v<Spectrum> && m_metadata.channels == 3 && !raw) {
+            //
+        // }
 
         // Mark values which are only used in the implementation class as queried
         props.mark_queried("use_grid_bbox");
