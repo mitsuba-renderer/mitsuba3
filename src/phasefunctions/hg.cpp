@@ -37,13 +37,15 @@ isotropic- (g=0) to forward (g>0) scattering.
 template <typename Float, typename Spectrum>
 class HGPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction)
+    MTS_IMPORT_BASE(PhaseFunction, m_flags)
     MTS_IMPORT_TYPES(PhaseFunctionContext)
 
-    HGPhaseFunction(const Properties &props) {
+    HGPhaseFunction(const Properties &props) : Base(props) {
         m_g = props.float_("g", 0.8f);
         if (m_g >= 1 || m_g <= -1)
             Log(Error, "The asymmetry parameter must lie in the interval (-1, 1)!");
+
+        m_flags = +PhaseFunctionFlags::Anisotropic;
     }
 
     MTS_INLINE Float eval_hg(Float cos_theta) const {

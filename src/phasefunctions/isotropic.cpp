@@ -20,10 +20,12 @@ interaction. It does not have any parameters.
 template <typename Float, typename Spectrum>
 class IsotropicPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction)
+    MTS_IMPORT_BASE(PhaseFunction, m_flags)
     MTS_IMPORT_TYPES(PhaseFunctionContext)
 
-    IsotropicPhaseFunction(const Properties & /* props */) {}
+    IsotropicPhaseFunction(const Properties & props) : Base(props) {
+        m_flags = +PhaseFunctionFlags::Isotropic;
+    }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
                                       const MediumInteraction3f & /* mi */, const Point2f &sample,

@@ -54,6 +54,7 @@ add_mitsuba_python_library(render_ext
   main.cpp
   bsdf.cpp
   microfacet.cpp
+  phase.cpp
   spiral.cpp
 )
 
