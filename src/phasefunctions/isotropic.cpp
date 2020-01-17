@@ -17,21 +17,24 @@ interaction. It does not have any parameters.
 
 */
 
-
 template <typename Float, typename Spectrum>
 class IsotropicPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(PhaseFunction)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(PhaseFunctionContext)
 
     IsotropicPhaseFunction(const Properties & /* props */) {}
 
-    Vector3f sample(const MediumInteraction3f & /* mi */, const Point2f &sample,
-                               Mask /* active */) const override {
-        return warp::square_to_uniform_sphere(sample);
+    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
+                                      const MediumInteraction3f & /* mi */, const Point2f &sample,
+                                      Mask /* active */) const override {
+        auto wo  = warp::square_to_uniform_sphere(sample);
+        auto pdf = warp::square_to_uniform_sphere_pdf(wo);
+        return std::make_pair(wo, pdf);
     }
 
-    Float eval(const Vector3f &wo, Mask /* active */) const override {
+    Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f & /* mi */,
+               const Vector3f &wo, Mask /* active */) const override {
         return warp::square_to_uniform_sphere_pdf(wo);
     }
 

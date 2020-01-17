@@ -38,7 +38,7 @@ template <typename Float, typename Spectrum>
 class HGPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(PhaseFunction)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(PhaseFunctionContext)
 
     HGPhaseFunction(const Properties &props) {
         m_g = props.float_("g", 0.8f);
@@ -46,8 +46,14 @@ public:
             Log(Error, "The asymmetry parameter must lie in the interval (-1, 1)!");
     }
 
-    Vector3f sample(const MediumInteraction3f & /* mi */, const Point2f &sample,
-                               Mask /* active */) const override {
+    MTS_INLINE Float eval_hg(Float cos_theta) const {
+        Float temp = 1.0f + m_g * m_g - 2.0f * m_g * cos_theta;
+        return math::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * enoki::sqrt(temp));
+    }
+
+    std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
+                                      const MediumInteraction3f & /* mi */, const Point2f &sample,
+                                      Mask /* active */) const override {
         Float cos_theta;
         if (std::abs(m_g) < math::Epsilon<ScalarFloat>) {
             cos_theta = 1 - 2 * sample.x();
@@ -58,12 +64,14 @@ public:
 
         Float sin_theta = enoki::safe_sqrt(1.0f - cos_theta * cos_theta);
         auto [sin_phi, cos_phi] = enoki::sincos(2 * math::Pi<ScalarFloat> * sample.y());
-        return Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
+        auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
+        Float pdf = eval_hg(cos_theta);
+        return std::make_pair(wo, pdf);
     }
 
-    Float eval(const Vector3f &wo, Mask /* active */) const override {
-        Float temp = 1.0f + m_g * m_g - 2.0f * m_g * wo.z();
-        return math::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * enoki::sqrt(temp));
+    Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f & /* mi */,
+               const Vector3f &wo, Mask /* active */) const override {
+        return eval_hg(wo.z());
     }
 
     void traverse(TraversalCallback *callback) override {

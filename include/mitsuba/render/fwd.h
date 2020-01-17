@@ -37,6 +37,8 @@ template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct BSDFSample3;
+template <typename Float, typename Spectrum> struct PhaseFunctionContext;
+
 
 template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Float                  = Float_;
@@ -57,6 +59,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SurfaceInteraction3f   = SurfaceInteraction<Float, Spectrum>;
     using MediumInteraction3f    = MediumInteraction<Float, Spectrum>;
     using BSDFSample3f           = BSDFSample3<Float, Spectrum>;
+    using PhaseFunctionContext   = mitsuba::PhaseFunctionContext<Float, Spectrum>;
 
     /// Strip away any masking-related wrappers from 'Float' and 'Spectrum'
     using FloatU                 = underlying_t<Float>;

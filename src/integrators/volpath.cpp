@@ -17,7 +17,8 @@ class VolumetricPathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
     MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr, Medium, MediumPtr)
+    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
+                     Medium, MediumPtr, PhaseFunctionContext)
 
     VolumetricPathIntegrator(const Properties &props) : Base(props) {}
 
@@ -77,9 +78,11 @@ public:
             }
 
             if (any_or<true>(active_medium)) {
+                PhaseFunctionContext phase_ctx(sampler);
+
                 auto phase = mi.medium->phase_function();
                 masked(phase, !active_medium) = nullptr;
-                auto wo = phase->sample(mi, sampler->next_2d(active_medium), active_medium);
+                auto [wo, phase_pdf] = phase->sample(phase_ctx, mi, sampler->next_2d(active_medium), active_medium);
                 Ray3f new_ray  = mi.spawn_ray(mi.to_world(wo));
                 new_ray.mint = 0.0f;
                 new_ray.maxt = math::Infinity<ScalarFloat>;
@@ -97,7 +100,7 @@ public:
                         mi, true, medium, sampler->next_2d(active_e), sampler, true, active_e);
                     active_e &= neq(ds.pdf, 0.f);
                     Float phase_val =
-                        mi.medium->phase_function()->eval(mi.to_local(ds.d), active_e);
+                        mi.medium->phase_function()->eval(phase_ctx, mi, ds.d, active_e);
                     masked(result, active_e) += throughput * phase_val * emitter_val;
                 }
             }
