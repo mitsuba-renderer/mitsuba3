@@ -14,11 +14,15 @@ public:
         m_color = props.texture<Texture>("color", 1.f);
     }
 
-    Spectrum eval(const Interaction3f &it, Mask active) const override {
+    UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
         return eval_impl<false>(it, active);
     }
 
-    std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
+    Float eval_1(const Interaction3f & /* it */, Mask /* active */) const override {
+        return m_color->mean();
+    }
+
+    std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
                                                 Mask active) const override {
         return eval_impl<true>(it, active);
     }

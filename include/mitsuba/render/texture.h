@@ -167,7 +167,7 @@ public:
     // ======================================================================
 
     /// Evaluate the texture at the given surface interaction, with color processing.
-    virtual Spectrum eval(const Interaction3f &si, Mask active = true) const;
+    virtual UnpolarizedSpectrum eval(const Interaction3f &si, Mask active = true) const;
 
     /// Evaluate this texture as a single-channel quantity.
     virtual Float eval_1(const Interaction3f &si, Mask active = true) const;
@@ -179,8 +179,8 @@ public:
      * Evaluate the texture at the given surface interaction,
      * and compute the gradients of the linear interpolant as well.
      */
-    virtual std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
-                                                        Mask active = true) const;
+    virtual std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
+                                                                   Mask active = true) const;
 
     /// Returns the maximum value of the texture over all dimensions.
     virtual ScalarFloat max() const;

@@ -13,7 +13,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // Forward declaration of specialized grid3d
-template <typename Float, typename Spectrum, uint32_t Channels>
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class Grid3DImpl;
 
 /**
@@ -38,25 +38,34 @@ public:
     explicit Grid3D(const Properties &props) : Base(props), m_props(props) {
 
         auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
-        m_metadata = metadata;
-
-        bool raw = props.bool_("raw", false);
-
-        size_t size = hprod(m_metadata.shape);
-        m_data = DynamicBuffer<Float>::copy(raw_data.get(), size * m_metadata.channel_count);
-
+        m_metadata                = metadata;
+        m_raw                     = props.bool_("raw", false);
+        size_t size               = hprod(m_metadata.shape);
         // Apply spectral conversion if necessary
-        // if (is_spectral_v<Spectrum> && m_metadata.channels == 3 && !raw) {
-            //
-        // }
+        if (is_spectral_v<Spectrum> && m_metadata.channel_count == 3 && !m_raw) {
+            ScalarFloat *ptr = raw_data.get();
+            double mean      = 0.0;
+            for (size_t i = 0; i < size; ++i) {
+                ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                value               = srgb_model_fetch(value);
+                mean += (double) srgb_model_mean(value);
+                store_unaligned(ptr, value);
+                ptr += 3;
+            }
+            m_metadata.mean = mean;
+            // Conservatively bound the maximum spectral coefficients
+            m_metadata.max = 1.0f;
+        }
+
+        // Copy loaded data to an Enoki array (e.g. on the GPU)
+        m_data = DynamicBuffer<Float>::copy(raw_data.get(), size * m_metadata.channel_count);
 
         // Mark values which are only used in the implementation class as queried
         props.mark_queried("use_grid_bbox");
         props.mark_queried("max_value");
     }
 
-    template <uint32_t Channels>
-    using Impl = Grid3DImpl<Float, Spectrum, Channels>;
+    template <uint32_t Channels, bool Raw> using Impl = Grid3DImpl<Float, Spectrum, Channels, Raw>;
 
     /**
      * Recursively expand into an implementation specialized to the actual loaded grid.
@@ -65,10 +74,12 @@ public:
         ref<Object> result;
         switch (m_metadata.channel_count) {
             case 1:
-                result = (Object *) new Impl<1>(m_props, m_metadata, m_data);
+                result = m_raw ? (Object *) new Impl<1, true>(m_props, m_metadata, m_data)
+                               : (Object *) new Impl<1, false>(m_props, m_metadata, m_data);
                 break;
             case 3:
-                result = (Object *) new Impl<3>(m_props, m_metadata, m_data);
+                result = m_raw ? (Object *) new Impl<3, true>(m_props, m_metadata, m_data)
+                               : (Object *) new Impl<3, false>(m_props, m_metadata, m_data);
                 break;
             default:
                 Throw("Unsupported channel count: %d (expected 1 or 3)", m_metadata.channel_count);
@@ -78,12 +89,13 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
+    bool m_raw;
     DynamicBuffer<Float> m_data;
     VolumeMetadata m_metadata;
     Properties m_props;
 };
 
-template <typename Float, typename Spectrum, uint32_t Channels>
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class Grid3DImpl final : public Texture3D<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Texture3D, is_inside, update_bbox, m_world_to_local)
@@ -107,32 +119,88 @@ public:
         }
     }
 
-    Spectrum eval(const Interaction3f &it, Mask active) const override {
-        return eval_impl<false>(it, active);
+    UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
+        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
+            Throw("The Grid3D texture %s was queried for a spectrum, but texture conversion "
+                  "into spectra was explicitly disabled! (raw=true)",
+                  to_string());
+        } else if constexpr (Channels != 3 && Channels != 1) {
+            Throw("The Grid3D texture %s was queried for a spectrum, but has a number of channels "
+                  "which is not 1 or 3",
+                  to_string());
+        } else {
+            auto result = eval_impl<false>(it, active);
+
+            if constexpr (Channels == 3 && is_monochromatic_v<Spectrum>)
+                return mitsuba::luminance(Color3f(result));
+            else if constexpr (Channels == 1)
+                return result.x();
+            else
+                return result;
+        }
     }
 
-    std::pair<Spectrum, Vector3f> eval_gradient(const Interaction3f &it,
-                                                Mask active) const override {
-        return eval_impl<true>(it, active);
+    Float eval_1(const Interaction3f &it, Mask active = true) const override {
+        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
+            Throw("eval_1(): The Grid3D texture %s was queried for a scalar value, but texture "
+                  "conversion into spectra was requested! (raw=false)",
+                  to_string());
+        } else {
+            auto result = eval_impl<false>(it, active);
+            if constexpr (Channels == 3)
+                return mitsuba::luminance(Color3f(result));
+            else
+                return hmean(result);
+        }
     }
+
+
+    Vector3f eval_3(const Interaction3f &it, Mask active = true) const override {
+        if constexpr (Channels != 3) {
+            Throw("eval_3(): The Grid3D texture %s was queried for a 3D vector, but it has "
+                  "only a single channel!", to_string());
+        } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
+            Throw("eval_3(): The Grid3D texture %s was queried for a 3D vector, but texture "
+                  "conversion into spectra was requested! (raw=false)",
+                  to_string());
+        } else {
+            return eval_impl<false>(it, active);
+        }
+    }
+
+
+    std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
+                                                Mask active) const override {
+        if constexpr (Channels != 1)
+            Throw("eval_gradient() is currently only supported for single channel grids!", to_string());
+        else {
+            auto [result, gradient] = eval_impl<true>(it, active);
+            return { result.x(), gradient };
+        }
+    }
+
 
     template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
+        using StorageType = Array<Float, Channels>;
+        constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
+        using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         auto p = m_world_to_local * it.p;
         active &= all((p >= 0) && (p <= 1));
 
         if constexpr (with_gradient) {
             if (none_or<false>(active))
-                return std::make_pair(zero<Spectrum>(), zero<Vector3f>());
+                return std::make_pair(zero<ResultType>(), zero<Vector3f>());
             auto [result, gradient] = interpolate<true>(p, it.wavelengths, active);
-            return std::make_pair(select(active, result, zero<Spectrum>()),
+            return std::make_pair(select(active, result, zero<ResultType>()),
                                   select(active, gradient, zero<Vector3f>()));
         } else {
+
             if (none_or<false>(active))
-                return zero<Spectrum>();
-            Spectrum result = interpolate<false>(p, it.wavelengths, active);
-            return select(active, result, zero<Spectrum>());
+                return zero<ResultType>();
+            ResultType result = interpolate<false>(p, it.wavelengths, active);
+            return select(active, result, zero<ResultType>());
         }
     }
 
@@ -153,9 +221,9 @@ public:
                                             Mask active) const {
         using Index   = uint32_array_t<Float>;
         using Index3  = uint32_array_t<Point3f>;
-        // using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
         using StorageType = Array<Float, Channels>;
-
+        constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
+        using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         // TODO: in the autodiff case, make sure these do not trigger a recompilation
         const size_t nx = m_metadata.shape.x();
@@ -188,8 +256,8 @@ public:
              d110 = gather<StorageType>(raw_data, index + z_offset + nx, active),
              d111 = gather<StorageType>(raw_data, index + z_offset + nx + 1, active);
 
-        Spectrum  v000, v001, v010, v011, v100, v101, v110, v111;
-        if constexpr (Channels == 3) {
+        ResultType v000, v001, v010, v011, v100, v101, v110, v111;
+        if constexpr (uses_srgb_model) {
             v000 = srgb_model_eval<UnpolarizedSpectrum>(d000, wavelengths);
             v001 = srgb_model_eval<UnpolarizedSpectrum>(d001, wavelengths);
             v010 = srgb_model_eval<UnpolarizedSpectrum>(d010, wavelengths);
@@ -199,23 +267,19 @@ public:
             v101 = srgb_model_eval<UnpolarizedSpectrum>(d101, wavelengths);
             v110 = srgb_model_eval<UnpolarizedSpectrum>(d110, wavelengths);
             v111 = srgb_model_eval<UnpolarizedSpectrum>(d111, wavelengths);
-        } else if constexpr (Channels == 1) {
-            v000 = d000.x(); v001 = d001.x(); v010 = d010.x(); v011 = d011.x();
-            v100 = d100.x(); v101 = d101.x(); v110 = d110.x(); v111 = d111.x();
         } else {
-            // No conversion to do
             v000 = d000; v001 = d001; v010 = d010; v011 = d011;
             v100 = d100; v101 = d101; v110 = d110; v111 = d111;
         }
 
         // Trilinear interpolation
-        Spectrum v00 = fmadd(v000, rf.x(), v001 * f.x()),
-                 v01 = fmadd(v010, rf.x(), v011 * f.x()),
-                 v10 = fmadd(v100, rf.x(), v101 * f.x()),
-                 v11 = fmadd(v110, rf.x(), v111 * f.x());
-        Spectrum v0  = fmadd(v00, rf.y(), v01 * f.y()),
-                 v1  = fmadd(v10, rf.y(), v11 * f.y());
-        Spectrum result = fmadd(v0, rf.z(), v1 * f.z());
+        ResultType v00 = fmadd(v000, rf.x(), v001 * f.x()),
+                   v01 = fmadd(v010, rf.x(), v011 * f.x()),
+                   v10 = fmadd(v100, rf.x(), v101 * f.x()),
+                   v11 = fmadd(v110, rf.x(), v111 * f.x());
+        ResultType v0  = fmadd(v00, rf.y(), v01 * f.y()),
+                   v1  = fmadd(v10, rf.y(), v11 * f.y());
+        ResultType result = fmadd(v0, rf.z(), v1 * f.z());
 
         if constexpr (with_gradient) {
             if constexpr (!is_monochromatic_v<Spectrum>)
@@ -277,6 +341,7 @@ public:
             << "  dimensions = " << m_metadata.shape << "," << std::endl
             << "  mean = " << m_metadata.mean << "," << std::endl
             << "  max = " << m_metadata.max << "," << std::endl
+            << "  channels = " << m_metadata.channel_count << std::endl
             << "]";
         return oss.str();
     }
@@ -292,12 +357,12 @@ protected:
 MTS_IMPLEMENT_CLASS_VARIANT(Grid3D, Texture3D)
 MTS_EXPORT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
 
-template <typename Float, typename Spectrum, uint32_t Channels>
-const Class *Grid3DImpl<Float, Spectrum, Channels>::class_() const {
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+const Class *Grid3DImpl<Float, Spectrum, Channels, Raw>::class_() const {
     return m_class;
 }
 
-template <typename Float, typename Spectrum, uint32_t Channels>
-Class *Grid3DImpl<Float, Spectrum, Channels>::m_class = Grid3D<Float, Spectrum>::m_class;
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+Class *Grid3DImpl<Float, Spectrum, Channels, Raw>::m_class = Grid3D<Float, Spectrum>::m_class;
 
 NAMESPACE_END(mitsuba)
