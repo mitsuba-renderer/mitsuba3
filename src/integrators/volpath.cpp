@@ -33,25 +33,25 @@ public:
         // Otherwise, it will depend on whether a valid interaction is sampled
         Mask valid_ray = !m_hide_emitters && neq(scene->environment(), nullptr);
 
-        Ray3f ray = ray_; // For now, ignore ray differentials
+        // For now, don't use ray differentials
+        Ray3f ray = ray_;
 
         // Tracks radiance scaling due to index of refraction changes
         Float eta(1.f);
 
         Spectrum throughput(1.f), result(0.f);
 
-        // MediumPtr medium = rs.medium;
         MediumPtr medium = nullptr;
         MediumInteraction3f mi;
 
         Mask specular_chain = active && !m_hide_emitters;
         for (int depth = 0;; ++depth) {
-        //     // ----------------- Handle termination of paths ------------------
+            // ----------------- Handle termination of paths ------------------
 
-            /* Russian roulette: try to keep path weights equal to one,
-            while accounting for the solid angle compression at refractive
-            index boundaries. Stop with at least some probability to avoid
-            getting stuck (e.g. due to total internal reflection) */
+            // Russian roulette: try to keep path weights equal to one, while accounting for the
+            // solid angle compression at refractive index boundaries. Stop with at least some
+            // probability to avoid  getting stuck (e.g. due to total internal reflection)
+
             active &= any(neq(depolarize(throughput), 0.f));
             if (depth > m_rr_depth) {
                 Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
@@ -88,12 +88,13 @@ public:
                 new_ray.maxt = math::Infinity<ScalarFloat>;
 
                 masked(ray, active_medium) = new_ray;
-                valid_ray |= active_medium;
-                // masked(valid+, active_medium) = 1.f;
 
                 Mask sample_emitters = mi.medium->use_emitter_sampling();
+
+                valid_ray |= active_medium;
                 specular_chain &= !active_medium;
                 specular_chain |= active_medium && !sample_emitters;
+
                 Mask active_e = active_medium && sample_emitters;
                 if (any_or<true>(active_e)) {
                     auto [ds, emitter_val] = scene->sample_emitter_direction_attenuated(
@@ -152,7 +153,6 @@ public:
 
                 Mask non_null_bsdf = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Null);
                 valid_ray |= non_null_bsdf;
-
                 specular_chain |= non_null_bsdf && has_flag(bs.sampled_type, BSDFFlags::Delta);
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
 

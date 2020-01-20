@@ -60,10 +60,11 @@ public:
         ScalarVector3f diag = m_density_aabb.max - m_density_aabb.min;
         ScalarVector3f res  = ScalarVector3f(m_density->resolution());
 
-        // This is just for information purposes only
-        Float step_size = m_step_size_scaling * hmin(diag * rcp(res));
         Log(Info, "Volume resolution %s", res);
-        Log(Info, "Step size: %f", step_size);
+        if (m_use_raymarching) {
+            ScalarFloat step_size = m_step_size_scaling * hmin(diag * rcp(res));
+            Log(Info, "Step size: %f", step_size);
+        }
     }
 
     MTS_INLINE ScalarFloat get_step_size() const {
@@ -77,7 +78,7 @@ public:
         it.p           = ray(t);
         it.wavelengths = ray.wavelengths;
         it.time        = ray.time;
-        return m_density_scale * depolarize(m_density->eval(it, active)).coeff(0);
+        return m_density_scale * m_density->eval_1(it, active);
     }
 
     virtual std::tuple<SurfaceInteraction3f, MediumInteraction3f, Spectrum>
