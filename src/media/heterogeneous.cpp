@@ -169,8 +169,7 @@ public:
             Mask escaped =
                 (!reached_density && (t_b > maxt)) || (reached_density && (sampledt > maxt));
             masked(integrated_density, escaped) +=
-                0.5f *
-                (f_a + density(ray, maxt - math::Epsilon<ScalarFloat>, active) * mean_sigmat);
+                0.5f * (f_a + density(ray, maxt - math::RayEpsilon<ScalarFloat>, active) * mean_sigmat);
 
             // Record medium interaction if the generated "t" is within the range of valid "t"
             Mask valid_mi = reached_density && (sampledt <= maxt);

@@ -223,7 +223,7 @@ public:
             }
             // Update the ray with new origin & t parameter
             masked(ray.o, active)    = si.p;
-            masked(ray.mint, active) = math::Epsilon<ScalarFloat>;
+            masked(ray.mint, active) = math::RayEpsilon<ScalarFloat>;
             interactions++;
         }
         return { value, emitter_pdf };

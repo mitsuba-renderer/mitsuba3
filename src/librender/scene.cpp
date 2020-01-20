@@ -198,7 +198,7 @@ Spectrum Scene<Float, Spectrum>::eval_transmittance(const Point3f &p1, Mask p1_o
     Float remaining = norm(d);
     d /= remaining;
 
-    Float used_epsilon = math::Epsilon<ScalarFloat> * (1.f + hmax(abs(p1)));
+    Float used_epsilon = math::RayEpsilon<Float> * (1.f + hmax(abs(p1)));
 
     Float min_dist      = select(p1_on_surface, used_epsilon, Float(0.0f));
     Float length_factor = select(p2_on_surface, Float(1 - math::ShadowEpsilon<Float>), Float(1.0f));
@@ -209,7 +209,7 @@ Spectrum Scene<Float, Spectrum>::eval_transmittance(const Point3f &p1, Mask p1_o
     while (any((remaining > 0) && active) && interactions < max_interactions) {
 
         // Intersect the transmittance ray with the scene
-        SurfaceInteraction3f si = this->ray_intersect(ray, active);
+        SurfaceInteraction3f si = ray_intersect(ray, active);
 
         // If intersection is found: evaluate BSDF transmission
         Mask active_surface = active && si.is_valid();
@@ -250,7 +250,7 @@ Scene<Float, Spectrum>::sample_emitter_direction_attenuated(const Interaction3f 
 
     ScopedPhase sp(ProfilerPhase::SampleEmitterDirection);
     DirectionSample3f ds;
-    Spectrum spec = 0.f;
+    Spectrum spec;
     Point2f sample(sample_);
 
     int max_interactions = 10;
@@ -277,7 +277,11 @@ Scene<Float, Spectrum>::sample_emitter_direction_attenuated(const Interaction3f 
         // Account for the discrete probability of sampling this emitter
         ds.pdf *= emitter_pdf;
         spec *= rcp(emitter_pdf);
+    } else {
+        ds = zero<DirectionSample3f>();
+        spec = 0.f;
     }
+
     return { ds, spec };
 }
 
