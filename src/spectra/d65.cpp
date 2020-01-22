@@ -43,7 +43,7 @@ public:
         props.set_float("lambda_min", 360);
         props.set_float("lambda_max", 830);
         props.set_int("size", 95);
-        Float tmp[95];
+        ScalarFloat tmp[95];
         for (size_t i = 0; i < 95; ++i)
             tmp[i] = data[i] * m_scale;
         props.set_pointer("values", (const void *) &tmp[0]);
@@ -66,7 +66,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    Float m_scale;
+    ScalarFloat m_scale;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(D65Spectrum, Texture)
