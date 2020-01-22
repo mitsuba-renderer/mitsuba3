@@ -55,6 +55,30 @@ public:
     virtual Spectrum eval_transmittance(const Ray3f &ray, Sampler *sampler,
                                         Mask active = true) const = 0;
 
+    // NEW INTERFACE
+    virtual std::tuple<Mask, Float, Float> intersect_aabb(const Ray3f &ray) const = 0;
+
+    virtual Spectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const = 0;
+    virtual std::tuple<Spectrum, Spectrum, Spectrum>
+    get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const = 0;
+
+    std::tuple<SurfaceInteraction3f, MediumInteraction3f, Spectrum>
+    sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, int channel, Mask active) const;
+
+    // enum EventType  {
+    //     Scattering,
+    //     Absorption,
+    //     Null,
+    // };
+
+    // MTS_INLINE EventType Medium::sample_event(const MediumInteraction3f& mi, Float sample, int channel, Mask active = true) const {
+    //     return select(sample < mi.sigma_t[channel] / mi.combined_extinction[channel], Medium::Scattering, Medium::Null)''
+    // }
+
+
+    // END NEW INTERFACE
+
+
     /// Return the phase function of this medium
     MTS_INLINE const PhaseFunction *phase_function() const { return m_phase_function.get(); }
 
@@ -106,6 +130,10 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_CALL_SUPPORT_METHOD(eval_transmittance)
     ENOKI_CALL_SUPPORT_METHOD(phase_function)
     ENOKI_CALL_SUPPORT_METHOD(use_emitter_sampling)
+    ENOKI_CALL_SUPPORT_METHOD(get_combined_extinction)
+    ENOKI_CALL_SUPPORT_METHOD(intersect_aabb)
+    ENOKI_CALL_SUPPORT_METHOD(sample_interaction)
+    ENOKI_CALL_SUPPORT_METHOD(get_scattering_coefficients)
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Medium)
 
 //! @}

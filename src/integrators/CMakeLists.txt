@@ -6,6 +6,7 @@ add_plugin(path    path.cpp)
 add_plugin(aov     aov.cpp)
 add_plugin(stokes  stokes.cpp)
 add_plugin(volpath  volpath.cpp)
+add_plugin(volpathnull  volpath-null.cpp)
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

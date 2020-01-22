@@ -93,6 +93,23 @@ public:
         return enoki::exp(-(ray.maxt - ray.mint) * eval_sigmat(mi));
     }
 
+        // NEW INTERFACE
+    Spectrum get_combined_extinction(const MediumInteraction3f &mi, Mask /* active */) const override {
+        return eval_sigmat(mi);
+    }
+
+    std::tuple<Spectrum, Spectrum, Spectrum> get_scattering_coefficients(const MediumInteraction3f &mi, Mask active) const override {
+        Spectrum sigmat = eval_sigmat(mi);
+        Spectrum sigmas = sigmat * m_albedo->eval(mi, active);
+        Spectrum sigman = 0.f;
+        return { sigmas, sigman, sigmat };
+    }
+
+    std::tuple<Mask, Float, Float> intersect_aabb(const Ray3f & /* ray */) const override {
+        return { true, 0.f, math::Infinity<Float> };
+    }
+
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("density", m_density);
         callback->put_object("albedo", m_albedo.get());

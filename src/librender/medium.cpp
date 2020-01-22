@@ -2,6 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/phase.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -26,6 +27,64 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
 }
 
 MTS_VARIANT Medium<Float, Spectrum>::~Medium() {}
+
+MTS_VARIANT std::tuple<
+typename Medium<Float, Spectrum>::SurfaceInteraction3f,
+typename Medium<Float, Spectrum>::MediumInteraction3f,
+Spectrum>
+Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, int channel, Mask active) const {
+    // initialize basic medium interaction fields
+    MediumInteraction3f mi;
+    mi.t           = math::Infinity<Float>;
+    mi.p           = Point3f(0.0f, 0.0f, 0.0f);
+
+    mi.sh_frame    = Frame3f(ray.d);
+    mi.wi          = Vector3f(0.0f, 0.0f, 1.0f);
+    mi.time        = ray.time;
+    mi.wavelengths = ray.wavelengths;
+    mi.medium      = nullptr;
+
+    Spectrum transmittance(1.0f);
+
+    // make sure that the ray doesn't miss the medium (via m_density_aabb)
+    auto [aabb_its, mint, maxt] = intersect_aabb(ray);
+
+    SurfaceInteraction3f si;
+    Mask missed = active && !aabb_its;
+    // TODO: Group all ray intersect calls
+    // If medium missed: still compute surface interaction (for now)
+    masked(si, missed) = scene->ray_intersect(ray, missed);
+    active &= aabb_its;
+
+    mint = max(ray.mint, mint);
+    maxt = min(ray.maxt, maxt);
+
+    // sample t
+    Spectrum combined_extinction = get_combined_extinction(mi, active);
+    Float sampled_t = mint + (-enoki::log(1 - sample) / depolarize(combined_extinction)[channel]);
+
+
+    Ray ray_its = ray;
+    Mask inside_bbox = active && (sampled_t <= maxt);
+    masked(ray_its.maxt, inside_bbox) = sampled_t; // restrict ray maxt if inside the medium's bounding box
+    si = scene->ray_intersect(ray_its, active);
+    Float t = min(si.t, maxt) - mint;
+
+    // Escaped medium
+    masked(t, inside_bbox && si.is_valid()) = si.t - mint;
+
+    // Fill MediumInteraction if we sampled a vaid medium interaction
+    Mask valid_mi = inside_bbox && !si.is_valid();
+    masked(t, valid_mi) = sampled_t - mint;
+    masked(mi.t, valid_mi) = sampled_t;
+    mi.p = ray(sampled_t);
+    mi.medium = this;
+    std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) = get_scattering_coefficients(mi, valid_mi);
+    mi.combined_extinction = combined_extinction;
+
+    transmittance *= exp(-t * combined_extinction);
+    return std::make_tuple(si, mi, transmittance);
+}
 
 // MTS_VARIANT
 // std::tuple<ref<Texture<Float, Spectrum>>,

@@ -378,6 +378,9 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     /// Incident direction in the local shading frame
     Vector3f wi;
 
+    Spectrum sigma_s, sigma_n, sigma_t, combined_extinction;
+
+
     //! @}
     // =============================================================
 
@@ -398,7 +401,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     ENOKI_DERIVED_STRUCT(MediumInteraction, Base,
         ENOKI_BASE_FIELDS(t, time, wavelengths, p),
-        ENOKI_DERIVED_FIELDS(medium, sh_frame, wi)
+        ENOKI_DERIVED_FIELDS(medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction)
     )
 
 };
@@ -482,7 +485,7 @@ ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
                      prim_index, instance)
 
 ENOKI_STRUCT_SUPPORT(mitsuba::MediumInteraction, t, time, wavelengths, p,
-                     medium, sh_frame, wi)
+                     medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction)
 
 //! @}
 // -----------------------------------------------------------------------
