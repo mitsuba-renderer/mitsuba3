@@ -234,6 +234,14 @@ public:
 
             // If intersection is found: Is it a null bsdf or an occlusion?
             Mask active_surface = active && si.is_valid();
+
+            // compute transmittance to the next hitpoint
+            Mask active_medium = neq(medium, nullptr) && active;
+            if (any_or<true>(active_medium)) {
+                masked(transmittance, active_medium) *=
+                    medium->eval_transmittance(Ray(ray, 0, si.t), sampler, active_medium);
+            }
+
             // Check if we hit an emitter and add illumination if needed
             emitter          = si.emitter(scene, active);
             Mask emitter_hit = neq(emitter, nullptr) && active;
@@ -250,11 +258,6 @@ public:
                 auto bsdf         = si.bsdf(ray);
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
                 masked(transmittance, active_surface) *= bsdf_val;
-            }
-            Mask active_medium = neq(medium, nullptr) && active;
-            if (any_or<true>(active_medium)) {
-                masked(transmittance, active_medium) *=
-                    medium->eval_transmittance(Ray(ray, 0, si.t), sampler, active_medium);
             }
 
             active &= si.is_valid() && any(neq(depolarize(transmittance), 0.f));

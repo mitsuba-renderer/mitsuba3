@@ -253,6 +253,9 @@ Scene<Float, Spectrum>::sample_emitter_direction_attenuated(const Interaction3f 
     Spectrum spec;
     Point2f sample(sample_);
 
+    // TODO: This currently does not handle the case propertly
+    // where a connection to an environment map is sampled without interfaces in between
+    // (then transmittance should be zero)
     int max_interactions = 10;
     if (likely(!m_emitters.empty())) {
         // Randomly pick an emitter according to the precomputed emitter distribution
