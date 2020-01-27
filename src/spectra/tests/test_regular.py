@@ -5,23 +5,18 @@ import mitsuba
 import pytest
 import enoki as ek
 
+from mitsuba.python.test import variant_spectral
 
 @pytest.fixture()
 def obj():
-    try:
-        mitsuba.set_variant('scalar_spectral')
+    return mitsuba.core.xml.load_string('''
+        <spectrum version='2.0.0' type='regular'>
+            <float name="lambda_min" value="500"/>
+            <float name="lambda_max" value="600"/>
+            <string name="values" value="1, 2"/>
+        </spectrum>''')
 
-        return mitsuba.core.xml.load_string('''
-            <spectrum version='2.0.0' type='regular'>
-                <float name="lambda_min" value="500"/>
-                <float name="lambda_max" value="600"/>
-                <string name="values" value="1, 2"/>
-            </spectrum>''')
-    except ImportError:
-        pytest.skip("scalar_spectral mode not enabled")
-
-
-def test01_eval(obj):
+def test01_eval(variant_spectral, obj):
     from mitsuba.render import SurfaceInteraction3f
 
     si = SurfaceInteraction3f()
@@ -41,7 +36,7 @@ def test01_eval(obj):
     assert 'not implemented' in str(excinfo.value)
 
 
-def test02_sample(obj):
+def test02_sample(variant_spectral, obj):
     from mitsuba.render import SurfaceInteraction3f
 
     si = SurfaceInteraction3f()

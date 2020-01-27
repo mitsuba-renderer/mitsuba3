@@ -60,4 +60,4 @@ def test04_seed_vectorized(variant_scalar, sampler):
         sampler.seed(seed)
         sampler_p.seed(seed)
         assert sampler.next_1d() == sampler_p.next_1d()[0]
-        assert ek.allclose(sampler_p.next_2d(), sampler.next_2d())
+        assert ek.allclose(sampler_p.next_2d(), ek.dynamic.Vector2f(sampler.next_2d()))
