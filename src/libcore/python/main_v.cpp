@@ -18,7 +18,7 @@ MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(Transform);
-//MTS_PY_DECLARE(AnimatedTransform);
+MTS_PY_DECLARE(AnimatedTransform);
 MTS_PY_DECLARE(vector);
 MTS_PY_DECLARE(warp);
 MTS_PY_DECLARE(xml);
@@ -232,6 +232,14 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     m.attr("float_dtype") = is_float_v<ScalarFloat> ? "f" : "d";
 
+    m.attr("USE_OPTIX") = is_cuda_array_v<Float>;
+
+    #if defined(MTS_USE_EMBREE)
+        m.attr("USE_EMBREE")  = !is_cuda_array_v<Float>;
+    #else
+        m.attr("USE_EMBREE")  = false;
+    #endif
+
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(BoundingBox);
     MTS_PY_IMPORT(BoundingSphere);
@@ -247,7 +255,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT_SUBMODULE(spline);
     MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(Transform);
-    //MTS_PY_IMPORT(AnimatedTransform);
+    MTS_PY_IMPORT(AnimatedTransform);
     MTS_PY_IMPORT(Hierarchical2D);
     MTS_PY_IMPORT(Marginal2D);
     MTS_PY_IMPORT(vector);

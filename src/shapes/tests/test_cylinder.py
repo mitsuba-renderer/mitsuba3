@@ -1,14 +1,13 @@
-import numpy as np
-import pytest
-
 import mitsuba
-from mitsuba.scalar_rgb.core      import Ray3f
-from mitsuba.scalar_rgb.core.xml  import load_string
-from mitsuba.scalar_rgb.core.math import Pi
+import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
 
-UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
+from mitsuba.python.test import variant_scalar
+
 
 def example_disk(scale = (1, 1, 1), translate = (0, 0, 0)):
+    from mitsuba.core.xml import load_string
     return load_string("""<shape version="2.0.0" type="cylinder">
         <transform name="to_world">
             <scale x="{}" y="{}" z="{}"/>
@@ -18,6 +17,7 @@ def example_disk(scale = (1, 1, 1), translate = (0, 0, 0)):
                        translate[0], translate[1], translate[2]))
 
 def example_scene(scale = (1, 1, 1), translate = (0, 0, 0)):
+    from mitsuba.core.xml import load_string
     return load_string("""<scene version='2.0.0'>
         <shape type="cylinder">
             <transform name="to_world">
@@ -29,28 +29,33 @@ def example_scene(scale = (1, 1, 1), translate = (0, 0, 0)):
                        translate[0], translate[1], translate[2]))
 
 
-def test01_create():
+def test01_create(variant_scalar):
     s = example_disk()
     assert s is not None
     assert s.primitive_count() == 1
-    assert np.allclose(s.surface_area(), 2*Pi)
+    assert ek.allclose(s.surface_area(), 2*ek.pi)
 
 
-def test02_bbox():
+def test02_bbox(variant_scalar):
+    from mitsuba.core import Vector3f
+
     for l in [1, 5]:
         for r in [1, 2, 4]:
             s = example_disk((r, r, l))
             b = s.bbox()
 
-            assert np.allclose(s.surface_area(), 2*Pi*r*l)
+            assert ek.allclose(s.surface_area(), 2*ek.pi*r*l)
             assert b.valid()
-            assert np.allclose(b.min, -np.array([r, r, 0.0]))
-            assert np.allclose(b.max, +np.array([r, r, l]))
+            assert ek.allclose(b.min, -Vector3f([r, r, 0.0]))
+            assert ek.allclose(b.max,  Vector3f([r, r, l]))
 
 
-@pytest.mark.xfail(condition=UNSUPPORTED,
-                   reason="Shape intersections not implemented with Embree or OptiX")
-def test03_ray_intersect():
+def test03_ray_intersect(variant_scalar):
+    UNSUPPORTED = mitsuba.core.USE_EMBREE or mitsuba.core.USE_OPTIX
+    pytest.mark.xfail(condition=UNSUPPORTED,
+                      reason="Shape intersections not implemented with Embree or OptiX")
+    from mitsuba.core import Ray3f
+
     for r in [1, 2, 4]:
         for l in [1, 5]:
             s = example_scene((r, r, l))
@@ -58,10 +63,8 @@ def test03_ray_intersect():
             # grid size
             n = 10
 
-            wl = np.zeros(3)
-
-            xx = np.linspace(-1, 1, n)
-            zz = np.linspace(-1, 1, n)
+            xx = ek.linspace(Float, -1, 1, n)
+            zz = ek.linspace(Float, -1, 1, n)
 
             for x in xx:
                 for z in zz:
@@ -69,16 +72,16 @@ def test03_ray_intersect():
                     z = 1.1*l*z
 
                     ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
-                                time=0.0, wavelengths=wl)
+                                time=0.0, wavelengths=[])
                     si_found = s.ray_test(ray)
                     si = s.ray_intersect(ray)
 
                     assert si_found == si.is_valid()
-                    assert si_found == np.allclose(si.p[0]**2 + si.p[1]**2, r**2)
+                    assert si_found == ek.allclose(si.p[0]**2 + si.p[1]**2, r**2)
 
                     if  si_found:
                         ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
-                                    time=0.0, wavelengths=wl)
+                                    time=0.0, wavelengths=[])
 
                         si = s.ray_intersect(ray)
                         ray_u = Ray3f(ray)
@@ -94,10 +97,10 @@ def test03_ray_intersect():
                         if si_u.is_valid():
                             dp_du = (si_u.p - si.p) / eps
                             dn_du = (si_u.n - si.n) / eps
-                            assert np.allclose(dp_du, si.dp_du, atol=2e-2)
-                            assert np.allclose(dn_du, dn[0], atol=2e-2)
+                            assert ek.allclose(dp_du, si.dp_du, atol=2e-2)
+                            assert ek.allclose(dn_du, dn[0], atol=2e-2)
                         if si_v.is_valid():
                             dp_dv = (si_v.p - si.p) / eps
                             dn_dv = (si_v.n - si.n) / eps
-                            assert np.allclose(dp_dv, si.dp_dv, atol=2e-2)
-                            assert np.allclose(dn_dv, dn[1], atol=2e-2)
+                            assert ek.allclose(dp_dv, si.dp_dv, atol=2e-2)
+                            assert ek.allclose(dn_dv, dn[1], atol=2e-2)

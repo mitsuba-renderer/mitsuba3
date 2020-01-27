@@ -1,13 +1,14 @@
-import numpy as np
-import pytest
-
 import mitsuba
-from mitsuba.scalar_rgb.core      import Ray3f
-from mitsuba.scalar_rgb.core.xml  import load_string
+import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
 
-UNSUPPORTED = mitsuba.USE_EMBREE or mitsuba.USE_OPTIX
+from mitsuba.python.test import variant_scalar
+
 
 def example_rectangle(scale = (1, 1, 1), translate = (0, 0, 0)):
+    from mitsuba.core.xml import load_string
+
     return load_string("""<shape version="2.0.0" type="rectangle">
         <transform name="to_world">
             <scale x="{}" y="{}" z="{}"/>
@@ -17,37 +18,37 @@ def example_rectangle(scale = (1, 1, 1), translate = (0, 0, 0)):
                        translate[0], translate[1], translate[2]))
 
 
-def test01_create():
+def test01_create(variant_scalar):
     s = example_rectangle()
     assert s is not None
     assert s.primitive_count() == 1
-    assert np.allclose(s.surface_area(), 4.0)
+    assert ek.allclose(s.surface_area(), 4.0)
 
 
-def test02_bbox():
+def test02_bbox(variant_scalar):
+    from mitsuba.core import Vector3f
+
     sy = 2.5
     for sx in [1, 2, 4]:
-        for translate in [np.array([1.3, -3.0, 5]),
-                          np.array([-10000, 3.0, 31])]:
+        for translate in [Vector3f([1.3, -3.0, 5]),
+                          Vector3f([-10000, 3.0, 31])]:
             s = example_rectangle((sx, sy, 1.0), translate)
             b = s.bbox()
 
-            assert np.allclose(s.surface_area(), sx * sy * 4)
+            assert ek.allclose(s.surface_area(), sx * sy * 4)
 
             assert b.valid()
-            assert np.allclose(b.center(), translate)
-            assert np.allclose(b.min, translate - np.array([sx, sy, 0.0]))
-            assert np.allclose(b.max, translate + np.array([sx, sy, 0.0]))
+            assert ek.allclose(b.center(), translate)
+            assert ek.allclose(b.min, translate - [sx, sy, 0.0])
+            assert ek.allclose(b.max, translate + [sx, sy, 0.0])
 
 
-@pytest.mark.xfail(condition=UNSUPPORTED,
-                   reason="Shape intersections not implemented with Embree or OptiX")
-def test03_ray_intersect():
-    try:
-        from mitsuba.packet_rgb.core.xml import load_string as load_string_packet
-        from mitsuba.packet_rgb.core import Ray3f as Ray3fX
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
+def test03_ray_intersect(variant_scalar):
+    UNSUPPORTED = mitsuba.core.USE_EMBREE or mitsuba.core.USE_OPTIX
+    pytest.mark.xfail(condition=UNSUPPORTED,
+                      reason="Shape intersections not implemented with Embree or OptiX")
+    from mitsuba.core.xml import load_string
+    from mitsuba.core import Ray3f
 
     # Scalar
     scene = load_string("""<scene version="2.0.0">
@@ -59,9 +60,9 @@ def test03_ray_intersect():
     </scene>""")
 
     n = 15
-    coords = np.linspace(-1, 1, n)
+    coords = ek.linspace(Float, -1, 1, n)
     rays = [Ray3f(o=[a, a, 5], d=[0, 0, -1], time=0.0,
-                  wavelengths=[0, 0, 0]) for a in coords]
+                  wavelengths=[]) for a in coords]
     si_scalar = []
     valid_count = 0
     for i in range(n):
@@ -76,6 +77,13 @@ def test03_ray_intersect():
 
     assert valid_count == 7
 
+    try:
+        mitsuba.set_variant('packet_rgb')
+        from mitsuba.core.xml import load_string as load_string_packet
+        from mitsuba.core import Ray3f as Ray3fX
+    except ImportError:
+        pytest.skip("packet_rgb mode not enabled")
+
     # Packet
     scene_p = load_string_packet("""<scene version="2.0.0">
         <shape type="rectangle">
@@ -85,12 +93,14 @@ def test03_ray_intersect():
         </shape>
     </scene>""")
 
-    packet = Ray3fX(n)
+    packet = Ray3fX.zero(n)
     for i in range(n):
         packet[i] = rays[i]
+
     si_p = scene_p.ray_intersect(packet)
     its_found_p = scene_p.ray_test(packet)
 
-    assert np.all(si_p.is_valid() == its_found_p)
+    assert ek.all(si_p.is_valid() == its_found_p)
+
     for i in range(n):
-        assert np.allclose(si_p[i].t, si_scalar[i].t)
+        assert ek.allclose(si_p.t[i], si_scalar[i].t)
