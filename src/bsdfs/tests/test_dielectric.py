@@ -3,9 +3,7 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar, variant_packet
 
 
 def example_bsdf(reflectance=0.3, transmittance=0.6):
@@ -18,7 +16,7 @@ def example_bsdf(reflectance=0.3, transmittance=0.6):
         </bsdf>""".format(reflectance, transmittance))
 
 
-def test01_create(variant):
+def test01_create(variant_scalar):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -38,7 +36,7 @@ def test01_create(variant):
             </bsdf>""")
 
 
-def test02_sample(variant):
+def test02_sample(variant_scalar):
     from mitsuba.render import BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -71,7 +69,7 @@ def test02_sample(variant):
         assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
 
-def test03_sample_reverse(variant):
+def test03_sample_reverse(variant_scalar):
     from mitsuba.render import BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
 
     si = SurfaceInteraction3f()
@@ -103,7 +101,7 @@ def test03_sample_reverse(variant):
         assert bs.sampled_type == +BSDFFlags.DeltaTransmission
 
 
-def test04_sample_specific_component(variant):
+def test04_sample_specific_component(variant_scalar):
     from mitsuba.render import BSDFContext, SurfaceInteraction3f, TransportMode, BSDFFlags
 
     si = SurfaceInteraction3f()
@@ -150,7 +148,7 @@ def test04_sample_specific_component(variant):
     assert ek.all(spec == [0] * 3)
 
 
-def test05_spot_check(variant):
+def test05_spot_check(variant_scalar):
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
 
     angle = 80 * ek.pi / 180

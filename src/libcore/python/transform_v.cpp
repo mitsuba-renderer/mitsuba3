@@ -7,7 +7,7 @@
 MTS_PY_EXPORT(Transform) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
 
-    MTS_PY_CHECK_ALIAS(Transform3f, m) {
+    MTS_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
         auto trans3 = py::class_<Transform3f>(m, "Transform3f", D(Transform))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform3f &>(), "Copy constructor")
@@ -55,7 +55,7 @@ MTS_PY_EXPORT(Transform) {
         bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3);
     }
 
-    MTS_PY_CHECK_ALIAS(Transform4f, m) {
+    MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
         auto trans4 = py::class_<Transform4f>(m, "Transform4f", D(Transform))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform4f &>(), "Copy constructor")
@@ -131,7 +131,7 @@ MTS_PY_EXPORT(AnimatedTransform) {
     using ScalarVector3f     = typename AnimatedTransform::Vector3f;
     using ScalarTransform4f  = typename AnimatedTransform::Transform4f;
 
-    MTS_PY_CHECK_ALIAS(AnimatedTransform, m) {
+    MTS_PY_CHECK_ALIAS(AnimatedTransform, "AnimatedTransform") {
         auto atrafo = MTS_PY_CLASS(AnimatedTransform, Object);
 
         py::class_<Keyframe>(atrafo, "Keyframe")

@@ -6,7 +6,7 @@ template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char 
         using Point = typename BBox::Point;
         using Float = typename BBox::Value;
 
-        MTS_PY_CHECK_ALIAS(BBox, m) {
+        MTS_PY_CHECK_ALIAS(BBox, name) {
             auto bbox = py::class_<BBox>(m, name, D(BoundingBox))
                 .def(py::init<>(), D(BoundingBox, BoundingBox))
                 .def(py::init<Point>(), D(BoundingBox, BoundingBox, 2), "p"_a)

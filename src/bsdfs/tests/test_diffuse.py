@@ -3,12 +3,10 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
+from mitsuba.python.test import variant_scalar, variant_packet
 
 
-def test01_create(variant):
+def test01_create(variant_scalar):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -19,7 +17,7 @@ def test01_create(variant):
     assert b.flags() == b.flags(0)
 
 
-def test02_eval_pdf(variant):
+def test02_eval_pdf(variant_scalar):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
@@ -41,3 +39,21 @@ def test02_eval_pdf(variant):
         v_eval = bsdf.eval(ctx, si, wo=wo)[0]
         assert ek.allclose(v_pdf, wo[2] / ek.pi)
         assert ek.allclose(v_eval, 0.5 * wo[2] / ek.pi)
+
+
+def test03_chi2(variant_packet):
+    from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
+    from mitsuba.core import ScalarBoundingBox2f
+
+    sample_func, pdf_func = BSDFAdapter("diffuse", '')
+
+    chi2 = ChiSquareTest(
+        domain = SphericalDomain(),
+        sample_func = sample_func,
+        pdf_func = pdf_func,
+        sample_dim = 3
+    )
+
+    result = chi2.run(0.1)
+    # chi2._dump_tables()
+    assert result

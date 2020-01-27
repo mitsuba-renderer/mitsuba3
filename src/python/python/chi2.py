@@ -1,6 +1,5 @@
 import mitsuba
 import enoki as ek
-from .math import rlgamma
 
 
 class ChiSquareTest:
@@ -241,6 +240,7 @@ class ChiSquareTest:
 
         from mitsuba.core import UInt32, Float64
         from mitsuba.core.math import chi2
+        from mitsuba.python.math import rlgamma
 
         if self.histogram is None:
             self.tabulate_histogram()
@@ -393,6 +393,7 @@ class SphericalDomain:
     'Maps between the unit sphere and a [cos(theta), phi] parameterization.'
 
     def bounds(self):
+        from mitsuba.core import ScalarBoundingBox2f
         return ScalarBoundingBox2f([-ek.pi, -1], [ek.pi, 1])
 
     def aspect(self):
@@ -414,6 +415,65 @@ class SphericalDomain:
     def map_backward(self, p):
         from mitsuba.core import Vector2f
         return Vector2f(ek.atan2(y=p.y, x=p.x), -p.z)
+
+
+#--------------------------------------
+#               Adapters
+#--------------------------------------
+
+
+def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
+    """
+    Adapter which permits testing BSDF distributions using the Chi^2 test.
+
+    Parameters
+    ----------
+    bsdf_type: string
+        Name of the BSDF plugin to instantiate.
+    extra: string
+        Additional XML used to specify the BSDF's parameters.
+    wi: array(3,)
+        Incoming direction, in local coordinates.
+    """
+
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f
+    from mitsuba.core import Float
+    from mitsuba.core.xml import load_string
+
+    def make_context(n):
+        si = SurfaceInteraction3f.zero(n)
+        si.wi = wi
+        ek.set_slices(si.wi, n)
+        si.wavelengths = []
+        return (si, BSDFContext())
+
+    def instantiate(args):
+        xml = """<bsdf version="2.0.0" type="%s">
+            %s
+        </bsdf>""" % (bsdf_type, extra)
+        return load_string(xml % args)
+
+    def sample_functor(sample, *args):
+        n = ek.slices(sample)
+        plugin = instantiate(args)
+        (si, ctx) = make_context(n)
+        bs, weight = plugin.sample(ctx, si, sample[0], [sample[1], sample[2]])
+
+        w = Float.full(1.0, ek.slices(weight))
+        w[ek.hmean(weight) == 0] = 0
+        print("w:", w)
+        print("bs.wo:", bs.wo)
+        return bs.wo, w
+
+    def pdf_functor(wo, *args):
+        n = ek.slices(wo)
+        plugin = instantiate(args)
+        (si, ctx) = make_context(n)
+        return plugin.pdf(ctx, si, wo)
+
+    return sample_functor, pdf_functor
+
+
 
 if __name__ == '__main__':
     mitsuba.set_variant('packet_rgb')

@@ -154,9 +154,9 @@ inline py::module create_submodule(py::module &m, const char *name) {
     return module;
 }
 
-#define MTS_PY_CHECK_ALIAS(Name, Module)              \
-    if (auto h = get_type_handle<Name>(); h) {        \
-        Module.attr(#Name) = h;                       \
+#define MTS_PY_CHECK_ALIAS(Type, Name)                \
+    if (auto h = get_type_handle<Type>(); h) {        \
+        m.attr(Name) = h;                             \
     }                                                 \
     else
 
