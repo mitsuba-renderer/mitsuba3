@@ -1,13 +1,14 @@
-import numpy as np
-import os
+import mitsuba
 import pytest
+import os
+import enoki as ek
 
-from mitsuba.scalar_rgb.core import Bitmap, Struct, ReconstructionFilter, float_dtype
-from mitsuba.scalar_rgb.render import ImageBlock
-from mitsuba.scalar_rgb.core.xml import load_string
+from mitsuba.python.test import variant_scalar
 
 
-def test01_construct():
+def test01_construct(variant_scalar):
+    from mitsuba.core.xml import load_string
+
     # With default reconstruction filter
     film = load_string("""<film version="2.0.0" type="hdrfilm"></film>""")
     assert film is not None
@@ -32,7 +33,10 @@ def test01_construct():
             <string name="pixel_format" value="brga"/>
         </film>""")
 
-def test02_crops():
+
+def test02_crops(variant_scalar):
+    from mitsuba.core.xml import load_string
+
     film = load_string("""<film version="2.0.0" type="hdrfilm">
             <integer name="width" value="32"/>
             <integer name="height" value="21"/>
@@ -44,9 +48,9 @@ def test02_crops():
             <string name="pixel_format" value="rgba"/>
         </film>""")
     assert film is not None
-    assert np.all(film.size() == [32, 21])
-    assert np.all(film.crop_size() == [11, 5])
-    assert np.all(film.crop_offset() == [2, 3])
+    assert ek.all(film.size() == [32, 21])
+    assert ek.all(film.crop_size() == [11, 5])
+    assert ek.all(film.crop_offset() == [2, 3])
     assert film.has_high_quality_edges()
 
     # Crop size doesn't adjust its size, so an error should be raised if the
@@ -63,12 +67,18 @@ def test02_crops():
             <integer name="crop_height" value="1"/>
         </film>""")
     assert film is not None
-    assert np.all(film.size() == [32, 21])
-    assert np.all(film.crop_size() == [2, 1])
-    assert np.all(film.crop_offset() == [30, 20])
+    assert ek.all(film.size() == [32, 21])
+    assert ek.all(film.crop_size() == [2, 1])
+    assert ek.all(film.crop_offset() == [30, 20])
+
 
 @pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
-def test03_develop(file_format, tmpdir):
+def test03_develop(variant_scalar, file_format, tmpdir):
+    from mitsuba.core.xml import load_string
+    from mitsuba.core import Bitmap, Struct, ReconstructionFilter, float_dtype
+    from mitsuba.render import ImageBlock
+    import numpy as np
+
     """Create a test image. Develop it to a few file format, each time reading
     it back and checking that contents are unchanged."""
     np.random.seed(12345 + ord(file_format[0]))
@@ -109,7 +119,7 @@ def test03_develop(file_format, tmpdir):
     film.develop()
 
     # Read back and check contents
-    other = Bitmap(filename).convert(Bitmap.PixelFormat.XYZAW, Struct.Type.Float, srgb_gamma=False)
+    other = Bitmap(filename).convert(Bitmap.PixelFormat.XYZAW, Struct.Type.Float32, srgb_gamma=False)
     img   = np.array(other, copy=False)
 
     if False:
@@ -120,17 +130,17 @@ def test03_develop(file_format, tmpdir):
         plt.subplot(1, 3, 2)
         plt.imshow(img[:, :, :3])
         plt.subplot(1, 3, 3)
-        plt.imshow(np.sum(np.abs(img[:, :, :3] - contents[:, :, :3]), axis=2), cmap='coolwarm')
+        plt.imshow(ek.sum(ek.abs(img[:, :, :3] - contents[:, :, :3]), axis=2), cmap='coolwarm')
         plt.colorbar()
         plt.show()
 
     if file_format == "exr":
-        assert np.allclose(img, contents, atol=1e-5)
+        assert ek.allclose(img, contents, atol=1e-5)
     else:
         if file_format == "rgbe":
-            assert np.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-2), \
+            assert ek.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-2), \
                    '\n{}\nvs\n{}\n'.format(img[:4, :4, :3], contents[:4, :4, :3])
         else:
-            assert np.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-5)
+            assert ek.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-5)
         # Alpha channel was ignored, alpha and weights should default to 1.0.
-        assert np.allclose(img[:, :, 3:5], 1.0, atol=1e-6)
+        assert ek.allclose(img[:, :, 3:5], 1.0, atol=1e-6)
