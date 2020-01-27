@@ -65,7 +65,7 @@ public:
         mi.t                  = -enoki::log(1 - u) / avg_sigmat;
         mi.p                  = ray(mi.t);
         mi.sh_frame           = Frame3f(ray.d);
-        mi.wi                 = Vector3f(0.0f, 0.0f, 1.0f);
+        mi.wi                 = -ray.d;
         mi.time               = ray.time;
         mi.wavelengths        = ray.wavelengths;
         mi.medium             = this;

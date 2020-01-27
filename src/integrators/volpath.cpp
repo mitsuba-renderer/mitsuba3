@@ -83,7 +83,7 @@ public:
                 auto phase = mi.medium->phase_function();
                 masked(phase, !active_medium) = nullptr;
                 auto [wo, phase_pdf] = phase->sample(phase_ctx, mi, sampler->next_2d(active_medium), active_medium);
-                Ray3f new_ray  = mi.spawn_ray(mi.to_world(wo));
+                Ray3f new_ray  = mi.spawn_ray(wo);
                 new_ray.mint = 0.0f;
                 new_ray.maxt = math::Infinity<ScalarFloat>;
 

@@ -39,7 +39,7 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     mi.p           = Point3f(0.0f, 0.0f, 0.0f);
 
     mi.sh_frame    = Frame3f(ray.d);
-    mi.wi          = Vector3f(0.0f, 0.0f, 1.0f);
+    mi.wi          = -ray.d;
     mi.time        = ray.time;
     mi.wavelengths = ray.wavelengths;
     mi.medium      = nullptr;
