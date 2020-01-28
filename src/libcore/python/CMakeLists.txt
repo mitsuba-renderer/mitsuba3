@@ -80,4 +80,4 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
   target_compile_options(core_ext PRIVATE -fvisibility=hidden)
 endif()
 
-target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render tbb)
+target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render tbb asmjit)

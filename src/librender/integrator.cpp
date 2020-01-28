@@ -1,4 +1,5 @@
 #include <thread>
+#include <mutex>
 
 #include <enoki/morton.h>
 #include <mitsuba/core/profiler.h>
