@@ -1,7 +1,6 @@
 set(INC_DIR "../../include/mitsuba/render")
 
 set(LIBRENDER_EXTRA_SRC "")
-set(LIBRENDER_EXTRA_LIB "")
 
 if (MTS_ENABLE_OPTIX)
   # Glob up PTX files
@@ -27,7 +26,6 @@ if (MTS_ENABLE_OPTIX)
     PRE_BUILD VERBATIM)
 
   set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h)
-  set(LIBRENDER_EXTRA_LIB optix)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
@@ -64,6 +62,7 @@ add_library(mitsuba-render-obj OBJECT
   srgb.cpp         ${INC_DIR}/srgb.h
   ${LIBRENDER_EXTRA_SRC}
 )
+
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
 set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-render-obj mitsuba-render PROPERTIES FOLDER mitsuba-render)
@@ -75,7 +74,7 @@ target_link_libraries(mitsuba-render
 )
 
 # Link to Intel's Thread Building Blocks
-target_link_libraries(mitsuba-render PRIVATE tbb ${LIBRENDER_EXTRA_LIB})
+target_link_libraries(mitsuba-render PRIVATE tbb)
 
 # Link to libcore
 target_link_libraries(mitsuba-render PUBLIC mitsuba-core)
@@ -88,6 +87,16 @@ if (MTS_ENABLE_EMBREE)
       target_link_libraries(mitsuba-render PRIVATE embree)
   endif()
   add_dist(embree)
+endif()
+
+if (MTS_ENABLE_OPTIX)
+  target_include_directories(mitsuba-render-obj PRIVATE ${MTS_OPTIX_PATH}/include)
+  target_link_libraries(mitsuba-render PRIVATE optix)
+  target_link_directories(mitsuba-render PRIVATE ${MTS_OPTIX_PATH}/lib64)
+  set_target_properties(mitsuba-render PROPERTIES
+    INSTALL_RPATH ${MTS_OPTIX_PATH}/lib64
+    BUILD_RPATH ${MTS_OPTIX_PATH}/lib64
+  )
 endif()
 
 # Copy to 'dist' directory
