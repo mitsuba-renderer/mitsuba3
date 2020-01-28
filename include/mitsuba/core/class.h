@@ -2,6 +2,7 @@
 
 #include <mitsuba/mitsuba.h>
 #include <string>
+#include <functional>
 
 NAMESPACE_BEGIN(mitsuba)
 

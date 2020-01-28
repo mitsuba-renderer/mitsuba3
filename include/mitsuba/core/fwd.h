@@ -201,7 +201,7 @@ template <typename Float_> struct CoreAliases {
      */
     using Array1f        = Array<Float, 1>;
     using Array3f        = Array<Float, 3>;
-    using DynamicBuffer  = DynamicBuffer<Float>;
+    using DynamicBuffer  = mitsuba::DynamicBuffer<Float>;
 };
 
 //! @}
