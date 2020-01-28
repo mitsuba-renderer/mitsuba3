@@ -81,7 +81,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Film);
     MTS_PY_IMPORT(fresnel);
     MTS_PY_IMPORT(ImageBlock);
-    // MTS_PY_IMPORT(Integrator);
+    MTS_PY_IMPORT(Integrator);
     MTS_PY_IMPORT(Interaction);
     MTS_PY_IMPORT(SurfaceInteraction);
     MTS_PY_IMPORT_SUBMODULE(mueller);

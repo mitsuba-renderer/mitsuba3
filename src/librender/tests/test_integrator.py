@@ -1,35 +1,13 @@
-"""Tests common to all integrator implementations."""
-
-import numpy as np
+# """Tests common to all integrator implementations."""
 import os
-import pytest
-
 import mitsuba
-from mitsuba.scalar_rgb.core import Bitmap, Struct
-from mitsuba.scalar_rgb.core.xml import load_string as load_string_scalar_rgb
-from mitsuba.test.scenes import SCENES, make_integrator
+import pytest
+import enoki as ek
+import numpy as np
+from enoki.dynamic import Float32 as Float
 
-import importlib
-
-def get_modes_load_string_func():
-    load_string_list = []
-
-    def add_load_string(mode):
-        try:
-            f = importlib.import_module('mitsuba.%s.core.xml' % mode).load_string
-            load_string_list.append((mode, f))
-        except ImportError:
-            pass
-
-    add_load_string('scalar_rgb')
-    add_load_string('packet_rgb')
-    add_load_string('gpu_rgb')
-
-    return load_string_list
-
-modes = [
-    'load_string_func', get_modes_load_string_func()
-]
+from mitsuba.python.test import variant_scalar, variants_cpu_rgb, variants_all_rgb
+from mitsuba.python.test.scenes import SCENES
 
 integrators = [
     'int_name', [
@@ -39,7 +17,13 @@ integrators = [
     ]
 ]
 
-parameters = [ (integrator, mode[0], mode[1]) for integrator in integrators[1] for mode in modes[1] ]
+def make_integrator(kind, xml = ""):
+    from mitsuba.core.xml import load_string
+    integrator = load_string("<integrator version='2.0.0' type='%s'>"
+                             "%s</integrator>" % (kind, xml))
+    assert integrator is not None
+    return integrator
+
 
 scene_i = 0
 def _save(film, int_name, suffix=''):
@@ -52,9 +36,17 @@ def _save(film, int_name, suffix=''):
     print('Saved debug image to: ' + fname)
     scene_i += 1
 
-def check_scene(int_name, scene_name, mode_name, load_string_func = load_string_scalar_rgb, is_empty = False):
-    integrator = make_integrator(int_name, "", load_string_func)
-    scene = SCENES[scene_name]['factory'](load_string_func=load_string_func)
+
+def check_scene(int_name, scene_name, is_empty = False):
+    from mitsuba.core.xml import load_string
+    from mitsuba.core import Bitmap, Struct
+
+    variant_name = mitsuba.variant()
+
+    print("variant_name:", variant_name)
+
+    integrator = make_integrator(int_name, "")
+    scene = SCENES[scene_name]['factory']()
     integrator_type = {
         'direct': 'direct',
         'depth':  'depth',
@@ -66,23 +58,23 @@ def check_scene(int_name, scene_name, mode_name, load_string_func = load_string_
     film = sensor.film()
 
     status = integrator.render(scene, sensor)
-    assert status, "Rendering ({}) failed".format(mode_name)
+    assert status, "Rendering ({}) failed".format(variant_name)
 
     if False:
-        _save(film, int_name, suffix='_' + mode_name)
+        _save(film, int_name, suffix='_' + variant_name)
 
     converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     values    = np.array(converted, copy=False)
     means     = np.mean(values, axis=(0, 1))
     # Very noisy images, so we add a tolerance
-    assert np.allclose(means, avg, rtol=5e-2), \
-           "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, mode_name)
+    assert ek.allclose(means, avg, rtol=5e-2), \
+           "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, variant_name)
 
     return np.array(film.bitmap(), copy=True)
 
 
 @pytest.mark.parametrize(*integrators)
-def test01_create(int_name):
+def test01_create(variants_all_rgb, int_name):
     integrator = make_integrator(int_name)
     assert integrator is not None
 
@@ -111,27 +103,29 @@ def test01_create(int_name):
             """)
 
 
-@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
-def test02_render_empty_scene(int_name, mode_name, load_string_func):
-    check_scene(int_name, 'empty', mode_name, load_string_func, is_empty=True)
-
-@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
-def test03_render_teapot(int_name, mode_name, load_string_func):
-    check_scene(int_name, 'teapot', mode_name, load_string_func)
-
-@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
-def test04_render_box(int_name, mode_name, load_string_func):
-    check_scene(int_name, 'box', mode_name, load_string_func)
-
-@pytest.mark.parametrize("int_name, mode_name, load_string_func", parameters)
-def test05_render_museum_plane(int_name, mode_name, load_string_func):
-    check_scene(int_name, 'museum_plane', mode_name, load_string_func)
-
-
-@pytest.mark.skipif(mitsuba.DEBUG, reason="Timeout is unreliable in debug mode.")
 @pytest.mark.parametrize(*integrators)
-def test06_render_timeout(int_name):
+def test02_render_empty_scene(variants_all_rgb, int_name):
+    check_scene(int_name, 'empty', is_empty=True)
+
+@pytest.mark.parametrize(*integrators)
+def test03_render_teapot(variants_all_rgb, int_name):
+    check_scene(int_name, 'teapot')
+
+@pytest.mark.parametrize(*integrators)
+def test04_render_box(variants_all_rgb, int_name):
+    check_scene(int_name, 'box')
+
+@pytest.mark.parametrize(*integrators)
+def test05_render_museum_plane(variants_all_rgb, int_name):
+    check_scene(int_name, 'museum_plane')
+
+
+@pytest.mark.parametrize(*integrators)
+def test06_render_timeout(variants_cpu_rgb, int_name):
     from timeit import timeit
+
+    if mitsuba.core.DEBUG:
+        pytest.skip("Timeout is unreliable in debug mode.")
 
     # Very long rendering job, but interrupted by a short timeout
     timeout = 0.5
@@ -140,20 +134,19 @@ def test06_render_timeout(int_name):
     scene = SCENES['teapot']['factory'](spp=100000)
     sensor = scene.sensors()[0]
 
-    def wrapped_scalar():
-        assert integrator.render(scene, sensor) is True
-    def wrapped_vector():
+    def wrapped():
         assert integrator.render(scene, sensor) is True
 
-    effective_s = timeit(wrapped_scalar, number=1)
-    effective_v = timeit(wrapped_vector, number=1)
+    effective = timeit(wrapped, number=1)
 
     # Check that timeout is respected +/- 0.5s.
-    assert np.allclose(timeout, effective_s, atol=0.5)
-    assert np.allclose(timeout, effective_v, atol=0.5)
+    assert ek.allclose(timeout, effective, atol=0.5)
 
 
 def make_reference_renders():
+    mitsuba.set_variant('scalar_rgb')
+    from mitsuba.core import Bitmap, Struct
+
     """Produces reference images for the test scenes, printing the per-channel
     average pixel values to update `scenes.SCENE_AVERAGES` when needed."""
     integrators = {

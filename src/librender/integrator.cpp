@@ -187,6 +187,8 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         }
     } else if constexpr (is_array_v<Float> && !is_cuda_array_v<Float>) {
         for (auto [index, active] : range<UInt32>(pixel_count * sample_count)) {
+            if (should_stop())
+                break;
             Point2u pos = enoki::morton_decode<Point2u>(index / UInt32(sample_count));
             active &= !any(pos >= block->size());
             pos += block->offset();

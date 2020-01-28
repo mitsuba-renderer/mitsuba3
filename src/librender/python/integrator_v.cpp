@@ -10,7 +10,7 @@
 #  define MTS_HANDLE_SIGINT 0
 #endif
 
-#if defined(MTS_HANDLE_SIGINT)
+#if MTS_HANDLE_SIGINT
 #include <signal.h>
 
 /// Current signal handler
@@ -123,7 +123,7 @@ MTS_PY_EXPORT(Integrator) {
             [&](Integrator *integrator, Scene *scene, Sensor *sensor) {
                 py::gil_scoped_release release;
 
-#if defined(MTS_HANDLE_SIGINT)
+#if MTS_HANDLE_SIGINT
                 // Install new signal handler
                 sigint_handler = [integrator]() {
                     integrator->cancel();
@@ -142,7 +142,7 @@ MTS_PY_EXPORT(Integrator) {
 
                 bool res = integrator->render(scene, sensor);
 
-#if defined(MTS_HANDLE_SIGINT)
+#if MTS_HANDLE_SIGINT
                 // Restore previous signal handler
                 signal(SIGINT, sigint_handler_prev);
 #endif

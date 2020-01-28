@@ -45,3 +45,21 @@ def variants_vec(request):
     except:
         pytest.skip("%s mode not enabled" % request.param)
     return request.param
+
+
+@pytest.fixture(params = ['scalar_rgb', 'packet_rgb'])
+def variants_cpu_rgb(request):
+    try:
+        mitsuba.set_variant(request.param)
+    except:
+        pytest.skip("%s mode not enabled" % request.param)
+    return request.param
+
+
+@pytest.fixture(params = ['scalar_rgb', 'packet_rgb', 'gpu_rgb'])
+def variants_all_rgb(request):
+    try:
+        mitsuba.set_variant(request.param)
+    except:
+        pytest.skip("%s mode not enabled" % request.param)
+    return request.param
