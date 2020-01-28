@@ -91,6 +91,9 @@ const Float *cie1931_z_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
 void cie_alloc() {
 #if defined(MTS_ENABLE_OPTIX)
+    static bool cie_alloc_done = false;
+    if (cie_alloc_done)
+        return;
     const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
     Float *src = (Float *) cuda_managed_malloc(size);
     memcpy(src, cie1931_tbl, size);
@@ -98,8 +101,7 @@ void cie_alloc() {
     cie1931_x_data = src;
     cie1931_y_data = src + MTS_CIE_SAMPLES;
     cie1931_z_data = src + MTS_CIE_SAMPLES * 2;
-#else
-    ;
+    cie_alloc_done = true;
 #endif
 }
 

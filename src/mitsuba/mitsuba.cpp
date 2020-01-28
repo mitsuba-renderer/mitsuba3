@@ -91,7 +91,6 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
     Profiler::static_initialization();
-    cie_alloc();
 
     // Ensure that the mitsuba-render shared library is loaded
     librender_nop();
@@ -133,6 +132,9 @@ int main(int argc, char *argv[]) {
             arg_define = arg_define->next();
         }
         std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
+        if (string::starts_with(mode, "gpu"))
+            cie_alloc();
+
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
         // Initialize Intel Thread Building Blocks with the requested number of threads

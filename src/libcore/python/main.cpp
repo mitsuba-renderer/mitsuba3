@@ -66,7 +66,6 @@ PYBIND11_MODULE(core_ext, m) {
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
-    cie_alloc();
 
     // Append the mitsuba directory to the FileResolver search path list
     ref<FileResolver> fr = Thread::thread()->file_resolver();

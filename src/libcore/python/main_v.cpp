@@ -240,6 +240,9 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         m.attr("USE_EMBREE")  = false;
     #endif
 
+    if constexpr (is_cuda_array_v<Float>)
+        cie_alloc();
+
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(BoundingBox);
     MTS_PY_IMPORT(BoundingSphere);
