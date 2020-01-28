@@ -313,8 +313,7 @@ const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
     return m_class;
 }
 
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class
-    = BitmapTexture<Float, Spectrum>::m_class;
+MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
+MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 
 NAMESPACE_END(mitsuba)
