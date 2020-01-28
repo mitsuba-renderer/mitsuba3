@@ -90,7 +90,7 @@ protected:
 template <typename Scalar_> struct Resampler {
     using Scalar = Scalar_;
     using Float = float;
-    using ReconstructionFilter = ReconstructionFilter<Float, Color<Float, 3>>;
+    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
      * \brief Create a new Resampler object that transforms between the specified resolutions

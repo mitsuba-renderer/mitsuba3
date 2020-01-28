@@ -5,7 +5,6 @@
 MTS_PY_EXPORT(BoundingSphere) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()
 
-
     MTS_PY_CHECK_ALIAS(BoundingSphere3f, "BoundingSphere3f") {
         py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere))
             .def(py::init<>(), D(BoundingSphere, BoundingSphere))
@@ -15,11 +14,13 @@ MTS_PY_EXPORT(BoundingSphere) {
             .def("contains",
                 [](const BoundingSphere3f &self, const Point3f &p, bool strict) {
                     return strict ? self.template contains<true>(p)
-                                    : self.template contains<false>(p);
+                                  : self.template contains<false>(p);
                 }, D(BoundingSphere, contains), "p"_a, "strict"_a = false)
             .def("expand", &BoundingSphere3f::expand, D(BoundingSphere, expand))
-            .def("ray_intersect", &BoundingSphere3f::template ray_intersect<Ray3f>,
-                D(BoundingSphere, ray_intersect))
+            .def("ray_intersect",
+                [](const BoundingSphere3f &self, const Ray3f &ray) {
+                    return self.template ray_intersect(ray);
+                }, D(BoundingSphere, ray_intersect), "ray"_a)
             .def(py::self == py::self)
             .def(py::self != py::self)
             .def_readwrite("center", &BoundingSphere3f::center)

@@ -958,13 +958,13 @@ private:
 NAMESPACE_END(detail)
 
 Struct::Struct(bool pack, Struct::ByteOrder byte_order)
-    : m_pack(pack), m_byte_order(byte_order) {
+    : Object(), m_pack(pack), m_byte_order(byte_order) {
     if (m_byte_order == Struct::ByteOrder::HostByteOrder)
         m_byte_order = host_byte_order();
 }
 
 Struct::Struct(const Struct &s)
-    : m_fields(s.m_fields), m_pack(s.m_pack),
+    : Object(), m_fields(s.m_fields), m_pack(s.m_pack),
       m_byte_order(s.m_byte_order) { }
 
 size_t Struct::size() const {

@@ -84,6 +84,7 @@ public:
     MTS_INLINE auto face_indices(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
         using Result = uint32_array_t<Index3>;
+        ENOKI_MARK_USED(active);
 
         if constexpr (!is_array_v<Index>) {
             return load<Result>(face(index));
@@ -104,6 +105,8 @@ public:
     MTS_INLINE auto vertex_position(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
         using Result = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
+        ENOKI_MARK_USED(active);
+
         if constexpr (!is_array_v<Index>) {
             return load<Result>(vertex(index));
         } else if constexpr (!is_cuda_array_v<Index>) {
@@ -123,6 +126,8 @@ public:
     MTS_INLINE auto vertex_normal(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
         using Result = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
+        ENOKI_MARK_USED(active);
+
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_normal_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {
@@ -141,6 +146,8 @@ public:
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index, mask_t<Index> active = true) const {
         using Result = Point<replace_scalar_t<Index, ScalarFloat>, 2>;
+        ENOKI_MARK_USED(active);
+
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_texcoord_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {

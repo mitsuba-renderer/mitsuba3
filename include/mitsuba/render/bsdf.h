@@ -278,7 +278,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER BSDF : public Object {
 public:
-    MTS_IMPORT_TYPES();
+    MTS_IMPORT_TYPES()
 
     /**
      * \brief Importance sample the BSDF model

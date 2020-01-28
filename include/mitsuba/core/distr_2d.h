@@ -869,6 +869,7 @@ protected:
             return fmadd(v0, w0, v1 * w1);
         } else {
             ENOKI_MARK_USED(param_weight);
+            ENOKI_MARK_USED(size);
             return gather<Float>(data, i0, active);
         }
     }
@@ -1030,6 +1031,7 @@ protected:
                                                  mask_t<Float> active) const {
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
+        ENOKI_MARK_USED(slice_offset);
 
         // Avoid degeneracies at the extrema
         sample = clamp(sample, math::Epsilon<Float>, math::OneMinusEpsilon<Float>);

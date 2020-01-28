@@ -38,8 +38,8 @@ template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct BSDFSample3;
 
 template <typename Float_, typename Spectrum_> struct RenderAliases {
-    using Float    = Float_;
-    using Spectrum = Spectrum_;
+    using Float                  = Float_;
+    using Spectrum               = Spectrum_;
 
     using Wavelength             = wavelength_t<Spectrum>;
     using UnpolarizedSpectrum    = depolarize_t<Spectrum>;

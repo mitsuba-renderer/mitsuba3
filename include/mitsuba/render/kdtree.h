@@ -2065,6 +2065,7 @@ public:
     MTS_INLINE std::pair<Mask, Float> ray_intersect(const Ray3f &ray,
                                                     Float *cache,
                                                     Mask active) const {
+        ENOKI_MARK_USED(active);
         if constexpr (!is_array_v<Float>)
             return ray_intersect_scalar<ShadowRay>(ray, cache);
         else

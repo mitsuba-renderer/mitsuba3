@@ -22,7 +22,7 @@ class MTS_EXPORT_CORE Bitmap : public Object {
 public:
     using Float = float;
     MTS_IMPORT_CORE_TYPES()
-    using ReconstructionFilter = ReconstructionFilter<Float, Color<Float, 3>>;
+    using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
      * This enumeration lists all pixel format types supported
@@ -652,6 +652,7 @@ void accumulate_2d(ConstT source,
 
     if constexpr (std::is_pointer_v<T>) {
         constexpr Value maxval = std::numeric_limits<Value>::max();
+        ENOKI_MARK_USED(maxval);
 
         source += (source_offset.x() + source_offset.y() * (size_t) source_size.x()) * channel_count;
         target += (target_offset.x() + target_offset.y() * (size_t) target_size.x()) * channel_count;

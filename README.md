@@ -94,30 +94,44 @@ which used ``camelCase`` everywhere). We've essentially imported Python's [PEP
 specify a recommended naming convention), ensuring that code that uses
 functionality from both languages looks natural.
 
-## Compiling
+## Compiling on Linux
 
-Compiling from scratch requires CMake and a recent version of XCode on Mac,
-Visual Studio 2017 on Windows, or Clang on Linux.
-The minimum supported Python version is **Python 3.6**. 
+Please install the following prerequisites (e.g. on Ubuntu):
 
-On Linux and MacOS, compiling should be as simple as
+```
+sudo libxrandr-dev libxinerama-dev libxcursor-dev libz-dev libpng-dev libjpeg-dev cmake ninja-build
+```
+
+Also, note that Mitsuba requires a somewhat recent version of Python (the
+minimum is **Python 3.6**).
+
+Following this, compiling should be as simple as
 
 ```bash
 git clone --recursive https://github.com/mitsuba-renderer/mitsuba2
 cd mitsuba2
-
-# Build using CMake & GNU Make (legacy)
-cmake -D MTS_USE_OPTIX=ON . # include differentiable rendering support, or:
-cmake . # do not include differentiable rendering support.
-make -j 4
-
-# OR: Build using CMake & Ninja (recommended, must install [Ninja](https://ninja-build.org/) first)
 cmake -GNinja .
 ninja
 ```
 
-On Windows, open the generated ``mitsuba.sln`` file after running
-``cmake .`` and proceed building as usual from within Visual Studio.
+## Compiling on MacOS
+
+On MacOS, you will need to install XCode, CMake, and
+[Ninja](https://ninja-build.org/). Following this, compiling should be as
+simple as
+
+```bash
+git clone --recursive https://github.com/mitsuba-renderer/mitsuba2
+cd mitsuba2
+cmake -GNinja .
+ninja
+```
+
+## Compiling on Windows
+
+Compilation on Windows requires Visual Studio 2019. Open the generated
+``mitsuba.sln`` file after running ``cmake .`` and proceed building as usual
+from within Visual Studio.
 
 ## Running Mitsuba
 
