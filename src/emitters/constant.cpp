@@ -31,7 +31,7 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        return m_radiance->eval(si, active);
+        return unpolarized(Spectrum(m_radiance->eval(si, active)));
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -49,7 +49,7 @@ public:
 
         return std::make_pair(Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
                                     Frame3f(-v0).to_world(v1), time, wavelengths),
-                              weight * (4.f * sqr(math::Pi<Float> * m_bsphere.radius)));
+                              unpolarized(Spectrum(weight)) * (4.f * sqr(math::Pi<Float> * m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -73,7 +73,7 @@ public:
 
         return std::make_pair(
             ds,
-            m_radiance->eval(si, active) / ds.pdf
+            unpolarized(Spectrum(m_radiance->eval(si, active))) / ds.pdf
         );
     }
 

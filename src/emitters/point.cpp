@@ -40,7 +40,7 @@ public:
                  warp::square_to_uniform_sphere(dir_sample),
                  time, wavelengths);
 
-        return { ray, spec_weight * (4.f * math::Pi<Float>) };
+        return { ray, unpolarized(Spectrum(spec_weight)) * (4.f * math::Pi<Float>) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -63,10 +63,8 @@ public:
         SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
-        UnpolarizedSpectrum spec = m_intensity->eval(si, active) *
-                        (inv_dist * inv_dist);
-
-        return { ds, spec };
+        Spectrum spec = m_intensity->eval(si, active) * (inv_dist * inv_dist);
+        return { ds, unpolarized(spec) };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {

@@ -9,6 +9,7 @@
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
+#include <mitsuba/render/mueller.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -77,6 +78,21 @@ constexpr depolarize_t<T> depolarize(const T& spectrum) {
     else
         // First entry of the Mueller matrix is the unpolarized spectrum
         return spectrum.x().x();
+}
+
+/**
+ * Turn a spectrum into a Mueller matrix representation that only has a non-zero
+ * (1,1) entry. For all non-polarized modes, this is the identity function.
+ */
+template <typename T>
+constexpr auto unpolarized(const T& spectrum) {
+    if constexpr (is_polarized_v<T>) {
+        T result = zero<T>();
+        result(0, 0) = spectrum.x().x();
+        return result;
+    } else {
+        return spectrum;
+    }
 }
 
 //! @}

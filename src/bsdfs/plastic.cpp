@@ -296,7 +296,7 @@ public:
             masked(result, sample_diffuse) = diff;
         }
 
-        return { bs, result };
+        return { bs, unpolarized(result) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -321,7 +321,7 @@ public:
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *
                 m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
 
-        return select(active, diff, zero<Spectrum>());
+        return select(active, unpolarized(Spectrum(diff)), zero<Spectrum>());
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,

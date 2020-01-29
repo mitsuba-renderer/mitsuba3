@@ -304,7 +304,7 @@ public:
 
         bs.pdf *= abs(dwh_dwo);
 
-        return { bs, select(active, weight, 0.f) };
+        return { bs, select(active, unpolarized(weight), 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -371,7 +371,7 @@ public:
                 abs(value * sqr(factor));
         }
 
-        return result;
+        return unpolarized(result);
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,

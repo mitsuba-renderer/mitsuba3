@@ -165,7 +165,7 @@ public:
         if (any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
-        return { bs, select(active, weight, 0.f) };
+        return { bs, select(active, unpolarized(weight), 0.f) };
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
