@@ -559,11 +559,11 @@ endif()
 if(NOT WIN32)
   string(ASCII 27 Esc)
   set(ColorReset "${Esc}[m")
-  set(BoldRed     "${Esc}[1;31m")
+  set(BoldRed "${Esc}[1;31m")
 endif()
 
 if (MITSUBA_COPIED_CONFIG_FILE)
-  message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration file. "
-          "You will probably want to edit this file to specify the "
+  message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
+          "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
 endif()

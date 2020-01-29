@@ -137,12 +137,23 @@ def set_variant(value):
     if variant() == value:
         return
 
-    _tls.modules = {
-        'mitsuba.core': (_import_module('mitsuba.core_ext'),
-                         _import_module('mitsuba.core_' + value + '_ext')),
-        'mitsuba.render': (_import_module('mitsuba.render_ext'),
-                           _import_module('mitsuba.render_' + value + '_ext'))
-    }
+    modules = None
+    try:
+        modules = {
+            'mitsuba.core': (_import_module('mitsuba.core_ext'),
+                             _import_module('mitsuba.core_' + value + '_ext')),
+            'mitsuba.render': (_import_module('mitsuba.render_ext'),
+                               _import_module('mitsuba.render_' + value + '_ext'))
+        }
+    except ImportError as e:
+        if not str(e).startswith('No module named'):
+            raise
+        pass
+
+    if modules is None:
+        raise ImportError('Mitsuba variant "%s" not found.' % value)
+
+    _tls.modules = modules
     _tls.variant = value
 
 
