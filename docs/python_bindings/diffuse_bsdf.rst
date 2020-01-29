@@ -11,14 +11,14 @@ The BSDF class need to implement the following 3 methods: :code:`sample`, :code:
 
 .. literalinclude:: ../examples/04_diffuse_bsdf/diffuse_bsdf.py
    :language: python
-   :lines: 12-58
+   :lines: 13-63
 
 After defining this new BSDF class, we have to register it as a plugin.
 This allows Mitsuba to instantiate this new BSDF when loading a scene:
 
 .. literalinclude:: ../examples/04_diffuse_bsdf/diffuse_bsdf.py
    :language: python
-   :lines: 61
+   :lines: 65
 
 The :code:`register_bsdf` function takes the name of our new plugin and a function to construct new instances.
 After that, we can use our new BSDF in a scene by specifying
@@ -31,4 +31,4 @@ The scene is then rendered by calling the standard :code:`render` function:
 
 .. literalinclude:: ../examples/04_diffuse_bsdf/diffuse_bsdf.py
    :language: python
-   :lines: 64-76
+   :lines: 70-80

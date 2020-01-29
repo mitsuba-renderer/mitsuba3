@@ -49,13 +49,14 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
     def("__repr__", [](const Class &c) { std::ostringstream oss; oss << c; return oss.str(); } )
 
 /// Shorthand notation for defining object registration routine for trampoline objects
+/// WARNING: this will leak out memory as the constructed py::object will never be destroyed
 #define MTS_PY_REGISTER_OBJECT(Function, Name)                                                     \
     m.def(Function,                                                                                \
-        [](const std::string &name, std::function<py::object(const Properties &)> &constructor) {  \
+        [](const std::string &name, std::function<py::object(const Properties *)> &constructor) {  \
             (void) new Class(name, #Name, ::mitsuba::detail::get_variant<Float, Spectrum>(),       \
                             [=](const Properties &p) {                                             \
-                                py::object o = constructor(p);                                     \
-                                return o.cast<ref<Name>>();                                        \
+                                py::object o = constructor(&p);                                    \
+                                return o.release().cast<ref<Name>>();                              \
                             },                                                                     \
                             nullptr);                                                              \
             PluginManager::instance()->register_python_plugin(name);                               \
