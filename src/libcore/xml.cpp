@@ -345,7 +345,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
     if (version == Version(MTS_VERSION_MAJOR, MTS_VERSION_MINOR, MTS_VERSION_PATCH))
         return;
 
-    Log(Info, "\"%s\": upgrading document from v%s to v%s ..", src.id, version,
+    Log(Info, "\"%s\": in-memory version upgrade (v%s -> v%s) ..", src.id, version,
         Version(MTS_VERSION));
 
     if (version < Version(2, 0, 0)) {

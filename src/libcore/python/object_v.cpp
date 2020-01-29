@@ -3,11 +3,11 @@
 #include <mitsuba/core/frame.h>
 
 #define GET_ATTR(T)                                                                                \
-    if (type == typeid(T))                                                                         \
+    if (strcmp(type.name(), typeid(T).name()) == 0)                                                \
        return py::cast((T *) ptr, py::return_value_policy::reference_internal, parent)
 
 #define SET_ATTR(T)                                                                                \
-    if (type == typeid(T)) {                                                                       \
+    if (strcmp(type.name(), typeid(T).name()) == 0) {                                              \
         *((T *) ptr) = py::cast<T>(handle);                                                        \
         return;                                                                                    \
     }
@@ -22,6 +22,7 @@ MTS_PY_EXPORT(Object) {
         GET_ATTR(DynamicBuffer<UInt32>);
         GET_ATTR(Vector2i);
         GET_ATTR(Vector2u);
+        GET_ATTR(Color1f);
         GET_ATTR(Color3f);
         GET_ATTR(Point3f);
         GET_ATTR(Vector3f);
@@ -40,6 +41,7 @@ MTS_PY_EXPORT(Object) {
             GET_ATTR(ScalarUInt32);
             GET_ATTR(ScalarVector2i);
             GET_ATTR(ScalarVector2u);
+            GET_ATTR(ScalarColor1f);
             GET_ATTR(ScalarColor3f);
             GET_ATTR(ScalarPoint3f);
             GET_ATTR(ScalarVector3f);
