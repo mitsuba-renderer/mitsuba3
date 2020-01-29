@@ -6,11 +6,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resource
 # ---------- Setup mitsuba.conf ----------
 
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf)
-  message(WARNING "Copying template mitsuba.conf to root directory")
   file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
   file(RENAME mitsuba.conf.template mitsuba.conf)
+  set(MITSUBA_COPIED_CONFIG_FILE 1)
 endif()
+
 
 # ---------- Detect renderer variants ----------
 
@@ -553,4 +554,16 @@ if (Sphinx_FOUND)
       ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR}" "${SPHINX_OUTPUT_DIR}"
       COMMENT "Building HTML documentation with Sphinx"
       USES_TERMINAL)
+endif()
+
+if(NOT WIN32)
+  string(ASCII 27 Esc)
+  set(ColorReset "${Esc}[m")
+  set(BoldRed     "${Esc}[1;31m")
+endif()
+
+if (MITSUBA_COPIED_CONFIG_FILE)
+  message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration file. "
+          "You will probably want to edit this file to specify the "
+          "desired configurations before starting to compile.${ColorReset}")
 endif()
