@@ -70,14 +70,11 @@ Smooth plastic material (:monosp:`plastic`)
 This plugin describes a smooth plastic-like material with internal scattering. It uses the Fresnel
 reflection and transmission coefficients to provide direction-dependent specular and diffuse
 components. Since it is simple, realistic, and fast, this model is often a better choice than the
-:ref:`phong`, :ref:`ward`, and :ref:`roughplastic` plugins when rendering smooth plastic-like
-materials. For convenience, this model allows to specify IOR values either numerically, or based on
-a list of known materials (see :ref:`ior-table-list` for an overview).
-Note that this plugin is quite similar to what one would get by applying the :ref:`coating` plugin
-to the :ref:`diffuse` material. The main difference is that this plugin is significantly faster,
-while at the same time causing less variance. Furthermore, it accounts for multiple interreflections
-inside the material (read on for details), which avoids a serious energy loss problem of the
-aforementioned plugin combination.
+:ref:`bsdf-roughplastic` plugins when rendering smooth plastic-like materials. For convenience, this
+model allows to specify IOR values either numerically, or based on a list of known materials
+(see Table :num:`ior-table-list` for an overview). This plugin accounts for multiple
+interreflections inside the material (read on for details), which avoids a serious energy loss
+problem of the aforementioned plugin combination.
 
 The following XML snippet describes a shiny material whose diffuse reflectance is specified using
 sRGB:
@@ -121,12 +118,12 @@ sRGB:
 .. subfigend::
     :width: 0.49
     :alt: An illustration of the scattering events that are internally handled by this plugin
-    :label: plastic-nonlinear
+    :label: fig-plastic-nonlinear
 
 When asked to do so, this model can account for subtle nonlinear color shifts due to internal
-scattering processes. The above images show a textured object first rendered using :ref:`diffuse`,
-then :ref:`plastic` with the default parameters, and finally using :ref:`plastic` and support for
-nonlinear color shifts.
+scattering processes. The above images show a textured object first rendered using :ref:`bsdf-diffuse`,
+then :ref:`bsdf-plastic` with the default parameters, and finally using :ref:`bsdf-plastic` and
+support for nonlinear color shifts.
 
 +++++++++++++++++++
 Internal scattering
@@ -174,14 +171,14 @@ fit this description perfectly well.
 Given illumination that is incident upon such a material, a portion
 of the illumination is specularly reflected at the material
 boundary, which results in a sharp reflection in the mirror direction
-(:ref:`plastic-intscat_a`).
+(:ref:`fig-plastic-intscat_a`).
 The remaining illumination refracts into the material, where it
-scatters from the diffuse base layer. (:ref:`plastic-intscat_b`).
+scatters from the diffuse base layer. (:ref:`fig-plastic-intscat_b`).
 While some of the diffusely scattered illumination is able to
 directly refract outwards again, the remainder is reflected from the
 interior side of the dielectric boundary and will in fact remain
 trapped inside the material for some number of internal scattering
-events until it is finally able to escape (:ref:`plastic-intscat_c`).
+events until it is finally able to escape (:ref:`fig-plastic-intscat_c`).
 Due to the mathematical simplicity of this setup, it is possible to work
 out the correct form of the model without actually having to simulate
 the potentially large number of internal scattering events.
@@ -190,7 +187,7 @@ material is in practice slightly different from the color of the
 base layer on its own---in particular, the material color will tend to shift towards
 darker colors with higher saturation. Since this can be counter-intuitive when
 using bitmap textures, these color shifts are disabled by default. Specify
-the parameter :code:`nonlinear=true` to enable them. :ref:`plastic-nonlinear`
+the parameter :code:`nonlinear=true` to enable them. :num:`fig-plastic-nonlinear`
 illustrates the resulting change. This effect is also seen in real life,
 for instance a piece of wood will look slightly darker after coating it
 with a layer of varnish.

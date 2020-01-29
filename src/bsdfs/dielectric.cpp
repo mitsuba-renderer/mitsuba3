@@ -39,7 +39,7 @@ Smooth dielectric material (:monosp:`dielectric`)
 .. _fig-dielectric-plain:
 
 .. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
-    :alt: Homogeneous reflectance
+    :alt: Glass dielectric
     :width: 95%
     :align: center
 
@@ -48,7 +48,7 @@ Smooth dielectric material (:monosp:`dielectric`)
 .. _fig-dielectric-textured:
 
 .. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_diamond.jpg
-    :alt: Textured reflectance
+    :alt: Diamond dielectric
     :width: 95%
     :align: center
 
@@ -84,7 +84,7 @@ This snippet describes a simple air-to-water interface
 
 When using this model, it is crucial that the scene contains
 meaningful and mutually compatible indices of refraction changes---see
-Figure |nbsp| :num:`fig-glass-explanation` for a description of what this entails.
+Figure :num:`fig-glass-explanation` for a description of what this entails.
 
 In many cases, we will want to additionally describe the *medium* within a
 dielectric material. This requires the use of a rendering technique that is
@@ -111,13 +111,14 @@ describe a slightly absorbing piece of glass is shown below:
     Dispersion is currently unsupported but will be enabled in a future release.
 
 
+
 .. figtable::
     :label: ior-table-list
     :caption: This table lists all supported material names
        along with along with their associated index of re-fraction at standard conditions.
        These material names can be used with the plugins :ref:`dielectric <bsdf-dielectric>`,
-       :ref:`roughdielectric <bsdf-roughdielectric>`, :ref:`plastic <bsdf-plastic>`,
-       :ref:`roughplastic <bsdf-roughplastic>`, as well as :ref:`coating <bsdf-coating>`.
+       :ref:`roughdielectric <bsdf-roughdielectric>`, :ref:`plastic <bsdf-plastic>`
+       , as well as :ref:`roughplastic <bsdf-roughplastic>`.
     :alt: List table
 
 

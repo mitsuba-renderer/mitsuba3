@@ -75,7 +75,7 @@ the desk and then *reduce* the material's reflectance---after all, it is quite u
 one could find a real-world desk that reflects 90% of all incident light.
 
 As another example of the necessity for a meaningful material description, consider
-the glass model illustrated in \figref{glass-explanation}. Here, careful thinking
+the glass model illustrated in Figure :num:`fig-glass-explanation`. Here, careful thinking
 is needed to decompose the object into boundaries that mark index of
 refraction-changes. If this is done incorrectly and a beam of light can
 potentially pass through a sequence of incompatible index of refraction changes (e.g. 1.00 to 1.33
@@ -83,15 +83,17 @@ followed by 1.50 to 1.33), the output is undefined and will quite likely
 even contain inaccuracies in parts of the scene that are far
 away from the glass.
 
-.. _fig-glass-explanation:
-
-.. figure:: ../../resources/data/docs/images/bsdf/glass_explanation.svg
+.. figtable::
+    :label: fig-glass-explanation
+    :caption: Some of the scattering models in Mitsuba need to know the indices of refraction on the exterior and
+              interior-facing side of a surface. It is therefore important to decompose the mesh into meaningful
+              separate surfaces corresponding to each index of refraction change. The example here shows such a
+              decomposition for a water-filled Glass.
     :alt: Glass interfaces explanation
-    :width: 95%
-    :align: center
 
-    Some of the scattering models in Mitsuba need to know the indices of refraction on the exterior and
-    interior-facing side of a surface. It is therefore important to decompose the mesh into meaningful
-    separate surfaces corresponding to each index of refraction change. The example here shows such a
-    decomposition for a water-filled Glass
+    .. figure:: ../../resources/data/docs/images/bsdf/glass_explanation.svg
+        :alt: Glass interfaces explanation
+        :width: 95%
+        :align: center
+
 

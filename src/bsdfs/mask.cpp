@@ -55,9 +55,9 @@ This plugin applies an opacity mask to add nested BSDF instance. It interpolates
 between perfectly transparent and completely opaque based on the :monosp:`opacity` parameter.
 
 The transparency is internally implemented as a forward-facing Dirac delta distribution.
-Note that the standard :ref:`path` tracer does not have a good sampling strategy to deal with this,
-but the volumetric path tracer (:ref:`volpath`) does. It may thus be preferable when rendering
-scenes that contain the :ref:`mask` plugin, even if there is nothing *volumetric* in the scene.
+Note that the standard :ref:`integrator-path` tracer does not have a good sampling strategy to deal with this,
+but the volumetric path tracer (:ref:`integrator-volpath`) does. It may thus be preferable when rendering
+scenes that contain the :ref:`bsdf-mask` plugin, even if there is nothing *volumetric* in the scene.
 
 The following XML snippet describes a material configuration for a transparent leaf:
 

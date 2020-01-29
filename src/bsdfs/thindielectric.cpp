@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _bsdf-thindielectric:
 
 Thin dielectric material (:monosp:`thindielectric`)
--------------------------------------------
+---------------------------------------------------
 
 
 .. list-table::
@@ -48,26 +48,26 @@ Hence, light exits such a material without any form of angular deflection
 (though there is still specular reflection).
 This model should be used for things like glass windows that were modeled using only a
 single sheet of triangles or quads. On the other hand, when the window consists of
-proper closed geometry, :ref:`dielectric` is the right choice. This is illustrated below:
+proper closed geometry, :ref:`bsdf-dielectric` is the right choice. This is illustrated below:
 
 .. subfigstart::
 .. _fig-dielectric_figure:
 
 .. figure:: ../../resources/data/docs/images/bsdf/dielectric_figure.svg
-    :alt: The :ref:`dielectric` plugin models a single transition from one index of refraction to another
+    :alt: The :ref:`bsdf-dielectric` plugin models a single transition from one index of refraction to another
     :width: 95%
     :align: center
 
-    The :ref:`dielectric` plugin models a single transition from one index of refraction to another
+    The :ref:`bsdf-dielectric` plugin models a single transition from one index of refraction to another
 
 .. _fig-thindielectric_figure:
 
 .. figure:: ../../resources/data/docs/images/bsdf/thindielectric_figure.svg
-    :alt: The :ref:`thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
+    :alt: The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
     :width: 95%
     :align: center
 
-    The :ref:`thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
+    The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
 
 .. _fig-thindielectric_figure:
 
@@ -80,7 +80,7 @@ proper closed geometry, :ref:`dielectric` is the right choice. This is illustrat
 
 .. subfigend::
     :width: 0.49
-    :alt: An illustration of the difference between the :ref:`dielectric` and :ref:`thindielectric` plugins
+    :alt: An illustration of the difference between the :ref:`bsdf-dielectric` and :ref:`bsdf-thindielectric` plugins
     :label: fig-thindielectric-diff
 
 

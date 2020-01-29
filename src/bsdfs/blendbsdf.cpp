@@ -45,12 +45,8 @@ Blended material (:monosp:`blendbsdf`)
     :label: fig-mask-bsdf
 
 This plugin implements a *blend* material, which represents
-linear combinations of two BSDF instances. It is conceptually very similar
-to the :ref:`mixturebsdf` plugin. The main difference is that
-:ref:`blendbsdf` can interpolate based on a texture rather than a set
-of constants.
-Any surface scattering model in Mitsuba (be it smooth, rough, reflecting, or
-transmitting) can be mixed with others in this manner to synthesize new models.
+linear combinations of two BSDF instances. Any surface scattering model in Mitsuba (be it smooth,
+rough, reflecting, or transmitting) can be mixed with others in this manner to synthesize new models.
 
 The following XML snippet describes the material shown above:
 
