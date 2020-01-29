@@ -11,6 +11,152 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _bsdf-roughdielectric:
+
+Rough dielectric material (:monosp:`roughdielectric`)
+-------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - distribution
+   - |string|
+   - Specifies the type of microfacet normal distribution used to model the surface roughness.
+
+     - :monosp:`beckmann`: Physically-based distribution derived from Gaussian random surfaces.
+       This is the default.
+     - :monosp:`ggx`: The GGX :cite:`Walter07Microfacet` distribution (also known as Trowbridge-Reitz
+       :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
+       tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
+       distribution.
+
+ * - alpha, alpha_u, alpha_v
+   - |spectrum| or |texture|
+   - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
+     bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
+     **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
+     parameter to initialize both :monosp:`alpha_u` and :monosp:`alpha_v` to the same value. (Default: 0.1)
+ * - int_ior
+   - |float| or |string|
+   - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+ * - ext_ior
+   - |float| or |string|
+   - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+
+ * - sample_visible
+   - |bool|
+   - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
+     focuses computation on the visible parts of the microfacet normal distribution, considerably
+     reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
+ * - specular_reflectance, specular_transmittance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection/transmission component.
+     Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+
+This plugin implements a realistic microfacet scattering model for rendering
+rough interfaces between dielectric materials, such as a transition from air to
+ground glass. Microfacet theory describes rough surfaces as an arrangement of
+unresolved and ideally specular facets, whose normal directions are given by
+a specially chosen **microfacet distribution**. By accounting for shadowing
+and masking effects between these facets, it is possible to reproduce the important
+off-specular reflections peaks observed in real-world measurements of such
+materials.
+
+.. subfigstart::
+.. _fig-roughdielectric-glass:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_glass.jpg
+    :alt: Anti-glare glass
+    :width: 95%
+    :align: center
+
+    Anti-glare glass (Beckmann, :math:`\alpha=0.02`)
+
+.. _fig-roughdielectric-rough:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_rough.jpg
+    :alt: Rough glass
+    :width: 95%
+    :align: center
+
+    Rough glass (Beckmann, :math:`\alpha=0.1`)
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example roughdielectric appearances
+    :label: fig-roughdielectric-bsdf
+
+This plugin is essentially the *roughened* equivalent of the (smooth) plugin
+:ref:`bsdf-dielectric`. For very low values of :math:`\alpha`, the two will
+be identical, though scenes using this plugin will take longer to render
+due to the additional computational burden of tracking surface roughness.
+
+The implementation is based on the paper *Microfacet Models
+for Refraction through Rough Surfaces* by Walter et al.
+:cite:`Walter07Microfacet`. It supports three different types of microfacet
+distributions and has a texturable roughness parameter. Exterior and
+interior IOR values can be specified independently, where *exterior*
+refers to the side that contains the surface normal. Similar to the
+:ref:`bsdf-dielectric` plugin, IOR values can either be specified
+numerically, or based on a list of known materials (see
+Table :num:`ior-table-list` for an overview). When no parameters are given,
+the plugin activates the default settings, which describe a borosilicate
+glass BK7/air interface with a light amount of roughness modeled using a
+Beckmann distribution.
+
+To get an intuition about the effect of the surface roughness parameter
+:math:`\alpha`, consider the following approximate classification: a value of
+:math:`\alpha=0.001-0.01` corresponds to a material with slight imperfections
+on an otherwise smooth surface finish, :math:`\alpha=0.1` is relatively rough,
+and :math:`\alpha=0.3-0.7` is **extremely** rough (e.g. an etched or ground
+finish). Values significantly above that are probably not too realistic.
+
+Please note that when using this plugin, it is crucial that the scene contains
+meaningful and mutually compatible index of refraction changes---see
+Figure :num:`fig-glass-explanation` for an example of what this entails. Also, note that
+the importance sampling implementation of this model is close, but
+not always a perfect a perfect match to the underlying scattering distribution,
+particularly for high roughness values and when the :monosp:`ggx` microfacet distribution is used.
+Hence, such renderings may converge slowly.
+
+Technical details
+*****************
+All microfacet distributions allow the specification of two distinct
+roughness values along the tangent and bitangent directions. This can be
+used to provide a material with a *brushed* appearance. The alignment
+of the anisotropy will follow the UV parameterization of the underlying
+mesh. This means that such an anisotropic material cannot be applied to
+triangle meshes that are missing texture coordinates.
+
+Since Mitsuba 0.5.1, this plugin uses a new importance sampling technique
+contributed by Eric Heitz and Eugene D'Eon, which restricts the sampling
+domain to the set of visible (unmasked) microfacet normals. The previous
+approach of sampling all normals is still available and can be enabled
+by setting :monosp:`sample_visible` to |false|.
+Note that this new method is only available for the :monosp:`beckmann` and
+:monosp:`ggx` microfacet distributions.
+
+The following XML snippet describes a material definition for rough glass:
+
+.. code-block:: xml
+    :name: roughdielectric-roughglass
+
+    <bsdf type="roughdielectric">
+        <string name="distribution" value="beckmann"/>
+        <float name="alpha" value="0.1"/>
+        <string name="int_ior" value="bk7"/>
+        <string name="ext_ior" value="air"/>
+    </bsdf>
+
+ */
+
 template <typename Float, typename Spectrum>
 class RoughDielectric final : public BSDF<Float, Spectrum> {
 public:
