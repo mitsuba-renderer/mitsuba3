@@ -43,6 +43,41 @@ public:
 
         Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
                                          m_k->eval(si, active));
+        UnpolarizedSpectrum reflectance = m_specular_reflectance->eval(si, active);
+
+        if constexpr (is_polarized_v<Spectrum>) {
+            /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
+               always evaluated w.r.t. the actual light propagation direction, no
+               matter the transport mode. In the following, 'wi_hat' is toward the
+               light source. */
+            Vector3f wi_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
+                     wo_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
+
+            // Mueller matrix for specular reflection.
+            value = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wi_hat)), eta);
+
+            /* Apply frame reflection, according to "Stellar Polarimetry" by
+               David Clarke, Appendix A.2 (A26) */
+            value = mueller::reverse(value);
+
+            /* The Stokes reference frame vector of this matrix lies in the plane
+               of reflection. */
+            Vector3f n(0, 0, 1);
+            Vector3f s_axis_in = normalize(cross(n, -wi_hat)),
+                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
+                     s_axis_out = normalize(cross(n, wo_hat)),
+                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+
+            /* Rotate in/out reference vector of M s.t. it aligns with the implicit
+               Stokes bases of -wi_hat & wo_hat. */
+            value = mueller::rotate_mueller_basis(value,
+                                                  -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
+                                                   wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
+            value *= mueller::absorber(reflectance);
+        } else {
+            value = reflectance * fresnel_conductor(UnpolarizedSpectrum(cos_theta_i), eta);
+        }
+
         value = m_specular_reflectance->eval(si, active) *
                 fresnel_conductor(UnpolarizedSpectrum(cos_theta_i), eta);
 
