@@ -75,12 +75,13 @@ public:
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
                 Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 // Determine density of sampling that same direction using BSDF sampling
                 Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
                 Float mis = select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
-                result[active_e] += throughput * emitter_val * bsdf_val * mis;
+                result[active_e] += mis * throughput * bsdf_val * emitter_val;
             }
 
             /* ----------------------- BSDF sampling ---------------------- */
@@ -88,7 +89,9 @@ public:
             // Sample BSDF * cos(theta)
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
                                                sampler->next_2d(active), active);
-            throughput *= bsdf_val;
+            bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
+
+            throughput = throughput * bsdf_val;
             active &= any(neq(depolarize(throughput), 0.f));
             if (none_or<false>(active))
                 break;

@@ -81,6 +81,7 @@ public:
                 Vector3f wo = si.to_local(ds.d);
 
                 Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 /* Determine probability of having sampled that same
                    direction using BSDF sampling. */
@@ -88,7 +89,7 @@ public:
 
                 Float mis = select(ds.delta, Float(1.f), mis_weight(
                     ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
-                result[active_e] += emitter_val * bsdf_val * mis;
+                result[active_e] += mis * bsdf_val * emitter_val;
             }
         }
 
@@ -96,6 +97,7 @@ public:
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
                                                sampler->next_2d(active), active);
+            bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
             Mask active_b = active && any(neq(depolarize(bsdf_val), 0.f));
 
