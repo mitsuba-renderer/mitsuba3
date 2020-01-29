@@ -68,3 +68,4 @@ docs/_build/
 # Config
 include/mitsuba/core/config.h
 include/mitsuba/python/config.h
+mitsuba.conf

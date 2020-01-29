@@ -27,6 +27,7 @@ if (MTS_ENABLE_OPTIX)
 
   set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
+  link_directories(${MTS_OPTIX_PATH}/lib64)
 endif()
 
 include_directories(
@@ -92,7 +93,6 @@ endif()
 if (MTS_ENABLE_OPTIX)
   target_include_directories(mitsuba-render-obj PRIVATE ${MTS_OPTIX_PATH}/include)
   target_link_libraries(mitsuba-render PRIVATE optix)
-  target_link_directories(mitsuba-render PRIVATE ${MTS_OPTIX_PATH}/lib64)
   set_target_properties(mitsuba-render PROPERTIES
     INSTALL_RPATH ${MTS_OPTIX_PATH}/lib64
     BUILD_RPATH ${MTS_OPTIX_PATH}/lib64
