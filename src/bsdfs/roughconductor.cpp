@@ -77,14 +77,44 @@ public:
             weight = distr.G(si.wi, bs.wo, m) * dot(si.wi, m) /
                      (cos_theta_i * Frame3f::cos_theta(m));
 
+        // Jacobian of the half-direction mapping
+        bs.pdf /= 4.f * dot(bs.wo, m);
+
         // Evaluate the Fresnel factor
         Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                            m_k->eval(si, active));
 
-        Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, m)), eta_c);
+        Spectrum F;
+        if constexpr (is_polarized_v<Spectrum>) {
+            /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
+               always evaluated w.r.t. the actual light propagation direction, no
+               matter the transport mode. In the following, 'wi_hat' is toward the
+               light source. */
+            Vector3f wi_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
+                     wo_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
 
-        // Jacobian of the half-direction mapping
-        bs.pdf /= 4.f * dot(bs.wo, m);
+            // Mueller matrix for specular reflection.
+            F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wi_hat)), eta_c);
+
+            /* Apply frame reflection, according to "Stellar Polarimetry" by
+               David Clarke, Appendix A.2 (A26) */
+            F = mueller::reverse(F);
+
+            /* The Stokes reference frame vector of this matrix lies in the plane
+               of reflection. */
+            Vector3f s_axis_in = normalize(cross(m, -wi_hat)),
+                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
+                     s_axis_out = normalize(cross(m, wo_hat)),
+                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+
+            /* Rotate in/out reference vector of F s.t. it aligns with the implicit
+               Stokes bases of -wi_hat & wo_hat. */
+            F = mueller::rotate_mueller_basis(F,
+                                              -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
+                                               wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
+        } else {
+            F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, m)), eta_c);
+        }
 
         return { bs, (F * weight) & active };
     }
@@ -113,17 +143,47 @@ public:
 
         active &= neq(D, 0.f);
 
-        // Evaluate the Fresnel factor
-        Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
-                                           m_k->eval(si, active));
-
-        Spectrum F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
-
         // Evaluate Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, H);
 
         // Evaluate the full microfacet model (except Fresnel)
         Float result = D * G / (4.f * Frame3f::cos_theta(si.wi));
+
+        // Evaluate the Fresnel factor
+        Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+                                           m_k->eval(si, active));
+
+        Spectrum F;
+        if constexpr (is_polarized_v<Spectrum>) {
+            /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
+               always evaluated w.r.t. the actual light propagation direction, no
+               matter the transport mode. In the following, 'wi_hat' is toward the
+               light source. */
+            Vector3f wi_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
+                     wo_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
+
+            // Mueller matrix for specular reflection.
+            F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wi_hat)), eta_c);
+
+            /* Apply frame reflection, according to "Stellar Polarimetry" by
+               David Clarke, Appendix A.2 (A26) */
+            F = mueller::reverse(F);
+
+            /* The Stokes reference frame vector of this matrix lies in the plane
+               of reflection. */
+            Vector3f s_axis_in = normalize(cross(H, -wi_hat)),
+                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
+                     s_axis_out = normalize(cross(H, wo_hat)),
+                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+
+            /* Rotate in/out reference vector of F s.t. it aligns with the implicit
+               Stokes bases of -wi_hat & wo_hat. */
+            F = mueller::rotate_mueller_basis(F,
+                                              -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
+                                               wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
+        } else {
+            F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
+        }
 
         return (F * result) & active;
     }
