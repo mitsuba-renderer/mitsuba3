@@ -21,7 +21,7 @@ MTS_PY_EXPORT(ImageBlock) {
             [](ImageBlock &ib, const Point2f &pos,
                 const std::vector<Float> &data, Mask mask) {
                 if (data.size() != ib.channel_count())
-                        throw std::runtime_error("Incompatible channel count!");
+                    throw std::runtime_error("Incompatible channel count!");
                 ib.put(pos, data.data(), mask);
             }, "pos"_a, "data"_a, "active"_a = true)
         .def_method(ImageBlock, clear)

@@ -230,47 +230,6 @@ def get_differentiable_parameters(scene):
 # ------------------------------------------------------------ Differentiable rendering
 
 
-def render_block(scene, spp=None):
-    sensor = scene.sensor()
-    film = sensor.film()
-    sampler = sensor.sampler()
-    film_size = film.crop_size()
-    if spp is None:
-        spp = sampler.sample_count()
-
-    pos = UInt32D.arange(film_size[0] * film_size[1] * spp) / spp
-
-    scale = Vector2fD(1.0 / film_size[0], 1.0 / film_size[1])
-    pos = Vector2fD(FloatD(pos % int(film_size[0])),
-                    FloatD(pos / int(film_size[0])))
-
-    active = BoolD.full(True, len(pos.x))
-
-    wavelength_sample = sampler.next_1d_d(active)
-    position_sample = pos + sampler.next_2d_d(active)
-
-    rays, weights = sensor.sample_ray_differential(
-        time=0,
-        sample1=wavelength_sample,
-        sample2=position_sample * scale,
-        sample3=0,
-        active=active
-    )
-    del wavelength_sample
-
-    rs = RadianceSample3fD(scene, sampler)
-    result = scene.integrator().eval(rays, rs) * weights
-    wavelengths = rays.wavelengths
-    del weights, rs, rays
-
-    rfilter = film.reconstruction_filter()
-    block = ImageBlock(Bitmap.EXYZAW, film.crop_size(), warn=False,
-                       filter=rfilter, border=(rfilter.border_size() > 0))
-    block.clear_d()
-    block.put(position_sample, wavelengths, result, 1)
-
-    del result, wavelengths, position_sample
-    return block
 
 
 def render(scene, spp, pixel_format):

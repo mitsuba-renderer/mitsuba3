@@ -42,6 +42,8 @@ MTS_PY_EXPORT(Spectrum) {
         m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
     }
 
+    m.def("depolarize", vectorize(&depolarize<Spectrum>), D(depolarize));
+
     if constexpr (is_cuda_array_v<Float>) {
         py::module::import("enoki");
         pybind11_type_alias<Array<Float, 3>, Color3f>();

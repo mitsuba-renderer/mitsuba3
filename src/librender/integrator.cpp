@@ -128,10 +128,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         );
     } else {
         for (size_t i = 0; i < n_passes; i++) {
-            ScalarUInt32 total_sample_count = hprod(film_size) * samples_per_pass;
-
-            Mask active(true);
-            set_slices(active, total_sample_count);
+            ScalarUInt32 total_sample_count = hprod(film_size) * (uint32_t) samples_per_pass;
 
             ref<Sampler> sampler = sensor->sampler();
             sampler->seed(arange<UInt64>(total_sample_count));
@@ -143,13 +140,16 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                                                    !has_aovs);
             block->clear();
 
-            UInt32 idx = arange<UInt32>(total_sample_count) / UInt32(samples_per_pass);
-            Vector2f pos = Vector2f(Float(idx % int(film_size[0])),
-                                    Float(idx / int(film_size[0])));
+            UInt32 idx = arange<UInt32>(total_sample_count);
+            if (samples_per_pass != 1)
+                idx /= samples_per_pass;
+
+            Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
+                                    Float(idx / uint32_t(film_size[0])));
 
             std::vector<Float> aovs(channels.size());
             render_sample(scene, sensor, sampler, block, aovs.data(),
-                          pos, diff_scale_factor, active);
+                          pos, diff_scale_factor);
             film->put(block);
         }
     }

@@ -27,10 +27,10 @@ public:
     virtual ref<Sampler> clone() = 0;
 
     /**
-     * \brief Deterministically seed the underlying RNG, if any
+     * \brief Deterministically seed the underlying RNG, if applicable.
      *
-     * \param size
-     *     Number of random variates to be produced (only applies to the dynamic-size implementations)
+     * In the context of wavefront ray tracing & dynamic arrays, this function
+     * must be called with a \c seed_value matching the size of the wavefront.
      */
     virtual void seed(UInt64 seed_value);
 

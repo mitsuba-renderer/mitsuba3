@@ -44,7 +44,7 @@ public:
         if constexpr (is_dynamic_array_v<Float>) {
             if (m_rng == nullptr)
                 Throw("Sampler::seed() must be invoked before using this sampler!");
-            if (active.size() != m_rng->state.size())
+            if (active.size() != 1 && active.size() != m_rng->state.size())
                 Throw("Invalid mask size (%d), expected %d", active.size(), m_rng->state.size());
         }
 
