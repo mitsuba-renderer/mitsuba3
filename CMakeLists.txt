@@ -6,10 +6,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resource
 # ---------- Setup mitsuba.conf ----------
 
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf)
-  message(STATUS "Copying template mitsuba.conf to root directory")
-  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.template.conf
+  message(WARNING "Copying template mitsuba.conf to root directory")
+  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
        DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
-  file(RENAME mitsuba.template.conf mitsuba.conf)
+  file(RENAME mitsuba.conf.template mitsuba.conf)
 endif()
 
 # ---------- Detect renderer variants ----------
