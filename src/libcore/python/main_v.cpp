@@ -232,6 +232,11 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     m.attr("float_dtype") = is_float_v<ScalarFloat> ? "f" : "d";
 
+    m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
+    m.attr("is_rgb") = is_rgb_v<Spectrum>;
+    m.attr("is_spectral") = is_spectral_v<Spectrum>;
+    m.attr("is_polarized") = is_polarized_v<Spectrum>;
+
     m.attr("USE_OPTIX") = is_cuda_array_v<Float>;
 
     #if defined(MTS_USE_EMBREE)
