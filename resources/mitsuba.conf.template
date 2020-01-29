@@ -128,7 +128,7 @@
     },
 
     "packet_mono_double": {
-        "float": "Packet<double, array_default_size<float>>",
+        "float": "Packet<double>",
         "spectrum": "Color<Float, 1>"
     },
 
@@ -138,7 +138,7 @@
     },
 
     "packet_rgb_double": {
-        "float": "Packet<double, array_default_size<float>>",
+        "float": "Packet<double>",
         "spectrum": "Color<Float, 3>"
     },
 
@@ -148,7 +148,7 @@
     },
 
     "packet_spectral_double": {
-        "float": "Packet<double, array_default_size<float>>",
+        "float": "Packet<double>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
@@ -158,7 +158,7 @@
     },
 
     "packet_spectral_polarized_double": {
-        "float": "Packet<double, array_default_size<float>>",
+        "float": "Packet<double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
