@@ -10,8 +10,19 @@ NAMESPACE_BEGIN(mitsuba)
  * This file provides a number of utility functions for constructing and
  * analyzing Mueller matrices. Mueller matrices describe how a scattering
  * interaction modifies the polarization state of light, which is assumed to be
- * encoded as a Stokes vector. Please also refer to the header file
- * <tt>mitsuba/render/stokes.h</tt>.
+ * encoded as a Stokes vector.
+ *
+ * The meaning of a Stokes vector is only well defined together with its
+ * corresponding reference basis vector that is orthogonal to the propagation
+ * direction of the light beam. In other words, for light to be e.g. linearly
+ * polarized with a horizontal orientation we first have to define what
+ * "horizontal" actually means.
+ * Another important detail is that the polarization ellipse, and thus the
+ * Stokes vector, is observed from the view of the sensor, looking back along
+ * the propagation direction of the light beam.
+ *
+ * To simplify APIs throughout Mitsuba, Stokes vectors are also implemented as
+ * Mueller matrices (with only the first column having non-zero entries).
  */
 NAMESPACE_BEGIN(mueller)
 
@@ -41,6 +52,8 @@ template <typename Float> MuellerMatrix<Float> absorber(Float value) {
 * \brief Constructs the Mueller matrix of a linear polarizer
 * which transmits linear polarization at 0 degrees.
 *
+* "Polarized Light" by Edward Collett, Ch. 5 eq. (13)
+*
 * \param value
 *     The amount of attenuation of the transmitted component (1 corresponds
 *     to an ideal polarizer).
@@ -61,6 +74,8 @@ template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.
  *
  * This implements the general case with arbitrary phase shift and can be used
  * to construct the common special cases of quarter-wave and half-wave plates.
+ *
+ * "Polarized Light" by Edward Collett, Ch. 5 eq. (27)
  *
  * \param phase
  *     The phase difference between the fast and slow axis
@@ -97,14 +112,22 @@ template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
 
 /**
   * \brief Constructs the Mueller matrix of an ideal rotator, which performs a
-  * counter-clockwise rotation of the electric field by 'theta' radians.
+  * counter-clockwise rotation of the electric field by 'theta' radians (when
+  * facing the light beam from the sensor side).
+  *
+  * To be more precise, it rotates the reference frame of the current Stokes
+  * vector. For example: horizontally linear polarized light s1 = [1,1,0,0]
+  * will look like -45˚ linear polarized light s2 = R(45˚) * s1 = [1,0,-1,0]
+  * after applying a rotator of +45˚ to it.
+  *
+  * "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
   */
 template <typename Float> MuellerMatrix<Float> rotator(Float theta) {
     auto [s, c] = sincos(2.f * theta);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
-        0, c, -s, 0,
-        0, s, c, 0,
+        0, c, s, 0,
+        0, -s, c, 0,
         0, 0, 0, 1
     );
 }
@@ -116,8 +139,8 @@ template <typename Float> MuellerMatrix<Float> rotator(Float theta) {
 template <typename Float>
 MuellerMatrix<Float> rotated_element(Float theta,
                                      const MuellerMatrix<Float> &M) {
-    MuellerMatrix<Float> R = rotator(theta), Ri = transpose(R);
-    return R * M * Ri;
+    MuellerMatrix<Float> R = rotator(theta), Rt = transpose(R);
+    return Rt * M * R;
 }
 
 /**
@@ -216,7 +239,13 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
 }
 
 /**
- * \brief Gives the reference frame basis for a Stokes vector
+ * \brief Gives the reference frame basis for a Stokes vector.
+ *
+ * For light transport involving polarized quantities it is essential to keep
+ * track of reference frames. A Stokes vector is only meaningful if we also know
+ * w.r.t. which basis this state of light is observed.
+ * In Mitsuba, these reference frames are never explicitly stored but instead
+ * can be computed on the fly using this function.
  *
  * \param w
  *      Direction of travel for Stokes vector (normalized)
@@ -235,6 +264,13 @@ Vector3 stokes_basis(const Vector3 &w) {
 /**
  * \brief Gives the Mueller matrix that alignes the reference frames (defined by
  * their respective basis vectors) of two collinear stokes vectors.
+ *
+ * If we have a stokes vector s_current expressed in 'basis_current', we can
+ * re-interpret it as a stokes vector rotate_stokes_basis(..) * s1 that is
+ * expressed in 'basis_target' instead.
+ * For example: Horizontally polarized light [1,1,0,0] in a basis [1,0,0] can be
+ * interpreted as +45˚ linear polarized light [1,0,1,0] by switching to a target
+ * basis [0.707, -0.707, 0].
  *
  * \param forward
  *      Direction of travel for Stokes vector (normalized)
@@ -264,6 +300,11 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
 /**
  * \brief Return the Mueller matrix for some new reference frames.
  * This version rotates the input/output frames independently.
+ *
+ * This operation is often used in polarized light transport when we have a
+ * known Mueller matrix 'M' that operates from 'in_basis_current' to
+ * 'out_basis_current' but instead want to re-express it as a Mueller matrix
+ * that operates from 'in_basis_target' to 'out_basis_target'.
  *
  * \param M
  *      The current Mueller matrix that operates from \c in_basis_current to \c out_basis_current.
@@ -307,6 +348,11 @@ MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
 /**
  * \brief Return the Mueller matrix for some new reference frames.
  * This version applies the same rotation to the input/output frames.
+ *
+ * This operation is often used in polarized light transport when we have a
+ * known Mueller matrix 'M' that operates from 'basis_current' to
+ * 'basis_current' but instead want to re-express it as a Mueller matrix that
+ * operates from 'basis_target' to 'basis_target'.
  *
  * \param M
  *      The current Mueller matrix that operates from \c basis_current to \c basis_current.

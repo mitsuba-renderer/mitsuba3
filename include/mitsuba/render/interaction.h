@@ -247,75 +247,88 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /**
      * \brief Converts a Mueller matrix defined in a local frame to world space
      *
-     * A Mueller matrix operates from (implicitly) defined stokes_basis(-wi) to
-     * stokes_basis(wo).
+     * A Mueller matrix operates from the (implicitly) defined frame
+     * stokes_basis(in_forward) to the frame stokes_basis(out_forward).
      * This method converts a Mueller matrix defined on directions in the local
-     * frame (wi_local, wo_local) to a Mueller matrix defined on world-space
-     * directions (wi_world, wo_world).
+     * frame to a Mueller matrix defined on world-space directions.
+     *
+     * This expands to a no-op in non-polarized modes.
      *
      * \param M_local
      *      The Mueller matrix in local space, e.g. returned by a BSDF.
      *
-     * \param wi_local
-     *      Incident direction, given in local frame coordinates.
+     * \param in_forward_local
+     *      Incident direction (along propagation direction of light),
+     *      given in local frame coordinates.
      *
      * \param wo_local
-     *      Outgoing direction, given in local frame coordinates.
+     *      Outgoing direction (along propagation direction of light),
+     *      given in local frame coordinates.
      *
      * \return
      *      Equivalent Mueller matrix that operates in world-space coordinates.
      */
-    MuellerMatrix4f to_world_mueller(const MuellerMatrix4f &M_local, const Vector3f &wi_local,
-                                     const Vector3f &wo_local) const {
-        Vector3f wi_world = to_world(wi_local),
-                 wo_world = to_world(wo_local);
+    Spectrum to_world_mueller(const Spectrum &M_local,
+                              const Vector3f &in_forward_local,
+                              const Vector3f &out_forward_local) const {
+        if constexpr (is_polarized_v<Spectrum>) {
+            Vector3f in_forward_world  = to_world(in_forward_local),
+                     out_forward_world = to_world(out_forward_local);
 
-        Vector3f in_basis_current = to_world(mueller::stokes_basis(-wi_local)),
-                 in_basis_target  = mueller::stokes_basis(-wi_world);
+            Vector3f in_basis_current = to_world(mueller::stokes_basis(in_forward_local)),
+                     in_basis_target  = mueller::stokes_basis(in_forward_world);
 
-        Vector3f out_basis_current = to_world(mueller::stokes_basis(wo_local)),
-                 out_basis_target  = mueller::stokes_basis(wo_world);
+            Vector3f out_basis_current = to_world(mueller::stokes_basis(out_forward_local)),
+                     out_basis_target  = mueller::stokes_basis(out_forward_world);
 
-        return mueller::rotate_mueller_basis(M_local,
-                                             -wi_world, in_basis_current, in_basis_target,
-                                             wo_world, out_basis_current, out_basis_target);
+            return mueller::rotate_mueller_basis(M_local,
+                                                 in_forward_world, in_basis_current, in_basis_target,
+                                                 out_forward_world, out_basis_current, out_basis_target);
+        } else {
+            return M_local;
+        }
     }
 
     /**
      * \brief Converts a Mueller matrix defined in world space to a local frame
      *
-     * A Mueller matrix operates from (implicitly) defined stokes_basis(-wi) to
-     * stokes_basis(wo).
-     * This method converts a Mueller matrix defined on world-space directions
-     * (wi_world, wo_world) to a Mueller matrix defined on directions in the
-     * local frame (wi_local, wo_local)l
+     * A Mueller matrix operates from the (implicitly) defined frame
+     * stokes_basis(in_forward) to the frame stokes_basis(out_forward).
+     * This method converts a Mueller matrix defined on directions in
+     * world-space to a Mueller matrix defined in the local frame.
      *
-     * \param M_world
-     *      The Mueller matrix in world-space.
+     * This expands to a no-op in non-polarized modes.
      *
-     * \param wi_world
-     *      Incident direction, given in world-space coordinates.
+     * \param in_forward_local
+     *      Incident direction (along propagation direction of light),
+     *      given in world-space coordinates.
      *
-     * \param wo_world
-     *      Outgoing direction, given in world-space coordinates.
+     * \param wo_local
+     *      Outgoing direction (along propagation direction of light),
+     *      given in world-space coordinates.
      *
      * \return
      *      Equivalent Mueller matrix that operates in local frame coordinates.
      */
-    MuellerMatrix4f to_local_mueller(const MuellerMatrix4f &M_world, const Vector3f &wi_world,
-                                     const Vector3f &wo_world) const {
-        Vector3f wi_local = to_local(wi_world),
-                 wo_local = to_local(wo_world);
+    Spectrum to_local_mueller(const Spectrum &M_world,
+                              const Vector3f &in_forward_world,
+                              const Vector3f &out_forward_world) const {
+        if constexpr (is_polarized_v<Spectrum>) {
+            Vector3f in_forward_local = to_local(in_forward_world),
+                     out_forward_local = to_local(out_forward_world);
 
-        Vector3f in_basis_current = to_local(mueller::stokes_basis(-wi_world)),
-                 in_basis_target  = mueller::stokes_basis(-wi_local);
+            Vector3f in_basis_current = to_local(mueller::stokes_basis(in_forward_world)),
+                     in_basis_target  = mueller::stokes_basis(in_forward_local);
 
-        Vector3f out_basis_current = to_local(mueller::stokes_basis(wo_world)),
-                 out_basis_target  = mueller::stokes_basis(wo_local);
+            Vector3f out_basis_current = to_local(mueller::stokes_basis(out_forward_world)),
+                     out_basis_target  = mueller::stokes_basis(out_forward_local);
 
-        return mueller::rotate_mueller_basis(M_world,
-                                             -wi_local, in_basis_current, in_basis_target,
-                                             wo_local, out_basis_current, out_basis_target);
+            return mueller::rotate_mueller_basis(M_world,
+                                                 in_forward_local, in_basis_current, in_basis_target,
+                                                 out_forward_local, out_basis_current, out_basis_target);
+        } else {
+            return M_world;
+        }
     }
 
     bool has_uv_partials() const {
