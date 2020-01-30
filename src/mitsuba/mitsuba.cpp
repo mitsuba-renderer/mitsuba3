@@ -211,10 +211,8 @@ int main(int argc, char *argv[]) {
             if (!fr2->contains(scene_dir))
                 fr2->append(scene_dir);
 
-            if (*arg_output) {
-                filesystem::path output(arg_output->as_string());
-                filename = filename.parent_path() / output;
-            }
+            if (*arg_output)
+                filename = arg_output->as_string();
 
             // Try and parse a scene from the passed file.
             ref<Object> parsed =
