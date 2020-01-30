@@ -34,11 +34,10 @@ public:
     }
 
     ScalarFloat mean() const override {
-        if constexpr (is_spectral_v<Spectrum>) {
+        if constexpr (is_spectral_v<Spectrum>)
             return srgb_model_mean(m_value);
-        } else {
-            return hmean(m_value);
-        }
+        else
+            return scalar_cast(hmean(m_value));
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -53,7 +52,7 @@ protected:
      */
     static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
-    Color<ScalarFloat, ChannelCount> m_value;
+    Color<Float, ChannelCount> m_value;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(SRGBReflectanceSpectrum, Texture)

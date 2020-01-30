@@ -56,7 +56,7 @@ private:
      */
     static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
 
-    Color<ScalarFloat, ChannelCount> m_value;
+    Color<Float, ChannelCount> m_value;
     ref<Texture> m_d65;
 };
 
