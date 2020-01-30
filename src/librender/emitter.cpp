@@ -6,9 +6,6 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props) : Base(props) { }
 MTS_VARIANT Emitter<Float, Spectrum>::~Emitter() { }
-MTS_VARIANT bool Emitter<Float, Spectrum>::is_environment() const {
-    return false;
-}
 
 MTS_IMPLEMENT_CLASS_VARIANT(Emitter, Endpoint, "emitter")
 MTS_INSTANTIATE_CLASS(Emitter)

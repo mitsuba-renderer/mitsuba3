@@ -48,6 +48,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
 endforeach()
 
 add_mitsuba_python_library(render_ext
+  emitter.cpp
   main.cpp
   bsdf.cpp
   microfacet.cpp

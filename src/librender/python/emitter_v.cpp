@@ -39,9 +39,6 @@ public:
         PYBIND11_OVERLOAD_PURE(ScalarBoundingBox3f, Emitter, bbox,);
     }
 
-    bool is_environment() const override {
-        PYBIND11_OVERLOAD_PURE(bool, Emitter, is_environment,);
-    }
 
     std::string to_string() const override {
         PYBIND11_OVERLOAD_PURE(std::string, Emitter, to_string,);
@@ -54,7 +51,8 @@ MTS_PY_EXPORT(Emitter) {
 
     auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
         .def(py::init<const Properties&>())
-        .def_method(Emitter, is_environment);
+        .def_method(Emitter, is_environment)
+        .def_method(Emitter, flags);
 
     if constexpr (is_cuda_array_v<Float>)
         pybind11_type_alias<UInt64, EmitterPtr>();

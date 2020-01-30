@@ -12,7 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter)
+    MTS_IMPORT_BASE(Emitter, m_flags)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
@@ -21,6 +21,7 @@ public:
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
+        m_flags = +EmitterFlags::Infinite;
     }
 
     void set_scene(const Scene *scene) override {
@@ -84,10 +85,6 @@ public:
     /// This emitter does not occupy any particular region of space, return an invalid bounding box
     ScalarBoundingBox3f bbox() const override {
         return ScalarBoundingBox3f();
-    }
-
-    bool is_environment() const override {
-        return true;
     }
 
     void traverse(TraversalCallback *callback) override {

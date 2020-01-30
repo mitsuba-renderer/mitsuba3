@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_world_transform)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
@@ -74,6 +74,7 @@ public:
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(luminance.get(), m_resolution);
         m_d65 = Texture::D65(1.f);
+        m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
     }
 
     void parameters_changed() override {
@@ -174,10 +175,6 @@ public:
             << "  bsphere = " << m_bsphere << std::endl
             << "]";
         return oss.str();
-    }
-
-    bool is_environment() const override {
-        return true;
     }
 
 protected:
