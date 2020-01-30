@@ -90,21 +90,7 @@ class DummyOptimizer(Optimizer):
         return 'DummyOptimizer[]'
 
 
-class SGD(Optimizer):
-    def __init__(self, params, lr, momentum=0):
-        """
-        Implements basic stochastic gradient descent with a fixed learning rate
-        and, optionally, momentum (0.9 is a typical parameter value).
-        """
-        super(SGD, self).__init__(params, lr)
-        assert momentum >= 0 and momentum < 1
-        self.momentum = momentum
 
-    def reset(self, key):
-        """Resets the state to a zero-filled array of the right dimension."""
-        p = self.params[key]
-        size = slices(p)
-        self.state[key] = detach(type(p).zero(size))
 
     def step(self):
         gradients = self.compute_gradients()
@@ -161,12 +147,6 @@ class Adam(Optimizer):
         self.beta_1_t = FloatC(1, literal=False)
         self.beta_2_t = FloatC(1, literal=False)
 
-    def reset(self, key):
-        """Resets the state to a zero-filled array of the right dimension."""
-        p = self.params[key]
-        size = slices(p)
-        t = type(p)
-        self.state[key] = (detach(t.zero(size)), detach(t.zero(size)))
 
     def step(self):
         self.beta_1_t *= self.beta_1

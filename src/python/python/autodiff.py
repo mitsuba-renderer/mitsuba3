@@ -1,9 +1,9 @@
 import enoki as ek
 
-def render_block(scene, spp=None, sensor_index=0):
+def render(scene, spp=None, sensor_index=0):
     """
-    Render the specified Mitsuba scene and return an ImageBlock instance
-    containing RGB values and AOVs, if applicable
+    Render the specified Mitsuba scene and return a floating point
+    array containing RGB values and AOVs, if applicable
     """
     from mitsuba.core import (Float, UInt32, UInt64, Vector2f, Mask,
         is_monochromatic, is_rgb, is_polarized)
@@ -82,3 +82,58 @@ def render_block(scene, spp=None, sensor_index=0):
     values = ek.gather(data, values_idx)
 
     return values / weight
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.set_learning_rate(lr)
+        self.params = params
+        self.state = {}
+        for k, p in self.params.items():
+            ek.set_requires_gradient(p)
+            self._reset(k)
+
+    def set_learning_rate(self, lr):
+        from mitsuba.core import Float
+        # Ensure that the JIT compiler does merge 'lr' into the PTX code
+        # (this would trigger a recompile every time it is changed)
+        self.lr = lr
+        self.lr_v = ek.detach(Float(lr, literal=False))
+
+
+class SGD(Optimizer):
+    def __init__(self, params, lr, momentum=0):
+        """
+        Implements basic stochastic gradient descent with a fixed learning rate
+        and, optionally, momentum (0.9 is a typical parameter value).
+        """
+        super(SGD, self).__init__(params, lr)
+        assert momentum >= 0 and momentum < 1
+        self.momentum = momentum
+
+    def step(self):
+        """ Take a gradient step """
+        for k, p in self.params.items():
+            g_p = ek.gradient(p)
+            if ek.slices(g_p) == 0:
+                continue
+            if self.momentum == 0:
+                value = ek.detach(p) - self.lr_v * g_p
+            else:
+                self.state[k] = self.momentum * self.state[k] + \
+                                self.lr_v * g_p
+                value = ek.detach(p) - self.state[k]
+            value = type(p)(value)
+            ek.set_requires_gradient(value)
+            self.params[k] = value
+        self.params.update()
+
+    def _reset(self, key):
+        """ Zero-initializes the internal state associated with a parameter """
+        p = self.params[key]
+        size = ek.slices(p)
+        self.state[key] = ek.detach(type(p).zero(size))
+
+    def __repr__(self):
+        return ('SGD[\n  lr = %.2g,\n  momentum = %.2g\n]') % \
+                (self.lr, self.momentum)

@@ -1,4 +1,8 @@
 def traverse(node):
+    """
+    Traverse a node of Mitsuba's scene graph and return a dictionary-like
+    object that can be used to read and write associated scene parameters.
+    """
     from mitsuba.core import TraversalCallback, \
         set_property, get_property
 
@@ -76,10 +80,31 @@ def traverse(node):
         def keys(self):
             return self.properties.keys()
 
+        def items(self):
+            class ParameterMapItemIterator:
+                def __init__(self, pmap):
+                    self.pmap = pmap
+                    self.it = pmap.keys().__iter__()
+
+                def __iter__(self):
+                    return self
+
+                def __next__(self):
+                    key = next(self.it)
+                    return (key, self.pmap[key])
+
+            return ParameterMapItemIterator(self)
+
         def update(self):
             work_list = sorted(set(self.update_list), key=lambda x: x[0])
             for depth, node in reversed(work_list):
                 node.parameters_changed()
             self.update_list.clear()
+
+        def keep(self, values):
+            values = set(values)
+            self.properties = {
+                k:v for k, v in self.properties.items() if k in values
+            }
 
     return ParameterMap(cb.properties, cb.hierarchy)
