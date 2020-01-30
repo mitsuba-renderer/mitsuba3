@@ -1,8 +1,13 @@
+import enoki as ek
+
 def render_block(scene, spp=None, sensor_index=0):
+    """
+    Render the specified Mitsuba scene and return an ImageBlock instance
+    containing RGB values and AOVs, if applicable
+    """
     from mitsuba.core import (Float, UInt32, UInt64, Vector2f, Mask,
         is_monochromatic, is_rgb, is_polarized)
     from mitsuba.render import ImageBlock
-    import enoki as ek
 
     sensor = scene.sensors()[sensor_index]
     film = sensor.film()
@@ -11,13 +16,13 @@ def render_block(scene, spp=None, sensor_index=0):
     if spp is None:
         spp = sampler.sample_count()
 
-    pos = ek.arange(UInt64, film_size[0] * film_size[1] * spp)
+    pos = ek.arange(UInt64, ek.hprod(film_size) * spp)
     sampler.seed(pos)
 
-    pos /= spp
+    pos //= spp
     scale = Vector2f(1.0 / film_size[0], 1.0 / film_size[1])
-    pos = Vector2f(Float(pos % int(film_size[0])),
-                   Float(pos / int(film_size[0])))
+    pos = Vector2f(Float(pos  % int(film_size[0])),
+                   Float(pos // int(film_size[0])))
 
     pos += sampler.next_2d()
 
@@ -30,6 +35,7 @@ def render_block(scene, spp=None, sensor_index=0):
 
     spec, mask, aovs = scene.integrator().sample(scene, sampler, rays)
     spec *= weights
+    del mask
 
     if is_polarized:
         from mitsuba.core import depolarize
@@ -45,11 +51,10 @@ def render_block(scene, spp=None, sensor_index=0):
         rgb = xyz_to_srgb(xyz)
         del xyz
 
-    aovs = [*rgb, ek.select(mask, Float(1.0), Float(0.0)), Float(1.0)] + aovs
+    aovs = [Float(1.0), *rgb] + aovs
     del rgb
 
-    wavelengths = rays.wavelengths
-    del spec, mask, weights, rays
+    del spec, weights, rays
 
     rfilter = film.reconstruction_filter()
     block = ImageBlock(
@@ -62,6 +67,18 @@ def render_block(scene, spp=None, sensor_index=0):
     )
 
     block.put(pos, aovs)
+    del pos
+    del aovs
 
-    del wavelengths, pos
-    return block
+    data = block.data()
+
+    ch = block.channel_count()
+    i = UInt32.arange(ek.hprod(block.size()) * (ch - 1))
+
+    weight_idx = i // (ch - 1) * ch
+    values_idx = (i * ch) // (ch - 1) + 1
+
+    weight = ek.gather(data, weight_idx)
+    values = ek.gather(data, values_idx)
+
+    return values / weight

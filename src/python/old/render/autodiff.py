@@ -194,67 +194,8 @@ class Adam(Optimizer):
 
     def __repr__(self):
         return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},\n  beta_2 = {:.2g},\n'
-                '  params = {}\n]').format(
-                    self.lr.numpy().squeeze(), self.beta_1, self.beta_2, indent(str(self.params)))
+                '  params = {}\n]').format(self.lr.numpy().squeeze(), self.beta_1, self.beta_2)
 
-
-def get_differentiable_parameters(scene):
-    params = DifferentiableParameters()
-    children = set()
-
-    def traverse(path, n):
-        if n in children:
-            return
-
-        path += type(n).__name__
-        if hasattr(n, "id"):
-            identifier = n.id()
-            if len(identifier) > 0 and '[0x' not in identifier:
-                path += '[id=\"%s\"]' % identifier
-        path += '/'
-        params.set_prefix(path)
-
-        children.add(n)
-
-        if hasattr(n, 'put_parameters'):
-            n.put_parameters(params)
-
-        if hasattr(n, 'children'):
-            for c in n.children():
-                traverse(path, c)
-
-    traverse('/', scene)
-    return params
-
-
-# ------------------------------------------------------------ Differentiable rendering
-
-
-
-
-def render(scene, spp, pixel_format):
-    supported_formats = [Bitmap.EY, Bitmap.EXYZ, PixelFormat.RGB]
-
-    # Assume that the block has format XYZAW
-    block = render_block(scene, spp)
-    X, Y, Z, A, W = block.bitmap_d()
-    del block, A
-    W = select(eq(W, 0), 0, rcp(W))
-    X *= W; Y *= W; Z *= W
-
-    if pixel_format == Bitmap.EY:
-        return Y
-    elif pixel_format == Bitmap.EXYZ:
-        return Vector3fD(X, Y, Z)
-    elif pixel_format == PixelFormat.RGB:
-        return Vector3fD(
-             3.240479 * X + -1.537150 * Y + -0.498535 * Z,
-            -0.969256 * X +  1.875991 * Y +  0.041556 * Z,
-             0.055648 * X + -0.204043 * Y +  1.057311 * Z
-        )
-    else:
-        raise ValueError('Unknown pixel format {} -- must be one of {}'
-                         .format(pixel_format, supported_formats))
 
 
 def render_torch(scene, params=None, **kwargs):
