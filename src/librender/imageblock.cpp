@@ -114,15 +114,14 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     // Convert to pixel coordinates within the image block
     Point2f pos = pos_ - (m_offset - m_border_size + .5f);
 
-    // Determine the affected range of pixels
-    Point2u lo = Point2u(max(ceil2int <Point2i>(pos - filter_radius), 0)),
-            hi = Point2u(min(floor2int<Point2i>(pos + filter_radius), size - 1));
-
-    uint32_t n = ceil2int<uint32_t>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
-
-    Point2f base = lo - pos;
-
     if (filter_radius > 1) {
+        // Determine the affected range of pixels
+        Point2u lo = Point2u(max(ceil2int <Point2i>(pos - filter_radius), 0)),
+                hi = Point2u(min(floor2int<Point2i>(pos + filter_radius), size - 1));
+
+        uint32_t n = ceil2int<uint32_t>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
+
+        Point2f base = lo - pos;
         for (uint32_t i = 0; i < n; ++i) {
             Point2f p = base + i;
             if constexpr (!is_cuda_array_v<Float>) {
@@ -161,19 +160,12 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             }
         }
     } else {
-        ENOKI_NOUNROLL for (uint32_t yr = 0; yr < n; ++yr) {
-            UInt32 y = lo.y() + yr;
-            Mask enabled = active && y <= hi.y();
+        Point2u lo = ceil2int<Point2i>(pos - .5f);
+        UInt32 offset = m_channel_count * (lo.y() * size.x() + lo.x());
 
-            ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
-                UInt32 x       = lo.x() + xr,
-                       offset  = m_channel_count * (y * size.x() + x);
-
-                enabled &= x <= hi.x();
-                ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
-                    scatter_add(m_data, value[k], offset + k, enabled);
-            }
-        }
+        Mask enabled = active && all(lo >= 0u && lo < size);
+        ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
+            scatter_add(m_data, value[k], offset + k, enabled);
     }
 
     return active;
