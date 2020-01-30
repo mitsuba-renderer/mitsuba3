@@ -107,7 +107,7 @@ static int64_t stoll(const std::string &s) {
 
 
 static std::unordered_map<std::string, Tag> *tags = nullptr;
-static std::unordered_map<std::string /* e.g. bsdf.scalar_rgb */,
+static std::unordered_map<std::string, // e.g. bsdf.scalar_rgb
                           const Class *> *tag_class = nullptr;
 
 inline std::string class_key(const std::string &name, const std::string &variant) {
@@ -349,7 +349,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
         Version(MTS_VERSION));
 
     if (version < Version(2, 0, 0)) {
-        /* Upgrade all attribute names from camelCase to underscore_case */
+        // Upgrade all attribute names from camelCase to underscore_case
         for (pugi::xpath_node result: node.select_nodes("//@name")) {
             pugi::xml_attribute name_attrib = result.attribute();
             std::string name = name_attrib.value();
@@ -368,7 +368,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
         for (pugi::xpath_node result: node.select_nodes("//lookAt"))
             result.node().set_name("lookat");
 
-        /* Update 'uoffset', 'voffset', 'uscale', 'vscale' to transform block */
+        // Update 'uoffset', 'voffset', 'uscale', 'vscale' to transform block
         for (pugi::xpath_node result : node.select_nodes(
                  "//node()[float[@name='uoffset' or @name='voffset' or "
                  "@name='uscale' or @name='vscale']]")) {
@@ -434,14 +434,14 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             }
         }
 
-        /* Skip over comments */
+        // Skip over comments
         if (node.type() == pugi::node_comment || node.type() == pugi::node_declaration)
             return std::make_pair("", "");
 
         if (node.type() != pugi::node_element)
             src.throw_error(node, "unexpected content");
 
-        /* Look up the name of the current element */
+        // Look up the name of the current element
         auto it = tags->find(node.name());
         if (it == tags->end())
             src.throw_error(node, "unexpected tag \"%s\"", node.name());
@@ -452,7 +452,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             && tag_class->find(class_key(node.name(), ctx.variant)) != tag_class->end())
             tag = Tag::Object;
 
-        /* Perform some safety checks to make sure that the XML tree really makes sense */
+        // Perform some safety checks to make sure that the XML tree really makes sense
         bool has_parent              = parent_tag != Tag::Invalid;
         bool parent_is_object        = has_parent && parent_tag == Tag::Object;
         bool current_is_object       = tag == Tag::Object;
@@ -629,7 +629,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         Throw("Exceeded <include> recursion limit of %i",
                               MTS_XML_INCLUDE_MAX_RECURSION);
 
-                    if (!result) /* There was a parser / file IO error */
+                    if (!result) // There was a parser / file IO error
                         src.throw_error(node, "error while loading \"%s\" (at %s): %s",
                             nested_src.id, nested_src.offset(result.offset),
                             result.description());
@@ -795,6 +795,13 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         bool is_regular = true;
                         Float interval = 0.f;
 
+                        /* Values are scaled so that integrating the
+                           spectrum against the CIE curves and converting
+                           to sRGB yields (1, 1, 1) for D65. See D65Spectrum. */
+                        Float unit_conversion = 1.0f;
+                        if (within_emitter)
+                            unit_conversion = 100.0f / 10568.0f;
+
                         for (const std::string &token : tokens) {
                             std::vector<std::string> pair = string::tokenize(token, ":");
                             if (pair.size() != 2)
@@ -809,7 +816,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             }
 
                             wavelengths.push_back(wavelength);
-                            values.push_back(value);
+                            values.push_back(unit_conversion * value);
 
                             size_t n = wavelengths.size();
                             if (n <= 1)
@@ -1116,14 +1123,14 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
         [&](ptrdiff_t pos) { return detail::string_offset(string, pos); }
     };
 
-    if (!result) /* There was a parser error */
+    if (!result) // There was a parser error
         Throw("Error while loading \"%s\" (at %s): %s", src.id,
               src.offset(result.offset), result.description());
 
     pugi::xml_node root = doc.document_element();
     detail::XMLParseContext ctx(variant);
     Properties prop;
-    size_t arg_counter; /* Unused */
+    size_t arg_counter; // Unused
     auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
                                       param, arg_counter, 0).second;
     return detail::instantiate_node(ctx, scene_id);
@@ -1148,7 +1155,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         [&](ptrdiff_t pos) { return detail::file_offset(filename, pos); }
     };
 
-    if (!result) /* There was a parser / file IO error */
+    if (!result) // There was a parser / file IO error
         Throw("Error while loading \"%s\" (at %s): %s", src.id,
               src.offset(result.offset), result.description());
 
@@ -1156,7 +1163,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     detail::XMLParseContext ctx(variant);
     Properties prop;
-    size_t arg_counter = 0; /* Unused */
+    size_t arg_counter = 0; // Unused
     auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
                                       param, arg_counter, 0).second;
 
@@ -1167,12 +1174,12 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         if (!fs::rename(filename, backup))
             Throw("Unable to rename file \"%s\" to \"%s\"!", filename, backup);
 
-        /* Update version number */
+        // Update version number
         root.prepend_attribute("version").set_value(MTS_VERSION);
         if (root.attribute("type").value() == std::string("scene"))
             root.remove_attribute("type");
 
-        /* Strip anonymous IDs/names */
+        // Strip anonymous IDs/names
         for (pugi::xpath_node result2: doc.select_nodes("//*[starts-with(@id, '_unnamed_')]"))
             result2.node().remove_attribute("id");
         for (pugi::xpath_node result2: doc.select_nodes("//*[starts-with(@name, '_arg_')]"))
@@ -1180,7 +1187,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
         doc.save_file(filename.native().c_str(), "    ");
 
-        /* Update for detail::file_offset */
+        // Update for detail::file_offset
         filename = backup;
     }
 
