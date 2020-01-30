@@ -105,7 +105,6 @@ def test02_intersection_partials(variant_scalar):
     assert(ek.allclose(si.duv_dx, [0, 0]))
     assert(ek.allclose(si.duv_dy, [0, 0]))
 
-
 def test03_mueller_to_world_to_local(variant_polarized):
     """
     At a few places, coordinate changes between local BSDF reference frame and
@@ -119,27 +118,23 @@ def test03_mueller_to_world_to_local(variant_polarized):
     for some arbitrary incident/outgoing directions in world coordinates and
     compute the round trip going to local frame and back again.
     """
+    from mitsuba.core import Frame3f, Spectrum, UnpolarizedSpectrum
     from mitsuba.core import MTS_WAVELENGTH_SAMPLES as n_spectral_samples
-    from mitsuba.render.mueller import linear_polarizer
     from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.render.mueller import linear_polarizer
     import numpy as np
 
     si = SurfaceInteraction3f()
-    n = [1.0, 1.0, 1.0]
-    n /= ek.norm(n)
-    si.sh_frame = Frame3f(n)
+    si.sh_frame = Frame3f(ek.normalize([1.0, 1.0, 1.0]))
 
-    M_monochromatic = linear_polarizer(1)
-    # Assemble spectral version of Mueller matrix
-    M = np.zeros((n_spectral_samples, 4, 4))
+    M = np.zeros((4, 4, n_spectral_samples))    # TODO: Either bind mueller functions using UnpolarizedSpectrum or do all polarization tests in a 'scalar_mono_polarized' mode
     for i in range(n_spectral_samples):
-        M[i, :, :] = M_monochromatic
+        M[i,:,:] = linear_polarizer()
+    M = Spectrum(M)
 
     # Random incident and outgoing directions
-    wi_world = [0.2, 0.0, 1.0]
-    wi_world /= ek.norm(wi_world)
-    wo_world = [0.0, -0.8, 1.0]
-    wo_world /= ek.norm(wo_world)
+    wi_world = ek.normalize([0.2, 0.0, 1.0])
+    wo_world = ek.normalize([0.0, -0.8, 1.0])
 
     wi_local = si.to_local(wi_world)
     wo_local = si.to_local(wo_world)
@@ -147,4 +142,4 @@ def test03_mueller_to_world_to_local(variant_polarized):
     M_local = si.to_local_mueller(M, wi_world, wo_world)
     M_world = si.to_world_mueller(M_local, wi_local, wo_local)
 
-    assert ek.allclose(M, M_world, atol=1e-5)
+    assert np.allclose(M, M_world, atol=1e-5)   # TODO: ek.allclose doesn't like ek.scalar.Matrix44f
