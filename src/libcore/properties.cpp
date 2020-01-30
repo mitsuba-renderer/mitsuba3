@@ -438,8 +438,7 @@ ref<AnimatedTransform> Properties::animated_transform(
     return animated_transform(name, new AnimatedTransform(def_val));
 }
 
-ref<Object> Properties::find_object(const std::string &name) const
-{
+ref<Object> Properties::find_object(const std::string &name) const {
     const auto it = d->entries.find(name);
     if (it == d->entries.end())
         return ref<Object>();

@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
         } else {
             ng::init();
 
-            {
+            /* main loop */ {
                 ng::ref<MitsubaViewer> viewer = new MitsubaViewer();
                 viewer->dec_ref();
 

@@ -1039,7 +1039,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
             auto &kv = named_references[i];
             try {
                 ref<Object> obj;
-                auto instantiate_recursively = [&](){
+                auto instantiate_recursively = [&]() {
                     obj = instantiate_node(ctx, kv.second);
                 };
 

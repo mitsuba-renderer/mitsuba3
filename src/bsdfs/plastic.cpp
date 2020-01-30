@@ -83,7 +83,7 @@ sRGB:
     :name: plastic-shiny
 
     <bsdf type="plastic">
-		<rgb name="diffuse_reflectance" value="0.1, 0.27, 0.36"/>
+        <rgb name="diffuse_reflectance" value="0.1, 0.27, 0.36"/>
         <float name="int_ior" value="1.9"/>
     </bsdf>
 

@@ -10,7 +10,7 @@ void bind_set_object(PyClass &cl) {
     using ObjectPtr = replace_scalar_t<Float, const Object *>;
 
     if constexpr (is_array_v<Float>)
-        cl.def("set_object", [](Class& ps, UInt64 ptr){ ps.object = static_cast<ObjectPtr>(ptr); });
+        cl.def("set_object", [](Class& ps, UInt64 ptr) { ps.object = static_cast<ObjectPtr>(ptr); });
 }
 
 MTS_PY_EXPORT(PositionSample) {
