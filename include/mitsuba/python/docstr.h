@@ -265,6 +265,8 @@ static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
 
@@ -872,7 +874,7 @@ prevent out-of-range values that are created by the resampling
 process.
 
 The optional ``temp`` parameter can be used to pass an image of
-resolution ``Vector2s(target->width(), this->height())`` to avoid
+resolution ``Vector2u(target->width(), this->height())`` to avoid
 intermediate memory allocations.
 
 Parameter ``target``:
@@ -1165,8 +1167,6 @@ R"doc(Calculate the shortest squared distance between the axis-aligned
 bounding box and ``bbox``.)doc";
 
 static const char *__doc_mitsuba_BoundingBox_surface_area = R"doc(Calculate the 2-dimensional surface area of a 3D bounding box)doc";
-
-static const char *__doc_mitsuba_BoundingBox_surface_area_2 = R"doc(General case: calculate the n-1 dimensional volume of the boundary)doc";
 
 static const char *__doc_mitsuba_BoundingBox_valid =
 R"doc(Check whether this is a valid bounding box
@@ -1667,6 +1667,24 @@ static const char *__doc_mitsuba_DiscreteDistribution_sum = R"doc(Return the ori
 
 static const char *__doc_mitsuba_DiscreteDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pmf.)doc";
 
+static const char *__doc_mitsuba_Distribution2D = R"doc(Base class of Hierarchical2D and Marginal2D with common functionality)doc";
+
+static const char *__doc_mitsuba_Distribution2D_Distribution2D = R"doc()doc";
+
+static const char *__doc_mitsuba_Distribution2D_Distribution2D_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Distribution2D_interpolate_weights = R"doc()doc";
+
+static const char *__doc_mitsuba_Distribution2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
+
+static const char *__doc_mitsuba_Distribution2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(ScalarFloat))doc";
+
+static const char *__doc_mitsuba_Distribution2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
+
+static const char *__doc_mitsuba_Distribution2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
+
+static const char *__doc_mitsuba_Distribution2D_m_slices = R"doc(Total number of slices (in case Dimension > 1))doc";
+
 static const char *__doc_mitsuba_DummyStream =
 R"doc(Stream implementation that never writes to disk, but keeps track of
 the size of the content being written. It can be used, for example, to
@@ -1725,11 +1743,35 @@ static const char *__doc_mitsuba_Emitter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_EmitterFlags =
+R"doc(This list of flags is used to classify the different types of
+emitters.)doc";
+
+static const char *__doc_mitsuba_EmitterFlags_Delta = R"doc(Delta function in either position or direction)doc";
+
+static const char *__doc_mitsuba_EmitterFlags_DeltaDirection = R"doc(The emitter emits light in a single direction)doc";
+
+static const char *__doc_mitsuba_EmitterFlags_DeltaPosition = R"doc(The emitter lies at a single point in space)doc";
+
+static const char *__doc_mitsuba_EmitterFlags_Infinite = R"doc(The emitter is placed at infinity (e.g. environment maps))doc";
+
+static const char *__doc_mitsuba_EmitterFlags_None = R"doc(No flags set (default value))doc";
+
+static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emission depends on the UV coordinates)doc";
+
+static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is attached to a surface (e.g. area emitters))doc";
+
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_class = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_flags = R"doc(Flags for all components combined.)doc";
+
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
+
+static const char *__doc_mitsuba_Emitter_m_flags = R"doc(Combined flags for all properties of this emitter.)doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Endpoint: an abstract interface to light sources and sensors
@@ -1762,6 +1804,8 @@ may be set to ``nullptr`` when it is surrounded by vacuum).)doc";
 static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
 
@@ -2058,6 +2102,8 @@ static const char *__doc_mitsuba_Film_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
 static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
@@ -2290,6 +2336,105 @@ static const char *__doc_mitsuba_Grid3DBase_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_Grid3DBase_traverse = R"doc()doc";
 
+static const char *__doc_mitsuba_Hierarchical2D =
+R"doc(Implements a hierarchical sample warping scheme for 2D distributions
+with linear interpolation and an optional dependence on additional
+parameters
+
+This class takes a rectangular floating point array as input and
+constructs internal data structures to efficiently map uniform
+variates from the unit square ``[0, 1]^2`` to a function on ``[0,
+1]^2`` that linearly interpolates the input array.
+
+The mapping is constructed from a sequence of ``log2(hmax(res))``
+hierarchical sample warping steps, where ``res`` is the input array
+resolution. It is bijective and generally very well-behaved (i.e. low
+distortion), which makes it a good choice for structured point sets
+such as the Halton or Sobol sequence.
+
+The implementation also supports *conditional distributions*, i.e. 2D
+distributions that depend on an arbitrary number of parameters
+(indicated via the ``Dimension`` template parameter).
+
+In this case, the input array should have dimensions ``N0 x N1 x ... x
+Nn x res.y() x res.x()`` (where the last dimension is contiguous in
+memory), and the ``param_res`` should be set to ``{ N0, N1, ..., Nn
+}``, and ``param_values`` should contain the parameter values where
+the distribution is discretized. Linear interpolation is used when
+sampling or evaluating the distribution for in-between parameter
+values.
+
+Remark:
+    The Python API exposes explicitly instantiated versions of this
+    class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2
+    for data that depends on 0, 1, and 2 parameters, respectively.)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Hierarchical2D = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Hierarchical2D_2 =
+R"doc(Construct a hierarchical sample warping scheme for floating point data
+of resolution ``size``.
+
+``param_res`` and ``param_values`` are only needed for conditional
+distributions (see the text describing the Hierarchical2D class).
+
+If ``normalize`` is set to ``False``, the implementation will not re-
+scale the distribution so that it integrates to ``1``. It can still be
+sampled (proportionally), but returned density values will reflect the
+unnormalized values.
+
+If ``build_hierarchy`` is set to ``False``, the implementation will
+not construct the hierarchy needed for sample warping, which saves
+memory in case this functionality is not needed (e.g. if only the
+interpolation in ``eval``() is used). In this case, ``sample``() and
+``invert``() can still be called without triggering undefined
+behavior, but they will not return meaningful results.)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_Level = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_Level_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_data = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_data_ptr = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_index =
+R"doc(Convert from 2D pixel coordinates to an index indicating how the data
+is laid out in memory.
+
+The implementation stores 2x2 patches contigously in memory to improve
+cache locality during hierarchical traversals)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_ptr = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_ptr_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_size = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_Level_width = R"doc()doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_eval =
+R"doc(Evaluate the density at position ``pos``. The distribution is
+parameterized by ``param`` if applicable.)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_m_levels = R"doc(MIP hierarchy over linearly interpolated patches)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_m_max_patch_index = R"doc(Number of bilinear patches in the X/Y dimension - 1)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_sample =
+R"doc(Given a uniformly distributed 2D sample, draw a sample from the
+distribution (parameterized by ``param`` if applicable)
+
+Returns the warped sample and associated probability density.)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_to_string = R"doc()doc";
+
 static const char *__doc_mitsuba_IOREntry = R"doc()doc";
 
 static const char *__doc_mitsuba_IOREntry_name = R"doc()doc";
@@ -2309,6 +2454,8 @@ reconstruction filters.)doc";
 static const char *__doc_mitsuba_ImageBlock_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a new image block of the requested properties
@@ -2473,6 +2620,8 @@ different kinds of implementations.)doc";
 static const char *__doc_mitsuba_Integrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -2751,11 +2900,95 @@ static const char *__doc_mitsuba_Logger_static_initialization = R"doc(Initialize
 
 static const char *__doc_mitsuba_Logger_static_shutdown = R"doc(Shutdown logging)doc";
 
+static const char *__doc_mitsuba_Marginal2D =
+R"doc(Implements a marginal sample warping scheme for 2D distributions with
+linear interpolation and an optional dependence on additional
+parameters
+
+This class takes a rectangular floating point array as input and
+constructs internal data structures to efficiently map uniform
+variates from the unit square ``[0, 1]^2`` to a function on ``[0,
+1]^2`` that linearly interpolates the input array.
+
+The mapping is constructed via the inversion method, which is applied
+to a marginal distribution over rows, followed by a conditional
+distribution over columns.
+
+The implementation also supports *conditional distributions*, i.e. 2D
+distributions that depend on an arbitrary number of parameters
+(indicated via the ``Dimension`` template parameter).
+
+In this case, the input array should have dimensions ``N0 x N1 x ... x
+Nn x res.y() x res.x()`` (where the last dimension is contiguous in
+memory), and the ``param_res`` should be set to ``{ N0, N1, ..., Nn
+}``, and ``param_values`` should contain the parameter values where
+the distribution is discretized. Linear interpolation is used when
+sampling or evaluating the distribution for in-between parameter
+values.
+
+Remark:
+    The Python API exposes explicitly instantiated versions of this
+    class named Marginal2D0, Marginal2D1, and Marginal2D2 for data
+    that depends on 0, 1, and 2 parameters, respectively.)doc";
+
+static const char *__doc_mitsuba_Marginal2D_Marginal2D = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_Marginal2D_2 =
+R"doc(Construct a marginal sample warping scheme for floating point data of
+resolution ``size``.
+
+``param_res`` and ``param_values`` are only needed for conditional
+distributions (see the text describing the Marginal2D class).
+
+If ``normalize`` is set to ``False``, the implementation will not re-
+scale the distribution so that it integrates to ``1``. It can still be
+sampled (proportionally), but returned density values will reflect the
+unnormalized values.
+
+If ``build_cdf`` is set to ``False``, the implementation will not
+construct the cdf needed for sample warping, which saves memory in
+case this functionality is not needed (e.g. if only the interpolation
+in ``eval``() is used).)doc";
+
+static const char *__doc_mitsuba_Marginal2D_eval =
+R"doc(Evaluate the density at position ``pos``. The distribution is
+parameterized by ``param`` if applicable.)doc";
+
+static const char *__doc_mitsuba_Marginal2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+
+static const char *__doc_mitsuba_Marginal2D_invert_continuous = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_invert_discrete = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_lookup = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_m_conditional_cdf = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_m_data = R"doc(Density values)doc";
+
+static const char *__doc_mitsuba_Marginal2D_m_marginal_cdf = R"doc(Marginal and conditional PDFs)doc";
+
+static const char *__doc_mitsuba_Marginal2D_m_size = R"doc(Resolution of the discretized density function)doc";
+
+static const char *__doc_mitsuba_Marginal2D_sample =
+R"doc(Given a uniformly distributed 2D sample, draw a sample from the
+distribution (parameterized by ``param`` if applicable)
+
+Returns the warped sample and associated probability density.)doc";
+
+static const char *__doc_mitsuba_Marginal2D_sample_continuous = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_sample_discrete = R"doc()doc";
+
+static const char *__doc_mitsuba_Marginal2D_to_string = R"doc()doc";
+
 static const char *__doc_mitsuba_Medium = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
@@ -2918,11 +3151,37 @@ static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_context = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_faces = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_faces_buf = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_geometry = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_ready = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_vertex_normals = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_vertex_normals_buf = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_vertex_positions = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_vertex_positions_buf = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_vertex_texcoords = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_OptixData_vertex_texcoords_buf = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_area_distr_build =
 R"doc(Build internal tables for sampling uniformly wrt. area.
@@ -2992,6 +3251,8 @@ static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_normal_offset = R"doc(Byte offset of the normal data within the vertex buffer)doc";
 
+static const char *__doc_mitsuba_Mesh_m_optix = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_texcoord_offset = R"doc(Byte offset of the texture coordinate data within the vertex buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
@@ -3005,6 +3266,8 @@ static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_normal_derivative = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
@@ -3233,6 +3496,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator = R"doc()doc";
 static const char *__doc_mitsuba_MonteCarloIntegrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
@@ -3611,6 +3876,8 @@ rendered using the traditional OpenGL pipeline.)doc";
 static const char *__doc_mitsuba_ProjectiveCamera_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -4065,6 +4332,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -4186,6 +4455,8 @@ static const char *__doc_mitsuba_Sampler_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
@@ -4210,11 +4481,11 @@ static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two c
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 
 static const char *__doc_mitsuba_Sampler_seed =
-R"doc(Deterministically seed the underlying RNG, if any
+R"doc(Deterministically seed the underlying RNG, if applicable.
 
-Parameter ``size``:
-    Number of random variates to be produced (only applies to the
-    dynamic-size implementations))doc";
+In the context of wavefront ray tracing & dynamic arrays, this
+function must be called with a ``seed_value`` matching the size of the
+wavefront.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator =
 R"doc(Integrator based on Monte Carlo sampling
@@ -4227,6 +4498,8 @@ this estimator to compute all pixels of the image.)doc";
 static const char *__doc_mitsuba_SamplingIntegrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
@@ -4311,6 +4584,8 @@ static const char *__doc_mitsuba_Scene = R"doc()doc";
 static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -4484,6 +4759,8 @@ static const char *__doc_mitsuba_Sensor_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -4582,11 +4859,15 @@ static const char *__doc_mitsuba_Shape_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -4754,6 +5035,8 @@ static const char *__doc_mitsuba_Shape_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_operator_new_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
+
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_pdf_direction =
@@ -4887,7 +5170,9 @@ The default implementation throws an exception.)doc";
 
 static const char *__doc_mitsuba_Shape_traverse = R"doc()doc";
 
-static const char *__doc_mitsuba_Spectrum = R"doc(//! @{ \name Data types for discretized spectral data)doc";
+static const char *__doc_mitsuba_Spectrum =
+R"doc(//! @{ \name Data types for spectral quantities with sampled
+wavelengths)doc";
 
 static const char *__doc_mitsuba_Spectrum_Spectrum = R"doc()doc";
 
@@ -6080,11 +6365,15 @@ static const char *__doc_mitsuba_Texture_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_Texture3D = R"doc(Abstract base class for spatially-varying 3D textures.)doc";
 
 static const char *__doc_mitsuba_Texture3D_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Texture3D_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture3D_Texture3D = R"doc()doc";
 
@@ -6819,7 +7108,7 @@ declaring a template specialization for your type.)doc";
 
 static const char *__doc_mitsuba_detail_serialization_helper_write_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_spectrum_traits = R"doc()doc";
+static const char *__doc_mitsuba_detail_spectrum_traits = R"doc(//! @{ \name Color mode traits)doc";
 
 static const char *__doc_mitsuba_detail_spectrum_traits_2 = R"doc()doc";
 
@@ -7150,11 +7439,11 @@ of travel. In the real-valued case, this also happens to be equal to
 the scale factor that must be applied to the X and Y component of the
 refracted direction.)doc";
 
-static const char *__doc_mitsuba_function_traits = R"doc(Type trait to inspect the return and argument types of functions)doc";
-
 static const char *__doc_mitsuba_has_flag = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
@@ -7227,48 +7516,33 @@ treshold entries and resulting number of pooled regions.)doc";
 static const char *__doc_mitsuba_math_find_interval =
 R"doc(Find an interval in an ordered set
 
-This function is very similar to ``std::upper_bound``, but it uses a
-functor rather than an actual array to permit working with
-procedurally defined data. It returns the index ``i`` such that
-pred(i) is ``True`` and ``pred(i+1)`` is ``False``.
+This function performs a binary search to find an index ``i`` such
+that ``pred(i)<tt? is ``True`` and <tt>pred(i+1)`` is ``False``, where
+``pred`` is a user-specified predicate that monotonically decreases
+over this range (i.e. max one ``True`` -> ``False`` transition).
 
-This function is primarily used to locate an interval (i, i+1) for
-linear interpolation, hence its name. To avoid issues with out of
-bounds accesses, and to deal with predicates that evaluate to ``True``
-or ``False`` on the entire domain, the returned left interval index is
-clamped to the range ``[left, right-2]``.
+The predicate will be evaluated exactly <tt>floor(log2(size)) + 1<tt>
+times. Note that the template parameter ``Index`` is automatically
+inferred from the supplied predicate, which takes an index or an index
+vector of type ``Index`` as input argument and can (optionally) take a
+mask argument as well. In the vectorized case, each vector lane can
+use different predicate. When ``pred`` is ``False`` for all entries,
+the function returns ``0``, and when it is ``True`` for all cases, it
+returns <tt>size-2<tt>.
 
-In particular: (i) If there is no index such that pred(i) is true, we
-return (left). (ii) If there is no index such that pred(i+1) is false,
-we return (right-2).)doc";
+The main use case of this function is to locate an interval (i, i+1)
+in an ordered list.
 
-static const char *__doc_mitsuba_math_find_interval_2 =
-R"doc(Find an interval in an ordered set
+```
+float my_list[] = { 1, 1.5f, 4.f, ... };
 
-This function is very similar to ``std::upper_bound``, but it uses a
-functor rather than an actual array to permit working with
-procedurally defined data. It returns the index ``i`` such that
-pred(i) is ``True`` and ``pred(i+1)`` is ``False``.
-
-This function is primarily used to locate an interval (i, i+1) for
-linear interpolation, hence its name. To avoid issues with out of
-bounds accesses, and to deal with predicates that evaluate to ``True``
-or ``False`` on the entire domain, the returned left interval index is
-clamped to the range ``[left, right-2]``.
-
-In particular: (i) If there is no index such that pred(i) is true, we
-return (left). (ii) If there is no index such that pred(i+1) is false,
-we return (right-2).
-
-Remark:
-    This function is intended for vectorized predicatesand
-    additionally accepts a mask as an input. This mask can be used to
-    disable some of the computations done in the predicate, which
-    receives it as its second parameter.)doc";
-
-static const char *__doc_mitsuba_math_find_interval_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_math_find_interval_4 = R"doc()doc";
+UInt32 index = find_interval(
+    sizeof(my_list) / sizeof(float),
+    [](UInt32 index, mask_t<UInt32> active) {
+        return gather<Float>(my_list, index, active) < x;
+    }
+);
+```)doc";
 
 static const char *__doc_mitsuba_math_is_power_of_two = R"doc(Check whether the provided integer is a power of two)doc";
 
@@ -7480,6 +7754,8 @@ static const char *__doc_mitsuba_operator_add_2 = R"doc(Adding a vector to a poi
 
 static const char *__doc_mitsuba_operator_add_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -7488,9 +7764,15 @@ static const char *__doc_mitsuba_operator_band_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_band_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bnot_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
@@ -7499,6 +7781,10 @@ static const char *__doc_mitsuba_operator_bor_2 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bor_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
@@ -7831,10 +8117,6 @@ static const char *__doc_mitsuba_sample_uniform_spectrum = R"doc()doc";
 static const char *__doc_mitsuba_sample_wavelength =
 R"doc(Helper function to sample a wavelength (and a weight) given a random
 number)doc";
-
-static const char *__doc_mitsuba_scalar_cast =
-R"doc(Helper function to convert GPU array resulting from horizontal
-operation to CPU scalar)doc";
 
 static const char *__doc_mitsuba_set_query =
 R"doc(Setup this record so that it can be used to *query* the density of a
@@ -8406,203 +8688,6 @@ static const char *__doc_mitsuba_variant_variant_2 = R"doc()doc";
 static const char *__doc_mitsuba_variant_variant_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_variant_visit = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D =
-R"doc(Implements a hierarchical sample warping scheme for 2D distributions
-with linear interpolation and an optional dependence on additional
-parameters
-
-This class takes a rectangular floating point array as input and
-constructs internal data structures to efficiently map uniform
-variates from the unit square ``[0, 1]^2`` to a function on ``[0,
-1]^2`` that linearly interpolates the input array.
-
-The mapping is constructed from a sequence of ``log2(hmax(res))``
-hierarchical sample warping steps, where ``res`` is the input array
-resolution. It is bijective and generally very well-behaved (i.e. low
-distortion), which makes it an ideal choice for structured point sets
-such as the Halton or Sobol sequence.
-
-The implementation also supports *conditional distributions*, i.e. 2D
-distributions that depend on an arbitrary number of parameters
-(indicated via the ``Dimension`` template parameter).
-
-In this case, the input array should have dimensions ``N0 x N1 x ... x
-Nn x res.y() x res.x()`` (where the last dimension is contiguous in
-memory), and the ``param_res`` should be set to ``{ N0, N1, ..., Nn
-}``, and ``param_values`` should contain the parameter values where
-the distribution is discretized. Linear interpolation is used when
-sampling or evaluating the distribution for in-between parameter
-values.
-
-Remark:
-    The Python API exposes explicitly instantiated versions of this
-    class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2
-    for data that depends on 0, 1, and 2 parameters, respectively.)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Hierarchical2D = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Hierarchical2D_2 =
-R"doc(Construct a hierarchical sample warping scheme for floating point data
-of resolution ``size``.
-
-``param_res`` and ``param_values`` are only needed for conditional
-distributions (see the text describing the Hierarchical2D class).
-
-If ``normalize`` is set to ``False``, the implementation will not re-
-scale the distribution so that it integrates to ``1``. It can still be
-sampled (proportionally), but returned density values will reflect the
-unnormalized values.
-
-If ``build_hierarchy`` is set to ``False``, the implementation will
-not construct the hierarchy needed for sample warping, which saves
-memory in case this functionality is not needed (e.g. if only the
-interpolation in ``eval``() is used). In this case, ``sample``() and
-``invert``() can still be called without triggering undefined
-behavior, but they will not return meaningful results.)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_Level = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_Level_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_data = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_index =
-R"doc(Convert from 2D pixel coordinates to an index indicating how the data
-is laid out in memory.
-
-The implementation stores 2x2 patches contigously in memory to improve
-cache locality during hierarchical traversals)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_lookup = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_lookup_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_ptr = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_ptr_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_size = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_Level_width = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_eval =
-R"doc(Evaluate the density at position ``pos``. The distribution is
-parameterized by ``param`` if applicable.)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_inv_patch_size = R"doc(Inverse of the above)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_levels = R"doc(MIP hierarchy over linearly interpolated patches)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_max_patch_index = R"doc(Number of bilinear patches in the X/Y dimension - 1)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(ScalarFloat))doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_m_vertex_count = R"doc(Resolution of the fine-resolution PDF data)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_sample =
-R"doc(Given a uniformly distributed 2D sample, draw a sample from the
-distribution (parameterized by ``param`` if applicable)
-
-Returns the warped sample and associated probability density.)doc";
-
-static const char *__doc_mitsuba_warp_Hierarchical2D_to_string = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D =
-R"doc(Implements a marginal sample warping scheme for 2D distributions with
-linear interpolation and an optional dependence on additional
-parameters
-
-This class takes a rectangular floating point array as input and
-constructs internal data structures to efficiently map uniform
-variates from the unit square ``[0, 1]^2`` to a function on ``[0,
-1]^2`` that linearly interpolates the input array.
-
-The mapping is constructed via the inversion method, which is applied
-to a marginal distribution over rows, followed by a conditional
-distribution over columns.
-
-The implementation also supports *conditional distributions*, i.e. 2D
-distributions that depend on an arbitrary number of parameters
-(indicated via the ``Dimension`` template parameter).
-
-In this case, the input array should have dimensions ``N0 x N1 x ... x
-Nn x res.y() x res.x()`` (where the last dimension is contiguous in
-memory), and the ``param_res`` should be set to ``{ N0, N1, ..., Nn
-}``, and ``param_values`` should contain the parameter values where
-the distribution is discretized. Linear interpolation is used when
-sampling or evaluating the distribution for in-between parameter
-values.
-
-Remark:
-    The Python API exposes explicitly instantiated versions of this
-    class named Marginal2D0, Marginal2D1, and Marginal2D2 for data
-    that depends on 0, 1, and 2 parameters, respectively.)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_Marginal2D = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_Marginal2D_2 =
-R"doc(Construct a marginal sample warping scheme for floating point data of
-resolution ``size``.
-
-``param_res`` and ``param_values`` are only needed for conditional
-distributions (see the text describing the Marginal2D class).
-
-If ``normalize`` is set to ``False``, the implementation will not re-
-scale the distribution so that it integrates to ``1``. It can still be
-sampled (proportionally), but returned density values will reflect the
-unnormalized values.
-
-If ``build_cdf`` is set to ``False``, the implementation will not
-construct the cdf needed for sample warping, which saves memory in
-case this functionality is not needed (e.g. if only the interpolation
-in ``eval``() is used).)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_eval =
-R"doc(Evaluate the density at position ``pos``. The distribution is
-parameterized by ``param`` if applicable.)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_lookup = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_lookup_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_conditional_cdf = R"doc()doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_data = R"doc(Density values)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_inv_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_marginal_cdf = R"doc(Marginal and conditional PDFs)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_param_size = R"doc(Resolution of each parameter (optional))doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_param_strides = R"doc(Stride per parameter in units of sizeof(ScalarFloat))doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_param_values = R"doc(Discretization of each parameter domain)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_patch_size = R"doc(Size of a bilinear patch in the unit square)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_m_size = R"doc(Resolution of the discretized density function)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_sample =
-R"doc(Given a uniformly distributed 2D sample, draw a sample from the
-distribution (parameterized by ``param`` if applicable)
-
-Returns the warped sample and associated probability density.)doc";
-
-static const char *__doc_mitsuba_warp_Marginal2D_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 
