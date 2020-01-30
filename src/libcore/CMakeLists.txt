@@ -103,7 +103,7 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
 endif()
 
 # Copy to 'dist' directory
-add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb libzmq)
+add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb)
 
 # Python bindings
 if (MTS_ENABLE_PYTHON)
