@@ -15,6 +15,10 @@
 #include <mitsuba/render/scene.h>
 #include <tbb/task_scheduler_init.h>
 
+#if !defined(__WINDOWS__)
+#  include <signal.h>
+#endif
+
 using namespace mitsuba;
 
 static void help(int thread_count) {
@@ -60,6 +64,9 @@ Options:
 )";
 }
 
+std::function<void(void)> develop_callback;
+std::mutex develop_callback_mutex;
+
 template <typename Float, typename Spectrum>
 bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
@@ -68,21 +75,41 @@ bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
     if (sensor_i >= scene->sensors().size())
         Throw("Specified sensor index is out of bounds!");
     auto sensor = scene->sensors()[sensor_i];
+    auto film = sensor->film();
 
     filename.replace_extension("exr");
-    sensor->film()->set_destination_file(filename);
+    film->set_destination_file(filename);
 
     auto integrator = scene->integrator();
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene->to_string());
 
+    /* critical section */ {
+        std::lock_guard<std::mutex> guard(develop_callback_mutex);
+        develop_callback = [&]() { film->develop(); };
+    }
     bool success = integrator->render(scene, sensor.get());
+    /* critical section */ {
+        std::lock_guard<std::mutex> guard(develop_callback_mutex);
+        develop_callback = nullptr;
+    }
     if (success)
-        sensor->film()->develop();
+        film->develop();
     else
         Log(Warn, "\U0000274C Rendering failed, result not saved.");
     return success;
 }
+
+#if !defined(__WINDOWS__)
+// Handle the hang-up signal and write a partially rendered image to disk
+void hup_signal_handler(int signal) {
+    if (signal != SIGHUP)
+        return;
+    std::lock_guard<std::mutex> guard(develop_callback_mutex);
+    if (develop_callback)
+        develop_callback();
+}
+#endif
 
 int main(int argc, char *argv[]) {
     Jit::static_initialization();
@@ -109,6 +136,16 @@ int main(int argc, char *argv[]) {
     bool print_profile = false;
     xml::ParameterList params;
     std::string error_msg;
+
+#if !defined(__WINDOWS__)
+    /* Initialize signal handlers */
+    struct sigaction sa;
+    sa.sa_handler = hup_signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    if (sigaction(SIGHUP, &sa, nullptr))
+        Log(Warn, "Could not install a custom signal handler!");
+#endif
 
     try {
         // Parse all command line options
