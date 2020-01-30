@@ -121,41 +121,58 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     uint32_t n = ceil2int<uint32_t>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
 
     Point2f base = lo - pos;
-    for (uint32_t i = 0; i < n; ++i) {
-        Point2f p = base + i;
-        if constexpr (!is_cuda_array_v<Float>) {
-            m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
-            m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
-        } else {
-            m_weights_x[i] = m_filter->eval(p.x(), active);
-            m_weights_y[i] = m_filter->eval(p.y(), active);
-        }
-    }
 
-    if (unlikely(m_normalize)) {
-        Float wx(0), wy(0);
-        for (uint32_t i = 0; i <= n; ++i) {
-            wx += m_weights_x[i];
-            wy += m_weights_y[i];
+    if (filter_radius > 1) {
+        for (uint32_t i = 0; i < n; ++i) {
+            Point2f p = base + i;
+            if constexpr (!is_cuda_array_v<Float>) {
+                m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
+                m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
+            } else {
+                m_weights_x[i] = m_filter->eval(p.x(), active);
+                m_weights_y[i] = m_filter->eval(p.y(), active);
+            }
         }
 
-        Float factor = rcp(wx * wy);
-        for (uint32_t i = 0; i <= n; ++i)
-            m_weights_x[i] *= factor;
-    }
+        if (unlikely(m_normalize)) {
+            Float wx(0), wy(0);
+            for (uint32_t i = 0; i <= n; ++i) {
+                wx += m_weights_x[i];
+                wy += m_weights_y[i];
+            }
 
-    ENOKI_NOUNROLL for (uint32_t yr = 0; yr < n; ++yr) {
-        UInt32 y = lo.y() + yr;
-        Mask enabled = active && y <= hi.y();
+            Float factor = rcp(wx * wy);
+            for (uint32_t i = 0; i <= n; ++i)
+                m_weights_x[i] *= factor;
+        }
 
-        ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
-            UInt32 x       = lo.x() + xr,
-                   offset  = m_channel_count * (y * size.x() + x);
-            Float weight = m_weights_y[yr] * m_weights_x[xr];
+        ENOKI_NOUNROLL for (uint32_t yr = 0; yr < n; ++yr) {
+            UInt32 y = lo.y() + yr;
+            Mask enabled = active && y <= hi.y();
 
-            enabled &= x <= hi.x();
-            ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
-                scatter_add(m_data, value[k] * weight, offset + k, enabled);
+            ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
+                UInt32 x       = lo.x() + xr,
+                       offset  = m_channel_count * (y * size.x() + x);
+                Float weight = m_weights_y[yr] * m_weights_x[xr];
+
+                enabled &= x <= hi.x();
+                ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
+                    scatter_add(m_data, value[k] * weight, offset + k, enabled);
+            }
+        }
+    } else {
+        ENOKI_NOUNROLL for (uint32_t yr = 0; yr < n; ++yr) {
+            UInt32 y = lo.y() + yr;
+            Mask enabled = active && y <= hi.y();
+
+            ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
+                UInt32 x       = lo.x() + xr,
+                       offset  = m_channel_count * (y * size.x() + x);
+
+                enabled &= x <= hi.x();
+                ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
+                    scatter_add(m_data, value[k], offset + k, enabled);
+            }
         }
     }
 
