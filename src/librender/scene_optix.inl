@@ -34,6 +34,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     OptixState &s = *(OptixState *) m_accel;
 
     rt_check(rtContextCreate(&s.context));
+    int devices = 0;
+    rt_check(rtContextSetDevices(s.context, 1, &devices));
 
     rt_check(rtContextSetRayTypeCount(s.context, 1));
     rt_check(rtContextSetEntryPointCount(s.context, 2));
