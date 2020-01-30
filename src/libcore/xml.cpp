@@ -621,7 +621,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                     detail::XMLSource nested_src {
                         filename.string(), doc,
-                        [&](ptrdiff_t pos) { return detail::file_offset(filename, pos); },
+                        [=](ptrdiff_t pos) { return detail::file_offset(filename, pos); },
                         src.depth + 1
                     };
 
@@ -1152,7 +1152,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     detail::XMLSource src {
         filename.string(), doc,
-        [&](ptrdiff_t pos) { return detail::file_offset(filename, pos); }
+        [=](ptrdiff_t pos) { return detail::file_offset(filename, pos); }
     };
 
     if (!result) // There was a parser / file IO error
