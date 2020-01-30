@@ -35,7 +35,7 @@ public:
 
     ScalarFloat mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return srgb_model_mean(m_value);
+            return hmean(srgb_model_mean(m_value));
         else
             return scalar_cast(hmean(m_value));
     }
