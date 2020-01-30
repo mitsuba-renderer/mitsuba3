@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Constant3D final : public Texture3D<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture3D, m_world_to_local)
+    MTS_IMPORT_BASE(Texture3D, is_inside, m_world_to_local)
     MTS_IMPORT_TYPES(Texture)
 
     explicit Constant3D(const Properties &props) : Base(props) {
@@ -34,11 +34,9 @@ public:
     template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, const Mask &active) const {
         Spectrum result = 0.f;
-
-        auto p         = m_world_to_local * it.p;
-        Mask inside    = active && all((p >= 0) && (p <= 1));
+        // TODO: actual implementation
         //result[inside] = m_color->eval(it, inside);
-        result[inside] = 0.f; // TODO
+        result[active && is_inside(it, active)] = 0.f;
 
         if constexpr (with_gradient)
             return std::make_pair(result, zero<Vector3f>());
@@ -46,6 +44,10 @@ public:
             return result;
     }
 
+    Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
+        auto p = m_world_to_local * it.p;
+        return all((p >= 0) && (p <= 1));
+    }
 
     ScalarFloat max() const override { NotImplementedError("max"); }
 

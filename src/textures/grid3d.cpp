@@ -29,7 +29,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class Grid3D final : public Grid3DBase<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Grid3DBase, set_metadata, m_metadata, m_size, m_world_to_local)
+    MTS_IMPORT_BASE(Grid3DBase, is_inside, set_metadata, m_metadata, m_size, m_world_to_local)
     MTS_IMPORT_TYPES()
 
     static constexpr int m_channel_count = is_monochromatic_v<Spectrum> ? 1 : 3;
@@ -84,6 +84,11 @@ public:
             Spectrum result = trilinear_interpolation<false>(p, it.wavelengths, active);
             return select(active, result, zero<Spectrum>());
         }
+    }
+
+    Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
+        auto p = m_world_to_local * it.p;
+        return all((p >= 0) && (p <= 1));
     }
 
     /**
