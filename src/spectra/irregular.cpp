@@ -39,7 +39,7 @@ public:
                 }
             }
 
-            m_distr = IrregularContinuousDistribution<Wavelength>(
+            m_distr = IrregularContinuousDistribution<Float>(
                 wavelengths.data(), values.data(), values.size()
             );
         } else {
@@ -47,7 +47,7 @@ public:
             const ScalarFloat *wavelengths = (ScalarFloat *) props.pointer("wavelengths");
             const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
 
-            m_distr = IrregularContinuousDistribution<Wavelength>(
+            m_distr = IrregularContinuousDistribution<Float>(
                 wavelengths, values, size
             );
         }
@@ -99,7 +99,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    IrregularContinuousDistribution<Wavelength> m_distr;
+    IrregularContinuousDistribution<Float> m_distr;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(IrregularSpectrum, Texture)
