@@ -80,6 +80,42 @@ public:
         return 0.f;
     }
 
+    Spectrum eval_tr(const SurfaceInteraction3f &si, Mask active) const override {
+        UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
+        if constexpr (is_polarized_v<Spectrum>) {
+            // Query rotation angle
+            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
+
+            // Get standard Mueller matrix for a linear polarizer.
+            Spectrum M = mueller::linear_polarizer(1.f);
+
+            // Rotate optical element by specified angle
+            M = mueller::rotated_element(theta, M);
+
+            // Forward direction is always away from light source.
+            Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
+
+            /* To account for non-perpendicular incidence, we compute the effective
+               transmitting axis based on "The polarization properties of a tilted polarizer"
+               by Korger et al. 2013. */
+            Vector3f a_axis(0, 1, 0);
+            Vector3f eff_a_axis = normalize(a_axis - dot(a_axis, forward)*forward);
+            Vector3f eff_t_axis = cross(forward, eff_a_axis);
+
+            // Rotate in/out basis of M s.t. to standard basis
+            M = mueller::rotate_mueller_basis_collinear(M, forward,
+                                                        eff_t_axis,
+                                                        mueller::stokes_basis(forward));
+
+            // Handle potential absorption if transmittance < 1.0
+            M *= mueller::absorber(transmittance);
+
+            return M;
+        } else {
+            return 0.5f*transmittance;
+        }
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("theta", m_theta.get());
         callback->put_object("transmittance", m_transmittance.get());

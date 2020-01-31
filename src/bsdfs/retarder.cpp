@@ -74,6 +74,36 @@ public:
         return 0.f;
     }
 
+    Spectrum eval_tr(const SurfaceInteraction3f &si, Mask active) const override {
+        if constexpr (is_polarized_v<Spectrum>) {
+            // Query rotation angle
+            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
+
+            // Query phase difference
+            UnpolarizedSpectrum delta = deg_to_rad(m_delta->eval(si, active));
+
+            // Approximate angle-of-incidence behaviour with a cosine falloff
+            delta *= abs(Frame3f::cos_theta(si.wi));
+
+            // Get standard Mueller matrix for a linear polarizer.
+            Spectrum M = mueller::linear_retarder(delta);
+
+            // Rotate optical element by specified angle
+            M = mueller::rotated_element(theta, M);
+
+            // Forward direction is always away from light source.
+            Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
+
+            // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
+            M = mueller::rotate_mueller_basis_collinear(M, forward,
+                                                        Vector3f(1.f, 0.f, 0.f),
+                                                        mueller::stokes_basis(forward));
+            return M;
+        } else {
+            return 1.f;
+        }
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("theta", m_theta.get());
         callback->put_object("delta", m_delta.get());
