@@ -96,7 +96,7 @@ def traverse(node):
             return ParameterMapItemIterator(self)
 
         def torch(self):
-            return { k : v.torch() for k, v in self.items() }
+            return { k : v.torch().requires_grad_() for k, v in self.items() }
 
         def update(self):
             work_list = sorted(set(self.update_list), key=lambda x: x[0])
