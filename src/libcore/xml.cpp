@@ -827,12 +827,12 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 src.throw_error(node, "wavelengths must be specified in increasing order");
                             if (n == 2)
                                 interval = distance;
-                            else if (distance - interval > math::Epsilon<Float>)
+                            else if (std::abs(distance - interval) > math::Epsilon<Float>)
                                 is_regular = false;
                         }
 
                         if (!is_regular)
-                            Throw("Not implemented yet: irregularly sampled spectra.");
+                            Throw("Not implemented yet: irregularly sampled spectra");
 
                         Properties props2;
 
