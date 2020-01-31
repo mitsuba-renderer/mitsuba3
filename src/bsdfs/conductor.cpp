@@ -78,9 +78,6 @@ public:
             value = reflectance * fresnel_conductor(UnpolarizedSpectrum(cos_theta_i), eta);
         }
 
-        value = m_specular_reflectance->eval(si, active) *
-                fresnel_conductor(UnpolarizedSpectrum(cos_theta_i), eta);
-
         return { bs, value & active };
     }
 

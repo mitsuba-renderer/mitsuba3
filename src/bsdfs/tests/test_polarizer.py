@@ -91,9 +91,9 @@ def test02_sample_local(variant_mono_polarized):
 
 
 def test03_sample_world(variant_mono_polarized):
-    from mitsuba.core import Ray3f, Frame3f, Transform4f, Spectrum
+    from mitsuba.core import Ray3f, Spectrum
     from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
+    from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
 
     def spectrum_from_stokes(v):
@@ -159,9 +159,9 @@ def test03_sample_world(variant_mono_polarized):
 
 
 def test04_path_tracer_polarizer(variant_mono_polarized):
-    from mitsuba.core import Ray3f, Frame3f, Transform4f, Spectrum
+    from mitsuba.core import Spectrum
     from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
+    from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):
@@ -259,9 +259,9 @@ def test04_path_tracer_polarizer(variant_mono_polarized):
 
 
 def test05_path_tracer_malus_law(variant_mono_polarized):
-    from mitsuba.core import Ray3f, Frame3f, Transform4f, Spectrum
+    from mitsuba.core import Spectrum
     from mitsuba.core.xml import load_string
-    from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
+    from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis_m
 
     def spectrum_from_stokes(v):
