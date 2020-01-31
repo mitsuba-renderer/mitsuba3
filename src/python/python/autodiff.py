@@ -86,18 +86,43 @@ def render(scene, spp=None, sensor_index=0):
     return values / (weight + 1e-8)
 
 
-def write_bitmap(filename, data, size):
+def write_bitmap(filename, data, resolution):
+    """
+    Write the linearized RGB image in `data` to a
+    PNG/EXR/.. file with resolution `resolution`.
+    """
     import numpy as np
     from mitsuba.core import Bitmap, Struct
 
-    bitmap = Bitmap(np.array(data).reshape(*size, -1))
+    bitmap = Bitmap(np.array(data).reshape(*resolution, -1))
     if filename.endswith('.png') or filename.endswith('.jpg'):
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)
     bitmap.write(filename)
 
+def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
+                spp_diff=None, sensor_index=0):
+    """
+    Perform a differentiable of the scene `scene`. This function differs from
+    `render()` in that it splits the rendering step into two separate passes
+    that generate the primal image and gradients, respectively (assuming that
+    `unbiased=True` is specified). This is necessary to avoid correlations that
+    would otherwise introduce bias into the resulting parameter gradients.
+    """
+    if unbiased:
+        with optimizer.disable_gradients():
+            image = render(scene, spp=spp_primal, sensor_index=sensor_index)
+        image_diff = render(scene, spp=spp_diff, sensor_index=sensor_index)
+        ek.reattach(image, image_diff)
+    else:
+        spp = max(spp_primal, spp_diff)
+        image = render(scene, spp=spp, sensor_index=sensor_index)
+    return image
 
 class Optimizer:
+    """
+    Base class of optimizers (SGD, Adam)
+    """
     def __init__(self, params, lr):
         self.set_learning_rate(lr)
         self.params = params
@@ -115,7 +140,7 @@ class Optimizer:
 
     @contextmanager
     def disable_gradients(self):
-        """Temporarily disables gradients for the optimized parameters."""
+        """Temporarily disable the generation of gradients."""
         for _, p in self.params.items():
             ek.set_requires_gradient(p, False)
         try:
