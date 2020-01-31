@@ -90,6 +90,16 @@
         "spectrum": "Color<Float, 1>"
     },
 
+    "scalar_mono_polarized": {
+        "float": "float",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "scalar_mono_polarized_double": {
+        "float": "double",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
     "scalar_rgb": {
         "float": "float",
         "spectrum": "Color<Float, 3>"
@@ -130,6 +140,16 @@
     "packet_mono_double": {
         "float": "Packet<double>",
         "spectrum": "Color<Float, 1>"
+    },
+
+    "packet_mono_polarized": {
+        "float": "Packet<float>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "packet_mono_polarized_double": {
+        "float": "Packet<double>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "packet_rgb": {
