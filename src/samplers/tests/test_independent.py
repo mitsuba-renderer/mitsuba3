@@ -49,11 +49,7 @@ def test04_seed_vectorized(variant_scalar, sampler):
     """For a given seed, the first lane of a sampled packet should be equal
     to the sample of a scalar independent sampler."""
 
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except:
-        pytest.skip("packet_rgb mode not enabled")
-
+    mitsuba.set_variant('packet_rgb')
     from mitsuba.core.xml import load_string
 
     sampler_p = load_string("""<sampler version="2.0.0" type="independent">

@@ -18,11 +18,7 @@ def check_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)) , resolut
     func     = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str))
     pdf_func = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str + "_pdf"))
 
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except:
-        pytest.skip("packet_rgb mode not enabled")
-
+    mitsuba.set_variant('packet_rgb')
     func_vec     = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str))
     pdf_func_vec = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str + "_pdf"))
     from mitsuba.core import Vector2f

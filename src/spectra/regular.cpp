@@ -32,14 +32,14 @@ public:
                 }
             }
 
-            m_distr = ContinuousDistribution<Float>(
+            m_distr = ContinuousDistribution<Wavelength>(
                 wavelength_range, data.data(), data.size()
             );
         } else {
             size_t size = props.size_("size");
             const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
 
-            m_distr = ContinuousDistribution<Float>(
+            m_distr = ContinuousDistribution<Wavelength>(
                 wavelength_range, values, size
             );
         }
@@ -91,7 +91,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ContinuousDistribution<Float> m_distr;
+    ContinuousDistribution<Wavelength> m_distr;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(RegularSpectrum, Texture)

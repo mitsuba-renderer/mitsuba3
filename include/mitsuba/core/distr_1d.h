@@ -18,6 +18,9 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Float> struct DiscreteDistribution {
     using FloatStorage = DynamicBuffer<Float>;
+    using Index = uint32_array_t<Float>;
+    using Mask = mask_t<Float>;
+
     using ScalarFloat = scalar_t<Float>;
     using ScalarVector2u = Array<uint32_t, 2>;
 
@@ -109,27 +112,23 @@ public:
     bool empty() const { return m_pmf.empty(); }
 
     /// Evaluate the unnormalized probability mass function (PMF) at index \c index
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_pmf(Index index, mask_t<T> active = true) const {
-        return gather<T>(m_pmf, index, active);
+    Float eval_pmf(Index index, Mask active = true) const {
+        return gather<Float>(m_pmf, index, active);
     }
 
     /// Evaluate the normalized probability mass function (PMF) at index \c index
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_pmf_normalized(Index index, mask_t<T> active = true) const {
-        return gather<T>(m_pmf, index, active) * m_normalization;
+    Float eval_pmf_normalized(Index index, Mask active = true) const {
+        return gather<Float>(m_pmf, index, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at index \c index
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_cdf(Index index, mask_t<T> active = true) const {
-        return gather<T>(m_cdf, index, active);
+    Float eval_cdf(Index index, Mask active = true) const {
+        return gather<Float>(m_cdf, index, active);
     }
 
     /// Evaluate the normalized cumulative distribution function (CDF) at index \c index
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_cdf_normalized(Index index, mask_t<T> active = true) const {
-        return gather<T>(m_cdf, index, active) * m_normalization;
+    Float eval_cdf_normalized(Index index, Mask active = true) const {
+        return gather<Float>(m_cdf, index, active) * m_normalization;
     }
 
     /**
@@ -142,14 +141,13 @@ public:
      * \return
      *     The discrete index associated with the sample
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    Index sample(T value, mask_t<T> active = true) const {
+    Index sample(Float value, Mask active = true) const {
         value *= m_sum;
 
         return enoki::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_cdf, index, active) < value;
+                return gather<Float>(m_cdf, index, active) < value;
             }
         );
     }
@@ -167,10 +165,9 @@ public:
      *     1. the discrete index associated with the sample, and
      *     2. the normalized probability value of the sample.
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    std::pair<Index, T> sample_pmf(T value, mask_t<T> active = true) const {
+    std::pair<Index, Float> sample_pmf(Float value, Mask active = true) const {
         Index index = sample(value, active);
-        return { index, eval_pmf_normalized<T>(index) };
+        return { index, eval_pmf_normalized(index) };
     }
 
     /**
@@ -189,13 +186,12 @@ public:
      *     1. the discrete index associated with the sample, and
      *     2. the re-scaled sample value.
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    std::pair<Index, T>
-    sample_reuse(T value, mask_t<T> active = true) const {
+    std::pair<Index, Float>
+    sample_reuse(Float value, Mask active = true) const {
         Index index = sample(value, active);
 
-        T pmf = eval_pmf_normalized<T>(index, active),
-          cdf = eval_cdf_normalized<T>(index - 1, active && index > 0);
+        Float pmf = eval_pmf_normalized(index, active),
+              cdf = eval_cdf_normalized(index - 1, active && index > 0);
 
         return { index, (value - cdf) / pmf };
     }
@@ -217,13 +213,12 @@ public:
      *     2. the re-scaled sample value
      *     3. the normalized probability value of the sample
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    std::tuple<Index, T, T>
-    sample_reuse_pmf(T value, mask_t<T> active = true) const {
+    std::tuple<Index, Float, Float>
+    sample_reuse_pmf(Float value, Mask active = true) const {
         auto [index, pdf] = sample_pmf(value, active);
 
-        T pmf = eval_pmf_normalized<T>(index, active),
-          cdf = eval_cdf_normalized<T>(index - 1, active && index > 0);
+        Float pmf = eval_pmf_normalized(index, active),
+              cdf = eval_cdf_normalized(index - 1, active && index > 0);
 
         return {
             index,
@@ -254,6 +249,9 @@ private:
  */
 template <typename Float> struct ContinuousDistribution {
     using FloatStorage = DynamicBuffer<Float>;
+    using Index = uint32_array_t<Float>;
+    using Mask = mask_t<Float>;
+
     using ScalarFloat = scalar_t<Float>;
     using ScalarVector2f = Array<ScalarFloat, 2>;
     using ScalarVector2u = Array<uint32_t, 2>;
@@ -369,49 +367,45 @@ public:
     bool empty() const { return m_pdf.empty(); }
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_pdf(T x, mask_t<T> active = true) const {
+    Float eval_pdf(Float x, Mask active = true) const {
         active &= x >= m_range.x() && x <= m_range.y();
         x = (x - m_range.x()) * m_inv_interval_size;
 
         Index index = clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        T y0 = gather<T>(m_pdf, index,      active),
-          y1 = gather<T>(m_pdf, index + 1u, active);
+        Float y0 = gather<Float>(m_pdf, index,      active),
+              y1 = gather<Float>(m_pdf, index + 1u, active);
 
-        T w1 = x - T(index),
-          w0 = 1.f - w1;
+        Float w1 = x - Float(index),
+              w0 = 1.f - w1;
 
         return fmadd(w0, y0, w1 * y1);
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
-    template <typename T>
-    T eval_pdf_normalized(T x, mask_t<T> active) const {
+    Float eval_pdf_normalized(Float x, Mask active) const {
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_cdf(T x_, mask_t<T> active = true) const {
-        T x = (x_ - m_range.x()) * m_inv_interval_size;
+    Float eval_cdf(Float x_, Mask active = true) const {
+        Float x = (x_ - m_range.x()) * m_inv_interval_size;
 
         Index index = clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        T y0 = gather<T>(m_pdf, index,      active),
-          y1 = gather<T>(m_pdf, index + 1u, active),
-          c0 = gather<T>(m_cdf, index - 1u, index > 0u && active);
+        Float y0 = gather<Float>(m_pdf, index,      active),
+              y1 = gather<Float>(m_pdf, index + 1u, active),
+              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0u);
 
 
-        T t   = clamp(x - T(index), 0.f, 1.f),
-          cdf = c0 + t * (y0 + .5f * t * (y1 - y0)) * m_interval_size;
+        Float t   = clamp(x - Float(index), 0.f, 1.f),
+              cdf = c0 + t * (y0 + .5f * t * (y1 - y0)) * m_interval_size;
 
         return cdf;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    template <typename T>
-    T eval_cdf_normalized(T x, mask_t<T> active = true) const {
+    Float eval_cdf_normalized(Float x, Mask active = true) const {
         return eval_cdf(x, active) * m_normalization;
     }
 
@@ -425,28 +419,27 @@ public:
      * \return
      *     The sampled position.
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    T sample(T value, mask_t<T> active = true) const {
+    Float sample(Float value, Mask active = true) const {
         value *= m_integral;
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_cdf, index, active) < value;
+                return gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        T y0 = gather<T>(m_pdf, index,      active),
-          y1 = gather<T>(m_pdf, index + 1u, active),
-          c0 = gather<T>(m_cdf, index- 1u, active && index > 0);
+        Float y0 = gather<Float>(m_pdf, index,      active),
+              y1 = gather<Float>(m_pdf, index + 1u, active),
+              c0 = gather<Float>(m_cdf, index- 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        T t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-          t_const  = value / y0,
-          t        = select(eq(y0, y1), t_const, t_linear);
+        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+              t_const  = value / y0,
+              t        = select(eq(y0, y1), t_const, t_linear);
 
-        return fmadd(T(index) + t, m_interval_size, m_range.x());
+        return fmadd(Float(index) + t, m_interval_size, m_range.x());
     }
 
     /**
@@ -462,28 +455,27 @@ public:
      *     1. the sampled position.
      *     2. the normalized probability density of the sample.
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    std::pair<T, T> sample_pdf(T value, mask_t<T> active = true) const {
+    std::pair<Float, Float> sample_pdf(Float value, Mask active = true) const {
         value *= m_integral;
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_cdf, index, active) < value;
+                return gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        T y0 = gather<T>(m_pdf, index,      active),
-          y1 = gather<T>(m_pdf, index + 1u, active),
-          c0 = gather<T>(m_cdf, index- 1u, active && index > 0);
+        Float y0 = gather<Float>(m_pdf, index,      active),
+              y1 = gather<Float>(m_pdf, index + 1u, active),
+              c0 = gather<Float>(m_cdf, index- 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        T t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-          t_const  = value / y0,
-          t        = select(eq(y0, y1), t_const, t_linear);
+        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+              t_const  = value / y0,
+              t        = select(eq(y0, y1), t_const, t_linear);
 
-        return { fmadd(T(index) + t, m_interval_size, m_range.x()),
+        return { fmadd(Float(index) + t, m_interval_size, m_range.x()),
                  fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
@@ -512,6 +504,9 @@ private:
  */
 template <typename Float> struct IrregularContinuousDistribution {
     using FloatStorage = DynamicBuffer<Float>;
+    using Index = uint32_array_t<Float>;
+    using Mask = mask_t<Float>;
+
     using ScalarFloat = scalar_t<Float>;
     using ScalarVector2f = Array<ScalarFloat, 2>;
     using ScalarVector2u = Array<uint32_t, 2>;
@@ -637,23 +632,22 @@ public:
     bool empty() const { return m_pdf.empty(); }
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_pdf(T x, mask_t<T> active = true) const {
+    Float eval_pdf(Float x, Mask active = true) const {
         active &= x >= m_range.x() && x <= m_range.y();
 
         Index index = enoki::binary_search(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_nodes, index, active) < x;
+                return gather<Float>(m_nodes, index, active) < x;
             }
         );
 
         index = enoki::max(enoki::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        T x0 = gather<T>(m_nodes, index,      active),
-          x1 = gather<T>(m_nodes, index + 1u, active),
-          y0 = gather<T>(m_pdf,   index,      active),
-          y1 = gather<T>(m_pdf,   index + 1u, active);
+        Float x0 = gather<Float>(m_nodes, index,      active),
+              x1 = gather<Float>(m_nodes, index + 1u, active),
+              y0 = gather<Float>(m_pdf,   index,      active),
+              y1 = gather<Float>(m_pdf,   index + 1u, active);
 
         x = (x - x0) / (x1 - x0);
 
@@ -661,39 +655,36 @@ public:
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
-    template <typename T>
-    T eval_pdf_normalized(T x, mask_t<T> active) const {
+    Float eval_pdf_normalized(Float x, Mask active) const {
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    template <typename T, typename Index = uint32_array_t<T>>
-    T eval_cdf(T x, mask_t<T> active = true) const {
+    Float eval_cdf(Float x, Mask active = true) const {
         Index index = enoki::binary_search(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_nodes, index, active) < x;
+                return gather<Float>(m_nodes, index, active) < x;
             }
         );
 
         index = enoki::max(enoki::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        T x0 = gather<T>(m_nodes, index,      active),
-          x1 = gather<T>(m_nodes, index + 1u, active),
-          y0 = gather<T>(m_pdf,   index,      active),
-          y1 = gather<T>(m_pdf,   index + 1u, active),
-          c0 = gather<T>(m_cdf,   index - 1u, index > 0u && active);
+        Float x0 = gather<Float>(m_nodes, index,      active),
+              x1 = gather<Float>(m_nodes, index + 1u, active),
+              y0 = gather<Float>(m_pdf,   index,      active),
+              y1 = gather<Float>(m_pdf,   index + 1u, active),
+              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0u);
 
-        T w   = x1 - x0,
-          t   = clamp((x - x0) / w, 0.f, 1.f),
-          cdf = c0 + w * t * (y0 + .5f * t * (y1 - y0));
+        Float w   = x1 - x0,
+              t   = clamp((x - x0) / w, 0.f, 1.f),
+              cdf = c0 + w * t * (y0 + .5f * t * (y1 - y0));
 
         return cdf;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    template <typename T>
-    T eval_cdf_normalized(T x, mask_t<T> active = true) const {
+    Float eval_cdf_normalized(Float x, Mask active = true) const {
         return eval_cdf(x, active) * m_normalization;
     }
 
@@ -707,29 +698,28 @@ public:
      * \return
      *     The sampled position.
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    T sample(T value, mask_t<T> active = true) const {
+    Float sample(Float value, Mask active = true) const {
         value *= m_integral;
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_cdf, index, active) < value;
+                return gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        T x0 = gather<T>(m_nodes, index,      active),
-          x1 = gather<T>(m_nodes, index + 1u, active),
-          y0 = gather<T>(m_pdf,   index,      active),
-          y1 = gather<T>(m_pdf,   index + 1u, active),
-          c0 = gather<T>(m_cdf,   index - 1u, active && index > 0),
-          w  = x1 - x0;
+        Float x0 = gather<Float>(m_nodes, index,      active),
+              x1 = gather<Float>(m_nodes, index + 1u, active),
+              y0 = gather<Float>(m_pdf,   index,      active),
+              y1 = gather<Float>(m_pdf,   index + 1u, active),
+              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0),
+              w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        T t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-          t_const  = value / y0,
-          t        = select(eq(y0, y1), t_const, t_linear);
+        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+              t_const  = value / y0,
+              t        = select(eq(y0, y1), t_const, t_linear);
 
         return fmadd(t, w, x0);
     }
@@ -747,29 +737,28 @@ public:
      *     1. the sampled position.
      *     2. the normalized probability density of the sample.
      */
-    template <typename T, typename Index = uint32_array_t<T>>
-    std::pair<T, T> sample_pdf(T value, mask_t<T> active = true) const {
+    std::pair<Float, Float> sample_pdf(Float value, Mask active = true) const {
         value *= m_integral;
 
         Index index = enoki::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<T>(m_cdf, index, active) < value;
+                return gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        T x0 = gather<T>(m_nodes, index,      active),
-          x1 = gather<T>(m_nodes, index + 1u, active),
-          y0 = gather<T>(m_pdf,   index,      active),
-          y1 = gather<T>(m_pdf,   index + 1u, active),
-          c0 = gather<T>(m_cdf,   index - 1u, active && index > 0),
-          w  = x1 - x0;
+        Float x0 = gather<Float>(m_nodes, index,      active),
+              x1 = gather<Float>(m_nodes, index + 1u, active),
+              y0 = gather<Float>(m_pdf,   index,      active),
+              y1 = gather<Float>(m_pdf,   index + 1u, active),
+              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0),
+              w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        T t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
-          t_const  = value / y0,
-          t        = select(eq(y0, y1), t_const, t_linear);
+        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+              t_const  = value / y0,
+              t        = select(eq(y0, y1), t_const, t_linear);
 
         return { fmadd(t, w, x0),
             fmadd(t, y1 - y0, y0) * m_normalization };

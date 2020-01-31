@@ -476,10 +476,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
 
 
 if __name__ == '__main__':
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except:
-        assert False, "packet_rgb mode not enabled"
+    mitsuba.set_variant('packet_rgb')
 
     from mitsuba.core.warp import square_to_cosine_hemisphere
     from mitsuba.core.warp import square_to_cosine_hemisphere_pdf

@@ -19,40 +19,28 @@ MTS_PY_EXPORT(DiscreteDistribution) {
              D(DiscreteDistribution, pmf), py::return_value_policy::reference_internal)
         .def("cdf", py::overload_cast<>(&DiscreteDistribution::cdf),
              D(DiscreteDistribution, cdf), py::return_value_policy::reference_internal)
-        .def("eval_pmf", vectorize(&DiscreteDistribution::eval_pmf<Float>),
+        .def("eval_pmf", vectorize(&DiscreteDistribution::eval_pmf),
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_pmf))
-        .def("eval_pmf", vectorize(&DiscreteDistribution::eval_pmf<Wavelength>),
-             "index"_a, "active"_a = true, D(DiscreteDistribution, eval_pmf))
-        .def("eval_pmf_normalized", vectorize(&DiscreteDistribution::eval_pmf_normalized<Float>),
+        .def("eval_pmf_normalized", vectorize(&DiscreteDistribution::eval_pmf_normalized),
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_pmf_normalized))
-        .def("eval_pmf_normalized", vectorize(&DiscreteDistribution::eval_pmf_normalized<Wavelength>),
-             "index"_a, "active"_a = true, D(DiscreteDistribution, eval_pmf_normalized))
-        .def("eval_cdf", vectorize(&DiscreteDistribution::eval_cdf<Float>),
+        .def("eval_cdf", vectorize(&DiscreteDistribution::eval_cdf),
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_cdf))
-        .def("eval_cdf", vectorize(&DiscreteDistribution::eval_cdf<Wavelength>),
-             "index"_a, "active"_a = true, D(DiscreteDistribution, eval_cdf))
-        .def("eval_cdf_normalized", vectorize(&DiscreteDistribution::eval_cdf_normalized<Float>),
-             "index"_a, "active"_a = true, D(DiscreteDistribution, eval_cdf_normalized))
-        .def("eval_cdf_normalized", vectorize(&DiscreteDistribution::eval_cdf_normalized<Wavelength>),
+        .def("eval_cdf_normalized", vectorize(&DiscreteDistribution::eval_cdf_normalized),
              "index"_a, "active"_a = true, D(DiscreteDistribution, eval_cdf_normalized))
         .def_method(DiscreteDistribution, update)
         .def_method(DiscreteDistribution, sum)
         .def_method(DiscreteDistribution, normalization)
-        .def("sample", vectorize(&DiscreteDistribution::sample<Float>),
+        .def("sample",
+            vectorize(&DiscreteDistribution::sample),
             "value"_a, "active"_a = true, D(DiscreteDistribution, sample))
-        .def("sample", vectorize(&DiscreteDistribution::sample<Wavelength>),
-            "value"_a, "active"_a = true, D(DiscreteDistribution, sample))
-        .def("sample_pmf", vectorize(&DiscreteDistribution::sample_pmf<Float>),
+        .def("sample_pmf",
+            vectorize(&DiscreteDistribution::sample_pmf),
             "value"_a, "active"_a = true, D(DiscreteDistribution, sample_pmf))
-        .def("sample_pmf", vectorize(&DiscreteDistribution::sample_pmf<Wavelength>),
-            "value"_a, "active"_a = true, D(DiscreteDistribution, sample_pmf))
-        .def("sample_reuse", vectorize(&DiscreteDistribution::sample_reuse<Float>),
+        .def("sample_reuse",
+            vectorize(&DiscreteDistribution::sample_reuse),
             "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse))
-        .def("sample_reuse", vectorize(&DiscreteDistribution::sample_reuse<Wavelength>),
-            "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse))
-        .def("sample_reuse_pmf", vectorize(&DiscreteDistribution::sample_reuse_pmf<Float>),
-            "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
-        .def("sample_reuse_pmf", vectorize(&DiscreteDistribution::sample_reuse_pmf<Wavelength>),
+        .def("sample_reuse_pmf",
+            vectorize(&DiscreteDistribution::sample_reuse_pmf),
             "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
         .def_repr(DiscreteDistribution);
 }
@@ -77,32 +65,22 @@ MTS_PY_EXPORT(ContinuousDistribution) {
              D(ContinuousDistribution, pdf), py::return_value_policy::reference_internal)
         .def("cdf", py::overload_cast<>(&ContinuousDistribution::cdf),
              D(ContinuousDistribution, cdf), py::return_value_policy::reference_internal)
-        .def("eval_pdf", vectorize(&ContinuousDistribution::eval_pdf<Float>),
+        .def("eval_pdf", vectorize(&ContinuousDistribution::eval_pdf),
              "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf))
-        .def("eval_pdf", vectorize(&ContinuousDistribution::eval_pdf<Wavelength>),
-             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf))
-        .def("eval_pdf_normalized", vectorize(&ContinuousDistribution::eval_pdf_normalized<Float>),
+        .def("eval_pdf_normalized", vectorize(&ContinuousDistribution::eval_pdf_normalized),
              "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf_normalized))
-        .def("eval_pdf_normalized", vectorize(&ContinuousDistribution::eval_pdf_normalized<Wavelength>),
-             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_pdf_normalized))
-        .def("eval_cdf", vectorize(&ContinuousDistribution::eval_cdf<Float>),
+        .def("eval_cdf", vectorize(&ContinuousDistribution::eval_cdf),
              "x"_a, "active"_a = true, D(ContinuousDistribution, eval_cdf))
-        .def("eval_cdf", vectorize(&ContinuousDistribution::eval_cdf<Wavelength>),
-             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_cdf))
-        .def("eval_cdf_normalized", vectorize(&ContinuousDistribution::eval_cdf_normalized<Float>),
-             "x"_a, "active"_a = true, D(ContinuousDistribution, eval_cdf_normalized))
-        .def("eval_cdf_normalized", vectorize(&ContinuousDistribution::eval_cdf_normalized<Wavelength>),
+        .def("eval_cdf_normalized", vectorize(&ContinuousDistribution::eval_cdf_normalized),
              "x"_a, "active"_a = true, D(ContinuousDistribution, eval_cdf_normalized))
         .def_method(ContinuousDistribution, update)
         .def_method(ContinuousDistribution, integral)
         .def_method(ContinuousDistribution, normalization)
-        .def("sample", vectorize(&ContinuousDistribution::sample<Float>),
+        .def("sample",
+            vectorize(&ContinuousDistribution::sample),
             "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
-        .def("sample", vectorize(&ContinuousDistribution::sample<Wavelength>),
-            "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
-        .def("sample_pdf", vectorize(&ContinuousDistribution::sample_pdf<Float>),
-            "value"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
-        .def("sample_pdf", vectorize(&ContinuousDistribution::sample_pdf<Wavelength>),
+        .def("sample_pdf",
+            vectorize(&ContinuousDistribution::sample_pdf),
             "value"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
         .def_repr(ContinuousDistribution);
 }
@@ -127,32 +105,22 @@ MTS_PY_EXPORT(IrregularContinuousDistribution) {
              D(IrregularContinuousDistribution, pdf), py::return_value_policy::reference_internal)
         .def("cdf", py::overload_cast<>(&IrregularContinuousDistribution::cdf),
              D(IrregularContinuousDistribution, cdf), py::return_value_policy::reference_internal)
-        .def("eval_pdf", vectorize(&IrregularContinuousDistribution::eval_pdf<Float>),
+        .def("eval_pdf", vectorize(&IrregularContinuousDistribution::eval_pdf),
              "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf))
-        .def("eval_pdf", vectorize(&IrregularContinuousDistribution::eval_pdf<Wavelength>),
-             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf))
-        .def("eval_pdf_normalized", vectorize(&IrregularContinuousDistribution::eval_pdf_normalized<Float>),
+        .def("eval_pdf_normalized", vectorize(&IrregularContinuousDistribution::eval_pdf_normalized),
              "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf_normalized))
-        .def("eval_pdf_normalized", vectorize(&IrregularContinuousDistribution::eval_pdf_normalized<Wavelength>),
-             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_pdf_normalized))
-        .def("eval_cdf", vectorize(&IrregularContinuousDistribution::eval_cdf<Float>),
+        .def("eval_cdf", vectorize(&IrregularContinuousDistribution::eval_cdf),
              "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_cdf))
-        .def("eval_cdf", vectorize(&IrregularContinuousDistribution::eval_cdf<Wavelength>),
-             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_cdf))
-        .def("eval_cdf_normalized", vectorize(&IrregularContinuousDistribution::eval_cdf_normalized<Float>),
-             "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_cdf_normalized))
-        .def("eval_cdf_normalized", vectorize(&IrregularContinuousDistribution::eval_cdf_normalized<Wavelength>),
+        .def("eval_cdf_normalized", vectorize(&IrregularContinuousDistribution::eval_cdf_normalized),
              "x"_a, "active"_a = true, D(IrregularContinuousDistribution, eval_cdf_normalized))
         .def_method(IrregularContinuousDistribution, update)
         .def_method(IrregularContinuousDistribution, integral)
         .def_method(IrregularContinuousDistribution, normalization)
-        .def("sample", vectorize(&IrregularContinuousDistribution::sample<Float>),
+        .def("sample",
+            vectorize(&IrregularContinuousDistribution::sample),
             "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
-        .def("sample", vectorize(&IrregularContinuousDistribution::sample<Wavelength>),
-            "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
-        .def("sample_pdf", vectorize(&IrregularContinuousDistribution::sample_pdf<Float>),
-            "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample_pdf))
-        .def("sample_pdf", vectorize(&IrregularContinuousDistribution::sample_pdf<Wavelength>),
+        .def("sample_pdf",
+            vectorize(&IrregularContinuousDistribution::sample_pdf),
             "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample_pdf))
         .def_repr(IrregularContinuousDistribution);
 }
