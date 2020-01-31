@@ -5,8 +5,12 @@ MTS_PY_EXPORT(Sampler) {
     MTS_PY_IMPORT_TYPES(Sampler)
     MTS_PY_CLASS(Sampler, Object)
         .def_method(Sampler, clone)
-        .def("seed", vectorize(&Sampler::seed), "seed_value"_a)
-        .def("next_1d", vectorize(&Sampler::next_1d), "active"_a = true)
-        .def("next_2d", vectorize(&Sampler::next_2d), "active"_a = true)
-        .def_method(Sampler, sample_count);
+        .def_method(Sampler, sample_count)
+        .def_method(Sampler, ready)
+        .def("seed", vectorize(&Sampler::seed),
+             "seed_value"_a, D(Sampler, seed))
+        .def("next_1d", vectorize(&Sampler::next_1d),
+             "active"_a = true, D(Sampler, next_1d))
+        .def("next_2d", vectorize(&Sampler::next_2d),
+             "active"_a = true, D(Sampler, next_2d));
 }

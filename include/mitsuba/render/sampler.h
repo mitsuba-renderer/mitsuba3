@@ -40,6 +40,9 @@ public:
     /// Retrieve the next two component values from the current sample
     virtual Point2f next_2d(Mask active = true);
 
+    /// Check whether the sampler is ready (i.e. properly seeded)
+    virtual bool ready() const;
+
     /// Return the number of samples per pixel
     size_t sample_count() const { return m_sample_count; }
 

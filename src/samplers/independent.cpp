@@ -60,6 +60,10 @@ public:
         return Point2f(f1, f2);
     }
 
+    bool ready() const override {
+        return m_rng != nullptr;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "IndependentSampler[" << std::endl

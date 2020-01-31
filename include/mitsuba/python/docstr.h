@@ -4487,6 +4487,9 @@ In the context of wavefront ray tracing & dynamic arrays, this
 function must be called with a ``seed_value`` matching the size of the
 wavefront.)doc";
 
+static const char *__doc_mitsuba_Sampler_ready =
+R"doc(Check if the sampler is ready (i.e. properly seeded))doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator =
 R"doc(Integrator based on Monte Carlo sampling
 

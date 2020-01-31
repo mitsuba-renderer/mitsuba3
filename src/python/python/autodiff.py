@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import enoki as ek
 
 def render(scene, spp=None, sensor_index=0):
@@ -17,7 +18,8 @@ def render(scene, spp=None, sensor_index=0):
         spp = sampler.sample_count()
 
     pos = ek.arange(UInt64, ek.hprod(film_size) * spp)
-    sampler.seed(pos)
+    if not sampler.ready():
+        sampler.seed(pos)
 
     pos //= spp
     scale = Vector2f(1.0 / film_size[0], 1.0 / film_size[1])
@@ -52,9 +54,7 @@ def render(scene, spp=None, sensor_index=0):
         del xyz
 
     aovs = [Float(1.0), *rgb] + aovs
-    del rgb
-
-    del spec, weights, rays
+    del rgb, spec, weights, rays
 
     rfilter = film.reconstruction_filter()
     block = ImageBlock(
@@ -66,7 +66,9 @@ def render(scene, spp=None, sensor_index=0):
         border=False
     )
 
+    block.clear()
     block.put(pos, aovs)
+
     del pos
     del aovs
 
@@ -81,7 +83,18 @@ def render(scene, spp=None, sensor_index=0):
     weight = ek.gather(data, weight_idx)
     values = ek.gather(data, values_idx)
 
-    return values / weight
+    return values / (weight + 1e-8)
+
+
+def write_bitmap(filename, data, size):
+    import numpy as np
+    from mitsuba.core import Bitmap, Struct
+
+    bitmap = Bitmap(np.array(data).reshape(*size, -1))
+    if filename.endswith('.png') or filename.endswith('.jpg'):
+        bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
+                                Struct.Type.UInt8, True)
+    bitmap.write(filename)
 
 
 class Optimizer:
@@ -99,6 +112,17 @@ class Optimizer:
         # (this would trigger a recompile every time it is changed)
         self.lr = lr
         self.lr_v = ek.detach(Float(lr, literal=False))
+
+    @contextmanager
+    def disable_gradients(self):
+        """Temporarily disables gradients for the optimized parameters."""
+        for _, p in self.params.items():
+            ek.set_requires_gradient(p, False)
+        try:
+            yield
+        finally:
+            for _, p in self.params.items():
+                ek.set_requires_gradient(p, True)
 
 
 class SGD(Optimizer):

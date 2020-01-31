@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 
 from mitsuba.scalar_rgb.core import Bitmap
 from mitsuba.scalar_rgb.render import (DifferentiableParameters, RadianceSample3fD,
@@ -16,62 +15,6 @@ def indent(s, amount=2):
 
 
 # ------------------------------------------------------------ Optimizers
-
-class Optimizer:
-    def __init__(self, params, lr):
-        # Ensure that the JIT does not consider the learning rate as a literal
-        self.lr = FloatC(lr, literal=False)
-        self.params = params
-        self.gradients_acc = {}
-        self.gradients_acc_count = 0
-        self.state = {}
-        for k, p in self.params.items():
-            set_requires_gradient(p)
-            self.params[k] = p
-            self.reset(k)
-
-    def reset(self, _):
-        pass
-
-    def accumulate_gradients(self, weight=1):
-        """
-        Retrieve gradients from the parameters and accumulate their values
-        values until the next time `step` is called.
-        Useful for e.g. block-based rendering.
-        """
-        for k, p in self.params.items():
-            g = gradient(p)
-            if slices(g) <= 0:
-                continue
-            if k not in self.gradients_acc:
-                self.gradients_acc[k] = FloatC.full(0., len(g))
-            self.gradients_acc[k] += FloatC(weight) * g
-        self.gradients_acc_count += weight
-
-    def compute_gradients(self):
-        """
-        Returns either the average gradients collected with `accumulate_gradients`,
-        or the current gradient values if not available.
-        Any accumulated gradients are cleared!
-        """
-        if self.gradients_acc:
-            gg = {k: g / self.gradients_acc_count for k, g in self.gradients_acc.items()}
-            self.gradients_acc.clear()
-            self.gradients_acc_count = 0
-            return gg
-        # There was no call to `accumulate_gradients`
-        return {k: gradient(p) for k, p in self.params.items()}
-
-    @contextmanager
-    def no_gradients(self):
-        """Temporarily disables gradients for the optimized parameters."""
-        for _, p in self.params.items():
-            set_requires_gradient(p, False)
-        try:
-            yield
-        finally:
-            for _, p in self.params.items():
-                set_requires_gradient(p, True)
 
 
 class DummyOptimizer(Optimizer):
