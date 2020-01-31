@@ -35,8 +35,7 @@ def variant_mono_polarized():
     try:
         mitsuba.set_variant('scalar_mono_polarized')
     except:
-        pass
-        # pytest.skip("scalar_mono_polarized mode not enabled")
+        pytest.skip("scalar_mono_polarized mode not enabled")
 
 
 @pytest.fixture()
