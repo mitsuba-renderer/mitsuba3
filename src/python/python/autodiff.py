@@ -131,22 +131,29 @@ class SGD(Optimizer):
         Implements basic stochastic gradient descent with a fixed learning rate
         and, optionally, momentum (0.9 is a typical parameter value).
         """
-        super(SGD, self).__init__(params, lr)
         assert momentum >= 0 and momentum < 1
         self.momentum = momentum
+        super().__init__(params, lr)
 
     def step(self):
         """ Take a gradient step """
         for k, p in self.params.items():
             g_p = ek.gradient(p)
-            if ek.slices(g_p) == 0:
+            size = ek.slices(g_p)
+            if size == 0:
                 continue
-            if self.momentum == 0:
-                value = ek.detach(p) - self.lr_v * g_p
-            else:
+
+            if self.momentum != 0:
+                if size != ek.slices(self.state[k]):
+                    # Reset state if data size has changed
+                    self._reset(k)
+
                 self.state[k] = self.momentum * self.state[k] + \
                                 self.lr_v * g_p
                 value = ek.detach(p) - self.state[k]
+            else:
+                value = ek.detach(p) - self.lr_v * g_p
+
             value = type(p)(value)
             ek.set_requires_gradient(value)
             self.params[k] = value
@@ -154,6 +161,8 @@ class SGD(Optimizer):
 
     def _reset(self, key):
         """ Zero-initializes the internal state associated with a parameter """
+        if self.momentum == 0:
+            return
         p = self.params[key]
         size = ek.slices(p)
         self.state[key] = ek.detach(type(p).zero(size))
@@ -161,3 +170,68 @@ class SGD(Optimizer):
     def __repr__(self):
         return ('SGD[\n  lr = %.2g,\n  momentum = %.2g\n]') % \
                 (self.lr, self.momentum)
+
+
+class Adam(Optimizer):
+    def __init__(self, params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
+        """
+        Implements the optimization technique presented in
+
+        "Adam: A Method for Stochastic Optimization"
+        Diederik P. Kingma and Jimmy Lei Ba
+        ICLR 2015
+
+        The method has the following parameters:
+
+        ``lr``: learning rate
+
+        ``beta_1``: controls the exponential averaging of first
+        order gradient moments
+
+        ``beta_2``: controls the exponential averaging of second
+        order gradient moments
+        """
+        super().__init__(params, lr)
+        assert beta_1 >= 0 and beta_1 < 1
+        assert beta_2 >= 0 and beta_2 < 1
+        self.beta_1 = beta_1
+        self.beta_2 = beta_2
+        self.epsilon = epsilon
+
+        from mitsuba.core import Float
+        self.beta_1_t = ek.detach(Float(1, literal=False))
+        self.beta_2_t = ek.detach(Float(1, literal=False))
+
+
+    def step(self):
+        self.beta_1_t *= self.beta_1
+        self.beta_2_t *= self.beta_2
+        lr_t = self.lr * ek.sqrt(1 - self.beta_2_t) / (1 - self.beta_1_t)
+
+        for k, p in self.params.items():
+            g_p = ek.gradient(p)
+            size = ek.slices(g_p)
+            if size == 0:
+                continue
+            elif size != ek.slices(self.state[k][0]):
+                # Reset state if data size has changed
+                self._reset(k)
+
+            m_tp, v_tp = self.state[k]
+            m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
+            v_t = self.beta_2 * v_tp + (1 - self.beta_2) * ek.sqr(g_p)
+            self.state[k] = (m_t, v_t)
+            u = ek.detach(p) - lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
+            u = type(p)(u)
+            ek.set_requires_gradient(u)
+            self.params[k] = u
+
+    def _reset(self, key):
+        """ Zero-initializes the internal state associated with a parameter """
+        p = self.params[key]
+        size = ek.slices(p)
+        self.state[key] = (ek.detach(type(p).zero(size)), ek.detach(type(p).zero(size)))
+
+    def __repr__(self):
+        return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},'
+                '\n  beta_2 = {:.2g}\n]').format(self.lr, self.beta_1, self.beta_2)
