@@ -891,7 +891,9 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 Log(Warn, "Spectrum (at %s): clamping out-of-gamut color %s",
                                     src.offset(node.offset_debug()), color);
                                 color = clamp(color, 0.f, 1.f);
-                            } else if (within_emitter) {
+                            } else if (within_emitter && any(color < 0.f)) {
+                                Log(Warn, "Spectrum (at %s): clamping out-of-gamut emission %s",
+                                    src.offset(node.offset_debug()), color);
                                 color = max(color, 0.f);
                             }
 
