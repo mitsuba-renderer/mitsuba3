@@ -83,7 +83,7 @@ template <typename Spectrum> using MuellerMatrix = enoki::Matrix<Spectrum, 4>;
 template <typename Value>
 using DynamicBuffer = std::conditional_t<
     is_dynamic_array_v<Value>,
-    Value,
+    std::conditional_t<is_static_array_v<Value>, value_t<Value>, Value>,
     DynamicArray<Packet<scalar_t<Value>>>
 >;
 
