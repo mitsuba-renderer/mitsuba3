@@ -53,7 +53,9 @@ def render(scene, spp=None, sensor_index=0):
         rgb = xyz_to_srgb(xyz)
         del xyz
 
-    aovs = [Float(1.0), *rgb] + aovs
+    aovs.insert(0, Float(1.0))
+    for i in range(len(rgb)):
+        aovs.insert(i+1, rgb[i])
     del rgb, spec, weights, rays
 
     rfilter = film.reconstruction_filter()
@@ -93,12 +95,14 @@ def write_bitmap(filename, data, resolution):
     """
     import numpy as np
     from mitsuba.core import Bitmap, Struct
-
-    bitmap = Bitmap(np.array(data).reshape(*resolution, -1))
+    data = np.array(data.numpy())
+    data = data.reshape(*resolution, -1)
+    bitmap = Bitmap(data)
     if filename.endswith('.png') or filename.endswith('.jpg'):
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)
     bitmap.write(filename)
+
 
 def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
                 spp_diff=None, sensor_index=0):
@@ -115,9 +119,9 @@ def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
         image_diff = render(scene, spp=spp_diff, sensor_index=sensor_index)
         ek.reattach(image, image_diff)
     else:
-        spp = max(spp_primal, spp_diff)
-        image = render(scene, spp=spp, sensor_index=sensor_index)
+        image = render(scene, spp=spp_diff, sensor_index=sensor_index)
     return image
+
 
 class Optimizer:
     """
@@ -260,3 +264,91 @@ class Adam(Optimizer):
     def __repr__(self):
         return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},'
                 '\n  beta_2 = {:.2g}\n]').format(self.lr, self.beta_1, self.beta_2)
+
+def render_torch(scene, params=None, **kwargs):
+    from mitsuba.core import Float
+    # Delayed import of PyTorch dependency
+    ns = globals()
+    if 'render_torch_helper' in ns:
+        render_torch = ns['render_torch_helper']
+    else:
+        import torch
+
+        class Render(torch.autograd.Function):
+            @staticmethod
+            def forward(ctx, scene, params, *args):
+                try:
+                    assert len(args) % 2 == 0
+                    args = dict(zip(args[0::2], args[1::2]))
+
+                    spp = None
+                    sensor_index = 0
+                    unbiased = True
+                    primal = None
+
+                    params_todo = { }
+                    ctx.inputs = [None, None]
+                    for k, v in args.items():
+                        if k == 'spp':
+                            spp = v
+                        elif k == 'sensor_index':
+                            sensor_index = v
+                        elif k == 'unbiased':
+                            unbiased = v
+                        else:
+                            value = type(params[k])(v)
+                            ek.set_requires_gradient(value, v.requires_grad)
+                            params_todo[k] = value
+                            ctx.inputs.append(None)
+                            ctx.inputs.append(value)
+                            continue
+
+                        ctx.inputs.append(None)
+                        ctx.inputs.append(None)
+
+                    result = None
+                    if params is not None:
+                        if unbiased:
+                            for k in params.keys():
+                                ek.set_requires_gradient(params[k], False)
+                            result = render(scene, spp=spp, sensor_index=sensor_index).torch()
+
+                        for k, v in params_todo.items():
+                            params[k] = v
+                        params.update()
+
+                    ctx.output = render(scene, spp=spp, sensor_index=sensor_index)
+
+                    if result is None:
+                        result = ctx.output.torch()
+
+                    ek.cuda_malloc_trim()
+                    return result
+                except Exception as e:
+                    print("render_torch(): critical exception during forward pass: %s" % str(e))
+                    raise e
+
+            @staticmethod
+            def backward(ctx, grad_output):
+                try:
+                    ek.set_gradient(ctx.output, ek.detach(Float(grad_output)))
+                    Float.backward()
+                    result = tuple(ek.gradient(i).torch() if i is not None else None
+                                   for i in ctx.inputs)
+                    del ctx.output
+                    del ctx.inputs
+                    ek.cuda_malloc_trim()
+                    return result
+                except Exception as e:
+                    print("render_torch(): critical exception during backwardpass: %s" % str(e))
+                    raise e
+
+        render_torch = Render.apply
+        ns['render_torch_helper'] = render_torch
+
+    result = render_torch(scene, params,
+        *[num for elem in kwargs.items() for num in elem])
+
+    sensor_index = 0 if 'sensor_index' not in kwargs else kwargs['sensor_index']
+    crop_size = scene.sensors()[sensor_index].film().crop_size()
+    return result.reshape(crop_size[1], crop_size[0], -1)

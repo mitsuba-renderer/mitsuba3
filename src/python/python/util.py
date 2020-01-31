@@ -95,6 +95,9 @@ def traverse(node):
 
             return ParameterMapItemIterator(self)
 
+        def torch(self):
+            return { k : v.torch() for k, v in self.items() }
+
         def update(self):
             work_list = sorted(set(self.update_list), key=lambda x: x[0])
             for depth, node in reversed(work_list):
