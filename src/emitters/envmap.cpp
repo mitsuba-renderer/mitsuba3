@@ -97,7 +97,7 @@ public:
                              safe_acos(v.y()) * math::InvPi<Float>);
         uv -= floor(uv);
 
-        return unpolarized(eval_spectrum(uv, si.wavelengths, active));
+        return unpolarized<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float /* time */, Float /* wavelength_sample */,
@@ -136,7 +136,7 @@ public:
 
         return std::make_pair(
             ds,
-            unpolarized(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf
+            unpolarized<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf
         );
     }
 
@@ -178,7 +178,7 @@ public:
     }
 
 protected:
-    Spectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
+    UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
         uv *= Vector2f(m_resolution - 1u);
 
         Point2u pos = min(Point2u(uv), m_resolution - 2u);

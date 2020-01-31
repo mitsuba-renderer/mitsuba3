@@ -71,24 +71,22 @@ struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>>
 };
 
 /// Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.
-template <typename T>
-constexpr depolarize_t<T> depolarize(const T& spectrum) {
+template <typename T> depolarize_t<T> depolarize(const T& spectrum) {
     if constexpr (std::is_same_v<depolarize_t<T>, T>)
         return spectrum;
     else
         // First entry of the Mueller matrix is the unpolarized spectrum
-        return spectrum.x().x();
+        return spectrum(0, 0);
 }
 
 /**
  * Turn a spectrum into a Mueller matrix representation that only has a non-zero
  * (1,1) entry. For all non-polarized modes, this is the identity function.
  */
-template <typename T>
-constexpr auto unpolarized(const T& spectrum) {
+template <typename T> auto unpolarized(const T& spectrum) {
     if constexpr (is_polarized_v<T>) {
         T result = zero<T>();
-        result(0, 0) = spectrum.x().x();
+        result(0, 0) = spectrum(0, 0);
         return result;
     } else {
         return spectrum;

@@ -36,7 +36,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         return select(
             Frame3f::cos_theta(si.wi) > 0.f,
-            unpolarized(Spectrum(m_radiance->eval(si, active))),
+            unpolarized<Spectrum>(m_radiance->eval(si, active)),
             0.f
         );
     }
@@ -57,7 +57,7 @@ public:
 
         return std::make_pair(
             Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelengths),
-            unpolarized(Spectrum(spec_weight)) * m_area_times_pi
+            unpolarized<Spectrum>(spec_weight) * m_area_times_pi
         );
     }
 
@@ -72,7 +72,7 @@ public:
         Spectrum spec = m_radiance->eval(si, active) / ds.pdf;
 
         ds.object = this;
-        return { ds, unpolarized(spec) & active };
+        return { ds, unpolarized<Spectrum>(spec) & active };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,

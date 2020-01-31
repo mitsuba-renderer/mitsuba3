@@ -135,7 +135,7 @@ public:
         active &= bs.pdf > 0.f;
         result = eval(ctx, si, bs.wo, active);
 
-        return { bs, select(active, unpolarized(result) / bs.pdf, 0.f) };
+        return { bs, select(active, unpolarized<Spectrum>(result) / bs.pdf, 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -186,7 +186,7 @@ public:
             result += diff * (math::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
-        return select(active, unpolarized(result), 0.f);
+        return select(active, unpolarized<Spectrum>(result), 0.f);
     }
 
     Float lerp_gather(const scalar_t<Float> *data, Float x, size_t size,
