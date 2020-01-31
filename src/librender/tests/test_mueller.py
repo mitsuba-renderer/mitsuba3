@@ -105,8 +105,8 @@ def test06_specular_transmission(variant_scalar):
 
 
 def test07_rotate_stokes_basis(variant_scalar):
+    from mitsuba.core import Transform4f
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis
-    import numpy as np
 
     # Each Stokes vector describes light polarization only w.r.t. a certain reference
     # frame determined by unit vector perpendicular to the direction of travel.
@@ -123,7 +123,7 @@ def test07_rotate_stokes_basis(variant_scalar):
     b_00 = stokes_basis(w) # Corresponding Stokes basis
 
     def rotate_vector(v, axis, angle):
-        return mitsuba.core.Transform4f.rotate(axis, angle).matrix.numpy()[0:3, 0:3] @ v
+        return Transform4f.rotate(axis, angle).transform_vector(v)
 
     # Switch to basis rotated by 90˚.
     b_90 = rotate_vector(b_00, w, 90.0)
@@ -148,9 +148,9 @@ def test07_rotate_stokes_basis(variant_scalar):
 
 
 def test08_rotate_mueller_basis(variant_scalar):
+    from mitsuba.core import Transform4f
     from mitsuba.render.mueller import stokes_basis, rotated_element, rotate_mueller_basis, \
                                        rotate_mueller_basis_collinear, linear_polarizer
-    import numpy as np
 
     # If we have an optical element such as a linear polarizer, its rotation around
     # the optical axis can also be interpreted as a change of both incident and
@@ -164,7 +164,7 @@ def test08_rotate_mueller_basis(variant_scalar):
     M = linear_polarizer()
 
     def rotate_vector(v, axis, angle):
-        return mitsuba.core.Transform4f.rotate(axis, angle).matrix.numpy()[0:3, 0:3] @ v
+        return Transform4f.rotate(axis, angle).transform_vector(v)
 
     # As reference, rotate the element directly by -45˚
     M_rotated_element = rotated_element(-45 * ek.pi/180, M)

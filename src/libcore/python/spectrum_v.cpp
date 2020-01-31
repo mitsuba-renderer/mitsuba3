@@ -43,6 +43,7 @@ MTS_PY_EXPORT(Spectrum) {
     }
 
     m.def("depolarize", vectorize(&depolarize<Spectrum>), D(depolarize));
+    m.def("unpolarized", vectorize(&unpolarized<Spectrum>), "");
 
     if constexpr (is_cuda_array_v<Float>) {
         py::module::import("enoki");
