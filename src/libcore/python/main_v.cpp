@@ -214,15 +214,13 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         pybind11_type_alias<Array<ScalarUInt32, 4>, ScalarPoint4u>();
     }
 
-    if constexpr (is_spectral_v<UnpolarizedSpectrum>) {
+    if constexpr (is_spectral_v<UnpolarizedSpectrum>)
         pybind11_type_alias<Array<Float, UnpolarizedSpectrum::Size>,
                             UnpolarizedSpectrum>();
 
-        if constexpr (is_polarized_v<Spectrum>) {
-            pybind11_type_alias<enoki::Matrix<Array<Float, UnpolarizedSpectrum::Size>, 4>,
-                                Spectrum>();
-        }
-    }
+    if constexpr (is_polarized_v<Spectrum>)
+        pybind11_type_alias<enoki::Matrix<Array<Float, UnpolarizedSpectrum::Size>, 4>,
+                            Spectrum>();
 
     if constexpr (is_array_v<Float>)
         pybind11_type_alias<UInt64, replace_scalar_t<Float, const Object *>>();
