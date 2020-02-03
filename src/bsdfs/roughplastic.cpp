@@ -13,6 +13,174 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+.. _bsdf-roughplastic:
+
+Rough plastic material (:monosp:`roughplastic`)
+-----------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - distribution
+   - |string|
+   - Specifies the type of microfacet normal distribution used to model the surface roughness.
+
+     - :monosp:`beckmann`: Physically-based distribution derived from Gaussian random surfaces.
+       This is the default.
+     - :monosp:`ggx`: The GGX :cite:`Walter07Microfacet` distribution (also known as Trowbridge-Reitz
+       :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
+       tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
+       distribution.
+ * - alpha
+   - |float|
+   - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
+     bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
+     **root mean square** (RMS) slope of the microfacets. (Default: 0.1)
+ * - int_ior
+   - |float| or |string|
+   - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)
+ * - ext_ior
+   - |float| or |string|
+   - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
+ * - sample_visible
+   - |bool|
+   - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
+     focuses computation on the visible parts of the microfacet normal distribution, considerably
+     reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
+ * - specular_reflectance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection component.
+     Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+ * - nonlinear
+   - |bool|
+   - Account for nonlinear color shifts due to internal scattering? See the :ref:`bsdf-plastic`
+     plugin for details.\default{Don't account for them and preserve the texture colors.
+     (Default: |false|)
+
+This plugin implements a realistic microfacet scattering model for rendering
+rough dielectric materials with internal scattering, such as plastic.
+
+Microfacet theory describes rough surfaces as an arrangement of unresolved and ideally specular
+facets, whose normal directions are given by a specially chosen **microfacet distribution**.
+By accounting for shadowing and masking effects between these facets, it is possible to reproduce
+the important off-specular reflections peaks observed in real-world measurements of such materials.
+
+.. subfigstart::
+.. _fig-roughplastic-beckmann:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_beckmann.jpg
+    :alt: Anti-glare glass
+    :width: 95%
+    :align: center
+
+    Beckmann, :math:`\alpha=0.1`
+
+.. _fig-roughplastic-ggx:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_ggx.jpg
+    :alt: Rough glass
+    :width: 95%
+    :align: center
+
+    GGX, :math:`\alpha=0.3`
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example roughplastic appearances
+    :label: fig-roughplastic-bsdf
+
+
+This plugin is essentially the *roughened* equivalent of the (smooth) plugin
+:ref:`bsdf-plastic`. For very low values of :math:`\alpha`, the two will
+be identical, though scenes using this plugin will take longer to render
+due to the additional computational burden of tracking surface roughness.
+
+For convenience, this model allows to specify IOR values either numerically,
+or based on a list of known materials (see Table :num:`ior-table-list` for an overview).
+When no parameters are given, the plugin activates the defaults,
+which describe a white polypropylene plastic material with a light amount
+of roughness modeled using the Beckmann distribution.
+
+Like the :ref:`bsdf-plastic` material, this model internally simulates the
+interaction of light with a diffuse base surface coated by a thin dielectric
+layer (where the coating layer is now **rough**). This is a convenient
+abstraction rather than a restriction. In other words, there are many
+materials that can be rendered with this model, even if they might not
+fit this description perfectly well.
+
+The simplicity of this setup makes it possible to account for interesting
+nonlinear effects due to internal scattering, which is controlled by
+the :monosp:`nonlinear` parameter. For more details, please refer to the description
+of this parameter given in the :ref:`bsdf-plastic` plugin section.
+
+To get an intuition about the effect of the surface roughness parameter
+:math:`\alpha`, consider the following approximate classification: a value of
+:math:`\alpha=0.001-0.01` corresponds to a material with slight imperfections
+on an otherwise smooth surface finish, :math:`\alpha=0.1` is relatively rough,
+and :math:`\alpha=0.3-0.7` is **extremely** rough (e.g. an etched or ground
+finish). Values significantly above that are probably not too realistic.
+
+
+.. subfigstart::
+
+.. _fig-roughplastic-diffuse:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_diffuse.jpg
+    :alt: Textured diffuse material
+    :width: 95%
+    :align: center
+
+    Diffuse textured rendering
+
+.. _fig-roughplastic-preserve:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_preserve.jpg
+    :alt: Rough plastic preserve
+    :width: 95%
+    :align: center
+
+    Rough plastic model with :monosp:`nonlinear=false`
+
+.. _fig-roughplastic-nopreserve:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_nopreserve.jpg
+    :alt: Rough plastic nopreserve
+    :width: 95%
+    :align: center
+
+    Textured rough plastic model with :monosp:`nonlinear=true`
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example roughplastic appearances
+    :label: fig-roughplastic-bsdf-2
+
+
+When asked to do so, this model can account for subtle nonlinear color shifts due
+to internal scattering processes. The above images show a textured
+object first rendered using :ref:`fig-roughplastic-diffuse`, then
+:ref:`fig-roughplastic-preserve` with the default parameters, and finally using
+:ref:`fig-roughplastic-nopreserve` and support for nonlinear color shifts.
+
+The following XML snippet describes a material definition for black plastic material.
+
+.. code-block:: xml
+    :name: lst-roughplastic-black
+
+    <bsdf type="roughplastic">
+        <string name="distribution" value="beckmann"/>
+        <float name="int_ior" value="1.61"/>
+        <spectrum name="diffuse_reflectance" value="0"/>
+    </bsdf>
+
+ */
+
 template <typename Float, typename Spectrum>
 class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:

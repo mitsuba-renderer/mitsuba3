@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _bsdf-roughdielectric:
 
 Rough dielectric material (:monosp:`roughdielectric`)
--------------------------------------------
+-----------------------------------------------------
 
 .. list-table::
  :widths: 20 15 65
@@ -38,7 +38,7 @@ Rough dielectric material (:monosp:`roughdielectric`)
        distribution.
 
  * - alpha, alpha_u, alpha_v
-   - |spectrum| or |texture|
+   - |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
@@ -49,7 +49,6 @@ Rough dielectric material (:monosp:`roughdielectric`)
  * - ext_ior
    - |float| or |string|
    - Exterior index of refraction specified numerically or using a known material name.  (Default: air / 1.000277)
-
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
