@@ -71,3 +71,12 @@ def variants_all_rgb(request):
     except:
         pytest.skip("%s mode not enabled" % request.param)
     return request.param
+
+
+@pytest.fixture(params = mitsuba.variants())
+def variants_all(request):
+    try:
+        mitsuba.set_variant(request.param)
+    except:
+        pytest.skip("%s mode not enabled" % request.param)
+    return request.param
