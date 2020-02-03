@@ -232,8 +232,8 @@ public:
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
         // Compute weights that further steer samples towards the specular or diffuse components
-        ScalarFloat d_mean = hmax(m_diffuse_reflectance->mean()),
-                    s_mean = hmax(m_specular_reflectance->mean());
+        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
+                    s_mean = m_specular_reflectance->mean();
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
     }
@@ -249,7 +249,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
@@ -276,7 +276,7 @@ public:
             masked(bs.wo, sample_specular) = reflect(si.wi);
             masked(bs.pdf, sample_specular) = prob_specular;
             masked(bs.sampled_component, sample_specular) = 0;
-            masked(bs.sampled_type, sample_specular)      = +BSDFFlags::DeltaReflection;
+            masked(bs.sampled_type, sample_specular) = +BSDFFlags::DeltaReflection;
 
             Spectrum spec = m_specular_reflectance->eval(si, sample_specular) * f_i / bs.pdf;
             masked(result, sample_specular) = spec;

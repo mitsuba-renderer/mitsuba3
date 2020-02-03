@@ -112,7 +112,7 @@ public:
             return m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
         }
 
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum result(0.f);
 
         Float weight = eval_weight(si, active);

@@ -30,7 +30,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum value(0.f);
         if (unlikely(none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
             return { bs, value };

@@ -135,7 +135,7 @@ public:
         Float t = 1.f - r;
 
         // Select the lobe to be sampled
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum weight;
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {

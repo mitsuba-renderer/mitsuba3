@@ -172,7 +172,7 @@ public:
                                              Float /*sample1*/,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
 

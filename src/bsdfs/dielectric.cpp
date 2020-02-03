@@ -228,7 +228,7 @@ public:
         Float t_i = 1.f - r_i;
 
         // Lobe selection
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r_i && active;

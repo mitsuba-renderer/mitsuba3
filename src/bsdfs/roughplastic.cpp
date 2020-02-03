@@ -228,8 +228,8 @@ public:
 
         /* Compute weights that further steer samples towards
            the specular or diffuse components */
-        ScalarFloat d_mean = hmax(m_diffuse_reflectance->mean()),
-                    s_mean = hmax(m_specular_reflectance->mean());
+        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
+                    s_mean = m_specular_reflectance->mean();
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
@@ -244,7 +244,10 @@ public:
                 ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
                 slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
             }
-            m_external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
+
+            auto external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
+            m_external_transmittance = DynamicBuffer<Float>::copy(external_transmittance.data(),
+                                                                  slices(external_transmittance));
             m_internal_reflectance =
                 hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
@@ -261,7 +264,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
@@ -446,7 +449,7 @@ private:
     ScalarFloat m_specular_sampling_weight;
     bool m_nonlinear;
     bool m_sample_visible;
-    DynamicBuffer<ScalarFloat> m_external_transmittance;
+    DynamicBuffer<Float> m_external_transmittance;
     ScalarFloat m_internal_reflectance;
 };
 
