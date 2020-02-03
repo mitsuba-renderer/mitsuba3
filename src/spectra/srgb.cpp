@@ -37,7 +37,7 @@ public:
         if constexpr (is_spectral_v<Spectrum>)
             return scalar_cast(hmean(srgb_model_mean(m_value)));
         else
-            return scalar_cast(hmean(m_value));
+            return scalar_cast(hmean(hmean(m_value)));
     }
 
     void traverse(TraversalCallback *callback) override {
