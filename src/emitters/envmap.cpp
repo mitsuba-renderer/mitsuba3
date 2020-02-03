@@ -128,7 +128,7 @@ public:
         ds.n      = -d;
         ds.uv     = uv;
         ds.time   = it.time;
-        ds.pdf    = pdf * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>)));
+        ds.pdf = select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>))), 0.f);
         ds.delta  = false;
         ds.object = this;
         ds.d      = d;
