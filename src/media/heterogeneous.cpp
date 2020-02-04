@@ -283,7 +283,7 @@ public:
     }
 
     std::tuple<Spectrum, Spectrum, Spectrum> get_scattering_coefficients(const MediumInteraction3f &mi, Mask active) const override {
-        Spectrum sigmat = m_density_scale * m_density->eval_1(mi, active);
+        Spectrum sigmat = m_density_scale * m_density->eval_1(mi, active) * m_sigmat->eval(mi, active);
         Spectrum sigmas = sigmat * m_albedo->eval(mi, active);
         Spectrum sigman = Spectrum(get_combined_extinction(mi, active)) - sigmat;
         return { sigmas, sigman, sigmat };
