@@ -35,7 +35,7 @@ public:
     MTS_IMPORT_BASE(Texture3D, m_world_to_local)
     MTS_IMPORT_TYPES()
 
-    explicit Grid3D(const Properties &props) : Base(props), m_props(props) {
+    Grid3D(const Properties &props) : Base(props), m_props(props) {
 
         auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
         m_metadata                = metadata;
@@ -63,6 +63,10 @@ public:
         // Mark values which are only used in the implementation class as queried
         props.mark_queried("use_grid_bbox");
         props.mark_queried("max_value");
+    }
+
+    Mask is_inside(const Interaction3f & /* it */, Mask /*active*/) const override {
+       return true; // dummy implementation
     }
 
     template <uint32_t Channels, bool Raw> using Impl = Grid3DImpl<Float, Spectrum, Channels, Raw>;
@@ -355,14 +359,33 @@ protected:
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Grid3D, Texture3D)
-MTS_EXPORT_PLUGIN(Grid3D, "Grid 3D texture with interpolation")
+MTS_EXPORT_PLUGIN(Grid3D, "Grid3D texture")
+
+NAMESPACE_BEGIN()
+template <uint32_t Channels, bool Raw>
+constexpr const char * grid3d_class_name() {
+    if constexpr (!Raw) {
+        if constexpr (Channels == 1)
+            return "Grid3DImpl_1_0";
+        else
+            return "Grid3DImpl_3_0";
+    } else {
+        if constexpr (Channels == 1)
+            return "Grid3DImpl_1_1";
+        else
+            return "Grid3DImpl_3_1";
+    }
+}
+NAMESPACE_END()
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-const Class *Grid3DImpl<Float, Spectrum, Channels, Raw>::class_() const {
+Class *Grid3DImpl<Float, Spectrum, Channels, Raw>::m_class
+    = new Class(grid3d_class_name<Channels, Raw>(), "Texture3D",
+                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
+
+template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
+const Class* Grid3DImpl<Float, Spectrum, Channels, Raw>::class_() const {
     return m_class;
 }
-
-template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class *Grid3DImpl<Float, Spectrum, Channels, Raw>::m_class = Grid3D<Float, Spectrum>::m_class;
 
 NAMESPACE_END(mitsuba)
