@@ -61,6 +61,9 @@ template <typename Value_, size_t Size_ = 4>
 struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>> {
     using Base = enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>>;
 
+    // Never allow matrix-vector products involving this type (important for polarized rendering)
+    static constexpr bool IsVector = false;
+
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Spectrum<T, Size_>;
 
