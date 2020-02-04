@@ -48,6 +48,7 @@ public:
 
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
+        UInt32 channel = sampler->next_1d(active) * array_size_v<Spectrum>;
 
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
@@ -76,13 +77,13 @@ public:
             if (any_or<true>(active_medium)) {
                 Spectrum medium_throughput;
                 std::tie(si_medium, mi, medium_throughput) = medium->sample_interaction(
-                    scene, ray, sampler->next_1d(active_medium), 0, active_medium);
+                    scene, ray, sampler->next_1d(active_medium), channel, active_medium);
 
                 escaped_medium = active_medium && si_medium.is_valid() && !mi.is_valid();
                 active_medium &= mi.is_valid();
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= depolarize(mi.sigma_t)[0] / depolarize(mi.combined_extinction)[0];
+                Mask null_scatter = sampler->next_1d(active_medium) >= depolarize(mi.sigma_t)[channel] / depolarize(mi.combined_extinction)[channel];
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
