@@ -45,7 +45,8 @@ public:
         MediumInteraction3f mi;
 
         Mask specular_chain = active && !m_hide_emitters;
-        for (int depth = 0;; ++depth) {
+        int depth = 0;
+        for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
 
             // Russian roulette: try to keep path weights equal to one, while accounting for the
@@ -76,6 +77,10 @@ public:
                 masked(throughput, active_medium) *= medium_throughput;
                 active_medium &= mi.is_valid();
             }
+
+            masked(depth, active_medium) += 1;
+            active &= depth < (uint32_t) m_max_depth;
+            active_medium &= active;
 
             if (any_or<true>(active_medium)) {
                 PhaseFunctionContext phase_ctx(sampler);
@@ -125,7 +130,7 @@ public:
                 // --------------------- Emitter sampling ---------------------
                 BSDFContext ctx;
                 BSDFPtr bsdf  = si.bsdf(ray);
-                Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth);
+                Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
                 if (likely(any_or<true>(active_e))) {
                     auto [ds, emitter_val] = scene->sample_emitter_direction_attenuated(
                         si, false, medium, sampler->next_2d(active_e), sampler, true, active_e);
@@ -152,12 +157,14 @@ public:
                 masked(ray, active_surface) = bsdf_ray;
 
                 Mask non_null_bsdf = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Null);
+                masked(depth, non_null_bsdf) += 1;
+
                 valid_ray |= non_null_bsdf;
                 specular_chain |= non_null_bsdf && has_flag(bs.sampled_type, BSDFFlags::Delta);
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
 
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
-                                   any(neq(depolarize(throughput), 0.f));
+                                   any(neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
 
                 uint32_t max_intersections = (uint32_t) m_max_depth - (uint32_t) depth - 1;
                 auto [emitted, emitter_pdf] =
@@ -184,7 +191,7 @@ public:
         Float emitter_pdf(0.0f);
         uint32_t interactions = 0;
         EmitterPtr emitter;
-        while (any(active) && interactions < maxInteractions) {
+        while (any(active)) {
 
             // Intersect the value ray with the scene
             SurfaceInteraction3f si = scene->ray_intersect(ray, active);
@@ -241,8 +248,8 @@ public:
     }
 
     Float mis_weight(Float pdf_a, Float pdf_b) const {
-        pdf_a *= pdf_a;
-        pdf_b *= pdf_b;
+        // pdf_a *= pdf_a;
+        // pdf_b *= pdf_b;
         return select(pdf_a > 0.0f, pdf_a / (pdf_a + pdf_b), Float(0.0f));
     };
 
