@@ -37,7 +37,7 @@ public:
                                            Float /*sample1*/, const Point2f & /*sample2*/,
                                            Mask /*active*/) const override {
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
-        BSDFSample3f bs;
+        BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum result(0.f);
         if (sample_transmission) {
             bs.wo                = -si.wi;
