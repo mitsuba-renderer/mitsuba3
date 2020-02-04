@@ -428,7 +428,7 @@ Parameter ``si``:
 Parameter ``wo``:
     The outgoing direction)doc";
 
-static const char *__doc_mitsuba_BSDF_eval_tr =
+static const char *__doc_mitsuba_BSDF_eval_null_transmission =
 R"doc(Evaluate un-scattered transmission component of the BSDF
 
 This method will evaluate the un-scattered transmission
@@ -2312,30 +2312,6 @@ textures from mitsuba::Bitmap instances.)doc";
 
 static const char *__doc_mitsuba_GPUTexture_GPUTexture = R"doc()doc";
 
-static const char *__doc_mitsuba_Grid3DBase =
-R"doc(Base class for 3D textures based on trilinearly interpolated volume
-data.)doc";
-
-static const char *__doc_mitsuba_Grid3DBase_Grid3DBase = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_data_size = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_m_metadata = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_m_size = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_max = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_parameters_changed = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_resolution = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_set_metadata = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_to_string = R"doc()doc";
-
-static const char *__doc_mitsuba_Grid3DBase_traverse = R"doc()doc";
-
 static const char *__doc_mitsuba_Hierarchical2D =
 R"doc(Implements a hierarchical sample warping scheme for 2D distributions
 with linear interpolation and an optional dependence on additional
@@ -2990,7 +2966,66 @@ static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_combined_extinction = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_medium = R"doc(Pointer to the associated medium)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_operator_array = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_sh_frame = R"doc(Shading frame)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_sigma_n = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_sigma_s = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_sigma_t = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_to_world = R"doc(Convert a local shading-space vector into world space)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_wi = R"doc(Incident direction in the local shading frame)doc";
+
+static const char *__doc_mitsuba_Medium_Medium = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_Medium_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_eval_transmittance =
+R"doc(Compute the transmittance along a ray segment
+
+Computes the transmittance along a ray segment [mint, maxt] associated
+with the ray. It is assumed that the ray has a normalized direction
+value.)doc";
+
+static const char *__doc_mitsuba_Medium_get_combined_extinction = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_get_scattering_coefficients = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
+
+static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_m_id = R"doc(Identifier (if available))doc";
+
+static const char *__doc_mitsuba_Medium_m_phase_function = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_m_sample_emitters = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_operator_delete = R"doc()doc";
 
@@ -3007,6 +3042,37 @@ static const char *__doc_mitsuba_Medium_operator_new_2 = R"doc()doc";
 static const char *__doc_mitsuba_Medium_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
+
+static const char *__doc_mitsuba_Medium_sample_distance =
+R"doc(Sample a free-flight distance in the medium.
+
+Should ideally importance sample with respect to the transmittance.
+
+Parameter ``scene``:
+    A pointer to the current scene
+
+Parameter ``ray``:
+    Ray, along which a distance should be sampled
+
+Parameter ``sampler``:
+    Sampler to produce random numbers. Note that some media (e.g.
+    heterogenous media) may require an arbitrary number of random
+    numbers to sample a distance.
+
+Returns:
+    This method returns both a medium and a surface interaction. If a
+    medium interaction was sampled, a valid MediumInteraction is
+    returned. If the sampled distance results in an intersection with
+    a surface, the corresponding SurfaceInteraction is returned.
+    Further, a spectrum with the sampled throughput value is returned.)doc";
+
+static const char *__doc_mitsuba_Medium_sample_interaction = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_to_string = R"doc(Return a human-readable representation of the Medium)doc";
+
+static const char *__doc_mitsuba_Medium_use_emitter_sampling = R"doc(Returns whether this specific medium instance uses emitter sampling)doc";
 
 static const char *__doc_mitsuba_MemoryMappedFile =
 R"doc(Basic cross-platform abstraction for memory mapped files
@@ -3475,6 +3541,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"d
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_m_hide_emitters = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_m_max_depth = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_m_rr_depth = R"doc()doc";
@@ -3593,6 +3661,133 @@ Remark:
 
 See also:
     TraversalCallback)doc";
+
+static const char *__doc_mitsuba_PhaseFunction = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunctionContext_PhaseFunctionContext = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_PhaseFunctionContext_mode = R"doc(Transported mode (radiance or importance))doc";
+
+static const char *__doc_mitsuba_PhaseFunctionContext_reverse =
+R"doc(Reverse the direction of light transport in the record
+
+This updates the transport mode (radiance to importance and vice
+versa).)doc";
+
+static const char *__doc_mitsuba_PhaseFunctionContext_sampler = R"doc(Sampler object)doc";
+
+static const char *__doc_mitsuba_PhaseFunctionFlags =
+R"doc(This enumeration is used to classify phase functions into different
+types, i.e. into isotropic, anisotropic and microflake phase
+functions.
+
+This can be used to optimize implementatons to for example have less
+overhead if the phase function is not a microflake phase function.)doc";
+
+static const char *__doc_mitsuba_PhaseFunctionFlags_Anisotropic = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunctionFlags_Isotropic = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunctionFlags_Microflake = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunctionFlags_None = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_PhaseFunction = R"doc(//! @})doc";
+
+static const char *__doc_mitsuba_PhaseFunction_class = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_eval =
+R"doc(Evaluates the phase function model
+
+The function returns the value (which equals the PDF) of the phase
+function in the query direction.
+
+Parameter ``ctx``:
+    A phase function sampling context, contains information about the
+    transport mode
+
+Parameter ``mi``:
+    A medium interaction data structure describing the underlying
+    medium position. The incident direction is obtained from the field
+    ``mi.wi``.
+
+Parameter ``wo``:
+    An outgoing direction to evaluate.
+
+Returns:
+    The value of the phase function in direction wo)doc";
+
+static const char *__doc_mitsuba_PhaseFunction_flags = R"doc(Flags for this phase function)doc";
+
+static const char *__doc_mitsuba_PhaseFunction_id = R"doc(Return a string identifier)doc";
+
+static const char *__doc_mitsuba_PhaseFunction_m_flags = R"doc(Type of phase function (e.g. anisotropic))doc";
+
+static const char *__doc_mitsuba_PhaseFunction_m_id = R"doc(Identifier (if available))doc";
+
+static const char *__doc_mitsuba_PhaseFunction_max_projected_area = R"doc(Return the maximum projected area of the microflake distribution)doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_delete = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_delete_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_delete_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_delete_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_new = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_new_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_new_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_operator_new_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_projected_area =
+R"doc(Returns the microflake projected area
+
+The function returns the projected area of the microflake distribution
+defining the phase function. For non-microflake phase functions, e.g.
+isotropic or Henyey-Greenstein, this should return a value of 1.
+
+Parameter ``mi``:
+    A medium interaction data structure describing the underlying
+    medium position. The incident direction is obtained from the field
+    ``mi.wi``.
+
+Returns:
+    The projected area in direction ``mi.wi`` at position ``mi.p``)doc";
+
+static const char *__doc_mitsuba_PhaseFunction_sample =
+R"doc(Importance sample the phase function model
+
+The function returns a sampled direction.
+
+Parameter ``ctx``:
+    A phase function sampling context, contains information about the
+    transport mode
+
+Parameter ``mi``:
+    A medium interaction data structure describing the underlying
+    medium position. The incident direction is obtained from the field
+    ``mi.wi``.
+
+Parameter ``sample``:
+    A uniformly distributed sample on $[0,1]^2$. It is used to
+    generate the sampled direction.
+
+Returns:
+    A sampled direction wo)doc";
+
+static const char *__doc_mitsuba_PhaseFunction_to_string = R"doc(Return a human-readable representation of the phase function)doc";
 
 static const char *__doc_mitsuba_PluginManager =
 R"doc(The object factory is responsible for loading plugin modules and
@@ -3763,6 +3958,14 @@ static const char *__doc_mitsuba_ProfilerPhase_InitScene = R"doc()doc";
 static const char *__doc_mitsuba_ProfilerPhase_LoadGeometry = R"doc()doc";
 
 static const char *__doc_mitsuba_ProfilerPhase_LoadTexture = R"doc()doc";
+
+static const char *__doc_mitsuba_ProfilerPhase_MediumEvaluate = R"doc()doc";
+
+static const char *__doc_mitsuba_ProfilerPhase_MediumSample = R"doc()doc";
+
+static const char *__doc_mitsuba_ProfilerPhase_PhaseFunctionEvaluate = R"doc()doc";
+
+static const char *__doc_mitsuba_ProfilerPhase_PhaseFunctionSample = R"doc()doc";
 
 static const char *__doc_mitsuba_ProfilerPhase_ProfilerPhaseCount = R"doc()doc";
 
@@ -4581,6 +4784,45 @@ static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emi
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
+static const char *__doc_mitsuba_Scene_eval_transmittance =
+R"doc(Evaluates the transmittance between two 3D points
+
+Given two points, this method will compute the fraction of radiance
+which reaches one point starting from the other.
+
+Parameter ``p1``:
+    A reference point somewhere within the scene
+
+Parameter ``p1_on_surface``:
+    This should be set to ``True`` if ``p1`` lies on a surface
+
+Parameter ``p2``:
+    A second point somewhere within the scene
+
+Parameter ``p2_on_surface``:
+    This should be set to ``True`` if ``p2`` lies on a surface
+
+Parameter ``time``:
+    The current time parameter
+
+Parameter ``wavelengths``:
+    The sampled wavelengths
+
+Parameter ``medium``:
+    A pointer to the current participating medium containing the
+    reference point ``p1`` This pointer should be ``null`` if the
+    reference point is not inside a medium.
+
+Parameter ``max_interactions``:
+    The maximum number of null interfaces which will be traversed
+    between ``p1`` and ``p2``
+
+Parameter ``sampler``:
+    A pointer to a sampler object
+
+Returns:
+    Transmittance between ``p1`` and ``p2``)doc";
+
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
 
 static const char *__doc_mitsuba_Scene_integrator_2 = R"doc(Return the scene's integrator)doc";
@@ -4682,6 +4924,43 @@ Parameter ``test_visibility``:
     When set to ``True``, a shadow ray will be cast to ensure that the
     sampled emitter position and the reference point are mutually
     visible.
+
+Returns:
+    Radiance received along the sampled ray divided by the sample
+    probability.)doc";
+
+static const char *__doc_mitsuba_Scene_sample_emitter_direction_attenuated =
+R"doc(Attenuated direct illumination sampling routine
+
+Given an arbitrary reference point in the scene, this method samples a
+direction from the reference point to towards an emitter. This method
+accounts for attenuation due to participating media
+
+Ideally, the implementation should importance sample the product of
+the emission profile and the geometry term between the reference point
+and the position on the emitter.
+
+Parameter ``ref``:
+    A reference point somewhere within the scene
+
+Parameter ``is_medium_interaction``:
+    This should be set to ``True`` if the reference point is inside a
+    medium
+
+Parameter ``medium``:
+    A pointer to the current participating medium containing the
+    reference point This pointer should be ``null`` if the reference
+    point is not inside a medium.
+
+Parameter ``sample``:
+    A uniformly distributed 2D vector
+
+Parameter ``sampler``:
+    A pointer to a sampler object
+
+Parameter ``test_visibility``:
+    When set to ``True``, the transmittance between the sampled
+    emitter position and and reference point is evaluated
 
 Returns:
     Radiance received along the sampled ray divided by the sample
@@ -7436,6 +7715,8 @@ static const char *__doc_mitsuba_has_flag_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_3 = R"doc()doc";
 
+static const char *__doc_mitsuba_has_flag_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
 static const char *__doc_mitsuba_hash_2 = R"doc()doc";
@@ -7981,6 +8262,8 @@ static const char *__doc_mitsuba_operator_add_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -7993,11 +8276,17 @@ static const char *__doc_mitsuba_operator_band_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_band_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_8 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bnot_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
@@ -8010,6 +8299,10 @@ static const char *__doc_mitsuba_operator_bor_4 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
@@ -8062,6 +8355,10 @@ static const char *__doc_mitsuba_operator_lshift_24 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_25 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_26 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_27 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_28 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 
