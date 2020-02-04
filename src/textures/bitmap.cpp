@@ -304,16 +304,34 @@ protected:
     ScalarFloat m_mean;
 };
 
+MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
+MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+
+NAMESPACE_BEGIN()
+template <uint32_t Channels, bool Raw>
+constexpr const char * bitmap_class_name() {
+    if constexpr (!Raw) {
+        if constexpr (Channels == 1)
+            return "BitmapTextureImpl_1_0";
+        else
+            return "BitmapTextureImpl_3_0";
+    } else {
+        if constexpr (Channels == 1)
+            return "BitmapTextureImpl_1_1";
+        else
+            return "BitmapTextureImpl_3_1";
+    }
+}
+NAMESPACE_END()
+
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class =
-new Class("BitmapTextureImpl", "Texture", detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
+Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class
+    = new Class(bitmap_class_name<Channels, Raw>(), "Texture",
+                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 const Class* BitmapTextureImpl<Float, Spectrum, Channels, Raw>::class_() const {
     return m_class;
 }
-
-MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
-MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 
 NAMESPACE_END(mitsuba)

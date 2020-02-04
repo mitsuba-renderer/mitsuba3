@@ -30,6 +30,10 @@ public:
         }
     }
 
+    Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
+        return m_value;
+    }
+
     Wavelength pdf(const SurfaceInteraction3f &si, Mask /*active*/) const override {
         if constexpr (is_spectral_v<Spectrum>) {
             auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
