@@ -36,17 +36,11 @@ def test_render(variants_all, scene_name):
     cur_bitmap = film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
     cur_image = np.array(cur_bitmap, copy=False)
 
-    if False:
-        # Write rendered image to a file
-        cur_fname = join(scene_dir, '_render_' + mitsuba.variant() + '.exr')
-        cur_bitmap.write(cur_fname)
-        print('Saved rendered image to: ' + cur_fname)
-
     ref_bitmap = Bitmap(ref_fname).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
     ref_image = np.array(ref_bitmap, copy=False)
 
     error = np.mean(np.mean(np.abs(ref_image - cur_image)))
-    success = error < 0.001 * np.max(np.max(ref_image))
+    success = error < 0.005 * np.max(np.max(ref_image))
 
     if not success:
         # Write diff image to a file
@@ -54,6 +48,11 @@ def test_render(variants_all, scene_name):
         diff_image = np.abs(ref_image - cur_image)
         Bitmap(diff_image).convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, False).write(diff_fname)
         print('Saved diff image to: ' + diff_fname)
+
+        # Write rendered image to a file
+        cur_fname = join(scene_dir, '_render_' + mitsuba.variant() + '.exr')
+        cur_bitmap.write(cur_fname)
+        print('Saved rendered image to: ' + cur_fname)
 
         assert False
 
