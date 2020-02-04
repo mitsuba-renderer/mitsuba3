@@ -76,7 +76,7 @@ public:
         SurfaceInteraction3f si = scene->ray_intersect(ray2, active);
         Spectrum weight(1.0f);
         masked(weight, si.is_valid() && active)  = exp(-si.t * sigmat) / exp(-si.t * avg_sigmat);
-        masked(weight, !si.is_valid() && active) = m_albedo->eval(mi);
+        masked(weight, !si.is_valid() && active) = m_albedo->eval(mi) * sigmat * exp(-mi.t * sigmat) / (detach(avg_sigmat) * exp(-mi.t * avg_sigmat));
         masked(si.t, !active)                    = math::Infinity<Float>;
 
         // Medium interactions are invalid if the surface was intersected
