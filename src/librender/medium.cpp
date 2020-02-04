@@ -32,7 +32,7 @@ MTS_VARIANT std::tuple<
 typename Medium<Float, Spectrum>::SurfaceInteraction3f,
 typename Medium<Float, Spectrum>::MediumInteraction3f,
 Spectrum>
-Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, int channel, Mask active) const {
+Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, UInt32 channel, Mask active) const {
     // initialize basic medium interaction fields
     MediumInteraction3f mi;
     mi.t           = math::Infinity<Float>;
@@ -82,6 +82,7 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) = get_scattering_coefficients(mi, valid_mi);
     mi.combined_extinction = combined_extinction;
 
+    // TODO: Probably this should only be done for "active" values
     transmittance *= exp(-t * combined_extinction);
     return std::make_tuple(si, mi, transmittance);
 }

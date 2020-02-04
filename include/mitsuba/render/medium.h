@@ -63,7 +63,7 @@ public:
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const = 0;
 
     std::tuple<SurfaceInteraction3f, MediumInteraction3f, Spectrum>
-    sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, int channel, Mask active) const;
+    sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, UInt32 channel, Mask active) const;
 
     // enum EventType  {
     //     Scattering,
