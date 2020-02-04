@@ -1,5 +1,6 @@
 import os
 from os.path import join, realpath
+import argparse
 import mitsuba
 import pytest
 import enoki as ek
@@ -23,6 +24,7 @@ def test_render(variants_all, scene_name):
 
     ref_name = get_ref_name()
     ref_fname = join(scene_dir, ref_name)
+    assert os.path.exists(ref_fname)
 
     scene_fname = join(scene_dir, 'scene.xml')
 
@@ -63,10 +65,15 @@ if __name__ == '__main__':
     and for all the color mode having their `scalar_*` mode enabled.
     """
 
-    # if True, replace all existing reference images
-    overwrite = False
+    parser = argparse.ArgumentParser(prog='RenderReferenceImages')
+    parser.add_argument('--overwrite', action='store_true',
+                        help='Force rerendering of all reference images. Otherwise, only missing references will be rendered.')
+    parser.add_argument('--spp', default=256, type=int,
+                        help='Samples per pixel')
+    args = parser.parse_args()
 
-    ref_spp = 256
+    ref_spp = args.spp
+    overwrite = args.overwrite
 
     for scene_name in scenes:
         scene_dir = join(TEST_SCENE_DIR, scene_name)
@@ -80,9 +87,6 @@ if __name__ == '__main__':
 
             ref_name = get_ref_name()
             ref_fname = join(scene_dir, ref_name)
-
-            print(variant)
-            print(ref_fname)
 
             if os.path.exists(ref_fname) and not overwrite:
                 continue
