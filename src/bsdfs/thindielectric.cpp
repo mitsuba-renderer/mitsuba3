@@ -69,19 +69,38 @@ proper closed geometry, :ref:`bsdf-dielectric` is the right choice. This is illu
 
     The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
 
-.. _fig-thindielectric_bsdf:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_thindielectric.jpg
-    :alt: Windows modeled using a single sheet of geometry are the most frequent application of this BSDF
-    :width: 95%
-    :align: center
-
-    Windows modeled using a single sheet of geometry are the most frequent application of this BSDF
-
 .. subfigend::
     :width: 0.49
     :alt: An illustration of the difference between the :ref:`bsdf-dielectric` and :ref:`bsdf-thindielectric` plugins
+    :label: fig-thindielectric-figures
+
+
+
+.. subfigstart::
+
+.. _fig-dielectric_bsdf_glass:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
+    :alt: Dielectric object
+    :width: 95%
+    :align: center
+
+    Dielectric
+
+.. _fig-thindielectric_bsdf:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_thindielectric_glass.jpg
+    :alt: Thindielectric object
+    :width: 95%
+    :align: center
+
+    Thindielectric
+
+.. subfigend::
+    :width: 0.49
+    :alt: Difference between the :ref:`bsdf-dielectric` and :ref:`bsdf-thindielectric` plugins
     :label: fig-thindielectric-diff
+
 
 
 The implementation correctly accounts for multiple internal reflections
