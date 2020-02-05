@@ -45,7 +45,7 @@ public:
         MediumInteraction3f mi;
 
         Mask specular_chain = active && !m_hide_emitters;
-        int depth = 0;
+        UInt32 depth = 0;
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
 
@@ -54,13 +54,13 @@ public:
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
 
             active &= any(neq(depolarize(throughput), 0.f));
-            if (depth > m_rr_depth) {
-                Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
-                active &= sampler->next_1d(active) < q;
-                throughput *= rcp(detach(q));
-            }
-
-            if (none(active) || (uint32_t) depth >= (uint32_t) m_max_depth)
+            // if (depth > m_rr_depth) {
+            //     Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
+            //     active &= sampler->next_1d(active) < q;
+            //     throughput *= rcp(detach(q));
+            // }
+            Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
+            if (none(active) || all(exceeded_max_depth))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
@@ -166,7 +166,7 @@ public:
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
                                    any(neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
 
-                uint32_t max_intersections = (uint32_t) m_max_depth - (uint32_t) depth - 1;
+                uint32_t max_intersections = (uint32_t) m_max_depth;
                 auto [emitted, emitter_pdf] =
                     ray_intersect_and_look_for_emitter(si, scene, sampler, medium, ray,
                                                        max_intersections, add_emitter);

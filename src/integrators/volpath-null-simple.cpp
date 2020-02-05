@@ -24,6 +24,16 @@ public:
         m_medium_mis = props.bool_("medium_mis", true);
     }
 
+    MTS_INLINE
+    Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
+        Float m = spec[0];
+        if constexpr (!is_spectral_v<Spectrum>) { // Handle RGB rendering
+            masked(m, eq(idx, 1)) = spec[1];
+            masked(m, eq(idx, 2)) = spec[2];
+        }
+        return m;
+    }
+
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray_,
@@ -83,7 +93,7 @@ public:
                 active_medium &= mi.is_valid();
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= mi.sigma_t[channel] / mi.combined_extinction[channel];
+                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel);
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
