@@ -94,8 +94,8 @@ if (MTS_ENABLE_OPTIX)
   target_include_directories(mitsuba-render-obj PRIVATE ${MTS_OPTIX_PATH}/include)
   target_link_libraries(mitsuba-render PRIVATE optix)
   set_target_properties(mitsuba-render PROPERTIES
-    INSTALL_RPATH ${MTS_OPTIX_PATH}/lib64
-    BUILD_RPATH ${MTS_OPTIX_PATH}/lib64
+    INSTALL_RPATH "${MTS_OPTIX_PATH}/lib64;${CMAKE_INSTALL_RPATH}"
+    BUILD_RPATH "${MTS_OPTIX_PATH}/lib64;${CMAKE_BUILD_RPATH}"
   )
 endif()
 

@@ -237,7 +237,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     m.attr("USE_OPTIX") = is_cuda_array_v<Float>;
 
-    #if defined(MTS_USE_EMBREE)
+    #if defined(MTS_ENABLE_EMBREE)
         m.attr("USE_EMBREE")  = !is_cuda_array_v<Float>;
     #else
         m.attr("USE_EMBREE")  = false;
