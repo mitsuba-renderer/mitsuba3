@@ -20,6 +20,10 @@ BSDF_ORDERING = ['diffuse',
                 'mask',
                 'twosided']
 
+EMITTER_ORDERING = ['area',
+                    'point',
+                    'constant',
+                    'envmap']
 
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
@@ -94,7 +98,7 @@ def generate(build_dir):
         # process_src(f, 'medium', 'section_media')
         # process_src(f, 'phase')
         # process_src(f, 'volume', 'section_volumes')
-        # process_src(f, 'emitters')
+        process_src(f, 'emitters', 'section_emitter', EMITTER_ORDERING)
         # process_src(f, 'sensors')
         # process_src(f, 'integrators')
         # process_src(f, 'samplers')

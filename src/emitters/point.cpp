@@ -7,6 +7,39 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _emitter-point:
+
+Point light source (:monosp:`point`)
+------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - intensity
+   - |spectrum|
+   - Specifies the radiant intensity in units of power per unit steradian.
+     (Default: :ref:`emitter-d65`)
+ * - position
+   - |point|
+   - Alternative parameter for specifying the light source position.
+     Note that only one of the parameters :monosp:`toWorld` and :monosp:`position` can be used at
+     a time.
+ * - to_world
+   - |transform|
+   - Specifies an optional sensor-to-world transformation.
+
+This emitter plugin implements a simple point light source, which
+uniformly radiates illumination into all directions.
+
+ */
+
 template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:

@@ -7,6 +7,51 @@
 #include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
+/**!
+
+.. _emitter-area:
+
+Area light (:monosp:`area`)
+---------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - radiance
+   - |spectrum|
+   - Specifies the emitted radiance in units of power per unit area per unit steradian.
+     (Default: :ref:`emitter-d65`)
+
+This plugin implements an area light, i.e. a light source that emits
+diffuse illumination from the exterior of an arbitrary shape.
+Since the emission profile of an area light is completely diffuse, it
+has the same apparent brightness regardless of the observer's viewing
+direction. Furthermore, since it occupies a nonzero amount of space, an
+area light generally causes scene objects to cast soft shadows.
+
+When modeling scenes involving area lights, it is preferable
+to use spheres as the emitter shapes, since they provide a
+particularly good direct illumination sampling strategy (see
+the :ref:`sphere` plugin for an example).
+
+To create an area light source, simply instantiate the desired
+emitter shape and specify an :monosp:`area` instance as its child:
+
+.. code-block:: xml
+    :name: sphere-light
+
+    <shape type="sphere">
+        <emitter type="area">
+            <spectrum name="radiance" value="1.0"/>
+        </emitter>
+    </shape>
+
+ */
 
 template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {

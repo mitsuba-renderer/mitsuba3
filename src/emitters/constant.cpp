@@ -9,6 +9,33 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _emitter-constant:
+
+Constant environment emitter (:monosp:`constant`)
+-------------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - radiance
+   - |spectrum|
+   - Specifies the emitted radiance in units of power per unit area per unit steradian.
+     (Default: :ref:`emitter-d65`)
+
+This plugin implements a constant environment emitter, which surrounds
+the scene and radiates diffuse illumination towards it. This is often
+a good default light source when the goal is to visualize some loaded
+geometry that uses basic (e.g. diffuse) materials.
+
+ */
+
 template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:

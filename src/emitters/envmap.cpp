@@ -10,6 +10,47 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _emitter-envmap:
+
+Environment emitter (:monosp:`envmap`)
+--------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - filename
+   - |string|
+   - Filename of the radiance-valued input image to be loaded; must be in latitude-longitude format.
+ * - scale
+   - |Float|
+   - A scale factor that is applied to the radiance values stored in the input image. (Default: 1.0)
+
+This plugin provides a HDRI (high dynamic range imaging) environment map,
+which is a type of light source that is well-suited for representing *natural*
+illumination.
+
+The implementation loads a captured illumination environment from a image in
+latitude-longitude format and turns it into an infinitely distant emitter.
+The image could either be a processed photograph or a rendering made using the
+spherical sensor.
+
+The plugin can work with all types of images that are natively supported by Mitsuba
+(i.e. JPEG, PNG, OpenEXR, RGBE, TGA, and BMP). In practice, a good environment
+map will contain high-dynamic range data that can only be represented using the
+OpenEXR or RGBE file formats.
+High quality free light probes are available on Paul Debevec's website
+(http://gl.ict.usc.edu/Data/HighResProbes) and Bernhard Vogl's website
+(http://dativ.at/lightprobes/).
+
+ */
+
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:

@@ -31,4 +31,4 @@ The scene is then rendered by calling the standard :code:`render` function:
 
 .. literalinclude:: ../examples/04_diffuse_bsdf/diffuse_bsdf.py
    :language: python
-   :lines: 70-80
+   :lines: 70-79

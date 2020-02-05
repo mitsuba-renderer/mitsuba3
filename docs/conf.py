@@ -51,6 +51,8 @@ rst_prolog = r"""
 .. |true| replace:: :monosp:`true`
 .. |string| replace:: :paramtype:`string`
 .. |bsdf| replace:: :paramtype:`bsdf`
+.. |point| replace:: :paramtype:`point`
+.. |transform| replace:: :paramtype:`transform`
 
 .. |nbsp| unicode:: 0xA0
    :trim:
@@ -94,7 +96,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['.build', 'release.rst', 'section_bsdf.rst']
+exclude_patterns = ['.build', 'release.rst', 'section_bsdf.rst', 'section_emitter.rst']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
