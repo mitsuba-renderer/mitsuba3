@@ -11,13 +11,13 @@ def test01_chi2(variant_packet):
 
     from mitsuba.core import ScalarBoundingBox2f
     chi2 = ChiSquareTest(
-        domain = SphericalDomain(),
-        sample_func = sample_func,
-        pdf_func = pdf_func,
-        sample_dim = 3,
+        domain=SphericalDomain(),
+        sample_func=sample_func,
+        pdf_func=pdf_func,
+        sample_dim=3
     )
 
     result = chi2.run(0.01)
-    # print(chi2.messages)
-    # chi2._dump_tables()
+    print(chi2.messages)
+    chi2._dump_tables()
     assert result

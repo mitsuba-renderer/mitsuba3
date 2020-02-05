@@ -71,9 +71,9 @@ int main(int argc, char *argv[]) {
     auto arg_threads = parser.add(StringVec{ "-t", "--threads" }, true);
     auto arg_verbose = parser.add(StringVec{ "-v", "--verbose" }, false);
     auto arg_define  = parser.add(StringVec{ "-D", "--define" }, true);
-    auto arg_mode    = parser.add(StringVec{ "-m", "--mode" }, true);
+    // auto arg_mode    = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_help    = parser.add(StringVec{ "-h", "--help" });
-    auto arg_update  = parser.add(StringVec{ "-u", "--update" }, false);
+    // auto arg_update  = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_extra   = parser.add("", true);
     xml::ParameterList params;
 

@@ -177,9 +177,8 @@ public:
     void parameters_changed() override {
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
 
-        if (m_alpha_u != m_alpha_v) {
+        if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
-        }
 
         m_components.clear();
         m_components.push_back(m_flags);
@@ -281,7 +280,7 @@ public:
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
         MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v,
-                                            m_sample_visible);
+                                     m_sample_visible);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);

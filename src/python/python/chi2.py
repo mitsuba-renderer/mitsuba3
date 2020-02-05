@@ -106,7 +106,7 @@ class ChiSquareTest:
 
         # Generate a table of uniform variates
         from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
-            UInt32, UInt64, PCG32
+            UInt64, PCG32
 
         rng = PCG32(initseq=ek.arange(UInt64, self.sample_count))
 
@@ -138,7 +138,8 @@ class ChiSquareTest:
 
         # Normalize position values
         xy = (xy - self.bounds.min) / self.bounds.extents()
-        xy = Vector2u(ek.clamp(xy * Vector2f(self.res), 0, Vector2f(self.res - 1)))
+        xy = Vector2u(ek.clamp(xy * Vector2f(self.res), 0,
+                               Vector2f(self.res - 1)))
 
         # Compute a histogram of the positions in the parameter domain
         self.histogram = ek.zero(Float, ek.hprod(self.res))
@@ -248,10 +249,11 @@ class ChiSquareTest:
         if self.pdf is None:
             self.tabulate_pdf()
 
-        index = UInt32([i[0] for i in sorted(enumerate(self.pdf), key=lambda x: x[1])])
+        index = UInt32([i[0] for i in sorted(enumerate(self.pdf),
+                                             key=lambda x: x[1])])
 
         # Sort entries by expected frequency (increasing)
-        pdf       = Float64(ek.gather(self.pdf,       index))
+        pdf = Float64(ek.gather(self.pdf, index))
         histogram = Float64(ek.gather(self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
@@ -276,7 +278,7 @@ class ChiSquareTest:
 
         # Probability of observing a test statistic at least as
         # extreme as the one here assuming that the distributions match
-        self.p_value = 1-rlgamma(dof/2,chi2val/2)
+        self.p_value = 1-rlgamma(dof/2, chi2val/2)
 
         # Apply the Šidák correction term, since we'll be conducting multiple
         # independent hypothesis tests. This accounts for the fact that the
@@ -294,9 +296,9 @@ class ChiSquareTest:
                 or not ek.isfinite(self.p_value):
             self._dump_tables()
             self._log('***** Rejected ***** the null hypothesis (p-value = %f,'
-                    ' significance level = %f). Target density and histogram'
-                    ' were written to "chi2_data.py".'
-                    % (self.p_value, significance_level))
+                      ' significance level = %f). Target density and histogram'
+                      ' were written to "chi2_data.py".'
+                      % (self.p_value, significance_level))
             return False
         else:
             self._log('Accepted the null hypothesis (p-value = %f, '
@@ -306,10 +308,11 @@ class ChiSquareTest:
 
     def _dump_tables(self):
         with open("chi2_data.py", "w") as f:
-            pdf = str([[self.pdf[x + y*self.res.x] for x in range(self.res.x)] \
-                for y in range(self.res.y)])
-            histogram = str([[self.histogram[x + y*self.res.x] for x in range(self.res.x)] \
-                for y in range(self.res.y)])
+            pdf = str([[self.pdf[x + y*self.res.x] for x in range(self.res.x)]
+                       for y in range(self.res.y)])
+            histogram = str([[self.histogram[x + y*self.res.x]
+                              for x in range(self.res.x)]
+                             for y in range(self.res.y)])
 
             f.write("pdf=%s\n" % str(pdf))
             f.write("histogram=%s\n\n" % str(histogram))
@@ -322,9 +325,13 @@ class ChiSquareTest:
             f.write('    diff=histogram - pdf\n')
             f.write('    absdiff=np.abs(diff).max()\n')
             f.write('    a = pdf.shape[1] / pdf.shape[0]\n')
-            f.write('    pdf_plot = axs[0].imshow(pdf, aspect=a, interpolation=\'nearest\')\n')
-            f.write('    hist_plot = axs[1].imshow(histogram, aspect=a, interpolation=\'nearest\')\n')
-            f.write('    diff_plot = axs[2].imshow(diff, aspect=a, vmin=-absdiff, vmax=absdiff, interpolation=\'nearest\', cmap=\'coolwarm\')\n')
+            f.write('    pdf_plot = axs[0].imshow(pdf, aspect=a,'
+                    ' interpolation=\'nearest\')\n')
+            f.write('    hist_plot = axs[1].imshow(histogram, aspect=a,'
+                    ' interpolation=\'nearest\')\n')
+            f.write('    diff_plot = axs[2].imshow(diff, aspect=a, '
+                    'vmin=-absdiff, vmax=absdiff, interpolation=\'nearest\','
+                    ' cmap=\'coolwarm\')\n')
             f.write('    axs[0].title.set_text(\'PDF\')\n')
             f.write('    axs[1].title.set_text(\'Histogram\')\n')
             f.write('    axs[2].title.set_text(\'Difference\')\n')
@@ -335,9 +342,9 @@ class ChiSquareTest:
             f.write('    plt.tight_layout()\n')
             f.write('    plt.show()\n')
 
-
     def _log(self, msg):
         self.messages += msg + '\n'
+
 
 class LineDomain:
     ' The identity map on the line.'
@@ -417,9 +424,9 @@ class SphericalDomain:
         return Vector2f(ek.atan2(y=p.y, x=p.x), -p.z)
 
 
-#--------------------------------------
-#               Adapters
-#--------------------------------------
+# --------------------------------------
+#                Adapters
+# --------------------------------------
 
 
 def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
@@ -460,9 +467,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
         bs, weight = plugin.sample(ctx, si, sample[0], [sample[1], sample[2]])
 
         w = Float.full(1.0, ek.slices(weight))
-        w[ek.hmean(weight) == 0] = 0
-        print("w:", w)
-        print("bs.wo:", bs.wo)
+        w[ek.all(ek.eq(weight, 0))] = 0
         return bs.wo, w
 
     def pdf_functor(wo, *args):
@@ -472,7 +477,6 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
         return plugin.pdf(ctx, si, wo)
 
     return sample_functor, pdf_functor
-
 
 
 if __name__ == '__main__':
@@ -487,12 +491,11 @@ if __name__ == '__main__':
     def my_pdf(p):
         return square_to_cosine_hemisphere_pdf(p)
 
-    from mitsuba.core import ScalarBoundingBox2f
     chi2 = ChiSquareTest(
-        domain = SphericalDomain(),
-        sample_func = my_sample,
-        pdf_func = my_pdf,
-        sample_dim = 2
+        domain=SphericalDomain(),
+        sample_func=my_sample,
+        pdf_func=my_pdf,
+        sample_dim=2
     )
 
     chi2.run(0.1)

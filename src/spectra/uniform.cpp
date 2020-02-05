@@ -30,7 +30,7 @@ public:
         }
     }
 
-    Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
+    Float eval_1(const SurfaceInteraction3f & /* it */, Mask /* active */) const override {
         return m_value;
     }
 
