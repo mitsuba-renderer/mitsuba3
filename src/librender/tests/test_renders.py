@@ -14,10 +14,6 @@ TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/da
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 
-def get_ref_name(scene_path):
-    return 'ref_' + '_'.join(mitsuba.variant().split('_')[1:]) + '.exr'
-
-
 def get_ref_fname(scene_path):
     return os.path.splitext(scene_path)[0] + '_ref_' + '_'.join(mitsuba.variant().split('_')[1:]) + '.exr'
 
