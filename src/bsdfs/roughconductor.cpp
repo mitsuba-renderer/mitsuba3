@@ -8,6 +8,151 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+.. _bsdf-roughconductor:
+
+Rough conductor material (:monosp:`roughconductor`)
+---------------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - distribution
+   - |string|
+   - Specifies the type of microfacet normal distribution used to model the surface roughness.
+
+     - :monosp:`beckmann`: Physically-based distribution derived from Gaussian random surfaces.
+       This is the default.
+     - :monosp:`ggx`: The GGX :cite:`Walter07Microfacet` distribution (also known as Trowbridge-Reitz
+       :cite:`Trowbridge19975Average` distribution) was designed to better approximate the long
+       tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
+       distribution.
+ * - alpha, alpha_u, alpha_v
+   - |float|
+   - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
+     bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
+     **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
+     parameter to initialize both :monosp:`alpha_u` and :monosp:`alpha_v` to the same value. (Default: 0.1)
+ * - eta, k
+   - |spectrum| or |texture|
+   - Real and imaginary components of the material's index of refraction. (Default: 0.0/1.0)
+ * - sample_visible
+   - |bool|
+   - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
+     focuses computation on the visible parts of the microfacet normal distribution, considerably
+     reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
+ * - specular_reflectance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection component.
+     Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+
+This plugin implements a realistic microfacet scattering model for rendering
+rough conducting materials, such as metals.
+
+.. subfigstart::
+
+.. _fig-roughconductor_copper:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughconductor_copper.jpg
+    :alt: Rough copper
+    :width: 95%
+    :align: center
+
+    Rough copper (Beckmann, :math:`\alpha=0.1`)
+
+.. _fig-roughconductor-brushed:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_roughconductor_anisotropic_aluminium.jpg
+    :alt: Vertically brushed aluminium
+    :width: 95%
+    :align: center
+
+    Vertically brushed aluminium (Anisotropic Phong, :math:`\alpha_u=0.05,\ \alpha_v=0.3`)
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example roughconductor appearances
+    :label: fig-roughconductor-bsdf
+
+
+Microfacet theory describes rough surfaces as an arrangement of unresolved
+and ideally specular facets, whose normal directions are given by a
+specially chosen \emph{microfacet distribution}. By accounting for shadowing
+and masking effects between these facets, it is possible to reproduce the
+important off-specular reflections peaks observed in real-world measurements
+of such materials.
+
+This plugin is essentially the *roughened* equivalent of the (smooth) plugin
+:ref:`bsdf-conductor`. For very low values of :math:`\alpha`, the two will
+be identical, though scenes using this plugin will take longer to render
+due to the additional computational burden of tracking surface roughness.
+
+The implementation is based on the paper *Microfacet Models
+for Refraction through Rough Surfaces* by Walter et al.
+:cite:`Walter07Microfacet`. It supports three different types of microfacet
+distributions and has a texturable roughness parameter.
+To facilitate the tedious task of specifying spectrally-varying index of
+refraction information, this plugin can access a set of measured materials
+for which visible-spectrum information was publicly available
+(see Table :num:`ior-table-list` for the full list).
+There is also a special material profile named :monosp:`none`, which disables
+the computation of Fresnel reflectances and produces an idealized
+100% reflecting mirror.
+
+When no parameters are given, the plugin activates the default settings,
+which describe copper with a medium amount of roughness modeled using a
+Beckmann distribution.
+
+To get an intuition about the effect of the surface roughness parameter
+:math:`\alpha`, consider the following approximate classification: a value of
+:math:`\alpha=0.001-0.01` corresponds to a material with slight imperfections
+on an otherwise smooth surface finish, :math:`\alpha=0.1` is relatively rough,
+and :math:`\alpha=0.3-0.7` is \emph{extremely} rough (e.g. an etched or ground
+finish). Values significantly above that are probably not too realistic.
+
+
+The following XML snippet describes a material definition for brushed aluminium:
+
+.. code-block:: xml
+    :name: lst-roughconductor-aluminium
+
+    <bsdf type="roughconductor">
+        <spectrum name="eta" value="0.789000"/>
+        <spectrum name="k" value="6.150000"/>
+        <string name="distribution" value="ggx"/>
+        <float name="alphaU" value="0.05"/>
+        <float name="alphaV" value="0.3"/>
+    </bsdf>
+
+Technical details
+*****************
+All microfacet distributions allow the specification of two distinct
+roughness values along the tangent and bitangent directions. This can be
+used to provide a material with a *brushed* appearance. The alignment
+of the anisotropy will follow the UV parameterization of the underlying
+mesh. This means that such an anisotropic material cannot be applied to
+triangle meshes that are missing texture coordinates.
+
+Since Mitsuba 0.5.1, this plugin uses a new importance sampling technique
+contributed by Eric Heitz and Eugene D'Eon, which restricts the sampling
+domain to the set of visible (unmasked) microfacet normals. The previous
+approach of sampling all normals is still available and can be enabled
+by setting :monosp:`sample_visible` to :monosp:`false`.
+
+When using this plugin, you should ideally compile Mitsuba with support for
+spectral rendering to get the most accurate results. While it also works
+in RGB mode, the computations will be more approximate in nature.
+Also note that this material is one-sided---that is, observed from the
+back side, it will be completely black. If this is undesirable,
+consider using the :ref:`twosided` BRDF adapter.
+
+ */
+
 template <typename Float, typename Spectrum>
 class RoughConductor final : public BSDF<Float, Spectrum> {
 public:

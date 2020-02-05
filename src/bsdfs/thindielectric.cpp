@@ -69,7 +69,7 @@ proper closed geometry, :ref:`bsdf-dielectric` is the right choice. This is illu
 
     The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
 
-.. _fig-thindielectric_figure:
+.. _fig-thindielectric_bsdf:
 
 .. figure:: ../../resources/data/docs/images/render/bsdf_thindielectric.jpg
     :alt: Windows modeled using a single sheet of geometry are the most frequent application of this BSDF

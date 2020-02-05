@@ -6,6 +6,83 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _bsdf-conductor:
+
+Smooth conductor (:monosp:`conductor`)
+-------------------------------------------
+
+.. list-table::
+ :widths: 20 15 65
+ :header-rows: 1
+ :class: paramstable
+
+ * - Parameter
+   - Type
+   - Description
+ * - eta, k
+   - |spectrum| or |texture|
+   - Real and imaginary components of the material's index of refraction. (Default: 0.0/1.0)
+ * - specular_reflectance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection component.
+     Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+
+
+.. subfigstart::
+
+.. _fig-conductor_copper:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_conductor_gold.jpg
+    :alt: Gold
+    :width: 95%
+    :align: center
+
+    Gold
+
+.. _fig-conductor-brushed:
+
+.. figure:: ../../resources/data/docs/images/render/bsdf_conductor_aluminium.jpg
+    :alt: Aluminium
+    :width: 95%
+    :align: center
+
+    Aluminium
+
+.. subfigend::
+    :width: 0.49
+    :alt: Example conductor appearances
+    :label: fig-conductor-bsdf
+
+
+This plugin implements a perfectly smooth interface to a conducting material,
+such as a metal. For a similar model that instead describes a rough surface
+microstructure, take a look at the separately available
+:ref:`roughconductor` plugin.
+In contrast to dielectric materials, conductors do not transmit
+any light. Their index of refraction is complex-valued and tends to undergo
+considerable changes throughout the visible color spectrum.
+
+When using this plugin, you should ideally one of the :monosp:`spectral` modes
+of the renderer to get the most accurate results. While it also works
+in RGB mode, the computations will be more approximate in nature.
+Also note that this material is one-sided---that is, observed from the
+back side, it will be completely black. If this is undesirable,
+consider using the :ref:`twosided` BRDF adapter plugin.
+
+The following XML snippet describes a material definition for aluminium:
+
+.. code-block:: xml
+    :name: lst-conductor-aluminium
+
+    <bsdf type="conductor">
+        <spectrum name="eta" value="0.789000"/>
+        <spectrum name="k" value="6.150000"/>
+    </bsdf>
+
+ */
+
 template <typename Float, typename Spectrum>
 class SmoothConductor final : public BSDF<Float, Spectrum> {
 public:
