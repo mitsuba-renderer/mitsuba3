@@ -1,6 +1,7 @@
 import os
-from os.path import join, realpath
+from os.path import join, realpath, dirname
 import argparse
+import glob
 import mitsuba
 import pytest
 import enoki as ek
@@ -10,23 +11,26 @@ from enoki.dynamic import Float32 as Float
 from mitsuba.python.test import variants_all
 
 TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/scenes'))
-scenes = os.listdir(TEST_SCENE_DIR)
+scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
-def get_ref_name():
+
+def get_ref_name(scene_path):
     return 'ref_' + '_'.join(mitsuba.variant().split('_')[1:]) + '.exr'
 
-@pytest.mark.parametrize(*['scene_name', scenes ])
-def test_render(variants_all, scene_name):
+
+def get_ref_fname(scene_path):
+    return os.path.splitext(scene_path)[0] + '_ref_' + '_'.join(mitsuba.variant().split('_')[1:]) + '.exr'
+
+
+@pytest.mark.parametrize(*['scene_fname', scenes])
+def test_render(variants_all, scene_fname):
     from mitsuba.core import Bitmap, Struct, Thread
 
-    scene_dir = join(TEST_SCENE_DIR, scene_name)
+    scene_dir = dirname(scene_fname)
     Thread.thread().file_resolver().append(scene_dir)
 
-    ref_name = get_ref_name()
-    ref_fname = join(scene_dir, ref_name)
+    ref_fname = get_ref_fname(scene_fname)
     assert os.path.exists(ref_fname)
-
-    scene_fname = join(scene_dir, 'scene.xml')
 
     scene = mitsuba.core.xml.load_file(scene_fname, parameters=[('spp', str(32))])
     scene.integrator().render(scene, scene.sensors()[0])
@@ -57,8 +61,7 @@ def test_render(variants_all, scene_name):
         assert False
 
 
-
-if __name__ == '__main__':
+def main():
     """
     Generate reference images for all the scenes contained within the TEST_SCENE_DIR directory,
     and for all the color mode having their `scalar_*` mode enabled.
@@ -74,8 +77,8 @@ if __name__ == '__main__':
     ref_spp = args.spp
     overwrite = args.overwrite
 
-    for scene_name in scenes:
-        scene_dir = join(TEST_SCENE_DIR, scene_name)
+    for scene_fname in scenes:
+        scene_dir = dirname(scene_fname)
 
         for variant in mitsuba.variants():
             if not variant.split('_')[0] == 'scalar':
@@ -84,16 +87,11 @@ if __name__ == '__main__':
             mitsuba.set_variant(variant)
             from mitsuba.core import Bitmap, Struct, Thread
 
-            ref_name = get_ref_name()
-            ref_fname = join(scene_dir, ref_name)
-
+            ref_fname = get_ref_fname(scene_fname)
             if os.path.exists(ref_fname) and not overwrite:
                 continue
 
             Thread.thread().file_resolver().append(scene_dir)
-
-            scene_fname = join(scene_dir, 'scene.xml')
-
             scene = mitsuba.core.xml.load_file(scene_fname, parameters=[('spp', str(ref_spp))])
             scene.integrator().render(scene, scene.sensors()[0])
 
@@ -103,3 +101,7 @@ if __name__ == '__main__':
             # Write rendered image to a file
             cur_bitmap.write(ref_fname)
             print('Saved rendered image to: ' + ref_fname)
+
+
+if __name__ == '__main__':
+    main()
