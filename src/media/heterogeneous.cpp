@@ -278,14 +278,15 @@ public:
     }
 
     // NEW INTERFACE
-    Spectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active) const override {
-        return Spectrum(m_max_density);
+    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active) const override {
+        return m_max_density; //TODO: This should be a spectral quantity
     }
 
-    std::tuple<Spectrum, Spectrum, Spectrum> get_scattering_coefficients(const MediumInteraction3f &mi, Mask active) const override {
-        Spectrum sigmat = m_density_scale * m_density->eval_1(mi, active) * m_sigmat->eval(mi, active);
-        Spectrum sigmas = sigmat * m_albedo->eval(mi, active);
-        Spectrum sigman = Spectrum(get_combined_extinction(mi, active)) - sigmat;
+    std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
+    get_scattering_coefficients(const MediumInteraction3f &mi, Mask active) const override {
+        auto sigmat = m_density_scale * m_density->eval_1(mi, active) * m_sigmat->eval(mi, active);
+        auto sigmas = sigmat * m_albedo->eval(mi, active);
+        auto sigman = get_combined_extinction(mi, active) - sigmat;
         return { sigmas, sigman, sigmat };
     }
 

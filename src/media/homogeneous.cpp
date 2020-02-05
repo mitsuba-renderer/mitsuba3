@@ -46,7 +46,7 @@ public:
         m_density = props.float_("density", 1.0f);
     }
 
-    MTS_INLINE Spectrum eval_sigmat(const MediumInteraction3f &mi) const {
+    MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi) const {
         return m_sigmat->eval(mi) * m_density;
     }
 
@@ -93,15 +93,17 @@ public:
         return enoki::exp(-(ray.maxt - ray.mint) * eval_sigmat(mi));
     }
 
-        // NEW INTERFACE
-    Spectrum get_combined_extinction(const MediumInteraction3f &mi, Mask /* active */) const override {
+    // NEW INTERFACE
+    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi, Mask /* active */) const override {
         return eval_sigmat(mi);
     }
 
-    std::tuple<Spectrum, Spectrum, Spectrum> get_scattering_coefficients(const MediumInteraction3f &mi, Mask active) const override {
-        Spectrum sigmat = eval_sigmat(mi);
-        Spectrum sigmas = sigmat * m_albedo->eval(mi, active);
-        Spectrum sigman = 0.f;
+    std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
+    get_scattering_coefficients(const MediumInteraction3f &mi,
+                                Mask active) const override {
+        auto sigmat = eval_sigmat(mi);
+        auto sigmas = sigmat * m_albedo->eval(mi, active);
+        UnpolarizedSpectrum sigman = 0.f;
         return { sigmas, sigman, sigmat };
     }
 

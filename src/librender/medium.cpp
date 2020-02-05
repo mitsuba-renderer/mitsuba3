@@ -60,8 +60,8 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     maxt = min(ray.maxt, maxt);
 
     // sample t
-    Spectrum combined_extinction = get_combined_extinction(mi, active);
-    Float sampled_t = mint + (-enoki::log(1 - sample) / depolarize(combined_extinction)[channel]);
+    auto combined_extinction = get_combined_extinction(mi, active);
+    Float sampled_t = mint + (-enoki::log(1 - sample) / combined_extinction[channel]);
 
 
     Ray ray_its = ray;

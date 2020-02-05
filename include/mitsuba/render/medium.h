@@ -58,23 +58,12 @@ public:
     // NEW INTERFACE
     virtual std::tuple<Mask, Float, Float> intersect_aabb(const Ray3f &ray) const = 0;
 
-    virtual Spectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const = 0;
-    virtual std::tuple<Spectrum, Spectrum, Spectrum>
+    virtual UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const = 0;
+    virtual std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const = 0;
 
     std::tuple<SurfaceInteraction3f, MediumInteraction3f, Spectrum>
     sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, UInt32 channel, Mask active) const;
-
-    // enum EventType  {
-    //     Scattering,
-    //     Absorption,
-    //     Null,
-    // };
-
-    // MTS_INLINE EventType Medium::sample_event(const MediumInteraction3f& mi, Float sample, int channel, Mask active = true) const {
-    //     return select(sample < mi.sigma_t[channel] / mi.combined_extinction[channel], Medium::Scattering, Medium::Null)''
-    // }
-
 
     // END NEW INTERFACE
 

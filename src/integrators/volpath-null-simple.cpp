@@ -83,7 +83,7 @@ public:
                 active_medium &= mi.is_valid();
 
                 // Handle null and real scatter events
-                Mask null_scatter = sampler->next_1d(active_medium) >= depolarize(mi.sigma_t)[channel] / depolarize(mi.combined_extinction)[channel];
+                Mask null_scatter = sampler->next_1d(active_medium) >= mi.sigma_t[channel] / mi.combined_extinction[channel];
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
@@ -103,7 +103,7 @@ public:
             }
 
             if (any_or<true>(act_medium_scatter)) {
-                masked(throughput, act_medium_scatter) *= depolarize(mi.sigma_s) / depolarize(mi.sigma_t);
+                masked(throughput, act_medium_scatter) *= mi.sigma_s / mi.sigma_t;
 
                 PhaseFunctionContext phase_ctx(sampler);
                 auto phase = mi.medium->phase_function();
@@ -265,7 +265,7 @@ public:
                 if (any_or<true>(active_medium)) {
                     masked(ray.o, active_medium)    = mi.p;
                     masked(ray.mint, active_medium) = 0.f;
-                    masked(transmittance, active_medium) *= mi.sigma_n / depolarize(mi.combined_extinction);
+                    masked(transmittance, active_medium) *= mi.sigma_n / mi.combined_extinction;
                 }
             }
 
@@ -302,7 +302,7 @@ public:
             masked(depth, active_surface) += 1; // only add depth if a surface is hit
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && any(neq(transmittance, 0.f));
+            active &= (active_medium || active_surface) && any(neq(depolarize(transmittance), 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();
