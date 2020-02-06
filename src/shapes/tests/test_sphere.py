@@ -25,6 +25,9 @@ def example_scene(radius = 1.0, extra = ""):
 
 
 def test01_create(variant_scalar):
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     s = example_sphere()
     assert s is not None
     assert s.primitive_count() == 1
@@ -32,6 +35,9 @@ def test01_create(variant_scalar):
 
 
 def test02_bbox(variant_scalar):
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     for r in [1, 2, 4]:
         s = example_sphere(r)
         b = s.bbox()
@@ -44,9 +50,9 @@ def test02_bbox(variant_scalar):
 
 
 def test03_ray_intersect_transform(variant_scalar):
-    UNSUPPORTED = mitsuba.core.USE_EMBREE or mitsuba.core.USE_OPTIX
-    pytest.mark.xfail(condition=UNSUPPORTED,
-                      reason="Shape intersections not implemented with Embree or OptiX")
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     from mitsuba.core import Ray3f
 
     for r in [1, 3]:
@@ -94,6 +100,9 @@ def test04_sample_direct(variant_scalar):
     from mitsuba.core.xml import load_string
     from mitsuba.core import Ray3f
     from mitsuba.render import Interaction3f
+
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
 
     sphere = load_string('<shape type="sphere" version="2.0.0"/>')
 

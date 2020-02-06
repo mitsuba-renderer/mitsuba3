@@ -28,6 +28,9 @@ def test01_depth_scalar_stairs(variant_scalar):
     from mitsuba.core import Ray3f
     from mitsuba.render import SurfaceInteraction3f
 
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     n_steps = 20
     scene = make_synthetic_scene(n_steps)
 
@@ -63,6 +66,9 @@ def test02_depth_scalar_bunny(variant_scalar):
     from mitsuba.core.xml import load_string
     from mitsuba.render import SurfaceInteraction3f
 
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     scene = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
@@ -96,6 +102,9 @@ def test02_depth_scalar_bunny(variant_scalar):
 def test03_depth_packet_stairs(variant_packet):
     from mitsuba.core import Ray3f as Ray3fX, Properties
     from mitsuba.render import Scene
+
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
 
     props = Properties("scene")
     props["_unnamed_0"] = create_stairs_packet(11)

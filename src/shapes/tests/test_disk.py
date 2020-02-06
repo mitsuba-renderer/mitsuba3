@@ -32,6 +32,9 @@ def example_scene(scale = (1, 1, 1), translate = (0, 0, 0)):
 
 
 def test01_create(variant_scalar):
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     s = example_disk()
     assert s is not None
     assert s.primitive_count() == 1
@@ -40,6 +43,10 @@ def test01_create(variant_scalar):
 
 def test02_bbox(variant_scalar):
     from mitsuba.core import Vector3f
+
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     sy = 2.5
     for sx in [1, 2, 4]:
         for translate in [Vector3f([1.3, -3.0, 5]),
@@ -55,9 +62,9 @@ def test02_bbox(variant_scalar):
             assert ek.allclose(b.max, translate + [sx, sy, 0.0])
 
 def test03_ray_intersect(variant_scalar):
-    UNSUPPORTED = mitsuba.core.USE_EMBREE or mitsuba.core.USE_OPTIX
-    pytest.mark.xfail(condition=UNSUPPORTED,
-                      reason="Shape intersections not implemented with Embree or OptiX")
+    if mitsuba.core.MTS_ENABLE_EMBREE:
+        pytest.skip("EMBREE enabled")
+
     from mitsuba.core import Ray3f, Vector3f
 
     for r in [1, 3, 5]:
