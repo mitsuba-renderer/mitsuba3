@@ -63,28 +63,15 @@ off-specular reflections peaks observed in real-world measurements of such
 materials.
 
 .. subfigstart::
-.. _fig-roughdielectric-glass:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_glass.jpg
-    :alt: Anti-glare glass
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_glass.jpg
 
     Anti-glare glass (Beckmann, :math:`\alpha=0.02`)
 
-.. _fig-roughdielectric-rough:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_rough.jpg
-    :alt: Rough glass
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_rough.jpg
 
     Rough glass (Beckmann, :math:`\alpha=0.1`)
 
 .. subfigend::
-    :width: 0.49
-    :alt: Example roughdielectric appearances
-    :label: fig-roughdielectric-bsdf
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin
 :ref:`bsdf-dielectric`. For very low values of :math:`\alpha`, the two will

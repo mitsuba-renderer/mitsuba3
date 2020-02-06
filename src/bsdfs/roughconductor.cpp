@@ -49,29 +49,15 @@ This plugin implements a realistic microfacet scattering model for rendering
 rough conducting materials, such as metals.
 
 .. subfigstart::
-
-.. _fig-roughconductor_copper:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughconductor_copper.jpg
-    :alt: Rough copper
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughconductor_copper.jpg
 
     Rough copper (Beckmann, :math:`\alpha=0.1`)
 
-.. _fig-roughconductor-brushed:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughconductor_anisotropic_aluminium.jpg
-    :alt: Vertically brushed aluminium
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughconductor_anisotropic_aluminium.jpg
 
     Vertically brushed aluminium (Anisotropic Phong, :math:`\alpha_u=0.05,\ \alpha_v=0.3`)
 
 .. subfigend::
-    :width: 0.49
-    :alt: Example roughconductor appearances
-    :label: fig-roughconductor-bsdf
 
 
 Microfacet theory describes rough surfaces as an arrangement of unresolved

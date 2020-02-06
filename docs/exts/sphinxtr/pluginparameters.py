@@ -1,92 +1,14 @@
-
 __docformat__ = 'reStructuredText'
-
 
 import sys
 import os.path
 import csv
 
-from docutils import io, nodes, statemachine, utils
-from docutils.utils.error_reporting import SafeString
+from docutils import nodes
 from docutils.utils import SystemMessagePropagation
-from docutils.parsers.rst import Directive
-from docutils.parsers.rst import directives
+from docutils.parsers.rst.directives.tables import Table
 
-
-class Table(Directive):
-
-    """
-    Generic table base class.
-    """
-
-    optional_arguments = 1
-    final_argument_whitespace = True
-    option_spec = {'class': directives.class_option,
-                   'name': directives.unchanged}
-    has_content = True
-
-    def make_title(self):
-        if self.arguments:
-            title_text = self.arguments[0]
-            text_nodes, messages = self.state.inline_text(title_text,
-                                                          self.lineno)
-            title = nodes.title(title_text, '', *text_nodes)
-        else:
-            title = None
-            messages = []
-        return title, messages
-
-    def process_header_option(self):
-        source = self.state_machine.get_source(self.lineno - 1)
-        table_head = []
-        max_header_cols = 0
-        if 'header' in self.options:   # separate table header in option
-            rows, max_header_cols = self.parse_csv_data_into_rows(
-                self.options['header'].split('\n'), self.HeaderDialect(),
-                source)
-            table_head.extend(rows)
-        return table_head, max_header_cols
-
-    def check_table_dimensions(self, rows, header_rows, stub_columns):
-        if len(rows) < header_rows:
-            error = self.state_machine.reporter.error(
-                '%s header row(s) specified but only %s row(s) of data '
-                'supplied ("%s" directive).'
-                % (header_rows, len(rows), self.name), nodes.literal_block(
-                self.block_text, self.block_text), line=self.lineno)
-            raise SystemMessagePropagation(error)
-        if len(rows) + 1 == header_rows > 0:
-            error = self.state_machine.reporter.error(
-                'Insufficient data supplied (%s row(s)); no data remaining '
-                'for table body, required by "%s" directive.'
-                % (len(rows), self.name), nodes.literal_block(
-                self.block_text, self.block_text), line=self.lineno)
-            raise SystemMessagePropagation(error)
-        for row in rows:
-            if len(row) < stub_columns:
-                error = self.state_machine.reporter.error(
-                    '%s stub column(s) specified but only %s columns(s) of '
-                    'data supplied ("%s" directive).' %
-                    (stub_columns, len(row), self.name), nodes.literal_block(
-                    self.block_text, self.block_text), line=self.lineno)
-                raise SystemMessagePropagation(error)
-            if len(row) == stub_columns > 0:
-                error = self.state_machine.reporter.error(
-                    'Insufficient data supplied (%s columns(s)); no data remaining '
-                    'for table body, required by "%s" directive.'
-                    % (len(row), self.name), nodes.literal_block(
-                    self.block_text, self.block_text), line=self.lineno)
-                raise SystemMessagePropagation(error)
-
-    def extend_short_rows_with_empty_cells(self, columns, parts):
-        for part in parts:
-            for row in part:
-                if len(row) < columns:
-                    row.extend([(0, 0, 0, [])] * (columns - len(row)))
-
-
-class CustomListTable(Table):
-
+class PluginParameters(Table):
     """
     Implement tables whose data is encoded as a uniform two-level bullet list using to describe
     Mitsuba 2 plugin parameters.
@@ -114,7 +36,7 @@ class CustomListTable(Table):
                         for row_list in node[0]]
         header_rows = self.options.get('header-rows', 1)
         stub_columns = self.options.get('stub-columns', 0)
-        self.check_table_dimensions(table_data, header_rows, stub_columns)
+        self.check_table_dimensions(table_data, header_rows-1, stub_columns)
 
         table_node = self.build_table_from_list(table_data, col_widths,
                                                 header_rows, stub_columns)
@@ -200,4 +122,4 @@ class CustomListTable(Table):
         return table
 
 def setup(app):
-    app.add_directive('pluginparameters', CustomListTable)
+    app.add_directive('pluginparameters', PluginParameters)

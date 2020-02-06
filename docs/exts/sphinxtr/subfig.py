@@ -6,6 +6,7 @@ from docutils import nodes
 import docutils.parsers.rst.directives as directives
 from docutils.parsers.rst import Directive
 from sphinx import addnodes
+from docutils.parsers.rst.directives.images import Image
 
 class subfig(nodes.General, nodes.Element):
     pass
@@ -76,7 +77,7 @@ class SubFigEndDirective(Directive):
 
     def run(self):
         label = self.options.get('label', None)
-        width = self.options.get('width', None)
+        width = self.options.get('width', 0.49)
         alt = self.options.get('alt', None)
 
         node = subfigend('', ids=[label] if label is not None else [])
@@ -137,7 +138,62 @@ def doctree_read(app, doctree):
                 nodeloc = node.parent.children.index(n)
                 node.parent.children[nodeloc] = subfig('', *children)
                 node.parent.children[nodeloc]['width'] = subfigend_node['width']
-                node.parent.children[nodeloc]['mainfigid'] = subfigend_node['ids'][0]
+                if len(subfigend_node['ids']) > 0:
+                    node.parent.children[nodeloc]['mainfigid'] = subfigend_node['ids'][0]
+                else:
+                    node.parent.children[nodeloc]['mainfigid'] = 'mainfig'
+
+
+class Subfigure(Image):
+
+    option_spec = Image.option_spec.copy()
+    option_spec['caption'] = directives.unchanged
+    option_spec['label'] = directives.uri
+
+    has_content = True
+
+    def run(self):
+        self.options['width'] = '95%'
+        (image_node,) = Image.run(self)
+        if isinstance(image_node, nodes.system_message):
+            return [image_node]
+
+        figure_node = nodes.figure('', image_node)
+        figure_node['align'] = 'center'
+
+        if self.content:
+            node = nodes.Element()          # anonymous container for parsing
+            self.state.nested_parse(self.content, self.content_offset, node)
+            first_node = node[0]
+            if isinstance(first_node, nodes.paragraph):
+                caption = nodes.caption(first_node.rawsource, '',
+                                        *first_node.children)
+                caption.source = first_node.source
+                caption.line = first_node.line
+                figure_node += caption
+            elif not (isinstance(first_node, nodes.comment)
+                      and len(first_node) == 0):
+                error = self.state_machine.reporter.error(
+                      'Subfigure caption must be a paragraph or empty comment.',
+                      nodes.literal_block(self.block_text, self.block_text),
+                      line=self.lineno)
+                return [figure_node, error]
+            if len(node) > 1:
+                figure_node += nodes.legend('', *node[1:])
+        else:
+            node = nodes.paragraph(text=self.options['caption'])
+            caption = nodes.caption(node.rawsource, '', *node.children)
+            caption.source = node.source
+            caption.line = node.line
+            figure_node += caption
+
+        label = self.options.get('label', None)
+        if label is not None:
+            targetnode = nodes.target('', '', ids=[label])
+            figure_node.append(targetnode)
+
+        return [figure_node]
+
 
 def setup(app):
     app.add_node(subfigstart,
@@ -160,5 +216,7 @@ def setup(app):
 
     app.add_directive('subfigstart', SubFigStartDirective)
     app.add_directive('subfigend', SubFigEndDirective)
+
+    app.add_directive('subfigure', Subfigure)
 
     app.connect('doctree-read', doctree_read)

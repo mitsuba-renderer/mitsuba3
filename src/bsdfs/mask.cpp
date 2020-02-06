@@ -22,28 +22,12 @@ Opacity mask (:monosp:`mask`)
    - A base BSDF model that represents the non-transparent portion of the scattering
 
 .. subfigstart::
-.. _fig-mask-before:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_mask_before.jpg
-    :alt: Rendering without an opacity mask
-    :width: 95%
-    :align: center
-
-    Rendering without an opacity mask
-
-.. _fig-mask-after:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_mask_after.jpg
-    :alt: Rendering with an opacity mask
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_mask_before.jpg
+    :caption: Rendering without an opacity mask
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_mask_after.jpg
 
     Rendering **with** an opacity mask
-
 .. subfigend::
-    :width: 0.49
-    :alt: Example mask application
-    :label: fig-mask-bsdf
 
 This plugin applies an opacity mask to add nested BSDF instance. It interpolates
 between perfectly transparent and completely opaque based on the :monosp:`opacity` parameter.

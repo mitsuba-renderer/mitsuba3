@@ -27,30 +27,12 @@ Smooth dielectric material (:monosp:`dielectric`)
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
 
-
 .. subfigstart::
-.. _fig-dielectric-plain:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
-    :alt: Glass dielectric
-    :width: 95%
-    :align: center
-
-    Air ↔ Water (IOR: 1.33) interface.
-
-.. _fig-dielectric-textured:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_diamond.jpg
-    :alt: Diamond dielectric
-    :width: 95%
-    :align: center
-
-    Air ↔ Diamond (IOR: 2.419)
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
+    :caption: Air ↔ Water (IOR: 1.33) interface.
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_diamond.jpg
+    :caption: Air ↔ Diamond (IOR: 2.419)
 .. subfigend::
-    :width: 0.49
-    :alt: Example dielectric appearances
-    :label: fig-dielectric-bsdf
 
 This plugin models an interface between two dielectric materials having mismatched
 indices of refraction (for instance, water and air). Exterior and interior IOR values
@@ -103,8 +85,6 @@ describe a slightly absorbing piece of glass is shown below:
 
     Dispersion is currently unsupported but will be enabled in a future release.
 
-
-
 .. figtable::
     :label: ior-table-list
     :caption: This table lists all supported material names
@@ -113,7 +93,6 @@ describe a slightly absorbing piece of glass is shown below:
        :ref:`roughdielectric <bsdf-roughdielectric>`, :ref:`plastic <bsdf-plastic>`
        , as well as :ref:`roughplastic <bsdf-roughplastic>`.
     :alt: List table
-
 
     .. list-table::
         :widths: 30 25 30 15
@@ -171,8 +150,6 @@ describe a slightly absorbing piece of glass is shown below:
           - 1.49
           -
           -
-
-
  */
 
 template <typename Float, typename Spectrum>

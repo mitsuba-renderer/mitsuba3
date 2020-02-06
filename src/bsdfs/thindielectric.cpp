@@ -30,10 +30,6 @@ Thin dielectric material (:monosp:`thindielectric`)
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
 
- * - reflectance
-   - |spectrum| or |texture|
-   - Specifies the diffuse albedo of the material (Default: 0.5)
-
 This plugin models a **thin** dielectric material that is embedded inside another
 dielectric---for instance, glass surrounded by air. The interior of the material
 is assumed to be so thin that its effect on transmitted rays is negligible,
@@ -44,57 +40,23 @@ single sheet of triangles or quads. On the other hand, when the window consists 
 proper closed geometry, :ref:`bsdf-dielectric` is the right choice. This is illustrated below:
 
 .. subfigstart::
-.. _fig-dielectric_figure:
-
-.. figure:: ../../resources/data/docs/images/bsdf/dielectric_figure.svg
-    :alt: The :ref:`bsdf-dielectric` plugin models a single transition from one index of refraction to another
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/bsdf/dielectric_figure.svg
 
     The :ref:`bsdf-dielectric` plugin models a single transition from one index of refraction to another
 
-.. _fig-thindielectric_figure:
-
-.. figure:: ../../resources/data/docs/images/bsdf/thindielectric_figure.svg
-    :alt: The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/bsdf/thindielectric_figure.svg
 
     The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
 
 .. subfigend::
-    :width: 0.49
-    :alt: An illustration of the difference between the :ref:`bsdf-dielectric` and :ref:`bsdf-thindielectric` plugins
-    :label: fig-thindielectric-figures
-
 
 
 .. subfigstart::
-
-.. _fig-dielectric_bsdf_glass:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
-    :alt: Dielectric object
-    :width: 95%
-    :align: center
-
-    Dielectric
-
-.. _fig-thindielectric_bsdf:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_thindielectric_glass.jpg
-    :alt: Thindielectric object
-    :width: 95%
-    :align: center
-
-    Thindielectric
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
+    :caption: Dielectric
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_thindielectric_glass.jpg
+    :caption: Thindielectric
 .. subfigend::
-    :width: 0.49
-    :alt: Difference between the :ref:`bsdf-dielectric` and :ref:`bsdf-thindielectric` plugins
-    :label: fig-thindielectric-diff
-
-
 
 The implementation correctly accounts for multiple internal reflections
 inside the thin dielectric at **no significant extra cost**, i.e. paths

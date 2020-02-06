@@ -24,19 +24,9 @@ Blended material (:monosp:`blendbsdf`)
    - Two nested BSDF instances that should be mixed according to the specified blending weight
 
 .. subfigstart::
-.. _fig-mask-plain:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_blendbsdf.jpg
-    :alt: A material created by blending between rough plastic and smooth metal based on a binary bitmap texture
-    :width: 95%
-    :align: center
-
-    A material created by blending between rough plastic and smooth metal based on a binary bitmap texture
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_blendbsdf.jpg
+   :caption: A material created by blending between rough plastic and smooth metal based on a binary bitmap texture
 .. subfigend::
-    :width: 0.49
-    :alt: Example blended materials
-    :label: fig-mask-bsdf
 
 This plugin implements a *blend* material, which represents
 linear combinations of two BSDF instances. Any surface scattering model in Mitsuba (be it smooth,

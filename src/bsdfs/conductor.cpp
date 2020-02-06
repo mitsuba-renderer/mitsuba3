@@ -23,32 +23,12 @@ Smooth conductor (:monosp:`conductor`)
    - Optional factor that can be used to modulate the specular reflection component.
      Note that for physical realism, this parameter should never be touched. (Default: 1.0)
 
-
 .. subfigstart::
-
-.. _fig-conductor_copper:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_conductor_gold.jpg
-    :alt: Gold
-    :width: 95%
-    :align: center
-
-    Gold
-
-.. _fig-conductor-brushed:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_conductor_aluminium.jpg
-    :alt: Aluminium
-    :width: 95%
-    :align: center
-
-    Aluminium
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_conductor_gold.jpg
+   :caption: Gold
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_conductor_aluminium.jpg
+   :caption: Aluminium
 .. subfigend::
-    :width: 0.49
-    :alt: Example conductor appearances
-    :label: fig-conductor-bsdf
-
 
 This plugin implements a perfectly smooth interface to a conducting material,
 such as a metal. For a similar model that instead describes a rough surface

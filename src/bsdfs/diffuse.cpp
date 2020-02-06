@@ -24,30 +24,12 @@ represents an ideally diffuse material with a user-specified amount of
 reflectance. Any received illumination is scattered so that the surface
 looks the same independently of the direction of observation. |spectrum|
 
-
 .. subfigstart::
-.. _fig-diffuse-plain:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
-    :alt: Homogeneous reflectance
-    :width: 95%
-    :align: center
-
-    Homogeneous reflectance
-
-.. _fig-diffuse-textured:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_diffuse_textured.jpg
-    :alt: Textured reflectance
-    :width: 95%
-    :align: center
-
-    Textured reflectance
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
+   :caption: Homogeneous reflectance
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_textured.jpg
+   :caption: Textured reflectance
 .. subfigend::
-    :width: 0.49
-    :alt: Example diffuse appearances
-    :label: fig-diffuse-bsdf
 
 Apart from a homogeneous reflectance value, the plugin can also accept
 a nested or referenced texture map to be used as the source of reflectance
@@ -67,7 +49,6 @@ whose reflectance is specified as an sRGB color:
     <bsdf type="diffuse">
         <rgb name="reflectance" value="0.2, 0.25, 0.7"/>
     </bsdf>
-
 
 Alternatively, the reflectance can be textured:
 

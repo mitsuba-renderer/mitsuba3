@@ -82,36 +82,19 @@ sRGB:
     </bsdf>
 
 .. subfigstart::
-.. _fig-plastic_diffuse:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_diffuse.jpg
-    :alt: Diffuse textured rendering
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_diffuse.jpg
 
     Diffuse textured rendering
 
-.. _fig-plastic_preserve:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_preserve.jpg
-    :alt: Plastic model, :code:`nonlinear=false`
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_preserve.jpg
 
     Plastic model, :code:`nonlinear=false`
 
-.. _fig-plastic_nopreserve:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_nopreserve.jpg
-    :alt: Plastic model, :code:`nonlinear=true`
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_nopreserve.jpg
 
     Plastic model, :code:`nonlinear=true`
 
 .. subfigend::
-    :width: 0.49
-    :alt: An illustration of the scattering events that are internally handled by this plugin
     :label: fig-plastic-nonlinear
 
 When asked to do so, this model can account for subtle nonlinear color shifts due to internal
@@ -119,9 +102,8 @@ scattering processes. The above images show a textured object first rendered usi
 then :ref:`bsdf-plastic` with the default parameters, and finally using :ref:`bsdf-plastic` and
 support for nonlinear color shifts.
 
-+++++++++++++++++++
 Internal scattering
-+++++++++++++++++++
+-------------------
 
 Internally, this is model simulates the interaction of light with a diffuse
 base surface coated by a thin dielectric layer. This is a convenient
@@ -130,49 +112,29 @@ materials that can be rendered with this model, even if they might not
 fit this description perfectly well.
 
 .. subfigstart::
-.. _fig-plastic-intscat_a:
-
-.. figure:: ../../resources/data/docs/images/bsdf/plastic_intscat_1.svg
-    :alt: At the boundary, incident illumination is partly *reflected* and refracted
-    :width: 95%
-    :align: center
-
-    At the boundary, incident illumination is partly *reflected* and refracted
-
-.. _fig-plastic-intscat_b:
-
-.. figure:: ../../resources/data/docs/images/bsdf/plastic_intscat_2.svg
-    :alt: The refracted portion scatters diffusely at the base layer
-    :width: 95%
-    :align: center
-
-    The refracted portion scatters diffusely at the base layer
-
-.. _fig-plastic-intscat_c:
-
-.. figure:: ../../resources/data/docs/images/bsdf/plastic_intscat_3.svg
-    :alt: An illustration of the scattering events that are internally handled by this plugin
-    :width: 95%
-    :align: center
-
-    An illustration of the scattering events that are internally handled by this plugin
-
+.. subfigure:: ../../resources/data/docs/images/bsdf/plastic_intscat_1.svg
+    :caption: At the boundary, incident illumination is partly reflected and refracted
+    :label: fig-plastic-intscat_a
+.. subfigure:: ../../resources/data/docs/images/bsdf/plastic_intscat_2.svg
+    :caption: The refracted portion scatters diffusely at the base layer
+    :label: fig-plastic-intscat_b
+.. subfigure:: ../../resources/data/docs/images/bsdf/plastic_intscat_3.svg
+    :caption: An illustration of the scattering events that are internally handled by this plugin
+    :label: fig-plastic-intscat_c
 .. subfigend::
-    :width: 0.49
-    :alt: An illustration of the scattering events that are internally handled by this plugin
     :label: fig-plastic-intscat
 
 Given illumination that is incident upon such a material, a portion
 of the illumination is specularly reflected at the material
 boundary, which results in a sharp reflection in the mirror direction
-(:ref:`fig-plastic-intscat_a`).
+(Figure :num:`fig-plastic-intscat_a`).
 The remaining illumination refracts into the material, where it
-scatters from the diffuse base layer. (:ref:`fig-plastic-intscat_b`).
+scatters from the diffuse base layer. (Figure :num:`fig-plastic-intscat_b`).
 While some of the diffusely scattered illumination is able to
 directly refract outwards again, the remainder is reflected from the
 interior side of the dielectric boundary and will in fact remain
 trapped inside the material for some number of internal scattering
-events until it is finally able to escape (:ref:`fig-plastic-intscat_c`).
+events until it is finally able to escape (Figure :num:`fig-plastic-intscat_c`).
 Due to the mathematical simplicity of this setup, it is possible to work
 out the correct form of the model without actually having to simulate
 the potentially large number of internal scattering events.
@@ -181,7 +143,7 @@ material is in practice slightly different from the color of the
 base layer on its own---in particular, the material color will tend to shift towards
 darker colors with higher saturation. Since this can be counter-intuitive when
 using bitmap textures, these color shifts are disabled by default. Specify
-the parameter :code:`nonlinear=true` to enable them. :num:`fig-plastic-nonlinear`
+the parameter :code:`nonlinear=true` to enable them. Figure :num:`fig-plastic-nonlinear`
 illustrates the resulting change. This effect is also seen in real life,
 for instance a piece of wood will look slightly darker after coating it
 with a layer of varnish.

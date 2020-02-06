@@ -68,26 +68,15 @@ the important off-specular reflections peaks observed in real-world measurements
 .. subfigstart::
 .. _fig-roughplastic-beckmann:
 
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_beckmann.jpg
-    :alt: Anti-glare glass
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_beckmann.jpg
 
     Beckmann, :math:`\alpha=0.1`
 
-.. _fig-roughplastic-ggx:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_ggx.jpg
-    :alt: Rough glass
-    :width: 95%
-    :align: center
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_ggx.jpg
 
     GGX, :math:`\alpha=0.3`
 
 .. subfigend::
-    :width: 0.49
-    :alt: Example roughplastic appearances
-    :label: fig-roughplastic-bsdf
 
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin
