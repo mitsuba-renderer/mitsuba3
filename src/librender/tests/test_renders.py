@@ -10,12 +10,17 @@ from enoki.dynamic import Float32 as Float
 
 from mitsuba.python.test import variants_all
 
+color_modes = ['mono', 'rgb', 'spectral', 'spectral_polarized']
+
 TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/scenes'))
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 
 def get_ref_fname(scene_path):
-    return os.path.splitext(scene_path)[0] + '_ref_' + '_'.join(mitsuba.variant().split('_')[1:]) + '.exr'
+    for color_mode in color_modes:
+        if mitsuba.variant().endswith(color_mode):
+            return os.path.splitext(scene_path)[0] + '_ref_' + color_mode + '.exr'
+    assert False
 
 
 @pytest.mark.parametrize(*['scene_fname', scenes])
@@ -40,17 +45,20 @@ def test_render(variants_all, scene_fname):
     ref_image = np.array(ref_bitmap, copy=False)
 
     error = np.mean(np.mean(np.abs(ref_image - cur_image)))
-    success = error < 0.005 * np.max(np.max(ref_image))
+    threshold = 0.5 * np.mean(np.mean(ref_image))
+    success = error < threshold
 
     if not success:
+        print("Failed. error: {} // threshold: {}".format(error, threshold))
+
         # Write diff image to a file
-        diff_fname = join(scene_dir, '_diff_' + mitsuba.variant() + '.exr')
+        diff_fname = os.path.splitext(scene_fname)[0] + '_diff_' + mitsuba.variant() + '.exr'
         diff_image = np.abs(ref_image - cur_image)
         Bitmap(diff_image).convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, False).write(diff_fname)
         print('Saved diff image to: ' + diff_fname)
 
         # Write rendered image to a file
-        cur_fname = join(scene_dir, '_render_' + mitsuba.variant() + '.exr')
+        cur_fname = os.path.splitext(scene_fname)[0] + '_render_' + mitsuba.variant() + '.exr'
         cur_bitmap.write(cur_fname)
         print('Saved rendered image to: ' + cur_fname)
 
