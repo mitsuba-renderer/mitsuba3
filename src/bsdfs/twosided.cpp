@@ -20,11 +20,9 @@ Two-sided BRDF adapter (:monosp:`twosided`)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_twosided_cbox_onesided.jpg
-   :caption:  From this angle, the Cornell box scene shows visible back-facing geometry
+   :caption: From this angle, the Cornell box scene shows visible back-facing geometry
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_twosided_cbox.jpg
-
-    Applying the `twosided` plugin fixes the rendering
-
+   :caption: Applying the `twosided` plugin fixes the rendering
 .. subfigend::
 
 By default, all non-transmissive scattering models in Mitsuba

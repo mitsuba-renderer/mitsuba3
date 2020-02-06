@@ -41,13 +41,9 @@ proper closed geometry, :ref:`bsdf-dielectric` is the right choice. This is illu
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/bsdf/dielectric_figure.svg
-
-    The :ref:`bsdf-dielectric` plugin models a single transition from one index of refraction to another
-
+   :caption: The :ref:`bsdf-dielectric` plugin models a single transition from one index of refraction to another
 .. subfigure:: ../../resources/data/docs/images/bsdf/thindielectric_figure.svg
-
-    The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
-
+   :caption: The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
 .. subfigend::
 
 

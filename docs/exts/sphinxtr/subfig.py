@@ -2,11 +2,14 @@
 Adds subfigure functionality
 """
 
+import docutils
 from docutils import nodes
 import docutils.parsers.rst.directives as directives
-from docutils.parsers.rst import Directive
+from docutils.parsers.rst import Directive, Parser
 from sphinx import addnodes
 from docutils.parsers.rst.directives.images import Image
+from docutils.statemachine import ViewList
+from sphinx.util.nodes import nested_parse_with_titles
 
 class subfig(nodes.General, nodes.Element):
     pass
@@ -181,11 +184,18 @@ class Subfigure(Image):
             if len(node) > 1:
                 figure_node += nodes.legend('', *node[1:])
         else:
-            node = nodes.paragraph(text=self.options['caption'])
-            caption = nodes.caption(node.rawsource, '', *node.children)
-            caption.source = node.source
-            caption.line = node.line
-            figure_node += caption
+            rst = ViewList()
+            rst.append(self.options['caption'], "", 0)
+
+            parsed_node = nodes.section()
+            parsed_node.document = self.state.document
+            nested_parse_with_titles(self.state, rst, parsed_node)
+
+            node = parsed_node[0]
+            caption_node = nodes.caption(node.rawsource, '', *node.children)
+            caption_node.source = node.source
+            caption_node.line = node.line
+            figure_node += caption_node
 
         label = self.options.get('label', None)
         if label is not None:

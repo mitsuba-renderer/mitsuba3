@@ -64,13 +64,9 @@ materials.
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_glass.jpg
-
-    Anti-glare glass (Beckmann, :math:`\alpha=0.02`)
-
+   :caption: Anti-glare glass (Beckmann, :math:`\alpha=0.02`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_rough.jpg
-
-    Rough glass (Beckmann, :math:`\alpha=0.1`)
-
+    :caption: Rough glass (Beckmann, :math:`\alpha=0.1`)
 .. subfigend::
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin

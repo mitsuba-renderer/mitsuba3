@@ -83,17 +83,11 @@ sRGB:
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_diffuse.jpg
-
-    Diffuse textured rendering
-
+   :caption: Diffuse textured rendering
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_preserve.jpg
-
-    Plastic model, :code:`nonlinear=false`
-
+   :caption: Plastic model, :code:`nonlinear=false`
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_nopreserve.jpg
-
-    Plastic model, :code:`nonlinear=true`
-
+   :caption: Plastic model, :code:`nonlinear=true`
 .. subfigend::
     :label: fig-plastic-nonlinear
 

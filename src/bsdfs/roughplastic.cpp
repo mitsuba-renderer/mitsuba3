@@ -66,18 +66,11 @@ By accounting for shadowing and masking effects between these facets, it is poss
 the important off-specular reflections peaks observed in real-world measurements of such materials.
 
 .. subfigstart::
-.. _fig-roughplastic-beckmann:
-
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_beckmann.jpg
-
-    Beckmann, :math:`\alpha=0.1`
-
+   :caption: Beckmann, :math:`\alpha=0.1`
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_ggx.jpg
-
-    GGX, :math:`\alpha=0.3`
-
+   :caption:  GGX, :math:`\alpha=0.3`
 .. subfigend::
-
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin
 :ref:`bsdf-plastic`. For very low values of :math:`\alpha`, the two will
@@ -111,38 +104,13 @@ finish). Values significantly above that are probably not too realistic.
 
 
 .. subfigstart::
-
-.. _fig-roughplastic-diffuse:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_diffuse.jpg
-    :alt: Textured diffuse material
-    :width: 95%
-    :align: center
-
-    Diffuse textured rendering
-
-.. _fig-roughplastic-preserve:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_preserve.jpg
-    :alt: Rough plastic preserve
-    :width: 95%
-    :align: center
-
-    Rough plastic model with :monosp:`nonlinear=false`
-
-.. _fig-roughplastic-nopreserve:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_roughplastic_nopreserve.jpg
-    :alt: Rough plastic nopreserve
-    :width: 95%
-    :align: center
-
-    Textured rough plastic model with :monosp:`nonlinear=true`
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_diffuse.jpg
+   :caption: Diffuse textured rendering
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_preserve.jpg
+   :caption: Rough plastic model with :monosp:`nonlinear=false`
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_nopreserve.jpg
+   :caption: Textured rough plastic model with :monosp:`nonlinear=true`
 .. subfigend::
-    :width: 0.49
-    :alt: Example roughplastic appearances
-    :label: fig-roughplastic-bsdf-2
 
 
 When asked to do so, this model can account for subtle nonlinear color shifts due

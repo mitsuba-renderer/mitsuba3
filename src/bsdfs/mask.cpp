@@ -25,8 +25,7 @@ Opacity mask (:monosp:`mask`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_mask_before.jpg
     :caption: Rendering without an opacity mask
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_mask_after.jpg
-
-    Rendering **with** an opacity mask
+    :caption: Rendering **with** an opacity mask
 .. subfigend::
 
 This plugin applies an opacity mask to add nested BSDF instance. It interpolates
