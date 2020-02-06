@@ -27,8 +27,6 @@ public:
                     m_albedo = texture3d;
                 } else if (kv.first == "sigma_t") {
                     m_sigmat = texture3d;
-                } else if (kv.first == "density") {
-                    m_density = texture3d;
                 }
             } else if (texture) { // If we directly specified RGB values: automatically convert to a
                                   // constant Texture3D
@@ -41,8 +39,6 @@ public:
                     m_albedo = texture3d_ref;
                 } else if (kv.first == "sigma_t") {
                     m_sigmat = texture3d_ref;
-                } else if (kv.first == "density") {
-                    m_density = texture3d_ref;
                 }
             }
         }
@@ -53,12 +49,13 @@ public:
         m_step_size_scaling  = props.float_("raymarching_step_scaling", 1.0f);
 
         // TODO: Should also get the maximum of sigmaT
-        m_max_density     = m_density_scale * m_density->max();
+        Log(Info, "Sigmat Max: %s", m_sigmat->max());
+        m_max_density     = m_density_scale * m_sigmat->max();
         m_inv_max_density = 1.0f / m_max_density;
-        m_density_aabb    = m_density->bbox();
+        m_aabb             = m_sigmat->bbox();
 
-        ScalarVector3f diag = m_density_aabb.max - m_density_aabb.min;
-        ScalarVector3f res  = ScalarVector3f(m_density->resolution());
+        ScalarVector3f diag = m_aabb.max - m_aabb.min;
+        ScalarVector3f res  = ScalarVector3f(m_sigmat->resolution());
 
         Log(Info, "Volume resolution %s", res);
         if (m_use_raymarching) {
@@ -68,8 +65,8 @@ public:
     }
 
     MTS_INLINE ScalarFloat get_step_size() const {
-        ScalarVector3f diag = m_density_aabb.max - m_density_aabb.min;
-        ScalarVector3f res  = ScalarVector3f(m_density->resolution());
+        ScalarVector3f diag = m_aabb.max - m_aabb.min;
+        ScalarVector3f res  = ScalarVector3f(m_sigmat->resolution());
         return m_step_size_scaling * hmin(diag * rcp(res));
     }
 
@@ -78,7 +75,7 @@ public:
         it.p           = ray(t);
         it.wavelengths = ray.wavelengths;
         it.time        = ray.time;
-        return m_density_scale * m_density->eval_1(it, active);
+        return m_density_scale * hmean(m_sigmat->eval(it, active));
     }
 
     virtual std::tuple<SurfaceInteraction3f, MediumInteraction3f, Spectrum>
@@ -90,7 +87,7 @@ public:
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
 
         Spectrum weight(1.0f);
-        auto [aabb_its, mint, maxt] = m_density_aabb.ray_intersect(ray);
+        auto [aabb_its, mint, maxt] = m_aabb.ray_intersect(ray);
         maxt                        = enoki::min(maxt, ray.maxt);
         active &= aabb_its;
 
@@ -105,24 +102,22 @@ public:
         mi.medium      = nullptr;
         mi.t           = math::Infinity<ScalarFloat>;
 
-        Float mean_sigmat = hmean(depolarize(m_sigmat->eval(mi)));
-
         if (m_use_raymarching) {
             ScalarFloat step_size      = get_step_size();
             ScalarFloat half_step_size = 0.5f * step_size;
 
-            ScalarVector3f diag      = m_density_aabb.max - m_density_aabb.min;
+            ScalarVector3f diag      = m_aabb.max - m_aabb.min;
             int max_steps            = norm(diag) / step_size + 1;
             Float desired_density    = max(0.f, -enoki::log(1 - sample.x()));
             Float t_a                = mint;
-            Float f_a                = density(ray, t_a, active) * mean_sigmat;
+            Float f_a                = density(ray, t_a, active);
             maxt                     = enoki::min(maxt, si.t);
             Float integrated_density = zero<Float>();
             Mask reached_density     = false;
 
             // Jitter: Perform first step outside of loop
             Float t_b         = t_a + sample.y() * step_size;
-            Float f_b         = density(ray, t_b, active) * mean_sigmat;
+            Float f_b         = density(ray, t_b, active);
             Float new_density = 0.5f * (t_b - t_a) * (f_a + f_b);
             reached_density |= active && (new_density >= desired_density);
             active &= !(active && (reached_density || (t_b > maxt)));
@@ -133,7 +128,7 @@ public:
 
             for (int i = 1; i < max_steps; ++i) {
                 masked(t_b, active) = fmadd(i, step_size, mint);
-                masked(f_b, active) = density(ray, t_b, active) * mean_sigmat;
+                masked(f_b, active) = density(ray, t_b, active);
                 Float new_density   = fmadd(half_step_size, f_a + f_b, integrated_density);
 
                 reached_density |= active && (new_density >= desired_density);
@@ -169,7 +164,7 @@ public:
             Mask escaped =
                 (!reached_density && (t_b > maxt)) || (reached_density && (sampledt > maxt));
             masked(integrated_density, escaped) +=
-                0.5f * (f_a + density(ray, maxt - math::RayEpsilon<ScalarFloat>, active) * mean_sigmat);
+                0.5f * (f_a + density(ray, maxt - math::RayEpsilon<ScalarFloat>, active));
 
             // Record medium interaction if the generated "t" is within the range of valid "t"
             Mask valid_mi = reached_density && (sampledt <= maxt);
@@ -201,7 +196,7 @@ public:
             active &= (t <= si.t) && (t <= maxt);
 
             // 3. Check whether we sampled a real or virtual particle interaction
-            Float d = density(ray, t, active) * mean_sigmat;
+            Float d = density(ray, t, active);
 
             Float p_s     = d * m_inv_max_density;
             Float p_n     = 1.f - p_s;
@@ -220,7 +215,7 @@ public:
 
     Spectrum eval_transmittance(const Ray3f &ray, Sampler *sampler, Mask active) const override {
 
-        auto [aabb_its, mint, maxt] = m_density_aabb.ray_intersect(ray);
+        auto [aabb_its, mint, maxt] = m_aabb.ray_intersect(ray);
 
         maxt = enoki::min(maxt, ray.maxt);
         mint = enoki::max(ray.mint, mint);
@@ -231,22 +226,21 @@ public:
         MediumInteraction3f mi;
         mi.p              = ray.o;
         mi.wavelengths    = ray.wavelengths;
-        Float mean_sigmat = hmean(depolarize(m_sigmat->eval(mi)));
 
         Spectrum tr(1.0f);
         if (m_use_raymarching) {
             ScalarFloat step_size    = get_step_size();
-            ScalarVector3f diag      = m_density_aabb.max - m_density_aabb.min;
+            ScalarVector3f diag      = m_aabb.max - m_aabb.min;
             ScalarFloat diag_norm    = norm(diag);
             int max_steps            = diag_norm / step_size + 1;
             Float t_a                = mint;
-            Float f_a                = density(ray, t_a, active) * mean_sigmat;
+            Float f_a                = density(ray, t_a, active);
             Float integrated_density = zero<Float>();
             for (int i = 1; i < max_steps; ++i) {
                 Float t_b                 = fmadd(i, step_size, mint);
                 Mask reached_maxt         = active && (t_b >= maxt);
                 masked(t_b, reached_maxt) = maxt;
-                Float f_b                 = density(ray, t_b, active) * mean_sigmat;
+                Float f_b                 = density(ray, t_b, active);
                 integrated_density += select(active, 0.5f * (f_a + f_b) * (t_b - t_a), 0.f);
 
                 active &= !reached_maxt;
@@ -263,8 +257,7 @@ public:
             t += -enoki::log(1 - u) * m_inv_max_density;
             active &= t <= maxt;
 
-            // Float p_s = density(ray, t, active) * mean_sigmat * m_inv_max_density;
-            Float p_n = 1.f - density(ray, t, active) * mean_sigmat * m_inv_max_density;
+            Float p_n = 1.f - density(ray, t, active) * m_inv_max_density;
             if (m_use_ratio_tracking) {
                 masked(tr, active) *= p_n;
             } else {
@@ -278,20 +271,21 @@ public:
     }
 
     // NEW INTERFACE
-    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active) const override {
-        return m_max_density; //TODO: This should be a spectral quantity
+    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f & /* mi */, Mask /* active */) const override {
+        //TODO: This should be a spectral quantity (at least in RGB mode this is straightforward)
+        return m_max_density;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active) const override {
-        auto sigmat = m_density_scale * m_density->eval_1(mi, active) * m_sigmat->eval(mi, active);
+        auto sigmat = m_density_scale * m_sigmat->eval(mi, active);
         auto sigmas = sigmat * m_albedo->eval(mi, active);
         auto sigman = get_combined_extinction(mi, active) - sigmat;
         return { sigmas, sigman, sigmat };
     }
 
     std::tuple<Mask, Float, Float> intersect_aabb(const Ray3f &ray) const override {
-        return m_density_aabb.ray_intersect(ray);
+        return m_aabb.ray_intersect(ray);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -314,7 +308,7 @@ public:
 private:
     ref<Texture3D> m_sigmat, m_albedo, m_density;
 
-    ScalarBoundingBox3f m_density_aabb;
+    ScalarBoundingBox3f m_aabb;
     ScalarFloat m_density_scale, m_max_density, m_inv_max_density, m_step_size_scaling;
     bool m_use_ratio_tracking, m_use_raymarching;
 };

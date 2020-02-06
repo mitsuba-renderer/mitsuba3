@@ -57,10 +57,10 @@ public:
         MediumInteraction3f mi;
         mi.p            = ray.o;
         mi.wavelengths  = ray.wavelengths;
-        Spectrum sigmat = eval_sigmat(mi);
+        UnpolarizedSpectrum sigmat = eval_sigmat(mi);
 
         // Simple importance sampling according to average extinction
-        Float avg_sigmat      = hmean(depolarize(sigmat));
+        Float avg_sigmat      = hmean(sigmat);
         Float u               = sample.x();
         mi.t                  = -enoki::log(1 - u) / avg_sigmat;
         mi.p                  = ray(mi.t);

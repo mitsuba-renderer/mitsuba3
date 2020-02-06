@@ -62,7 +62,7 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     // sample t
     auto combined_extinction = get_combined_extinction(mi, active);
     Float m = combined_extinction[0];
-    if constexpr (!is_spectral_v<Spectrum>) { // Handle RGB rendering
+    if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
         masked(m, eq(channel, 1)) = combined_extinction[1];
         masked(m, eq(channel, 2)) = combined_extinction[2];
     }

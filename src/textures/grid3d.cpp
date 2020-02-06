@@ -44,21 +44,27 @@ public:
         // Apply spectral conversion if necessary
         if (is_spectral_v<Spectrum> && m_metadata.channel_count == 3 && !m_raw) {
             ScalarFloat *ptr = raw_data.get();
-            double mean      = 0.0;
+            auto scaled_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * 4]);
+            ScalarFloat *scaled_data_ptr = scaled_data.get();
+            double mean = 0.0;
+            ScalarFloat max = 0.0;
             for (size_t i = 0; i < size; ++i) {
-                ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
-                value               = srgb_model_fetch(value);
-                mean += (double) srgb_model_mean(value);
-                store_unaligned(ptr, value);
+                ScalarColor3f rgb = load_unaligned<ScalarColor3f>(ptr);
+                ScalarFloat scale = hmax(rgb) * 2.f;
+                ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
+                ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
+                mean += (double) (srgb_model_mean(coeff) * scale);
+                max = std::max(max, scale);
+                store_unaligned(scaled_data_ptr, concat(coeff, scale));
                 ptr += 3;
+                scaled_data_ptr += 4;
             }
             m_metadata.mean = mean;
-            // Conservatively bound the maximum spectral coefficients
-            m_metadata.max = 1.0f;
+            m_metadata.max = max;
+            m_data = DynamicBuffer<Float>::copy(scaled_data.get(), size * 4);
+        } else {
+            m_data = DynamicBuffer<Float>::copy(raw_data.get(), size * m_metadata.channel_count);
         }
-
-        // Copy loaded data to an Enoki array (e.g. on the GPU)
-        m_data = DynamicBuffer<Float>::copy(raw_data.get(), size * m_metadata.channel_count);
 
         // Mark values which are only used in the implementation class as queried
         props.mark_queried("use_grid_bbox");
@@ -225,8 +231,8 @@ public:
                                             Mask active) const {
         using Index   = uint32_array_t<Float>;
         using Index3  = uint32_array_t<Point3f>;
-        using StorageType = Array<Float, Channels>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
+        using StorageType = std::conditional_t<uses_srgb_model, Array<Float, 4>, Array<Float, Channels>>;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         // TODO: in the autodiff case, make sure these do not trigger a recompilation
@@ -261,16 +267,24 @@ public:
              d111 = gather<StorageType>(raw_data, index + z_offset + nx + 1, active);
 
         ResultType v000, v001, v010, v011, v100, v101, v110, v111;
+        Float scale = 1.f;
         if constexpr (uses_srgb_model) {
-            v000 = srgb_model_eval<UnpolarizedSpectrum>(d000, wavelengths);
-            v001 = srgb_model_eval<UnpolarizedSpectrum>(d001, wavelengths);
-            v010 = srgb_model_eval<UnpolarizedSpectrum>(d010, wavelengths);
-            v011 = srgb_model_eval<UnpolarizedSpectrum>(d011, wavelengths);
+            v000 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d000), wavelengths);
+            v001 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d001), wavelengths);
+            v010 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d010), wavelengths);
+            v011 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d011), wavelengths);
+            v100 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d100), wavelengths);
+            v101 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d101), wavelengths);
+            v110 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d110), wavelengths);
+            v111 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d111), wavelengths);
 
-            v100 = srgb_model_eval<UnpolarizedSpectrum>(d100, wavelengths);
-            v101 = srgb_model_eval<UnpolarizedSpectrum>(d101, wavelengths);
-            v110 = srgb_model_eval<UnpolarizedSpectrum>(d110, wavelengths);
-            v111 = srgb_model_eval<UnpolarizedSpectrum>(d111, wavelengths);
+            Float f00 = fmadd(d000.w(), rf.x(), d001.w() * f.x()),
+                  f01 = fmadd(d010.w(), rf.x(), d011.w() * f.x()),
+                  f10 = fmadd(d100.w(), rf.x(), d101.w() * f.x()),
+                  f11 = fmadd(d110.w(), rf.x(), d111.w() * f.x());
+            Float f0  = fmadd(f00, rf.y(), f01 * f.y()),
+                  f1  = fmadd(f10, rf.y(), f11 * f.y());
+            scale = fmadd(f0, rf.z(), f1 * f.z());
         } else {
             v000 = d000; v001 = d001; v010 = d010; v011 = d011;
             v100 = d100; v101 = d101; v110 = d110; v111 = d111;
@@ -284,6 +298,9 @@ public:
         ResultType v0  = fmadd(v00, rf.y(), v01 * f.y()),
                    v1  = fmadd(v10, rf.y(), v11 * f.y());
         ResultType result = fmadd(v0, rf.z(), v1 * f.z());
+
+        if constexpr (uses_srgb_model)
+            result *= scale;
 
         if constexpr (with_gradient) {
             if constexpr (!is_monochromatic_v<Spectrum>)

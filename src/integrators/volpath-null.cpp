@@ -29,7 +29,7 @@ public:
     MTS_INLINE
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
         Float m = spec[0];
-        if constexpr (!is_spectral_v<Spectrum>) { // Handle RGB rendering
+        if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
             masked(m, eq(idx, 1)) = spec[1];
             masked(m, eq(idx, 2)) = spec[2];
         }
