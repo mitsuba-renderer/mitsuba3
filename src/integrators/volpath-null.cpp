@@ -30,8 +30,8 @@ public:
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
         Float m = spec[0];
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-            masked(m, eq(idx, 1)) = spec[1];
-            masked(m, eq(idx, 2)) = spec[2];
+            masked(m, eq(idx, 1u)) = spec[1];
+            masked(m, eq(idx, 2u)) = spec[2];
         }
         return m;
     }
@@ -63,7 +63,11 @@ public:
         WeightMatrix p_over_f = zero<WeightMatrix>() + 1.f;
         WeightMatrix p_over_f_nee = zero<WeightMatrix>() + 1.f;
 
-        UInt32 channel = sampler->next_1d(active) * array_size_v<Spectrum>;
+        UInt32 channel = 0;
+        if (is_rgb_v<Spectrum>) {
+            uint32_t n_channels = (uint32_t) array_size_v<Spectrum>;
+            channel = min(sampler->next_1d(active) * n_channels, n_channels - 1);
+        }
 
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
@@ -93,6 +97,8 @@ public:
             Mask act_medium_scatter = false;
             Mask escaped_medium = false;
             SurfaceInteraction3f si_medium;
+            Interaction3f last_scatter_event;
+
             if (any_or<true>(active_medium)) {
                 Spectrum tr;
                 std::tie(si_medium, mi, tr) = medium->sample_interaction(
@@ -112,6 +118,8 @@ public:
 
                 // Count this as a bounce
                 masked(depth, act_medium_scatter) += 1;
+                masked(last_scatter_event, act_medium_scatter) = mi;
+
                 active &= depth < (uint32_t) m_max_depth;
                 act_medium_scatter &= active;
                 specular_chain = specular_chain && !act_medium_scatter;
@@ -153,9 +161,8 @@ public:
                     new_ray.mint = 0.0f;
                     masked(ray, act_medium_scatter) = new_ray;
 
-                    Float emitter_pdf = get_emitter_pdf(mi, scene, ray, act_medium_scatter);
                     update_weights(p_over_f, phase_pdf, phase_pdf, act_medium_scatter);
-                    update_weights(p_over_f_nee, emitter_pdf, phase_pdf, act_medium_scatter);
+                    update_weights(p_over_f_nee, 1.f, phase_pdf, act_medium_scatter);
                 }
             }
 
@@ -172,8 +179,16 @@ public:
                 EmitterPtr emitter = si.emitter(scene);
                 Mask active_e = active_surface && neq(emitter, nullptr) && !(eq(depth, 0) && m_hide_emitters);
                 if (any_or<true>(active_e)) {
+                    if (any_or<true>(active_e && !count_direct)) {
+                        // Get the PDF of sampling this emitter using next event estimation
+                        DirectionSample3f ds(si, last_scatter_event);
+                        ds.object         = emitter;
+                        Float emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
+                        update_weights(p_over_f_nee, emitter_pdf, 1.f, active_e);
+                    }
                     Spectrum emitted = emitter->eval(si, active_e);
-                    Spectrum contrib = select(count_direct, mis_weight(p_over_f) * emitted, mis_weight(p_over_f, p_over_f_nee) * emitted);
+                    Spectrum contrib = select(count_direct, mis_weight(p_over_f) * emitted,
+                                                            mis_weight(p_over_f, p_over_f_nee) * emitted);
                     masked(result, active_e) += contrib;
                 }
             }
@@ -209,12 +224,12 @@ public:
                 specular_chain |= non_null_bsdf && has_flag(bs.sampled_type, BSDFFlags::Delta);
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
                 masked(depth, non_null_bsdf) += 1;
+                masked(last_scatter_event, non_null_bsdf) = si;
 
                 // Update NEE weights only if the BSDF is not null
                 set_weights(p_over_f_nee, p_over_f, non_null_bsdf);
                 update_weights(p_over_f, bs.pdf, bsdf_weight * bs.pdf, active_surface);
-                Float emitter_pdf = get_emitter_pdf(si, scene, ray, non_null_bsdf);
-                update_weights(p_over_f_nee, emitter_pdf, bsdf_weight * bs.pdf, non_null_bsdf);
+                update_weights(p_over_f_nee, 1.f, bsdf_weight * bs.pdf, non_null_bsdf);
 
                 Mask has_medium_trans            = si.is_valid() && si.is_medium_transition();
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
@@ -223,28 +238,6 @@ public:
         }
 
         return { result, valid_ray };
-    }
-
-    // Find the first emitter in the direction of the sampled ray
-    Float get_emitter_pdf(const Interaction3f &ref_it, const Scene *scene, Ray3f ray, Mask active) const {
-        using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
-
-        Float emitter_pdf = 0.f;
-        //  keep intersecting ray until we find an emitter
-        while (any(active)) {
-            auto si            = scene->ray_intersect(ray, active);
-            EmitterPtr emitter = si.emitter(scene, active);
-            Mask active_e      = neq(emitter, nullptr) && active;
-            if (any_or<true>(active_e)) {
-                DirectionSample3f ds(si, ref_it);
-                ds.object                     = emitter;
-                masked(emitter_pdf, active_e) = scene->pdf_emitter_direction(ref_it, ds, active_e);
-                active &= !active_e; // disable lanes which found an emitter
-            }
-            active &= si.is_valid();
-            masked(ray, active) = si.spawn_ray(ray.d);
-        }
-        return emitter_pdf;
     }
 
 

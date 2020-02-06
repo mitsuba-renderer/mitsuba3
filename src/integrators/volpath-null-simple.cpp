@@ -28,8 +28,8 @@ public:
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
         Float m = spec[0];
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-            masked(m, eq(idx, 1)) = spec[1];
-            masked(m, eq(idx, 2)) = spec[2];
+            masked(m, eq(idx, 1u)) = spec[1];
+            masked(m, eq(idx, 2u)) = spec[2];
         }
         return m;
     }
@@ -58,7 +58,12 @@ public:
 
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
-        UInt32 channel = sampler->next_1d(active) * array_size_v<Spectrum>;
+
+        UInt32 channel = 0;
+        if (is_rgb_v<Spectrum>) {
+            uint32_t n_channels = (uint32_t) array_size_v<Spectrum>;
+            channel = min(sampler->next_1d(active) * n_channels, n_channels - 1);
+        }
 
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
@@ -132,7 +137,7 @@ public:
                         Ray3f nee_ray = mi.spawn_ray(ds.d);
                         nee_ray.mint = 0.f;
                         auto [emitted, _] = evaluate_direct_light(mi, scene, sampler, medium, nee_ray,
-                                                             (uint32_t) (int(-1)), ds.dist, active_e);
+                                                                  ds.dist, active_e);
                         Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
                         if (m_medium_mis) {
                             masked(result, active_e) += throughput * emitted * phase_val * mis_weight(ds.pdf, phase_val) / ds.pdf;
@@ -152,8 +157,8 @@ public:
                 if (m_medium_mis) {
                     active_e = act_medium_scatter && sample_emitters && any(neq(depolarize(throughput), 0.f));
                     if (any_or<true>(active_e)) {
-                        auto [emitted, emitter_pdf] = evaluate_direct_light(mi, scene, sampler, medium, new_ray,
-                                                             (uint32_t) (int(-1)), -1.f, active_e);
+                        auto [emitted, emitter_pdf] = evaluate_direct_light(mi, scene, sampler, medium,
+                                                                            new_ray, -1.f, active_e);
                         result += select(active_e && neq(emitter_pdf, 0),
                                         mis_weight(phase_pdf, emitter_pdf) * throughput * emitted, 0.0f);
                     }
@@ -190,7 +195,7 @@ public:
 
                         // TODO: This has to be zero if its not reaching the same point
                         auto [emitted, _] = evaluate_direct_light(si, scene, sampler, medium, nee_ray,
-                                                             (uint32_t) (int(-1)), ds.dist, active_e);
+                                                                  ds.dist, active_e);
 
                         // Query the BSDF for that emitter-sampled direction
                         Vector3f wo       = si.to_local(ds.d);
@@ -222,12 +227,8 @@ public:
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
                                    any(neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
                 act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
-                // TODO: Should we just handle infinite null interactions here too?
-                uint32_t max_intersections = (uint32_t) (int(-1));
-
-                auto [emitted, emitter_pdf] =
-                    evaluate_direct_light(si, scene, sampler, medium, ray,
-                                                    max_intersections, -1.f, add_emitter);
+                auto [emitted, emitter_pdf] = evaluate_direct_light(si, scene, sampler,
+                                                                    medium, ray, -1.f, add_emitter);
                 result += select(add_emitter && neq(emitter_pdf, 0),
                                 mis_weight(bs.pdf, emitter_pdf) * throughput * emitted, 0.0f);
 
@@ -245,11 +246,10 @@ public:
     std::pair<Spectrum, Float>
     evaluate_direct_light(const Interaction3f &ref_interaction, const Scene *scene,
                           Sampler *sampler, MediumPtr medium, Ray3f ray,
-                          uint32_t maxInteractions, Float dist, Mask active) const {
+                          Float dist, Mask active) const {
 
         using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
         Spectrum emitter_val(0.0f);
-        uint32_t interactions = 0;
 
         Spectrum transmittance(1.0f);
         Float emitter_pdf(0.0f);

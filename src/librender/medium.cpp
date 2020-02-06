@@ -63,8 +63,8 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     auto combined_extinction = get_combined_extinction(mi, active);
     Float m = combined_extinction[0];
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-        masked(m, eq(channel, 1)) = combined_extinction[1];
-        masked(m, eq(channel, 2)) = combined_extinction[2];
+        masked(m, eq(channel, 1u)) = combined_extinction[1];
+        masked(m, eq(channel, 2u)) = combined_extinction[2];
     }
 
     Float sampled_t = mint + (-enoki::log(1 - sample) / m);
