@@ -167,10 +167,10 @@ public:
 
             if (any_or<true>(active_surface)) {
                 // ---------------- Intersection with emitters ----------------
-                Mask ray_from_camera = active_surface && (depth == 0);
+                Mask ray_from_camera = active_surface && eq(depth, 0);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && neq(emitter, nullptr) && !(depth == 0 && m_hide_emitters);
+                Mask active_e = active_surface && neq(emitter, nullptr) && !(eq(depth, 0) && m_hide_emitters);
                 if (any_or<true>(active_e)) {
                     Spectrum emitted = emitter->eval(si, active_e);
                     Spectrum contrib = select(count_direct, mis_weight(p_over_f) * emitted, mis_weight(p_over_f, p_over_f_nee) * emitted);
@@ -314,7 +314,6 @@ public:
                 Float emitter_pdf = scene->pdf_emitter_direction(ref_interaction, ds, emitter_hit);
                 update_weights(p_over_f_nee, emitter_pdf, 1.0f, emitter_hit);
                 active &= !emitter_hit; // disable lanes which found an emitter
-                break;
             }
 
             active_surface &= si.is_valid() && active;
@@ -377,7 +376,7 @@ public:
             Float sum = 0.0f;
             for (size_t j = 0; j < n; ++j)
                 sum += p_over_f[i * n + j];
-            weight[i] = sum == 0.0f ? 0.0f : n / sum;
+            weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
         }
         return weight;
     }
@@ -390,7 +389,7 @@ public:
             Float sum = 0.0f;
             for (size_t j = 0; j < n; ++j)
                 sum += p_over_f1[i * n + j] + p_over_f2[i * n + j];
-            weight[i] = sum == 0.0f ? 0.0f : n / sum;
+            weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
         }
         return weight;
     }
