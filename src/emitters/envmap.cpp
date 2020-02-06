@@ -17,14 +17,8 @@ NAMESPACE_BEGIN(mitsuba)
 Environment emitter (:monosp:`envmap`)
 --------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - filename
    - |string|
    - Filename of the radiance-valued input image to be loaded; must be in latitude-longitude format.

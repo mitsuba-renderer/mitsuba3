@@ -12,14 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
 Blended material (:monosp:`blendbsdf`)
 -------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - weight
    - |float| or |texture|
    - A floating point value or texture with values between zero and one. The extreme values zero and

@@ -13,14 +13,8 @@ NAMESPACE_BEGIN(mitsuba)
 Smooth conductor (:monosp:`conductor`)
 -------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - eta, k
    - |spectrum| or |texture|
    - Real and imaginary components of the material's index of refraction. (Default: 0.0/1.0)

@@ -14,14 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 Rough conductor material (:monosp:`roughconductor`)
 ---------------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - distribution
    - |string|
    - Specifies the type of microfacet normal distribution used to model the surface roughness.

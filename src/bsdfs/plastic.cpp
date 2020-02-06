@@ -15,14 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
 Smooth plastic material (:monosp:`plastic`)
 -------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name.

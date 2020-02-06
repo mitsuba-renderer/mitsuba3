@@ -15,15 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
 Thin dielectric material (:monosp:`thindielectric`)
 ---------------------------------------------------
 
+.. pluginparameters::
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
-
- * - Parameter
-   - Type
-   - Description
  * - int_ior
    - |float| or |string|
    - Interior index of refraction specified numerically or using a known material name. (Default: bk7 / 1.5046)

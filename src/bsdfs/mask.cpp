@@ -12,14 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
 Opacity mask (:monosp:`mask`)
 -------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - opacity
    - |spectrum| or |texture|
    - Specifies the opacity (where 1=completely opaque) (Default: 0.5)

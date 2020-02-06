@@ -145,6 +145,7 @@ sys.path.append(os.path.abspath('exts/sphinxtr'))
 extensions.append('subfig')
 extensions.append('figtable')
 extensions.append('numfig')
+extensions.append('pluginparameters')
 
 extensions.append('sphinxcontrib.bibtex')
 # Guzzle theme options (see theme.conf for more information)

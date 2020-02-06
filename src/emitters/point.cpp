@@ -14,14 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 Point light source (:monosp:`point`)
 ------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - intensity
    - |spectrum|
    - Specifies the radiant intensity in units of power per unit steradian.

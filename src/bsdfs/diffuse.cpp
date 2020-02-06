@@ -13,14 +13,8 @@ NAMESPACE_BEGIN(mitsuba)
 Smooth diffuse material (:monosp:`diffuse`)
 -------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - reflectance
    - |spectrum| or |texture|
    - Specifies the diffuse albedo of the material (Default: 0.5)

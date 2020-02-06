@@ -16,14 +16,8 @@ NAMESPACE_BEGIN(mitsuba)
 Constant environment emitter (:monosp:`constant`)
 -------------------------------------------------
 
-.. list-table::
- :widths: 20 15 65
- :header-rows: 1
- :class: paramstable
+.. pluginparameters::
 
- * - Parameter
-   - Type
-   - Description
  * - radiance
    - |spectrum|
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
