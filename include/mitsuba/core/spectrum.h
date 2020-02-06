@@ -58,8 +58,8 @@ struct Color : enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 4>
-struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>> {
-    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_>>;
+struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>> {
+    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>>;
 
     // Never allow matrix-vector products involving this type (important for polarized rendering)
     static constexpr bool IsVector = false;
