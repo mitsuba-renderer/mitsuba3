@@ -15,6 +15,9 @@ color_modes = ['mono', 'rgb', 'spectral', 'spectral_polarized']
 TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/scenes'))
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
+# Exclude certain tests for now
+EXCLUDE_FOLDERS = ['participating_media']
+
 
 def get_ref_fname(scene_path):
     for color_mode in color_modes:
@@ -28,6 +31,10 @@ def test_render(variants_all, scene_fname):
     from mitsuba.core import Bitmap, Struct, Thread
 
     scene_dir = dirname(scene_fname)
+
+    if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
+        pytest.skip(f"Skip rendering scene {scene_fname}")
+
     Thread.thread().file_resolver().append(scene_dir)
 
     ref_fname = get_ref_fname(scene_fname)
