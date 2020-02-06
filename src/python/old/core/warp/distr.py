@@ -208,76 +208,76 @@ try:
         dict(DEFAULT_SETTINGS,
             parameters=[('Angle of incidence', [0, 90, 30])])),
 
-        ('Diffuse BSDF', SphericalDomain(),
-        BSDFAdapter("diffuse", ''), DEFAULT_SETTINGS_3),
+        # ('Diffuse BSDF', SphericalDomain(),
+        # BSDFAdapter("diffuse", ''), DEFAULT_SETTINGS_3),
 
-        ('Rough conductor BSDF - smooth', SphericalDomain(),
-        BSDFAdapter("roughconductor", """
-            <float name="alpha" value="0.05"/>
-        """), DEFAULT_SETTINGS_3),
-        ('Rough conductor BSDF - rough', SphericalDomain(),
-        BSDFAdapter("roughconductor", """
-            <float name="alpha" value="0.25"/>
-        """), DEFAULT_SETTINGS_3),
-        ('Rough conductor BSDF - rough - alternative wi', SphericalDomain(),
-        BSDFAdapter("roughconductor", """
-            <float name="alpha" value="0.25"/>
-        """, wi=[0.970942, 0, 0.239316]), DEFAULT_SETTINGS_3),
+        # ('Rough conductor BSDF - smooth', SphericalDomain(),
+        # BSDFAdapter("roughconductor", """
+        #     <float name="alpha" value="0.05"/>
+        # """), DEFAULT_SETTINGS_3),
+        # ('Rough conductor BSDF - rough', SphericalDomain(),
+        # BSDFAdapter("roughconductor", """
+        #     <float name="alpha" value="0.25"/>
+        # """), DEFAULT_SETTINGS_3),
+        # ('Rough conductor BSDF - rough - alternative wi', SphericalDomain(),
+        # BSDFAdapter("roughconductor", """
+        #     <float name="alpha" value="0.25"/>
+        # """, wi=[0.970942, 0, 0.239316]), DEFAULT_SETTINGS_3),
 
-        ('Rough conductor BSDF', SphericalDomain(),
-        InteractiveBSDFAdapter("roughconductor", """
-            <boolean name="sample_visible" value="false"/>
-            <string name="distribution" value="beckmann"/>
-            <float name="alpha_u" value="%f"/>
-            <float name="alpha_v" value="%f"/>
-        """), dict(DEFAULT_SETTINGS,
-            parameters=[
-                ('theta_i', [0, 90, 30]),
-                ('phi_i', [0, 360, 0]),
-                ('alpha_u', [0, 1, 0.2]),
-                ('alpha_v', [0, 1, 0.2])
-        ])),
+        # ('Rough conductor BSDF', SphericalDomain(),
+        # InteractiveBSDFAdapter("roughconductor", """
+        #     <boolean name="sample_visible" value="false"/>
+        #     <string name="distribution" value="beckmann"/>
+        #     <float name="alpha_u" value="%f"/>
+        #     <float name="alpha_v" value="%f"/>
+        # """), dict(DEFAULT_SETTINGS,
+        #     parameters=[
+        #         ('theta_i', [0, 90, 30]),
+        #         ('phi_i', [0, 360, 0]),
+        #         ('alpha_u', [0, 1, 0.2]),
+        #         ('alpha_v', [0, 1, 0.2])
+        # ])),
 
-        ('Rough conductor BSDF (VNDF)', SphericalDomain(),
-        InteractiveBSDFAdapter("roughconductor", """
-            <boolean name="sample_visible" value="true"/>
-            <string name="distribution" value="beckmann"/>
-            <float name="alpha_u" value="%f"/>
-            <float name="alpha_v" value="%f"/>
-        """), dict(DEFAULT_SETTINGS,
-            parameters=[
-                ('theta_i', [0, 90, 30]),
-                ('phi_i', [0, 360, 0]),
-                ('alpha_u', [0, 1, 0.2]),
-                ('alpha_v', [0, 1, 0.2])
-        ])),
+        # ('Rough conductor BSDF (VNDF)', SphericalDomain(),
+        # InteractiveBSDFAdapter("roughconductor", """
+        #     <boolean name="sample_visible" value="true"/>
+        #     <string name="distribution" value="beckmann"/>
+        #     <float name="alpha_u" value="%f"/>
+        #     <float name="alpha_v" value="%f"/>
+        # """), dict(DEFAULT_SETTINGS,
+        #     parameters=[
+        #         ('theta_i', [0, 90, 30]),
+        #         ('phi_i', [0, 360, 0]),
+        #         ('alpha_u', [0, 1, 0.2]),
+        #         ('alpha_v', [0, 1, 0.2])
+        # ])),
 
 
         # ('Rough dielectric BSDF - smooth', SphericalDomain(),
         #  BSDFAdapter("roughdielectric", """
         #     <float name="alpha" value="0.05"/>
         #  """), DEFAULT_SETTINGS_3),
-        ('Rough dielectric BSDF - rough', SphericalDomain(),
-        BSDFAdapter("roughdielectric", """
-            <float name="alpha" value="0.25"/>
-        """), DEFAULT_SETTINGS_3),
-        ('Rough dielectric BSDF - rough - alternative wi', SphericalDomain(),
-        BSDFAdapter("roughdielectric", """
-            <float name="alpha" value="0.25"/>
-        """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
+        # ('Rough dielectric BSDF - rough', SphericalDomain(),
+        # BSDFAdapter("roughdielectric", """
+        #     <float name="alpha" value="0.25"/>
+        # """), DEFAULT_SETTINGS_3),
+        # ('Rough dielectric BSDF - rough - alternative wi', SphericalDomain(),
+        # BSDFAdapter("roughdielectric", """
+        #     <float name="alpha" value="0.25"/>
+        # """, wi=[0.48666426,  0.32444284,  0.81110711]), DEFAULT_SETTINGS_3),
 
-        ('Rough plastic BSDF - smooth', SphericalDomain(),
-        BSDFAdapter("roughplastic", """
-            <float name="alpha" value="0.05"/>
-            <spectrum name="specular_reflectance" value="0.7"/>
-            <spectrum name="diffuse_reflectance" value="0.1"/>
-        """), DEFAULT_SETTINGS_3),
-        ('Rough plastic BSDF - rough', SphericalDomain(),
-        BSDFAdapter("roughplastic", """
-            <float name="alpha" value="0.25"/>
-            <spectrum name="specular_reflectance" value="0.4"/>
-            <spectrum name="diffuse_reflectance" value="0.9"/>
-        """), DEFAULT_SETTINGS_3),
+        # ('Rough plastic BSDF - smooth', SphericalDomain(),
+        # BSDFAdapter("roughplastic", """
+        #     <float name="alpha" value="0.05"/>
+        #     <spectrum name="specular_reflectance" value="0.7"/>
+        #     <spectrum name="diffuse_reflectance" value="0.1"/>
+        # """), DEFAULT_SETTINGS_3),
+        # ('Rough plastic BSDF - rough', SphericalDomain(),
+        # BSDFAdapter("roughplastic", """
+        #     <float name="alpha" value="0.25"/>
+        #     <spectrum name="specular_reflectance" value="0.4"/>
+        #     <spectrum name="diffuse_reflectance" value="0.9"/>
+        # """), DEFAULT_SETTINGS_3),
 
         #('Measured BSDF', SphericalDomain(),
         # InteractiveBSDFAdapter("measured", """

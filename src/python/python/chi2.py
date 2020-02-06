@@ -37,7 +37,7 @@ class ChiSquareTest:
     sample_count: int, optional
        Total number of samples to be generated. The test will have more
        evidence as this number tends to infinity. The default value is
-       ``100000``.
+       ``1000000``.
 
     res: int, optional
        Vertical resolution of the generated histograms. The horizontal
