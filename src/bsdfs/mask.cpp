@@ -27,6 +27,7 @@ Opacity mask (:monosp:`mask`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_mask_after.jpg
     :caption: Rendering **with** an opacity mask
 .. subfigend::
+    :label: fig-bsdf-mask
 
 This plugin applies an opacity mask to add nested BSDF instance. It interpolates
 between perfectly transparent and completely opaque based on the :monosp:`opacity` parameter.

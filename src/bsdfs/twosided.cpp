@@ -24,6 +24,7 @@ Two-sided BRDF adapter (:monosp:`twosided`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_twosided_cbox.jpg
    :caption: Applying the `twosided` plugin fixes the rendering
 .. subfigend::
+    :label: fig-bsdf-twosided
 
 By default, all non-transmissive scattering models in Mitsuba
 are *one-sided* --- in other words, they absorb all light

@@ -33,6 +33,7 @@ Smooth dielectric material (:monosp:`dielectric`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_diamond.jpg
     :caption: Air ↔ Diamond (IOR: 2.419)
 .. subfigend::
+    :label: fig-bsdf-dielectric
 
 This plugin models an interface between two dielectric materials having mismatched
 indices of refraction (for instance, water and air). Exterior and interior IOR values

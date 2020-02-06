@@ -30,6 +30,7 @@ looks the same independently of the direction of observation. |spectrum|
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_textured.jpg
    :caption: Textured reflectance
 .. subfigend::
+   :label: fig-diffuse
 
 Apart from a homogeneous reflectance value, the plugin can also accept
 a nested or referenced texture map to be used as the source of reflectance

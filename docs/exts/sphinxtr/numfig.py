@@ -122,8 +122,8 @@ def doctree_resolved(app, doctree, docname):
                 for subfigname in subfigs:
                     subfigid = figids[figname] + chr(ord('a') + isub)
                     figids[subfigname] = subfigid
-                    if not figname_is_id(subfigname):
-                        isub += 1
+                    # if not figname_is_id(subfigname):
+                    isub += 1
                 figid += 1
             last_secnum = secnum[0]
 
@@ -132,7 +132,6 @@ def doctree_resolved(app, doctree, docname):
         for figure_info in doctree.traverse(lambda n: isinstance(n, nodes.figure) or \
                                                       isinstance(n, subfig.subfigend) or \
                                                       isinstance(n, figtable.figtable)):
-
 
             try:
                 for i in range(len(figure_info['ids'])):
@@ -160,7 +159,7 @@ def doctree_resolved(app, doctree, docname):
                 target = ref_info['reftarget']
 
             if target not in docnames_by_figname:
-                app.warn('Target figure not found: %s' % target)
+                print('\033[91m' + 'WARNING Target figure not found: %s' % target + '\033[0m')
                 link = "#%s" % target
                 linktext = target
             else:

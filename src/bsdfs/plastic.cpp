@@ -38,28 +38,12 @@ Smooth plastic material (:monosp:`plastic`)
      (Default: Don't account for them and preserve the texture colors, i.e. |false|)
 
 .. subfigstart::
-.. _fig-plastic_default:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_default.jpg
-    :alt: A rendering with the default parameters
-    :width: 95%
-    :align: center
-
-    A rendering with the default parameters
-
-.. _fig-plastic_shiny:
-
-.. figure:: ../../resources/data/docs/images/render/bsdf_plastic_shiny.jpg
-    :alt: A rendering with custom parameters
-    :width: 95%
-    :align: center
-
-    A rendering with custom parameters
-
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_default.jpg
+   :caption: A rendering with the default parameters
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_shiny.jpg
+   :caption:  A rendering with custom parameters
 .. subfigend::
-    :width: 0.49
-    :alt: Example diffuse appearances
-    :label: fig-diffuse-bsdf
+    :label: fig-bsdf-plastic
 
 This plugin describes a smooth plastic-like material with internal scattering. It uses the Fresnel
 reflection and transmission coefficients to provide direction-dependent specular and diffuse
@@ -89,7 +73,7 @@ sRGB:
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_plastic_nopreserve.jpg
    :caption: Plastic model, :code:`nonlinear=true`
 .. subfigend::
-    :label: fig-plastic-nonlinear
+    :label: fig-bsdf-plastic-nonlinear
 
 When asked to do so, this model can account for subtle nonlinear color shifts due to internal
 scattering processes. The above images show a textured object first rendered using :ref:`bsdf-diffuse`,
@@ -108,27 +92,27 @@ fit this description perfectly well.
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/bsdf/plastic_intscat_1.svg
     :caption: At the boundary, incident illumination is partly reflected and refracted
-    :label: fig-plastic-intscat_a
+    :label: fig-plastic-intscat-a
 .. subfigure:: ../../resources/data/docs/images/bsdf/plastic_intscat_2.svg
     :caption: The refracted portion scatters diffusely at the base layer
-    :label: fig-plastic-intscat_b
+    :label: fig-plastic-intscat-b
 .. subfigure:: ../../resources/data/docs/images/bsdf/plastic_intscat_3.svg
     :caption: An illustration of the scattering events that are internally handled by this plugin
-    :label: fig-plastic-intscat_c
+    :label: fig-plastic-intscat-c
 .. subfigend::
-    :label: fig-plastic-intscat
+    :label: fig-bsdf-plastic-intscat
 
 Given illumination that is incident upon such a material, a portion
 of the illumination is specularly reflected at the material
 boundary, which results in a sharp reflection in the mirror direction
-(Figure :num:`fig-plastic-intscat_a`).
+(Figure :num:`fig-plastic-intscat-a`).
 The remaining illumination refracts into the material, where it
-scatters from the diffuse base layer. (Figure :num:`fig-plastic-intscat_b`).
+scatters from the diffuse base layer. (Figure :num:`fig-plastic-intscat-b`).
 While some of the diffusely scattered illumination is able to
 directly refract outwards again, the remainder is reflected from the
 interior side of the dielectric boundary and will in fact remain
 trapped inside the material for some number of internal scattering
-events until it is finally able to escape (Figure :num:`fig-plastic-intscat_c`).
+events until it is finally able to escape (Figure :num:`fig-plastic-intscat-c`).
 Due to the mathematical simplicity of this setup, it is possible to work
 out the correct form of the model without actually having to simulate
 the potentially large number of internal scattering events.
@@ -137,7 +121,7 @@ material is in practice slightly different from the color of the
 base layer on its own---in particular, the material color will tend to shift towards
 darker colors with higher saturation. Since this can be counter-intuitive when
 using bitmap textures, these color shifts are disabled by default. Specify
-the parameter :code:`nonlinear=true` to enable them. Figure :num:`fig-plastic-nonlinear`
+the parameter :code:`nonlinear=true` to enable them. Figure :num:`fig-bsdf-plastic-nonlinear`
 illustrates the resulting change. This effect is also seen in real life,
 for instance a piece of wood will look slightly darker after coating it
 with a layer of varnish.

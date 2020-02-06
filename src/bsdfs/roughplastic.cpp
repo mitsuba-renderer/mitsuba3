@@ -69,8 +69,9 @@ the important off-specular reflections peaks observed in real-world measurements
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_beckmann.jpg
    :caption: Beckmann, :math:`\alpha=0.1`
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_ggx.jpg
-   :caption:  GGX, :math:`\alpha=0.3`
+   :caption: GGX, :math:`\alpha=0.3`
 .. subfigend::
+    :label: fig-bsdf-roughplastic
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin
 :ref:`bsdf-plastic`. For very low values of :math:`\alpha`, the two will
@@ -102,22 +103,24 @@ on an otherwise smooth surface finish, :math:`\alpha=0.1` is relatively rough,
 and :math:`\alpha=0.3-0.7` is **extremely** rough (e.g. an etched or ground
 finish). Values significantly above that are probably not too realistic.
 
-
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_diffuse.jpg
    :caption: Diffuse textured rendering
+   :label: fig-roughplastic-diffuse
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_preserve.jpg
    :caption: Rough plastic model with :monosp:`nonlinear=false`
+   :label: fig-roughplastic-preserve
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughplastic_nopreserve.jpg
    :caption: Textured rough plastic model with :monosp:`nonlinear=true`
+   :label: fig-roughplastic-nopreserve
 .. subfigend::
-
+    :label: fig-bsdf-roughplastic-nonlinear
 
 When asked to do so, this model can account for subtle nonlinear color shifts due
 to internal scattering processes. The above images show a textured
-object first rendered using :ref:`fig-roughplastic-diffuse`, then
-:ref:`fig-roughplastic-preserve` with the default parameters, and finally using
-:ref:`fig-roughplastic-nopreserve` and support for nonlinear color shifts.
+object first rendered using a diffuse material (Figure :num:`fig-roughplastic-diffuse`), then
+with the default parameters (Figure :num:`fig-roughplastic-preserve`), and finally with support for
+nonlinear color shifts (Figure :num:`fig-roughplastic-nopreserve`).
 
 The following XML snippet describes a material definition for black plastic material.
 

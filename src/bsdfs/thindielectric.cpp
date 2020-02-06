@@ -45,14 +45,15 @@ proper closed geometry, :ref:`bsdf-dielectric` is the right choice. This is illu
 .. subfigure:: ../../resources/data/docs/images/bsdf/thindielectric_figure.svg
    :caption: The :ref:`bsdf-thindielectric` plugin models a pair of interfaces causing a transient index of refraction change
 .. subfigend::
-
+    :label: fig-bsdf-thindielectric
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_dielectric_glass.jpg
-    :caption: Dielectric
+   :caption: Dielectric
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_thindielectric_glass.jpg
-    :caption: Thindielectric
+   :caption: Thindielectric
 .. subfigend::
+    :label: fig-bsdf-comparison-thindielectric
 
 The implementation correctly accounts for multiple internal reflections
 inside the thin dielectric at **no significant extra cost**, i.e. paths

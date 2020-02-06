@@ -68,6 +68,7 @@ materials.
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_rough.jpg
     :caption: Rough glass (Beckmann, :math:`\alpha=0.1`)
 .. subfigend::
+    :label: fig-bsdf-roughdielectric
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin
 :ref:`bsdf-dielectric`. For very low values of :math:`\alpha`, the two will

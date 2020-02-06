@@ -141,10 +141,7 @@ def doctree_read(app, doctree):
                 nodeloc = node.parent.children.index(n)
                 node.parent.children[nodeloc] = subfig('', *children)
                 node.parent.children[nodeloc]['width'] = subfigend_node['width']
-                if len(subfigend_node['ids']) > 0:
-                    node.parent.children[nodeloc]['mainfigid'] = subfigend_node['ids'][0]
-                else:
-                    node.parent.children[nodeloc]['mainfigid'] = 'mainfig'
+                node.parent.children[nodeloc]['mainfigid'] = subfigend_node['ids'][0]
 
 
 class Subfigure(Image):
@@ -157,11 +154,13 @@ class Subfigure(Image):
 
     def run(self):
         self.options['width'] = '95%'
+        label = self.options.get('label', None)
+
         (image_node,) = Image.run(self)
         if isinstance(image_node, nodes.system_message):
             return [image_node]
 
-        figure_node = nodes.figure('', image_node)
+        figure_node = nodes.figure('', image_node, ids=[label] if label is not None else [])
         figure_node['align'] = 'center'
 
         if self.content:
@@ -169,11 +168,10 @@ class Subfigure(Image):
             self.state.nested_parse(self.content, self.content_offset, node)
             first_node = node[0]
             if isinstance(first_node, nodes.paragraph):
-                caption = nodes.caption(first_node.rawsource, '',
-                                        *first_node.children)
-                caption.source = first_node.source
-                caption.line = first_node.line
-                figure_node += caption
+                caption_node = nodes.caption(first_node.rawsource, '', *first_node.children)
+                caption_node.source = first_node.source
+                caption_node.line = first_node.line
+                figure_node += caption_node
             elif not (isinstance(first_node, nodes.comment)
                       and len(first_node) == 0):
                 error = self.state_machine.reporter.error(
@@ -196,11 +194,6 @@ class Subfigure(Image):
             caption_node.source = node.source
             caption_node.line = node.line
             figure_node += caption_node
-
-        label = self.options.get('label', None)
-        if label is not None:
-            targetnode = nodes.target('', '', ids=[label])
-            figure_node.append(targetnode)
 
         return [figure_node]
 

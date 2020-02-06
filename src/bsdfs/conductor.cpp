@@ -29,6 +29,7 @@ Smooth conductor (:monosp:`conductor`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_conductor_aluminium.jpg
    :caption: Aluminium
 .. subfigend::
+    :label: fig-bsdf-conductor
 
 This plugin implements a perfectly smooth interface to a conducting material,
 such as a metal. For a similar model that instead describes a rough surface
