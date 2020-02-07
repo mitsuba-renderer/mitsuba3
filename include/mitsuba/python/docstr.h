@@ -3159,30 +3159,6 @@ static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_OptixData = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_context = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_faces = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_faces_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_geometry = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_ready = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_vertex_normals = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_vertex_normals_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_vertex_positions = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_vertex_positions_buf = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_vertex_texcoords = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_OptixData_vertex_texcoords_buf = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_area_distr_build =
 R"doc(Build internal tables for sampling uniformly wrt. area.
 
@@ -3251,8 +3227,6 @@ static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_normal_offset = R"doc(Byte offset of the normal data within the vertex buffer)doc";
 
-static const char *__doc_mitsuba_Mesh_m_optix = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_m_texcoord_offset = R"doc(Byte offset of the texture coordinate data within the vertex buffer)doc";
 
 static const char *__doc_mitsuba_Mesh_m_to_world = R"doc()doc";
@@ -3266,8 +3240,6 @@ static const char *__doc_mitsuba_Mesh_m_vertex_struct = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_vertices = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_normal_derivative = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
@@ -4478,6 +4450,8 @@ static const char *__doc_mitsuba_Sampler_next_1d = R"doc(Retrieve the next compo
 
 static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two component values from the current sample)doc";
 
+static const char *__doc_mitsuba_Sampler_ready = R"doc(Check whether the sampler is ready (i.e. properly seeded))doc";
+
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 
 static const char *__doc_mitsuba_Sampler_seed =
@@ -4486,9 +4460,6 @@ R"doc(Deterministically seed the underlying RNG, if applicable.
 In the context of wavefront ray tracing & dynamic arrays, this
 function must be called with a ``seed_value`` matching the size of the
 wavefront.)doc";
-
-static const char *__doc_mitsuba_Sampler_ready =
-R"doc(Check if the sampler is ready (i.e. properly seeded))doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator =
 R"doc(Integrator based on Monte Carlo sampling
@@ -5037,8 +5008,6 @@ static const char *__doc_mitsuba_Shape_operator_new_2 = R"doc()doc";
 static const char *__doc_mitsuba_Shape_operator_new_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_operator_new_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_optix_geometry = R"doc(Return the OptiX version of this shape)doc";
 
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
@@ -5804,19 +5773,20 @@ static const char *__doc_mitsuba_SurfaceInteraction_to_local = R"doc(Convert a w
 static const char *__doc_mitsuba_SurfaceInteraction_to_local_mueller =
 R"doc(Converts a Mueller matrix defined in world space to a local frame
 
-A Mueller matrix operates from (implicitly) defined stokes_basis(-wi)
-to stokes_basis(wo). This method converts a Mueller matrix defined on
-world-space directions (wi_world, wo_world) to a Mueller matrix
-defined on directions in the local frame (wi_local, wo_local)l
+A Mueller matrix operates from the (implicitly) defined frame
+stokes_basis(in_forward) to the frame stokes_basis(out_forward). This
+method converts a Mueller matrix defined on directions in world-space
+to a Mueller matrix defined in the local frame.
 
-Parameter ``M_world``:
-    The Mueller matrix in world-space.
+This expands to a no-op in non-polarized modes.
 
-Parameter ``wi_world``:
-    Incident direction, given in world-space coordinates.
+Parameter ``in_forward_local``:
+    Incident direction (along propagation direction of light), given
+    in world-space coordinates.
 
-Parameter ``wo_world``:
-    Outgoing direction, given in world-space coordinates.
+Parameter ``wo_local``:
+    Outgoing direction (along propagation direction of light), given
+    in world-space coordinates.
 
 Returns:
     Equivalent Mueller matrix that operates in local frame
@@ -5827,19 +5797,23 @@ static const char *__doc_mitsuba_SurfaceInteraction_to_world = R"doc(Convert a l
 static const char *__doc_mitsuba_SurfaceInteraction_to_world_mueller =
 R"doc(Converts a Mueller matrix defined in a local frame to world space
 
-A Mueller matrix operates from (implicitly) defined stokes_basis(-wi)
-to stokes_basis(wo). This method converts a Mueller matrix defined on
-directions in the local frame (wi_local, wo_local) to a Mueller matrix
-defined on world-space directions (wi_world, wo_world).
+A Mueller matrix operates from the (implicitly) defined frame
+stokes_basis(in_forward) to the frame stokes_basis(out_forward). This
+method converts a Mueller matrix defined on directions in the local
+frame to a Mueller matrix defined on world-space directions.
+
+This expands to a no-op in non-polarized modes.
 
 Parameter ``M_local``:
     The Mueller matrix in local space, e.g. returned by a BSDF.
 
-Parameter ``wi_local``:
-    Incident direction, given in local frame coordinates.
+Parameter ``in_forward_local``:
+    Incident direction (along propagation direction of light), given
+    in local frame coordinates.
 
 Parameter ``wo_local``:
-    Outgoing direction, given in local frame coordinates.
+    Outgoing direction (along propagation direction of light), given
+    in local frame coordinates.
 
 Returns:
     Equivalent Mueller matrix that operates in world-space
@@ -7023,11 +6997,21 @@ static const char *__doc_mitsuba_cie1931_xyz =
 R"doc(Evaluate the CIE 1931 XYZ color matching functions given a wavelength
 in nanometers)doc";
 
+static const char *__doc_mitsuba_cie1931_xyz_2 =
+R"doc(Evaluate the CIE 1931 XYZ color matching functions given a wavelength
+in nanometers)doc";
+
 static const char *__doc_mitsuba_cie1931_y =
 R"doc(Evaluate the CIE 1931 Y color matching function given a wavelength in
 nanometers)doc";
 
+static const char *__doc_mitsuba_cie1931_y_2 =
+R"doc(Evaluate the CIE 1931 Y color matching function given a wavelength in
+nanometers)doc";
+
 static const char *__doc_mitsuba_cie_alloc = R"doc(Allocate GPU memory for the CIE 1931 tables)doc";
+
+static const char *__doc_mitsuba_cie_alloc_2 = R"doc(Allocate GPU memory for the CIE 1931 tables)doc";
 
 static const char *__doc_mitsuba_class = R"doc()doc";
 
@@ -7052,6 +7036,10 @@ Parameter ``frame``:
 static const char *__doc_mitsuba_coordinate_system = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
 static const char *__doc_mitsuba_depolarize =
+R"doc(Return the (1,1) entry of a Mueller matrix. Identity function for all
+other-types.)doc";
+
+static const char *__doc_mitsuba_depolarize_2 =
 R"doc(Return the (1,1) entry of a Mueller matrix. Identity function for all
 other-types.)doc";
 
@@ -7480,6 +7468,10 @@ static const char *__doc_mitsuba_luminance = R"doc()doc";
 
 static const char *__doc_mitsuba_luminance_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_luminance_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_luminance_4 = R"doc()doc";
+
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function
 
@@ -7597,7 +7589,19 @@ R"doc(Constructs the Mueller matrix of an ideal absorber
 Parameter ``value``:
     The amount of absorption.)doc";
 
+static const char *__doc_mitsuba_mueller_absorber_2 =
+R"doc(Constructs the Mueller matrix of an ideal absorber
+
+Parameter ``value``:
+    The amount of absorption.)doc";
+
 static const char *__doc_mitsuba_mueller_depolarizer =
+R"doc(Constructs the Mueller matrix of an ideal depolarizer
+
+Parameter ``value``:
+    The value of the (0, 0) element)doc";
+
+static const char *__doc_mitsuba_mueller_depolarizer_2 =
 R"doc(Constructs the Mueller matrix of an ideal depolarizer
 
 Parameter ``value``:
@@ -7608,9 +7612,26 @@ R"doc(Constructs the Mueller matrix of a linear diattenuator, which
 attenuates the electric field components at 0 and 90 degrees by 'x'
 and 'y', * respectively.)doc";
 
+static const char *__doc_mitsuba_mueller_diattenuator_2 =
+R"doc(Constructs the Mueller matrix of a linear diattenuator, which
+attenuates the electric field components at 0 and 90 degrees by 'x'
+and 'y', * respectively.)doc";
+
 static const char *__doc_mitsuba_mueller_linear_polarizer =
 R"doc(Constructs the Mueller matrix of a linear polarizer which transmits
 linear polarization at 0 degrees.
+
+"Polarized Light" by Edward Collett, Ch. 5 eq. (13)
+
+Parameter ``value``:
+    The amount of attenuation of the transmitted component (1
+    corresponds to an ideal polarizer).)doc";
+
+static const char *__doc_mitsuba_mueller_linear_polarizer_2 =
+R"doc(Constructs the Mueller matrix of a linear polarizer which transmits
+linear polarization at 0 degrees.
+
+"Polarized Light" by Edward Collett, Ch. 5 eq. (13)
 
 Parameter ``value``:
     The amount of attenuation of the transmitted component (1
@@ -7624,6 +7645,21 @@ This implements the general case with arbitrary phase shift and can be
 used to construct the common special cases of quarter-wave and half-
 wave plates.
 
+"Polarized Light" by Edward Collett, Ch. 5 eq. (27)
+
+Parameter ``phase``:
+    The phase difference between the fast and slow axis)doc";
+
+static const char *__doc_mitsuba_mueller_linear_retarder_2 =
+R"doc(Constructs the Mueller matrix of a linear retarder which has its fast
+aligned vertically.
+
+This implements the general case with arbitrary phase shift and can be
+used to construct the common special cases of quarter-wave and half-
+wave plates.
+
+"Polarized Light" by Edward Collett, Ch. 5 eq. (27)
+
 Parameter ``phase``:
     The phase difference between the fast and slow axis)doc";
 
@@ -7631,9 +7667,57 @@ static const char *__doc_mitsuba_mueller_reverse =
 R"doc(Reverse direction of propagation of the electric field. Also used for
 reflecting reference frames.)doc";
 
+static const char *__doc_mitsuba_mueller_reverse_2 =
+R"doc(Reverse direction of propagation of the electric field. Also used for
+reflecting reference frames.)doc";
+
 static const char *__doc_mitsuba_mueller_rotate_mueller_basis =
 R"doc(Return the Mueller matrix for some new reference frames. This version
 rotates the input/output frames independently.
+
+This operation is often used in polarized light transport when we have
+a known Mueller matrix 'M' that operates from 'in_basis_current' to
+'out_basis_current' but instead want to re-express it as a Mueller
+matrix that operates from 'in_basis_target' to 'out_basis_target'.
+
+Parameter ``M``:
+    The current Mueller matrix that operates from ``in_basis_current``
+    to ``out_basis_current``.
+
+Parameter ``in_forward``:
+    Direction of travel for input Stokes vector (normalized)
+
+Parameter ``in_basis_current``:
+    Current (normalized) input Stokes basis. Must be orthogonal to
+    ``in_forward``.
+
+Parameter ``in_basis_target``:
+    Target (normalized) input Stokes basis. Must be orthogonal to
+    ``in_forward``.
+
+Parameter ``out_forward``:
+    Direction of travel for input Stokes vector (normalized)
+
+Parameter ``out_basis_current``:
+    Current (normalized) input Stokes basis. Must be orthogonal to
+    ``out_forward``.
+
+Parameter ``out_basis_target``:
+    Target (normalized) input Stokes basis. Must be orthogonal to
+    ``out_forward``.
+
+Returns:
+    New Mueller matrix that operates from ``in_basis_target`` to
+    ``out_basis_target``.)doc";
+
+static const char *__doc_mitsuba_mueller_rotate_mueller_basis_2 =
+R"doc(Return the Mueller matrix for some new reference frames. This version
+rotates the input/output frames independently.
+
+This operation is often used in polarized light transport when we have
+a known Mueller matrix 'M' that operates from 'in_basis_current' to
+'out_basis_current' but instead want to re-express it as a Mueller
+matrix that operates from 'in_basis_target' to 'out_basis_target'.
 
 Parameter ``M``:
     The current Mueller matrix that operates from ``in_basis_current``
@@ -7669,6 +7753,39 @@ static const char *__doc_mitsuba_mueller_rotate_mueller_basis_collinear =
 R"doc(Return the Mueller matrix for some new reference frames. This version
 applies the same rotation to the input/output frames.
 
+This operation is often used in polarized light transport when we have
+a known Mueller matrix 'M' that operates from 'basis_current' to
+'basis_current' but instead want to re-express it as a Mueller matrix
+that operates from 'basis_target' to 'basis_target'.
+
+Parameter ``M``:
+    The current Mueller matrix that operates from ``basis_current`` to
+    ``basis_current``.
+
+Parameter ``forward``:
+    Direction of travel for input Stokes vector (normalized)
+
+Parameter ``basis_current``:
+    Current (normalized) input Stokes basis. Must be orthogonal to
+    ``forward``.
+
+Parameter ``basis_target``:
+    Target (normalized) input Stokes basis. Must be orthogonal to
+    ``forward``.
+
+Returns:
+    New Mueller matrix that operates from ``basis_target`` to
+    ``basis_target``.)doc";
+
+static const char *__doc_mitsuba_mueller_rotate_mueller_basis_collinear_2 =
+R"doc(Return the Mueller matrix for some new reference frames. This version
+applies the same rotation to the input/output frames.
+
+This operation is often used in polarized light transport when we have
+a known Mueller matrix 'M' that operates from 'basis_current' to
+'basis_current' but instead want to re-express it as a Mueller matrix
+that operates from 'basis_target' to 'basis_target'.
+
 Parameter ``M``:
     The current Mueller matrix that operates from ``basis_current`` to
     ``basis_current``.
@@ -7692,6 +7809,39 @@ static const char *__doc_mitsuba_mueller_rotate_stokes_basis =
 R"doc(Gives the Mueller matrix that alignes the reference frames (defined by
 their respective basis vectors) of two collinear stokes vectors.
 
+If we have a stokes vector s_current expressed in 'basis_current', we
+can re-interpret it as a stokes vector rotate_stokes_basis(..) * s1
+that is expressed in 'basis_target' instead. For example: Horizontally
+polarized light [1,1,0,0] in a basis [1,0,0] can be interpreted as
++45˚ linear polarized light [1,0,1,0] by switching to a target basis
+[0.707, -0.707, 0].
+
+Parameter ``forward``:
+    Direction of travel for Stokes vector (normalized)
+
+Parameter ``basis_current``:
+    Current (normalized) Stokes basis. Must be orthogonal to
+    ``forward``.
+
+Parameter ``basis_target``:
+    Target (normalized) Stokes basis. Must be orthogonal to
+    ``forward``.
+
+Returns:
+    Mueller matrix that performs the desired change of reference
+    frames.)doc";
+
+static const char *__doc_mitsuba_mueller_rotate_stokes_basis_2 =
+R"doc(Gives the Mueller matrix that alignes the reference frames (defined by
+their respective basis vectors) of two collinear stokes vectors.
+
+If we have a stokes vector s_current expressed in 'basis_current', we
+can re-interpret it as a stokes vector rotate_stokes_basis(..) * s1
+that is expressed in 'basis_target' instead. For example: Horizontally
+polarized light [1,1,0,0] in a basis [1,0,0] can be interpreted as
++45˚ linear polarized light [1,0,1,0] by switching to a target basis
+[0.707, -0.707, 0].
+
 Parameter ``forward``:
     Direction of travel for Stokes vector (normalized)
 
@@ -7711,11 +7861,48 @@ static const char *__doc_mitsuba_mueller_rotated_element =
 R"doc(Applies a counter-clockwise rotation to the mueller matrix of a given
 element.)doc";
 
+static const char *__doc_mitsuba_mueller_rotated_element_2 =
+R"doc(Applies a counter-clockwise rotation to the mueller matrix of a given
+element.)doc";
+
 static const char *__doc_mitsuba_mueller_rotator =
 R"doc(Constructs the Mueller matrix of an ideal rotator, which performs a
-counter-clockwise rotation of the electric field by 'theta' radians.)doc";
+counter-clockwise rotation of the electric field by 'theta' radians
+(when facing the light beam from the sensor side).
+
+To be more precise, it rotates the reference frame of the current
+Stokes vector. For example: horizontally linear polarized light s1 =
+[1,1,0,0] will look like -45˚ linear polarized light s2 = R(45˚) * s1
+= [1,0,-1,0] after applying a rotator of +45˚ to it.
+
+"Polarized Light" by Edward Collett, Ch. 5 eq. (43))doc";
+
+static const char *__doc_mitsuba_mueller_rotator_2 =
+R"doc(Constructs the Mueller matrix of an ideal rotator, which performs a
+counter-clockwise rotation of the electric field by 'theta' radians
+(when facing the light beam from the sensor side).
+
+To be more precise, it rotates the reference frame of the current
+Stokes vector. For example: horizontally linear polarized light s1 =
+[1,1,0,0] will look like -45˚ linear polarized light s2 = R(45˚) * s1
+= [1,0,-1,0] after applying a rotator of +45˚ to it.
+
+"Polarized Light" by Edward Collett, Ch. 5 eq. (43))doc";
 
 static const char *__doc_mitsuba_mueller_specular_reflection =
+R"doc(Calculates the Mueller matrix of a specular reflection at an interface
+between two dielectrics or conductors.
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the surface normal and the incident
+    ray
+
+Parameter ``eta``:
+    Complex-valued relative refractive index of the interface. In the
+    real case, a value greater than 1.0 case means that the surface
+    normal points into the region of lower density.)doc";
+
+static const char *__doc_mitsuba_mueller_specular_reflection_2 =
 R"doc(Calculates the Mueller matrix of a specular reflection at an interface
 between two dielectrics or conductors.
 
@@ -7741,8 +7928,43 @@ Parameter ``eta``:
     greater than 1.0 in the real case means that the surface normal is
     pointing into the region of lower density.)doc";
 
+static const char *__doc_mitsuba_mueller_specular_transmission_2 =
+R"doc(Calculates the Mueller matrix of a specular transmission at an
+interface between two dielectrics or conductors.
+
+Parameter ``cos_theta_i``:
+    Cosine of the angle between the surface normal and the incident
+    ray
+
+Parameter ``eta``:
+    Complex-valued relative refractive index of the interface. A value
+    greater than 1.0 in the real case means that the surface normal is
+    pointing into the region of lower density.)doc";
+
 static const char *__doc_mitsuba_mueller_stokes_basis =
-R"doc(Gives the reference frame basis for a Stokes vector
+R"doc(Gives the reference frame basis for a Stokes vector.
+
+For light transport involving polarized quantities it is essential to
+keep track of reference frames. A Stokes vector is only meaningful if
+we also know w.r.t. which basis this state of light is observed. In
+Mitsuba, these reference frames are never explicitly stored but
+instead can be computed on the fly using this function.
+
+Parameter ``w``:
+    Direction of travel for Stokes vector (normalized)
+
+Returns:
+    The (implicitly defined) reference coordinate system basis for the
+    Stokes vector travelling along w.)doc";
+
+static const char *__doc_mitsuba_mueller_stokes_basis_2 =
+R"doc(Gives the reference frame basis for a Stokes vector.
+
+For light transport involving polarized quantities it is essential to
+keep track of reference frames. A Stokes vector is only meaningful if
+we also know w.r.t. which basis this state of light is observed. In
+Mitsuba, these reference frames are never explicitly stored but
+instead can be computed on the fly using this function.
 
 Parameter ``w``:
     Direction of travel for Stokes vector (normalized)
@@ -7853,7 +8075,15 @@ function for a single wavelength (Float), a set of wavelengths
 (Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all cases,
 the PDF is returned per wavelength.)doc";
 
+static const char *__doc_mitsuba_pdf_rgb_spectrum_2 =
+R"doc(PDF for the sample_rgb_spectrum strategy. It is valid to call this
+function for a single wavelength (Float), a set of wavelengths
+(Spectrumf), a packet of wavelengths (SpectrumfP), etc. In all cases,
+the PDF is returned per wavelength.)doc";
+
 static const char *__doc_mitsuba_pdf_uniform_spectrum = R"doc()doc";
+
+static const char *__doc_mitsuba_pdf_uniform_spectrum_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
@@ -8025,6 +8255,15 @@ Radziszewski, Boryczko, and Alda
 
 Returns a tuple with the sampled wavelength and inverse PDF)doc";
 
+static const char *__doc_mitsuba_sample_rgb_spectrum_2 =
+R"doc(Importance sample a "importance spectrum" that concentrates the
+computation on wavelengths that are relevant for rendering of RGB data
+
+Based on "An Improved Technique for Full Spectral Rendering" by
+Radziszewski, Boryczko, and Alda
+
+Returns a tuple with the sampled wavelength and inverse PDF)doc";
+
 static const char *__doc_mitsuba_sample_tea_32 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
 Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -8117,7 +8356,13 @@ Returns:
 
 static const char *__doc_mitsuba_sample_uniform_spectrum = R"doc()doc";
 
+static const char *__doc_mitsuba_sample_uniform_spectrum_2 = R"doc()doc";
+
 static const char *__doc_mitsuba_sample_wavelength =
+R"doc(Helper function to sample a wavelength (and a weight) given a random
+number)doc";
+
+static const char *__doc_mitsuba_sample_wavelength_2 =
 R"doc(Helper function to sample a wavelength (and a weight) given a random
 number)doc";
 
@@ -8136,6 +8381,8 @@ Parameter ``si``:
 \note Defined in scene.h)doc";
 
 static const char *__doc_mitsuba_spectrum_to_xyz = R"doc(Spectral responses to XYZ.)doc";
+
+static const char *__doc_mitsuba_spectrum_to_xyz_2 = R"doc(Spectral responses to XYZ.)doc";
 
 static const char *__doc_mitsuba_spline_eval_1d =
 R"doc(Evaluate a cubic spline interpolant of a *uniformly* sampled 1D
@@ -8588,6 +8835,8 @@ static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
 
 static const char *__doc_mitsuba_srgb_to_xyz = R"doc(Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values)doc";
 
+static const char *__doc_mitsuba_srgb_to_xyz_2 = R"doc(Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values)doc";
+
 static const char *__doc_mitsuba_string_ends_with = R"doc(Check if the given string ends with a specified suffix)doc";
 
 static const char *__doc_mitsuba_string_indent = R"doc(Indent every line of a string by some number of spaces)doc";
@@ -8625,6 +8874,16 @@ static const char *__doc_mitsuba_tuple_hasher_operator_call = R"doc()doc";
 static const char *__doc_mitsuba_type_suffix =
 R"doc(Convenience function which computes an array size/type suffix (like
 '2u' or '3fP'))doc";
+
+static const char *__doc_mitsuba_unpolarized =
+R"doc(Turn a spectrum into a Mueller matrix representation that only has a
+non-zero (1,1) entry. For all non-polarized modes, this is the
+identity function.)doc";
+
+static const char *__doc_mitsuba_unpolarized_2 =
+R"doc(Turn a spectrum into a Mueller matrix representation that only has a
+non-zero (1,1) entry. For all non-polarized modes, this is the
+identity function.)doc";
 
 static const char *__doc_mitsuba_util_core_count = R"doc(Determine the number of available CPU cores (including virtual cores))doc";
 
@@ -8694,6 +8953,8 @@ static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 
+static const char *__doc_mitsuba_warp_bilinear_to_square = R"doc()doc";
+
 static const char *__doc_mitsuba_warp_circ = R"doc(//! @{ \name Warping techniques that operate in the plane)doc";
 
 static const char *__doc_mitsuba_warp_cosine_hemisphere_to_square = R"doc(Inverse of the mapping square_to_cosine_hemisphere)doc";
@@ -8711,6 +8972,10 @@ static const char *__doc_mitsuba_warp_interval_to_tent = R"doc(Warp a uniformly 
 static const char *__doc_mitsuba_warp_square_to_beckmann = R"doc(Warp a uniformly distributed square sample to a Beckmann distribution)doc";
 
 static const char *__doc_mitsuba_warp_square_to_beckmann_pdf = R"doc(Probability density of square_to_beckmann())doc";
+
+static const char *__doc_mitsuba_warp_square_to_bilinear = R"doc()doc";
+
+static const char *__doc_mitsuba_warp_square_to_bilinear_pdf = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_square_to_cosine_hemisphere =
 R"doc(Sample a cosine-weighted vector on the unit hemisphere with respect to
@@ -8825,6 +9090,8 @@ Parameter ``update_scene``:
 static const char *__doc_mitsuba_xml_load_string = R"doc(Load a Mitsuba scene from an XML string)doc";
 
 static const char *__doc_mitsuba_xyz_to_srgb = R"doc(Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB)doc";
+
+static const char *__doc_mitsuba_xyz_to_srgb_2 = R"doc(Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB)doc";
 
 static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
 

@@ -1,7 +1,6 @@
 #pragma once
 
-#include <mitsuba/core/math.h>
-#include <mitsuba/core/vector.h>
+#include <mitsuba/core/warp.h>
 #include <mitsuba/core/util.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -18,9 +17,9 @@ public:
     using UInt32                      = uint32_array_t<Float>;
     using Int32                       = int32_array_t<Float>;
     using Mask                        = mask_t<Float>;
-    using Vector2f                    = Vector<Float, 2>;
-    using Vector2i                    = Vector<Int32, 2>;
-    using Vector2u                    = Vector<UInt32, 2>;
+    using Point2f                     = Point<Float, 2>;
+    using Point2i                     = Point<Int32, 2>;
+    using Point2u                     = Point<UInt32, 2>;
     using ScalarFloat                 = scalar_t<Float>;
     using ScalarVector2f              = Vector<ScalarFloat, 2>;
     using ScalarVector2u              = Vector<uint32_t, 2>;
@@ -141,8 +140,8 @@ public:
     using Base = Distribution2D<Float_, Dimension_>;
 
     ENOKI_USING_TYPES(Base,
-        Float, UInt32, Mask, ScalarFloat, Vector2f, Vector2i,
-        Vector2u, ScalarVector2f, ScalarVector2u, FloatStorage
+        Float, UInt32, Mask, ScalarFloat, Point2i, Point2f,
+        Point2u, ScalarVector2f, ScalarVector2u, FloatStorage
     )
 
     ENOKI_USING_MEMBERS(Base,
@@ -240,7 +239,7 @@ public:
             }
 
             // Copy and normalize fine resolution interpolant
-            ScalarFloat scale = normalize ? (hprod(n_patches) / (ScalarFloat) sum) : 1.f;
+            ScalarFloat scale = normalize ? (ScalarFloat) (hprod(n_patches) / sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 m_levels[0].data_ptr[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
@@ -273,9 +272,9 @@ public:
      *
      * Returns the warped sample and associated probability density.
      */
-    std::pair<Vector2f, Float> sample(Vector2f sample,
-                                      const Float *param = nullptr,
-                                      Mask active = true) const {
+    std::pair<Point2f, Float> sample(Point2f sample,
+                                     const Float *param = nullptr,
+                                     Mask active = true) const {
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
@@ -283,7 +282,7 @@ public:
         sample = clamp(sample, 0.f, 1.f);
 
         // Hierarchical sample warping
-        Vector2u offset = zero<Vector2u>();
+        Point2u offset = zero<Point2u>();
         for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
@@ -317,7 +316,7 @@ public:
                   r1 = v01 + v11;
             sample.y() *= r0 + r1;
             mask_t<Float> mask = sample.y() > r0;
-            masked(offset.y(), mask) += 1;
+            masked(offset.y(), mask) += 1u;
             masked(sample.y(), mask) -= r0;
             sample.y() /= select(mask, r1, r0);
 
@@ -328,7 +327,7 @@ public:
             mask = sample.x() > c0;
             masked(sample.x(), mask) -= c0;
             sample.x() /= select(mask, c1, c0);
-            masked(offset.x(), mask) += 1;
+            masked(offset.x(), mask) += 1u;
         }
 
         const Level &level0 = m_levels[0];
@@ -350,34 +349,19 @@ public:
         Float v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
-        Float r0   = v00 + v10,
-              r1   = v01 + v11,
-              r0_2 = r0 * r0,
-              r1_2 = r1 * r1;
-
-        // Invert marginal CDF in the 'y' parameter
-        masked(sample.y(), abs(r0 - r1) > 1e-4f * (r0 + r1)) =
-            (r0 - safe_sqrt(r0_2 + sample.y() * (r1_2 - r0_2))) / (r0 - r1);
-
-        // Invert conditional CDF in the 'x' parameter
-        Float c0   = fmadd(1.f - sample.y(), v00, sample.y() * v01),
-              c1   = fmadd(1.f - sample.y(), v10, sample.y() * v11),
-              c0_2 = c0 * c0,
-              c1_2 = c1 * c1;
-
-        masked(sample.x(), abs(c0 - c1) > 1e-4f * (c0 + c1)) =
-            (c0 - safe_sqrt(c0_2 + sample.x() * (c1_2 - c0_2))) /
-            (c0 - c1);
+        Float pdf;
+        std::tie(sample, pdf) =
+            warp::square_to_bilinear(v00, v01, v10, v11, sample);
 
         return {
-            (Vector2f(Vector2i(offset)) + sample) * m_patch_size,
-            fmadd(1.f - sample.x(), c0, sample.x() * c1)
+            (Point2f(Point2i(offset)) + sample) * m_patch_size,
+            pdf
         };
     }
 
     /// Inverse of the mapping implemented in \c sample()
-    std::pair<Vector2f, Float> invert(Vector2f sample, const Float *param = nullptr,
-                                      mask_t<Float> active = true) const {
+    std::pair<Point2f, Float> invert(Point2f sample, const Float *param = nullptr,
+                                     mask_t<Float> active = true) const {
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
@@ -388,8 +372,8 @@ public:
         const Level &level0 = m_levels[0];
         sample *= m_inv_patch_size;
 
-        /// Vector2f() -> Vector2i() cast because AVX2 has no _mm256_cvtps_epu32 :(
-        Vector2u offset = min(Vector2u(Vector2i(sample)), m_max_patch_index);
+        /// Point2f() -> Point2i() cast because AVX2 has no _mm256_cvtps_epu32 :(
+        Point2u offset = min(Point2u(Point2i(sample)), m_max_patch_index);
         UInt32 offset_i = offset.x() + offset.y() * level0.width;
         if (Dimension != 0)
             offset_i += slice_offset * level0.size;
@@ -406,21 +390,10 @@ public:
         Float v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
-        sample -= Vector2f(Vector2i(offset));
+        sample -= Point2f(Point2i(offset));
 
-        Vector2f w1 = sample, w0 = 1.f - w1;
-
-        Float c0   = fmadd(w0.y(), v00, w1.y() * v01),
-              c1   = fmadd(w0.y(), v10, w1.y() * v11),
-              pdf  = fmadd(w0.x(), c0, w1.x() * c1),
-              r0   = v00 + v10,
-              r1   = v01 + v11;
-
-        masked(sample.x(), abs(c1 - c0) > 1e-4f * (c0 + c1)) *=
-            (2.f * c0 + sample.x() * (c1 - c0)) / (c0 + c1);
-
-        masked(sample.y(), abs(r1 - r0) > 1e-4f * (r0 + r1)) *=
-            (2.f * r0 + sample.y() * (r1 - r0)) / (r0 + r1);
+        Float pdf;
+        std::tie(sample, pdf) = warp::bilinear_to_square(v00, v01, v10, v11, sample);
 
         // Hierarchical sample warping -- reverse direction
         for (int l = 1; l < (int) m_levels.size() - 1; ++l) {
@@ -449,10 +422,10 @@ public:
             Mask x_mask = neq(offset.x() & 1u, 0u),
                  y_mask = neq(offset.y() & 1u, 0u);
 
-            r0 = v00 + v10;
-            r1 = v01 + v11;
-            c0 = select(y_mask, v01, v00);
-            c1 = select(y_mask, v11, v10);
+            Float r0 = v00 + v10;
+            Float r1 = v01 + v11;
+            Float c0 = select(y_mask, v01, v00);
+            Float c1 = select(y_mask, v11, v10);
 
             sample.y() *= select(y_mask, r1, r0);
             masked(sample.y(), y_mask) += r0;
@@ -475,7 +448,7 @@ public:
      * \brief Evaluate the density at position \c pos. The distribution is
      * parameterized by \c param if applicable.
      */
-    Float eval(Vector2f pos, const Float *param = nullptr,
+    Float eval(Point2f pos, const Float *param = nullptr,
                mask_t<Float> active = true) const {
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
@@ -485,9 +458,8 @@ public:
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Vector2u offset = min(Vector2u(Vector2i(pos)), m_max_patch_index);
-        Vector2f w1 = pos - Vector2f(Vector2i(offset)),
-                 w0 = 1.f - w1;
+        Point2u offset = min(Point2u(Point2i(pos)), m_max_patch_index);
+        pos -= Point2f(Point2i(offset));
 
         const Level &level0 = m_levels[0];
         UInt32 offset_i = offset.x() + offset.y() * level0.width;
@@ -506,8 +478,7 @@ public:
         Float v11 = level0.template lookup<Dimension>(
             offset_i + level0.width + 1, m_param_strides, param_weight, active);
 
-        return fmadd(w0.y(),  fmadd(w0.x(), v00, w1.x() * v10),
-                     w1.y() * fmadd(w0.x(), v01, w1.x() * v11));
+        return warp::square_to_bilinear_pdf(v00, v01, v10, v11, pos);
     }
 
     std::string to_string() const {
@@ -563,8 +534,8 @@ protected:
          * The implementation stores 2x2 patches contigously in memory to
          * improve cache locality during hierarchical traversals
          */
-        template <typename Vector2u>
-        MTS_INLINE value_t<Vector2u> index(const Vector2u &p) const {
+        template <typename Point2u>
+        MTS_INLINE value_t<Point2u> index(const Point2u &p) const {
             return ((p.x() & 1u) | sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
@@ -640,8 +611,8 @@ public:
     using Base = Distribution2D<Float_, Dimension_>;
 
     ENOKI_USING_TYPES(Base,
-        Float, UInt32, Mask, ScalarFloat, Vector2f, Vector2i,
-        Vector2u, ScalarVector2f, ScalarVector2u, FloatStorage
+        Float, UInt32, Mask, ScalarFloat, Point2f, Point2i,
+        Point2u, ScalarVector2f, ScalarVector2u, FloatStorage
     )
 
     ENOKI_USING_MEMBERS(Base,
@@ -765,7 +736,7 @@ public:
      *
      * Returns the warped sample and associated probability density.
      */
-    std::pair<Vector2f, Float> sample(const Vector2f &sample,
+    std::pair<Point2f, Float> sample(const Point2f &sample,
                                       const Float *param = nullptr,
                                       mask_t<Float> active = true) const {
 
@@ -776,7 +747,7 @@ public:
     }
 
     /// Inverse of the mapping implemented in \c sample()
-    std::pair<Vector2f, Float> invert(const Vector2f &sample,
+    std::pair<Point2f, Float> invert(const Point2f &sample,
                                       const Float *param = nullptr,
                                       mask_t<Float> active = true) const {
         if constexpr (Continuous)
@@ -789,7 +760,7 @@ public:
      * \brief Evaluate the density at position \c pos. The distribution is
      * parameterized by \c param if applicable.
      */
-    Float eval(Vector2f pos, const Float *param = nullptr,
+    Float eval(Point2f pos, const Float *param = nullptr,
                mask_t<Float> active = true) const {
         Float param_weight[2 * DimensionInt];
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
@@ -799,9 +770,9 @@ public:
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Vector2u offset = min(Vector2u(Vector2i(pos)), m_size - 2u);
-        Vector2f w1 = pos - Vector2f(Vector2i(offset)),
-                 w0 = 1.f - w1;
+        Point2u offset = min(Point2u(Point2i(pos)), m_size - 2u);
+        Point2f w1 = pos - Point2f(Point2i(offset)),
+                w0 = 1.f - w1;
 
         UInt32 index = offset.x() + offset.y() * m_size.x();
 
@@ -875,7 +846,7 @@ protected:
     }
 
     MTS_INLINE
-    std::pair<Vector2f, Float> sample_discrete(Vector2f sample,
+    std::pair<Point2f, Float> sample_discrete(Point2f sample,
                                                const Float *param,
                                                mask_t<Float> active) const {
         Float param_weight[2 * DimensionInt];
@@ -955,13 +926,13 @@ protected:
             (c0 - c1);
 
         return {
-            (Vector2u(col, row) + sample) * m_patch_size,
+            (Point2u(col, row) + sample) * m_patch_size,
             fmadd(1.f - sample.x(), c0, sample.x() * c1) * hprod(m_inv_patch_size)
         };
     }
 
     MTS_INLINE
-    std::pair<Vector2f, Float> invert_discrete(Vector2f sample,
+    std::pair<Point2f, Float> invert_discrete(Point2f sample,
                                                const Float *param,
                                                mask_t<Float> active) const {
         Float param_weight[2 * DimensionInt];
@@ -972,7 +943,7 @@ protected:
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Vector2u offset = min(Vector2u(sample), m_size - 2u);
+        Point2u offset = min(Point2u(sample), m_size - 2u);
         UInt32 offset_i = offset.x() + offset.y() * m_size.x();
 
         uint32_t slice_size = hprod(m_size);
@@ -988,9 +959,9 @@ protected:
               v11 = lookup<Dimension>(m_data.data() + m_size.x() + 1, offset_i, slice_size,
                                       param_weight, active);
 
-        sample -= Vector2f(Vector2i(offset));
+        sample -= Point2f(Point2i(offset));
 
-        Vector2f w1 = sample, w0 = 1.f - w1;
+        Point2f w1 = sample, w0 = 1.f - w1;
 
         Float c0 = fmadd(w0.y(), v00, w1.y() * v01),
               c1 = fmadd(w0.y(), v10, w1.y() * v11),
@@ -1026,7 +997,7 @@ protected:
     }
 
     MTS_INLINE
-    std::pair<Vector2f, Float> sample_continuous(Vector2f sample,
+    std::pair<Point2f, Float> sample_continuous(Point2f sample,
                                                  const Float *param,
                                                  mask_t<Float> active) const {
         Float param_weight[2 * DimensionInt];
@@ -1111,13 +1082,13 @@ protected:
         masked(sample.x(), neq(divisor, 0.f)) /= divisor;
 
         return {
-            (Vector2u(col, row) + sample) * m_patch_size,
+            (Point2u(col, row) + sample) * m_patch_size,
             fmadd(1.f - sample.x(), c0, sample.x() * c1) * hprod(m_inv_patch_size)
         };
     }
 
     MTS_INLINE
-    std::pair<Vector2f, Float> invert_continuous(Vector2f sample,
+    std::pair<Point2f, Float> invert_continuous(Point2f sample,
                                                  const Float *param,
                                                  mask_t<Float> active) const {
         Float param_weight[2 * DimensionInt];
@@ -1128,8 +1099,8 @@ protected:
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Vector2u pos = min(Vector2u(Vector2i(sample)), m_size - 2u);
-        sample -= Vector2f(Vector2i(pos));
+        Point2u pos = min(Point2u(Point2i(sample)), m_size - 2u);
+        sample -= Point2f(Point2i(pos));
 
         UInt32 offset = pos.x() + pos.y() * m_size.x();
         uint32_t slice_size = hprod(m_size);
@@ -1146,7 +1117,7 @@ protected:
               v11 = lookup<Dimension>(m_data.data() + m_size.x() + 1, offset, slice_size,
                                       param_weight, active);
 
-        Vector2f w1 = sample, w0 = 1.f - w1;
+        Point2f w1 = sample, w0 = 1.f - w1;
 
         Float c0  = fmadd(w0.y(), v00, w1.y() * v01),
               c1  = fmadd(w0.y(), v10, w1.y() * v11),

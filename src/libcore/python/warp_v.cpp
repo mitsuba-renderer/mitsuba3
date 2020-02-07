@@ -157,4 +157,16 @@ MTS_PY_EXPORT(warp) {
     m.def("square_to_std_normal_pdf",
           vectorize(warp::square_to_std_normal_pdf<Float>),
           "v"_a, D(warp, square_to_std_normal_pdf));
+
+    m.def("square_to_bilinear", vectorize(warp::square_to_bilinear<Float>),
+          "v00"_a, "v10"_a, "v01"_a, "v11"_a, "sample"_a,
+          D(warp, square_to_bilinear));
+
+    m.def("square_to_bilinear_pdf", vectorize(warp::square_to_bilinear_pdf<Float>),
+          "v00"_a, "v10"_a, "v01"_a, "v11"_a, "sample"_a,
+          D(warp, square_to_bilinear_pdf));
+
+    m.def("bilinear_to_square", vectorize(warp::square_to_bilinear<Float>),
+          "v00"_a, "v10"_a, "v01"_a, "v11"_a, "sample"_a,
+          D(warp, bilinear_to_square));
 }

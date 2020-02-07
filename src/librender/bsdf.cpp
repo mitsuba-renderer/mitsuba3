@@ -131,7 +131,7 @@ std::ostream &operator<<(std::ostream &os, const TransportMode &mode) {
     switch (mode) {
         case TransportMode::Radiance:   os << "radiance"; break;
         case TransportMode::Importance: os << "importance"; break;
-        default:                       os << "invalid"; break;
+        default:                        os << "invalid"; break;
     }
     return os;
 }

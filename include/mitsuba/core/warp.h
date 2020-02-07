@@ -355,6 +355,74 @@ MTS_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
         return math::InvPi<Value> * v.z();
 }
 
+/**
+ * \brief Importance sample a bilinear interpolant
+ *
+ * Given a bilinear interpolant on the unit square with corner values \c v00,
+ * \c v10, \c v01, \c v11 (where \c v10 is the value at (x,y) == (0, 0)), warp
+ * a uniformly distributed input sample \c sample so that the resulting
+ * probability distribution matches the linear interpolant.
+ *
+ * The implementation first samples the marginal distribution to obtained \c x,
+ * followed by sampling the conditional distribution to obtain \c y.
+ */
+template <typename Value>
+MTS_INLINE std::pair<Point<Value, 2>, Value>
+square_to_bilinear(Value v00, Value v10, Value v01, Value v11,
+                   Point<Value, 2> sample) {
+    using Mask = mask_t<Value>;
+
+    // Invert marginal CDF in the 'x' parameter
+    Value c0 = v00 + v01, c1 = v10 + v11;
+    Mask linear_case = abs(c0 - c1) > 1e-4f * (c0 + c1);
+    masked(sample.x(), linear_case) *=
+        (c0 + c1) / (c0 + safe_sqrt(lerp(sqr(c0), sqr(c1), sample.x())));
+
+    // Boundary values of linear 1D interpolant over 'y'
+    Value r0 = lerp(v00, v10, sample.x()),
+          r1 = lerp(v01, v11, sample.x());
+
+    // Invert conditional CDF in the 'y' parameter
+    linear_case = abs(r0 - r1) > 1e-4f * (r0 + r1);
+    masked(sample.y(), linear_case) =
+        (r0 - safe_sqrt(lerp(sqr(r0), sqr(r1), sample.y()))) / (r0 - r1);
+
+    return { sample, lerp(r0, r1, sample.y()) };
+}
+
+/// Inverse of \ref square_to_bilinear
+template <typename Value>
+MTS_INLINE std::pair<Point<Value, 2>, Value>
+bilinear_to_square(Value v00, Value v01, Value v10, Value v11,
+                   Point<Value, 2> sample) {
+    using Mask = mask_t<Value>;
+
+    // Boundary values of linear 1D interpolant over 'y'
+    Value r0 = lerp(v00, v10, sample.x()),
+          r1 = lerp(v01, v11, sample.x());
+
+    Value pdf  = fmadd(r0, r1, sample.y());
+
+    Mask linear_case = abs(r0 - r1) > 1e-4f * (r0 + r1);
+
+    masked(sample.y(), linear_case) *=
+        fmadd(sample.y(), r1 - r0, 2.f * r0) / (r0 + r1);
+
+    masked(sample.x(), abs(r1 - r0) > 1e-4f * (r0 + r1)) *=
+        fmadd(sample.x(), r1 - r0, 2.f * r0) / (r0 + r1);
+
+    return { sample, pdf };
+}
+
+template <typename Value>
+MTS_INLINE Value
+square_to_bilinear_pdf(Value v00, Value v01, Value v10, Value v11,
+                       const Point<Value, 2> &sample) {
+    Point<Value, 2> m_sample = 1.f - sample;
+    return fmadd(m_sample.y(),  fmadd(m_sample.x(), v00, sample.x() * v10),
+                   sample.y() * fmadd(m_sample.x(), v01, sample.x() * v11));
+}
+
 // =======================================================================
 
 /**
