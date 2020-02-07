@@ -62,8 +62,10 @@ public:
     virtual std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const = 0;
 
-    std::tuple<SurfaceInteraction3f, MediumInteraction3f, Spectrum>
-    sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, UInt32 channel, Mask active) const;
+    MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
+                                           UInt32 channel, Mask active) const;
+    std::pair<Spectrum, Spectrum>
+    eval_tr_and_pdf(const MediumInteraction3f &mi, const SurfaceInteraction3f &si, Mask active) const;
 
     // END NEW INTERFACE
 
@@ -122,6 +124,7 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_CALL_SUPPORT_METHOD(get_combined_extinction)
     ENOKI_CALL_SUPPORT_METHOD(intersect_aabb)
     ENOKI_CALL_SUPPORT_METHOD(sample_interaction)
+    ENOKI_CALL_SUPPORT_METHOD(eval_tr_and_pdf)
     ENOKI_CALL_SUPPORT_METHOD(get_scattering_coefficients)
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Medium)
 

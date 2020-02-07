@@ -380,6 +380,9 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, combined_extinction;
 
+    /// mint used when sampling the given distance "t".
+    Float mint;
+
 
     //! @}
     // =============================================================
@@ -401,7 +404,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     ENOKI_DERIVED_STRUCT(MediumInteraction, Base,
         ENOKI_BASE_FIELDS(t, time, wavelengths, p),
-        ENOKI_DERIVED_FIELDS(medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction)
+        ENOKI_DERIVED_FIELDS(medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction, mint)
     )
 
 };
@@ -485,7 +488,7 @@ ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
                      prim_index, instance)
 
 ENOKI_STRUCT_SUPPORT(mitsuba::MediumInteraction, t, time, wavelengths, p,
-                     medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction)
+                     medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction, mint)
 
 //! @}
 // -----------------------------------------------------------------------

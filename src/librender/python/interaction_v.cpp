@@ -160,6 +160,7 @@ void bind_slicing_operator_mediuminteraction(PyClass &cl) {
             res.medium      = mi.medium[i];
             res.sh_frame    = slice(mi.sh_frame, i);
             res.wi          = slice(mi.wi, i);
+            res.mint        = slice(mi.mint, i);
             return res;
         })
         .def("__setitem__", [](Class &r, size_t i,
@@ -177,6 +178,7 @@ void bind_slicing_operator_mediuminteraction(PyClass &cl) {
             r.medium[i]             = slice(r2.medium, 0);
             slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
             slice(r.wi, i)          = slice(r2.wi, 0);
+            slice(r.mint, i)        = slice(r2.mint, 0);
         })
         .def("__len__", [](const Class &r) {
             return slices(r);

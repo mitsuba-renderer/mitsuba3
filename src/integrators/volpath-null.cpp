@@ -69,6 +69,9 @@ public:
             channel = min(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
+        SurfaceInteraction3f si;
+        Mask needs_intersection = true;
+
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
 
@@ -89,25 +92,24 @@ public:
             if (none(active))
                 break;
 
-
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
             Mask act_null_scatter = false;
             Mask act_medium_scatter = false;
             Mask escaped_medium = false;
-            SurfaceInteraction3f si_medium;
             Interaction3f last_scatter_event;
 
             if (any_or<true>(active_medium)) {
-                Spectrum tr;
-                std::tie(si_medium, mi, tr) = medium->sample_interaction(
-                    scene, ray, sampler->next_1d(active_medium), channel, active_medium);
-                Spectrum free_flight_pdf = select(active_medium && mi.is_valid(), mi.combined_extinction * tr, tr);
+                mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                masked(ray.maxt, active_medium && false && mi.is_valid()) = mi.t; // TODO: Short ray optimization
+                masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                needs_intersection &= !active_medium;
+                masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
+                auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, active_medium);
                 update_weights(p_over_f, free_flight_pdf, tr, active_medium);
                 update_weights(p_over_f_nee, free_flight_pdf, tr, active_medium);
-
-                escaped_medium = active_medium && si_medium.is_valid() && !mi.is_valid();
+                escaped_medium = active_medium && !mi.is_valid();
                 active_medium &= mi.is_valid();
             }
 
@@ -131,6 +133,7 @@ public:
 
                     masked(ray.o, act_null_scatter) = mi.p;
                     masked(ray.mint, act_null_scatter) = 0.f;
+                    masked(si.t, act_null_scatter) = si.t - mi.t;
                 }
 
                 if (any_or<true>(act_medium_scatter)) {
@@ -160,6 +163,7 @@ public:
                     Ray3f new_ray  = mi.spawn_ray(wo);
                     new_ray.mint = 0.0f;
                     masked(ray, act_medium_scatter) = new_ray;
+                    needs_intersection |= act_medium_scatter;
 
                     update_weights(p_over_f, phase_pdf, phase_pdf, act_medium_scatter);
                     update_weights(p_over_f_nee, 1.f, phase_pdf, act_medium_scatter);
@@ -168,9 +172,10 @@ public:
 
 
             // --------------------- Surface Interactions ---------------------
-            SurfaceInteraction3f si     = scene->ray_intersect(ray, active_surface);
-            masked(si, escaped_medium) = si_medium;
             active_surface |= escaped_medium;
+            Mask intersect = active_surface && needs_intersection;
+            masked(si, intersect) = scene->ray_intersect(ray, intersect);
+
 
             if (any_or<true>(active_surface)) {
                 // ---------------- Intersection with emitters ----------------
@@ -218,6 +223,7 @@ public:
 
                 Ray bsdf_ray                = si.spawn_ray(si.to_world(bs.wo));
                 masked(ray, active_surface) = bsdf_ray;
+                needs_intersection |= active_surface;
 
                 Mask non_null_bsdf = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Null);
                 valid_ray |= non_null_bsdf;
@@ -231,7 +237,7 @@ public:
                 update_weights(p_over_f, bs.pdf, bsdf_weight * bs.pdf, active_surface);
                 update_weights(p_over_f_nee, 1.f, bsdf_weight * bs.pdf, non_null_bsdf);
 
-                Mask has_medium_trans            = si.is_valid() && si.is_medium_transition();
+                Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
             active &= (active_surface | active_medium);
@@ -260,37 +266,41 @@ public:
         Spectrum emitter_val(0.f);
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
         Float total_dist = 0.f;
+        SurfaceInteraction3f si;
+        Mask needs_intersection = true;
         while (any(active)) {
             Mask escaped_medium = false;
             Mask active_medium  = active && neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
 
-            SurfaceInteraction3f si_medium;
             if (any_or<true>(active_medium)) {
-                Spectrum tr;
-                MediumInteraction3f mi;
-                std::tie(si_medium, mi, tr) = medium->sample_interaction(
-                    scene, ray, sampler->next_1d(active_medium), channel, active_medium);
+                auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                masked(ray.maxt, active_medium && false && mi.is_valid()) = mi.t; // TODO: Short ray optimization
+                masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
+                needs_intersection &= !active_medium;
 
-                Spectrum free_flight_pdf = select(mi.is_valid(), mi.combined_extinction * tr, tr);
+                auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, active_medium);
                 update_weights(p_over_f_nee, free_flight_pdf, tr, active_medium);
                 update_weights(p_over_f_uni, free_flight_pdf, tr, active_medium);
 
-                escaped_medium = active_medium && si_medium.is_valid() && !mi.is_valid();
+                escaped_medium = active_medium && !mi.is_valid();
                 active_medium &= mi.is_valid();
                 masked(total_dist, active_medium) += mi.t;
 
                 if (any_or<true>(active_medium)) {
                     masked(ray.o, active_medium)    = mi.p;
                     masked(ray.mint, active_medium) = 0.f;
+                    // Update si.t since we continue the ray into the same direction
+                    masked(si.t, active_medium) = si.t - mi.t;
                     update_weights(p_over_f_nee, 1.f, mi.sigma_n, active_medium);
                     update_weights(p_over_f_uni, mi.sigma_n / mi.combined_extinction, mi.sigma_n, active_medium);
                 }
             }
 
             // Handle interactions with surfaces
-            SurfaceInteraction3f si    = scene->ray_intersect(ray, active_surface);
-            masked(si, escaped_medium) = si_medium;
+            Mask intersect = active_surface && needs_intersection;
+            masked(si, intersect)    = scene->ray_intersect(ray, intersect);
             active_surface |= escaped_medium;
             masked(total_dist, active_surface) += si.t;
 
@@ -309,7 +319,7 @@ public:
                 active &= !emitter_hit; // disable lanes which found an emitter
             }
 
-            active_surface &= si.is_valid() && active;
+            active_surface &= si.is_valid() && active && !active_medium;
             if (any_or<true>(active_surface)) {
                 auto bsdf         = si.bsdf(ray);
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
@@ -318,6 +328,7 @@ public:
             }
 
             masked(ray, active_surface) = si.spawn_ray(ray.d);
+            needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
             active &= (active_medium || active_surface) &&
