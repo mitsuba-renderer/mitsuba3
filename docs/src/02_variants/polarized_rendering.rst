@@ -1,2 +1,0 @@
-Polarized rendering
-===================

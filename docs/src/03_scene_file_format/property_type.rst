@@ -1,2 +1,0 @@
-Property types
-==============
