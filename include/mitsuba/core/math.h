@@ -306,7 +306,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
         else
             right = middle;
         it++;
-        if (it > 100)
+        if (it > (is_float_v<Scalar> ? 100 : 150))
             throw std::runtime_error("Internal error in util::bisect!");
     }
 

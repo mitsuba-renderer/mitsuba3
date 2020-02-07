@@ -104,19 +104,19 @@ public:
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
-        using Result = Point<replace_scalar_t<Index, ScalarFloat>, 3>;
+        using Result = Point<replace_scalar_t<Index, InputFloat>, 3>;
         ENOKI_MARK_USED(active);
 
         if constexpr (!is_array_v<Index>) {
             return load<Result>(vertex(index));
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_vertex_size / ScalarSize(sizeof(ScalarFloat));
-            return gather<Result, sizeof(ScalarFloat)>(
+            index *= m_vertex_size / ScalarSize(sizeof(InputFloat));
+            return gather<Result, sizeof(InputFloat)>(
                 m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarFloat)>(m_optix->vertex_positions, index, active);
+            return gather<Result, sizeof(InputFloat)>(m_optix->vertex_positions, index, active);
         }
 #endif
     }
@@ -125,19 +125,19 @@ public:
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index, mask_t<Index> active = true) const {
         using Index3 = Array<Index, 3>;
-        using Result = Normal<replace_scalar_t<Index, ScalarFloat>, 3>;
+        using Result = Normal<replace_scalar_t<Index, InputFloat>, 3>;
         ENOKI_MARK_USED(active);
 
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_normal_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_vertex_size / ScalarSize(sizeof(ScalarFloat));
-            return gather<Result, sizeof(ScalarFloat)>(
+            index *= m_vertex_size / ScalarSize(sizeof(InputFloat));
+            return gather<Result, sizeof(InputFloat)>(
                 m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarFloat)>(m_optix->vertex_normals, index, active);
+            return gather<Result, sizeof(InputFloat)>(m_optix->vertex_normals, index, active);
         }
 #endif
     }
@@ -145,19 +145,19 @@ public:
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index, mask_t<Index> active = true) const {
-        using Result = Point<replace_scalar_t<Index, ScalarFloat>, 2>;
+        using Result = Point<replace_scalar_t<Index, InputFloat>, 2>;
         ENOKI_MARK_USED(active);
 
         if constexpr (!is_array_v<Index>) {
             return load_unaligned<Result>(vertex(index) + m_texcoord_offset);
         } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_vertex_size / ScalarSize(sizeof(ScalarFloat));
-            return gather<Result, sizeof(ScalarFloat)>(
+            index *= m_vertex_size / ScalarSize(sizeof(InputFloat));
+            return gather<Result, sizeof(InputFloat)>(
                 m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
         }
 #if defined(MTS_ENABLE_OPTIX)
         else {
-            return gather<Result, sizeof(ScalarFloat)>(m_optix->vertex_texcoords, index, active);
+            return gather<Result, sizeof(InputFloat)>(m_optix->vertex_texcoords, index, active);
         }
 #endif
     }

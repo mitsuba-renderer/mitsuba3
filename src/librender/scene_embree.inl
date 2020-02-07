@@ -62,7 +62,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             rh.ray.flags = 0;
             rtcIntersect1((RTCScene) m_accel, &context, &rh);
 
-            if (rh.ray.tfar != ray.maxt) {
+            if (rh.ray.tfar != (float) ray.maxt) {
                 ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index = rh.hit.primID;
@@ -74,7 +74,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
                 si.shape = m_shapes[shape_index];
                 si.prim_index = prim_index;
 
-                float cache[2] = { rh.hit.u, rh.hit.v };
+                Float cache[2] = { rh.hit.u, rh.hit.v };
 
                 // Ask shape(s) to fill in the rest using the cache
                 si.shape->fill_surface_interaction(ray, cache, si);

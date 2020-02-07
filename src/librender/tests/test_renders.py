@@ -1,5 +1,5 @@
 import os
-from os.path import join, realpath, dirname
+from os.path import join, realpath, dirname, basename
 import argparse
 import glob
 import mitsuba
@@ -10,7 +10,7 @@ from enoki.dynamic import Float32 as Float
 
 from mitsuba.python.test import variants_all
 
-color_modes = ['mono', 'rgb', 'spectral', 'spectral_polarized']
+color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
 
 TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/scenes'))
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
@@ -18,11 +18,10 @@ scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 # Exclude certain tests for now
 EXCLUDE_FOLDERS = ['participating_media']
 
-
 def get_ref_fname(scene_path):
     for color_mode in color_modes:
-        if mitsuba.variant().endswith(color_mode):
-            return os.path.splitext(scene_path)[0] + '_ref_' + color_mode + '.exr'
+        if color_mode in mitsuba.variant():
+            return join(dirname(scene_path), 'refs', os.path.splitext(basename(scene_path))[0] + '_ref_' + color_mode + '.exr')
     assert False
 
 
@@ -58,12 +57,6 @@ def test_render(variants_all, scene_fname):
     if not success:
         print("Failed. error: {} // threshold: {}".format(error, threshold))
 
-        # Write diff image to a file
-        diff_fname = os.path.splitext(scene_fname)[0] + '_diff_' + mitsuba.variant() + '.exr'
-        diff_image = np.abs(ref_image - cur_image)
-        Bitmap(diff_image).convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, False).write(diff_fname)
-        print('Saved diff image to: ' + diff_fname)
-
         # Write rendered image to a file
         cur_fname = os.path.splitext(scene_fname)[0] + '_render_' + mitsuba.variant() + '.exr'
         cur_bitmap.write(cur_fname)
@@ -92,7 +85,7 @@ def main():
         scene_dir = dirname(scene_fname)
 
         for variant in mitsuba.variants():
-            if not variant.split('_')[0] == 'scalar':
+            if not variant.split('_')[0] == 'scalar' or variant.endswith('double'):
                 continue
 
             mitsuba.set_variant(variant)
