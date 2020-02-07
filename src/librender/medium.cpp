@@ -28,16 +28,16 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
 
 MTS_VARIANT Medium<Float, Spectrum>::~Medium() {}
 
-MTS_VARIANT std::tuple<
-typename Medium<Float, Spectrum>::SurfaceInteraction3f,
-typename Medium<Float, Spectrum>::MediumInteraction3f,
-Spectrum>
-Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray, Float sample, UInt32 channel, Mask active) const {
+MTS_VARIANT
+std::tuple<typename Medium<Float, Spectrum>::SurfaceInteraction3f,
+           typename Medium<Float, Spectrum>::MediumInteraction3f, Spectrum>
+Medium<Float, Spectrum>::sample_interaction(const Scene *scene,
+                                            const Ray3f &ray, Float sample,
+                                            UInt32 channel, Mask active) const {
     // initialize basic medium interaction fields
     MediumInteraction3f mi;
     mi.t           = math::Infinity<Float>;
     mi.p           = Point3f(0.0f, 0.0f, 0.0f);
-
     mi.sh_frame    = Frame3f(ray.d);
     mi.wi          = -ray.d;
     mi.time        = ray.time;
@@ -51,6 +51,7 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
 
     SurfaceInteraction3f si;
     Mask missed = active && !aabb_its;
+
     // TODO: Group all ray intersect calls
     // If medium missed: still compute surface interaction (for now)
     masked(si, missed) = scene->ray_intersect(ray, missed);
@@ -59,7 +60,7 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     mint = max(ray.mint, mint);
     maxt = min(ray.maxt, maxt);
 
-    // sample t
+    // Sample distance to next scattering event
     auto combined_extinction = get_combined_extinction(mi, active);
     Float m = combined_extinction[0];
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
@@ -71,8 +72,9 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
 
     Ray ray_its = ray;
     Mask inside_bbox = active && (sampled_t <= maxt);
-    masked(ray_its.maxt, inside_bbox) = sampled_t; // restrict ray maxt if inside the medium's bounding box
-    si = scene->ray_intersect(ray_its, active);
+    // restrict ray maxt if inside the medium's bounding box
+    masked(ray_its.maxt, inside_bbox) = sampled_t;
+    masked(si, active) = scene->ray_intersect(ray_its, active);
     Float t = min(si.t, maxt) - mint;
 
     // Escaped medium
@@ -87,63 +89,9 @@ Medium<Float, Spectrum>::sample_interaction(const Scene *scene, const Ray3f &ray
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) = get_scattering_coefficients(mi, valid_mi);
     mi.combined_extinction = combined_extinction;
 
-    // TODO: Probably this should only be done for "active" values
-    transmittance *= exp(-t * combined_extinction);
+    masked(transmittance, active) *= exp(-t * combined_extinction);
     return std::make_tuple(si, mi, transmittance);
 }
-
-// MTS_VARIANT
-// std::tuple<ref<Texture<Float, Spectrum>>,
-//            ref<Texture<Float, Spectrum>>,
-//            ref<Texture<Float, Spectrum>>,
-//            ref<Texture<Float, Spectrum>>>
-//     Medium<Float, Spectrum>::extract_medium_parameters(const Properties &props) {
-
-//     bool has_sigma_a_sigma_s =
-//         props.has_property("sigma_s") || props.has_property("sigma_a");
-//     bool has_sigma_t_albedo =
-//         props.has_property("sigma_t") || props.has_property("albedo");
-
-//     if (has_sigma_a_sigma_s && has_sigma_t_albedo)
-//         Log(Error, "You can either specify sigma_s & sigma_a *or* "
-//                     "sigma_t & albedo, but no other combinations!");
-
-//     ref<Texture> sigma_s, sigma_a, sigma_t, albedo;
-//     if (has_sigma_a_sigma_s) {
-//         sigma_s = props.texture<Texture>("sigma_s", 1.0f);
-//         sigma_a = props.texture<Texture>("sigma_a", 1.0f);
-//         Properties props("sum");
-//         props.set_object("spectrum1", sigma_s.get());
-//         props.set_object("spectrum2", sigma_a.get());
-//         auto obj =
-//             PluginManager::instance()->create_object<Texture>(props);
-//         sigma_t = (Texture *) obj.get();
-//         Properties props2("division");
-//         props2.set_object("spectrum1", sigma_s.get());
-//         props2.set_object("spectrum2", sigma_t.get());
-//         auto obj2 =
-//             PluginManager::instance()->create_object<Texture>(
-//                 props2);
-//         albedo = (Texture *) obj2.get();
-//     } else if (has_sigma_t_albedo) {
-//         sigma_t = props.texture<Texture>("sigma_t", 1.0f);
-//         albedo  = props.texture<Texture>("albedo", 0.5f);
-//         Properties props("product");
-//         props.set_object("spectrum1", sigma_t.get());
-//         props.set_object("spectrum2", albedo.get());
-//         auto obj =
-//             PluginManager::instance()->create_object<Texture>(props);
-//         sigma_s = (Texture *) obj.get();
-//         Properties props2("difference");
-//         props2.set_object("spectrum1", sigma_t.get());
-//         props2.set_object("spectrum2", sigma_s.get());
-//         auto obj2 =
-//             PluginManager::instance()->create_object<Texture>(
-//                 props2);
-//         sigma_a = (Texture *) obj2.get();
-//     }
-//     return { sigma_a, sigma_s, sigma_t, albedo };
-// }
 
 MTS_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")
 MTS_INSTANTIATE_CLASS(Medium)
