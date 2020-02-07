@@ -1,7 +1,7 @@
 Introduction
 ==============
 
-.. image:: images/features.svg
+.. image:: ../../images/features.svg
     :width: 100%
     :align: center
 

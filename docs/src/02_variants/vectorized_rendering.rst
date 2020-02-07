@@ -1,0 +1,2 @@
+Vectorized rendering
+====================

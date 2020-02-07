@@ -65,7 +65,7 @@ rst_prolog = r"""
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'src/index'
 
 # General information about the project.
 project = 'mitsuba2'
@@ -96,7 +96,7 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['.build', 'release.rst', 'section_bsdf.rst', 'section_emitter.rst']
+exclude_patterns = ['.build', 'release.rst', 'src/07_plugin_reference/section_bsdf.rst', 'src/07_plugin_reference/section_emitter.rst']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

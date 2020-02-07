@@ -82,7 +82,7 @@ def process_src(target, src_subdir, section=None, ordering=None):
         section = "section_" + src_subdir
 
     # Copy paste the contents of the appropriate section file
-    with open(section + '.rst', 'r') as f:
+    with open('src/07_plugin_reference/' + section + '.rst', 'r') as f:
         target.write(f.read())
     process('../src/{0}'.format(src_subdir), target, ordering)
 
