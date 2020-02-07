@@ -22,6 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
 static RTCDevice __embree_device = nullptr;
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
+    static_assert(is_float_v<Float>, "Embree is not supported in double precision mode.");
     if (!__embree_device)
         __embree_device = rtcNewDevice("");
 
@@ -62,7 +63,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             rh.ray.flags = 0;
             rtcIntersect1((RTCScene) m_accel, &context, &rh);
 
-            if (rh.ray.tfar != (float) ray.maxt) {
+            if (rh.ray.tfar != ray.maxt) {
                 ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index = rh.hit.primID;
