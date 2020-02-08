@@ -64,7 +64,7 @@ public:
 
     MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
                                            UInt32 channel, Mask active) const;
-    std::pair<Spectrum, Spectrum>
+    std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
     eval_tr_and_pdf(const MediumInteraction3f &mi, const SurfaceInteraction3f &si, Mask active) const;
 
     // END NEW INTERFACE

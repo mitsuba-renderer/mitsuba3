@@ -69,13 +69,14 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 }
 
 MTS_VARIANT
-std::pair<Spectrum, Spectrum>
+std::pair<typename Medium<Float, Spectrum>::UnpolarizedSpectrum,
+          typename Medium<Float, Spectrum>::UnpolarizedSpectrum>
 Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
                                          const SurfaceInteraction3f &si,
-                                         Mask active) const {
+                                         Mask /* active */) const {
     Float t      = min(mi.t, si.t) - mi.mint;
-    Spectrum tr  = exp(-t * mi.combined_extinction);
-    Spectrum pdf = select(si.t < mi.t, tr, tr * mi.combined_extinction);
+    UnpolarizedSpectrum tr  = exp(-t * mi.combined_extinction);
+    UnpolarizedSpectrum pdf = select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };
 }
 
