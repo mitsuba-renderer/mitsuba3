@@ -21,7 +21,6 @@ public:
                      Medium, MediumPtr, PhaseFunctionContext)
 
     VolumetricNullSimplePathIntegrator(const Properties &props) : Base(props) {
-        m_medium_mis = props.bool_("medium_mis", true);
     }
 
     MTS_INLINE
@@ -146,11 +145,7 @@ public:
                         auto [emitted, _] = evaluate_direct_light(mi, scene, sampler, medium, nee_ray,
                                                                   ds.dist, channel, active_e);
                         Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
-                        if (m_medium_mis) {
-                            masked(result, active_e) += throughput * emitted * phase_val * mis_weight(ds.pdf, phase_val) / ds.pdf;
-                        } else {
-                            masked(result, active_e) += throughput * phase_val * emitted / ds.pdf;
-                        }
+                        masked(result, active_e) += throughput * phase_val * emitted / ds.pdf;
                     }
                 }
 
@@ -161,17 +156,6 @@ public:
                 new_ray.mint = 0.0f;
                 masked(ray, act_medium_scatter) = new_ray;
                 needs_intersection |= act_medium_scatter;
-
-                if (m_medium_mis) {
-                    active_e = act_medium_scatter && sample_emitters && any(neq(depolarize(throughput), 0.f));
-                    if (any_or<true>(active_e)) {
-                        auto [emitted, emitter_pdf] = evaluate_direct_light(mi, scene, sampler, medium,
-                                                                            new_ray, -1.f, channel, active_e);
-                        result += select(active_e && neq(emitter_pdf, 0),
-                                        mis_weight(phase_pdf, emitter_pdf) * throughput * emitted, 0.0f);
-                    }
-                }
-
             }
 
             // --------------------- Surface Interactions ---------------------

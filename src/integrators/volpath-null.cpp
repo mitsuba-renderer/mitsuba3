@@ -12,18 +12,54 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+// Forward declaration of specialized integrator
+template <typename Float, typename Spectrum, bool SpectralMis>
+class VolumetricNullPathIntegratorImpl;
+
 template <typename Float, typename Spectrum>
-class VolumetricNullPathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
+class VolumetricNullPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
     MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
-    using WeightMatrix = enoki::Array<Float, array_size_v<Spectrum> * array_size_v<Spectrum>>;
-
     VolumetricNullPathIntegrator(const Properties &props) : Base(props) {
-        m_mis = true;
+        m_use_spectral_mis = props.bool_("use_spectral_mis", true);
+        m_props = props;
+    }
+
+    template <bool SpectralMis>
+    using Impl = VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>;
+
+    std::vector<ref<Object>> expand() const override {
+        ref<Object> result;
+        if (m_use_spectral_mis)
+            result = (Object *) new Impl<true>(m_props);
+        else
+            result = (Object *) new Impl<false>(m_props);
+        return { result };
+    }
+    MTS_DECLARE_CLASS()
+
+protected:
+    Properties m_props;
+    bool m_use_spectral_mis;
+};
+
+template <typename Float, typename Spectrum, bool SpectralMis>
+class VolumetricNullPathIntegratorImpl final : public MonteCarloIntegrator<Float, Spectrum> {
+
+public:
+    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
+                     Medium, MediumPtr, PhaseFunctionContext)
+
+    using WeightMatrix = std::conditional_t<SpectralMis,
+                    enoki::Array<Float, array_size_v<Spectrum> * array_size_v<Spectrum>>,
+                    Spectrum>;
+
+    VolumetricNullPathIntegratorImpl(const Properties &props) : Base(props) {
     }
 
     MTS_INLINE
@@ -60,8 +96,8 @@ public:
 
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
-        WeightMatrix p_over_f = zero<WeightMatrix>() + 1.f;
-        WeightMatrix p_over_f_nee = zero<WeightMatrix>() + 1.f;
+        WeightMatrix p_over_f = full<WeightMatrix>(1.f);
+        WeightMatrix p_over_f_nee = full<WeightMatrix>(1.f);
 
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
@@ -179,10 +215,10 @@ public:
 
             if (any_or<true>(active_surface)) {
                 // ---------------- Intersection with emitters ----------------
-                Mask ray_from_camera = active_surface && eq(depth, 0);
+                Mask ray_from_camera = active_surface && eq(depth, 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
                 EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && neq(emitter, nullptr) && !(eq(depth, 0) && m_hide_emitters);
+                Mask active_e = active_surface && neq(emitter, nullptr) && !(eq(depth, 0u) && m_hide_emitters);
                 if (any_or<true>(active_e)) {
                     if (any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
@@ -331,8 +367,12 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) &&
+            if constexpr (SpectralMis)
+                active &= (active_medium || active_surface) &&
                       (any(neq(p_over_f_uni, 0.f)) || any(neq(p_over_f_nee, 0.f)));
+            else
+                active &= (active_medium || active_surface) &&
+                      (any(neq(depolarize(p_over_f_uni), 0.f)) || any(neq(depolarize(p_over_f_nee), 0.f)) );
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();
@@ -348,52 +388,75 @@ public:
     void update_weights(WeightMatrix& p_over_f, const Spectrum &p, const Spectrum &f, Mask active) const {
         // For two spectra p and f, computes all the ratios of the individual components
         // and multiplies them to the current values in p_over_f
-        constexpr size_t n = array_size_v<Spectrum>;
-        for (size_t i = 0; i < n; ++i) {
-            for (size_t j = 0; j < n; ++j) {
-                Float f_i = depolarize(f).coeff(i);
-                Float p_j = depolarize(p).coeff(j);
-                Mask invalid = eq(f_i, 0.f) || enoki::isinf(f_i) || enoki::isinf(p_j);
-                Float value = p_over_f[i * n + j] * select(invalid, 0.f, p_j / f_i);
-                // if p >> f, then a) p/f becomes inf and b) sample has such a small contribution that we can set it to zero
-                masked(value, enoki::isinf(value)) = 0.f;
-                masked(p_over_f[i * n + j], active) = value;
+        if constexpr (SpectralMis) {
+            constexpr size_t n = array_size_v<Spectrum>;
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < n; ++j) {
+                    Float f_i = depolarize(f).coeff(i);
+                    Float p_j = depolarize(p).coeff(j);
+                    Mask invalid = eq(f_i, 0.f) || enoki::isinf(f_i) || enoki::isinf(p_j);
+                    Float value = p_over_f[i * n + j] * select(invalid, 0.f, p_j / f_i);
+                    // if p >> f, then a) p/f becomes inf and b) sample has such a small contribution that we can set it to zero
+                    masked(value, enoki::isinf(value)) = 0.f;
+                    masked(p_over_f[i * n + j], active) = value;
+                }
             }
+        } else {
+            UnpolarizedSpectrum f_d = depolarize(f);
+            UnpolarizedSpectrum p_d = depolarize(p);
+            Mask invalid = eq(hmin(abs(f_d)), 0.f) || enoki::isinf(hmax(f_d)) || enoki::isinf(hmax(p_d));
+            Spectrum value = p_over_f * select(invalid, 0.f, p_d / f_d);
+            masked(value, enoki::isinf(hmax(value))) = 0.f;
+            masked(p_over_f, active) = value;
         }
     }
 
 
     MTS_INLINE
     void set_weights(WeightMatrix& target, const WeightMatrix &source, Mask active) const {
-        constexpr size_t n = array_size_v<Spectrum>;
-        for (size_t i = 0; i < n; ++i) {
-            for (size_t j = 0; j < n; ++j) {
-                masked(target[i * n + j], active) = source[i * n + j];
+        if constexpr (SpectralMis) {
+            constexpr size_t n = array_size_v<Spectrum>;
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < n; ++j) {
+                    masked(target[i * n + j], active) = source[i * n + j];
+                }
             }
+        } else {
+            masked(target, active) = source;
         }
     }
 
     Spectrum mis_weight(const WeightMatrix& p_over_f) const {
-        constexpr size_t n = array_size_v<Spectrum>;
-        UnpolarizedSpectrum weight(0.0f);
-        for (size_t i = 0; i < n; ++i) {
-            Float sum = 0.0f;
-            for (size_t j = 0; j < n; ++j)
-                sum += p_over_f[i * n + j];
-            weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
+        if constexpr (SpectralMis) {
+            constexpr size_t n = array_size_v<Spectrum>;
+            UnpolarizedSpectrum weight(0.0f);
+            for (size_t i = 0; i < n; ++i) {
+                Float sum = 0.0f;
+                for (size_t j = 0; j < n; ++j)
+                    sum += p_over_f[i * n + j];
+                weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
+            }
+            return weight;
+        } else {
+            Mask invalid = eq(hmin(abs(depolarize(p_over_f))), 0.f);
+            return select(invalid, 0.f, 1.f / depolarize(p_over_f));
         }
-        return weight;
     }
 
     // returns MIS'd throughput/pdf of two full paths represented by p_over_f1 and p_over_f2
     Spectrum mis_weight(const WeightMatrix& p_over_f1, const WeightMatrix& p_over_f2) const {
-        constexpr size_t n = array_size_v<Spectrum>;
         UnpolarizedSpectrum weight(0.0f);
-        for (size_t i = 0; i < n; ++i) {
-            Float sum = 0.0f;
-            for (size_t j = 0; j < n; ++j)
-                sum += p_over_f1[i * n + j] + p_over_f2[i * n + j];
-            weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
+        if constexpr (SpectralMis) {
+            constexpr size_t n = array_size_v<Spectrum>;
+            for (size_t i = 0; i < n; ++i) {
+                Float sum = 0.0f;
+                for (size_t j = 0; j < n; ++j)
+                    sum += p_over_f1[i * n + j] + p_over_f2[i * n + j];
+                weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
+            }
+        } else {
+            UnpolarizedSpectrum sum = depolarize(p_over_f1 + p_over_f2);
+            weight = select(eq(hmin(abs(sum)), 0.f), 0.0f, 1.f / sum);
         }
         return weight;
     }
@@ -411,10 +474,31 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    bool m_mis;
 
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumetricNullPathIntegrator, MonteCarloIntegrator);
 MTS_EXPORT_PLUGIN(VolumetricNullPathIntegrator, "Volumetric Path Tracer integrator");
+
+NAMESPACE_BEGIN()
+template <bool SpectralMis>
+constexpr const char * volpath_class_name() {
+    if constexpr (SpectralMis) {
+        return "Volpath_spectral_mis";
+    } else {
+        return "Volpath_no_spectral_mis";
+    }
+}
+NAMESPACE_END()
+
+template <typename Float, typename Spectrum, bool SpectralMis>
+Class *VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
+    = new Class(volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
+                ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
+
+template <typename Float, typename Spectrum, bool SpectralMis>
+const Class* VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>::class_() const {
+    return m_class;
+}
+
 NAMESPACE_END(mitsuba)
