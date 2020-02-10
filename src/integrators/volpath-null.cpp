@@ -55,12 +55,11 @@ public:
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
-    using WeightMatrix = std::conditional_t<SpectralMis,
-                    enoki::Array<Float, array_size_v<Spectrum> * array_size_v<Spectrum>>,
-                    Spectrum>;
+    using WeightMatrix =
+        std::conditional_t<SpectralMis, Matrix<Float, array_size_v<Spectrum>>,
+                           UnpolarizedSpectrum>;
 
-    VolumetricNullPathIntegratorImpl(const Properties &props) : Base(props) {
-    }
+    VolumetricNullPathIntegratorImpl(const Properties &props) : Base(props) {}
 
     MTS_INLINE
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
@@ -191,7 +190,7 @@ public:
                     }
 
                     // In a real interaction: reset p_over_f_nee
-                    set_weights(p_over_f_nee, p_over_f, act_medium_scatter);
+                    masked(p_over_f_nee, act_medium_scatter) = p_over_f;
 
                     // ------------------ Phase function sampling -----------------
                     masked(phase, !act_medium_scatter) = nullptr;
@@ -246,8 +245,8 @@ public:
                     Vector3f wo_local       = si.to_local(wo);
                     Spectrum bsdf_val = bsdf->eval(ctx, si, wo_local, active_e);
                     Float bsdf_pdf =  bsdf->pdf(ctx, si, wo_local, active_e);
-                    update_weights(p_over_f_nee_end, 1.0f, bsdf_val, active_e);
-                    update_weights(p_over_f_end, bsdf_pdf, bsdf_val, active_e);
+                    update_weights(p_over_f_nee_end, 1.0f, depolarize(bsdf_val), active_e);
+                    update_weights(p_over_f_end, bsdf_pdf, depolarize(bsdf_val), active_e);
                     masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
                 }
 
@@ -269,9 +268,9 @@ public:
                 masked(last_scatter_event, non_null_bsdf) = si;
 
                 // Update NEE weights only if the BSDF is not null
-                set_weights(p_over_f_nee, p_over_f, non_null_bsdf);
-                update_weights(p_over_f, bs.pdf, bsdf_weight * bs.pdf, active_surface);
-                update_weights(p_over_f_nee, 1.f, bsdf_weight * bs.pdf, non_null_bsdf);
+                masked(p_over_f_nee, non_null_bsdf) = p_over_f;
+                update_weights(p_over_f, bs.pdf, depolarize(bsdf_weight * bs.pdf), active_surface);
+                update_weights(p_over_f_nee, 1.f, depolarize(bsdf_weight * bs.pdf), non_null_bsdf);
 
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
@@ -359,8 +358,8 @@ public:
             if (any_or<true>(active_surface)) {
                 auto bsdf         = si.bsdf(ray);
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
-                update_weights(p_over_f_nee, 1.0f, bsdf_val, active_surface);
-                update_weights(p_over_f_uni, 1.0f, bsdf_val, active_surface);
+                update_weights(p_over_f_nee, 1.0f, depolarize(bsdf_val), active_surface);
+                update_weights(p_over_f_uni, 1.0f, depolarize(bsdf_val), active_surface);
             }
 
             masked(ray, active_surface) = si.spawn_ray(ray.d);
@@ -368,8 +367,7 @@ public:
 
             // Continue tracing through scene if non-zero weights exist
             if constexpr (SpectralMis)
-                active &= (active_medium || active_surface) &&
-                      (any(neq(p_over_f_uni, 0.f)) || any(neq(p_over_f_nee, 0.f)));
+                active &= (active_medium || active_surface) && any(neq(mis_weight(p_over_f_uni), 0.f));
             else
                 active &= (active_medium || active_surface) &&
                       (any(neq(depolarize(p_over_f_uni), 0.f)) || any(neq(depolarize(p_over_f_nee), 0.f)) );
@@ -379,83 +377,54 @@ public:
             if (any_or<true>(has_medium_trans)) {
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
-
         }
         return { p_over_f_nee, p_over_f_uni, emitter_val, ray.d};
     }
 
     MTS_INLINE
-    void update_weights(WeightMatrix& p_over_f, const Spectrum &p, const Spectrum &f, Mask active) const {
-        // For two spectra p and f, computes all the ratios of the individual components
-        // and multiplies them to the current values in p_over_f
+    void update_weights(WeightMatrix &p_over_f,
+                    const UnpolarizedSpectrum &p,
+                    const UnpolarizedSpectrum &f, Mask active) const {
+        // For two spectra p and f, computes all the ratios of the individual
+        // components and multiplies them to the current values in p_over_f
         if constexpr (SpectralMis) {
-            constexpr size_t n = array_size_v<Spectrum>;
-            for (size_t i = 0; i < n; ++i) {
-                for (size_t j = 0; j < n; ++j) {
-                    Float f_i = depolarize(f).coeff(i);
-                    Float p_j = depolarize(p).coeff(j);
-                    Mask invalid = eq(f_i, 0.f) || enoki::isinf(f_i) || enoki::isinf(p_j);
-                    Float value = p_over_f[i * n + j] * select(invalid, 0.f, p_j / f_i);
-                    // if p >> f, then a) p/f becomes inf and b) sample has such a small contribution that we can set it to zero
-                    masked(value, enoki::isinf(value)) = 0.f;
-                    masked(p_over_f[i * n + j], active) = value;
-                }
+            for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
+                UnpolarizedSpectrum ratio = p_over_f[i] * (p / f.coeff(i));
+                masked(p_over_f[i], active) = select(isfinite(ratio), ratio, 0.f);
             }
         } else {
-            UnpolarizedSpectrum f_d = depolarize(f);
-            UnpolarizedSpectrum p_d = depolarize(p);
-            Mask invalid = eq(hmin(abs(f_d)), 0.f) || enoki::isinf(hmax(f_d)) || enoki::isinf(hmax(p_d));
-            Spectrum value = p_over_f * select(invalid, 0.f, p_d / f_d);
-            masked(value, enoki::isinf(hmax(value))) = 0.f;
-            masked(p_over_f, active) = value;
+            auto ratio = p_over_f * (p / f);
+            masked(p_over_f, active) = select(isfinite(ratio), ratio, 0.f);
         }
     }
 
-
-    MTS_INLINE
-    void set_weights(WeightMatrix& target, const WeightMatrix &source, Mask active) const {
-        if constexpr (SpectralMis) {
-            constexpr size_t n = array_size_v<Spectrum>;
-            for (size_t i = 0; i < n; ++i) {
-                for (size_t j = 0; j < n; ++j) {
-                    masked(target[i * n + j], active) = source[i * n + j];
-                }
-            }
-        } else {
-            masked(target, active) = source;
-        }
-    }
-
-    Spectrum mis_weight(const WeightMatrix& p_over_f) const {
+    UnpolarizedSpectrum mis_weight(const WeightMatrix& p_over_f) const {
         if constexpr (SpectralMis) {
             constexpr size_t n = array_size_v<Spectrum>;
             UnpolarizedSpectrum weight(0.0f);
             for (size_t i = 0; i < n; ++i) {
-                Float sum = 0.0f;
-                for (size_t j = 0; j < n; ++j)
-                    sum += p_over_f[i * n + j];
+                Float sum = hsum(p_over_f[i]);
                 weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
             }
             return weight;
         } else {
-            Mask invalid = eq(hmin(abs(depolarize(p_over_f))), 0.f);
-            return select(invalid, 0.f, 1.f / depolarize(p_over_f));
+            Mask invalid = eq(hmin(abs(p_over_f)), 0.f);
+            return select(invalid, 0.f, 1.f / p_over_f);
         }
     }
 
     // returns MIS'd throughput/pdf of two full paths represented by p_over_f1 and p_over_f2
-    Spectrum mis_weight(const WeightMatrix& p_over_f1, const WeightMatrix& p_over_f2) const {
+    UnpolarizedSpectrum mis_weight(const WeightMatrix& p_over_f1, const WeightMatrix& p_over_f2) const {
         UnpolarizedSpectrum weight(0.0f);
         if constexpr (SpectralMis) {
             constexpr size_t n = array_size_v<Spectrum>;
+            auto sum_matrix = p_over_f1 + p_over_f2;
             for (size_t i = 0; i < n; ++i) {
-                Float sum = 0.0f;
-                for (size_t j = 0; j < n; ++j)
-                    sum += p_over_f1[i * n + j] + p_over_f2[i * n + j];
+                Float sum = hsum(sum_matrix[i]);
                 weight[i] = select(eq(sum, 0.f), 0.0f, n / sum);
             }
         } else {
-            UnpolarizedSpectrum sum = depolarize(p_over_f1 + p_over_f2);
+            auto sum = p_over_f1 + p_over_f2;
             weight = select(eq(hmin(abs(sum)), 0.f), 0.0f, 1.f / sum);
         }
         return weight;
