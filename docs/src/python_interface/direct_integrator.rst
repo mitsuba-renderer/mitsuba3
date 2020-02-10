@@ -12,7 +12,7 @@ The main rendering routing can be implemented in around 30 lines of code:
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
-   :lines: 21-54
+   :lines: 22-55
 
 The code is very similar to the direct illumination integrator implemented in C++ (in :code:`src/integrators/direct.cpp`).
 The function takes the current scene, sampler and array of rays as arguments.
@@ -30,7 +30,7 @@ To then call member functions of these different BSDFs, we have to invoke the ac
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
-   :lines: 37-38
+   :lines: 38-39
 
 This ensures that implementation provided by the different BSDF models will be called.
 Other than that, the code and used interfaces are nearly identical to the C++ version.
@@ -47,7 +47,7 @@ Since we already defined a function :code:`integrator_sample` with the right int
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
-   :lines: 57-70
+   :lines: 58-70
 
 This integrator not only returns the color, but also additionally renders out the depth of the scene.
 When using this integrator, Mitsuba will output a multichannel EXR file with a separate depth channel.
@@ -60,7 +60,7 @@ This allows Mitsuba to instantiate this new integrator when loading a scene:
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
-   :lines: 73
+   :lines: 74
 
 The :code:`register_integrator` function takes the name of our new plugin and a function to construct new instances.
 After that, we can use our new integrator in a scene by specifying
@@ -73,4 +73,4 @@ The scene is then rendered by calling the standard :code:`render` function:
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
-   :lines: 77-87
+   :lines: 78-88

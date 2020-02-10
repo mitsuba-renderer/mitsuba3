@@ -1,21 +1,22 @@
 import os
-
-import numpy as np
-
 import enoki as ek
 import mitsuba
-from mitsuba.gpu_rgb.core import Thread, xml
-from mitsuba.gpu_rgb.core.xml import load_file
-from mitsuba.gpu_rgb.render import (BSDF, BSDFContext, BSDFFlags,
-                                    DirectionSample3f, Emitter, ImageBlock,
-                                    SamplingIntegrator, has_flag,
-                                    register_integrator)
+
+# Set the desired mitsuba variant
+mitsuba.set_variant('gpu_rgb')
+
+from mitsuba.core import Float, Vector3f, Thread, xml
+from mitsuba.core.xml import load_file
+from mitsuba.render import (BSDF, BSDFContext, BSDFFlags,
+                            DirectionSample3f, Emitter, ImageBlock,
+                            SamplingIntegrator, has_flag,
+                            register_integrator)
 
 
 def mis_weight(pdf_a, pdf_b):
     pdf_a *= pdf_a
     pdf_b *= pdf_b
-    return ek.select(pdf_a > 0.0, pdf_a / (pdf_a + pdf_b), ek.FloatC(0.0))
+    return ek.select(pdf_a > 0.0, pdf_a / (pdf_a + pdf_b), Float(0.0))
 
 
 def integrator_sample(scene, sampler, rays, active=True):
@@ -24,7 +25,7 @@ def integrator_sample(scene, sampler, rays, active=True):
 
     # Visible emitters
     emitter_vis = si.emitter(scene, active)
-    result = ek.select(active, Emitter.eval_vec(emitter_vis, si, active), ek.Vector3fC(0.0))
+    result = ek.select(active, Emitter.eval_vec(emitter_vis, si, active), Vector3f(0.0))
 
     ctx = BSDFContext()
     bsdf = si.bsdf(rays)
@@ -36,8 +37,8 @@ def integrator_sample(scene, sampler, rays, active=True):
     wo = si.to_local(ds.d)
     bsdf_val = BSDF.eval_vec(bsdf, ctx, si, wo, active_e)
     bsdf_pdf = BSDF.pdf_vec(bsdf, ctx, si, wo, active_e)
-    mis = ek.select(ds.delta, ek.FloatC(1), mis_weight(ds.pdf, bsdf_pdf))
-    result += ek.select(active_e, emitter_val * bsdf_val * mis, ek.Vector3fC(0))
+    mis = ek.select(ds.delta, Float(1), mis_weight(ds.pdf, bsdf_pdf))
+    result += ek.select(active_e, emitter_val * bsdf_val * mis, Vector3f(0))
 
     # BSDF sampling
     active_b = active
@@ -49,9 +50,9 @@ def integrator_sample(scene, sampler, rays, active=True):
     delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
     ds = DirectionSample3f(si_bsdf, si)
     ds.object = emitter
-    emitter_pdf = ek.select(delta, ek.FloatC(0), scene.pdf_emitter_direction(si, ds, active_b))
-    result += ek.select(active_b, bsdf_val * emitter_val * mis_weight(bs.pdf, emitter_pdf), ek.Vector3fC(0))
-    return result, si.is_valid(), ek.select(si.is_valid(), si.t, ek.FloatC(0.0))
+    emitter_pdf = ek.select(delta, Float(0), scene.pdf_emitter_direction(si, ds, active_b))
+    result += ek.select(active_b, bsdf_val * emitter_val * mis_weight(bs.pdf, emitter_pdf), Vector3f(0))
+    return result, si.is_valid(), ek.select(si.is_valid(), si.t, Float(0.0))
 
 
 class MyDirectIntegrator(SamplingIntegrator):

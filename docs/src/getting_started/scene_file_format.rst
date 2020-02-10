@@ -9,7 +9,7 @@ Mitsuba uses simple XML-based format to represent scenes. As shown in the follow
         <!-- ... -->
     </scene>
 
-The scene version attribute denotes the release of Mitsuba that was used to create the scene. This information allows mitsuba to always correctly process the file irregardless of any potential future changes in the scene description language.
+The `version` attribute denotes the release of Mitsuba that was used to create the scene. This information allows mitsuba to always correctly process the file irregardless of any potential future changes in the scene description language.
 
 
 Mitsuba Object
@@ -22,7 +22,7 @@ The scene file describes a set of instances of plugins (*objects*) and how they 
     :caption: This table lists the different kind of *objects* and their respective tags. It also provides a non-exhaustive list of the available plugins associated to each tag.
 
     .. list-table::
-        :widths: 20 50 30
+        :widths: 17 53 30
         :header-rows: 1
 
         * - XML tag
@@ -99,12 +99,12 @@ Strings can be passed in a similar way:
 RGB color values
 ****************
 
-.. warning:: **TODO**
+.. todo:: Write this section
 
 Color spectra
 ****************
 
-.. warning:: **TODO**
+.. todo::  Write this section
 
 Vectors, Positions
 ******************

@@ -1,10 +1,12 @@
 import os
 import numpy as np
-
 import mitsuba
 
-from mitsuba.scalar_rgb.core  import Bitmap, Struct, Thread
-from mitsuba.scalar_rgb.core .xml import load_file
+# Set the desired mitsuba variant
+mitsuba.set_variant('scalar_rgb')
+
+from mitsuba.core  import Bitmap, Struct, Thread
+from mitsuba.core .xml import load_file
 
 
 SCENE_DIR = '../../../resources/data/scenes/'
@@ -20,9 +22,7 @@ Thread.thread().file_resolver().append(directory_name)
 scene = load_file(filename)
 
 # Call the scene's integrator to render the loaded scene
-
 scene.integrator().render(scene, scene.sensors()[0])
-
 
 # After rendering, the rendered data is stored in the film
 film = scene.sensors()[0].film()

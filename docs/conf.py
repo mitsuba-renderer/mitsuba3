@@ -147,6 +147,9 @@ extensions.append('figtable')
 extensions.append('numfig')
 extensions.append('pluginparameters')
 
+extensions.append('sphinx.ext.todo')
+todo_include_todos = True
+
 extensions.append('sphinxcontrib.bibtex')
 # Guzzle theme options (see theme.conf for more information)
 html_theme_options = {
