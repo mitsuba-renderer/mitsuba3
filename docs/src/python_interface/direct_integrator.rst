@@ -10,7 +10,7 @@ The code for this example can be found in :code:`docs/examples/03_direct_integra
 
 The main rendering routing can be implemented in around 30 lines of code:
 
-.. literalinclude:: ../examples/03_direct_integrator/direct_integrator.py
+.. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 21-54
 
@@ -28,7 +28,7 @@ This function will be invoked for an array of different rays, hence each ray can
 Therefore, :code:`bsdf = si.bsdf(rays)` will be an array of different BSDF pointers.
 To then call member functions of these different BSDFs, we have to invoke the according vectorized functions, e.g.
 
-.. literalinclude:: ../examples/03_direct_integrator/direct_integrator.py
+.. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 37-38
 
@@ -45,7 +45,7 @@ By using this class to define our integrator, we can then rely on the existing m
 
 Since we already defined a function :code:`integrator_sample` with the right interface, defining a new integrator becomes very simple:
 
-.. literalinclude:: ../examples/03_direct_integrator/direct_integrator.py
+.. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 57-70
 
@@ -58,7 +58,7 @@ If no AOVs are needed, you can just return an empty list instead.
 After defining this new integrator class, we have to register it as a plugin.
 This allows Mitsuba to instantiate this new integrator when loading a scene:
 
-.. literalinclude:: ../examples/03_direct_integrator/direct_integrator.py
+.. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 73
 
@@ -71,6 +71,6 @@ After that, we can use our new integrator in a scene by specifying
 
 The scene is then rendered by calling the standard :code:`render` function:
 
-.. literalinclude:: ../examples/03_direct_integrator/direct_integrator.py
+.. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 77-87

@@ -58,6 +58,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :caption: References
     :numbered:
 
+    plugin_reference/intro
     ../generated/plugins
 
 

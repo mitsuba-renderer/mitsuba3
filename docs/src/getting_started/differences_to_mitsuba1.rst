@@ -65,8 +65,7 @@ In the following we list the main missing features
 - Bidirectional path tracing
 - Photon mapping
 - Energy redistribution path tracing
-- Arbitrary output variables (AOVs)
-- Analytic shapes (spheres, cylinders, hair)
+- Analytic shape for hair
 - Quasi Monte Carlo or stratified sampling
 - Motion blur
 - Diffusion-based subsurface scattering

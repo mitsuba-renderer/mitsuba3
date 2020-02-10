@@ -1,0 +1,6 @@
+.. _plugins:
+
+Plugin reference
+================
+
+
