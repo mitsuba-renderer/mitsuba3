@@ -142,7 +142,7 @@ public:
                     if (any_or<true>(active_e)) {
                         Ray3f nee_ray = mi.spawn_ray(ds.d);
                         nee_ray.mint = 0.f;
-                        auto [emitted, _] = evaluate_direct_light(mi, scene, sampler, medium, nee_ray,
+                        auto [emitted, _] = evaluate_direct_light(mi, scene, sampler, medium, nee_ray, true, si,
                                                                   ds.dist, channel, active_e);
                         Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
                         masked(result, active_e) += throughput * phase_val * emitted / ds.pdf;
@@ -186,7 +186,7 @@ public:
                         Ray3f nee_ray = si.spawn_ray(ds.d);
 
                         // TODO: This has to be zero if its not reaching the same point
-                        auto [emitted, _] = evaluate_direct_light(si, scene, sampler, medium, nee_ray,
+                        auto [emitted, _] = evaluate_direct_light(si, scene, sampler, medium, nee_ray, true, si,
                                                                   ds.dist, channel, active_e);
 
                         // Query the BSDF for that emitter-sampled direction
@@ -220,13 +220,23 @@ public:
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
                                    any(neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
                 act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
+
+                // Intersect the indirect ray against the scene
+                Mask intersect = active_surface && needs_intersection && add_emitter;
+                SurfaceInteraction3f si_new = si;
+                masked(si_new, intersect) = scene->ray_intersect(ray, intersect);
+                needs_intersection &= !intersect;
+
                 auto [emitted, emitter_pdf] = evaluate_direct_light(si, scene, sampler,
-                                                                    medium, ray, -1.f, channel, add_emitter);
+                                                                    medium, ray, false, si_new,
+                                                                    -1.f, channel, add_emitter);
                 result += select(add_emitter && neq(emitter_pdf, 0),
                                 mis_weight(bs.pdf, emitter_pdf) * throughput * emitted, 0.0f);
 
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
+
+                masked(si, intersect) = si_new;
             }
             active &= (active_surface | active_medium);
         }
@@ -239,6 +249,7 @@ public:
     std::pair<Spectrum, Float>
     evaluate_direct_light(const Interaction3f &ref_interaction, const Scene *scene,
                           Sampler *sampler, MediumPtr medium, Ray3f ray,
+                          Mask needs_intersection, const SurfaceInteraction3f &si_ray,
                           Float dist, UInt32 channel, Mask active) const {
 
         using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
@@ -248,13 +259,11 @@ public:
         Float emitter_pdf(0.0f);
 
         Float total_dist = 0.f;
-        SurfaceInteraction3f si;
-        Mask needs_intersection = true;
+        SurfaceInteraction3f si = si_ray;
         while (any(active)) {
             Mask escaped_medium = false;
             Mask active_medium  = active && neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
-
             SurfaceInteraction3f si_medium;
             if (any_or<true>(active_medium)) {
                 auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
@@ -280,6 +289,7 @@ public:
             // Handle interactions with surfaces
             Mask intersect = active_surface && needs_intersection;
             masked(si, intersect)    = scene->ray_intersect(ray, intersect);
+            needs_intersection &= !intersect;
             active_surface |= escaped_medium;
             masked(total_dist, active_surface) += si.t;
 
