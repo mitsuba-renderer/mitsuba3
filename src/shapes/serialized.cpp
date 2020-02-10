@@ -8,6 +8,136 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _shape-serialized:
+
+Serialized mesh loader (:monosp:`serialized`)
+---------------------------------------------
+
+.. pluginparameters::
+
+ * - filename
+   - |string|
+   - Filename of the OBJ file that should be loaded
+ * - shape_index
+   - |int|
+   - A :monosp:`.serialized` file may contain several separate meshes. This parameter
+     specifies which one should be loaded. (Default: 0, i.e. the first one)
+ * - face_normals
+   - |bool|
+   - When set to |true|, any existing or computed vertex normals are
+     discarded and \emph{face normals} will instead be used during rendering.
+     This gives the rendered object a faceted appearance.(Default: |false|)
+ * - flip_tex_coords
+   - |bool|
+   - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation.
+     (Default: none (i.e. object space = world space))
+
+The serialized mesh format represents the most space and time-efficient way
+of getting geometry information into Mitsuba. It stores indexed triangle meshes
+in a lossless gzip-based encoding that (after decompression) nicely matches up
+with the internally used data structures. Loading such files is considerably
+faster than the :ref:`shape-ply` plugin and orders of magnitude faster than
+the :ref:`shape-obj` plugin.
+
+Format description
+******************
+
+The :monosp:`serialized` file format uses the little endian encoding, hence
+all fields below should be interpreted accordingly. The contents are structured as
+follows:
+
+.. figtable::
+    :label: table-serialized-format
+
+    .. list-table::
+        :widths: 20 80
+        :header-rows: 1
+
+        * - Type
+          - Content
+        * - :monosp:`uint16`
+          - File format identifier: :code:`0x041C`
+        * - :monosp:`uint16`
+          - File version identifier. Currently set to :code:`0x0004`
+        * - :math:`\rightarrow`
+          - From this point on, the stream is compressed by the :monosp:`DEFLATE` algorithm.
+        * - :math:`\rightarrow`
+          - The used encoding is that of the :monosp:`zlib` library.
+        * - :monosp:`uint32`
+          - An 32-bit integer whose bits can be used to specify the following flags:
+
+            - :code:`0x0001`: The mesh data includes per-vertex normals
+            - :code:`0x0002`: The mesh data includes texture coordinates
+            - :code:`0x0008`: The mesh data includes vertex colors
+            - :code:`0x0010`: Use face normals instead of smothly interpolated vertex normals.
+              Equivalent to specifying :monosp:`face_normals=true` to the plugin.
+            - :code:`0x1000`: The subsequent content is represented in single precision
+            - :code:`0x2000`: The subsequent content is represented in double precision
+        * - :monosp:`string`
+          - A null-terminated string (utf-8), which denotes the name of the shape.
+        * - :monosp:`uint64`
+          - Number of vertices in the mesh
+        * - :monosp:`uint64`
+          - Number of triangles in the mesh
+        * - :monosp:`array`
+          - Array of all vertex positions (X, Y, Z, X, Y, Z, ...) specified in binary single or
+            double precision format (as denoted by the flags)
+        * - :monosp:`array`
+          - Array of all vertex normal directions (X, Y, Z, X, Y, Z, ...) specified in binary single
+            or double precision format. When the mesh has no vertex normals, this field is omitted.
+        * - :monosp:`array`
+          - Array of all vertex texture coordinates (U, V, U, V, ...) specified in binary single or
+            double precision format. When the mesh has no texture coordinates, this field is omitted.
+        * - :monosp:`array`
+          - Array of all vertex colors (R, G, B, R, G, B, ...) specified in binary single or double
+            precision format. When the mesh has no vertex colors, this field is omitted.
+        * - :monosp:`array`
+          - Indexed triangle data (:code:`[i1, i2, i3]`, :code:`[i1, i2, i3]`, ..) specified in
+            :monosp:`uint32` or in :monosp:`uint64` format (the latter is used when the number of
+            vertices exceeds :code:`0xFFFFFFFF`).
+
+Multiple shapes
+***************
+
+It is possible to store multiple meshes in a single :monosp:`.serialized`
+file. This is done by simply concatenating their data streams,
+where every one is structured according to the above description.
+Hence, after each mesh, the stream briefly reverts back to an
+uncompressed format, followed by an uncompressed header, and so on.
+This is neccessary for efficient read access to arbitrary sub-meshes.
+
+End-of-file dictionary
+**********************
+In addition to the previous table, a :monosp:`.serialized` file also concludes with a brief summary
+at the end of the file, which specifies the starting position of each sub-mesh:
+
+.. figtable::
+    :label: table-serialized-end-of-file
+
+    .. list-table::
+        :widths: 20 80
+        :header-rows: 1
+
+        * - Type
+          - Content
+        * - :monosp:`uint64`
+          - File offset of the first mesh (in bytes)---this is always zero.
+        * - :monosp:`uint64`
+          - File offset of the second mesh
+        * - :math:`\cdots`
+          - :math:`\cdots`
+        * - :monosp:`uint64`
+          - File offset of the last sub-shape
+        * - :monosp:`uint32`
+          - Total number of meshes in the :monosp:`.serialized` file
+
+ */
+
 #define MTS_FILEFORMAT_HEADER     0x041C
 #define MTS_FILEFORMAT_VERSION_V3 0x0003
 #define MTS_FILEFORMAT_VERSION_V4 0x0004

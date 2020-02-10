@@ -12,13 +12,63 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Flat, rectangular shape, e.g. for use as a ground plane or area emitter.
- *
- * By default, the rectangle covers the XY-range [-1, 1]^2 and has a surface
- * normal that points into the positive $Z$ direction. To change the rectangle
- * scale, rotation, or translation, use the 'to_world' parameter.
+/**!
+
+.. _shape-rectangle:
+
+Rectangle (:monosp:`rectangle`)
+-------------------------------------------------
+
+.. pluginparameters::
+
+ * - to_world
+   - |transform|
+   - Specifies a linear object-to-world transformation. It is allowed to use non-uniform scaling,
+     but no shear. (Default: none (i.e. object space = world space))
+ * - flip_normals
+   - |bool|
+   - Is the rectangle inverted, i.e. should the normal vectors be flipped? (Default: |false|)
+
+\renderings{
+    \rendering{Two rectangles configured as a reflective surface and an
+    emitter (\lstref{rectangle})}{shape_rectangle}
+}
+
+This shape plugin describes a simple rectangular intersection primitive.
+It is mainly provided as a convenience for those cases when creating and
+loading an external mesh with two triangles is simply too tedious, e.g.
+when an area light source or a simple ground plane are needed.
+By default, the rectangle covers the XY-range :math:`[-1,1]\times[-1,1]`
+and has a surface normal that points into the positive Z-direction.
+To change the rectangle scale, rotation, or translation, use the
+:monosp:`to_world` parameter.
+
+
+The following XML snippet showcases a simple example involving two rectangle instances:
+
+.. code-block:: xml
+
+    <scene version=$\MtsVer$>
+        <shape type="rectangle">
+            <bsdf type="diffuse"/>
+        </shape>
+        <shape type="rectangle">
+            <transform name="to_world">
+                <rotate x="1" angle="90"/>
+                <scale x="0.4" y="0.3" z="0.2"/>
+                <translate y="1" z="0.2"/>
+            </transform>
+            <emitter type="area">
+                <spectrum name="intensity" value="3"/>
+            </emitter>
+        </shape>
+        <!-- ... other definitions ... -->
+    </scene>
+
+.. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
+
  */
+
 template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:

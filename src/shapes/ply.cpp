@@ -12,6 +12,43 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _shape-ply:
+
+PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
+----------------------------------------------------------
+
+.. pluginparameters::
+
+ * - filename
+   - |string|
+   - Filename of the OBJ file that should be loaded
+ * - face_normals
+   - |bool|
+   - When set to |true|, any existing or computed vertex normals are
+     discarded and \emph{face normals} will instead be used during rendering.
+     This gives the rendered object a faceted appearance.(Default: |false|)
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation.
+     (Default: none (i.e. object space $=$ world space))
+
+\renderings{
+    \rendering{The PLY plugin is useful for loading large geometry. (Dragon
+        statue courtesy of XYZ RGB)}{shape_ply_dragon}
+    \rendering{The Stanford bunny loaded with \code{face_normals=true}. Note
+        the faceted appearance.}{shape_ply_bunny}
+}
+
+This plugin implements a fast loader for the Stanford PLY format (both
+the ASCII and binary format). It is based on the :monosp:`libply` library by
+Ares Lagae (http://people.cs.kuleuven.be/~ares.lagae/libply).
+The current plugin implementation supports triangle meshes with optional
+UV coordinates, vertex normals, and vertex colors.
+
+ */
+
 template <typename Float, typename Spectrum>
 class PLYMesh final : public Mesh<Float, Spectrum> {
 public:

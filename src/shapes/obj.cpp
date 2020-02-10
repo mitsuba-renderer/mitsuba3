@@ -8,6 +8,57 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _shape-obj:
+
+Wavefront OBJ mesh loader (:monosp:`obj`)
+-----------------------------------------
+
+.. pluginparameters::
+
+ * - filename
+   - |string|
+   - Filename of the OBJ file that should be loaded
+ * - face_normals
+   - |bool|
+   - When set to |true|, any existing or computed vertex normals are
+     discarded and \emph{face normals} will instead be used during rendering.
+     This gives the rendered object a faceted appearance.(Default: |false|)
+ * - flip_tex_coords
+   - |bool|
+   - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation.
+     (Default: none (i.e. object space $=$ world space))
+
+\renderings{
+    \label{fig:rungholt}
+    \bigrendering{An example scene with both geometry and materials imported using the Wavefront OBJ mesh loader
+    (Neu Rungholt model courtesy of \texttt{kescha}, converted from Minecraft to OBJ by Morgan McGuire)}{shape_obj}
+}
+
+This plugin implements a simple loader for Wavefront OBJ files. It handles
+meshes containing triangles and quadrilaterals, and it also imports vertex normals
+and texture coordinates.
+
+Loading an ordinary OBJ file is as simple as writing:
+
+.. code-block:: xml
+
+    <shape type="obj">
+        <string name="filename" value="my_shape.obj"/>
+    </shape>
+
+.. note:: Importing geometry via OBJ files should only be used as an absolutely last resort. Due to
+          inherent limitations of this format, the files tend to be unreasonably large, and parsing
+          them requires significant amounts of memory and processing power. What's worse is that the
+          internally stored data is often truncated, causing a loss of precision.
+          If possible, use the \pluginref{ply} or \pluginref{serialized} plugins instead.
+
+ */
+
 template <bool Negate, size_t N>
 void advance(const char **start_, const char *end, const char (&delim)[N]) {
     const char *start = *start_;

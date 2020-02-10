@@ -13,13 +13,65 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Flat disk shape.
- *
- * By default, the disk has unit radius and is located at the origin. Its
- * surface normal points into the positive $Z$ direction. To change the disk
- * scale, rotation, or translation, use the 'to_world' parameter.
+
+/**!
+
+.. _shape-disk:
+
+Disk (:monosp:`disk`)
+-------------------------------------------------
+
+.. pluginparameters::
+
+ * - to_world
+   - |transform|
+   - Specifies a linear object-to-world transformation. Note that non-uniform scales are not
+     permitted! (Default: none (i.e. object space = world space))
+ * - flip_normals
+   - |bool|
+   - Is the disk inverted, i.e. should the normal vectors be flipped? (Default: |false|)
+
+\renderings{
+    \rendering{Rendering with an disk emitter and a textured disk, showing
+    the default parameterization. (\lstref{disk})}{shape_disk}
+}
+
+This shape plugin describes a simple disk intersection primitive. It is
+usually preferable over discrete approximations made from triangles.
+
+By default, the disk has unit radius and is located at the origin. Its
+surface normal points into the positive Z-direction.
+To change the disk scale, rotation, or translation, use the
+:monosp:`to_world` parameter.
+
+The following XML snippet showcases a simple example involving two disk instances:
+
+.. code-block:: xml
+
+    <scene version="2.0.0">
+        <shape type="disk">
+            <bsdf type="diffuse">
+                <texture name="reflectance" type="checkerboard">
+                    <float name="uvscale" value="5"/>
+                </texture>
+            </bsdf>
+        </shape>
+        <shape type="disk">
+            <transform name="to_world">
+                <rotate x="1" angle="90"/>
+                <scale value="0.3"/>
+                <translate y="1" z="0.3"/>
+            </transform>
+            <emitter type="area">
+                <spectrum name="intensity" value="4"/>
+            </emitter>
+        </shape>
+    </scene>
+
+.. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
+
  */
+
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:

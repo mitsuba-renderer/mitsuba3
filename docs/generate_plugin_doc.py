@@ -8,26 +8,36 @@ import os
 import re
 
 BSDF_ORDERING = ['diffuse',
-                'dielectric',
-                'thindielectric',
-                'roughdielectric',
-                'conductor',
-                'roughconductor',
-                'plastic',
-                'roughplastic',
-                'measured',
-                'blendbsdf',
-                'mask',
-                'twosided']
+                 'dielectric',
+                 'thindielectric',
+                 'roughdielectric',
+                 'conductor',
+                 'roughconductor',
+                 'plastic',
+                 'roughplastic',
+                 'measured',
+                 'blendbsdf',
+                 'mask',
+                 'twosided']
 
 EMITTER_ORDERING = ['area',
                     'point',
                     'constant',
                     'envmap']
 
+SHAPE_ORDERING = ['obj',
+                  'ply',
+                  'serialized',
+                  'sphere',
+                  'cylinder',
+                  'disk',
+                  'rectangle']
+
 INTEGRATOR_ORDERING = ['direct',
                        'path',
                        'aov']
+
+FILM_ORDERING = ['hdrfilm']
 
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
@@ -95,7 +105,7 @@ def generate(build_dir):
     original_wd = os.getcwd()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     with open(os.path.join(build_dir, 'plugins.rst'), 'w') as f:
-        # process_src(f, 'shapes')
+        process_src(f, 'shapes', 'section_shape', SHAPE_ORDERING)
         process_src(f, 'bsdfs', 'section_bsdf', BSDF_ORDERING)
         # process_src(f, 'textures')
         # process_src(f, 'subsurface')
@@ -106,7 +116,7 @@ def generate(build_dir):
         # process_src(f, 'sensors')
         process_src(f, 'integrators', 'section_integrator', INTEGRATOR_ORDERING)
         # process_src(f, 'samplers')
-        # process_src(f, 'films')
+        process_src(f, 'films', 'section_film', FILM_ORDERING)
         # process_src(f, 'rfilters')
 
     os.chdir(original_wd)

@@ -13,9 +13,64 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Cylinder shape.
+/**!
+
+.. _shape-cylinder:
+
+Cylinder (:monosp:`cylinder`)
+----------------------------------------------------
+
+.. pluginparameters::
+
+
+ * - p0
+   - |point|
+   - Object-space starting point of the cylinder's centerline.
+     (Default: (0, 0, 0))
+ * - p1
+   - |point|
+   - Object-space endpoint of the cylinder's centerline (Default: (0, 0, 1))
+ * - radius
+   - |float|
+   - Radius of the cylinder in object-space units (Default: 1)
+ * - flip_normals
+   - |bool|
+   -  Is the cylinder inverted, i.e. should the normal vectors
+      be flipped? (Default: |false|, i.e. the normals point outside)
+ * - to_world
+   - |transform|
+   - Specifies an optional linear object-to-world transformation. Note that non-uniform scales are
+     not permitted! (Default: none (i.e. object space = world space))
+
+\renderings{
+    \rendering{Cylinder with the default one-sided shading}
+        {shape_cylinder_onesided}
+    \rendering{Cylinder with two-sided shading, see \lstref{cylinder-twosided}}
+        {shape_cylinder_twosided}
+}
+
+This shape plugin describes a simple cylinder intersection primitive.
+It should always be preferred over approximations modeled using
+triangles. Note that the cylinder does not have endcaps -- also,
+it's interior has inward-facing normals, which most scattering
+models in Mitsuba will treat as fully absorbing. If this is not
+desirable, consider using the :ref:`bsdf-twosided` plugin.
+
+A simple example for instantiating a cylinder, whose interior is visible
+
+.. code-block:: xml
+
+    <shape type="cylinder">
+        <float name="radius" value="0.3"/>
+        <bsdf type="twosided">
+            <bsdf type="diffuse"/>
+        </bsdf>
+    </shape>
+
+.. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
+
  */
+
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:

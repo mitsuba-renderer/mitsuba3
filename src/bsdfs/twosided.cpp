@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _bsdf_twosided:
+.. _bsdf-twosided:
 
 Two-sided BRDF adapter (:monosp:`twosided`)
 --------------------------------------------
