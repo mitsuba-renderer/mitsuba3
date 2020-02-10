@@ -177,8 +177,9 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
                          ( eta_it * cos_theta_i_abs + cos_theta_t);
 
     auto index_matched = eq(eta, 1.f);
-    masked(a_s, index_matched) = 0.f;
-    masked(a_p, index_matched) = 0.f;
+    auto invalid       = eq(eta, 0.f);
+    masked(a_s, index_matched || invalid) = 0.f;
+    masked(a_p, index_matched || invalid) = 0.f;
 
     /* Adjust the sign of the transmitted direction */
     Float cos_theta_t_signed =
@@ -253,9 +254,10 @@ fresnel_polarized(Float cos_theta_i, Complex<Float> eta) {
     Complex<Float> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
                          ( eta_it * cos_theta_i_abs + cos_theta_t);
 
-    auto index_matched = eq(squared_norm(eta), 1.f);
-    masked(a_s, index_matched) = 0.f;
-    masked(a_p, index_matched) = 0.f;
+    auto index_matched = eq(squared_norm(eta), 1.f) && eq(imag(eta), 0.f);
+    auto invalid       = eq(squared_norm(eta), 0.f);
+    masked(a_s, index_matched || invalid) = 0.f;
+    masked(a_p, index_matched || invalid) = 0.f;
 
     /* Adjust the sign of the transmitted direction */
     Float cos_theta_t_signed =
