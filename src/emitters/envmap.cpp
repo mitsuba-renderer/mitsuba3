@@ -154,7 +154,8 @@ public:
 
         Float dist = 2.f * m_bsphere.radius;
 
-        Float inv_sin_theta = safe_rsqrt(sqr(d.x()) + sqr(d.z()));
+        Float sin_theta = safe_sqrt(sqr(d.x()) + sqr(d.z())),
+              inv_sin_theta = rcp(max(sin_theta, math::Epsilon<Float>));
 
         d = m_world_transform->eval(it.time, active).transform_affine(d);
 
@@ -186,7 +187,8 @@ public:
                              safe_acos(d.y()) * math::InvPi<Float>);
         uv -= floor(uv);
 
-        Float inv_sin_theta = safe_rsqrt(sqr(d.x()) + sqr(d.z()));
+        Float sin_theta = safe_sqrt(sqr(d.x()) + sqr(d.z())),
+              inv_sin_theta = rcp(max(sin_theta, math::Epsilon<Float>));
         return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>)));
     }
 
