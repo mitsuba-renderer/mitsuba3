@@ -8953,7 +8953,7 @@ static const char *__doc_mitsuba_variant_visit = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_beckmann_to_square = R"doc(Inverse of the mapping square_to_uniform_cone)doc";
 
-static const char *__doc_mitsuba_warp_bilinear_to_square = R"doc()doc";
+static const char *__doc_mitsuba_warp_bilinear_to_square = R"doc(Inverse of square_to_bilinear)doc";
 
 static const char *__doc_mitsuba_warp_circ = R"doc(//! @{ \name Warping techniques that operate in the plane)doc";
 
@@ -8963,17 +8963,40 @@ static const char *__doc_mitsuba_warp_detail_i0 = R"doc()doc";
 
 static const char *__doc_mitsuba_warp_detail_log_i0 = R"doc()doc";
 
+static const char *__doc_mitsuba_warp_interval_to_linear =
+R"doc(Importance sample a linear interpolant
+
+Given a linear interpolant on the unit interval with boundary values
+``v0``, ``v1`` (where ``v1`` is the value at ``x=1``), warp a
+uniformly distributed input sample ``sample`` so that the resulting
+probability distribution matches the linear interpolant.)doc";
+
 static const char *__doc_mitsuba_warp_interval_to_nonuniform_tent =
 R"doc(Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
 distribution with nodes ``{a, b, c}``)doc";
 
 static const char *__doc_mitsuba_warp_interval_to_tent = R"doc(Warp a uniformly distributed sample on [0, 1] to a tent distribution)doc";
 
+static const char *__doc_mitsuba_warp_linear_to_interval = R"doc(Inverse of interval_to_linear)doc";
+
 static const char *__doc_mitsuba_warp_square_to_beckmann = R"doc(Warp a uniformly distributed square sample to a Beckmann distribution)doc";
 
 static const char *__doc_mitsuba_warp_square_to_beckmann_pdf = R"doc(Probability density of square_to_beckmann())doc";
 
-static const char *__doc_mitsuba_warp_square_to_bilinear = R"doc()doc";
+static const char *__doc_mitsuba_warp_square_to_bilinear =
+R"doc(Importance sample a bilinear interpolant
+
+Given a bilinear interpolant on the unit square with corner values
+``v00``, ``v10``, ``v01``, ``v11`` (where ``v10`` is the value at
+(x,y) == (0, 0)), warp a uniformly distributed input sample ``sample``
+so that the resulting probability distribution matches the linear
+interpolant.
+
+The implementation first samples the marginal distribution to obtained
+``x``, followed by sampling the conditional distribution to obtain
+``y``.
+
+Returns the sampled point and PDF for convenience.)doc";
 
 static const char *__doc_mitsuba_warp_square_to_bilinear_pdf = R"doc()doc";
 

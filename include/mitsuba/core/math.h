@@ -239,7 +239,7 @@ template <typename T> T log2i_ceil(T value) {
  * \brief Find an interval in an ordered set
  *
  * This function performs a binary search to find an index \c i such that
- * <tt>pred(i)<tt? is \c true and <tt>pred(i+1)</tt> is \c false, where \c pred
+ * <tt>pred(i)</tt> is \c true and <tt>pred(i+1)</tt> is \c false, where \c pred
  * is a user-specified predicate that monotonically decreases over this range
  * (i.e. max one \c true -> \c false transition).
  *

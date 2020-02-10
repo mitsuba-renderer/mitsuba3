@@ -280,6 +280,10 @@ template <typename Float_> struct CoreAliases {
     using ScalarFloat = scalar_t<Float>;                                                           \
     MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
+#define MTS_MASK_ARGUMENT(mask)                                                                    \
+    if constexpr (is_scalar_v<Float>)                                                              \
+        active = true;
+
 NAMESPACE_BEGIN(filesystem)
 class path;
 NAMESPACE_END(filesystem)

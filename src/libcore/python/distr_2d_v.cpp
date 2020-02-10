@@ -3,7 +3,7 @@
 #include <pybind11/numpy.h>
 #include <enoki/stl.h>
 
-template <typename Warp> void bind_warp(py::module &m,
+template <typename Warp> auto bind_warp(py::module &m,
         const char *name,
         const char *doc,
         const char *doc_constructor,
@@ -19,52 +19,66 @@ template <typename Warp> void bind_warp(py::module &m,
 
     py::object zero = py::cast(enoki::zero<Array<ScalarFloat, Warp::Dimension>>());
 
-    py::class_<Warp>(m, name, py::module_local(), doc)
-        .def(py::init([](const NumPyArray &data,
-                         const std::array<std::vector<ScalarFloat>, Warp::Dimension> &param_values_in,
-                         bool normalize, bool build_hierarchy) {
-                 if (data.ndim() != Warp::Dimension + 2)
-                     throw std::domain_error("'data' array has incorrect dimension");
+    auto constructor =
+        py::init([](const NumPyArray &data,
+                    const std::array<std::vector<ScalarFloat>, Warp::Dimension>
+                        &param_values_in,
+                    bool normalize, bool build_hierarchy) {
+            if (data.ndim() != Warp::Dimension + 2)
+                throw std::domain_error("'data' array has incorrect dimension");
 
-                 std::array<uint32_t, Warp::Dimension> param_res;
-                 std::array<const ScalarFloat *, Warp::Dimension> param_values;
+            std::array<uint32_t, Warp::Dimension> param_res;
+            std::array<const ScalarFloat *, Warp::Dimension> param_values;
 
-                 for (size_t i = 0; i < Warp::Dimension; ++i) {
-                     if (param_values_in[i].size() != (size_t) data.shape(i))
-                         throw std::domain_error("'param_values' array has incorrect dimension");
-                     param_values[i] = param_values_in[i].data();
-                     param_res[i] = param_values_in[i].size();
-                 }
+            for (size_t i = 0; i < Warp::Dimension; ++i) {
+                if (param_values_in[i].size() != (size_t) data.shape(i))
+                    throw std::domain_error(
+                        "'param_values' array has incorrect dimension");
+                param_values[i] = param_values_in[i].data();
+                param_res[i]    = param_values_in[i].size();
+            }
 
-                 return Warp(data.data(),
-                             ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
-                                            (uint32_t) data.shape(data.ndim() - 2)),
-                             param_res, param_values, normalize, build_hierarchy);
+            return Warp(data.data(),
+                        ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
+                                       (uint32_t) data.shape(data.ndim() - 2)),
+                        param_res, param_values, normalize, build_hierarchy);
+        });
+
+    auto warp = py::class_<Warp>(m, name, py::module_local(), doc);
+
+    if constexpr (Warp::Dimension == 0)
+        warp.def(std::move(constructor), "data"_a,
+                 "param_values"_a = py::list(), "normalize"_a = true,
+                 "build_hierarchy"_a = true, doc_constructor);
+    else
+        warp.def(std::move(constructor), "data"_a, "param_values"_a,
+                 "normalize"_a = true, "build_hierarchy"_a = true,
+                 doc_constructor);
+
+    warp.def("sample",
+             vectorize([](const Warp *w, const Vector2f &sample,
+                          const Array<Float, Warp::Dimension> &param,
+                          Mask active) {
+                 return w->sample(sample, param.data(), active);
              }),
-             "data"_a, "param_values"_a, "normalize"_a = true, "build_hierarchy"_a = true,
-             doc_constructor)
-        .def("sample",
-            vectorize([](const Warp *w, const Vector2f &sample,
-                         const Array<Float, Warp::Dimension> &param,
-                         Mask active) {
-                return w->sample(sample, param.data(), active);
-            }),
-            "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
+             "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
         .def("invert",
-            vectorize([](const Warp *w, const Vector2f &sample,
-                         const Array<Float, Warp::Dimension> &param,
-                         Mask active) {
-                return w->invert(sample, param.data(), active);
-            }),
-            "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
+             vectorize([](const Warp *w, const Vector2f &sample,
+                          const Array<Float, Warp::Dimension> &param,
+                          Mask active) {
+                 return w->invert(sample, param.data(), active);
+             }),
+             "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
         .def("eval",
-            vectorize([](const Warp *w, const Vector2f &pos,
-                         const Array<Float, Warp::Dimension> &param,
-                         Mask active) {
-                return w->eval(pos, param.data(), active);
-            }),
-            "pos"_a, "param"_a = zero, "active"_a = true, doc_eval)
+             vectorize([](const Warp *w, const Vector2f &pos,
+                          const Array<Float, Warp::Dimension> &param,
+                          Mask active) {
+                 return w->eval(pos, param.data(), active);
+             }),
+             "pos"_a, "param"_a = zero, "active"_a = true, doc_eval)
         .def("__repr__", &Warp::to_string);
+
+    return warp;
 }
 
 template <typename Warp> void bind_warp_hierarchical(py::module &m, const char *name) {
@@ -99,13 +113,13 @@ MTS_PY_EXPORT(Hierarchical2D) {
 MTS_PY_EXPORT(Marginal2D) {
     MTS_PY_IMPORT_TYPES()
 
-    bind_warp_marginal<Marginal2D<Float, 0, false>>(m, "Marginal2DDiscrete0");
-    bind_warp_marginal<Marginal2D<Float, 1, false>>(m, "Marginal2DDiscrete1");
-    bind_warp_marginal<Marginal2D<Float, 2, false>>(m, "Marginal2DDiscrete2");
-    bind_warp_marginal<Marginal2D<Float, 3, false>>(m, "Marginal2DDiscrete3");
+    bind_warp_marginal<Marginal2D<Float, 0, false>>(m, "MarginalDiscrete2D0");
+    bind_warp_marginal<Marginal2D<Float, 1, false>>(m, "MarginalDiscrete2D1");
+    bind_warp_marginal<Marginal2D<Float, 2, false>>(m, "MarginalDiscrete2D2");
+    bind_warp_marginal<Marginal2D<Float, 3, false>>(m, "MarginalDiscrete2D3");
 
-    bind_warp_marginal<Marginal2D<Float, 0, true>>(m, "Marginal2DContinuous0");
-    bind_warp_marginal<Marginal2D<Float, 1, true>>(m, "Marginal2DContinuous1");
-    bind_warp_marginal<Marginal2D<Float, 2, true>>(m, "Marginal2DContinuous2");
-    bind_warp_marginal<Marginal2D<Float, 3, true>>(m, "Marginal2DContinuous3");
+    bind_warp_marginal<Marginal2D<Float, 0, true>>(m, "MarginalContinuous2D0");
+    bind_warp_marginal<Marginal2D<Float, 1, true>>(m, "MarginalContinuous2D1");
+    bind_warp_marginal<Marginal2D<Float, 2, true>>(m, "MarginalContinuous2D2");
+    bind_warp_marginal<Marginal2D<Float, 3, true>>(m, "MarginalContinuous2D3");
 }

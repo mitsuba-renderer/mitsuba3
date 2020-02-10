@@ -6,168 +6,63 @@ import numpy as np
 from mitsuba.python.test import variant_scalar, variant_packet, variants_vec
 
 
-@pytest.fixture(params = ['Hierarchical2D', 'Marginal2DDiscrete', 'Marginal2DContinuous'])
-# @pytest.fixture(params = ['Hierarchical2D'])
+@pytest.fixture(params=['Hierarchical2D', 'MarginalDiscrete2D',
+                        'MarginalContinuous2D'])
 def warps(request):
-    return [ getattr(mitsuba.core, request.param + str(i)) for i in range(4) ]
+    return [getattr(mitsuba.core, request.param + str(i)) for i in range(4)]
 
 
-# Create array of 2D samples to test implementations of the sample, eval and invert methods.
-sample_res = 4
-x, y = np.meshgrid(np.linspace(0.0, 1.0, sample_res), np.linspace(0.0, 1.0, sample_res))
-samples = np.array([x.ravel(), y.ravel()]).T
-samples_cout = sample_res**2
+def test01_sample_inverse_simple(variant_scalar, warps):
+    # Spot checks of Hierarchical2D0, MarginalDiscrete2D0
+    if 'Continuous' in warps[0].__name__:
+        return
 
+    # Mismatched X/Y resolution, odd number of columns
+    ref = np.array([[1, 2, 5],
+                    [9, 7, 2]])
 
-def test01_constructors(variants_vec, warps):
-    assert warps[0](np.ones((16, 16)),          [])
-    assert warps[1](np.ones((4, 16, 16)),       [np.arange(4)])
-    assert warps[2](np.ones((4, 4, 16, 16)),    [np.arange(4), np.arange(4)])
-    assert warps[3](np.ones((4, 4, 4, 16, 16)), [np.arange(4), np.arange(4), np.arange(4)])
+    # Normalized discrete PDF corresponding to the two patches
+    intg = np.array([19, 16]) / 35
 
+    distr = warps[0](ref)
 
-def test02_interpolation_eval(variants_vec, warps):
-    data_res = 8
-    # Build a data grid of shape [2 x res x res]. The first level is set to a ramp with values going
-    # from 0.0 to 1.0. The second level is set to a ramp with values going from 1.0 to 0.0. This way,
-    # the linear interpolation of both level at [0.0, :, :] is a constant 2D grid.
-    ramp, _ = np.meshgrid(np.linspace(0.0, 1.0, data_res), np.ones(data_res))
-    distr = warps[1](np.array([ramp, 1.0 - ramp]), [[0.0, 1.0]])
-    assert ek.allclose(distr.eval(samples, [0.5]), np.ones((samples_cout)))
+    # Check if we can reach the corners and transition between patches
+    assert ek.allclose(distr.sample([0, 0]), [[0, 0], 8.0 / 35.0], atol=1e-6)
+    assert ek.allclose(distr.sample([1, 1]), [[1, 1], 16.0 / 35.0], atol=1e-6)
+    assert ek.allclose(distr.sample([intg[0], 0]), [[0.5, 0], 16.0 / 35.0],
+                       atol=1e-6)
 
-    # Build a data grid of shape [2 x res x res] with random data. Compare the lerping of the 1D
-    # Warp versus evaluating a 0D Warp with data that as manually been lerped.
-    for i in range(10):
-        np.random.seed(1234 + i)
-        data_rand = np.array([np.random.random((data_res, data_res)),
-                              np.random.random((data_res, data_res))])
+    assert ek.allclose(distr.invert([0, 0]), [[0, 0], 8.0 / 35.0], atol=1e-6)
+    assert ek.allclose(distr.invert([1, 1]), [[1, 1], 16.0 / 35.0], atol=1e-6)
+    assert ek.allclose(distr.invert([0.5, 0]), [[intg[0], 0], 16.0 / 35.0],
+                       atol=1e-6)
 
-        distr = warps[1](data_rand, [[0.0, 1.0]], False, False)
+    from mitsuba.core.warp import bilinear_to_square
 
-        for p in np.linspace(0.0, 1.0, 6):
-            interp_data = data_rand[0] * (1.0 - p) + data_rand[1] * p
-            interp_distr = warps[0](interp_data, [], False, False)
-            assert ek.allclose(distr.eval(samples, [p]), interp_distr.eval(samples))
+    # Check if we can sample a specific position in each patch
+    sample, pdf = bilinear_to_square(1, 2, 9, 7, [0.4, 0.3])
+    sample.x *= intg[0]
+    pdf *= 8.0 / 35.0
+    assert ek.allclose(distr.sample(sample), [[0.2, 0.3], pdf])
+    assert ek.allclose(distr.invert([0.2, 0.3]), [sample, pdf])
+    assert ek.allclose(distr.eval([0.2, 0.3]), pdf)
 
+    sample, pdf = bilinear_to_square(2, 5, 7, 2, [0.4, 0.3])
+    sample.x = sample.x * intg[1] + intg[0]
+    pdf *= 8.0 / 35.0
+    assert ek.allclose(distr.sample(sample), [[0.7, 0.3], pdf])
+    assert ek.allclose(distr.invert([0.7, 0.3]), [sample, pdf])
+    assert ek.allclose(distr.eval([0.7, 0.3]), pdf+1)
 
-def test03_sample_match_eval_invert(variants_vec, warps):
-    for i in range(5):
-        np.random.seed(123456 + i)
-        distr0 = warps[0](np.random.random((16, 16)), [])
-        distr1 = warps[1](np.random.random((4, 16, 16)), [np.linspace(0.0, 1.0, 4)])
+def test01_sample_simple(variant_scalar, warps):
+    if 'Continuous' in warps[0].__name__:
+        return
 
-        pos, s_den = distr0.sample(samples)
-        sam, i_den = distr0.invert(pos)
+# Test inverse<->sample, eval
+# Chi2 test pow2, npow2
+# both hi res and low res
+# Test interpolation with and without normalization
+# Test sampling with and without interpolation
+#  Test combinations of multiple distributins at boundary and in the middle
+# Does invert still work for non-normalized data?
 
-        assert ek.allclose(s_den, distr0.eval(pos), atol=1e-4)
-        assert ek.allclose(s_den, i_den, atol=1e-4)
-        assert ek.allclose(samples, sam, atol=1e-4)
-
-        for p in np.linspace(0.0, 1.0, 12):
-            pos, s_den = distr1.sample(samples, [p])
-            sam, i_den = distr1.invert(pos, [p])
-            assert ek.allclose(s_den, distr1.eval(pos, [p]), atol=1e-4)
-            assert ek.allclose(s_den, i_den, atol=1e-4)
-            assert ek.allclose(samples, sam, atol=1e-4)
-
-
-# Sample a continuous bilinear patch defined by 4 points
-def invert_marginal_cdf(points, sample):
-    r0 = points[0] + points[1]
-    r1 = points[2] + points[3]
-    # Invert marginal CDF in the 'y' parameter
-    if (ek.abs(r0 - r1) > 1e-4 * (r0 + r1)):
-        y = (r0 - ek.sqrt(r0**2 + sample[1] * (r1**2 - r0**2))) / (r0 - r1)
-    else:
-        y = sample[1]
-    # Invert conditional CDF in the 'x' parameter
-    c0 = (1.0 - y) * points[0] + y * points[2]
-    c1 = (1.0 - y) * points[1] + y * points[3]
-    if (ek.abs(c0 - c1) > 1e-4 * (c0 + c1)):
-        x = (c0 - ek.sqrt(c0**2 + sample[0] * (c1**2 - c0**2))) / (c0 - c1)
-    else:
-        x = sample[0]
-    return [x, y], (1.0 - x) * c0 + x * c1
-
-
-def test04_hierarchical2D_sample(variants_vec):
-    from mitsuba.core import Hierarchical2D0, Vector2f
-
-    data = np.array([[0.0,  0.0,  0.6],
-                     [0.0,  0.0,  0.2],
-                     [0.2,  0.2,  0.0]])
-    # data_level_1 = np.array([[0.0, 0.2],
-    #                          [0.1, 0.1]])
-    distr = Hierarchical2D0(data, [])
-    assert ek.allclose(distr.sample([0.5, 0.25])[0],
-                       (0.5 * (Vector2f(invert_marginal_cdf([0.0, 0.6, 0.0, 0.2], [0.5, 0.5])[0]) + [1, 0])))
-    assert ek.allclose(distr.sample([0.25, 0.75])[0],
-                       (0.5 * (Vector2f(invert_marginal_cdf([0.0, 0.0, 0.2, 0.2], [0.5, 0.5])[0]) + [0, 1])))
-
-    # with an odd number of bilinear patches per axis
-    data = np.array([[0.0,  0.1,  0.1,  0.2],
-                     [0.1,  0.0,  0.0,  0.1],
-                     [0.1,  0.0,  0.0,  0.1],
-                     [0.1,  0.2,  0.2,  0.5]])
-    # data_level_1 = np.array([[0.2, 0.2, 0.4],
-    #                          [0.2, 0.0, 0.2]
-    #                          [0.4, 0.4, 0.8]])
-    # data_level_2 = np.array([[0.6,  0.6],
-    #                          [0.8,  0.8]])
-    distr = Hierarchical2D0(data, [])
-    assert ek.allclose(distr.sample([0.125, 1.0/14*3])[0],
-                       (Vector2f(invert_marginal_cdf([0.0, 0.1, 0.1, 0.0], [0.5, 3.0/4.0])[0]) + [0, 0]) / 3.0)
-
-
-def test04_marginal2Ddiscrete_sample(variants_vec):
-    from mitsuba.core import Marginal2DDiscrete0, Vector2f
-
-    data = np.array([[0.1,  0.1,  0.5],
-                     [0.3,  0.1,  0.3],
-                     [0.4,  0.4,  0.4]])
-    # bilinear_data = np.array([[0.1, 0.3],
-    #                           [0.2, 0.2]
-    #                           [0.4, 0.4]])
-    # cdfs = np.array([0.1, 0.4],
-    #                 [0.2, 0.4]
-    #                 [0.4, 0.8])
-    # marginal = [0.4, 0.6]
-
-    distr = Marginal2DDiscrete0(data, [])
-    assert ek.allclose(distr.sample([0.5, 0.2])[0],
-                       0.5 * (Vector2f(invert_marginal_cdf([0.1, 0.5, 0.1, 0.3], [1.0/3, 0.5])[0]) + [1, 0]))
-
-    assert ek.allclose(distr.sample([0.25, 0.5])[0],
-                       0.5 * (Vector2f(invert_marginal_cdf([0.3, 0.1, 0.4, 0.4], [0.5, 1.0/6])[0]) + [0, 1]))
-
-# TODO
-# def test05_marginal2Dcontinuous_sample(variant_scalar):
-#     from mitsuba.core import Marginal2DContinuous0, Vector2f
-
-#     data = np.array([[0.1,  0.1,  0.5],
-#                      [0.3,  0.1,  0.3],
-#                      [0.4,  0.4,  0.4]])
-#     # bilinear_data = np.array([[0.1, 0.3],
-#     #                           [0.2, 0.2]
-#     #                           [0.4, 0.4]])
-#     # cdfs = np.array([0.1, 0.4],
-#     #                 [0.2, 0.4]
-#     #                 [0.4, 0.8])
-#     # marginal = [0.4, 0.6]
-
-#     distr = Marginal2DContinuous0(data, [])
-
-#     print("my:", invert_marginal_cdf([0.2, 0.2, 0.4, 0.4], [0.0, 0.5 - 0.4])[0])
-
-#     print(distr.sample([0.5, 0.5])[0]) # -> 1/3 0.5
-
-#     print(0.5 * (Vector2f(invert_marginal_cdf([0.1, 0.5, 0.1, 0.3], [1.0/3, 0.5])[0]) + [1, 0]))
-
-
-#     # assert ek.allclose(distr.sample([0.5, 0.2])[0],
-#     #                    0.5 * (Vector2f(invert_marginal_cdf([0.1, 0.5, 0.1, 0.3], [1.0/3, 0.5])[0]) + [1, 0]))
-
-#     # assert ek.allclose(distr.sample([0.25, 0.5])[0],
-#     #                    0.5 * (Vector2f(invert_marginal_cdf([0.3, 0.1, 0.4, 0.4], [0.5, 1.0/6])[0]) + [0, 1]))
-
-#     assert False

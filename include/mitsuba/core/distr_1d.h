@@ -113,21 +113,29 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PMF) at index \c index
     Float eval_pmf(Index index, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         return gather<Float>(m_pmf, index, active);
     }
 
     /// Evaluate the normalized probability mass function (PMF) at index \c index
     Float eval_pmf_normalized(Index index, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         return gather<Float>(m_pmf, index, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at index \c index
     Float eval_cdf(Index index, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         return gather<Float>(m_cdf, index, active);
     }
 
     /// Evaluate the normalized cumulative distribution function (CDF) at index \c index
     Float eval_cdf_normalized(Index index, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         return gather<Float>(m_cdf, index, active) * m_normalization;
     }
 
@@ -142,6 +150,8 @@ public:
      *     The discrete index associated with the sample
      */
     Index sample(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         value *= m_sum;
 
         return enoki::binary_search(
@@ -166,6 +176,8 @@ public:
      *     2. the normalized probability value of the sample.
      */
     std::pair<Index, Float> sample_pmf(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         Index index = sample(value, active);
         return { index, eval_pmf_normalized(index) };
     }
@@ -188,6 +200,8 @@ public:
      */
     std::pair<Index, Float>
     sample_reuse(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         Index index = sample(value, active);
 
         Float pmf = eval_pmf_normalized(index, active),
@@ -215,6 +229,8 @@ public:
      */
     std::tuple<Index, Float, Float>
     sample_reuse_pmf(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         auto [index, pdf] = sample_pmf(value, active);
 
         Float pmf = eval_pmf_normalized(index, active),
@@ -368,6 +384,8 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
     Float eval_pdf(Float x, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         active &= x >= m_range.x() && x <= m_range.y();
         x = (x - m_range.x()) * m_inv_interval_size;
 
@@ -384,11 +402,15 @@ public:
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
     Float eval_pdf_normalized(Float x, Mask active) const {
+        MTS_MASK_ARGUMENT(active);
+
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Float eval_cdf(Float x_, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         Float x = (x_ - m_range.x()) * m_inv_interval_size;
 
         Index index = clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
@@ -406,6 +428,8 @@ public:
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Float eval_cdf_normalized(Float x, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         return eval_cdf(x, active) * m_normalization;
     }
 
@@ -420,6 +444,8 @@ public:
      *     The sampled position.
      */
     Float sample(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         value *= m_integral;
 
         Index index = enoki::binary_search(
@@ -456,6 +482,8 @@ public:
      *     2. the normalized probability density of the sample.
      */
     std::pair<Float, Float> sample_pdf(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         value *= m_integral;
 
         Index index = enoki::binary_search(
@@ -633,6 +661,8 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
     Float eval_pdf(Float x, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         active &= x >= m_range.x() && x <= m_range.y();
 
         Index index = enoki::binary_search(
@@ -656,11 +686,15 @@ public:
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
     Float eval_pdf_normalized(Float x, Mask active) const {
+        MTS_MASK_ARGUMENT(active);
+
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Float eval_cdf(Float x, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         Index index = enoki::binary_search(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
@@ -685,6 +719,8 @@ public:
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
     Float eval_cdf_normalized(Float x, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         return eval_cdf(x, active) * m_normalization;
     }
 
@@ -699,6 +735,8 @@ public:
      *     The sampled position.
      */
     Float sample(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         value *= m_integral;
 
         Index index = enoki::binary_search(
@@ -738,6 +776,8 @@ public:
      *     2. the normalized probability density of the sample.
      */
     std::pair<Float, Float> sample_pdf(Float value, Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+
         value *= m_integral;
 
         Index index = enoki::binary_search(
