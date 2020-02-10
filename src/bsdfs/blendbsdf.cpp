@@ -89,18 +89,21 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
+        Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
             if (!sample_first)
                 ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            return m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
+            else
+                weight = 1.f - weight;
+            auto [bs, result] = m_nested_bsdf[sample_first ? 0 : 1]->sample(ctx2, si, sample1, sample2, active);
+            result *= weight;
+            return { bs, result };
         }
 
         BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum result(0.f);
-
-        Float weight = eval_weight(si, active);
 
         Mask m0 = active && sample1 >  weight,
              m1 = active && sample1 <= weight;
@@ -124,15 +127,17 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
+        Float weight = eval_weight(si, active);
         if (unlikely(ctx.component != (uint32_t) -1)) {
             bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
             BSDFContext ctx2(ctx);
             if (!sample_first)
                 ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
-            return m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
+            else
+                weight = 1.f - weight;
+            return weight * m_nested_bsdf[sample_first ? 0 : 1]->eval(ctx2, si, wo, active);
         }
 
-        Float weight = eval_weight(si, active);
         return m_nested_bsdf[0]->eval(ctx, si, wo, active) * (1 - weight) +
                m_nested_bsdf[1]->eval(ctx, si, wo, active) * weight;
     }
