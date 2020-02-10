@@ -25,6 +25,10 @@ EMITTER_ORDERING = ['area',
                     'constant',
                     'envmap']
 
+INTEGRATOR_ORDERING = ['direct',
+                       'path',
+                       'aov']
+
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
     if f in ordering:
@@ -100,7 +104,7 @@ def generate(build_dir):
         # process_src(f, 'volume', 'section_volumes')
         process_src(f, 'emitters', 'section_emitter', EMITTER_ORDERING)
         # process_src(f, 'sensors')
-        # process_src(f, 'integrators')
+        process_src(f, 'integrators', 'section_integrator', INTEGRATOR_ORDERING)
         # process_src(f, 'samplers')
         # process_src(f, 'films')
         # process_src(f, 'rfilters')

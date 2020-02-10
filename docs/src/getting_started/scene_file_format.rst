@@ -86,6 +86,15 @@ Integer and floating point values can be passed as follows:
     <integer name="int_property" value="1234"/>
     <float name="float_property" value="-1.5e3"/>
 
+Booleans
+********
+
+Boolean values can be passed as follows:
+
+.. code-block:: xml
+
+    <boolean name="bool_property" value="true"/>
+
 Strings
 *******
 

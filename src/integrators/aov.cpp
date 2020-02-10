@@ -3,10 +3,43 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Integrator that returns one or more AOVs (Arbitrary Output Variables)
- * describing the visible surfaces.
+
+/**!
+
+.. _integrator-aov:
+
+Arbitrary Output Variables integrator (:monosp:`aov`)
+-----------------------------------------------------
+
+.. pluginparameters::
+
+ * - aovs
+   - |string|
+   - List of :monosp:`<name>:<type>` pairs denoting the enabled AOVs.
+ * - *(Nested plugin)*
+   - :paramtype:`integrator`
+   - Sub-integrators (can have more than one) which will be sampled along the AOV integrator. Their
+     respective output will be put into distinct images.
+
+
+This integrator returns one or more AOVs (Arbitraty Output Variables) describing the visible
+surfaces.
+
+Here is an example on how to enable the *depth* and *shading normal* AOVs while still rendering the
+image with a path tracer. The `RGBA` image produces by the path tracer will be stored in the
+[:code:`my_image.R`, :code:`my_image.G`, :code:`my_image.B`, :code:`my_image.A`] channels of the EXR
+output file.
+
+.. code-block:: xml
+
+    <integrator type="aov">
+        <string name="aovs" value="dd.y:depth,nn:sh_normal"/>
+        <integrator type="path" name="my_image"/>
+    </integrator>
+
+
  */
+
 template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:

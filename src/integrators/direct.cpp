@@ -6,6 +6,74 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _integrator-direct:
+
+Direct illumination integrator (:monosp:`direct`)
+-------------------------------------------------
+
+.. pluginparameters::
+
+ * - shading_samples
+   - |int|
+   - This convenience parameter can be used to set both :code:`emitter_samples` and
+     :code:`bsdf_samples` at the same time.
+ * - emitter_samples
+   - |int|
+   - Optional more fine-grained parameter: specifies the number of samples that should be generated
+     using the direct illumination strategies implemented by the scene's emitters.
+     (Default: set to the value of :monosp:`shading_samples`)
+ * - bsdf_samples
+   - |int|
+   - Optional more fine-grained parameter: specifies the number of samples that should be generated
+     using the BSDF sampling strategies implemented by the scene's surfaces.
+     (Default: set to the value of :monosp:`shading_samples`)
+ * - strict_normals
+   - |bool|
+   - Be strict about potential inconsistencies involving shading normals? See
+     :ref:`sec-path-strictnormals` for details. (Default: no, i.e. |false|)
+ * - hide_emitters
+   - |bool|
+   - Hide directly visible emitters.
+     (Default: no, i.e. |false|)
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/integrator_direct_bsdf.jpg
+   :caption: BSDF sampling only
+   :label: fig-direct-bsdf
+.. subfigure:: ../../resources/data/docs/images/render/integrator_direct_lum.jpg
+   :caption: Emitter sampling only
+   :label: fig-direct-lum
+.. subfigure:: ../../resources/data/docs/images/render/integrator_direct_both.jpg
+   :caption: MIS both sampling strategies
+   :label: fig-direct-both
+.. subfigend::
+   :label: fig-direct
+
+    This plugin implements two different strategies for computing the
+    direct illumination on surfaces. Both of them are dynamically
+    combined then obtain a robust rendering algorithm.
+
+This integrator implements a direct illumination technique that makes use
+of **multiple importance sampling**: for each pixel sample, the
+integrator generates a user-specifiable number of BSDF and emitter
+samples and combines them using the power heuristic. Usually, the BSDF
+sampling technique works very well on glossy objects but does badly
+everywhere else (Figure :num:`fig-direct-bsdf`), while the opposite
+is true for the emitter sampling technique
+(Figure :num:`fig-direct-lum`). By combining these approaches, one
+can obtain a rendering technique that works well in both cases
+(Figure :num:`fig-direct-both`).
+
+The number of samples spent on either technique is configurable, hence
+it is also possible to turn this plugin into an emitter sampling-only
+or BSDF sampling-only integrator.
+
+.. note:: This integrator does not handle participating media or indirect illumination.
+
+ */
+
 template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
