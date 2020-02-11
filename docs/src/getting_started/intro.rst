@@ -56,8 +56,9 @@ changes:
    interaction with the community (Pull Requests, etc.) in the future, which
    had become a severe bottleneck in Mitsuba 0.6.
 
-3. An all-new cross-platform user interface was developed using the
-   `NanoGUI <https://github.com/mitsuba-renderer/nanogui>`_ library.
+3. An all-new cross-platform user interface is currently being developed using
+   the `NanoGUI <https://github.com/mitsuba-renderer/nanogui>`_ library. *Note
+   that this is not yet done.*
 
 About
 --------------

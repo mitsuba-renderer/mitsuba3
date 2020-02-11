@@ -64,8 +64,9 @@ several other noteworthy changes:
    compilation settings (e.g. debug/release builds, single/double precision,
    etc).
 
-3. An all-new cross-platform user interface was developed using the
-   [NanoGUI](https://github.com/mitsuba-renderer/nanogui) library.
+3. An all-new cross-platform user interface is currently being developed using
+   the [NanoGUI](https://github.com/mitsuba-renderer/nanogui) library. *Note
+   that this is not yet done.*
 
 ## Documentation
 
