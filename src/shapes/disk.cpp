@@ -31,10 +31,11 @@ Disk (:monosp:`disk`)
    - |bool|
    - Is the disk inverted, i.e. should the normal vectors be flipped? (Default: |false|)
 
-\renderings{
-    \rendering{Rendering with an disk emitter and a textured disk, showing
-    the default parameterization. (\lstref{disk})}{shape_disk}
-}
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_disk.jpg
+   :caption: Rendering with an disk emitter and a textured disk, showing the default parameterization.
+.. subfigend::
+   :label: fig-disk
 
 This shape plugin describes a simple disk intersection primitive. It is
 usually preferable over discrete approximations made from triangles.

@@ -27,19 +27,20 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
  * - face_normals
    - |bool|
    - When set to |true|, any existing or computed vertex normals are
-     discarded and \emph{face normals} will instead be used during rendering.
+     discarded and **face normals** will instead be used during rendering.
      This gives the rendered object a faceted appearance.(Default: |false|)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
      (Default: none (i.e. object space $=$ world space))
 
-\renderings{
-    \rendering{The PLY plugin is useful for loading large geometry. (Dragon
-        statue courtesy of XYZ RGB)}{shape_ply_dragon}
-    \rendering{The Stanford bunny loaded with \code{face_normals=true}. Note
-        the faceted appearance.}{shape_ply_bunny}
-}
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_ply_bunny.jpg
+   :caption: The Stanford bunny loaded with :monosp:`face_normals=false`.
+.. subfigure:: ../../resources/data/docs/images/render/shape_ply_bunny_facet.jpg
+   :caption: The Stanford bunny loaded with :monosp:`face_normals=true`. Note the faceted appearance.
+.. subfigend::
+   :label: fig-ply
 
 This plugin implements a fast loader for the Stanford PLY format (both
 the ASCII and binary format). It is based on the :monosp:`libply` library by

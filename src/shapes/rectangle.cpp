@@ -29,10 +29,11 @@ Rectangle (:monosp:`rectangle`)
    - |bool|
    - Is the rectangle inverted, i.e. should the normal vectors be flipped? (Default: |false|)
 
-\renderings{
-    \rendering{Two rectangles configured as a reflective surface and an
-    emitter (\lstref{rectangle})}{shape_rectangle}
-}
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_rectangle.jpg
+   :caption: Two rectangles configured as a reflective surface and an emitter
+.. subfigend::
+   :label: fig-rectangle
 
 This shape plugin describes a simple rectangular intersection primitive.
 It is mainly provided as a convenience for those cases when creating and

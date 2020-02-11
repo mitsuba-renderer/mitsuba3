@@ -33,12 +33,6 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
    - Specifies an optional linear object-to-world transformation.
      (Default: none (i.e. object space $=$ world space))
 
-\renderings{
-    \label{fig:rungholt}
-    \bigrendering{An example scene with both geometry and materials imported using the Wavefront OBJ mesh loader
-    (Neu Rungholt model courtesy of \texttt{kescha}, converted from Minecraft to OBJ by Morgan McGuire)}{shape_obj}
-}
-
 This plugin implements a simple loader for Wavefront OBJ files. It handles
 meshes containing triangles and quadrilaterals, and it also imports vertex normals
 and texture coordinates.

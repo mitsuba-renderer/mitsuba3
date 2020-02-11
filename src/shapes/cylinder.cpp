@@ -42,12 +42,13 @@ Cylinder (:monosp:`cylinder`)
    - Specifies an optional linear object-to-world transformation. Note that non-uniform scales are
      not permitted! (Default: none (i.e. object space = world space))
 
-\renderings{
-    \rendering{Cylinder with the default one-sided shading}
-        {shape_cylinder_onesided}
-    \rendering{Cylinder with two-sided shading, see \lstref{cylinder-twosided}}
-        {shape_cylinder_twosided}
-}
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_cylinder_onesided.jpg
+   :caption: Cylinder with the default one-sided shading
+.. subfigure:: ../../resources/data/docs/images/render/shape_cylinder_twosided.jpg
+   :caption: Cylinder with two-sided shading
+.. subfigend::
+   :label: fig-cylinder
 
 This shape plugin describes a simple cylinder intersection primitive.
 It should always be preferred over approximations modeled using

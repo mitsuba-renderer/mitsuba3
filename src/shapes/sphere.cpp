@@ -38,18 +38,19 @@ Sphere (:monosp:`sphere`)
    - Is the sphere inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
      the normals point outside)
 
-\renderings{
-    \rendering{Basic example, see \lstref{sphere-basic}}
-        {shape_sphere_basic}
-    \rendering{A textured sphere with the default parameterization}
-        {shape_sphere_parameterization}
-}
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_sphere_basic.jpg
+   :caption: Basic example
+.. subfigure:: ../../resources/data/docs/images/render/shape_sphere_parameterization.jpg
+   :caption: A textured sphere with the default parameterization
+.. subfigend::
+   :label: fig-sphere
 
 This shape plugin describes a simple sphere intersection primitive. It should
 always be preferred over sphere approximations modeled using triangles.
 
 A sphere can either be configured using a linear :monosp:`to_world` transformation or the :monosp:`center` and :monosp:`radius` parameters (or both).
-The above two declarations are equivalent.
+The two declarations below are equivalent.
 
 .. code-block:: xml
 
@@ -64,37 +65,6 @@ The above two declarations are equivalent.
         <point name="center" x="1" y="0" z="0"/>
         <float name="radius" value="2"/>
         <bsdf type="diffuse"/>
-    </shape>
-
-When a :ref:`shape-sphere` shape is turned into an :ref:`emitter-area` light source,
-Mitsuba switches to an efficient sampling strategy :cite:`Shirley91Direct` that
-has particularly low variance. This makes it a good default choice for lighting
-new scenes (\figref{spherelight}).
-
-\renderings{
-    \rendering{Spherical area light modeled using triangles}
-        {shape_sphere_arealum_tri}
-    \rendering{Spherical area light modeled using the :ref:`shape-sphere` plugin}
-        {shape_sphere_arealum_analytic}
-
-    \caption{
-        \label{fig:spherelight}
-        Area lights built from the combination of the :ref:`emitter-area`
-        and :ref:`shape-sphere` plugins produce renderings that have an
-        overall lower variance.
-    }
-}
-
-Instantiation of a sphere emitter
-
-.. code-block:: xml
-
-    <shape type="sphere">
-        <point name="center" x="0" y="1" z="0"/>
-        <float name="radius" value="1"/>
-        <emitter type="area">
-            <blackbody name="intensity" temperature="7000K"/>
-        </emitter>
     </shape>
 
 .. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
