@@ -113,29 +113,21 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PMF) at index \c index
     Float eval_pmf(Index index, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
-
         return gather<Float>(m_pmf, index, active);
     }
 
     /// Evaluate the normalized probability mass function (PMF) at index \c index
     Float eval_pmf_normalized(Index index, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
-
         return gather<Float>(m_pmf, index, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at index \c index
     Float eval_cdf(Index index, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
-
         return gather<Float>(m_cdf, index, active);
     }
 
     /// Evaluate the normalized cumulative distribution function (CDF) at index \c index
     Float eval_cdf_normalized(Index index, Mask active = true) const {
-        MTS_MASK_ARGUMENT(active);
-
         return gather<Float>(m_cdf, index, active) * m_normalization;
     }
 
