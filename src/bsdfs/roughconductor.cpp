@@ -89,7 +89,7 @@ To get an intuition about the effect of the surface roughness parameter
 :math:`\alpha`, consider the following approximate classification: a value of
 :math:`\alpha=0.001-0.01` corresponds to a material with slight imperfections
 on an otherwise smooth surface finish, :math:`\alpha=0.1` is relatively rough,
-and :math:`\alpha=0.3-0.7` is \emph{extremely} rough (e.g. an etched or ground
+and :math:`\alpha=0.3-0.7` is **extremely** rough (e.g. an etched or ground
 finish). Values significantly above that are probably not too realistic.
 
 
@@ -126,7 +126,7 @@ spectral rendering to get the most accurate results. While it also works
 in RGB mode, the computations will be more approximate in nature.
 Also note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
-consider using the :ref:`twosided` BRDF adapter.
+consider using the :ref:`bsdf-twosided` BRDF adapter.
 
  */
 

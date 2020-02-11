@@ -28,11 +28,6 @@ has the same apparent brightness regardless of the observer's viewing
 direction. Furthermore, since it occupies a nonzero amount of space, an
 area light generally causes scene objects to cast soft shadows.
 
-When modeling scenes involving area lights, it is preferable
-to use spheres as the emitter shapes, since they provide a
-particularly good direct illumination sampling strategy (see
-the :ref:`sphere` plugin for an example).
-
 To create an area light source, simply instantiate the desired
 emitter shape and specify an :monosp:`area` instance as its child:
 

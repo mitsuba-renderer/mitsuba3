@@ -40,7 +40,7 @@ of 50% reflectance.
 
 Note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
-consider using the :ref:`twosided <bsdf_twosided>` BRDF adapter plugin.
+consider using the :ref:`bsdf-twosided` BRDF adapter plugin.
 The following XML snippet describes a diffuse material,
 whose reflectance is specified as an sRGB color:
 

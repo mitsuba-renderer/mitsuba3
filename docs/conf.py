@@ -55,6 +55,9 @@ rst_prolog = r"""
 .. |point| replace:: :paramtype:`point`
 .. |transform| replace:: :paramtype:`transform`
 
+.. |enoki| replace:: :monosp:`enoki`
+.. |numpy| replace:: :monosp:`numpy`
+
 .. |nbsp| unicode:: 0xA0
    :trim:
 

@@ -2,7 +2,7 @@ Writing a diffuse bsdf
 ===========================
 
 In this example, we will implement a simple diffuse BSDF in python using a similar approach as in
-the :ref:`direct_integrator`, extending the :code:`BSDF` base class. The code is very similar to the
+the :ref:`integrator-direct`, extending the :code:`BSDF` base class. The code is very similar to the
 diffuse BSDF implemented in C++ (in :code:`src/bsdf/diffuse.cpp`).
 
 The code for this example can be found in :code:`docs/examples/04_diffuse_bsdf/diffuse_bsdf.py`.

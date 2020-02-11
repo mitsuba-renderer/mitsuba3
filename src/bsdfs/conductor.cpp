@@ -34,7 +34,7 @@ Smooth conductor (:monosp:`conductor`)
 This plugin implements a perfectly smooth interface to a conducting material,
 such as a metal. For a similar model that instead describes a rough surface
 microstructure, take a look at the separately available
-:ref:`roughconductor` plugin.
+:ref:`bsdf-roughconductor` plugin.
 In contrast to dielectric materials, conductors do not transmit
 any light. Their index of refraction is complex-valued and tends to undergo
 considerable changes throughout the visible color spectrum.
@@ -44,7 +44,7 @@ of the renderer to get the most accurate results. While it also works
 in RGB mode, the computations will be more approximate in nature.
 Also note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
-consider using the :ref:`twosided` BRDF adapter plugin.
+consider using the :ref:`bsdf-twosided` BRDF adapter plugin.
 
 The following XML snippet describes a material definition for aluminium:
 
