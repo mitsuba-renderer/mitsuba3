@@ -23,7 +23,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :caption: Python interface
 
     python_interface/intro
-    python_interface/loading_renderer
+    python_interface/parsing_xml
     python_interface/rendering_scene
     python_interface/depth_integrator
     python_interface/direct_integrator

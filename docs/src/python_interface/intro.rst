@@ -120,3 +120,28 @@ directly pass |numpy| arrays to Mitsuba functions as in the following example:
 
     # Project the 2D grid onto a unit sphere
     pos = mitsuba.core.warp.square_to_uniform_sphere(samples)
+
+
+Submodules
+----------
+
+The Mitsuba Python bindings are split into different python submodules, following the folder
+structure of the C++ codebase.
+
+.. list-table::
+    :widths: 30 70
+    :header-rows: 1
+
+    * - Submodule name
+      - Description
+    * - :code:`mitsuba.core`
+      - Contains the Python bindings for the classes and functions of the
+        :monosp:`mitsuba/libcore` C++ library.
+    * - :code:`mitsuba.render`
+      - Contains the Python bindings for the classes and functions of the
+        :monosp:`mitsuba/librender` C++ library.
+    * - :code:`mitsuba.python`
+      - Provides classes and functions only related to the Python part of the framework.
+
+.. todo:: re-write those descriptions
+

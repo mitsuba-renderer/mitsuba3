@@ -174,7 +174,7 @@ Mathematically, each incremental transformation in the sequence is left-multipli
 
 
 References
----------------
+----------
 
 Quite often, you will find yourself using a object (such as a material) in many places. To avoid having to declare it over and over again, which wastes memory,, you can make use of references. Here is an example of how this works:
 
@@ -204,7 +204,7 @@ By providing a unique `id` attribute in the object declaration, the object is bo
 
 
 Include
----------------
+-------
 
 A scene can be split into multiple pieces for better readability. To include an external file, please ue the following command:
 
@@ -220,6 +220,8 @@ This feature is sometimes very convenient in conjunction with the :code:`-D key=
 
     <include filename="nested-scene-$version.xml"/>
 
+
+.. _sec-scene-file-format-params:
 
 Default parameters
 ------------------
@@ -242,7 +244,7 @@ and must precede the occurrences of the parameter in the XML file.
 
 
 Aliases
-------------------
+-------
 
 Sometimes, it can be useful to associate an object with multiple identifiers. This can be accomplished using the :code:`alias as=".."` keyword:
 
@@ -252,3 +254,9 @@ Sometimes, it can be useful to associate an object with multiple identifiers. Th
     <alias id="my_material_1" as="my_material_2"/>
 
 After this statement, the diffuse scattering model will be bound to *both* identifiers :code:`my_material_1` and :code:`my_material_2`.
+
+
+Relative path and FileResolver
+------------------------------
+
+.. todo:: Write this section
