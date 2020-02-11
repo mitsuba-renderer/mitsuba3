@@ -7,6 +7,14 @@
 import os
 import re
 
+SHAPE_ORDERING = ['obj',
+                  'ply',
+                  'serialized',
+                  'sphere',
+                  'cylinder',
+                  'disk',
+                  'rectangle']
+
 BSDF_ORDERING = ['diffuse',
                  'dielectric',
                  'thindielectric',
@@ -25,19 +33,23 @@ EMITTER_ORDERING = ['area',
                     'constant',
                     'envmap']
 
-SHAPE_ORDERING = ['obj',
-                  'ply',
-                  'serialized',
-                  'sphere',
-                  'cylinder',
-                  'disk',
-                  'rectangle']
+SENSOR_ORDERING = ['perspective',
+                   'thinlens']
+
+SAMPLER_ORDERING = ['independent']
 
 INTEGRATOR_ORDERING = ['direct',
                        'path',
                        'aov']
 
 FILM_ORDERING = ['hdrfilm']
+
+RFILTER_ORDERING = ['box',
+                    'tent',
+                    'gaussian',
+                    'catmullrom',
+                    'lanczos',
+                    'mitchell']
 
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
@@ -113,11 +125,11 @@ def generate(build_dir):
         # process_src(f, 'phase')
         # process_src(f, 'volume', 'section_volumes')
         process_src(f, 'emitters', 'section_emitter', EMITTER_ORDERING)
-        # process_src(f, 'sensors')
+        process_src(f, 'sensors', 'section_sensor', SENSOR_ORDERING)
         process_src(f, 'integrators', 'section_integrator', INTEGRATOR_ORDERING)
-        # process_src(f, 'samplers')
+        process_src(f, 'samplers', 'section_sampler', SAMPLER_ORDERING)
         process_src(f, 'films', 'section_film', FILM_ORDERING)
-        # process_src(f, 'rfilters')
+        process_src(f, 'rfilters', 'section_rfilter', RFILTER_ORDERING)
 
     os.chdir(original_wd)
 

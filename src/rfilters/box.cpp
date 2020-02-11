@@ -4,13 +4,21 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Box filter: this is the fastest, but also about the worst possible
- * reconstruction filter, since it is prone to severe aliasing.
- *
- * It is included mainly for completeness, though some rare situations
- * may warrant its use.
+/**!
+
+.. _rfilter-box:
+
+Box filter (:monosp:`box`)
+--------------------------
+
+This is the fastest, but also about the worst possible
+reconstruction filter, since it is prone to severe aliasing.
+
+It is included mainly for completeness, though some rare situations
+may warrant its use.
+
  */
+
 template <typename Float, typename Spectrum>
 class BoxFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:

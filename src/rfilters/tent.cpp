@@ -3,13 +3,21 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Simple tent (triangular) filter. This reconstruction filter never suffers
- * from ringing and usually causes less aliasing than a naive box filter. When
- * rendering scenes with sharp brightness discontinuities, this may be useful;
- * otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
- * or Lanczos Sinc)
+/**!
+
+.. _rfilter-tent:
+
+Tent filter (:monosp:`tent`)
+----------------------------
+
+Simple tent (triangular) filter. This reconstruction filter never suffers
+from ringing and usually causes less aliasing than a naive box filter. When
+rendering scenes with sharp brightness discontinuities, this may be useful;
+otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
+or Lanczos Sinc)
+
  */
+
 template <typename Float, typename Spectrum>
 class TentFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:

@@ -5,6 +5,32 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _sampler-independent:
+
+Independent sampler (:monosp:`independent`)
+-------------------------------------------
+
+.. pluginparameters::
+
+ * - sample_count
+   - |int|
+   - Number of samples per pixel (Default: 4)
+
+The independent sampler produces a stream of independent and uniformly
+distributed pseudorandom numbers. Internally, it relies on a fast SIMD version
+of the Mersenne Twister random number generator :cite:`Saito2008SIMD`.
+
+This is the most basic sample generator; because no precautions are taken to avoid
+sample clumping, images produced using this plugin will usually take longer to converge.
+In theory, this sampler is initialized using a deterministic procedure, which means
+that subsequent runs of Mitsuba should create the same image. In practice, when
+rendering with multiple threads and/or machines, this is not true anymore, since the
+ordering of samples is influenced by the operating system scheduler.
+
+ */
+
 template <typename Float, typename Spectrum>
 class IndependentSampler final : public Sampler<Float, Spectrum> {
 public:

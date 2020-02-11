@@ -3,11 +3,19 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Special version of the Mitchell-Netravali filter with constants B and C configured
- * to match the Catmull-Rom spline. It usually does a better job at at preserving sharp
- * features at the cost of more ringing.
+/**!
+
+.. _rfilter-catmullrom:
+
+Catmull-Rom filter (:monosp:`catmullrom`)
+-----------------------------------------
+
+Special version of the Mitchell-Netravali filter with constants B and C configured
+to match the Catmull-Rom spline. It usually does a better job at at preserving sharp
+features at the cost of more ringing.
+
  */
+
 template <typename Float, typename Spectrum>
 class CatmullRomFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:

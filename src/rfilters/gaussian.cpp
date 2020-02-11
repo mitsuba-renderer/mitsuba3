@@ -4,13 +4,21 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * This is a windowed Gaussian filter with configurable standard deviation.
- * It often produces pleasing results, but may introduce too much blurring.
- *
- * When no reconstruction filter is explicitly requested, this is the default
- * choice in Mitsuba.
+/**!
+
+.. _rfilter-gaussian:
+
+Gaussian filter (:monosp:`gaussian`)
+------------------------------------
+
+This is a windowed Gaussian filter with configurable standard deviation.
+It often produces pleasing results, but may introduce too much blurring.
+
+When no reconstruction filter is explicitly requested, this is the default
+choice in Mitsuba.
+
  */
+
 template <typename Float, typename Spectrum>
 class GaussianFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:

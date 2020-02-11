@@ -4,13 +4,21 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * Separable cubic spline reconstruction filter by Mitchell and Netravali.
- * This is often a good compromise between sharpness and ringing.
- *
- * D. Mitchell, A. Netravali, Reconstruction filters for computer graphics,
- * Proceedings of SIGGRAPH 88, Computer Graphics 22(4), pp. 221-228, 1988.
+/**!
+
+.. _rfilter-mitchell:
+
+Mitchell filter (:monosp:`mitchell`)
+------------------------------------
+
+Separable cubic spline reconstruction filter by Mitchell and Netravali.
+This is often a good compromise between sharpness and ringing.
+
+D. Mitchell, A. Netravali, Reconstruction filters for computer graphics,
+Proceedings of SIGGRAPH 88, Computer Graphics 22(4), pp. 221-228, 1988.
+
  */
+
 template <typename Float, typename Spectrum>
 class MitchellNetravaliFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:

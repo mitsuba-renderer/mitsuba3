@@ -6,6 +6,98 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _sensor-thinlens:
+
+Perspective camera with a thin lens (:monosp:`thinlens`)
+--------------------------------------------------------
+
+.. pluginparameters::
+
+ * - to_world
+   - |transform|
+   - Specifies an optional camera-to-world transformation.
+     (Default: none (i.e. camera space = world space))
+ * - aperture_radius
+   - |float|
+   - Denotes the radius of the camera's aperture in scene units.
+ * - focus_distance
+   - |float|
+   - Denotes the world-space distance from the camera's aperture to the focal plane.
+     (Default: :monosp:`0`)
+ * - focal_length
+   - |string|
+   - Denotes the camera's focal length specified using :monosp:`35mm` film equivalent units.
+     See the main description for further details. (Default: :monosp:`50mm`)
+ * - fov
+   - |float|
+   - An alternative to :monosp:`focal_length`: denotes the camera's field of view in degrees---must be
+     between 0 and 180, excluding the extremes.
+ * - fov_axis
+   - |string|
+   - When the parameter :monosp:`fov` is given (and only then), this parameter further specifies
+     the image axis, to which it applies.
+
+     1. :monosp:`x`: :monosp:`fov` maps to the :monosp:`x`-axis in screen space.
+     2. :monosp:`y`: :monosp:`fov` maps to the :monosp:`y`-axis in screen space.
+     3. :monosp:`diagonal`: :monosp:`fov` maps to the screen diagonal.
+     4. :monosp:`smaller`: :monosp:`fov` maps to the smaller dimension
+        (e.g. :monosp:`x` when :monosp:`width` < :monosp:`height`)
+     5. :monosp:`larger`: :monosp:`fov` maps to the larger dimension
+        (e.g. :monosp:`y` when :monosp:`width` < :monosp:`height`)
+
+     The default is :monosp:`x`.
+ * - shutter_open, shutter_close
+   - |float|
+   - Specifies the time interval of the measurement---this is only relevant when the scene is in
+     motion. (Default: 0)
+ * - near_clip, far_clip
+   - |float|
+   - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
+     and :monosp:`far_clip=1e4` (i.e. :monosp:`10000`))
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/sensor_thinlens_small_aperture.jpg
+   :caption: The material test ball viewed through a perspective thin lens camera. (:monosp:`aperture_radius=0.1`)
+.. subfigure:: ../../resources/data/docs/images/render/sensor_thinlens.jpg
+   :caption: The material test ball viewed through a perspective thin lens camera. (:monosp:`aperture_radius=0.3`)
+.. subfigend::
+   :label: fig-thinlens
+
+This plugin implements a simple perspective camera model with a thin lens
+at its circular aperture. It is very similar to the \pluginref{perspective} plugin
+except that the extra lens element permits rendering with a
+specifiable (i.e. non-infinite) depth of field. To configure this, it has two
+extra parameters named :monosp:`aperture_radius` and :monosp:`focus_distance`.
+
+By default, the camera's field of view is specified using a 35mm film
+equivalent focal length, which is first converted into a diagonal field
+of view and subsequently applied to the camera. This assumes that
+the film's aspect ratio matches that of 35mm film (1.5:1), though the
+parameter still behaves intuitively when this is not the case.
+Alternatively, it is also possible to specify a field of view in degrees
+along a given axis (see the :monosp:`fov` and :monosp:`fov_axis` parameters).
+
+The exact camera position and orientation is most easily expressed using the
+:monosp:`lookat` tag, i.e.:
+
+.. code-block:: xml
+
+    <sensor type="thinlens">
+        <transform name="to_world">
+            <!-- Move and rotate the camera so that looks from (1, 1, 1) to (1, 2, 1)
+                and the direction (0, 0, 1) points "up" in the output image -->
+            <lookat origin="1, 1, 1" target="1, 2, 1" up="0, 0, 1"/>
+        </transform>
+
+        <!-- Focus on the target -->
+        <float name="focus_distance" value="1"/>
+        <float name="aperture_radius" value="0.1"/>
+    </sensor>
+
+ */
+
 template <typename Float, typename Spectrum>
 class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:

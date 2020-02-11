@@ -5,13 +5,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * This is a windowed version of the theoretically optimal low-pass filter. It
- * is generally one of the best available filters in terms of producing sharp
- * high-quality output. Its main disadvantage is that it produces ringing
- * around discontinuities, which can become a serious problem when rendering
- * bright objects with sharp edges (a directly visible light source will for
- * instance have black fringing artifacts around it).
+/**!
+
+.. _rfilter-lanczos:
+
+Lanczos filter (:monosp:`lanczos`)
+----------------------------------
+
+This is a windowed version of the theoretically optimal low-pass filter. It
+is generally one of the best available filters in terms of producing sharp
+high-quality output. Its main disadvantage is that it produces ringing
+around discontinuities, which can become a serious problem when rendering
+bright objects with sharp edges (a directly visible light source will for
+instance have black fringing artifacts around it).
+
  */
 template <typename Float, typename Spectrum>
 class LanczosSincFilter final : public ReconstructionFilter<Float, Spectrum> {
