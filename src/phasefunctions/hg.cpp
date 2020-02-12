@@ -55,7 +55,9 @@ public:
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
                                       const MediumInteraction3f &mi, const Point2f &sample,
-                                      Mask /* active */) const override {
+                                      Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+
         Float cos_theta;
         if (std::abs(m_g) < math::Epsilon<ScalarFloat>) {
             cos_theta = 1 - 2 * sample.x();
@@ -73,7 +75,8 @@ public:
     }
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f &mi,
-               const Vector3f &wo, Mask /* active */) const override {
+               const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         return eval_hg(dot(wo, mi.wi));
     }
 

@@ -54,14 +54,16 @@ public:
 
     UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f & /* mi */,
-                            Mask /* active */) const override {
+                            Mask active) const override {
         // TODO: This could be a spectral quantity (at least in RGB mode)
+        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return m_max_density;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         auto sigmat = m_density_scale * m_sigmat->eval(mi, active);
         auto sigmas = sigmat * m_albedo->eval(mi, active);
         auto sigman = get_combined_extinction(mi, active) - sigmat;

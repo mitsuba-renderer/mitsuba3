@@ -182,6 +182,8 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+
         // Determine the type of interaction
         bool has_reflection    = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_transmission  = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
@@ -286,6 +288,8 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
@@ -353,6 +357,8 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 

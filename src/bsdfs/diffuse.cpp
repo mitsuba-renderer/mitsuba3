@@ -80,7 +80,7 @@ public:
                                              Float /* sample1 */,
                                              const Point2f &sample2,
                                              Mask active) const override {
-        ScopedPhase sp(ProfilerPhase::BSDFSample);
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         BSDFSample3f bs = zero<BSDFSample3f>();
@@ -103,7 +103,7 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
-        ScopedPhase sp(ProfilerPhase::BSDFEvaluate);
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;
@@ -119,8 +119,8 @@ public:
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-              const Vector3f &wo, Mask /* active */) const override {
-        ScopedPhase sp(ProfilerPhase::BSDFEvaluate);
+              const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
             return 0.f;

@@ -162,6 +162,8 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
             Throw("The bitmap texture %s was queried for a spectrum, but texture conversion "
                   "into spectra was explicitly disabled! (raw=true)",
@@ -177,6 +179,8 @@ public:
     }
 
     Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
             Throw("eval_1(): The bitmap texture %s was queried for a scalar value, but texture "
                   "conversion into spectra was requested! (raw=false)",
@@ -192,6 +196,8 @@ public:
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (Channels != 3) {
             Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but it is "
                   "monochromatic!", to_string());

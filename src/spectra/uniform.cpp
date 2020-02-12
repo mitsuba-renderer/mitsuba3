@@ -18,7 +18,9 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
-                             Mask /*active*/) const override {
+                             Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (is_spectral_v<Spectrum>) {
             auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
                           (si.wavelengths <= MTS_WAVELENGTH_MAX);
@@ -30,11 +32,14 @@ public:
         }
     }
 
-    Float eval_1(const SurfaceInteraction3f & /* it */, Mask /* active */) const override {
+    Float eval_1(const SurfaceInteraction3f & /* it */, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return m_value;
     }
 
-    Wavelength pdf(const SurfaceInteraction3f &si, Mask /*active*/) const override {
+    Wavelength pdf(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (is_spectral_v<Spectrum>) {
             auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
                           (si.wavelengths <= MTS_WAVELENGTH_MAX);
@@ -48,7 +53,9 @@ public:
 
     std::pair<Wavelength, UnpolarizedSpectrum> sample(const SurfaceInteraction3f &/*si*/,
                                                       const Wavelength &sample,
-                                                      Mask /*active*/) const override {
+                                                      Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+
         if constexpr (is_spectral_v<Spectrum>) {
             return { MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
                      m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) };

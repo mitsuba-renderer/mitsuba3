@@ -31,6 +31,8 @@ public:
                                      const RayDifferential3f &ray,
                                      Float *aovs,
                                      Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+
         auto result = m_integrator->sample(scene, sampler, ray, aovs + 12, active);
 
         if constexpr (is_polarized_v<Spectrum>) {

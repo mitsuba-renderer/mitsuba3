@@ -32,6 +32,8 @@ MTS_VARIANT
 typename Medium<Float, Spectrum>::MediumInteraction3f
 Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
                                             UInt32 channel, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+
     // initialize basic medium interaction fields
     MediumInteraction3f mi;
     mi.sh_frame    = Frame3f(ray.d);
@@ -72,7 +74,9 @@ std::pair<typename Medium<Float, Spectrum>::UnpolarizedSpectrum,
           typename Medium<Float, Spectrum>::UnpolarizedSpectrum>
 Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
                                          const SurfaceInteraction3f &si,
-                                         Mask /* active */) const {
+                                         Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+
     Float t      = min(mi.t, si.t) - mi.mint;
     UnpolarizedSpectrum tr  = exp(-t * mi.combined_extinction);
     UnpolarizedSpectrum pdf = select(si.t < mi.t, tr, tr * mi.combined_extinction);

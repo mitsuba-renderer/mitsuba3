@@ -126,7 +126,9 @@ public:
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
-                                     Mask /*active*/) const override {
+                                     Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps;
@@ -139,7 +141,8 @@ public:
         return ps;
     }
 
-    Float pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const override {
+    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
 
@@ -152,6 +155,8 @@ public:
 
     std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float *cache,
                                          Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         Ray3f ray     = m_world_to_object.transform_affine(ray_);
         Float t      = -ray.o.z() / ray.d.z();
         Point3f local = ray(t);
@@ -170,6 +175,8 @@ public:
     }
 
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         Ray3f ray     = m_world_to_object * ray_;
         Float t      = -ray.o.z() / ray.d.z();
         Point3f local = ray(t);
@@ -182,6 +189,8 @@ public:
 
     void fill_surface_interaction(const Ray3f &ray, const Float *cache,
                                   SurfaceInteraction3f &si_out, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         SurfaceInteraction3f si(si_out);
 
         Float r = norm(Point2f(cache[0], cache[1])),

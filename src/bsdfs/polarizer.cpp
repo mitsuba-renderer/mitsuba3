@@ -23,7 +23,7 @@ public:
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                              Float /* sample1 */, const Point2f &/* sample2 */,
                                              Mask active) const override {
-        ScopedPhase sp(ProfilerPhase::BSDFSample);
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         BSDFSample3f bs = zero<BSDFSample3f>();
         bs.wo = -si.wi;
@@ -70,17 +70,17 @@ public:
 
     Spectrum eval(const BSDFContext &/* ctx */, const SurfaceInteraction3f &/* si */,
                   const Vector3f &/* wo */, Mask /* active */) const override {
-        ScopedPhase sp(ProfilerPhase::BSDFEvaluate);
         return 0.f;
     }
 
     Float pdf(const BSDFContext &/* ctx */, const SurfaceInteraction3f &/* si */,
               const Vector3f &/* wo */, Mask /* active */) const override {
-        ScopedPhase sp(ProfilerPhase::BSDFEvaluate);
         return 0.f;
     }
 
     Spectrum eval_null_transmission(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle

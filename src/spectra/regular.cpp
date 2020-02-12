@@ -55,6 +55,8 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (is_spectral_v<Spectrum>)
             return m_distr.eval_pdf(si.wavelengths, active);
         else
@@ -62,6 +64,8 @@ public:
     }
 
     Wavelength pdf(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (is_spectral_v<Spectrum>)
             return m_distr.eval_pdf_normalized(si.wavelengths, active);
         else
@@ -71,6 +75,8 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum> sample(const SurfaceInteraction3f & /*si*/,
                                                       const Wavelength &sample,
                                                       Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+
         if constexpr (is_spectral_v<Spectrum>)
             return { m_distr.sample(sample, active), m_distr.integral() };
         else

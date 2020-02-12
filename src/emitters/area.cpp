@@ -68,6 +68,8 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
         return select(
             Frame3f::cos_theta(si.wi) > 0.f,
             unpolarized<Spectrum>(m_radiance->eval(si, active)),
@@ -78,6 +80,8 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
                                           Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
         // 1. Sample spatial component
         PositionSample3f ps = m_shape->sample_position(time, sample2, active);
 
@@ -97,6 +101,8 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
 
         DirectionSample3f ds = m_shape->sample_direction(it, sample, active);
@@ -111,6 +117,8 @@ public:
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
         return select(dot(ds.d, ds.n) < 0.f,
                       m_shape->pdf_direction(it, ds, active), 0.f);
     }

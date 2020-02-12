@@ -193,6 +193,8 @@ public:
 
     template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         using StorageType = Array<Float, Channels>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;

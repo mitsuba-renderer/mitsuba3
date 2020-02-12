@@ -17,6 +17,8 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &it, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         Point2f uv = m_transform.transform_affine(it.uv);
         mask_t<Point2f> mask = uv - floor(uv) > .5f;
         UnpolarizedSpectrum result = zero<UnpolarizedSpectrum>();
@@ -36,6 +38,8 @@ public:
     }
 
     Float eval_1(const SurfaceInteraction3f &it, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         Point2f uv = m_transform.transform_affine(it.uv);
         mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
         Float result = 0.f;

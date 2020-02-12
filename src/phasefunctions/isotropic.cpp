@@ -29,14 +29,17 @@ public:
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
                                       const MediumInteraction3f & /* mi */, const Point2f &sample,
-                                      Mask /* active */) const override {
+                                      Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
+
         auto wo  = warp::square_to_uniform_sphere(sample);
         auto pdf = warp::square_to_uniform_sphere_pdf(wo);
         return std::make_pair(wo, pdf);
     }
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f & /* mi */,
-               const Vector3f &wo, Mask /* active */) const override {
+               const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         return warp::square_to_uniform_sphere_pdf(wo);
     }
 

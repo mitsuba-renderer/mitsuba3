@@ -205,6 +205,8 @@ Mesh<Float, Spectrum>::surface_area() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     area_distr_ensure();
 
     using Index = replace_scalar_t<Float, ScalarIndex>;
@@ -250,7 +252,9 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     return ps;
 }
 
-MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
+MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     area_distr_ensure();
     return m_area_distr.normalization();
 }
@@ -259,6 +263,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /
                                                                  const Float *cache,
                                                                  SurfaceInteraction3f &si,
                                                                  Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     // Barycentric coordinates within triangle
     Float b1 = cache[0],
           b2 = cache[1];
@@ -323,6 +329,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /
 MTS_VARIANT std::pair<typename Mesh<Float, Spectrum>::Vector3f, typename Mesh<Float, Spectrum>::Vector3f>
 Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame,
                                          Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     Assert(has_vertex_normals());
 
     if (!shading_frame)

@@ -117,6 +117,8 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
+
     if constexpr (is_cuda_array_v<Float>)
         return ray_intersect_gpu(ray, active);
     else
@@ -125,6 +127,8 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
+
 #if !defined(MTS_ENABLE_EMBREE)
     if constexpr (!is_cuda_array_v<Float>)
         return ray_intersect_naive_cpu(ray, active);
@@ -136,6 +140,8 @@ Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
+
     if constexpr (is_cuda_array_v<Float>)
         return ray_test_gpu(ray, active);
     else
@@ -145,11 +151,11 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
                                                  bool test_visibility, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
+
     using EmitterPtr = replace_scalar_t<Float, Emitter*>;
 
-    ScopedPhase sp(ProfilerPhase::SampleEmitterDirection);
     Point2f sample(sample_);
-
     DirectionSample3f ds;
     Spectrum spec;
 
@@ -188,6 +194,7 @@ MTS_VARIANT Float
 Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
+    MTS_MASK_ARGUMENT(active);
     using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
 
     return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *

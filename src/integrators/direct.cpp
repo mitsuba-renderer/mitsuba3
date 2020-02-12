@@ -116,7 +116,8 @@ public:
                                      const RayDifferential3f &ray,
                                      Float * /* aovs */,
                                      Mask active) const override {
-        ScopedPhase sp(ProfilerPhase::SamplingIntegratorSample);
+        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
         Mask valid_ray = si.is_valid();
 

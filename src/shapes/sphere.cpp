@@ -126,7 +126,9 @@ public:
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
-                                     Mask /*active*/) const override {
+                                     Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         Point3f p = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps;
@@ -143,12 +145,15 @@ public:
         return ps;
     }
 
-    Float pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const override {
+    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
 
     DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
                                        Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         DirectionSample3f result = zero<DirectionSample3f>();
 
         Vector3f dc_v = m_center - it.p;
@@ -222,7 +227,9 @@ public:
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
-                        Mask /*active*/) const override {
+                        Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Float sin_alpha = m_radius * rcp(norm(m_center - it.p)),
               cos_alpha = enoki::safe_sqrt(1.f - sin_alpha * sin_alpha);
@@ -243,6 +250,8 @@ public:
 
     std::pair<Mask, Float> ray_intersect(const Ray3f &ray, Float * /*cache*/,
                                          Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         using Float64  = float64_array_t<Float>;
 
         Float64 mint = Float64(ray.mint);
@@ -270,6 +279,8 @@ public:
     }
 
     Mask ray_test(const Ray3f &ray, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         using Float64 = float64_array_t<Float>;
 
         Float64 mint = Float64(ray.mint);
@@ -295,6 +306,8 @@ public:
 
     void fill_surface_interaction(const Ray3f &ray, const Float * /*cache*/,
                                   SurfaceInteraction3f &si_out, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         SurfaceInteraction3f si(si_out);
 
         if constexpr (is_diff_array_v<Float>) {
@@ -362,7 +375,9 @@ public:
 
     std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
                                                     bool /*shading_frame*/,
-                                                    Mask /*active*/) const override {
+                                                    Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
         return { si.dp_du * inv_radius, si.dp_dv * inv_radius };
     }

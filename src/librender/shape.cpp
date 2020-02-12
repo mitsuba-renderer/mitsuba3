@@ -74,6 +74,8 @@ MTS_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
 Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
                                          const Point2f &sample,
                                          Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     DirectionSample3f ds(sample_position(it.time, sample, active));
     ds.d = ds.p - it.p;
 
@@ -91,6 +93,8 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
 MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
                                                         const DirectionSample3f &ds,
                                                         Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     Float pdf = pdf_position(ds, active),
            dp = abs_dot(ds.d, ds.n);
 
@@ -106,7 +110,9 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f & /*ray*/, Float * /*cache*/,
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::Mask Shape<Float, Spectrum>::ray_test(const Ray3f &ray,
-                                                                                   Mask /*active*/) const {
+                                                                                   Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     Float unused[MTS_KD_INTERSECTION_CACHE_SIZE];
     return ray_intersect(ray, unused).first;
 }
@@ -120,6 +126,8 @@ MTS_VARIANT void Shape<Float, Spectrum>::fill_surface_interaction(const Ray3f & 
 
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
     SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
     Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
     Mask success = false;

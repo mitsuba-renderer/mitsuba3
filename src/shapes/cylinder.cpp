@@ -201,7 +201,9 @@ public:
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
-                                     Mask /*active*/) const override {
+                                     Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         auto [sin_theta, cos_theta] = sincos(2.f * math::Pi<Float> * sample.y());
 
         Point3f p(cos_theta * m_radius,
@@ -222,7 +224,8 @@ public:
         return ps;
     }
 
-    Float pdf_position(const PositionSample3f & /*ps*/, Mask /*active*/) const override {
+    Float pdf_position(const PositionSample3f & /*ps*/, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
         return m_inv_surface_area;
     }
 
@@ -235,6 +238,8 @@ public:
 
     std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float * /*cache*/,
                                          Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         using Float64 = float64_array_t<Float>;
 
         Ray3f ray = m_world_to_object * ray_;
@@ -277,6 +282,8 @@ public:
     }
 
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         using Float64  = float64_array_t<Float>;
 
         Ray3f ray = m_world_to_object * ray_;
@@ -318,6 +325,8 @@ public:
 
     void fill_surface_interaction(const Ray3f &ray, const Float * /*cache*/,
                                   SurfaceInteraction3f &si_out, Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         SurfaceInteraction3f si(si_out);
 
         si.p = ray(si.t);
@@ -349,7 +358,9 @@ public:
 
     std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
                                                     bool /*shading_frame*/,
-                                                    Mask /*active*/) const override {
+                                                    Mask active) const override {
+        MTS_MASK_ARGUMENT(active);
+
         Vector3f dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f)),
                 dn_dv = Vector3f(0.f);
 

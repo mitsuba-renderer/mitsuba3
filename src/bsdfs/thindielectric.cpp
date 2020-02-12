@@ -94,6 +94,7 @@ public:
                                              Float sample1,
                                              const Point2f & /* sample2 */,
                                              Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);

@@ -35,7 +35,8 @@ public:
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                                            Float /*sample1*/, const Point2f & /*sample2*/,
-                                           Mask /*active*/) const override {
+                                           Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
         BSDFSample3f bs = zero<BSDFSample3f>();
         Spectrum result(0.f);

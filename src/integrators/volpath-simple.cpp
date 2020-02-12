@@ -38,7 +38,7 @@ public:
                                      const RayDifferential3f &ray_,
                                      Float * /* aovs */,
                                      Mask active) const override {
-
+        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         // If there is an environment emitter and emitters are visible: all rays will be valid
         // Otherwise, it will depend on whether a valid interaction is sampled

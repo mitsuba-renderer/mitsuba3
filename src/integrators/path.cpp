@@ -104,7 +104,8 @@ public:
                                      const RayDifferential3f &ray_,
                                      Float * /* aovs */,
                                      Mask active) const override {
-        ScopedPhase sp(ProfilerPhase::SamplingIntegratorSample);
+        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+
         RayDifferential3f ray = ray_;
 
         // Tracks radiance scaling due to index of refraction changes

@@ -37,6 +37,8 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
         if constexpr (is_spectral_v<Spectrum>)
             return m_d65->eval(si, active) *
                    srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);

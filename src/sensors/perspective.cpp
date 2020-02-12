@@ -166,6 +166,8 @@ public:
                                           const Point2f &position_sample,
                                           const Point2f & /*aperture_sample*/,
                                           Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         Ray3f ray;
         ray.time = time;
@@ -193,6 +195,8 @@ public:
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample, const Point2f &position_sample,
                             const Point2f & /*aperture_sample*/, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
         RayDifferential3f ray;
         ray.time = time;

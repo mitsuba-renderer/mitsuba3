@@ -58,10 +58,13 @@ public:
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return eval_impl(si.wavelengths, active);
     }
 
     Wavelength pdf(const SurfaceInteraction3f &si, Mask active_) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active_);
+
         if constexpr (is_spectral_v<Spectrum>) {
             mask_t<Wavelength> active = active_;
 
@@ -113,6 +116,8 @@ public:
     std::pair<Wavelength, UnpolarizedSpectrum> sample(const SurfaceInteraction3f &/* si */,
                                                       const Wavelength &sample_,
                                                       Mask active_) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active_);
+
         using WavelengthMask = mask_t<Wavelength>;
 
         if constexpr (is_spectral_v<Spectrum>) {

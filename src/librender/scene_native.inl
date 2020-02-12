@@ -16,7 +16,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
-    ScopedPhase sp(ProfilerPhase::RayIntersect);
     const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
     Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
 
@@ -24,7 +23,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
 
     SurfaceInteraction3f si;
     if (likely(any(hit))) {
-        ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
+        ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
         si = kdtree->create_surface_interaction(ray, hit_t, cache, hit);
     } else {
         si.wavelengths = ray.wavelengths;
@@ -36,14 +35,13 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
-    ScopedPhase sp(ProfilerPhase::RayIntersect);
     const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
     Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
     auto [hit, hit_t] = kdtree->template ray_intersect_naive<false>(ray, cache, active);
 
     SurfaceInteraction3f si;
     if (likely(any(hit))) {
-        ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
+        ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
         si = kdtree->create_surface_interaction(ray, hit_t, cache, hit);
     }
 
@@ -52,7 +50,6 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
-    ScopedPhase p(ProfilerPhase::RayTest);
     const ShapeKDTree *kdtree = (ShapeKDTree *) m_accel;
     return kdtree->template ray_intersect<true>(ray, (Float *) nullptr, active).first;
 }

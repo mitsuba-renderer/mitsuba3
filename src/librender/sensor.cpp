@@ -58,6 +58,7 @@ MTS_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
 MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
 Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                                                  const Point2f &sample3, Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
     auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
 

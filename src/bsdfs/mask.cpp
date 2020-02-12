@@ -98,6 +98,8 @@ public:
                                              Float sample1,
                                              const Point2f &sample2,
                                              Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+
         uint32_t null_index = (uint32_t) component_count() - 1;
 
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
@@ -132,12 +134,16 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         Float opacity = eval_opacity(si, active);
         return m_nested_bsdf->eval(ctx, si, wo, active) * opacity;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         uint32_t null_index      = (uint32_t) component_count() - 1;
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
         bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;

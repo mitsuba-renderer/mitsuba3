@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <mitsuba/core/profiler.h>
 #include <mitsuba/render/interaction.h>
 
 NAMESPACE_BEGIN(mitsuba)

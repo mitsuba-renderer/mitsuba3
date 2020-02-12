@@ -123,6 +123,8 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
         Vector3f v = m_world_transform->eval(si.time, active)
                          .inverse()
                          .transform_affine(-si.wi);
@@ -144,6 +146,8 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+
         auto [uv, pdf] = m_warp.sample(sample);
 
         Float theta = uv.y() * math::Pi<Float>,
@@ -178,6 +182,8 @@ public:
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
         Vector3f d = m_world_transform->eval(it.time, active)
                          .inverse()
                          .transform_affine(ds.d);

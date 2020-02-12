@@ -15,6 +15,7 @@ public:
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return eval_impl<false>(it, active);
     }
 
@@ -24,6 +25,7 @@ public:
 
     std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
                                                 Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return eval_impl<true>(it, active);
     }
 

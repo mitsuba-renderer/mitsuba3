@@ -42,7 +42,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
     if constexpr (!is_cuda_array_v<Float>) {
-        ScopedPhase sp(ProfilerPhase::RayIntersect);
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
         SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
@@ -64,7 +63,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
             rtcIntersect1((RTCScene) m_accel, &context, &rh);
 
             if (rh.ray.tfar != ray.maxt) {
-                ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
+                ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index = rh.hit.primID;
 
@@ -118,7 +117,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
 
             if (likely(any(hit))) {
                 using ShapePtr = replace_scalar_t<Float, const Shape *>;
-                ScopedPhase sp2(ProfilerPhase::CreateSurfaceInteraction);
+                ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
                 UInt32 shape_index = load<UInt32>(rh.hit.geomID);
                 UInt32 prim_index  = load<UInt32>(rh.hit.primID);
 
@@ -156,8 +155,6 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
     if constexpr (!is_cuda_array_v<Float>) {
-        ScopedPhase p(ProfilerPhase::RayTest);
-
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 

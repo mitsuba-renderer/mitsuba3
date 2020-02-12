@@ -172,6 +172,8 @@ public:
                                              Float /*sample1*/,
                                              const Point2f &sample2,
                                              Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+
         BSDFSample3f bs = zero<BSDFSample3f>();
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
@@ -269,6 +271,8 @@ public:
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo_, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         Vector3f wi = si.wi, wo = wo_;
 
         active &= Frame3f::cos_theta(wi) > 0.f &&
@@ -320,6 +324,8 @@ public:
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo_, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
         Vector3f wi = si.wi, wo = wo_;
 
         active &= Frame3f::cos_theta(wi) > 0.f &&

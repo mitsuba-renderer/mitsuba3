@@ -282,7 +282,12 @@ template <typename Float_> struct CoreAliases {
 
 #define MTS_MASK_ARGUMENT(mask)                                                                    \
     if constexpr (is_scalar_v<Float>)                                                              \
-        active = true;
+        mask = true;
+
+#define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
+    ScopedPhase scope_phase(profiler_phase);                                                       \
+    if constexpr (is_scalar_v<Float>)                                                              \
+        mask = true;
 
 NAMESPACE_BEGIN(filesystem)
 class path;

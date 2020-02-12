@@ -115,7 +115,7 @@ public:
                                      const RayDifferential3f &ray,
                                      Float *aovs,
                                      Mask active) const override {
-        ScopedPhase sp(ProfilerPhase::SamplingIntegratorSample);
+        MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         std::pair<Spectrum, Mask> result { 0.f, false };
 

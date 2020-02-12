@@ -58,6 +58,8 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f & /*pos_sample*/, const Point2f &dir_sample,
                                           Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
         auto [wavelengths, spec_weight] = m_intensity->sample(
             zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
@@ -73,6 +75,8 @@ public:
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
                                                             const Point2f & /*sample*/,
                                                             Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+
         auto trafo = m_world_transform->eval(it.time, active);
 
         DirectionSample3f ds;

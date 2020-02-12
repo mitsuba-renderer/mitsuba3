@@ -79,6 +79,8 @@ public:
                                              Float /* sample1 */,
                                              const Point2f &/* sample2 */,
                                              Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
+
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
