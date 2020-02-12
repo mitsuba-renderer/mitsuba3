@@ -57,9 +57,7 @@ def create_medium_scene(phase_function='isotropic', spp=8):
                 <string name="filename" value="resources/data/ply/teapot.ply"/>
                 <bsdf type="null" />
                 <medium name="interior" type="homogeneous">
-                    <texture3d type="constant3d" name="sigma_t">
-                        <rgb name="color" value="1.0, 1.0, 1.0"/>
-                    </texture3d>
+                    <rgb name="sigma_t" value="1.0, 1.0, 1.0"/>
                     <rgb name="albedo" value="0.99, 0.4, 0.4"/>
                     <phase type="{phase_function}"/>
                     <boolean name="sample_emitters" value="true"/>

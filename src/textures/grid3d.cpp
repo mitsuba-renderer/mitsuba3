@@ -12,9 +12,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-// Forward declaration of specialized grid3d
+// Forward declaration of specialized GridVolume
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-class Grid3DImpl;
+class GridVolumeImpl;
 
 /**
  * Interpolated 3D grid texture of scalar or color values.
@@ -30,12 +30,12 @@ class Grid3DImpl;
  *     where (xpos, ypos, zpos, chan) denotes the lookup location.
  */
 template <typename Float, typename Spectrum>
-class Grid3D final : public Texture3D<Float, Spectrum> {
+class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture3D, m_world_to_local)
+    MTS_IMPORT_BASE(Volume, m_world_to_local)
     MTS_IMPORT_TYPES()
 
-    Grid3D(const Properties &props) : Base(props), m_props(props) {
+    GridVolume(const Properties &props) : Base(props), m_props(props) {
 
         auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
         m_metadata                = metadata;
@@ -50,6 +50,7 @@ public:
             ScalarFloat max = 0.0;
             for (size_t i = 0; i < size; ++i) {
                 ScalarColor3f rgb = load_unaligned<ScalarColor3f>(ptr);
+                // TODO: Make this scaling optional if the RGB values are between 0 and 1
                 ScalarFloat scale = hmax(rgb) * 2.f;
                 ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
@@ -75,7 +76,7 @@ public:
        return true; // dummy implementation
     }
 
-    template <uint32_t Channels, bool Raw> using Impl = Grid3DImpl<Float, Spectrum, Channels, Raw>;
+    template <uint32_t Channels, bool Raw> using Impl = GridVolumeImpl<Float, Spectrum, Channels, Raw>;
 
     /**
      * Recursively expand into an implementation specialized to the actual loaded grid.
@@ -106,12 +107,12 @@ protected:
 };
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-class Grid3DImpl final : public Texture3D<Float, Spectrum> {
+class GridVolumeImpl final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture3D, is_inside, update_bbox, m_world_to_local)
+    MTS_IMPORT_BASE(Volume, is_inside, update_bbox, m_world_to_local)
     MTS_IMPORT_TYPES()
 
-    Grid3DImpl(const Properties &props, const VolumeMetadata &meta,
+    GridVolumeImpl(const Properties &props, const VolumeMetadata &meta,
                const DynamicBuffer<Float> &data)
         : Base(props) {
 
@@ -131,11 +132,11 @@ public:
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
-            Throw("The Grid3D texture %s was queried for a spectrum, but texture conversion "
+            Throw("The GridVolume texture %s was queried for a spectrum, but texture conversion "
                   "into spectra was explicitly disabled! (raw=true)",
                   to_string());
         } else if constexpr (Channels != 3 && Channels != 1) {
-            Throw("The Grid3D texture %s was queried for a spectrum, but has a number of channels "
+            Throw("The GridVolume texture %s was queried for a spectrum, but has a number of channels "
                   "which is not 1 or 3",
                   to_string());
         } else {
@@ -152,7 +153,7 @@ public:
 
     Float eval_1(const Interaction3f &it, Mask active = true) const override {
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
-            Throw("eval_1(): The Grid3D texture %s was queried for a scalar value, but texture "
+            Throw("eval_1(): The GridVolume texture %s was queried for a scalar value, but texture "
                   "conversion into spectra was requested! (raw=false)",
                   to_string());
         } else {
@@ -167,10 +168,10 @@ public:
 
     Vector3f eval_3(const Interaction3f &it, Mask active = true) const override {
         if constexpr (Channels != 3) {
-            Throw("eval_3(): The Grid3D texture %s was queried for a 3D vector, but it has "
+            Throw("eval_3(): The GridVolume texture %s was queried for a 3D vector, but it has "
                   "only a single channel!", to_string());
         } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
-            Throw("eval_3(): The Grid3D texture %s was queried for a 3D vector, but texture "
+            Throw("eval_3(): The GridVolume texture %s was queried for a 3D vector, but texture "
                   "conversion into spectra was requested! (raw=false)",
                   to_string());
         } else {
@@ -304,7 +305,7 @@ public:
 
         if constexpr (with_gradient) {
             if constexpr (!is_monochromatic_v<Spectrum>)
-                NotImplementedError("eval_gradient with multichannel Grid3D texture");
+                NotImplementedError("eval_gradient with multichannel GridVolume texture");
 
             Float gx0 = fmadd(d001 - d000, rf.y(), (d011 - d010) * f.y()).x(),
                   gx1 = fmadd(d101 - d100, rf.y(), (d111 - d110) * f.y()).x(),
@@ -339,7 +340,7 @@ public:
         if (m_size != new_size) {
             // Only support a special case: resolution doubling along all axes
             if (new_size != m_size * 8)
-                Throw("Unsupported Grid3D data size update: %d -> %d. Expected %d or %d "
+                Throw("Unsupported GridVolume data size update: %d -> %d. Expected %d or %d "
                       "(doubling "
                       "the resolution).",
                       m_size, new_size, m_size, m_size * 8);
@@ -357,7 +358,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Grid3D[" << std::endl
+        oss << "GridVolume[" << std::endl
             << "  world_to_local = " << m_world_to_local << "," << std::endl
             << "  dimensions = " << m_metadata.shape << "," << std::endl
             << "  mean = " << m_metadata.mean << "," << std::endl
@@ -375,33 +376,33 @@ protected:
     size_t m_size;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Grid3D, Texture3D)
-MTS_EXPORT_PLUGIN(Grid3D, "Grid3D texture")
+MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
+MTS_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
 
 NAMESPACE_BEGIN()
 template <uint32_t Channels, bool Raw>
-constexpr const char * grid3d_class_name() {
+constexpr const char * gridvolume_class_name() {
     if constexpr (!Raw) {
         if constexpr (Channels == 1)
-            return "Grid3DImpl_1_0";
+            return "GridVolumeImpl_1_0";
         else
-            return "Grid3DImpl_3_0";
+            return "GridVolumeImpl_3_0";
     } else {
         if constexpr (Channels == 1)
-            return "Grid3DImpl_1_1";
+            return "GridVolumeImpl_1_1";
         else
-            return "Grid3DImpl_3_1";
+            return "GridVolumeImpl_3_1";
     }
 }
 NAMESPACE_END()
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-Class *Grid3DImpl<Float, Spectrum, Channels, Raw>::m_class
-    = new Class(grid3d_class_name<Channels, Raw>(), "Texture3D",
+Class *GridVolumeImpl<Float, Spectrum, Channels, Raw>::m_class
+    = new Class(gridvolume_class_name<Channels, Raw>(), "Volume",
                 ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
-const Class* Grid3DImpl<Float, Spectrum, Channels, Raw>::class_() const {
+const Class* GridVolumeImpl<Float, Spectrum, Channels, Raw>::class_() const {
     return m_class;
 }
 

@@ -29,7 +29,7 @@ template <typename Float, typename Spectrum> class ProjectiveCamera;
 template <typename Float, typename Spectrum> class Shape;
 template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture;
-template <typename Float, typename Spectrum> class Texture3D;
+template <typename Float, typename Spectrum> class Volume;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
 template <typename Float, typename Spectrum> struct PositionSample;
@@ -85,7 +85,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ImageBlock             = mitsuba::ImageBlock<FloatU, SpectrumU>;
     using ReconstructionFilter   = mitsuba::ReconstructionFilter<FloatU, SpectrumU>;
     using Texture                = mitsuba::Texture<FloatU, SpectrumU>;
-    using Texture3D              = mitsuba::Texture3D<FloatU, SpectrumU>;
+    using Volume              = mitsuba::Volume<FloatU, SpectrumU>;
 
     using ObjectPtr              = replace_scalar_t<Float, const Object *>;
     using BSDFPtr                = replace_scalar_t<Float, const BSDF *>;
@@ -139,7 +139,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ImageBlock             = typename RenderAliases::ImageBlock;                             \
     using ReconstructionFilter   = typename RenderAliases::ReconstructionFilter;                   \
     using Texture                = typename RenderAliases::Texture;                                \
-    using Texture3D              = typename RenderAliases::Texture3D;                              \
+    using Volume                 = typename RenderAliases::Volume;                                 \
     using ObjectPtr              = typename RenderAliases::ObjectPtr;                              \
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \

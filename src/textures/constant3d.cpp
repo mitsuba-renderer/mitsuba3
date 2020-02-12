@@ -5,12 +5,12 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class Constant3D final : public Texture3D<Float, Spectrum> {
+class ConstVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Texture3D, is_inside, m_world_to_local)
+    MTS_IMPORT_BASE(Volume, is_inside, m_world_to_local)
     MTS_IMPORT_TYPES(Texture)
 
-    explicit Constant3D(const Properties &props) : Base(props) {
+    explicit ConstVolume(const Properties &props) : Base(props) {
         m_color = props.texture<Texture>("color", 1.f);
     }
 
@@ -29,8 +29,6 @@ public:
 
     template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, const Mask &active) const {
-        Mask inside    = active && is_inside(it, active);
-
         SurfaceInteraction3f si;
         si.uv          = Point2f(0.f, 0.f);
         si.wavelengths = it.wavelengths;
@@ -56,7 +54,7 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Constant3D[" << std::endl
+        oss << "ConstVolume[" << std::endl
             << "  world_to_local = " << m_world_to_local << "," << std::endl
             << "  color = " << m_color << std::endl
             << "]";
@@ -68,6 +66,6 @@ protected:
     ref<Texture> m_color;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(Constant3D, Texture3D)
-MTS_EXPORT_PLUGIN(Constant3D, "Constant 3D texture")
+MTS_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)
+MTS_EXPORT_PLUGIN(ConstVolume, "Constant 3D texture")
 NAMESPACE_END(mitsuba)

@@ -3,31 +3,31 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/spectrum.h>
 
-MTS_PY_EXPORT(Texture3D) {
-    MTS_PY_CLASS(Texture3D, Object)
+MTS_PY_EXPORT(Volume) {
+    MTS_PY_CLASS(Volume, Object)
         .def(py::init<const Properties &>())
         .def("eval",
             vectorize(py::overload_cast<const Interaction3f&, Mask>(
-                &Texture3D::eval, py::const_)),
-            "it"_a, "active"_a = true, D(Texture3D, eval))
+                &Volume::eval, py::const_)),
+            "it"_a, "active"_a = true, D(Volume, eval))
         .def("eval_1",
             vectorize(py::overload_cast<const Interaction3f&, Mask>(
-                &Texture3D::eval_1, py::const_)),
-            "it"_a, "active"_a = true, D(Texture3D, eval_1))
+                &Volume::eval_1, py::const_)),
+            "it"_a, "active"_a = true, D(Volume, eval_1))
         .def("eval_3",
             vectorize(py::overload_cast<const Interaction3f&, Mask>(
-                &Texture3D::eval_3, py::const_)),
-            "it"_a, "active"_a = true, D(Texture3D, eval_3))
+                &Volume::eval_3, py::const_)),
+            "it"_a, "active"_a = true, D(Volume, eval_3))
         .def("eval_gradient",
-             vectorize(py::overload_cast<const Interaction3f&, Mask>(&Texture3D::eval_gradient,
+             vectorize(py::overload_cast<const Interaction3f&, Mask>(&Volume::eval_gradient,
                                                             py::const_),
-             D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
+             D(Volume, eval_gradient), "it"_a, "active"_a = true)
         .def("eval_gradient",
              vectorize_wrapper(py::overload_cast<const Interaction3fP &, MaskP>(
-                 &Texture3D::eval_gradient, py::const_)),
-             D(Texture3D, eval_gradient), "it"_a, "active"_a = true)
-        .def_method(Texture3D, max)
-        .def_method(Texture3D, bbox)
-        .def_method(Texture3D, resolution)
-        .def("__repr__", &Texture3D::to_string);
+                 &Volume::eval_gradient, py::const_)),
+             D(Volume, eval_gradient), "it"_a, "active"_a = true)
+        .def_method(Volume, max)
+        .def_method(Volume, bbox)
+        .def_method(Volume, resolution)
+        .def("__repr__", &Volume::to_string);
 }

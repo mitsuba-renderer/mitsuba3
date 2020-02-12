@@ -158,7 +158,7 @@ protected:
 
 /// Abstract base class for spatially-varying 3D textures.
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER Texture3D : public Object {
+class MTS_EXPORT_RENDER Volume : public Object {
 public:
     MTS_IMPORT_TYPES()
 
@@ -197,7 +197,7 @@ public:
     /// Returns a human-reable summary
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "Texture3D[" << std::endl
+        oss << "Volume[" << std::endl
             << "  world_to_local = " << m_world_to_local << std::endl
             << "]";
         return oss.str();
@@ -205,8 +205,8 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    Texture3D(const Properties &props);
-    virtual ~Texture3D() {}
+    Volume(const Properties &props);
+    virtual ~Volume() {}
 
     virtual Mask is_inside(const Interaction3f &it, Mask active = true) const = 0;
 
@@ -227,5 +227,5 @@ protected:
 };
 
 MTS_EXTERN_CLASS_RENDER(Texture)
-MTS_EXTERN_CLASS_RENDER(Texture3D)
+MTS_EXTERN_CLASS_RENDER(Volume)
 NAMESPACE_END(mitsuba)

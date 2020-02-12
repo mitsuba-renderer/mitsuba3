@@ -72,7 +72,7 @@ MTS_PY_DECLARE(Shape);
 MTS_PY_DECLARE(ShapeKDTree);
 MTS_PY_DECLARE(srgb);
 MTS_PY_DECLARE(Texture);
-MTS_PY_DECLARE(Texture3D);
+MTS_PY_DECLARE(Volume);
 
 PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
@@ -106,7 +106,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(ShapeKDTree);
     MTS_PY_IMPORT(srgb);
     MTS_PY_IMPORT(Texture);
-    // MTS_PY_IMPORT(Texture3D);
+    // MTS_PY_IMPORT(Volume);
 
     /// Register the variant-specific caster with the 'core_ext' module
     auto casters = (std::vector<void *> *) (py::capsule)(

@@ -60,43 +60,43 @@ Texture<Float, Spectrum>::D65(ScalarFloat scale) {
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Texture3D implementations
+//! @{ \name Volume implementations
 // =======================================================================
 
-MTS_VARIANT Texture3D<Float, Spectrum>::Texture3D(const Properties &props) {
+MTS_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props) {
     m_world_to_local = props.transform("to_world", ScalarTransform4f()).inverse();
     update_bbox();
 }
 
-MTS_VARIANT typename Texture3D<Float, Spectrum>::UnpolarizedSpectrum
-Texture3D<Float, Spectrum>::eval(const Interaction3f &, Mask) const {
+MTS_VARIANT typename Volume<Float, Spectrum>::UnpolarizedSpectrum
+Volume<Float, Spectrum>::eval(const Interaction3f &, Mask) const {
     NotImplementedError("eval");
 }
 
-MTS_VARIANT Float Texture3D<Float, Spectrum>::eval_1(const Interaction3f &, Mask) const {
+MTS_VARIANT Float Volume<Float, Spectrum>::eval_1(const Interaction3f &, Mask) const {
     NotImplementedError("eval_1");
 }
 
-MTS_VARIANT typename Texture3D<Float, Spectrum>::Vector3f
-Texture3D<Float, Spectrum>::eval_3(const Interaction3f &, Mask) const {
+MTS_VARIANT typename Volume<Float, Spectrum>::Vector3f
+Volume<Float, Spectrum>::eval_3(const Interaction3f &, Mask) const {
     NotImplementedError("eval_3");
 }
 
-MTS_VARIANT std::pair<typename Texture3D<Float, Spectrum>::UnpolarizedSpectrum,
-                      typename Texture3D<Float, Spectrum>::Vector3f>
-Texture3D<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*active*/) const {
+MTS_VARIANT std::pair<typename Volume<Float, Spectrum>::UnpolarizedSpectrum,
+                      typename Volume<Float, Spectrum>::Vector3f>
+Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*active*/) const {
     NotImplementedError("eval_gradient");
 }
 
-MTS_VARIANT typename Texture3D<Float, Spectrum>::ScalarFloat
-Texture3D<Float, Spectrum>::max() const { NotImplementedError("max"); }
+MTS_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
+Volume<Float, Spectrum>::max() const { NotImplementedError("max"); }
 
 //! @}
 // =======================================================================
 
 MTS_IMPLEMENT_CLASS_VARIANT(Texture, Object, "texture")
-MTS_IMPLEMENT_CLASS_VARIANT(Texture3D, Object, "texture3d")
+MTS_IMPLEMENT_CLASS_VARIANT(Volume, Object, "volume")
 
 MTS_INSTANTIATE_CLASS(Texture)
-MTS_INSTANTIATE_CLASS(Texture3D)
+MTS_INSTANTIATE_CLASS(Volume)
 NAMESPACE_END(mitsuba)

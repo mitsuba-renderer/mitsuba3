@@ -307,48 +307,48 @@ public:  // Type-specific getters and setters ----------------------------------
     }
 
     /// Retrieve a 3D texture
-    template <typename Texture3D>
-    ref<Texture3D> texture3d(const std::string &name) const {
+    template <typename Volume>
+    ref<Volume> volume(const std::string &name) const {
         ref<Object> object = find_object(name);
         if (!object)
             Throw("Property \"%s\" has not been specified!", name);
-        if (!object->class_()->derives_from(MTS_CLASS(Texture3D)))
-            Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+        if (!object->class_()->derives_from(MTS_CLASS(Volume)))
+            Throw("The property \"%s\" has the wrong type (expected <Volume>).",
                 name);
         mark_queried(name);
-        return (Texture3D *) object.get();
+        return (Volume *) object.get();
     }
 
     /// Retrieve a 3D texture (use the provided texture if no entry exists)
-    template <typename Texture3D>
-    ref<Texture3D> texture3d(const std::string &name, ref<Texture3D> def_val) const {
+    template <typename Volume>
+    ref<Volume> volume(const std::string &name, ref<Volume> def_val) const {
         ref<Object> object = find_object(name);
         if (!object)
             return def_val;
-        if (!object->class_()->derives_from(MTS_CLASS(Texture3D)))
-            Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+        if (!object->class_()->derives_from(MTS_CLASS(Volume)))
+            Throw("The property \"%s\" has the wrong type (expected <Volume>).",
                 name);
         mark_queried(name);
-        return (Texture3D *) object.get();
+        return (Volume *) object.get();
     }
 
     /// Retrieve a 3D texture (use default constant texture if no entry exists)
-    template <typename Texture3D>
-    ref<Texture3D> texture3d(const std::string &name, Float def_val) const {
+    template <typename Volume>
+    ref<Volume> volume(const std::string &name, Float def_val) const {
         ref<Object> object = find_object(name);
         if (!object) {
-            Properties props("constant3d");
+            Properties props("constvolume");
             ref<Object> obj
-                = this->texture<typename Texture3D::Texture>("__default_spectrum", def_val).get();
+                = this->texture<typename Volume::Texture>("__default_spectrum", def_val).get();
             props.set_object("color", obj);
-            return (Texture3D *) PluginManager::instance()
-                ->create_object<Texture3D>(props).get();
+            return (Volume *) PluginManager::instance()
+                ->create_object<Volume>(props).get();
         }
-        if (!object->class_()->derives_from(MTS_CLASS(Texture3D)))
-            Throw("The property \"%s\" has the wrong type (expected <texture3d>).",
+        if (!object->class_()->derives_from(MTS_CLASS(Volume)))
+            Throw("The property \"%s\" has the wrong type (expected <Volume>).",
                 name);
         mark_queried(name);
-        return (Texture3D *) object.get();
+        return (Volume *) object.get();
     }
 private:
     // Return a reference to an object for a specific name (return null ref if doesn't exist)
