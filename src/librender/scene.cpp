@@ -158,6 +158,9 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         ScalarFloat emitter_pdf = 1.f / m_emitters.size();
         EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
 
+        // Rescale sample.x() to lie in [0,1) again
+        sample.x() = (sample.x() - index*emitter_pdf) * m_emitters.size();
+
         // Sample a direction towards the emitter
         std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
         active &= neq(ds.pdf, 0.f);
@@ -175,7 +178,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     } else {
         ds = zero<DirectionSample3f>();
         spec = 0.f;
-     }
+    }
 
     return { ds, spec };
 }
