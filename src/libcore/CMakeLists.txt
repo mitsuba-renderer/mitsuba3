@@ -15,6 +15,7 @@ add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
+  ${INC_DIR}/math.h
   ${INC_DIR}/jit.h
   ${INC_DIR}/simd.h
   ${INC_DIR}/platform.h
@@ -36,7 +37,6 @@ add_library(mitsuba-core-obj OBJECT
   fstream.cpp          ${INC_DIR}/fstream.h
   jit.cpp              ${INC_DIR}/jit.h
   logger.cpp           ${INC_DIR}/logger.h
-  math.cpp             ${INC_DIR}/math.h
   mmap.cpp             ${INC_DIR}/mmap.h
   tensor.cpp           ${INC_DIR}/tensor.h
   mstream.cpp          ${INC_DIR}/mstream.h

@@ -53,7 +53,7 @@ static Struct::Type convert_component_format(nanogui::Texture::ComponentFormat c
 GPUTexture::GPUTexture(const Bitmap *bitmap, InterpolationMode min_interpolation_mode,
                  InterpolationMode mag_interpolation_mode, WrapMode wrap_mode)
     : Base(convert_pixel_format(bitmap->pixel_format()),
-           convert_component_format(bitmap->component_format()), bitmap->size(),
+           convert_component_format(bitmap->component_format()), Vector<int, 2>(bitmap->size()),
            min_interpolation_mode, mag_interpolation_mode, wrap_mode) {
     ref<const Bitmap> source = bitmap;
     if (convert_pixel_format(bitmap->pixel_format()) != m_pixel_format ||

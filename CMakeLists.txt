@@ -203,18 +203,6 @@ endif()
 # Build the dependencies
 add_subdirectory(ext ext_build)
 
-if (CMAKE_EXPORT_COMPILE_COMMANDS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # Somewhat specific to Wenzel's development setup: to get clangd-based autocomplete
-  # to work, we must explicitly add the libc++ include directory to the search path
-  execute_process(
-    COMMAND ${CMAKE_CXX_COMPILER} -Wp,-v -x c++ -stdlib=libc++ -fsyntax-only /dev/null
-    ERROR_VARIABLE CLANG_INCLUDE_PATH
-  )
-  string(REGEX MATCH "starts here.*" CLANG_INCLUDE_PATH "${CLANG_INCLUDE_PATH}")
-  string(REGEX MATCH "([^ \r\n]*v1)" CLANG_INCLUDE_PATH "${CLANG_INCLUDE_PATH}")
-  include_directories(${CLANG_INCLUDE_PATH})
-endif()
-
 # Always add the include directories for tinyformat, Enoki and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
