@@ -313,7 +313,6 @@ public:
                     masked(ray.mint, active_medium) = 0.f;
                     masked(si.t, active_medium) = si.t - mi.t;
 
-                    auto tr_before = transmittance;
                     if (any_or<true>(is_spectral))
                         masked(transmittance, is_spectral && active_medium) *= mi.sigma_n;
                     if (any_or<true>(not_spectral))

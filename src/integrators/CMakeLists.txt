@@ -5,7 +5,6 @@ add_plugin(direct  direct.cpp)
 add_plugin(path    path.cpp)
 add_plugin(aov     aov.cpp)
 add_plugin(stokes  stokes.cpp)
-add_plugin(volpath  volpath.cpp)
 add_plugin(volpathnull  volpath-null.cpp)
 add_plugin(volpathnullsimple  volpath-null-simple.cpp)
 
