@@ -53,7 +53,7 @@ Perspective pinhole camera (:monosp:`perspective`)
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective.jpg
    :caption: The material test ball viewed through a perspective pinhole camera. (:monosp:`fov=28`)
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective_large_fov.jpg
-   :caption: The material test ball viewed through a perspective pinhole camera. (:monosp:`fov=45`)
+   :caption: The material test ball viewed through a perspective pinhole camera. (:monosp:`fov=40`)
 .. subfigend::
    :label: fig-perspective
 

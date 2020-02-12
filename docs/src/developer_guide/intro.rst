@@ -17,3 +17,14 @@ function names and variables (in contrast to Mitsuba 0.4, which used
 8 <https://www.python.org/dev/peps/pep-0008>`_ into the C++ side (which does not
 specify a recommended naming convention), ensuring that code that uses
 functionality from both languages looks natural.
+
+
+Code structure
+--------------
+
+Mitsuba is split into 2 basic support libraries:
+
+* The core library (:code:`libcore`) implements basic functionality such as cross-platform file and
+  bitmap I/O, data structures, scheduling, as well as logging and plugin management.
+* The rendering library (:code:`librender`) contains abstractions needed to load and represent scenes
+  containing light sources, shapes, materials, and participating media.

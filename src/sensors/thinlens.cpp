@@ -61,7 +61,7 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
 .. subfigure:: ../../resources/data/docs/images/render/sensor_thinlens_small_aperture.jpg
    :caption: The material test ball viewed through a perspective thin lens camera. (:monosp:`aperture_radius=0.1`)
 .. subfigure:: ../../resources/data/docs/images/render/sensor_thinlens.jpg
-   :caption: The material test ball viewed through a perspective thin lens camera. (:monosp:`aperture_radius=0.3`)
+   :caption: The material test ball viewed through a perspective thin lens camera. (:monosp:`aperture_radius=0.2`)
 .. subfigend::
    :label: fig-thinlens
 

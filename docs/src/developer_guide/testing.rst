@@ -17,3 +17,15 @@ parallelizes the test execution.
 
     # if using ninja
     ninja pytest
+
+
+Chi Square tests
+----------------
+
+.. todo:: write here
+
+
+Rendering tests and T-test
+--------------------------
+
+.. todo:: write here

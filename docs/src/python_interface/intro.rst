@@ -43,7 +43,7 @@ via this function. The above example then simplifies to
 
 The variant name can be changed at any time and will only apply to future imports. The variant name
 is a per-thread property, hence multiple independent threads can execute code in separate variants.
-Other helper functions are provided in python in order to interact with the available variants:
+Other helper functions are provided in Python in order to interact with the available variants:
 
 .. code-block:: python
 
@@ -54,10 +54,50 @@ Other helper functions are provided in python in order to interact with the avai
     mitsuba.variant() # e.g. 'scalar_rgb'
 
 
+Python API documentation
+------------------------
+
+The Python bindings exports comprehensive Python-style docstrings, hence it is possible to get
+information on classes, function, or entire namespaces within using the :code:`help` Python function
+after having set the desired variant:
+
+.. code-block:: python
+
+    import mitsuba
+    mitsuba.set_variant('scalar_rgb')
+    help(mitsuba.render.BSDF)
+
+    # Output:
+    # class Bitmap(Object)
+    # |  General-purpose bitmap class with read and write support for several
+    # |  common file formats.
+    # |
+    # |  This class handles loading of PNG, JPEG, BMP, TGA, as well as OpenEXR
+    # |  files, and it supports writing of PNG, JPEG and OpenEXR files.
+    # |
+    # |  PNG and OpenEXR files are optionally annotated with string-valued
+    # |  metadata, and the gamma setting can be stored as well. Please see the
+    # |  class methods and enumerations for further detail.
+    # |
+    # |  Method resolution order:
+    # |      Bitmap
+    # |      Object
+    # |      pybind11_builtins.pybind11_object
+    # |      builtins.object
+    # |
+    # |  Methods defined here:
+    # |
+    # |  __eq__(...)
+    # |      __eq__(self: mitsuba.core.Bitmap, arg0: mitsuba.core.Bitmap) -> bool
+    # ...
+
+
+
+
 Enoki aliases
 -------------
 
-In order to let the user write generic code in python that is valid for the different variants of
+In order to let the user write generic code in Python that is valid for the different variants of
 the renderer, :code:`mitsuba.core` provides aliases for basic types like :code:`Float`,
 :code:`UInt32`, etc, as well as for |enoki| types such as :code:`Vector2f`, :code:`Vector3f`,
 :code:`Vector2i`, :code:`Point3f`, etc.
@@ -129,7 +169,7 @@ directly pass |numpy| arrays to Mitsuba functions as in the following example:
 Submodules
 ----------
 
-The Mitsuba Python bindings are split into different python submodules, following the folder
+The Mitsuba Python bindings are split into different Python submodules, following the folder
 structure of the C++ codebase.
 
 .. list-table::

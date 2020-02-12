@@ -12,7 +12,7 @@ When dealing with relative path in the scene description, the XML parser relies 
 :code:`FileResolver` for resolving the full paths. It is therefore necessary to add the scene directory to
 the :code:`FileResolver`'s search path in order to properly load the scene's data (e.g. mesh, textures, ...).
 
-Here is a simple Python example on how to load a Mitsuba scene from a XML file:
+Here is a simple Python example on how to load a Mitsuba scene from an XML file:
 
 .. code-block:: python
 
@@ -30,27 +30,6 @@ Here is a simple Python example on how to load a Mitsuba scene from a XML file:
 
     # Load the scene for an XML file
     scene = load_file(filename)
-
-Mitsuba also provides a function decorator :code:`fresolver_append_path` that adds the mitsuba
-project root to the :code:`FileResolver`'s search path. This is useful in particular to load scenes or data
-from the resources folder. It can be used as follow:
-
-.. code-block:: python
-
-    import mitsuba
-    mitsuba.set_variant('scalar_rgb')
-    from mitsuba.python.test.util import fresolver_append_path
-    from mitsuba.core.xml import load_string
-
-    @fresolver_append_path
-    def load_bunny():
-        return load_string("""
-            <shape type="ply" version="2.0.0">
-                <string name="filename" value="resources/data/ply/bunny.ply"/>
-            </shape>
-        """))
-
-    shape_bunny = load_bunny()
 
 
 Passing arguments to the scene

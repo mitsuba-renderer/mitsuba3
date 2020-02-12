@@ -221,13 +221,13 @@ public:                                             \
  * For example,
  *
  * \code
- *     MTS_IMPORT_BASE(m_flags, m_components)
+ *     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
  * \endcode
  *
  * expands to
  *
  * \code
- *     using Base = Name<Float, Spectrum>;
+ *     using Base = BSDF<Float, Spectrum>;
  *     using Base::m_flags;
  *     using Base::m_components;
  * \endcode

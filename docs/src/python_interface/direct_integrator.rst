@@ -1,12 +1,10 @@
-Writing a direct integrator
+Adding a custom integrator
 ===========================
 
 In the previous example, we implemented a simple depth integrator.
 In this example, we will implement a more complex rendering method.
 This integrator will render an image with direct illumination from arbitrary light sources.
 The resulting image will have realistic shadows and shading, but no global illumination.
-
-The code for this example can be found in :code:`docs/examples/03_direct_integrator/direct_integrator.py`.
 
 The main rendering routing can be implemented in around 30 lines of code:
 
@@ -74,3 +72,5 @@ The scene is then rendered by calling the standard :code:`render` function:
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 78-88
+
+.. note:: The code for this example can be found in :code:`docs/examples/03_direct_integrator/direct_integrator.py`.

@@ -5,18 +5,14 @@ import mitsuba
 # Set the desired mitsuba variant
 mitsuba.set_variant('scalar_rgb')
 
-from mitsuba.core  import Bitmap, Struct, Thread
-from mitsuba.core .xml import load_file
+from mitsuba.core import Bitmap, Struct, Thread
+from mitsuba.core.xml import load_file
 
+# Absolute or relative path to the XML file
+filename = 'path/to/my/scene.xml'
 
-SCENE_DIR = '../../../resources/data/scenes/'
-filename = os.path.join(SCENE_DIR, 'cbox/cbox.xml')
-
-# Append the directory containing the scene to the "file resolver".
-# This is needed since the scene specifies meshes and textures
-# using relative paths.
-directory_name = os.path.dirname(filename)
-Thread.thread().file_resolver().append(directory_name)
+# Add the scene directory to the FileResolver's search path
+Thread.thread().file_resolver().append(os.path.dirname(filename))
 
 # Load the actual scene
 scene = load_file(filename)
@@ -28,12 +24,12 @@ scene.integrator().render(scene, scene.sensors()[0])
 film = scene.sensors()[0].film()
 
 # Write out rendering as high dynamic range OpenEXR file
-film.set_destination_file('cbox.exr')
+film.set_destination_file('/path/to/output.exr')
 film.develop()
 
 # Write out a tonemapped JPG of the same rendering
 bmp = film.bitmap()
-bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True).write('cbox.jpg')
+bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True).write('/path/to/output.jpg')
 
 # Get linear pixel values as a numpy array for further processing
 bmp_linear_rgb = bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False)
