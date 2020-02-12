@@ -137,7 +137,7 @@ public:
             ps.n = -ps.n;
 
         ps.time = time;
-        ps.delta = m_radius != 0.f;
+        ps.delta = m_radius == 0.f;
         ps.pdf = m_inv_surface_area;
 
         return ps;
@@ -213,7 +213,7 @@ public:
         }
 
         result.time = it.time;
-        result.delta = m_radius != 0;
+        result.delta = m_radius == 0.f;
 
         if (m_flip_normals)
             result.n = -result.n;
