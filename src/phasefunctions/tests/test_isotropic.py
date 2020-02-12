@@ -1,15 +1,23 @@
 import numpy as np
 
-from mitsuba.scalar_rgb.core.math import Pi
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import PhaseFunctionContext, MediumInteraction3f
+import mitsuba
+import pytest
+import enoki as ek
+from enoki.dynamic import Float32 as Float
+from mitsuba.python.test import variant_scalar, variant_packet
 
-def test01_create():
+
+def test01_create(variant_scalar):
+    from mitsuba.core.xml import load_string
     p = load_string("<phase version='2.0.0' type='isotropic'/>")
     assert p is not None
 
 
-def test02_eval():
+def test02_eval(variant_scalar):
+    from mitsuba.core.math import Pi
+    from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
+    from mitsuba.core.xml import load_string
+
     p = load_string("<phase version='2.0.0' type='isotropic'/>")
     ctx = PhaseFunctionContext(None)
     mi = MediumInteraction3f()
@@ -18,3 +26,20 @@ def test02_eval():
             wo = [np.sin(theta), 0, np.cos(theta)]
             v_eval = p.eval(ctx, mi, wo)
             assert np.allclose(v_eval, 1.0 / (4 * Pi))
+
+def test03_chi2(variant_packet):
+    from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
+    from mitsuba.core import ScalarBoundingBox2f
+
+    sample_func, pdf_func = PhaseFunctionAdapter("isotropic", '')
+
+    chi2 = ChiSquareTest(
+        domain = SphericalDomain(),
+        sample_func = sample_func,
+        pdf_func = pdf_func,
+        sample_dim = 2
+    )
+
+    result = chi2.run(0.1)
+    chi2._dump_tables()
+    assert result

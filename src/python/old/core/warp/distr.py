@@ -294,12 +294,12 @@ try:
             <string name="filename" value="resources/data/envmap/museum.exr"/>
         """), DEFAULT_SETTINGS),
 
-        ('Isotropic phase function', SphericalDomain(),
-        PhaseFunctionAdapter("isotropic", ''), DEFAULT_SETTINGS_2),
-        ('HG phase function - isotropic', SphericalDomain(),
-        PhaseFunctionAdapter("hg", '<float name="g" value="0.0"/>'), DEFAULT_SETTINGS_2),
-        ('HG phase function - anisotropic', SphericalDomain(),
-        PhaseFunctionAdapter("hg", '<float name="g" value="0.6"/>'), DEFAULT_SETTINGS_2)
+        # ('Isotropic phase function', SphericalDomain(),
+        # PhaseFunctionAdapter("isotropic", ''), DEFAULT_SETTINGS_2),
+        # ('HG phase function - isotropic', SphericalDomain(),
+        # PhaseFunctionAdapter("hg", '<float name="g" value="0.0"/>'), DEFAULT_SETTINGS_2),
+        # ('HG phase function - anisotropic', SphericalDomain(),
+        # PhaseFunctionAdapter("hg", '<float name="g" value="0.6"/>'), DEFAULT_SETTINGS_2)
     ]
 
     @fresolver_append_path

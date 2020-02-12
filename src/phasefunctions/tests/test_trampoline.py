@@ -3,12 +3,13 @@ import numpy as np
 import pytest
 
 import mitsuba
-from mitsuba.scalar_rgb.core import math, warp, Bitmap, Struct
-from mitsuba.scalar_rgb.core.math import Pi
-from mitsuba.scalar_rgb.core.xml import load_string
-from mitsuba.scalar_rgb.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
-                                       MediumInteraction3f, register_phasefunction, has_flag)
-from mitsuba.test.util import fresolver_append_path
+mitsuba.set_variant("scalar_rgb")
+from mitsuba.core import math, warp, Bitmap, Struct
+from mitsuba.core.math import Pi
+from mitsuba.core.xml import load_string
+from mitsuba.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
+                            MediumInteraction3f, register_phasefunction, has_flag)
+from mitsuba.python.test.util import fresolver_append_path
 
 
 @pytest.fixture(scope='module')
@@ -44,8 +45,8 @@ def create_medium_scene(phase_function='isotropic', spp=8):
                             up    ="0.0,   0.0, 1.0"/>
                 </transform>
                 <film type="hdrfilm">
-                    <integer name="width" value="100"/>
-                    <integer name="height" value="100"/>
+                    <integer name="width" value="32"/>
+                    <integer name="height" value="32"/>
                     <string name="pixel_format" value="rgb" />
                 </film>
                 <sampler type="independent">
@@ -93,7 +94,7 @@ def test02_render_scene(create_phasefunction):
 
     film = scene.sensors()[0].film()
     converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
-    mean_trampoline = np.mean(np.array(converted, copy=False), (0,  1))
+    trampoline_np = np.array(converted, copy=False)
 
     # Reference image: rendered using isotropic phase function
     scene = create_medium_scene('isotropic')
@@ -102,8 +103,7 @@ def test02_render_scene(create_phasefunction):
 
     film = scene.sensors()[0].film()
     converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
-    mean_ref = np.mean(np.array(converted, copy=False), (0, 1))
+    ref_np = np.array(converted, copy=False)
 
-    # The implementation of "myisotropic" follows the C++ implementation of the "isotropic" plugin
-    # Therefore, we can expect the image values to be identical (using the same seed for rendering)
-    assert np.allclose(mean_trampoline, mean_ref)
+    diff = np.mean((ref_np - trampoline_np) ** 2)
+    assert diff < 0.001 # TODO: Replace this by a T-Test

@@ -493,16 +493,17 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
         Incoming direction, in local coordinates.
     """
     from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
-    from mitsuba.core import Float
+    from mitsuba.core import Float, Frame3f
     from mitsuba.core.xml import load_string
 
     def make_context(n):
-        mi = MediumInteraction3f(n)
+        mi = MediumInteraction3f.zero(n)
         mi.wi = wi
         ek.set_slices(mi.wi, n)
+        mi.sh_frame = Frame3f(-mi.wi);
         mi.wavelengths = []
         ctx = PhaseFunctionContext(None)
-        return ctx, mi
+        return mi, ctx
 
     def instantiate(args):
         xml = """<phase version="2.0.0" type="%s">
@@ -513,14 +514,16 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
     def sample_functor(sample, *args):
         n = ek.slices(sample)
         plugin = instantiate(args)
-        ctx, mi = make_context(n)
-        wo = plugin.sample(ctx, mi, [sample[0], sample[1]])
-        return wo, np.ones(n)
+        mi, ctx = make_context(n)
+        wo, pdf = plugin.sample(ctx, mi, [sample[0], sample[1]])
+        w = Float.full(1.0, ek.slices(pdf))
+        w[ek.eq(pdf, 0)] = 0
+        return wo, w
 
     def pdf_functor(wo, *args):
         n = ek.slices(wo)
         plugin = instantiate(args)
-        ctx, mi = make_context(n)
+        mi, ctx = make_context(n)
         return plugin.eval(ctx, mi, wo)
 
     return sample_functor, pdf_functor
