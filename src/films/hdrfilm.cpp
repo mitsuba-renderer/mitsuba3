@@ -251,40 +251,21 @@ public:
         return true;
     }
 
-    Bitmap *bitmap() override {
+    ref<Bitmap> bitmap(bool develop) override {
         if constexpr (is_cuda_array_v<Float>) {
             cuda_eval();
             cuda_sync();
         }
 
-        return new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
-                                                 : Bitmap::PixelFormat::XYZAW,
+        ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
+                                                               : Bitmap::PixelFormat::XYZAW,
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
                           (uint8_t *) m_storage->data().managed().data());
-     };
 
-    void develop() override {
-        if (m_dest_file.empty())
-            Throw("Destination file not specified, cannot develop.");
-
-        fs::path filename = m_dest_file;
-        std::string proper_extension;
-        if (m_file_format == Bitmap::FileFormat::OpenEXR)
-            proper_extension = ".exr";
-        else if (m_file_format == Bitmap::FileFormat::RGBE)
-            proper_extension = ".rgbe";
-        else
-            proper_extension = ".pfm";
-
-        std::string extension = string::to_lower(filename.extension().string());
-        if (extension != proper_extension)
-            filename.replace_extension(proper_extension);
-
-        Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
+        if (!develop)
+            return source;
 
         bool has_aovs = m_channels.size() != 5;
-
-        ref<Bitmap> source = bitmap();
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
@@ -339,7 +320,30 @@ public:
         }
 
         source->convert(target);
-        target->write(filename, m_file_format);
+
+        return target;
+     };
+
+    void develop() override {
+        if (m_dest_file.empty())
+            Throw("Destination file not specified, cannot develop.");
+
+        fs::path filename = m_dest_file;
+        std::string proper_extension;
+        if (m_file_format == Bitmap::FileFormat::OpenEXR)
+            proper_extension = ".exr";
+        else if (m_file_format == Bitmap::FileFormat::RGBE)
+            proper_extension = ".rgbe";
+        else
+            proper_extension = ".pfm";
+
+        std::string extension = string::to_lower(filename.extension().string());
+        if (extension != proper_extension)
+            filename.replace_extension(proper_extension);
+
+        Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
+
+        bitmap(true)->write(filename, m_file_format);
     }
 
     bool destination_exists(const fs::path &base_name) const override {

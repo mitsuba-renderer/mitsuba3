@@ -49,7 +49,7 @@ def render(scene, spp=None, sensor_index=0):
         rgb = spec
     else:
         from mitsuba.core import spectrum_to_xyz, xyz_to_srgb
-        xyz = spectrum_to_xyz(spec_u, rays.wavelengths, active);
+        xyz = spectrum_to_xyz(spec_u, rays.wavelengths, active)
         rgb = xyz_to_srgb(xyz)
         del xyz
 

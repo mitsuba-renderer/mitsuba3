@@ -19,7 +19,7 @@ MTS_PY_EXPORT(Film) {
                 &Film::develop, py::const_),
             "offset"_a, "size"_a, "target_offset"_a, "target"_a)
         .def_method(Film, destination_exists, "basename"_a)
-        .def_method(Film, bitmap)
+        .def_method(Film, bitmap, "develop"_a = false)
         .def_method(Film, has_high_quality_edges)
         .def_method(Film, size)
         .def_method(Film, crop_size)

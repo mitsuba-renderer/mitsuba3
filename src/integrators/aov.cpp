@@ -25,6 +25,18 @@ Arbitrary Output Variables integrator (:monosp:`aov`)
 This integrator returns one or more AOVs (Arbitraty Output Variables) describing the visible
 surfaces.
 
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
+   :caption: Scene rendered with a path tracer
+.. subfigure:: ../../resources/data/docs/images/render/integrator_aov_depth.jpg
+   :caption: Depth AOV
+.. subfigure:: ../../resources/data/docs/images/render/integrator_aov_sh_normal.jpg
+   :caption: Depth AOV
+.. subfigure:: ../../resources/data/docs/images/render/integrator_aov_position.jpg
+   :caption: Position AOV
+.. subfigend::
+   :label: fig-diffuse
+
 Here is an example on how to enable the *depth* and *shading normal* AOVs while still rendering the
 image with a path tracer. The `RGBA` image produces by the path tracer will be stored in the
 [:code:`my_image.R`, :code:`my_image.G`, :code:`my_image.B`, :code:`my_image.A`] channels of the EXR

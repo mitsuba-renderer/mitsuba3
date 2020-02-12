@@ -32,7 +32,7 @@ description, it can be instantiated from an XML scene file using a custom config
     </integrator>
 
 In some cases, plugins also indicate that they accept nested plugins as input arguments. These can
-either be *named* or *unnamed*. If the amazing integrator also accepted the following two parameters:
+either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the following two parameters:
 
 .. pluginparameters::
 
@@ -51,7 +51,9 @@ then it can be instantiated e.g. as follows:
     <integrator type="amazing">
         <boolean name="softer_rays" value="true"/>
         <float name="dark_matter" value="0.44"/>
+        <!-- Nested unnamed integrator -->
         <integrator type="path"/>
+        <!-- Nested texture named puppies -->
         <texture name="puppies" type="bitmap">
             <string name="filename" value="cute.jpg"/>
         </texture>
