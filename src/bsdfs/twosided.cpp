@@ -14,7 +14,7 @@ Two-sided BRDF adapter (:monosp:`twosided`)
 
 .. pluginparameters::
 
- * - *(Nested plugin)*
+ * - (Nested plugin)
    - |bsdf|
    - A nested BRDF that should be turned into a two-sided scattering model. If two BRDFs are specified, they will be placed on the front and back side, respectively
 

@@ -17,7 +17,7 @@ Opacity mask (:monosp:`mask`)
  * - opacity
    - |spectrum| or |texture|
    - Specifies the opacity (where 1=completely opaque) (Default: 0.5)
- * - *(Nested plugin)*
+ * - (Nested plugin)
    - |bsdf|
    - A base BSDF model that represents the non-transparent portion of the scattering
 

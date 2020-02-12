@@ -45,7 +45,7 @@ High dynamic range film (:monosp:`hdrfilm`)
    - If set to |true|, regions slightly outside of the film plane will also be sampled. This may
      improve the image quality at the edges, especially when using very large reconstruction
      filters. In general, this is not needed though. (Default: |false|, i.e. disabled)
- * - *(Nested plugin)*
+ * - (Nested plugin)
    - :paramtype:`rfilter`
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
      Gaussian filter)

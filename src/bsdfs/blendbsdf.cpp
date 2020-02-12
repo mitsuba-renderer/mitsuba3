@@ -19,7 +19,7 @@ Blended material (:monosp:`blendbsdf`)
    - A floating point value or texture with values between zero and one. The extreme values zero and
      one activate the first and second nested BSDF respectively, and inbetween values interpolate
      accordingly. (Default: 0.5)
- * - *(Nested plugin)*
+ * - (Nested plugin)
    - |bsdf|
    - Two nested BSDF instances that should be mixed according to the specified blending weight
 

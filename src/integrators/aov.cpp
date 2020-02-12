@@ -16,7 +16,7 @@ Arbitrary Output Variables integrator (:monosp:`aov`)
  * - aovs
    - |string|
    - List of :monosp:`<name>:<type>` pairs denoting the enabled AOVs.
- * - *(Nested plugin)*
+ * - (Nested plugin)
    - :paramtype:`integrator`
    - Sub-integrators (can have more than one) which will be sampled along the AOV integrator. Their
      respective output will be put into distinct images.

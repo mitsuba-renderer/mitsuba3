@@ -42,7 +42,7 @@ required to run Mitsuba.
     source setpath.sh
 
     # On Windows
-    C:\...\mitsuba2> setpath
+    C:/.../mitsuba2> setpath
 
 
 Mitsuba can then be used to render scenes by typing

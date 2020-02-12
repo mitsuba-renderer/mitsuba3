@@ -6,7 +6,10 @@ import csv
 
 from docutils import nodes
 from docutils.utils import SystemMessagePropagation
+from docutils.parsers.rst import Directive, Parser
 from docutils.parsers.rst.directives.tables import Table
+from docutils.statemachine import ViewList
+from sphinx.util.nodes import nested_parse_with_titles
 
 class PluginParameters(Table):
     """
@@ -107,9 +110,21 @@ class PluginParameters(Table):
 
         for row in table_data:
             row_node = nodes.row()
-            for cell in row:
+            for i, cell in enumerate(row):
                 entry = nodes.entry()
-                entry += cell
+
+                # force the first column to be write in paramtype style
+                if i == 0:
+                    rst = ViewList()
+                    rst.append(""":paramtype:`{name}`""".format(name=str(cell[0][0])), "", 0)
+                    parsed_node = nodes.section()
+                    parsed_node.document = self.state.document
+                    nested_parse_with_titles(self.state, rst, parsed_node)
+
+                    entry += [parsed_node[0]]
+                else:
+                    entry += cell
+
                 row_node += entry
             rows.append(row_node)
         if header_rows:

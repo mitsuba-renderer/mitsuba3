@@ -19,13 +19,13 @@ Import Python bindings
 ----------------------
 
 Mitsuba 2 can be compiled to a great variety of different variants (e.g. :code:`'scalar_rgb'`,
-:code:`'gpu_autodiff_spectral_polarized'`, etc.) that each have their own Python bindings in
+:code:`'gpu_spectral'`, etc.) that each have their own Python bindings in
 addition to generic/non-templated code that lives in yet another module. Writing various different
 prefixes many times in import statements such as
 
 .. code-block:: python
 
-    from mitsuba.render_gpu_autodiff_spectral_polarized_ext import Integrator
+    from mitsuba.render_gpu_spectral_ext import Integrator
     from mitsuba.core_ext import FileStream
 
 can get rather tiring. For this reason, Mitsuba uses *virtual* Python modules that dynamically
@@ -36,7 +36,7 @@ via this function. The above example then simplifies to
 
     import mitsuba
 
-    mitsuba.set_variant('gpu_autodiff_spectral_polarized')
+    mitsuba.set_variant('gpu_spectral')
 
     from mitsuba.render import Integrator
     from mitsuba.core import FileStream
@@ -65,7 +65,7 @@ after having set the desired variant:
 
     import mitsuba
     mitsuba.set_variant('scalar_rgb')
-    help(mitsuba.render.BSDF)
+    help(mitsuba.core.Bitmap)
 
     # Output:
     # class Bitmap(Object)
@@ -158,11 +158,11 @@ directly pass |numpy| arrays to Mitsuba functions as in the following example:
     # Choose the variant
     mitsuba.set_variant("packet_rgb") # valid code with other variants, e.g. 'gpu_rgb'
 
-    # Generate 1000^2 samples in the unit square
+    # Generate 1000^2 samples in the unit square using Numpy
     sample_count = 1000
     samples = np.random.random((sample_count, 2))
 
-    # Project the 2D grid onto a unit sphere
+    # Project the 2D grid onto a unit sphere (implicit conversion to enoki type)
     pos = mitsuba.core.warp.square_to_uniform_sphere(samples)
 
 
