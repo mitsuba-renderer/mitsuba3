@@ -86,18 +86,32 @@ public:
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
-            Mask act_null_scatter = false;
-            Mask act_medium_scatter = false;
-            Mask escaped_medium = false;
+            Mask act_null_scatter = false, act_medium_scatter = false,
+                 escaped_medium = false;
+
+            // If the medium does not have a spectrally varying extinction,
+            // we can perform a few optimizations to speed up rendering
+            Mask is_spectral = active_medium;
+            Mask not_spectral = false;
+            if (any_or<true>(active_medium)) {
+                is_spectral &= medium->has_spectral_extinction();
+                not_spectral = !is_spectral && active_medium;
+            }
+
             if (any_or<true>(active_medium)) {
                 mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                masked(ray.maxt, active_medium && false && mi.is_valid()) = mi.t; // TODO: Short ray optimization
-                masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
+                Mask intersect = needs_intersection && active_medium;
+                if (any_or<true>(intersect))
+                    masked(si, intersect) = scene->ray_intersect(ray, intersect);
                 needs_intersection &= !active_medium;
+
                 masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
-                auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, active_medium);
-                Float tr_pdf = index_spectrum(free_flight_pdf, channel);
-                masked(throughput, active_medium) *= select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
+                if (any_or<true>(is_spectral)) {
+                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, is_spectral);
+                    Float tr_pdf = index_spectrum(free_flight_pdf, channel);
+                    masked(throughput, is_spectral) *= select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
+                }
 
                 escaped_medium = active_medium && !mi.is_valid();
                 active_medium &= mi.is_valid();
@@ -108,7 +122,10 @@ public:
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
 
-                masked(throughput, act_null_scatter) *= index_spectrum(mi.combined_extinction, channel);
+                if (any_or<true>(is_spectral && act_null_scatter))
+                    masked(throughput, is_spectral && act_null_scatter) *=
+                        mi.sigma_n * index_spectrum(mi.combined_extinction, channel) /
+                        index_spectrum(mi.sigma_n, channel);
 
                 masked(depth, act_medium_scatter) += 1;
             }
@@ -124,7 +141,11 @@ public:
             }
 
             if (any_or<true>(act_medium_scatter)) {
-                masked(throughput, act_medium_scatter) *= mi.sigma_s * index_spectrum(mi.combined_extinction, channel) / mi.sigma_t;
+                if (any_or<true>(is_spectral))
+                    masked(throughput, is_spectral && act_medium_scatter) *=
+                        mi.sigma_s * index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel);
+                if (any_or<true>(not_spectral))
+                    masked(throughput, not_spectral && act_medium_scatter) *= mi.sigma_s / mi.sigma_t;
 
                 PhaseFunctionContext phase_ctx(sampler);
                 auto phase = mi.medium->phase_function();
@@ -203,7 +224,7 @@ public:
                 // ----------------------- BSDF sampling ----------------------
                 auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active_surface),
                                                    sampler->next_2d(active_surface), active_surface);
-                throughput[active_surface] *= bsdf_val;
+                masked(throughput, active_surface) *= bsdf_val;
                 masked(eta, active_surface) *= bs.eta;
 
                 Ray bsdf_ray                = si.spawn_ray(si.to_world(bs.wo));
@@ -267,11 +288,20 @@ public:
             SurfaceInteraction3f si_medium;
             if (any_or<true>(active_medium)) {
                 auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                masked(ray.maxt, active_medium && false && mi.is_valid()) = mi.t; // TODO: Short ray optimization
-                masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
+                Mask intersect = needs_intersection && active_medium;
+                if (any_or<true>(intersect))
+                    masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+
                 masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
-                auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, active_medium);
-                masked(transmittance, active_medium) *= tr / index_spectrum(free_flight_pdf, channel);
+
+                Mask is_spectral = medium->has_spectral_extinction() && active_medium;
+                Mask not_spectral = !is_spectral && active_medium;
+                if (any_or<true>(is_spectral)) {
+                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, is_spectral);
+                    Float tr_pdf = index_spectrum(free_flight_pdf, channel);
+                    masked(transmittance, is_spectral) *= select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
+                }
 
                 needs_intersection &= !active_medium;
                 escaped_medium = active_medium && !mi.is_valid();
@@ -282,7 +312,12 @@ public:
                     masked(ray.o, active_medium)    = mi.p;
                     masked(ray.mint, active_medium) = 0.f;
                     masked(si.t, active_medium) = si.t - mi.t;
-                    masked(transmittance, active_medium) *= mi.sigma_n;
+
+                    auto tr_before = transmittance;
+                    if (any_or<true>(is_spectral))
+                        masked(transmittance, is_spectral && active_medium) *= mi.sigma_n;
+                    if (any_or<true>(not_spectral))
+                        masked(transmittance, not_spectral && active_medium) *= mi.sigma_n / mi.combined_extinction;
                 }
             }
 

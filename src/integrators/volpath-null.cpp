@@ -130,22 +130,37 @@ public:
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
-            Mask act_null_scatter = false;
-            Mask act_medium_scatter = false;
-            Mask escaped_medium = false;
+            Mask act_null_scatter = false, act_medium_scatter = false,
+                 escaped_medium = false;
             Interaction3f last_scatter_event;
+
+            // If the medium does not have a spectrally varying extinction,
+            // we can perform a few optimizations to speed up rendering
+            Mask is_spectral = active_medium;
+            Mask not_spectral = false;
+            if (any_or<true>(active_medium)) {
+                is_spectral &= medium->has_spectral_extinction();
+                not_spectral = !is_spectral && active_medium;
+            }
 
             if (any_or<true>(active_medium)) {
                 mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                masked(ray.maxt, active_medium && false && mi.is_valid()) = mi.t; // TODO: Short ray optimization
-                masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
+                Mask intersect = needs_intersection && active_medium;
+                if (any_or<true>(intersect))
+                    masked(si, intersect) = scene->ray_intersect(ray, intersect);
                 needs_intersection &= !active_medium;
                 masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
-                auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, active_medium);
-                update_weights(p_over_f, free_flight_pdf, tr, active_medium);
-                update_weights(p_over_f_nee, free_flight_pdf, tr, active_medium);
+
+                if (any_or<true>(is_spectral)) {
+                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, is_spectral);
+                    update_weights(p_over_f, free_flight_pdf, tr, channel, is_spectral);
+                    update_weights(p_over_f_nee, free_flight_pdf, tr, channel, is_spectral);
+                }
                 escaped_medium = active_medium && !mi.is_valid();
                 active_medium &= mi.is_valid();
+                is_spectral &= active_medium;
+                not_spectral &= active_medium;
             }
 
             if (any_or<true>(active_medium)) {
@@ -163,8 +178,14 @@ public:
 
 
                 if (any_or<true>(act_null_scatter)) {
-                    update_weights(p_over_f, mi.sigma_n / mi.combined_extinction, mi.sigma_n, act_null_scatter);
-                    update_weights(p_over_f_nee, 1.0f, mi.sigma_n, act_null_scatter);
+                    if (any_or<true>(is_spectral)) {
+                        update_weights(p_over_f, mi.sigma_n / mi.combined_extinction, mi.sigma_n, channel, is_spectral && act_null_scatter);
+                        update_weights(p_over_f_nee, 1.0f, mi.sigma_n, channel, is_spectral && act_null_scatter);
+                    }
+                    if (any_or<true>(not_spectral)) {
+                       update_weights(p_over_f, mi.sigma_n, mi.sigma_n, channel, not_spectral && act_null_scatter);
+                       update_weights(p_over_f_nee, 1.0f, mi.sigma_n / mi.combined_extinction, channel, not_spectral && act_null_scatter);
+                    }
 
                     masked(ray.o, act_null_scatter) = mi.p;
                     masked(ray.mint, act_null_scatter) = 0.f;
@@ -172,7 +193,10 @@ public:
                 }
 
                 if (any_or<true>(act_medium_scatter)) {
-                    update_weights(p_over_f, mi.sigma_t / mi.combined_extinction, mi.sigma_s, act_medium_scatter);
+                    if (any_or<true>(is_spectral))
+                        update_weights(p_over_f, mi.sigma_t / mi.combined_extinction, mi.sigma_s, channel, is_spectral && act_medium_scatter);
+                    if (any_or<true>(not_spectral))
+                        update_weights(p_over_f, mi.sigma_t, mi.sigma_s, channel, not_spectral && act_medium_scatter);
 
                     PhaseFunctionContext phase_ctx(sampler);
                     auto phase = mi.medium->phase_function();
@@ -184,8 +208,8 @@ public:
                     if (any_or<true>(active_e)) {
                         auto [p_over_f_nee_end, p_over_f_end, emitted, wo] = sample_emitter(mi, true, scene, sampler, medium, p_over_f, channel, active_e);
                         Float phase_val = phase->eval(phase_ctx, mi, wo, active_e);
-                        update_weights(p_over_f_nee_end, 1.0f, phase_val, active_e);
-                        update_weights(p_over_f_end, phase_val, phase_val, active_e);
+                        update_weights(p_over_f_nee_end, 1.0f, phase_val, channel, active_e);
+                        update_weights(p_over_f_end, phase_val, phase_val, channel, active_e);
                         masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
                     }
 
@@ -200,8 +224,8 @@ public:
                     masked(ray, act_medium_scatter) = new_ray;
                     needs_intersection |= act_medium_scatter;
 
-                    update_weights(p_over_f, phase_pdf, phase_pdf, act_medium_scatter);
-                    update_weights(p_over_f_nee, 1.f, phase_pdf, act_medium_scatter);
+                    update_weights(p_over_f, phase_pdf, phase_pdf, channel, act_medium_scatter);
+                    update_weights(p_over_f_nee, 1.f, phase_pdf, channel, act_medium_scatter);
                 }
             }
 
@@ -209,7 +233,8 @@ public:
             // --------------------- Surface Interactions ---------------------
             active_surface |= escaped_medium;
             Mask intersect = active_surface && needs_intersection;
-            masked(si, intersect) = scene->ray_intersect(ray, intersect);
+            if (any_or<true>(intersect))
+                masked(si, intersect) = scene->ray_intersect(ray, intersect);
 
 
             if (any_or<true>(active_surface)) {
@@ -224,7 +249,7 @@ public:
                         DirectionSample3f ds(si, last_scatter_event);
                         ds.object         = emitter;
                         Float emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
-                        update_weights(p_over_f_nee, emitter_pdf, 1.f, active_e);
+                        update_weights(p_over_f_nee, emitter_pdf, 1.f, channel, active_e);
                     }
                     Spectrum emitted = emitter->eval(si, active_e);
                     Spectrum contrib = select(count_direct, mis_weight(p_over_f) * emitted,
@@ -245,8 +270,8 @@ public:
                     Vector3f wo_local       = si.to_local(wo);
                     Spectrum bsdf_val = bsdf->eval(ctx, si, wo_local, active_e);
                     Float bsdf_pdf =  bsdf->pdf(ctx, si, wo_local, active_e);
-                    update_weights(p_over_f_nee_end, 1.0f, depolarize(bsdf_val), active_e);
-                    update_weights(p_over_f_end, bsdf_pdf, depolarize(bsdf_val), active_e);
+                    update_weights(p_over_f_nee_end, 1.0f, depolarize(bsdf_val), channel, active_e);
+                    update_weights(p_over_f_end, bsdf_pdf, depolarize(bsdf_val), channel, active_e);
                     masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
                 }
 
@@ -269,8 +294,8 @@ public:
 
                 // Update NEE weights only if the BSDF is not null
                 masked(p_over_f_nee, non_null_bsdf) = p_over_f;
-                update_weights(p_over_f, bs.pdf, depolarize(bsdf_weight * bs.pdf), active_surface);
-                update_weights(p_over_f_nee, 1.f, depolarize(bsdf_weight * bs.pdf), non_null_bsdf);
+                update_weights(p_over_f, bs.pdf, depolarize(bsdf_weight * bs.pdf), channel, active_surface);
+                update_weights(p_over_f_nee, 1.f, depolarize(bsdf_weight * bs.pdf), channel, non_null_bsdf);
 
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
@@ -310,17 +335,26 @@ public:
 
             if (any_or<true>(active_medium)) {
                 auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                masked(ray.maxt, active_medium && false && mi.is_valid()) = mi.t; // TODO: Short ray optimization
-                masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
+                Mask intersect = needs_intersection && active_medium;
+                if (any_or<true>(intersect))
+                    masked(si, intersect) = scene->ray_intersect(ray, intersect);
                 masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
                 needs_intersection &= !active_medium;
 
-                auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, active_medium);
-                update_weights(p_over_f_nee, free_flight_pdf, tr, active_medium);
-                update_weights(p_over_f_uni, free_flight_pdf, tr, active_medium);
+                Mask is_spectral = medium->has_spectral_extinction() && active_medium;
+                Mask not_spectral = !is_spectral && active_medium;
+                if (any_or<true>(is_spectral)) {
+                    auto [tr, free_flight_pdf] = medium->eval_tr_and_pdf(mi, si, is_spectral);
+                    update_weights(p_over_f_nee, free_flight_pdf, tr, channel, is_spectral);
+                    update_weights(p_over_f_uni, free_flight_pdf, tr, channel, is_spectral);
+                }
 
                 escaped_medium = active_medium && !mi.is_valid();
                 active_medium &= mi.is_valid();
+                is_spectral &= active_medium;
+                not_spectral &= active_medium;
+
                 masked(total_dist, active_medium) += mi.t;
 
                 if (any_or<true>(active_medium)) {
@@ -328,14 +362,21 @@ public:
                     masked(ray.mint, active_medium) = 0.f;
                     // Update si.t since we continue the ray into the same direction
                     masked(si.t, active_medium) = si.t - mi.t;
-                    update_weights(p_over_f_nee, 1.f, mi.sigma_n, active_medium);
-                    update_weights(p_over_f_uni, mi.sigma_n / mi.combined_extinction, mi.sigma_n, active_medium);
+                    if (any_or<true>(is_spectral)) {
+                        update_weights(p_over_f_nee, 1.f, mi.sigma_n, channel, is_spectral);
+                        update_weights(p_over_f_uni, mi.sigma_n / mi.combined_extinction, mi.sigma_n, channel, is_spectral);
+                    }
+                    if (any_or<true>(not_spectral)) {
+                        update_weights(p_over_f_nee, 1.f, mi.sigma_n / mi.combined_extinction, channel, not_spectral);
+                        update_weights(p_over_f_uni, mi.sigma_n, mi.sigma_n, channel, not_spectral);
+                    }
                 }
             }
 
             // Handle interactions with surfaces
             Mask intersect = active_surface && needs_intersection;
-            masked(si, intersect)    = scene->ray_intersect(ray, intersect);
+            if (any_or<true>(intersect))
+                masked(si, intersect)    = scene->ray_intersect(ray, intersect);
             active_surface |= escaped_medium;
             masked(total_dist, active_surface) += si.t;
 
@@ -350,7 +391,7 @@ public:
                 ds.object                        = emitter;
                 masked(emitter_val, emitter_hit) = emitter->eval(si, emitter_hit);
                 Float emitter_pdf = scene->pdf_emitter_direction(ref_interaction, ds, emitter_hit);
-                update_weights(p_over_f_nee, emitter_pdf, 1.0f, emitter_hit);
+                update_weights(p_over_f_nee, emitter_pdf, 1.0f, channel, emitter_hit);
                 active &= !emitter_hit; // disable lanes which found an emitter
             }
 
@@ -358,8 +399,8 @@ public:
             if (any_or<true>(active_surface)) {
                 auto bsdf         = si.bsdf(ray);
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
-                update_weights(p_over_f_nee, 1.0f, depolarize(bsdf_val), active_surface);
-                update_weights(p_over_f_uni, 1.0f, depolarize(bsdf_val), active_surface);
+                update_weights(p_over_f_nee, 1.0f, depolarize(bsdf_val), channel, active_surface);
+                update_weights(p_over_f_uni, 1.0f, depolarize(bsdf_val), channel, active_surface);
             }
 
             masked(ray, active_surface) = si.spawn_ray(ray.d);
@@ -384,7 +425,8 @@ public:
     MTS_INLINE
     void update_weights(WeightMatrix &p_over_f,
                     const UnpolarizedSpectrum &p,
-                    const UnpolarizedSpectrum &f, Mask active) const {
+                    const UnpolarizedSpectrum &f,
+                    UInt32 channel, Mask active) const {
         // For two spectra p and f, computes all the ratios of the individual
         // components and multiplies them to the current values in p_over_f
         if constexpr (SpectralMis) {
@@ -393,7 +435,9 @@ public:
                 masked(p_over_f[i], active) = select(isfinite(ratio), ratio, 0.f);
             }
         } else {
-            auto ratio = p_over_f * (p / f);
+            // If we dont do spectral MIS: We need to use a specific channel of the spectrum "p" as the PDF
+            Float pdf = index_spectrum(p, channel);
+            auto ratio = p_over_f * (pdf / f);
             masked(p_over_f, active) = select(isfinite(ratio), ratio, 0.f);
         }
     }

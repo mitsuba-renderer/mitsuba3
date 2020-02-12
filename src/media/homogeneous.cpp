@@ -15,11 +15,11 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Texture3D)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
-
+        m_is_homogeneous = true;
         for (auto &kv : props.objects()) {
             Texture3D *texture3d = dynamic_cast<Texture3D *>(kv.second.get());
             Texture *texture     = dynamic_cast<Texture *>(kv.second.get());
@@ -44,6 +44,7 @@ public:
             }
         }
         m_density = props.float_("density", 1.0f);
+        m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
     }
 
     MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi) const {

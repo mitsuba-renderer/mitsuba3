@@ -76,22 +76,17 @@ public:
     /// Returns whether this specific medium instance uses emitter sampling
     MTS_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
+    /// Returns whether this medium is homogeneous
+    MTS_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
+
+    /// Returns whether this medium has a spectrally varying extinction
+    MTS_INLINE bool has_spectral_extinction() const { return m_has_spectral_extinction; }
+
     /// Return a string identifier
     std::string id() const override { return m_id; }
 
     /// Return a human-readable representation of the Medium
     std::string to_string() const override = 0;
-
-    /**
-     * Extracts the following medium parameters from the given properties:
-     * - sigma_a (absoption)
-     * - sigma_s (scattering)
-     * - sigma_t (transmission)
-     * - albedo
-     */
-    // static std::tuple<ref<Texture>, ref<Texture>,
-    //                   ref<Texture>, ref<Texture>>
-    // extract_medium_parameters(const Properties &props);
 
     ENOKI_PINNED_OPERATOR_NEW(Float)
     MTS_DECLARE_CLASS()
@@ -102,7 +97,7 @@ protected:
 
 protected:
     ref<PhaseFunction> m_phase_function;
-    bool m_sample_emitters;
+    bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
 
     /// Identifier (if available)
     std::string m_id;
@@ -121,6 +116,8 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_CALL_SUPPORT_METHOD(eval_transmittance)
     ENOKI_CALL_SUPPORT_METHOD(phase_function)
     ENOKI_CALL_SUPPORT_METHOD(use_emitter_sampling)
+    ENOKI_CALL_SUPPORT_METHOD(is_homogeneous)
+    ENOKI_CALL_SUPPORT_METHOD(has_spectral_extinction)
     ENOKI_CALL_SUPPORT_METHOD(get_combined_extinction)
     ENOKI_CALL_SUPPORT_METHOD(intersect_aabb)
     ENOKI_CALL_SUPPORT_METHOD(sample_interaction)

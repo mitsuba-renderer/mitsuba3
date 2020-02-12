@@ -7,7 +7,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Medium<Float, Spectrum>::Medium() {}
+MTS_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_spectral_extinction(true) {}
 
 MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
 
@@ -34,17 +34,16 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
                                             UInt32 channel, Mask active) const {
     // initialize basic medium interaction fields
     MediumInteraction3f mi;
-    mi.t           = math::Infinity<Float>;
-    mi.p           = Point3f(0.0f, 0.0f, 0.0f);
     mi.sh_frame    = Frame3f(ray.d);
     mi.wi          = -ray.d;
     mi.time        = ray.time;
     mi.wavelengths = ray.wavelengths;
-    mi.medium      = nullptr;
-    mi.mint        = 0.f;
 
     auto [aabb_its, mint, maxt] = intersect_aabb(ray);
+    aabb_its &= (enoki::isfinite(mint) || enoki::isfinite(maxt));
     active &= aabb_its;
+    masked(mint, !active) = 0.f;
+    masked(maxt, !active) = math::Infinity<Float>;
 
     mint = max(ray.mint, mint);
     maxt = min(ray.maxt, maxt);
@@ -56,12 +55,12 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         masked(m, eq(channel, 2u)) = combined_extinction[2];
     }
 
-    Float sampled_t        = mint + (-enoki::log(1 - sample) / m);
-    Mask valid_mi          = active && (sampled_t <= maxt);
-    masked(mi.t, valid_mi) = sampled_t;
-    mi.p                   = ray(sampled_t);
-    mi.medium              = this;
-    mi.mint                = mint;
+    Float sampled_t = mint + (-enoki::log(1 - sample) / m);
+    Mask valid_mi   = active && (sampled_t <= maxt);
+    mi.t            = select(valid_mi, sampled_t, math::Infinity<Float>);
+    mi.p            = ray(sampled_t);
+    mi.medium       = this;
+    mi.mint         = mint;
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
         get_scattering_coefficients(mi, valid_mi);
     mi.combined_extinction = combined_extinction;

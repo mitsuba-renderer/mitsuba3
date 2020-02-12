@@ -15,10 +15,11 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Texture3D)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
+        m_is_homogeneous = false;
         for (auto &kv : props.objects()) {
             Texture3D *texture3d = dynamic_cast<Texture3D *>(kv.second.get());
             Texture *texture     = dynamic_cast<Texture *>(kv.second.get());
@@ -47,6 +48,7 @@ public:
         m_use_ratio_tracking = props.bool_("use_ratio_tracking", false);
         m_use_raymarching    = props.bool_("use_raymarching", false);
         m_step_size_scaling  = props.float_("raymarching_step_scaling", 1.0f);
+        m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
 
         // TODO: Should also get the maximum of sigmaT
         Log(Info, "Sigmat Max: %s", m_sigmat->max());
