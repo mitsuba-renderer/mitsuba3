@@ -182,7 +182,8 @@ public:
             // --------------------- Surface Interactions ---------------------
             active_surface |= escaped_medium;
             Mask intersect = active_surface && needs_intersection;
-            masked(si, intersect) = scene->ray_intersect(ray, intersect);
+            if (any_or<true>(intersect))
+                masked(si, intersect) = scene->ray_intersect(ray, intersect);
 
             if (any_or<true>(active_surface)) {
                 // ---------------- Intersection with emitters ----------------
@@ -245,7 +246,8 @@ public:
                 // Intersect the indirect ray against the scene
                 Mask intersect = active_surface && needs_intersection && add_emitter;
                 SurfaceInteraction3f si_new = si;
-                masked(si_new, intersect) = scene->ray_intersect(ray, intersect);
+                if (any_or<true>(intersect))
+                    masked(si_new, intersect) = scene->ray_intersect(ray, intersect);
                 needs_intersection &= !intersect;
 
                 auto [emitted, emitter_pdf] = evaluate_direct_light(si, scene, sampler,
@@ -291,7 +293,7 @@ public:
                 masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = mi.t;
                 Mask intersect = needs_intersection && active_medium;
                 if (any_or<true>(intersect))
-                    masked(si, needs_intersection && active_medium) = scene->ray_intersect(ray, needs_intersection && active_medium);
+                    masked(si, intersect) = scene->ray_intersect(ray, intersect);
 
                 masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
 
