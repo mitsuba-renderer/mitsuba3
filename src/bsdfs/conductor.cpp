@@ -56,6 +56,9 @@ The following XML snippet describes a material definition for aluminium:
         <spectrum name="k" value="6.150000"/>
     </bsdf>
 
+In *polarized* rendering modes, the material automatically switches to a polarized
+implementation of the Fresnel equations.
+
  */
 
 template <typename Float, typename Spectrum>

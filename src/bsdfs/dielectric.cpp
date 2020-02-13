@@ -82,6 +82,9 @@ describe a slightly absorbing piece of glass is shown below:
         </medium>
     <shape>
 
+In *polarized* rendering modes, the material automatically switches to a polarized
+implementation of the Fresnel equations.
+
 .. note::
 
     Dispersion is currently unsupported but will be enabled in a future release.

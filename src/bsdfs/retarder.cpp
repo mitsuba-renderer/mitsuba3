@@ -6,6 +6,43 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _bsdf-retarder:
+
+Linear retarder material (:monosp:`retarder`)
+-----------------------------------------------
+
+.. pluginparameters::
+
+ * - theta
+   - |spectrum| or |texture|
+   - Specifies the rotation angle (in degrees) of the retarder around the optical axis (Default: 0.0)
+ * - delta
+   - |spectrum| or |texture|
+   - Specifies the retardance (in degrees) where 360 degrees is equivalent to a full wavelength. (Default: 90.0)
+
+This material simulates an ideal linear retarder useful to test polarization aware
+light transport or to conduct virtual optical experiments. The fast axis of the
+retarder is aligned with the *U*-direction of the underlying surface parameterization.
+For non-perpendicular incidence, a cosine falloff term is applied to the retardance.
+
+This plugin can be used to instantiate the  common special cases of
+*half-wave plates* (with ``delta=180``) and *quarter-wave plates* (with ``delta=90``).
+
+The following XML snippet describes a quarter-wave plate material:
+
+.. code-block:: xml
+    :name: retarder
+
+    <bsdf type="retarder">
+        <spectrum name="delta" value="90"/>
+    </bsdf>
+
+In *unpolarized* rendering modes, the behaviour defaults to non-polarizing
+transparent material similar to :ref:`bsdf-null`.
+
+*/
 template <typename Float, typename Spectrum>
 class LinearRetarder final : public BSDF<Float, Spectrum> {
 public:

@@ -6,6 +6,52 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _bsdf-polarizer:
+
+Linear polarizer material (:monosp:`polarizer`)
+-----------------------------------------------
+
+.. pluginparameters::
+
+ * - theta
+   - |spectrum| or |texture|
+   - Specifies the rotation angle (in degrees) of the polarizer around the optical axis (Default: 0.0)
+ * - transmittance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular transmission. (Default: 1.0)
+
+This material simulates an ideal linear polarizer useful to test polarization aware
+light transport or to conduct virtual optical experiments. The aborbing axis of the
+polarizer is aligned with the *V*-direction of the underlying surface parameterization.
+To rotate the polarizer, either the parameter ``theta`` can be used, or alternative
+a rotation can be applied directly to the associated shape.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_aligned.jpg
+   :caption: Two aligned polarizers. The average intensity is reduced by a factor of 2.
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_absorbing.jpg
+   :caption: Two polarizers offset by 90 degrees. All trasmitted light is aborbed.
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_middle.jpg
+   :caption: Two polarizers offset by 90 degrees, with a third polarizer in between at 45 degrees. Some light is transmitted again.
+.. subfigend::
+   :label: fig-polarizer
+
+The following XML snippet describes a linear polarizer material with a rotation
+of 90 degrees.
+
+.. code-block:: xml
+    :name: polarizer
+
+    <bsdf type="polarizer">
+        <spectrum name="theta" value="90"/>
+    </bsdf>
+
+In *unpolarized* rendering modes, the behaviour defaults to a non-polarizing
+transmitting material that absorbs 50% of the incident illumination.
+
+*/
 template <typename Float, typename Spectrum>
 class LinearPolarizer final : public BSDF<Float, Spectrum> {
 public:

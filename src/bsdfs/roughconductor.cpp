@@ -128,6 +128,9 @@ Also note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
 consider using the :ref:`bsdf-twosided` BRDF adapter.
 
+In *polarized* rendering modes, the material automatically switches to a polarized
+implementation of the Fresnel equations.
+
  */
 
 template <typename Float, typename Spectrum>
