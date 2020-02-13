@@ -3,7 +3,57 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// This integrator wraps another integrator and returns its Stokes components as AOVs.
+/**!
+
+.. _integrator-stokes:
+
+Stokes vector integrator (:monosp:`stokes`)
+-----------------------------------------------------
+
+.. pluginparameters::
+
+ * - (Nested plugin)
+   - :paramtype:`integrator`
+   - Sub-integrator (only one can be specified) which will be sampled along the Stokes
+     integrator. In polarized rendering modes, its output Stokes vector is written
+     into distinct images.
+
+This integrator returns a multi-channel image describing the complete measured
+polarization state at the sensor, represented as a Stokes vector :math:`\mathbf{s}`.
+
+Here we show an example monochrome output in a scene with two dielectric and one
+conductive sphere that all affect the polarization state of the
+(initially unpolarized) light.
+
+The first entry corresponds to usual radiance, whereas the remaining three entries
+describe the polarization of light shown as false color images.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox_s0.jpg
+   :caption: ":math:`\mathbf{s}_0`": radiance
+.. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox_s1.jpg
+   :caption: ":math:`\mathbf{s}_1`": horizontal vs. vertical polarization
+.. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox_s2.jpg
+   :caption: ":math:`\mathbf{s}_2`": positive vs. negative diagonal polarization
+.. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox_s3.jpg
+   :caption: ":math:`\mathbf{s}_3`": right vs. left circular polarization
+.. subfigend::
+   :label: fig-stokes
+
+In the following example, a normal path tracer is nested inside the Stokes vector
+integrator:
+
+.. code-block:: xml
+
+    <integrator type="stokes">
+        <integrator type="path">
+            <!-- path tracer parameters -->
+        </integrator>
+    </integrator>
+
+
+ */
+
 template <typename Float, typename Spectrum>
 class StokesIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
