@@ -449,7 +449,7 @@ public:
 
         Float y0 = gather<Float>(m_pdf, index,      active),
               y1 = gather<Float>(m_pdf, index + 1u, active),
-              c0 = gather<Float>(m_cdf, index- 1u, active && index > 0);
+              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
@@ -487,7 +487,7 @@ public:
 
         Float y0 = gather<Float>(m_pdf, index,      active),
               y1 = gather<Float>(m_pdf, index + 1u, active),
-              c0 = gather<Float>(m_cdf, index- 1u, active && index > 0);
+              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 

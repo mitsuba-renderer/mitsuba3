@@ -49,7 +49,7 @@ template <typename Warp> auto bind_warp(py::module &m,
     if constexpr (Warp::Dimension == 0)
         warp.def(std::move(constructor), "data"_a,
                  "param_values"_a = py::list(), "normalize"_a = true,
-                 "build_hierarchy"_a = true, doc_constructor);
+                 "enable_sampling"_a = true, doc_constructor);
     else
         warp.def(std::move(constructor), "data"_a, "param_values"_a,
                  "normalize"_a = true, "build_hierarchy"_a = true,

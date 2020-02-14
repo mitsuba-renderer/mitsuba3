@@ -43,15 +43,14 @@ def test02_eval_pdf(variant_scalar):
 
 def test03_chi2(variant_packet):
     from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
-    from mitsuba.core import ScalarBoundingBox2f
 
     sample_func, pdf_func = BSDFAdapter("diffuse", '')
 
     chi2 = ChiSquareTest(
-        domain = SphericalDomain(),
-        sample_func = sample_func,
-        pdf_func = pdf_func,
-        sample_dim = 3
+        domain=SphericalDomain(),
+        sample_func=sample_func,
+        pdf_func=pdf_func,
+        sample_dim=3
     )
 
     result = chi2.run(0.1)

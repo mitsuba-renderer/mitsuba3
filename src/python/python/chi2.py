@@ -213,7 +213,7 @@ class ChiSquareTest:
 
         self.pdf *= self.sample_count * ek.hprod(self.bounds.extents())
 
-    def run(self, significance_level, test_count=1):
+    def run(self, significance_level=0.01, test_count=1, quiet=False):
         """
         Run the Chi^2 test
 
@@ -278,7 +278,7 @@ class ChiSquareTest:
 
         # Probability of observing a test statistic at least as
         # extreme as the one here assuming that the distributions match
-        self.p_value = 1-rlgamma(dof/2, chi2val/2)
+        self.p_value = 1 - rlgamma(dof / 2, chi2val / 2)
 
         # Apply the Šidák correction term, since we'll be conducting multiple
         # independent hypothesis tests. This accounts for the fact that the
@@ -288,23 +288,26 @@ class ChiSquareTest:
             (1.0 - significance_level) ** (1.0 / test_count)
 
         if self.fail:
-            self._dump_tables()
             self._log('Not running the test for reasons listed above. Target '
                       'density and histogram were written to "chi2_data.py')
-            return False
+            result = False
         elif self.p_value < significance_level \
                 or not ek.isfinite(self.p_value):
-            self._dump_tables()
             self._log('***** Rejected ***** the null hypothesis (p-value = %f,'
                       ' significance level = %f). Target density and histogram'
                       ' were written to "chi2_data.py".'
                       % (self.p_value, significance_level))
-            return False
+            result = False
         else:
             self._log('Accepted the null hypothesis (p-value = %f, '
                       'significance level = %f)' %
                       (self.p_value, significance_level))
-            return True
+            result = True
+        if not quiet:
+            print(self.messages)
+            if not result:
+                self._dump_tables()
+        return result
 
     def _dump_tables(self):
         with open("chi2_data.py", "w") as f:
@@ -548,6 +551,4 @@ if __name__ == '__main__':
         sample_dim=2
     )
 
-    chi2.run(0.1)
-    print(chi2.messages)
-    chi2._dump_tables()
+    chi2.run(0.01)

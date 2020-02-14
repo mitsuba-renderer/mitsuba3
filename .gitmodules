@@ -19,9 +19,6 @@
 [submodule "ext/pugixml"]
     path = ext/pugixml
     url = https://github.com/mitsuba-renderer/pugixml
-[submodule "ext/zeromq"]
-    path = ext/zeromq
-    url = https://github.com/mitsuba-renderer/zeromq
 [submodule "ext/asmjit"]
     path = ext/asmjit
     url = https://github.com/mitsuba-renderer/asmjit
