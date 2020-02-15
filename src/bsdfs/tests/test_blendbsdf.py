@@ -3,11 +3,8 @@ import pytest
 import enoki as ek
 from enoki.dynamic import UInt32
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
 
-def test01_create(variant):
+def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -33,7 +30,8 @@ def test01_create(variant):
     assert bsdf.flags(1) == BSDFFlags.DiffuseReflection | BSDFFlags.FrontSide
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
-def test02_eval_all(variant):
+
+def test02_eval_all(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
@@ -62,12 +60,12 @@ def test02_eval_all(variant):
     ctx = BSDFContext()
 
     # Evaluate the blend of both components
-    expected = (1-weight) * 0.0*InvPi + weight * 1.0*InvPi
+    expected = (1 - weight) * 0.0 * InvPi + weight * 1.0 * InvPi
     value    = bsdf.eval(ctx, si, wo)
     assert ek.allclose(value, expected)
 
 
-def test03_eval_components(variant):
+def test03_eval_components(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
@@ -108,7 +106,7 @@ def test03_eval_components(variant):
     assert ek.allclose(value1, expected1)
 
 
-def test04_sample_all(variant):
+def test04_sample_all(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
@@ -147,7 +145,7 @@ def test04_sample_all(variant):
     assert ek.allclose(weight_b, expected_b)
 
 
-def test05_sample_components(variant):
+def test05_sample_components(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string

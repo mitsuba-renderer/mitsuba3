@@ -2,9 +2,8 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from mitsuba.python.test import variant_mono_polarized
 
-def test01_create(variant_mono_polarized):
+def test01_create(variant_scalar_mono_polarized):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -15,7 +14,7 @@ def test01_create(variant_mono_polarized):
     assert b.flags() == b.flags(0)
 
 
-def test02_sample_quarter_wave_local(variant_mono_polarized):
+def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
     from mitsuba.core import Frame3f, Transform4f, Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
@@ -76,7 +75,7 @@ def test02_sample_quarter_wave_local(variant_mono_polarized):
     assert ek.allclose(M @ circular_left, linear_pos , atol=1e-3)
 
 
-def test03_sample_half_wave_local(variant_mono_polarized):
+def test03_sample_half_wave_local(variant_scalar_mono_polarized):
     from mitsuba.core import Frame3f, Transform4f, Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
@@ -131,7 +130,7 @@ def test03_sample_half_wave_local(variant_mono_polarized):
 
 
 
-def test04_sample_quarter_wave_world(variant_mono_polarized):
+def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
     from mitsuba.core import Ray3f, Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode
@@ -206,7 +205,7 @@ def test04_sample_quarter_wave_world(variant_mono_polarized):
     assert ek.allclose(M @ circular_left, linear_pos , atol=1e-3)
 
 
-def test05_sample_half_wave_world(variant_mono_polarized):
+def test05_sample_half_wave_world(variant_scalar_mono_polarized):
     from mitsuba.core import Ray3f, Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode
@@ -274,7 +273,7 @@ def test05_sample_half_wave_world(variant_mono_polarized):
     assert ek.allclose(M @ circular_left, circular_right , atol=1e-3)
 
 
-def test06_path_tracer_quarter_wave(variant_mono_polarized):
+def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
     from mitsuba.core import Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode
@@ -396,7 +395,7 @@ def test06_path_tracer_quarter_wave(variant_mono_polarized):
         assert ek.allclose(observed[k], expected[k], atol=1e-3)
 
 
-def test07_path_tracer_half_wave(variant_mono_polarized):
+def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
     from mitsuba.core import Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode

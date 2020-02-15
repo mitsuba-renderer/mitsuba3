@@ -26,8 +26,9 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     rep = outcome.get_result()
     if rep.outcome == 'failed':
-        for entry in rep.longrepr.chain:
-            patch_tb(entry[0])
+        if hasattr(rep.longrepr, 'chain'):
+            for entry in rep.longrepr.chain:
+                patch_tb(entry[0])
     return rep
 
 

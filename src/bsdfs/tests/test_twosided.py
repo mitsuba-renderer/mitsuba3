@@ -3,10 +3,6 @@ import pytest
 import enoki as ek
 from enoki.dynamic import UInt32
 
-@pytest.fixture()
-def variant():
-    mitsuba.set_variant('scalar_rgb')
-
 
 @pytest.fixture(scope="module")
 def interaction():
@@ -20,7 +16,7 @@ def interaction():
     return si
 
 
-def test01_create(variant):
+def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -44,7 +40,7 @@ def test01_create(variant):
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
 
-def test02_pdf(variant, interaction):
+def test02_pdf(variant_scalar_rgb, interaction):
     from mitsuba.core.math import InvPi
     from mitsuba.render import BSDFContext
     from mitsuba.core.xml import load_string
@@ -63,7 +59,7 @@ def test02_pdf(variant, interaction):
     assert ek.allclose(p_pdf, 0.0)
 
 
-def test03_sample_eval_pdf(variant, interaction):
+def test03_sample_eval_pdf(variant_scalar_rgb, interaction):
     from mitsuba.core.math import InvPi
     from mitsuba.core.warp import square_to_uniform_sphere
     from mitsuba.render import BSDFContext
@@ -83,7 +79,7 @@ def test03_sample_eval_pdf(variant, interaction):
     for u in ek.arange(UInt32, n):
         for v in ek.arange(UInt32, n):
             interaction.wi = square_to_uniform_sphere([u / float(n-1),
-                                                    v / float(n-1)])
+                                                       v / float(n-1)])
             up = ek.dot(interaction.wi, [0, 0, 1]) > 0
 
             for x in ek.arange(UInt32, n):

@@ -1,12 +1,8 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variant_packet
-
-
-def test01_create(variant_scalar):
+def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -17,7 +13,7 @@ def test01_create(variant_scalar):
     assert b.flags() == b.flags(0)
 
 
-def test02_eval_pdf(variant_scalar):
+def test02_eval_pdf(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
@@ -32,7 +28,8 @@ def test02_eval_pdf(variant_scalar):
 
     ctx = BSDFContext()
 
-    for theta in ek.linspace(Float, 0, ek.pi / 2, 20):
+    for i in range(20):
+        theta = i / 19.0 * (ek.pi / 2)
         wo = [ek.sin(theta), 0, ek.cos(theta)]
 
         v_pdf  = bsdf.pdf(ctx, si, wo=wo)
@@ -41,7 +38,7 @@ def test02_eval_pdf(variant_scalar):
         assert ek.allclose(v_eval, 0.5 * wo[2] / ek.pi)
 
 
-def test03_chi2(variant_packet):
+def test03_chi2(variant_packet_rgb):
     from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("diffuse", '')
@@ -53,6 +50,4 @@ def test03_chi2(variant_packet):
         sample_dim=3
     )
 
-    result = chi2.run(0.1)
-    # chi2._dump_tables()
-    assert result
+    assert chi2.run()

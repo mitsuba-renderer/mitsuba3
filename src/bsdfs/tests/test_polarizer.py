@@ -2,9 +2,7 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from mitsuba.python.test import variant_mono_polarized
-
-def test01_create(variant_mono_polarized):
+def test01_create(variant_scalar_mono_polarized):
     from mitsuba.render import BSDFFlags
     from mitsuba.core.xml import load_string
 
@@ -15,7 +13,7 @@ def test01_create(variant_mono_polarized):
     assert b.flags() == b.flags(0)
 
 
-def test02_sample_local(variant_mono_polarized):
+def test02_sample_local(variant_scalar_mono_polarized):
     from mitsuba.core import Frame3f, Transform4f, Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
@@ -23,7 +21,7 @@ def test02_sample_local(variant_mono_polarized):
     def spectrum_from_stokes(v):
         res = Spectrum(0.0)
         for i in range(4):
-            res[i,0] = v[i]
+            res[i, 0] = v[i]
         return res
 
     # Test polarized implementation, version in local BSDF coordinate system
@@ -90,7 +88,7 @@ def test02_sample_local(variant_mono_polarized):
         assert ek.allclose(expected, stokes_out, atol=1e-3)
 
 
-def test03_sample_world(variant_mono_polarized):
+def test03_sample_world(variant_scalar_mono_polarized):
     from mitsuba.core import Ray3f, Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode
@@ -158,7 +156,7 @@ def test03_sample_world(variant_mono_polarized):
         assert ek.allclose(stokes_out, expected, atol=1e-3)
 
 
-def test04_path_tracer_polarizer(variant_mono_polarized):
+def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
     from mitsuba.core import Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode
@@ -246,7 +244,7 @@ def test04_path_tracer_polarizer(variant_mono_polarized):
         value, _, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
-        value /= value[0,0]
+        value /= value[0, 0]
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
@@ -258,7 +256,7 @@ def test04_path_tracer_polarizer(variant_mono_polarized):
         assert ek.allclose(value, expected[k], atol=1e-3)
 
 
-def test05_path_tracer_malus_law(variant_mono_polarized):
+def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
     from mitsuba.core import Spectrum
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode

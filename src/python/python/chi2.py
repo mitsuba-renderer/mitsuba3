@@ -156,8 +156,8 @@ class ChiSquareTest:
                       'weights: %f' % histogram_min)
             self.fail = True
 
-        histogram_sum = ek.hsum(self.histogram) / self.sample_count
-        if histogram_sum > 1.1:
+        self.histogram_sum = ek.hsum(self.histogram) / self.sample_count
+        if self.histogram_sum > 1.1:
             self._log('Sample weights add up to a value greater '
                       'than 1.0: %f' % histogram_sum)
             self.fail = True
@@ -205,8 +205,8 @@ class ChiSquareTest:
                       'negative PDF value: %f' % pdf_min)
             self.fail = True
 
-        pdf_sum = ek.hsum(self.pdf)
-        if pdf_sum > 1.1 * self.sample_count:
+        self.pdf_sum = ek.hsum(self.pdf)
+        if self.pdf_sum > 1.1 * self.sample_count:
             self._log('PDF integrates to a value greater '
                       'than 1.0: %f' % (pdf_sum / self.sample_count))
             self.fail = True
@@ -293,6 +293,8 @@ class ChiSquareTest:
             result = False
         elif self.p_value < significance_level \
                 or not ek.isfinite(self.p_value):
+            self._log('Histogram sum = %f, PDF sum = %f' % (self.histogram_sum,
+                                                            self.pdf_sum))
             self._log('***** Rejected ***** the null hypothesis (p-value = %f,'
                       ' significance level = %f). Target density and histogram'
                       ' were written to "chi2_data.py".'
