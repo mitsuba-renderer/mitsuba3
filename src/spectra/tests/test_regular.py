@@ -5,7 +5,6 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from mitsuba.python.test import variant_spectral
 
 @pytest.fixture()
 def obj():
@@ -16,7 +15,8 @@ def obj():
             <string name="values" value="1, 2"/>
         </spectrum>''')
 
-def test01_eval(variant_spectral, obj):
+
+def test01_eval(variant_scalar_spectral, obj):
     from mitsuba.render import SurfaceInteraction3f
 
     si = SurfaceInteraction3f()
@@ -36,7 +36,7 @@ def test01_eval(variant_spectral, obj):
     assert 'not implemented' in str(excinfo.value)
 
 
-def test02_sample(variant_spectral, obj):
+def test02_sample(variant_scalar_spectral, obj):
     from mitsuba.render import SurfaceInteraction3f
 
     si = SurfaceInteraction3f()
