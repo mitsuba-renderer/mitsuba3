@@ -31,7 +31,7 @@ surfaces.
 .. subfigure:: ../../resources/data/docs/images/render/integrator_aov_depth.jpg
    :caption: Depth AOV
 .. subfigure:: ../../resources/data/docs/images/render/integrator_aov_sh_normal.jpg
-   :caption: Depth AOV
+   :caption: Normal AOV
 .. subfigure:: ../../resources/data/docs/images/render/integrator_aov_position.jpg
    :caption: Position AOV
 .. subfigend::
@@ -49,6 +49,13 @@ output file.
         <integrator type="path" name="my_image"/>
     </integrator>
 
+Currently, the following AOVs types are available:
+
+    - :monosp:`depth`: Distance from the pinhole.
+    - :monosp:`position`: World space position value.
+    - :monosp:`uv`: UV coordinates.
+    - :monosp:`geo_normal`: Geometric normal.
+    - :monosp:`sh_normal`: Shading normal.
 
  */
 
