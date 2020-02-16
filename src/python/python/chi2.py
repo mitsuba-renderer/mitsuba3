@@ -1,5 +1,6 @@
 import mitsuba
 import enoki as ek
+import time
 
 
 class ChiSquareTest:
@@ -77,9 +78,7 @@ class ChiSquareTest:
                  sample_count=1000000, res=101, ires=4):
         from mitsuba.core import ScalarVector2u
 
-        if res % 2 == 0:
-            raise Exception("The 'res' parameter should be odd!")
-        elif ires < 2:
+        if ires < 2:
             raise Exception("The 'ires' parameter must be >= 2!")
 
         self.domain = domain
@@ -114,6 +113,8 @@ class ChiSquareTest:
         for i in range(self.sample_dim):
             samples_in[i] = rng.next_float32() if Float is Float32 \
                 else rng.next_float64()
+
+        self.pdf_start = time.time()
 
         # Invoke sampling strategy
         samples_out = self.sample_func(samples_in)
@@ -150,6 +151,8 @@ class ChiSquareTest:
             source=weights_out
         )
 
+        self.pdf_end = time.time()
+
         histogram_min = ek.hmin(self.histogram)
         if not histogram_min >= 0:
             self._log('Encountered a cell with negative sample '
@@ -159,59 +162,62 @@ class ChiSquareTest:
         self.histogram_sum = ek.hsum(self.histogram) / self.sample_count
         if self.histogram_sum > 1.1:
             self._log('Sample weights add up to a value greater '
-                      'than 1.0: %f' % histogram_sum)
+                      'than 1.0: %f' % self.histogram_sum)
             self.fail = True
 
     def tabulate_pdf(self):
         """
         Numerically integrate the provided probability density function over
         each cell to generate an array resembling the histogram computed by
-        ``tabulate_histogram()``. The function uses 2D tensor product Simpson
-        quadrature over intervals discretized into ``self.ires`` separate
-        function evaluations.
+        ``tabulate_histogram()``. The function uses the trapezoid rule over
+        intervals discretized into ``self.ires`` separate function evaluations.
         """
 
-        from mitsuba.core import Float, Vector2f
+        from mitsuba.core import Float, Vector2f, ScalarVector2f
+
+        extents = self.bounds.extents()
+        endpoint = self.bounds.max - extents / ScalarVector2f(self.res)
 
         # Compute a set of nodes where the PDF should be evaluated
         x, y = ek.meshgrid(
-            ek.linspace(Float, self.bounds.min.x,
-                        self.bounds.max.x - 1/self.res.x, self.res.x),
-            ek.linspace(Float, self.bounds.min.y,
-                        self.bounds.max.y - 1/self.res.y, self.res.y)
+            ek.linspace(Float, self.bounds.min.x, endpoint.x, self.res.x),
+            ek.linspace(Float, self.bounds.min.y, endpoint.y, self.res.y)
         )
 
-        nx = ek.linspace(Float, 0, 1, self.ires) / self.res.x
-        ny = ek.linspace(Float, 0, 1, self.ires) / self.res.y
-        wx = [1 / ((self.ires - 1) * self.res.x)] * self.ires
-        wy = [1 / ((self.ires - 1) * self.res.y)] * self.ires
+        endpoint = extents / ScalarVector2f(self.res)
+        eps = 1e-4
+        nx = ek.linspace(Float, eps, endpoint.x * (1 - eps), self.ires)
+        ny = ek.linspace(Float, eps, endpoint.y * (1 - eps), self.ires)
+        wx = [1 / (self.ires - 1)] * self.ires
+        wy = [1 / (self.ires - 1)] * self.ires
         wx[0] = wx[-1] = wx[0] * .5
         wy[0] = wy[-1] = wy[0] * .5
 
         integral = 0
 
+        self.histogram_start = time.time()
         for yi, dy in enumerate(ny):
             for xi, dx in enumerate(nx):
                 xy = self.domain.map_forward(Vector2f(x + dx, y + dy))
                 pdf = self.pdf_func(xy)
                 integral = ek.fmadd(pdf, wx[xi] * wy[yi], integral)
+        self.histogram_end = time.time()
 
-        self.pdf = integral
+        self.pdf = integral * (ek.hprod(extents / ScalarVector2f(self.res))
+                               * self.sample_count)
 
         # A few sanity checks
-        pdf_min = ek.hmin(self.pdf)
+        pdf_min = ek.hmin(self.pdf) / self.sample_count
         if not pdf_min >= 0:
-            self._log('Encountered a cell with a '
+            self._log('Failure: Encountered a cell with a '
                       'negative PDF value: %f' % pdf_min)
             self.fail = True
 
-        self.pdf_sum = ek.hsum(self.pdf)
-        if self.pdf_sum > 1.1 * self.sample_count:
-            self._log('PDF integrates to a value greater '
-                      'than 1.0: %f' % (pdf_sum / self.sample_count))
+        self.pdf_sum = ek.hsum(self.pdf) / self.sample_count
+        if self.pdf_sum > 1.1:
+            self._log('Failure: PDF integrates to a value greater '
+                      'than 1.0: %f' % self.pdf_sum)
             self.fail = True
-
-        self.pdf *= self.sample_count * ek.hprod(self.bounds.extents())
 
     def run(self, significance_level=0.01, test_count=1, quiet=False):
         """
@@ -261,18 +267,24 @@ class ChiSquareTest:
             chi2(histogram, pdf, 5)
 
         if dof < 1:
-            self._log('The number of degrees of freedom is too low!')
+            self._log('Failure: The number of degrees of freedom is too low!')
             self.fail = True
 
         if ek.any(ek.eq(pdf, 0) & ek.neq(histogram, 0)):
-            self._log('Found samples in a cell with expected frequency 0. '
-                      'Rejecting the null hypothesis!')
+            self._log('Failure: Found samples in a cell with expected '
+                      'frequency 0. Rejecting the null hypothesis!')
             self.fail = True
 
         if pooled_in > 0:
             self._log('Pooled %i low-valued cells into %i cells to '
                       'ensure sufficiently high expected cell frequencies'
                       % (pooled_in, pooled_out))
+
+        pdf_time = (self.pdf_end - self.pdf_start) * 1000
+        histogram_time = (self.histogram_end - self.histogram_start) * 1000
+
+        self._log('Histogram sum = %f (%.2f ms), PDF sum = %f (%.2f ms)' %
+                  (self.histogram_sum, histogram_time, self.pdf_sum, pdf_time))
 
         self._log('Chi^2 statistic = %f (d.o.f = %i)' % (chi2val, dof))
 
@@ -293,8 +305,6 @@ class ChiSquareTest:
             result = False
         elif self.p_value < significance_level \
                 or not ek.isfinite(self.p_value):
-            self._log('Histogram sum = %f, PDF sum = %f' % (self.histogram_sum,
-                                                            self.pdf_sum))
             self._log('***** Rejected ***** the null hypothesis (p-value = %f,'
                       ' significance level = %f). Target density and histogram'
                       ' were written to "chi2_data.py".'
@@ -313,9 +323,10 @@ class ChiSquareTest:
 
     def _dump_tables(self):
         with open("chi2_data.py", "w") as f:
-            pdf = str([[self.pdf[x + y*self.res.x] for x in range(self.res.x)]
+            pdf = str([[self.pdf[x + y * self.res.x]
+                        for x in range(self.res.x)]
                        for y in range(self.res.y)])
-            histogram = str([[self.histogram[x + y*self.res.x]
+            histogram = str([[self.histogram[x + y * self.res.x]
                               for x in range(self.res.x)]
                              for y in range(self.res.y)])
 
@@ -359,7 +370,7 @@ class LineDomain:
 
         self._bounds = ScalarBoundingBox2f(
             min=(bounds[0], -0.5),
-            max=(bounds[1],  0.5)
+            max=(bounds[1], 0.5)
         )
 
     def bounds(self):
@@ -434,9 +445,9 @@ class SphericalDomain:
 # --------------------------------------
 
 
-def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
+def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     """
-    Adapter which permits testing BSDF distributions using the Chi^2 test.
+    Adapter to test BSDF sampling using the Chi^2 test.
 
     Parameters
     ----------
@@ -452,12 +463,15 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
     from mitsuba.core import Float
     from mitsuba.core.xml import load_string
 
+    if ctx is None:
+        ctx = BSDFContext()
+
     def make_context(n):
         si = SurfaceInteraction3f.zero(n)
         si.wi = wi
         ek.set_slices(si.wi, n)
         si.wavelengths = []
-        return (si, BSDFContext())
+        return (si, ctx)
 
     def instantiate(args):
         xml = """<bsdf version="2.0.0" type="%s">
@@ -486,7 +500,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1]):
 
 def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
     """
-    Adapter which permits testing phase function distributions using the Chi^2 test.
+    Adapter to test phase function sampling using the Chi^2 test.
 
     Parameters
     ----------
@@ -505,7 +519,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
         mi = MediumInteraction3f.zero(n)
         mi.wi = wi
         ek.set_slices(mi.wi, n)
-        mi.sh_frame = Frame3f(-mi.wi);
+        mi.sh_frame = Frame3f(-mi.wi)
         mi.wavelengths = []
         ctx = PhaseFunctionContext(None)
         return mi, ctx
@@ -553,4 +567,5 @@ if __name__ == '__main__':
         sample_dim=2
     )
 
-    chi2.run(0.01)
+    chi2.run()
+    chi2._dump_tables()

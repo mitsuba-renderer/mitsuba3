@@ -298,8 +298,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies in the plane
                of reflection. */
-            Vector3f s_axis_in = normalize(cross(H, -wi_hat)),
-                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
+            Vector3f s_axis_in  = normalize(cross(H, -wi_hat)),
+                     p_axis_in  = normalize(cross(-wi_hat, s_axis_in)),
                      s_axis_out = normalize(cross(H, wo_hat)),
                      p_axis_out = normalize(cross(wo_hat, s_axis_out));
 
@@ -322,13 +322,18 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
-        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+        // Calculate the half-direction vector
+        Vector3f m = normalize(wo + si.wi);
+
+        /* Filter cases where the micro/macro-surface don't agree on the side.
+           This logic is evaluated in smith_g1() called as part of the eval()
+           and sample() methods and needs to be replicated in the probability
+           density computation as well. */
+        active &= cos_theta_i   > 0.f && cos_theta_o   > 0.f &&
+                  dot(si.wi, m) > 0.f && dot(wo,    m) > 0.f;
 
         if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
             return 0.f;
-
-        // Calculate the half-direction vector
-        Vector3f H = normalize(wo + si.wi);
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
@@ -336,10 +341,10 @@ public:
 
         Float result;
         if (likely(m_sample_visible))
-            result = distr.eval(H) * distr.smith_g1(si.wi, H) /
+            result = distr.eval(m) * distr.smith_g1(si.wi, m) /
                      (4.f * cos_theta_i);
         else
-            result = distr.pdf(si.wi, H) / (4.f * dot(wo, H));
+            result = distr.pdf(si.wi, m) / (4.f * dot(wo, m));
 
         return select(active, result, 0.f);
     }

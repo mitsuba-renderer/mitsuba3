@@ -425,7 +425,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl
-            << "  distribution = " << m_type << "," << std::endl
+            << "  distribution = "           << m_type           << "," << std::endl
             << "  sample_visible = "         << m_sample_visible << "," << std::endl
             << "  alpha_u = "                << m_alpha_u        << "," << std::endl
             << "  alpha_v = "                << m_alpha_v        << "," << std::endl

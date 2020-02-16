@@ -18,6 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
 enum class MicrofacetType : uint32_t {
     /// Beckmann distribution derived from Gaussian random surfaces
     Beckmann = 0,
+
     /// GGX: Long-tailed distribution for very rough surfaces (aka. Trowbridge-Reitz distr.)
     GGX = 1
 };
@@ -64,7 +65,8 @@ template <typename Float, typename Spectrum>
 class MicrofacetDistribution {
 public:
     MTS_IMPORT_TYPES()
-    static constexpr auto Pi = math::Pi<scalar_t<Float>>;
+
+    static constexpr auto Pi        = math::Pi<scalar_t<Float>>;
     static constexpr auto InvSqrtPi = math::InvSqrtPi<scalar_t<Float>>;
 
     /**
@@ -93,7 +95,8 @@ public:
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha_u, Float alpha_v,
                            bool sample_visible = true)
-        : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v), m_sample_visible(sample_visible) {
+        : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v),
+          m_sample_visible(sample_visible) {
         configure();
     }
 
@@ -101,8 +104,10 @@ public:
      * \brief Create a microfacet distribution from a Property data
      * structure
      */
-    MicrofacetDistribution(const Properties &props, MicrofacetType type = MicrofacetType::Beckmann,
-                           Float alpha_u = Float(0.1), Float alpha_v = Float(0.1),
+    MicrofacetDistribution(const Properties &props,
+                           MicrofacetType type = MicrofacetType::Beckmann,
+                           Float alpha_u       = Float(0.1),
+                           Float alpha_v       = Float(0.1),
                            bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v) {
 
@@ -132,11 +137,10 @@ public:
             m_alpha_v = props.float_("alpha_v");
         }
 
-        if (alpha_u == Float(0) || alpha_v == Float(0)) {
+        if (alpha_u == 0.f || alpha_v == 0.f)
             Log(Warn,
-                "Cannot create a microfacet distribution withalpha_u/alpha_v=0 (clamped to 10^-4). "
-                "Please use thecorresponding smooth reflectance model to get zero roughness.");
-        }
+                "Cannot create a microfacet distribution with alpha_u/alpha_v=0 (clamped to 10^-4). "
+                "Please use the corresponding smooth reflectance model to get zero roughness.");
 
         m_sample_visible = props.bool_("sample_visible", sample_visible);
 
@@ -372,11 +376,11 @@ public:
             sample = max(min(sample, 1.f - 1e-6f), 1e-6f);
             Float x = maxval - (maxval + 1.f) * erf(sqrt(-log(sample.x())));
 
-            /* Normalization factor for the CDF */
+            // Normalization factor for the CDF
             sample.x() *= 1.f + maxval + InvSqrtPi *
                           tan_theta_i * exp(-sqr(cot_theta_i));
 
-            /* Three Newton iterations */
+            // Three Newton iterations
             ENOKI_NOUNROLL for (size_t i = 0; i < 3; ++i) {
                 Float slope = erfinv(x),
                       value = 1.f + x + InvSqrtPi * tan_theta_i *
@@ -386,20 +390,20 @@ public:
                 x -= value / derivative;
             }
 
-            /* Now convert back into a slope value */
+            // Now convert back into a slope value
             return erfinv(Vector2f(x, fmsub(2.f, sample.y(), 1.f)));
         } else {
-            /* Choose a projection direction and re-scale the sample */
+            // Choose a projection direction and re-scale the sample
             Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
             Float s = .5f * (1.f + cos_theta_i);
             p.y() = lerp(safe_sqrt(1.f - sqr(p.x())), p.y(), s);
 
-            /* Project onto chosen side of the hemisphere */
+            // Project onto chosen side of the hemisphere
             Float x = p.x(), y = p.y(),
                   z = safe_sqrt(1.f - squared_norm(p));
 
-            /* Convert to slope */
+            // Convert to slope
             Float sin_theta_i = safe_sqrt(1.f - sqr(cos_theta_i));
             Float norm = rcp(fmadd(sin_theta_i, y, cos_theta_i * z));
             return Vector2f(fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
@@ -471,8 +475,8 @@ DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spect
     std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
     set_slices(result, slices(wi_));
 
-    Vector2fX nodes_2     = meshgrid(nodes, nodes),
-                weights_2 = meshgrid(weights, weights);
+    Vector2fX nodes_2    = meshgrid(nodes, nodes),
+              weights_2  = meshgrid(weights, weights);
 
     for (size_t i = 0; i < slices(wi_); ++i) {
         auto wi      = slice(wi_, i);
@@ -480,7 +484,7 @@ DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spect
 
         for (size_t j = 0; j < packets(nodes_2); ++j) {
             Vector2fP node(packet(nodes_2, j)),
-                        weight(packet(weights_2, j));
+                      weight(packet(weights_2, j));
             node = fmadd(node, .5f, .5f);
 
             Normal3fP m = std::get<0>(distr.sample(wi, node));
