@@ -245,9 +245,6 @@ public:
             // Perfect specular reflection based on the microfacet normal
             bs.wo[selected_r] = reflect(si.wi, m);
 
-            // Ignore samples that ended up on the wrong side
-            active &= selected_t || (cos_theta_i * Frame3f::cos_theta(bs.wo) > 0.f);
-
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r && active);
 
             // Jacobian of the half-direction mapping
@@ -258,9 +255,6 @@ public:
         if (any_or<true>(selected_t)) {
             // Perfect specular transmission based on the microfacet normal
             bs.wo[selected_t]  = refract(si.wi, m, cos_theta_t, eta_ti);
-
-            // Ignore samples that ended up on the wrong side
-            active &= selected_r || (cos_theta_i * Frame3f::cos_theta(bs.wo) < 0.f);
 
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
@@ -381,6 +375,13 @@ public:
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = mulsign(m, Frame3f::cos_theta(m));
+
+        /* Filter cases where the micro/macro-surface don't agree on the side.
+           This logic is evaluated in smith_g1() called as part of the eval()
+           and sample() methods and needs to be replicated in the probability
+           density computation as well. */
+        active &= dot(si.wi, m) * Frame3f::cos_theta(si.wi) > 0.f &&
+                  dot(wo,    m) * Frame3f::cos_theta(wo)    > 0.f;
 
         // Jacobian of the half-direction mapping
         Float dwh_dwo = select(reflect, rcp(4.f * dot(wo, m)),
