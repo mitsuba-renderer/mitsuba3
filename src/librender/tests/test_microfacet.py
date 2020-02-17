@@ -309,3 +309,27 @@ def test05_sample_ggx(variant_packet_rgb):
     assert ek.allclose(ref[1], result[1], atol=1e-4)
 
 
+@pytest.mark.parametrize("sample_visible", [True, False])
+@pytest.mark.parametrize("alpha", [0.1, 0.5])
+@pytest.mark.parametrize("md_type_name", ['GGX', 'Beckmann'])
+@pytest.mark.parametrize("angle", [0, 80, 30])
+def test06_chi2(variant_packet_rgb, md_type_name, alpha, sample_visible, angle):
+    from mitsuba.python.chi2 import MicrofacetAdapter, ChiSquareTest, SphericalDomain
+    from mitsuba.render import MicrofacetType
+
+    if md_type_name == "GGX":
+        md_type = MicrofacetType.GGX
+    else:
+        md_type = MicrofacetType.Beckmann
+
+    sample_func, pdf_func = MicrofacetAdapter(md_type, alpha, sample_visible)
+
+    chi2 = ChiSquareTest(
+        domain=SphericalDomain(),
+        sample_func=lambda *args: sample_func(*(list(args) + [angle])),
+        pdf_func=lambda *args: pdf_func(*(list(args) + [angle])),
+        sample_dim=2,
+        ires=10
+    )
+
+    assert chi2.run()

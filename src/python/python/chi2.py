@@ -498,6 +498,33 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     return sample_functor, pdf_functor
 
 
+def MicrofacetAdapter(md_type, alpha, sample_visible=False):
+    """
+    Adapter for testing microfacet distribution sampling techniques
+    (separately from BSDF models, which are also tested)
+    """
+
+    from mitsuba.render import MicrofacetDistribution
+
+    def instantiate(args):
+        wi = [0, 0, 1]
+        if len(args) == 1:
+            angle = args[0] * ek.pi / 180
+            wi = [ek.sin(angle), 0, ek.cos(angle)]
+        return MicrofacetDistribution(md_type, alpha, sample_visible), wi
+
+    def sample_functor(sample, *args):
+        dist, wi = instantiate(args)
+        s_value, _ = dist.sample(wi, sample)
+        return s_value
+
+    def pdf_functor(m, *args):
+        dist, wi = instantiate(args)
+        return dist.pdf(wi, m)
+
+    return sample_functor, pdf_functor
+
+
 def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
     """
     Adapter to test phase function sampling using the Chi^2 test.
