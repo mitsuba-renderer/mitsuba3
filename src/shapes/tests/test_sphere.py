@@ -111,7 +111,7 @@ def test04_sample_direct(variant_scalar_rgb):
         s, c = ek.sin(phi), ek.cos(phi)
         return [c * sin_theta, s * sin_theta, cos_theta]
 
-    it = Interaction3f()
+    it = Interaction3f.zero()
     it.p = [0, 0, -3]
     it.t = 0
     sin_cone_angle = 1.0 / it.p[2]

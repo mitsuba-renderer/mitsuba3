@@ -4,59 +4,52 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 
 
-def example_emitter(spectrum = "1.0", extra = ""):
+def create_emitter_and_spectrum():
     from mitsuba.core.xml import load_string
-
-    return load_string("""
-        <emitter version="2.0.0" type="constant">
-            <spectrum name="radiance" value="{}"/>
-            {}
-        </emitter>
-    """.format(spectrum, extra))
+    emitter = load_string("""<emitter version="2.0.0" type="constant"/>""")
+    spectrum = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
+    return emitter, spectrum
 
 
-def test01_construct(variant_scalar_rgb):
-    assert not example_emitter().bbox().valid()  # degenerate bounding box
+def test01_sample_ray(variant_packet_spectral):
+    from mitsuba.core import Frame3f, warp, sample_shifted
+    from mitsuba.render import SurfaceInteraction3f
+
+    emitter, spectrum = create_emitter_and_spectrum()
+
+    time = 0.5
+    wavelength_sample = [0.5, 0.33, 0.1]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    dir_sample = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
+
+    ray, spec = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
+
+    it = SurfaceInteraction3f.zero(3)
+    wav, res = spectrum.sample(it, sample_shifted(wavelength_sample))
+
+    assert ek.allclose(spec, res * 4 * ek.pi * ek.pi)
+    assert ek.allclose(ray.time, time)
+    assert ek.allclose(ray.wavelengths, wav)
+    assert ek.allclose(ray.o, warp.square_to_uniform_sphere(pos_sample))
+    assert ek.allclose(
+        ray.d, Frame3f(-ray.o).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
 
 
-def test02_sample_ray(variant_scalar_spectral):
-    from mitsuba.core.math import InvFourPi, RayEpsilon
-    from mitsuba.core.xml import load_string
-    import numpy as np
+def test02_sample_direction(variant_packet_rgb):
+    from mitsuba.core import warp
+    from mitsuba.core.math import InvFourPi
+    from mitsuba.render import SurfaceInteraction3f
 
-    e = load_string("""
-            <emitter version="2.0.0" type="constant">
-                <spectrum name="radiance" value="3.5"/>
-            </emitter>
-        """)
-
-    ray, weight = e.sample_ray(0.3, 0.4, [0.1, 0.6], [0.9, 0.24])
-
-    assert ek.allclose(ray.time, 0.3) and ek.allclose(ray.mint, RayEpsilon)
-    # Ray should point towards the scene
-    assert ek.count(ray.d > 0) > 0
-    assert ek.dot(ray.d, ray.o) < 0
-    assert ek.all(weight > 0)
-    # Wavelengths sampled should be different
-    n = len(ray.wavelengths)
-    assert n > 0 and len(np.unique(ray.wavelengths))
-
-
-def test03_sample_direction(variant_scalar_rgb):
-    from mitsuba.core.math import InvFourPi, RayEpsilon
-    from mitsuba.render import Interaction3f
-
-    it = Interaction3f()
-    it.wavelengths = []
+    it = SurfaceInteraction3f.zero()
     it.p = [-0.5, 0.3, -0.1]  # Some position inside the unit sphere
     it.time = 1.0
 
-    e = example_emitter(spectrum=3.5)
-    ds, spectrum = e.sample_direction(it, [0.85, 0.13])
+    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
+
+    emitter, _ = create_emitter_and_spectrum()
+    ds, spectrum = emitter.sample_direction(it, samples)
 
     assert ek.allclose(ds.pdf, InvFourPi)
-    # Ray points towards the scene's bounding sphere
-    assert ek.any(ek.abs(ds.d) > 0)
-    assert ek.dot(ds.d, [0, 0, 1]) > 0
-    assert ek.allclose(e.pdf_direction(it, ds), InvFourPi)
+    assert ek.allclose(ds.d, warp.square_to_uniform_sphere(samples))
+    assert ek.allclose(emitter.pdf_direction(it, ds), InvFourPi)
     assert ek.allclose(ds.time, it.time)
