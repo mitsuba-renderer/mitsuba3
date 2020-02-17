@@ -3,10 +3,8 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variant_spectral
 
-
-def test01_cie1931(variant_scalar):
+def test01_cie1931(variant_scalar_rgb):
     """CIE 1931 observer"""
     XYZw = mitsuba.core.cie1931_xyz(600)
     assert ek.allclose(XYZw[0], 1.0622)
@@ -17,7 +15,7 @@ def test01_cie1931(variant_scalar):
     assert ek.allclose(Y, 0.631)
 
 
-def test02_d65(variant_spectral):
+def test02_d65(variant_scalar_spectral):
     """d65: Spot check the model in a few places, the chi^2 test will ensure
     that sampling works."""
 
@@ -32,7 +30,7 @@ def test02_d65(variant_spectral):
                        ek.scalar.Vector4f([0, 117.49, 71.6091, 0]) / 10568.0)
 
 
-def test03_blackbody(variant_spectral):
+def test03_blackbody(variant_scalar_spectral):
     """blackbody: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
@@ -48,7 +46,7 @@ def test03_blackbody(variant_spectral):
                        [0, 10997.9, 11812, 0])
 
 
-def test04_srgb_d65(variant_spectral):
+def test04_srgb_d65(variant_scalar_spectral):
     """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
     with intensity factored out when evaluating the sRGB model."""
 
@@ -89,7 +87,7 @@ def test04_srgb_d65(variant_spectral):
                            d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)))
 
 
-def test05_sample_rgb_spectrum(variant_spectral):
+def test05_sample_rgb_spectrum(variant_scalar_spectral):
     """rgb_spectrum: Spot check the model in a few places, the chi^2 test will
     ensure that sampling works."""
 
@@ -112,7 +110,7 @@ def test05_sample_rgb_spectrum(variant_spectral):
         assert pdf_rgb_spectrum(MTS_WAVELENGTH_MAX + 0.5)  == 0.0
 
 
-def test06_rgb2spec_fetch_eval_mean(variant_spectral):
+def test06_rgb2spec_fetch_eval_mean(variant_scalar_spectral):
     from mitsuba.render import srgb_model_fetch, srgb_model_eval, srgb_model_mean
     from mitsuba.core import MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX, MTS_WAVELENGTH_SAMPLES
     import numpy as np

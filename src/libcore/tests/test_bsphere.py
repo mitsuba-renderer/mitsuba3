@@ -1,9 +1,8 @@
 import pytest
 import mitsuba
 
-from mitsuba.python.test import variant_scalar
 
-def test01_basics(variant_scalar):
+def test01_basics(variant_scalar_rgb):
     from mitsuba.core import BoundingSphere3f as BSphere
 
     bsphere1 = BSphere()

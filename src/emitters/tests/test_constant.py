@@ -3,8 +3,6 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variant_spectral
-
 
 def example_emitter(spectrum = "1.0", extra = ""):
     from mitsuba.core.xml import load_string
@@ -17,11 +15,11 @@ def example_emitter(spectrum = "1.0", extra = ""):
     """.format(spectrum, extra))
 
 
-def test01_construct(variant_scalar):
+def test01_construct(variant_scalar_rgb):
     assert not example_emitter().bbox().valid()  # degenerate bounding box
 
 
-def test02_sample_ray(variant_spectral):
+def test02_sample_ray(variant_scalar_spectral):
     from mitsuba.core.math import InvFourPi, RayEpsilon
     from mitsuba.core.xml import load_string
     import numpy as np
@@ -44,7 +42,7 @@ def test02_sample_ray(variant_spectral):
     assert n > 0 and len(np.unique(ray.wavelengths))
 
 
-def test03_sample_direction(variant_scalar):
+def test03_sample_direction(variant_scalar_rgb):
     from mitsuba.core.math import InvFourPi, RayEpsilon
     from mitsuba.render import Interaction3f
 

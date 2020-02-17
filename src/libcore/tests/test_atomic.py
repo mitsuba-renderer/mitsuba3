@@ -3,9 +3,8 @@ from threading import Thread
 import pytest
 import mitsuba
 
-from mitsuba.python.test import variant_scalar
 
-def test01_add(variant_scalar):
+def test01_add(variant_scalar_rgb):
     from mitsuba.core import AtomicFloat
 
     f = AtomicFloat(5)

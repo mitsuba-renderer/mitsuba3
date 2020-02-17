@@ -3,11 +3,10 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar
 from mitsuba.python.test.util import fresolver_append_path
 
 
-def test01_create_mesh(variant_scalar):
+def test01_create_mesh(variant_scalar_rgb):
     from mitsuba.core import Struct, float_dtype
     from mitsuba.render import Mesh
 
@@ -78,7 +77,7 @@ def test01_create_mesh(variant_scalar):
 
 
 @fresolver_append_path
-def test02_ply_triangle(variant_scalar):
+def test02_ply_triangle(variant_scalar_rgb):
     from mitsuba.core import UInt32, Vector3f
     from mitsuba.core.xml import load_string
 
@@ -103,7 +102,7 @@ def test02_ply_triangle(variant_scalar):
     assert faces[0]['i2'] == UInt32(2)
 
 @fresolver_append_path
-def test03_ply_computed_normals(variant_scalar):
+def test03_ply_computed_normals(variant_scalar_rgb):
     from mitsuba.core import Vector3f
     from mitsuba.core.xml import load_string
 
@@ -122,7 +121,7 @@ def test03_ply_computed_normals(variant_scalar):
     assert ek.allclose(vertices['nz'], [0, 0, 0])
 
 
-def test04_normal_weighting_scheme(variant_scalar):
+def test04_normal_weighting_scheme(variant_scalar_rgb):
     from mitsuba.core import Struct, float_dtype, Vector3f
     from mitsuba.render import Mesh
     import numpy as np
@@ -167,7 +166,7 @@ def test04_normal_weighting_scheme(variant_scalar):
 
 
 @fresolver_append_path
-def test05_load_simple_mesh(variant_scalar):
+def test05_load_simple_mesh(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     """Tests the OBJ and PLY loaders on a simple example."""
@@ -192,7 +191,7 @@ def test05_load_simple_mesh(variant_scalar):
 @pytest.mark.parametrize('mesh_format', ['obj', 'ply', 'serialized'])
 @pytest.mark.parametrize('features', ['normals', 'uv', 'normals_uv'])
 @pytest.mark.parametrize('face_normals', [True, False])
-def test06_load_various_features(variant_scalar, mesh_format, features, face_normals):
+def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face_normals):
     """Tests the OBJ & PLY loaders with combinations of vertex / face normals,
     presence and absence of UVs, etc.
     """

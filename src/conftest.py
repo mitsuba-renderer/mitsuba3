@@ -33,7 +33,7 @@ def pytest_runtest_makereport(item, call):
 
 
 def generate_fixture(variant):
-    @pytest.fixture(scope='module')
+    @pytest.fixture()
     def fixture():
         try:
             import mitsuba

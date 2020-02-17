@@ -8,7 +8,15 @@ import enoki as ek
 import numpy as np
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variants_all
+
+@pytest.fixture(params = mitsuba.variants())
+def variants_all(request):
+    try:
+        mitsuba.set_variant(request.param)
+    except:
+        pytest.skip("%s mode not enabled" % request.param)
+    return request.param
+
 
 color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
 

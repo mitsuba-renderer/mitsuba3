@@ -2,10 +2,9 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 import pytest
 import mitsuba
-from mitsuba.python.test import variant_scalar
 
 
-def test01_coordinate_system(variant_scalar):
+def test01_coordinate_system(variant_scalar_rgb):
     from mitsuba.core import coordinate_system, warp
 
     def branchless_onb(n):

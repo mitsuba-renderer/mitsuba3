@@ -4,7 +4,6 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 import pytest
 import mitsuba
-from mitsuba.python.test import variant_scalar
 
 
 def check_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)) , resolution = 2):
@@ -53,7 +52,7 @@ def check_inverse(func, inverse):
             assert(ek.allclose(p1, p3, atol=1e-5))
 
 
-def test_square_to_uniform_disk(variant_scalar):
+def test_square_to_uniform_disk(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_uniform_disk([0.5, 0]), [0, 0]))
@@ -66,7 +65,7 @@ def test_square_to_uniform_disk(variant_scalar):
     check_vectorization("square_to_uniform_disk")
 
 
-def test_square_to_uniform_disk_concentric(variant_scalar):
+def test_square_to_uniform_disk_concentric(variant_scalar_rgb):
     from mitsuba.core import warp
     from math import sqrt
 
@@ -78,7 +77,7 @@ def test_square_to_uniform_disk_concentric(variant_scalar):
     check_vectorization("square_to_uniform_disk_concentric")
 
 
-def test_square_to_uniform_triangle(variant_scalar):
+def test_square_to_uniform_triangle(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_uniform_triangle([0, 0]),   [0, 0]))
@@ -92,7 +91,7 @@ def test_square_to_uniform_triangle(variant_scalar):
     check_vectorization("square_to_uniform_triangle")
 
 
-def test_interval_to_tent(variant_scalar):
+def test_interval_to_tent(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.interval_to_tent(0.5), 0))
@@ -100,7 +99,7 @@ def test_interval_to_tent(variant_scalar):
     assert(ek.allclose(warp.interval_to_tent(1),   1))
 
 
-def test_interval_to_nonuniform_tent(variant_scalar):
+def test_interval_to_nonuniform_tent(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.interval_to_nonuniform_tent(0, 0.5, 1, 0.499), 0.499, atol=1e-3))
@@ -108,7 +107,7 @@ def test_interval_to_nonuniform_tent(variant_scalar):
     assert(ek.allclose(warp.interval_to_nonuniform_tent(0, 0.5, 1, 0.5), 1))
 
 
-def test_square_to_tent(variant_scalar):
+def test_square_to_tent(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_tent([0.5, 0.5]), [0, 0]))
@@ -119,7 +118,7 @@ def test_square_to_tent(variant_scalar):
     check_vectorization("square_to_tent")
 
 
-def test_square_to_uniform_sphere_vec(variant_scalar):
+def test_square_to_uniform_sphere_vec(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_uniform_sphere([0, 0]), [0, 0,  1]))
@@ -130,7 +129,7 @@ def test_square_to_uniform_sphere_vec(variant_scalar):
     check_vectorization("square_to_uniform_sphere")
 
 
-def test_square_to_uniform_hemisphere(variant_scalar):
+def test_square_to_uniform_hemisphere(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_uniform_hemisphere([0.5, 0.5]), [0, 0, 1]))
@@ -140,7 +139,7 @@ def test_square_to_uniform_hemisphere(variant_scalar):
     check_vectorization("square_to_uniform_hemisphere")
 
 
-def test_square_to_cosine_hemisphere(variant_scalar):
+def test_square_to_cosine_hemisphere(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_cosine_hemisphere([0.5, 0.5]), [0,  0,  1]))
@@ -150,7 +149,7 @@ def test_square_to_cosine_hemisphere(variant_scalar):
     check_vectorization("square_to_cosine_hemisphere")
 
 
-def test_square_to_uniform_cone(variant_scalar):
+def test_square_to_uniform_cone(variant_scalar_rgb):
     from mitsuba.core import warp
 
     assert(ek.allclose(warp.square_to_uniform_cone([0.5, 0.5], 1), [0, 0, 1]))
@@ -167,7 +166,7 @@ def test_square_to_uniform_cone(variant_scalar):
     check_vectorization("square_to_uniform_cone", wrapper)
 
 
-def test_square_to_beckmann(variant_scalar):
+def test_square_to_beckmann(variant_scalar_rgb):
     from mitsuba.core import warp
 
     fwd = lambda v: warp.square_to_beckmann(v, 0.3)
@@ -181,7 +180,7 @@ def test_square_to_beckmann(variant_scalar):
     check_vectorization("square_to_beckmann", wrapper)
 
 
-def test_square_to_von_mises_fisher(variant_scalar):
+def test_square_to_von_mises_fisher(variant_scalar_rgb):
     from mitsuba.core import warp
 
     fwd = lambda v: warp.square_to_von_mises_fisher(v, 10)
@@ -195,27 +194,27 @@ def test_square_to_von_mises_fisher(variant_scalar):
     check_vectorization("square_to_von_mises_fisher", wrapper)
 
 
-def test_square_to_std_normal_pdf(variant_scalar):
+def test_square_to_std_normal_pdf(variant_scalar_rgb):
     from mitsuba.core import warp
     assert(ek.allclose(warp.square_to_std_normal_pdf([0, 0]),   0.16, atol=1e-2))
     assert(ek.allclose(warp.square_to_std_normal_pdf([0, 0.8]), 0.12, atol=1e-2))
     assert(ek.allclose(warp.square_to_std_normal_pdf([0.8, 0]), 0.12, atol=1e-2))
 
 
-def test_square_to_std_normal(variant_scalar):
+def test_square_to_std_normal(variant_scalar_rgb):
     from mitsuba.core import warp
     assert(ek.allclose(warp.square_to_std_normal([0, 0]), [0, 0]))
     assert(ek.allclose(warp.square_to_std_normal([0, 1]), [0, 0]))
     assert(ek.allclose(warp.square_to_std_normal([0.39346, 0]), [1, 0], atol=1e-3))
 
 
-def test_interval_to_linear(variant_scalar):
+def test_interval_to_linear(variant_scalar_rgb):
     from mitsuba.core.warp import interval_to_linear, linear_to_interval
     x = interval_to_linear(3, 5., .3)
     assert ek.allclose(linear_to_interval(3, 5, x), .3)
 
 
-def test_square_to_bilinear(variant_scalar):
+def test_square_to_bilinear(variant_scalar_rgb):
     from mitsuba.core.warp import square_to_bilinear, \
         bilinear_to_square, square_to_bilinear_pdf
 

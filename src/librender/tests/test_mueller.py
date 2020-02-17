@@ -2,15 +2,14 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from mitsuba.python.test import variant_scalar
 
-def test01_depolarizer(variant_scalar):
+def test01_depolarizer(variant_scalar_rgb):
     from mitsuba.render.mueller import depolarizer
 
     # Remove all polarization, and change intensity based on transmittance value.
     assert ek.allclose(depolarizer(.8) @ [1, .5, .5, .5], [.8, 0, 0, 0])
 
-def test02_rotator(variant_scalar):
+def test02_rotator(variant_scalar_rgb):
     from mitsuba.render.mueller import rotator
 
     # Start with horizontally linear polarized light [1,1,0,0] and ..
@@ -21,7 +20,7 @@ def test02_rotator(variant_scalar):
 
 
 
-def test03_linear_polarizer(variant_scalar):
+def test03_linear_polarizer(variant_scalar_rgb):
     from mitsuba.render.mueller import rotated_element, linear_polarizer
 
     # Malus' law
@@ -34,7 +33,7 @@ def test03_linear_polarizer(variant_scalar):
     intensity  = stokes_out[0]
     assert ek.allclose(intensity, value_malus)
 
-def test04_linear_polarizer_rotated(variant_scalar):
+def test04_linear_polarizer_rotated(variant_scalar_rgb):
     from mitsuba.render.mueller import rotated_element, linear_polarizer, rotator
 
     # The closed-form expression for a rotated linear polarizer is available
@@ -52,7 +51,7 @@ def test04_linear_polarizer_rotated(variant_scalar):
     assert ek.allclose(M, M_ref)
 
 
-def test05_specular_reflection(variant_scalar):
+def test05_specular_reflection(variant_scalar_rgb):
     from mitsuba.core import Matrix4f
     from mitsuba.render.mueller import specular_reflection
     import numpy as np
@@ -86,7 +85,7 @@ def test05_specular_reflection(variant_scalar):
     assert ek.allclose(M[2:4, 2:4], [[ek.cos(phi_delta), ek.sin(phi_delta)], [-ek.sin(phi_delta), ek.cos(phi_delta)]])
 
 
-def test06_specular_transmission(variant_scalar):
+def test06_specular_transmission(variant_scalar_rgb):
     from mitsuba.core import Matrix4f
     from mitsuba.render.mueller import specular_transmission
 
@@ -104,7 +103,7 @@ def test06_specular_transmission(variant_scalar):
     assert ek.allclose(specular_transmission(ek.cos(ek.atan(1/1.5)), 1/1.5), ref)
 
 
-def test07_rotate_stokes_basis(variant_scalar):
+def test07_rotate_stokes_basis(variant_scalar_rgb):
     from mitsuba.core import Transform4f
     from mitsuba.render.mueller import stokes_basis, rotate_stokes_basis
 
@@ -147,7 +146,7 @@ def test07_rotate_stokes_basis(variant_scalar):
     assert ek.allclose(s_45_neg, [1.0, 0.0, +1.0, 0.0], atol=1e-3)
 
 
-def test08_rotate_mueller_basis(variant_scalar):
+def test08_rotate_mueller_basis(variant_scalar_rgb):
     from mitsuba.core import Transform4f
     from mitsuba.render.mueller import stokes_basis, rotated_element, rotate_mueller_basis, \
                                        rotate_mueller_basis_collinear, linear_polarizer

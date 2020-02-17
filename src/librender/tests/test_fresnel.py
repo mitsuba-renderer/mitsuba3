@@ -3,9 +3,8 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variant_packet
 
-def test01_fresnel(variant_scalar):
+def test01_fresnel(variant_scalar_rgb):
     from mitsuba.render import fresnel
 
     ct_crit = -ek.sqrt(1 - 1 / 1.5**2)
@@ -40,7 +39,7 @@ def test01_fresnel(variant_scalar):
     assert ek.allclose(F, F_ref)
 
 
-def test02_fresnel_polarized(variant_scalar):
+def test02_fresnel_polarized(variant_scalar_rgb):
     from mitsuba.render import fresnel_polarized
 
     # Brewster's angle
@@ -52,7 +51,7 @@ def test02_fresnel_polarized(variant_scalar):
     assert ek.allclose(ek.real(a_p*a_p), 0)
 
 
-def test02_fresnel_polarized_packet(variant_packet):
+def test02_fresnel_polarized_packet(variant_packet_rgb):
     from mitsuba.render import fresnel
 
     cos_theta_i = ek.linspace(Float, -1, 1, 20)
@@ -61,7 +60,7 @@ def test02_fresnel_polarized_packet(variant_packet):
     assert ek.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
-def test03_fresnel_conductor(variant_packet):
+def test03_fresnel_conductor(variant_packet_rgb):
     from mitsuba.render import fresnel, fresnel_conductor
 
     # The conductive and diel. variants should agree given a real-valued IOR
@@ -76,7 +75,7 @@ def test03_fresnel_conductor(variant_packet):
     assert ek.allclose(r, r_2)
 
 
-def test04_snell(variant_packet):
+def test04_snell(variant_packet_rgb):
     from mitsuba.render import fresnel
 
     # Snell's law
@@ -87,7 +86,7 @@ def test04_snell(variant_packet):
     assert ek.allclose(ek.sin(theta_i) - 1.5 * ek.sin(theta_t), Float.zero(20), atol=1e-5)
 
 
-def test05_phase(variant_scalar):
+def test05_phase(variant_scalar_rgb):
     from mitsuba.render import fresnel_polarized
 
     # 180 deg phase shift for perpendicularly arriving light (air -> glass)
@@ -108,7 +107,7 @@ def test05_phase(variant_scalar):
     assert ek.real(a_s) > 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
 
 
-def test06_phase_tir(variant_scalar):
+def test06_phase_tir(variant_scalar_rgb):
     import numpy as np
     from mitsuba.render import fresnel_polarized
 

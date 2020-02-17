@@ -2,10 +2,8 @@ import enoki as ek
 import pytest
 import mitsuba
 
-from mitsuba.python.test import variant_scalar
 
-
-def test01_basics(variant_scalar):
+def test01_basics(variant_scalar_rgb):
     from mitsuba.core import BoundingBox3f as BBox
 
     bbox1 = BBox()
@@ -59,7 +57,7 @@ def test01_basics(variant_scalar):
     assert bbox2 == bbox3
 
 
-def test02_contains_variants(variant_scalar):
+def test02_contains_variants(variant_scalar_rgb):
     from mitsuba.core import BoundingBox3f as BBox
 
     bbox = BBox([1, 2, 3], [2, 3, 5])
@@ -81,7 +79,7 @@ def test02_contains_variants(variant_scalar):
                              strict=True)
 
 
-def test03_distance(variant_scalar):
+def test03_distance(variant_scalar_rgb):
     from mitsuba.core import BoundingBox3f as BBox
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance(

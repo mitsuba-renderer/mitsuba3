@@ -3,7 +3,6 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variant_packet, variant_spectral
 from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
@@ -21,7 +20,7 @@ def example_shape(filename = "data/triangle.ply", has_emitter = True):
     """.format(filename=filename,
                emitter="<emitter type='area'><spectrum name='radiance' value='1'/></emitter>" if has_emitter else ""))
 
-def test01_area_construct(variant_scalar):
+def test01_area_construct(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     e = load_string("""<emitter version="2.0.0" type="area">
@@ -43,7 +42,7 @@ def test01_area_construct(variant_scalar):
                 </transform>
             </emitter>""")
 
-def test02_area_sample_direction(variant_scalar):
+def test02_area_sample_direction(variant_scalar_rgb):
     from mitsuba.core import warp
     from mitsuba.render import Interaction3f
 
@@ -66,7 +65,7 @@ def test02_area_sample_direction(variant_scalar):
     assert d_rec.pdf > 1.0
 
 @fresolver_append_path
-def test03_area_sample_ray(variant_spectral):
+def test03_area_sample_ray(variant_scalar_spectral):
     from mitsuba.core.xml import load_string
     from mitsuba.render import SurfaceInteraction3f
     from mitsuba.core import warp, Frame3f
@@ -119,7 +118,7 @@ def example_shape_vec(filename = "data/triangle.ply", has_emitter = True):
     """.format(filename=filename,
                emitter="<emitter type='area'><spectrum name='radiance' value='1'/></emitter>" if has_emitter else ""))
 
-def test04_area_sample_direction_vec(variant_packet):
+def test04_area_sample_direction_vec(variant_packet_rgb):
     from mitsuba.core import Vector2f
     from mitsuba.render import Interaction3f
 

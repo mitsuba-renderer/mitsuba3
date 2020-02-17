@@ -1,24 +1,23 @@
 import enoki as ek
 import pytest
 import mitsuba
-from mitsuba.python.test import variant_scalar
 
 
-def test01_invalid_xml(variant_scalar):
+def test01_invalid_xml(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception):
         xml.load_string('<?xml version="1.0"?>')
 
 
-def test02_invalid_root_node(variant_scalar):
+def test02_invalid_root_node(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception):
         xml.load_string('<?xml version="1.0"?><invalid></invalid>')
 
 
-def test03_invalid_root_node(variant_scalar):
+def test03_invalid_root_node(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -27,7 +26,7 @@ def test03_invalid_root_node(variant_scalar):
     e.match('root element "integer" must be an object')
 
 
-def test04_valid_root_node(variant_scalar):
+def test04_valid_root_node(variant_scalar_rgb):
     from mitsuba.core import xml
     from mitsuba.render import Scene
 
@@ -38,7 +37,7 @@ def test04_valid_root_node(variant_scalar):
     assert type(obj2) is Scene
 
 
-def test05_duplicate_id(variant_scalar):
+def test05_duplicate_id(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -53,7 +52,7 @@ def test05_duplicate_id(variant_scalar):
         ' col 14\\)')
 
 
-def test06_reserved_id(variant_scalar):
+def test06_reserved_id(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -63,7 +62,7 @@ def test06_reserved_id(variant_scalar):
         'are reserved for internal identifiers.')
 
 
-def test06_reserved_name(variant_scalar):
+def test06_reserved_name(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -74,7 +73,7 @@ def test06_reserved_name(variant_scalar):
         'leading underscores are reserved for internal identifiers.')
 
 
-def test06_incorrect_nesting(variant_scalar):
+def test06_incorrect_nesting(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -86,7 +85,7 @@ def test06_incorrect_nesting(variant_scalar):
     e.match('node "shape" cannot occur as child of a property')
 
 
-def test07_incorrect_nesting(variant_scalar):
+def test07_incorrect_nesting(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -98,7 +97,7 @@ def test07_incorrect_nesting(variant_scalar):
     e.match('node "float" cannot occur as child of a property')
 
 
-def test08_incorrect_nesting(variant_scalar):
+def test08_incorrect_nesting(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -109,7 +108,7 @@ def test08_incorrect_nesting(variant_scalar):
     e.match('transform operations can only occur in a transform node')
 
 
-def test09_incorrect_nesting(variant_scalar):
+def test09_incorrect_nesting(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -122,7 +121,7 @@ def test09_incorrect_nesting(variant_scalar):
     e.match('transform nodes can only contain transform operations')
 
 
-def test10_unknown_id(variant_scalar):
+def test10_unknown_id(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -132,7 +131,7 @@ def test10_unknown_id(variant_scalar):
     e.match('reference to unknown object "unknown"')
 
 
-def test11_unknown_attribute(variant_scalar):
+def test11_unknown_attribute(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -142,7 +141,7 @@ def test11_unknown_attribute(variant_scalar):
     e.match('unexpected attribute "param2" in element "shape".')
 
 
-def test12_missing_attribute(variant_scalar):
+def test12_missing_attribute(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -151,7 +150,7 @@ def test12_missing_attribute(variant_scalar):
     e.match('missing attribute "value" in element "integer".')
 
 
-def test13_duplicate_parameter(variant_scalar):
+def test13_duplicate_parameter(variant_scalar_rgb):
     from mitsuba.core import xml
     from mitsuba.core import Thread, LogLevel
 
@@ -169,7 +168,7 @@ def test13_duplicate_parameter(variant_scalar):
     e.match('Property "a" was specified multiple times')
 
 
-def test14_missing_parameter(variant_scalar):
+def test14_missing_parameter(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -179,7 +178,7 @@ def test14_missing_parameter(variant_scalar):
     e.match('Property "filename" has not been specified')
 
 
-def test15_incorrect_parameter_type(variant_scalar):
+def test15_incorrect_parameter_type(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -191,7 +190,7 @@ def test15_incorrect_parameter_type(variant_scalar):
             ' \\(expected <string>\\).')
 
 
-def test16_invalid_integer(variant_scalar):
+def test16_invalid_integer(variant_scalar_rgb):
     from mitsuba.core import xml
 
     def test_input(value, valid):
@@ -214,7 +213,7 @@ def test16_invalid_integer(variant_scalar):
     test_input("  50    ", True)
 
 
-def test17_invalid_float(variant_scalar):
+def test17_invalid_float(variant_scalar_rgb):
     from mitsuba.core import xml
 
     def test_input(value, valid):
@@ -238,7 +237,7 @@ def test17_invalid_float(variant_scalar):
     test_input("1e+12", True)
 
 
-def test18_invalid_boolean(variant_scalar):
+def test18_invalid_boolean(variant_scalar_rgb):
     from mitsuba.core import xml
 
     with pytest.raises(Exception) as e:
@@ -249,7 +248,7 @@ def test18_invalid_boolean(variant_scalar):
             ' -- must be "true" or "false".')
 
 
-def test19_invalid_vector(variant_scalar):
+def test19_invalid_vector(variant_scalar_rgb):
     from mitsuba.core import xml
 
     err_str = 'could not parse floating point value "a"'

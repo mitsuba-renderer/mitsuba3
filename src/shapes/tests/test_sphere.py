@@ -3,8 +3,6 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar
-
 
 def example_sphere(radius = 1.0):
     from mitsuba.core.xml import load_string
@@ -24,7 +22,7 @@ def example_scene(radius = 1.0, extra = ""):
     </scene>""".format(radius, extra))
 
 
-def test01_create(variant_scalar):
+def test01_create(variant_scalar_rgb):
     if mitsuba.core.MTS_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 
@@ -34,7 +32,7 @@ def test01_create(variant_scalar):
     assert ek.allclose(s.surface_area(), 4 * ek.pi)
 
 
-def test02_bbox(variant_scalar):
+def test02_bbox(variant_scalar_rgb):
     if mitsuba.core.MTS_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 
@@ -49,7 +47,7 @@ def test02_bbox(variant_scalar):
         assert ek.allclose(b.extents(), [2 * r] * 3)
 
 
-def test03_ray_intersect_transform(variant_scalar):
+def test03_ray_intersect_transform(variant_scalar_rgb):
     if mitsuba.core.MTS_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 
@@ -96,7 +94,7 @@ def test03_ray_intersect_transform(variant_scalar):
                         assert ek.allclose(dv, [0, 1], atol=2e-2)
 
 
-def test04_sample_direct(variant_scalar):
+def test04_sample_direct(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
     from mitsuba.core import Ray3f
     from mitsuba.render import Interaction3f

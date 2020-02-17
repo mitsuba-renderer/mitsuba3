@@ -3,8 +3,6 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar
-
 
 @pytest.fixture(scope="module")
 def sampler():
@@ -22,12 +20,12 @@ def next_float(rng, shape = None):
     return rng.next_float32(shape=shape) if shape else rng.next_float32()
 
 
-def test01_construct(variant_scalar):
+def test01_construct(variant_scalar_rgb):
     s = make_sampler(sample_count=58)
     assert s.sample_count() == 58
 
 
-def test02_sample_vs_pcg32(variant_scalar, sampler):
+def test02_sample_vs_pcg32(variant_scalar_rgb, sampler):
     # IndependentSampler uses the default-constructed PCG if no seed is provided.
     ref = ek.scalar.PCG32()
     for i in range(10):
@@ -35,7 +33,7 @@ def test02_sample_vs_pcg32(variant_scalar, sampler):
         assert ek.all(sampler.next_2d() == [next_float(ref), next_float(ref)])
 
 
-def test03_clone(variant_scalar, sampler):
+def test03_clone(variant_scalar_rgb, sampler):
     """After cloning, the new sampler should *not* yield the same values: it
     should automatically be seeded differently rather than copying the exact
     state of the original sampler."""
@@ -45,7 +43,7 @@ def test03_clone(variant_scalar, sampler):
         assert ek.all(sampler.next_2d() != sampler2.next_2d())
 
 
-def test04_seed_vectorized(variant_scalar, sampler):
+def test04_seed_vectorized(variant_scalar_rgb, sampler):
     """For a given seed, the first lane of a sampled packet should be equal
     to the sample of a scalar independent sampler."""
 

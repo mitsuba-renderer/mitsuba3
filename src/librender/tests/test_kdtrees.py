@@ -4,7 +4,6 @@ import enoki as ek
 
 from .mesh_generation import create_stairs, create_stairs_packet
 
-from mitsuba.python.test import variant_scalar, variant_packet
 from mitsuba.python.test.util import fresolver_append_path
 
 
@@ -24,7 +23,7 @@ def compare_results(res_a, res_b, atol=0.0):
 
 # ------------------------------------------------------------------------------
 
-def test01_depth_scalar_stairs(variant_scalar):
+def test01_depth_scalar_stairs(variant_scalar_rgb):
     from mitsuba.core import Ray3f
     from mitsuba.render import SurfaceInteraction3f
 
@@ -61,7 +60,7 @@ def test01_depth_scalar_stairs(variant_scalar):
 
 
 @fresolver_append_path
-def test02_depth_scalar_bunny(variant_scalar):
+def test02_depth_scalar_bunny(variant_scalar_rgb):
     from mitsuba.core import Ray3f, BoundingBox3f
     from mitsuba.core.xml import load_string
     from mitsuba.render import SurfaceInteraction3f
@@ -99,7 +98,7 @@ def test02_depth_scalar_bunny(variant_scalar):
             compare_results(res_naive, res)
 
 
-def test03_depth_packet_stairs(variant_packet):
+def test03_depth_packet_stairs(variant_packet_rgb):
     from mitsuba.core import Ray3f as Ray3fX, Properties
     from mitsuba.render import Scene
 

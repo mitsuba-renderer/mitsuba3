@@ -5,7 +5,6 @@ import os
 import pytest
 import enoki as ek
 import mitsuba
-from mitsuba.python.test import variant_scalar, variant_packet, variant_spectral
 
 
 def check_value(im, arr, atol=1e-9):
@@ -21,7 +20,7 @@ def check_value(im, arr, atol=1e-9):
                'Channel %d:\n' % (k) + str(vals[:, :, k]) \
                               + '\n\n' + str(ref[:, :, k])
 
-def test01_construct(variant_scalar):
+def test01_construct(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -49,7 +48,7 @@ def test01_construct(variant_scalar):
     assert im is not None
     im.channel_count() == 6
 
-def test02_put_image_block(variant_scalar):
+def test02_put_image_block(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -74,7 +73,7 @@ def test02_put_image_block(variant_scalar):
         im.put(im2)
         check_value(im, (i+1) * ref)
 
-def test03_put_values_basic(variant_scalar):
+def test03_put_values_basic(variant_scalar_rgb):
     from mitsuba.core import srgb_to_xyz
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
@@ -101,7 +100,7 @@ def test03_put_values_basic(variant_scalar):
 
     check_value(im, ref, atol=1e-6)
 
-def test04_put_packets_basic(variant_scalar):
+def test04_put_packets_basic(variant_scalar_rgb):
     from mitsuba.core import srgb_to_xyz
 
     try:
@@ -144,7 +143,7 @@ def test04_put_packets_basic(variant_scalar):
 
     check_value(im, ref, atol=1e-6)
 
-def test05_put_with_filter(variant_scalar):
+def test05_put_with_filter(variant_scalar_rgb):
     from mitsuba.core import srgb_to_xyz
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
@@ -221,7 +220,7 @@ def test05_put_with_filter(variant_scalar):
     check_value(im2, ref, atol=1e-6)
 
 
-def test06_put_values_basic(variant_spectral):
+def test06_put_values_basic(variant_scalar_spectral):
     from mitsuba.core import spectrum_to_xyz, MTS_WAVELENGTH_SAMPLES
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock

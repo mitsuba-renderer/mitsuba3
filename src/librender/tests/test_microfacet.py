@@ -4,10 +4,8 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 import numpy as np
 
-from mitsuba.python.test import variant_scalar, variant_packet
 
-
-def test01_construct(variant_scalar):
+def test01_construct(variant_scalar_rgb):
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
     md = MicrofacetDistribution(MicrofacetType.Beckmann, 0.1, True)
@@ -17,7 +15,7 @@ def test01_construct(variant_scalar):
     assert md.sample_visible()
 
 
-def test02_eval_pdf_beckmann(variant_packet):
+def test02_eval_pdf_beckmann(variant_packet_rgb):
     from mitsuba.core import Vector3f
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -97,7 +95,7 @@ def test02_eval_pdf_beckmann(variant_packet):
     assert ek.allclose(mdf_i.pdf(wi, v), Float.full(11.86709118 * ek.cos(0.1), steps))
 
 
-def test03_smith_g1_beckmann(variant_packet):
+def test03_smith_g1_beckmann(variant_packet_rgb):
     from mitsuba.core import Vector3f
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -142,7 +140,7 @@ def test03_smith_g1_beckmann(variant_packet):
     assert ek.allclose(mdf_i.smith_g1(v, wi), Float.full(0.67333597, steps))
 
 
-def test04_sample_beckmann(variant_packet):
+def test04_sample_beckmann(variant_packet_rgb):
     from mitsuba.core import Vector3f
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -208,7 +206,7 @@ def test04_sample_beckmann(variant_packet):
     assert ek.allclose(ref[1], result[1], atol=1e-4)
 
 
-def test03_smith_g1_ggx(variant_packet):
+def test03_smith_g1_ggx(variant_packet_rgb):
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
     # Compare against data obtained from previous Mitsuba v0.6 implementation
@@ -249,7 +247,7 @@ def test03_smith_g1_ggx(variant_packet):
     assert ek.allclose(mdf_i.smith_g1(v, wi), Float.full(0.46130955, steps))
 
 
-def test05_sample_ggx(variant_packet):
+def test05_sample_ggx(variant_packet_rgb):
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
     mdf = MicrofacetDistribution(MicrofacetType.GGX, 0.1, 0.3, False)

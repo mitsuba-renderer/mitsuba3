@@ -6,7 +6,6 @@ import enoki as ek
 import numpy as np
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variants_cpu_rgb, variants_all_rgb
 from mitsuba.python.test.scenes import SCENES
 
 integrators = [

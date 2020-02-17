@@ -2,8 +2,6 @@ import enoki as ek
 import pytest
 import mitsuba
 
-from mitsuba.python.test import variant_scalar
-
 
 def fill_properties(p):
     """Sets up some properties with various types"""
@@ -13,7 +11,7 @@ def fill_properties(p):
     p['prop_4'] = 3.14
 
 
-def test01_name_and_id(variant_scalar):
+def test01_name_and_id(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -26,7 +24,7 @@ def test01_name_and_id(variant_scalar):
     assert p.plugin_name() == p2.plugin_name()
 
 
-def test02_type_is_preserved(variant_scalar):
+def test02_type_is_preserved(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -41,7 +39,7 @@ def test02_type_is_preserved(variant_scalar):
     assert p['prop_2'] == 2
 
 
-def test03_management_of_properties(variant_scalar):
+def test03_management_of_properties(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -60,7 +58,7 @@ def test03_management_of_properties(variant_scalar):
     assert not p.has_property('prop_1')
 
 
-def test04_queried_properties(variant_scalar):
+def test04_queried_properties(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -80,7 +78,7 @@ def test04_queried_properties(variant_scalar):
     assert p.unqueried() == ['prop_4']
 
 
-def test05_copy_and_merge(variant_scalar):
+def test05_copy_and_merge(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -102,7 +100,7 @@ def test05_copy_and_merge(variant_scalar):
     assert p2['hello'] == 'world' # p3 unchanged
 
 
-def test06_equality(variant_scalar):
+def test06_equality(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -127,7 +125,7 @@ def test06_equality(variant_scalar):
     assert p == p2
 
 
-def test07_printing(variant_scalar):
+def test07_printing(variant_scalar_rgb):
     from mitsuba.core import Properties as Prop
 
     p = Prop()
@@ -149,7 +147,7 @@ def test07_printing(variant_scalar):
 
 
 @pytest.mark.skip("TODO fix AnimatedTransform")
-def test08_animated_transforms(variant_scalar):
+def test08_animated_transforms(variant_scalar_rgb):
     """An AnimatedTransform can be built from a given Transform."""
     from mitsuba.core import Properties as Prop, Transform4f, AnimatedTransform
 

@@ -3,17 +3,15 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar, variant_packet
 
-
-def test01_point_construct(variant_scalar):
+def test01_point_construct(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     c = load_string("<emitter version='2.0.0' type='point'></emitter>")
     assert c is not None
 
 
-def test02_point_sample_direction(variant_scalar):
+def test02_point_sample_direction(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
     from mitsuba.core import warp
     from mitsuba.render import Interaction3f
@@ -40,7 +38,7 @@ def test02_point_sample_direction(variant_scalar):
     assert ek.all(res > 0)
 
 
-def test03_point_sample_direction_vec(variant_packet):
+def test03_point_sample_direction_vec(variant_packet_rgb):
     from mitsuba.render import Interaction3f
     from mitsuba.core.xml import load_string
 

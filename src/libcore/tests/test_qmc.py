@@ -2,8 +2,6 @@ import enoki as ek
 import pytest
 import mitsuba
 
-from mitsuba.python.test import variant_scalar
-
 
 def r_inv(divisor, index):
     factor = 1
@@ -34,7 +32,7 @@ def gen_primes():
         q += 1
 
 
-def test01_radical_inverse(variant_scalar):
+def test01_radical_inverse(variant_scalar_rgb):
     from mitsuba.core import RadicalInverse
 
     v = RadicalInverse()
@@ -50,7 +48,7 @@ def test01_radical_inverse(variant_scalar):
             assert ek.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
-def test02_radical_inverse_vectorized(variant_scalar):
+def test02_radical_inverse_vectorized(variant_scalar_rgb):
     from mitsuba.core import RadicalInverse
 
     v = RadicalInverse()
@@ -62,7 +60,7 @@ def test02_radical_inverse_vectorized(variant_scalar):
             assert ek.abs(r_inv(prime, i) - result[i]) < 1e-7
 
 
-def test03_faure_permutations(variant_scalar):
+def test03_faure_permutations(variant_scalar_rgb):
     from mitsuba.core import RadicalInverse
 
     p = RadicalInverse()
@@ -72,7 +70,7 @@ def test03_faure_permutations(variant_scalar):
     assert (p.permutation(3) == [0, 2, 5, 3, 1, 4, 6]).all()
 
 
-def test04_scrambled_radical_inverse(variant_scalar):
+def test04_scrambled_radical_inverse(variant_scalar_rgb):
     from mitsuba.core import RadicalInverse
     from mitsuba.core import math
 
@@ -100,7 +98,7 @@ def test04_scrambled_radical_inverse(variant_scalar):
         assert(p.eval_scrambled(0, i) == values_scrambled[i])
 
 @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
-def test02_radical_inverse_vectorized(variant_scalar):
+def test02_radical_inverse_vectorized(variant_scalar_rgb):
     from mitsuba.core import RadicalInverse
 
     try:

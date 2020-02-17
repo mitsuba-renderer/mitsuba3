@@ -3,8 +3,6 @@ import pytest
 import enoki as ek
 from enoki.dynamic import Float32 as Float
 
-from mitsuba.python.test import variant_scalar
-
 
 def example_disk(scale = (1, 1, 1), translate = (0, 0, 0)):
     from mitsuba.core.xml import load_string
@@ -31,7 +29,7 @@ def example_scene(scale = (1, 1, 1), translate = (0, 0, 0)):
                        translate[0], translate[1], translate[2]))
 
 
-def test01_create(variant_scalar):
+def test01_create(variant_scalar_rgb):
     if mitsuba.core.MTS_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 
@@ -41,7 +39,7 @@ def test01_create(variant_scalar):
     assert ek.allclose(s.surface_area(), ek.pi)
 
 
-def test02_bbox(variant_scalar):
+def test02_bbox(variant_scalar_rgb):
     from mitsuba.core import Vector3f
 
     if mitsuba.core.MTS_ENABLE_EMBREE:
@@ -61,7 +59,7 @@ def test02_bbox(variant_scalar):
             assert ek.allclose(b.min, translate - [sx, sy, 0.0])
             assert ek.allclose(b.max, translate + [sx, sy, 0.0])
 
-def test03_ray_intersect(variant_scalar):
+def test03_ray_intersect(variant_scalar_rgb):
     if mitsuba.core.MTS_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")
 

@@ -2,10 +2,8 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from mitsuba.python.test import variant_scalar
 
-
-def test01_create(variant_scalar):
+def test01_create(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
     from mitsuba.core import BoundingBox3f
 
@@ -70,7 +68,7 @@ def test01_create(variant_scalar):
     assert c.film() is not None
 
 
-def test02_sample_rays(variant_scalar):
+def test02_sample_rays(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     c = load_string("<sensor version='2.0.0' type='perspective'></sensor>")
@@ -79,7 +77,7 @@ def test02_sample_rays(variant_scalar):
     assert ek.all(spec_weight > 0)
 
 
-def test03_needs_time_sample(variant_scalar):
+def test03_needs_time_sample(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     c = load_string("""

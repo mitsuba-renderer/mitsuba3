@@ -1,12 +1,11 @@
 import pytest
 
 import mitsuba
-from mitsuba.python.test import variant_scalar
 from mitsuba.python.test.util import fresolver_append_path
 
 
 @fresolver_append_path
-def test01_emitter_checks(variant_scalar):
+def test01_emitter_checks(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     def check_scene(xml, count, error=None):

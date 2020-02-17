@@ -3,10 +3,8 @@ import pytest
 import os
 import enoki as ek
 
-from mitsuba.python.test import variant_scalar
 
-
-def test01_construct(variant_scalar):
+def test01_construct(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     # With default reconstruction filter
@@ -34,7 +32,7 @@ def test01_construct(variant_scalar):
         </film>""")
 
 
-def test02_crops(variant_scalar):
+def test02_crops(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
 
     film = load_string("""<film version="2.0.0" type="hdrfilm">
@@ -73,7 +71,7 @@ def test02_crops(variant_scalar):
 
 
 @pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
-def test03_develop(variant_scalar, file_format, tmpdir):
+def test03_develop(variant_scalar_rgb, file_format, tmpdir):
     from mitsuba.core.xml import load_string
     from mitsuba.core import Bitmap, Struct, ReconstructionFilter, float_dtype
     from mitsuba.render import ImageBlock

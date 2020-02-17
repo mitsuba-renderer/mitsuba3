@@ -9,10 +9,8 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 import numpy as np
 
-from mitsuba.python.test import variant_scalar, variant_packet
 
-
-def test01_position_sample_construction_single(variant_scalar):
+def test01_position_sample_construction_single(variant_scalar_rgb):
     from mitsuba.render import PositionSample3f, SurfaceInteraction3f
 
     record = PositionSample3f()
@@ -42,7 +40,7 @@ def test01_position_sample_construction_single(variant_scalar):
            and ek.all(record.uv == si.uv) \
            and record.pdf == 0.0
 
-def test02_position_sample_construction_dynamic(variant_packet):
+def test02_position_sample_construction_dynamic(variant_packet_rgb):
     from mitsuba.render import PositionSample3f, SurfaceInteraction3f
 
     n_records = 5
@@ -85,7 +83,7 @@ def test02_position_sample_construction_dynamic(variant_packet):
     assert ek.all(records.time == si.time)
 
 
-def test03_position_sample_construction_dynamic_slicing(variant_packet):
+def test03_position_sample_construction_dynamic_slicing(variant_packet_rgb):
     from mitsuba.render import PositionSample3f
 
     n_records = 5
@@ -119,7 +117,7 @@ def test03_position_sample_construction_dynamic_slicing(variant_packet):
             and ek.allclose(records[3].time, single.time))
 
 
-def test04_direction_sample_construction_single(variant_scalar):
+def test04_direction_sample_construction_single(variant_scalar_rgb):
     from mitsuba.render import Interaction3f, DirectionSample3f, SurfaceInteraction3f
 
     # Default constructor
@@ -154,7 +152,7 @@ def test04_direction_sample_construction_single(variant_scalar):
     d = (its.p - ref.p) / ek.norm(its.p - ref.p)
     assert ek.allclose(record.d, d)
 
-def test05_direction_sample_construction_dynamic_and_slicing(variant_packet):
+def test05_direction_sample_construction_dynamic_and_slicing(variant_packet_rgb):
     from mitsuba.render import DirectionSample3f, SurfaceInteraction3f
     import numpy as np
 

@@ -2,10 +2,8 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from mitsuba.python.test import variant_scalar, variant_mono_polarized
 
-
-def test01_intersection_construction(variant_scalar):
+def test01_intersection_construction(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import SurfaceInteraction3f
 
@@ -52,7 +50,7 @@ def test01_intersection_construction(variant_scalar):
 ]"""
 
 
-def test02_intersection_partials(variant_scalar):
+def test02_intersection_partials(variant_scalar_rgb):
     from mitsuba.core import Frame3f, Ray3f, RayDifferential3f
     from mitsuba.render import SurfaceInteraction3f
 
@@ -105,7 +103,7 @@ def test02_intersection_partials(variant_scalar):
     assert(ek.allclose(si.duv_dx, [0, 0]))
     assert(ek.allclose(si.duv_dy, [0, 0]))
 
-def test03_mueller_to_world_to_local(variant_mono_polarized):
+def test03_mueller_to_world_to_local(variant_scalar_mono_polarized):
     """
     At a few places, coordinate changes between local BSDF reference frame and
     world coordinates need to take place. This change also needs to be applied
