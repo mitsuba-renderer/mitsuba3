@@ -87,7 +87,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
         if (m_warn_negative) {
             for (uint32_t k = 0; k < m_channel_count; ++k)
-                is_valid &= value[k] >= 0;
+                is_valid &= value[k] >= -1e-5f;
         }
 
         if (m_warn_invalid) {
