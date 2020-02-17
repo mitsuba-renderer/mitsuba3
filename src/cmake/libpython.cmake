@@ -82,14 +82,16 @@ function(add_mitsuba_python_library TARGET_NAME)
   set_target_properties(${TARGET_NAME} ${TARGET_NAME}-obj PROPERTIES FOLDER mitsuba-python)
 endfunction()
 
-# Copy nanogui python library to 'dist' folder
-add_dist(python/nanogui-python)
-if (APPLE)
-  set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
-elseif(UNIX)
-  set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+if (MTS_ENABLE_GUI)
+    # Copy nanogui python library to 'dist' folder
+    add_dist(python/nanogui-python)
+    if (APPLE)
+    set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "@loader_path/..")
+    elseif(UNIX)
+    set_target_properties(nanogui-python PROPERTIES INSTALL_RPATH "$ORIGIN/..")
+    endif()
+    set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 endif()
-set_target_properties(nanogui-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # Copy enoki python library to 'dist' folder
 set(ENOKI_LIBS core scalar dynamic)

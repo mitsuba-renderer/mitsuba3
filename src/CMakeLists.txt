@@ -7,11 +7,16 @@ endif()
 # Mitsuba support libraries
 add_subdirectory(libcore)
 add_subdirectory(librender)
-add_subdirectory(libui)
+if (MTS_ENABLE_GUI)
+    add_subdirectory(libui)
+endif()
 
 # Mitsuba executables
 add_subdirectory(mitsuba)
-add_subdirectory(mtsgui)
+
+if (MTS_ENABLE_GUI)
+    add_subdirectory(mtsgui)
+endif()
 
 # # Plugins
 add_subdirectory(bsdfs)

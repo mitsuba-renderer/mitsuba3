@@ -53,7 +53,7 @@ endif()
 
 option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
 option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" OFF)
-# option(MTS_ENABLE_OPTIX   "Enable the use of Optix for ray tracing in GPU mode?" OFF)
+option(MTS_ENABLE_GUI     "Build GUI" OFF)
 
 if (UNIX)
   option(MTS_ENABLE_PROFILER     "Enable sampling profiler" ON)
