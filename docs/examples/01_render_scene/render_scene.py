@@ -28,7 +28,7 @@ film.set_destination_file('/path/to/output.exr')
 film.develop()
 
 # Write out a tonemapped JPG of the same rendering
-bmp = film.bitmap()
+bmp = film.bitmap(develop=False)
 bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True).write('/path/to/output.jpg')
 
 # Get linear pixel values as a numpy array for further processing

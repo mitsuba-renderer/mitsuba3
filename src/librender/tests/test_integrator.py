@@ -62,7 +62,7 @@ def check_scene(int_name, scene_name, is_empty = False):
     if False:
         _save(film, int_name, suffix='_' + variant_name)
 
-    converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
+    converted = film.bitmap(False).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     values    = np.array(converted, copy=False)
     means     = np.mean(values, axis=(0, 1))
     # Very noisy images, so we add a tolerance
@@ -165,7 +165,7 @@ def make_reference_renders():
             status = integrator.render(scene, sensor)
 
             # Extract per-channel averages
-            converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
+            converted = film.bitmap(False).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
             values    = np.array(converted, copy=False)
             averages[scene_name][int_name] = np.mean(values, axis=(0,1))
 

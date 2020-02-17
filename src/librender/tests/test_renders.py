@@ -52,7 +52,7 @@ def test_render(variants_all, scene_fname):
 
     film = scene.sensors()[0].film()
 
-    cur_bitmap = film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
+    cur_bitmap = film.bitmap(False).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
     cur_image = np.array(cur_bitmap, copy=False)
 
     ref_bitmap = Bitmap(ref_fname).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)

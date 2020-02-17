@@ -93,7 +93,7 @@ def test02_render_scene(create_phasefunction):
     assert status, "Rendering failed"
 
     film = scene.sensors()[0].film()
-    converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
+    converted = film.bitmap(False).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     trampoline_np = np.array(converted, copy=False)
 
     # Reference image: rendered using isotropic phase function
@@ -102,7 +102,7 @@ def test02_render_scene(create_phasefunction):
     assert status, "Reference rendering failed"
 
     film = scene.sensors()[0].film()
-    converted = film.bitmap().convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
+    converted = film.bitmap(False).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     ref_np = np.array(converted, copy=False)
 
     diff = np.mean((ref_np - trampoline_np) ** 2)

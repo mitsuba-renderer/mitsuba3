@@ -44,8 +44,12 @@ One can also write out a tonemapped JPG of the same rendering using the :code:`B
 .. code-block:: python
 
     # Write out a tonemapped JPG of the same rendering
-    bmp = film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True)
+    bmp = film.bitmap(False).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True)
     bmp.write('/path/to/output.jpg')
+
+The :code:`False` argument in :code:`film.bitmap(False)` specifies that we are interested in the raw
+data of the film in order to convert it ourself into the desired format. When passing :code:`True`,
+the data will automatically be converted into the format specified in the scene file.
 
 The data stored in the :code:`Bitmap` object can also be cast into a numpy array for further processing
 in Python:
