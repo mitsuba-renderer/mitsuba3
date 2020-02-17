@@ -26,6 +26,7 @@ scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 # Exclude certain tests for now
 EXCLUDE_FOLDERS = ['participating_media']
 
+
 def get_ref_fname(scene_path):
     for color_mode in color_modes:
         if color_mode in mitsuba.variant():
@@ -52,7 +53,7 @@ def test_render(variants_all, scene_fname):
 
     film = scene.sensors()[0].film()
 
-    cur_bitmap = film.bitmap(False).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
+    cur_bitmap = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
     cur_image = np.array(cur_bitmap, copy=False)
 
     ref_bitmap = Bitmap(ref_fname).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
@@ -108,7 +109,7 @@ def main():
             scene.integrator().render(scene, scene.sensors()[0])
 
             film = scene.sensors()[0].film()
-            cur_bitmap = film.bitmap().convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
+            cur_bitmap = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
 
             # Write rendered image to a file
             cur_bitmap.write(ref_fname)

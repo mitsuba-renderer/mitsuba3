@@ -16,7 +16,8 @@ integrators = [
     ]
 ]
 
-def make_integrator(kind, xml = ""):
+
+def make_integrator(kind, xml=""):
     from mitsuba.core.xml import load_string
     integrator = load_string("<integrator version='2.0.0' type='%s'>"
                              "%s</integrator>" % (kind, xml))
@@ -25,6 +26,7 @@ def make_integrator(kind, xml = ""):
 
 
 scene_i = 0
+
 def _save(film, int_name, suffix=''):
     """Quick utility to save rendered scenes for debugging."""
     global scene_i
@@ -36,7 +38,7 @@ def _save(film, int_name, suffix=''):
     scene_i += 1
 
 
-def check_scene(int_name, scene_name, is_empty = False):
+def check_scene(int_name, scene_name, is_empty=False):
     from mitsuba.core.xml import load_string
     from mitsuba.core import Bitmap, Struct
 
@@ -48,7 +50,7 @@ def check_scene(int_name, scene_name, is_empty = False):
     scene = SCENES[scene_name]['factory']()
     integrator_type = {
         'direct': 'direct',
-        'depth':  'depth',
+        'depth': 'depth',
         # All other integrators: 'full'
     }.get(int_name, 'full')
     sensor = scene.sensors()[0]
@@ -62,14 +64,15 @@ def check_scene(int_name, scene_name, is_empty = False):
     if False:
         _save(film, int_name, suffix='_' + variant_name)
 
-    converted = film.bitmap(False).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
-    values    = np.array(converted, copy=False)
-    means     = np.mean(values, axis=(0, 1))
+    converted = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
+    values = np.array(converted, copy=False)
+    means = np.mean(values, axis=(0, 1))
     # Very noisy images, so we add a tolerance
     assert ek.allclose(means, avg, rtol=5e-2), \
-           "Mismatch: {} integrator, {} scene, {}".format(int_name, scene_name, variant_name)
+        "Mismatch: {} integrator, {} scene, {}".format(
+            int_name, scene_name, variant_name)
 
-    return np.array(film.bitmap(), copy=True)
+    return np.array(film.bitmap(raw=False), copy=True)
 
 
 @pytest.mark.parametrize(*integrators)
@@ -106,13 +109,16 @@ def test01_create(variants_all_rgb, int_name):
 def test02_render_empty_scene(variants_all_rgb, int_name):
     check_scene(int_name, 'empty', is_empty=True)
 
+
 @pytest.mark.parametrize(*integrators)
 def test03_render_teapot(variants_all_rgb, int_name):
     check_scene(int_name, 'teapot')
 
+
 @pytest.mark.parametrize(*integrators)
 def test04_render_box(variants_all_rgb, int_name):
     check_scene(int_name, 'box')
+
 
 @pytest.mark.parametrize(*integrators)
 def test05_render_museum_plane(variants_all_rgb, int_name):
@@ -149,13 +155,13 @@ def make_reference_renders():
     """Produces reference images for the test scenes, printing the per-channel
     average pixel values to update `scenes.SCENE_AVERAGES` when needed."""
     integrators = {
-        'depth':  make_integrator('depth'),
+        'depth': make_integrator('depth'),
         'direct': make_integrator('direct'),
-        'full':   make_integrator('path'),
+        'full': make_integrator('path'),
     }
 
     spp = 32
-    averages = { n: {} for n in SCENES }
+    averages = {n: {} for n in SCENES}
     for int_name, integrator in integrators.items():
         for scene_name, props in SCENES.items():
             scene = props['factory'](spp=spp)
@@ -165,9 +171,10 @@ def make_reference_renders():
             status = integrator.render(scene, sensor)
 
             # Extract per-channel averages
-            converted = film.bitmap(False).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
-            values    = np.array(converted, copy=False)
-            averages[scene_name][int_name] = np.mean(values, axis=(0,1))
+            converted = film.bitmap(raw=True).convert(
+                Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
+            values = np.array(converted, copy=False)
+            averages[scene_name][int_name] = np.mean(values, axis=(0, 1))
 
             # Save files
             fname = "scene_{}_{}_reference.exr".format(scene_name, int_name)

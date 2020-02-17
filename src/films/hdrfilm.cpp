@@ -251,7 +251,7 @@ public:
         return true;
     }
 
-    ref<Bitmap> bitmap(bool develop) override {
+    ref<Bitmap> bitmap(bool raw = false) override {
         if constexpr (is_cuda_array_v<Float>) {
             cuda_eval();
             cuda_sync();
@@ -262,7 +262,7 @@ public:
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
                           (uint8_t *) m_storage->data().managed().data());
 
-        if (!develop)
+        if (raw)
             return source;
 
         bool has_aovs = m_channels.size() != 5;
@@ -343,7 +343,7 @@ public:
 
         Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
 
-        bitmap(true)->write(filename, m_file_format);
+        bitmap()->write(filename, m_file_format);
     }
 
     bool destination_exists(const fs::path &base_name) const override {

@@ -47,7 +47,7 @@ public:
         Bitmap *target) const = 0;
 
     /// Return a bitmap object storing the developed contents of the film
-    virtual ref<Bitmap> bitmap(bool develop = true) = 0;
+    virtual ref<Bitmap> bitmap(bool raw = false) = 0;
 
     /// Set the target filename (with or without extension)
     virtual void set_destination_file(const fs::path &filename) = 0;
