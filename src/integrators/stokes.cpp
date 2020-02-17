@@ -26,10 +26,10 @@ conductive sphere that all affect the polarization state of the
 (initially unpolarized) light.
 
 The first entry corresponds to usual radiance, whereas the remaining three entries
-describe the polarization of light shown as false color images.
+describe the polarization of light shown as false color images (green: positive, red: negative).
 
 .. subfigstart::
-.. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox_s0.jpg
+.. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox.jpg
    :caption: ":math:`\mathbf{s}_0`": radiance
 .. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox_s1.jpg
    :caption: ":math:`\mathbf{s}_1`": horizontal vs. vertical polarization
