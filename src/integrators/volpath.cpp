@@ -77,6 +77,9 @@ public:
                                      Float * /* aovs */,
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
+        if constexpr (is_polarized_v<Spectrum>) {
+            Throw("This integrator currently does not support polarized mode!");
+        }
 
         // If there is an environment emitter and emitters are visible: all rays will be valid
         // Otherwise, it will depend on whether a valid interaction is sampled

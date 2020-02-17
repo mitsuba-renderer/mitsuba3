@@ -214,6 +214,7 @@ public:
                         // Query the BSDF for that emitter-sampled direction
                         Vector3f wo       = si.to_local(ds.d);
                         Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+                        bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                         // Determine probability of having sampled that same
                         // direction using BSDF sampling.
@@ -225,6 +226,8 @@ public:
                 // ----------------------- BSDF sampling ----------------------
                 auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active_surface),
                                                    sampler->next_2d(active_surface), active_surface);
+                bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
+
                 masked(throughput, active_surface) *= bsdf_val;
                 masked(eta, active_surface) *= bs.eta;
 
@@ -348,6 +351,8 @@ public:
             if (any_or<true>(active_surface)) {
                 auto bsdf         = si.bsdf(ray);
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
+                bsdf_val = si.to_world_mueller(bsdf_val, si.wi, si.wi);
+
                 masked(transmittance, active_surface) *= bsdf_val;
             }
 
