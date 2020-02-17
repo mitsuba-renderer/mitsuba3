@@ -445,6 +445,42 @@ class SphericalDomain:
 # --------------------------------------
 
 
+def SpectrumAdapter(value):
+    """
+    Adapter which permits testing 1D spectral power distributions using the
+    Chi^2 test.
+    """
+
+    from mitsuba.core.xml import load_string
+    from mitsuba.core import sample_shifted, Vector1f, Spectrum
+    from mitsuba.render import SurfaceInteraction3f
+
+    def instantiate(args):
+        if hasattr(value, 'sample'):
+            return value
+        else:
+            obj = load_string(value % args)
+            expanded = obj.expand()
+            if len(expanded) == 1:
+                return expanded[0]
+            else:
+                return obj
+
+    def sample_functor(sample, *args):
+        plugin = instantiate(args)
+        si = SurfaceInteraction3f.zero(ek.slices(sample))
+        wavelength, weight = plugin.sample(si, sample_shifted(sample[0]))
+        return Vector1f(wavelength[0])
+
+    def pdf_functor(w, *args):
+        plugin = instantiate(args)
+        si = SurfaceInteraction3f.zero(ek.slices(w))
+        si.wavelengths = w
+        return plugin.pdf(si)[0]
+
+    return sample_functor, pdf_functor
+
+
 def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     """
     Adapter to test BSDF sampling using the Chi^2 test.
