@@ -48,7 +48,7 @@ public:
             bs.pdf               = 1.f;
             result               = 1.f;
         }
-        return { bs, result };
+        return { bs, unpolarized<Spectrum>(result) };
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
@@ -63,7 +63,7 @@ public:
 
     Spectrum eval_null_transmission(const SurfaceInteraction3f & /*si*/,
                                     Mask /*active*/) const override {
-        return 1.f;
+        return unpolarized<Spectrum>(1.f);
     }
 
     std::string to_string() const override { return "Null[]"; }
