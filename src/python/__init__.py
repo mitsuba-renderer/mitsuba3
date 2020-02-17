@@ -164,16 +164,8 @@ def variant():
 
 def variants():
     'Returns a list of all variants that have been compiled'
-    import pkgutil
-    import mitsuba
-
-    variants = []
-    for importer, modname, ispkg in pkgutil.iter_modules(mitsuba.__path__):
-        if len(modname) > 8 and modname.startswith('core_') and \
-           modname.endswith('_ext'):
-            variants.append(modname[5:-4])
-
-    return variants
+    from .config import MTS_VARIANTS
+    return MTS_VARIANTS
 
 
 # Cleanup

@@ -22,4 +22,3 @@ add_custom_target(python-copy ALL DEPENDS ${PYTHON_OUTPUT})
 set_property(TARGET python-copy PROPERTY FOLDER misc)
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/python/mitsuba)
-file(WRITE ${CMAKE_BINARY_DIR}/dist/python/mitsuba/config.py "PYTHON_EXECUTABLE='${PYTHON_EXECUTABLE}'")
