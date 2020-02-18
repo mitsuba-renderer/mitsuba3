@@ -82,7 +82,7 @@ class MitsubaModule(types.ModuleType):
             pass
 
         if not hasattr(_tls, 'variant'):
-            raise AttributeError('Before importing any packages, you '
+            raise ImportError('Before importing any packages, you '
                 'must specify the desired variant of Mitsuba using '
                 '\"mitsuba.set_variant(..)\".\nThe following variants '
                 'are available: %s.' % (", ".join(variants())))
