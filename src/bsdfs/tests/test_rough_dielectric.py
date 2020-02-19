@@ -3,7 +3,7 @@ from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 
 def test01_chi2_smooth(variant_packet_rgb):
-    xml = """<float name="alpha" value="0.2"/>"""
+    xml = """<float name="alpha" value="0.05"/>"""
     wi = ek.normalize([0.8, 0.3, 0.05])
     sample_func, pdf_func = BSDFAdapter("roughdielectric", xml, wi=wi)
 
@@ -103,7 +103,6 @@ def test06_chi2_rough_ggx_visible(variant_packet_rgb):
     )
 
     assert chi2.run()
-    chi2._dump_tables()
 
 
 def test07_chi2_rough_from_inside(variant_packet_rgb):

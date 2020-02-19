@@ -90,6 +90,14 @@ PYBIND11_MODULE(core_ext, m) {
         "Sets the maximum number of threads to be used for parallelized "
         "execution of Mitsuba code. Defaults to -1 (automatic).");
 
+    py::module enoki_scalar = py::module::import("enoki.scalar");
+    pybind11_type_alias<Array<uint32_t, 2>, Vector<uint32_t, 2>>();
+    pybind11_type_alias<Array<uint32_t, 2>, Point<uint32_t, 2>>();
+    pybind11_type_alias<Array<int32_t, 2>, Vector<int32_t, 2>>();
+    pybind11_type_alias<Array<int32_t, 2>, Point<int32_t, 2>>();
+    pybind11_type_alias<Array<float, 3>, Vector<float, 3>>();
+    pybind11_type_alias<Array<float, 3>, Point<float, 3>>();
+
     // Register python modules
     MTS_PY_IMPORT(atomic);
     MTS_PY_IMPORT(filesystem);
@@ -101,12 +109,12 @@ PYBIND11_MODULE(core_ext, m) {
     MTS_PY_IMPORT(Appender);
     MTS_PY_IMPORT(ArgParser);
     MTS_PY_IMPORT(rfilter);
+    MTS_PY_IMPORT(Stream);
     MTS_PY_IMPORT(Bitmap);
     MTS_PY_IMPORT(Formatter);
     MTS_PY_IMPORT(FileResolver);
     MTS_PY_IMPORT(Logger);
     MTS_PY_IMPORT(MemoryMappedFile);
-    MTS_PY_IMPORT(Stream);
     MTS_PY_IMPORT(DummyStream);
     MTS_PY_IMPORT(FileStream);
     MTS_PY_IMPORT(MemoryStream);

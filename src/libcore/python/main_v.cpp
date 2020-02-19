@@ -247,10 +247,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         cie_alloc();
 
     MTS_PY_IMPORT(Object);
+    MTS_PY_IMPORT(Ray);
     MTS_PY_IMPORT(BoundingBox);
     MTS_PY_IMPORT(BoundingSphere);
     MTS_PY_IMPORT(Frame);
-    MTS_PY_IMPORT(Ray);
     MTS_PY_IMPORT(DiscreteDistribution);
     MTS_PY_IMPORT(ContinuousDistribution);
     MTS_PY_IMPORT(IrregularContinuousDistribution);

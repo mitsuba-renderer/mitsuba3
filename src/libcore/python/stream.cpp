@@ -22,8 +22,15 @@
          }, D(Stream, write, 2))
 
 MTS_PY_EXPORT(Stream) {
-    auto c = MTS_PY_CLASS(Stream, Object)
-        .def_method(Stream, close)
+    auto cls = MTS_PY_CLASS(Stream, Object);
+
+    py::enum_<Stream::EByteOrder>(cls, "EByteOrder", D(Stream, EByteOrder))
+        .value("EBigEndian", Stream::EBigEndian, D(Stream, EByteOrder, EBigEndian))
+        .value("ELittleEndian", Stream::ELittleEndian, D(Stream, EByteOrder, ELittleEndian))
+        .value("ENetworkByteOrder", Stream::ENetworkByteOrder, D(Stream, EByteOrder, ENetworkByteOrder))
+        .export_values();
+
+    cls. def_method(Stream, close)
         .def_method(Stream, set_byte_order)
         .def_method(Stream, byte_order)
         .def_method(Stream, seek)
@@ -59,12 +66,6 @@ MTS_PY_EXPORT(Stream) {
         .DECLARE_RW(float, "float")
         .DECLARE_RW(bool, "bool")
         .DECLARE_RW(std::string, "string");
-
-    py::enum_<Stream::EByteOrder>(c, "EByteOrder", D(Stream, EByteOrder))
-        .value("EBigEndian", Stream::EBigEndian, D(Stream, EByteOrder, EBigEndian))
-        .value("ELittleEndian", Stream::ELittleEndian, D(Stream, EByteOrder, ELittleEndian))
-        .value("ENetworkByteOrder", Stream::ENetworkByteOrder, D(Stream, EByteOrder, ENetworkByteOrder))
-        .export_values();
 }
 
 #undef DECLARE_RW
@@ -107,7 +108,7 @@ MTS_PY_EXPORT(ZStream) {
 
     c.def(py::init<Stream*, ZStream::EStreamType, int>(), D(ZStream, ZStream),
         "child_stream"_a,
-        "streamType"_a = ZStream::EDeflateStream,
+        "stream_type"_a = ZStream::EDeflateStream,
         "level"_a = -1)
         .def("child_stream", [](ZStream &stream) {
             return py::cast(stream.child_stream());

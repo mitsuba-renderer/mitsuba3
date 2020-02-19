@@ -41,12 +41,5 @@ MTS_PY_EXPORT(Logger) {
         .def_method(Logger, set_formatter, py::keep_alive<1, 2>())
         .def_method(Logger, read_log);
 
-    py::enum_<LogLevel>(m, "LogLevel", D(LogLevel))
-        .value("Trace", Trace, D(LogLevel, Trace))
-        .value("Debug", Debug, D(LogLevel, Debug))
-        .value("Info", Info, D(LogLevel, Info))
-        .value("Warn", Warn, D(LogLevel, Warn))
-        .value("Error", Error, D(LogLevel, Error));
-
     m.def("Log", &PyLog, "level"_a, "msg"_a);
 }

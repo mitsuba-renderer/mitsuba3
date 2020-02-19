@@ -28,6 +28,13 @@ public:
 };
 
 MTS_PY_EXPORT(Appender) {
+    py::enum_<LogLevel>(m, "LogLevel", D(LogLevel))
+        .value("Trace", Trace, D(LogLevel, Trace))
+        .value("Debug", Debug, D(LogLevel, Debug))
+        .value("Info", Info, D(LogLevel, Info))
+        .value("Warn", Warn, D(LogLevel, Warn))
+        .value("Error", Error, D(LogLevel, Error));
+
     MTS_PY_TRAMPOLINE_CLASS(PyAppender, Appender, Object)
         .def(py::init<>())
         .def_method(Appender, append, "level"_a, "text"_a)

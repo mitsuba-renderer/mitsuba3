@@ -34,6 +34,7 @@ py::dtype dtype_for_struct(const Struct *s) {
 
 MTS_PY_EXPORT(Struct) {
     auto c = MTS_PY_CLASS(Struct, Object);
+    py::class_<Struct::Field> field(c, "Field", D(Struct, Field));
 
     py::enum_<Struct::Type>(c, "Type")
         .value("Int8",    Struct::Type::Int8,    D(Struct, Type, Int8))
@@ -47,7 +48,6 @@ MTS_PY_EXPORT(Struct) {
         .value("Float16", Struct::Type::Float16, D(Struct, Type, Float16))
         .value("Float32", Struct::Type::Float32, D(Struct, Type, Float32))
         .value("Float64", Struct::Type::Float64, D(Struct, Type, Float64))
-        // .value("Float", struct_type_v<Float>) // TODO
         .value("Invalid", Struct::Type::Invalid, D(Struct, Type, Invalid))
         .def(py::init([](py::dtype dt) {
             Struct::Type value = Struct::Type::Int8;
@@ -128,8 +128,7 @@ MTS_PY_EXPORT(Struct) {
         .def_static("range", &Struct::range, D(Struct, range))
         .def("dtype", &dtype_for_struct, "Return a NumPy dtype corresponding to this data structure");
 
-    py::class_<Struct::Field>(c, "Field", D(Struct, Field))
-        .def("is_float", &Struct::Field::is_float, D(Struct, Field, is_float))
+    field.def("is_float", &Struct::Field::is_float, D(Struct, Field, is_float))
         .def("is_integer", &Struct::Field::is_integer, D(Struct, Field, is_integer))
         .def("is_signed", &Struct::Field::is_signed, D(Struct, Field, is_signed))
         .def("is_unsigned", &Struct::Field::is_unsigned, D(Struct, Field, is_unsigned))

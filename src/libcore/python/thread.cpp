@@ -61,33 +61,9 @@ public:
 NAMESPACE_END(mitsuba)
 
 MTS_PY_EXPORT(Thread) {
-    auto th = py::class_<Thread, Object, ref<Thread>, PyThread>(m, "Thread", D(Thread))
-        .def(py::init<const std::string &>(), "name"_a)
-        .def("parent", (Thread * (Thread::*) ()) & Thread::parent,
-            D(Thread, parent))
-        .def("file_resolver",
-            (FileResolver * (Thread::*) ()) & Thread::file_resolver,
-            D(Thread, file_resolver))
-        .def_method(Thread, set_priority)
-        .def_method(Thread, priority)
-        .def_method(Thread, set_core_affinity)
-        .def_method(Thread, core_affinity)
-        .def_method(Thread, set_critical)
-        .def_method(Thread, is_critical)
-        .def_method(Thread, set_name)
-        .def_method(Thread, name)
-        .def_method(Thread, thread_id)
-        .def_method(Thread, logger)
-        .def_method(Thread, set_logger)
-        .def_method(Thread, set_file_resolver)
-        .def_static_method(Thread, thread)
-        .def_method(Thread, start)
-        .def_method(Thread, is_running)
-        .def_method(Thread, detach)
-        .def_method(Thread, join)
-        .def_static_method(Thread, sleep);
+    auto thr = py::class_<Thread, Object, ref<Thread>, PyThread>(m, "Thread", D(Thread));
 
-    py::enum_<Thread::EPriority>(th, "EPriority", D(Thread, EPriority))
+    py::enum_<Thread::EPriority>(thr, "EPriority", D(Thread, EPriority))
         .value("EIdlePriority", Thread::EIdlePriority, D(Thread, EPriority, EIdlePriority))
         .value("ELowestPriority", Thread::ELowestPriority, D(Thread, EPriority, ELowestPriority))
         .value("ELowPriority", Thread::ELowPriority, D(Thread, EPriority, ELowPriority))
@@ -96,6 +72,32 @@ MTS_PY_EXPORT(Thread) {
         .value("EHighestPriority", Thread::EHighestPriority, D(Thread, EPriority, EHighestPriority))
         .value("ERealtimePriority", Thread::ERealtimePriority, D(Thread, EPriority, ERealtimePriority))
         .export_values();
+
+
+    thr.def(py::init<const std::string &>(), "name"_a)
+       .def("parent", (Thread * (Thread::*) ()) & Thread::parent,
+           D(Thread, parent))
+       .def("file_resolver",
+           (FileResolver * (Thread::*) ()) & Thread::file_resolver,
+           D(Thread, file_resolver))
+       .def_method(Thread, set_priority)
+       .def_method(Thread, priority)
+       .def_method(Thread, set_core_affinity)
+       .def_method(Thread, core_affinity)
+       .def_method(Thread, set_critical)
+       .def_method(Thread, is_critical)
+       .def_method(Thread, set_name)
+       .def_method(Thread, name)
+       .def_method(Thread, thread_id)
+       .def_method(Thread, logger)
+       .def_method(Thread, set_logger)
+       .def_method(Thread, set_file_resolver)
+       .def_static_method(Thread, thread)
+       .def_method(Thread, start)
+       .def_method(Thread, is_running)
+       .def_method(Thread, detach)
+       .def_method(Thread, join)
+       .def_static_method(Thread, sleep);
 
     py::class_<ThreadEnvironment>(m, "ThreadEnvironment", D(ThreadEnvironment))
         .def(py::init<>());

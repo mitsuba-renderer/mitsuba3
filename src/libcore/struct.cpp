@@ -18,7 +18,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/* Defined in dither-matrix256.cpp */
+// Defined in dither-matrix256.cpp
 extern const float dither_matrix256[65536];
 
 NAMESPACE_BEGIN(detail)

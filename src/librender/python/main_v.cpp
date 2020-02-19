@@ -82,6 +82,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     py::module mueller = create_submodule(m, "mueller");
     mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
+    MTS_PY_IMPORT(PositionSample);
+    MTS_PY_IMPORT(DirectionSample);
+    MTS_PY_IMPORT(Interaction);
+    MTS_PY_IMPORT(SurfaceInteraction);
     MTS_PY_IMPORT(BSDFSample);
     MTS_PY_IMPORT(BSDF);
     MTS_PY_IMPORT(Endpoint);
@@ -90,14 +94,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(fresnel);
     MTS_PY_IMPORT(ImageBlock);
     MTS_PY_IMPORT(Integrator);
-    MTS_PY_IMPORT(Interaction);
-    MTS_PY_IMPORT(SurfaceInteraction);
     MTS_PY_IMPORT(MediumInteraction);
     MTS_PY_IMPORT(Medium);
     MTS_PY_IMPORT_SUBMODULE(mueller);
     MTS_PY_IMPORT(MicrofacetDistribution);
-    MTS_PY_IMPORT(PositionSample);
-    MTS_PY_IMPORT(DirectionSample);
     MTS_PY_IMPORT(PhaseFunction);
     MTS_PY_IMPORT(Sampler);
     MTS_PY_IMPORT(Scene);
