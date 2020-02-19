@@ -12,6 +12,13 @@ if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf)
   set(MITSUBA_COPIED_CONFIG_FILE 1)
 endif()
 
+# ---------- Detect Python ----------
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ext/pybind11/tools")
+set(Python_ADDITIONAL_VERSIONS 3.9 3.8 3.7 3.6 3.5)
+find_package(PythonLibsNew REQUIRED)
+
+
 # ---------- Detect renderer variants ----------
 
 # We want CMake to re-run whenever 'mitsuba.conf' changes because the build
