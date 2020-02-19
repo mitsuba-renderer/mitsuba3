@@ -111,11 +111,12 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi),
               cos_theta_o = Frame3f::cos_theta(wo);
 
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+
         Spectrum value = m_reflectance->eval(si, active) *
                          math::InvPi<Float> * cos_theta_o;
 
-        return select(cos_theta_i > 0.f && cos_theta_o > 0.f,
-                      unpolarized<Spectrum>(value), 0.f);
+        return select(active, unpolarized<Spectrum>(value), 0.f);
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
