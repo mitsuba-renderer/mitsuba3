@@ -58,13 +58,13 @@ template <typename Float, typename Spectrum>
 class StokesIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, SamplingIntegrator)
+    MTS_IMPORT_TYPES(Scene, Sampler)
 
     StokesIntegrator(const Properties &props) : Base(props) {
         if constexpr (!is_polarized_v<Spectrum>)
             Throw("This integrator should only be used in polarized mode!");
         for (auto &kv : props.objects()) {
-            SamplingIntegrator *integrator = dynamic_cast<SamplingIntegrator *>(kv.second.get());
+            Base *integrator = dynamic_cast<Base *>(kv.second.get());
             if (!integrator)
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
             if (m_integrator)
@@ -122,7 +122,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ref<SamplingIntegrator> m_integrator;
+    ref<Base> m_integrator;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(StokesIntegrator, SamplingIntegrator)

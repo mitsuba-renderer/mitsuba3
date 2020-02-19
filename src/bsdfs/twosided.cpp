@@ -58,14 +58,14 @@ template <typename Float, typename Spectrum>
 class TwoSidedBRDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(BSDF)
+    MTS_IMPORT_TYPES()
 
     TwoSidedBRDF(const Properties &props) : Base(props) {
         auto bsdfs = props.objects();
         if (bsdfs.size() > 0)
-            m_brdf[0] = dynamic_cast<BSDF *>(bsdfs[0].second.get());
+            m_brdf[0] = dynamic_cast<Base *>(bsdfs[0].second.get());
         if (bsdfs.size() == 2)
-            m_brdf[1] = dynamic_cast<BSDF *>(bsdfs[1].second.get());
+            m_brdf[1] = dynamic_cast<Base *>(bsdfs[1].second.get());
         else if (bsdfs.size() > 2)
             Throw("At most two nested BSDFs can be specified!");
 
@@ -196,7 +196,7 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    ref<BSDF> m_brdf[2];
+    ref<Base> m_brdf[2];
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(TwoSidedBRDF, BSDF)

@@ -687,6 +687,7 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
         m_optix->ready = true;
         return m_optix->geometry;
     } else {
+        ENOKI_MARK_USED(context);
         return nullptr;
     }
 }

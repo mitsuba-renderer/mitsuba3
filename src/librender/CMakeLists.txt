@@ -100,6 +100,10 @@ if (MTS_ENABLE_OPTIX)
   )
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
+  target_link_libraries(mitsuba-render PRIVATE -Wl,--no-undefined)
+endif()
+
 # Copy to 'dist' directory
 add_dist(mitsuba-render)
 

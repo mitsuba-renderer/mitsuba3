@@ -55,6 +55,8 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
         masked(m, eq(channel, 1u)) = combined_extinction[1];
         masked(m, eq(channel, 2u)) = combined_extinction[2];
+    } else {
+        ENOKI_MARK_USED(channel);
     }
 
     Float sampled_t = mint + (-enoki::log(1 - sample) / m);

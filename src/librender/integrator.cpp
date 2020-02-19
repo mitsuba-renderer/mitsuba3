@@ -197,6 +197,10 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
             render_sample(scene, sensor, sampler, block, aovs, pos, diff_scale_factor, active);
         }
     } else {
+        ENOKI_MARK_USED(scene);
+        ENOKI_MARK_USED(sensor);
+        ENOKI_MARK_USED(aovs);
+        ENOKI_MARK_USED(diff_scale_factor);
         Throw("Not implemented for CUDA arrays.");
     }
 }

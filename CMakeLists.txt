@@ -30,7 +30,7 @@ configure_file(mitsuba.conf ${CMAKE_CURRENT_BINARY_DIR}/ext_build/unused)
 
 # Generate the config.h headers from the configuration
 execute_process(
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py
+  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py ${CMAKE_CXX_COMPILER_ID}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   OUTPUT_VARIABLE MTS_VARIANTS
   ERROR_VARIABLE MTS_VARIANTS_ERR
@@ -271,8 +271,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
       add_compile_options("-finline-limit=150")
     endif()
 
-    # Set the default symbol visibility to hidden
-    add_compile_options("-fvisibility=hidden")
+    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+      # Set the default symbol visibility to hidden except on GCC
+      # which has some issues with extern partial template specialization
+      add_compile_options("-fvisibility=hidden")
+    endif()
   endif()
 endif()
 

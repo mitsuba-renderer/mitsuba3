@@ -55,12 +55,12 @@ template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
-    MTS_IMPORT_TYPES(Texture, BSDF)
+    MTS_IMPORT_TYPES(Texture)
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
         for (auto &kv : props.objects()) {
-            auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
+            auto *bsdf = dynamic_cast<Base *>(kv.second.get());
             if (bsdf) {
                 if (bsdf_index == 2)
                     Throw("BlendBSDF: Cannot specify more than two child BSDFs");
@@ -186,7 +186,7 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_weight;
-    ref<BSDF> m_nested_bsdf[2];
+    ref<Base> m_nested_bsdf[2];
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(BlendBSDF, BSDF)

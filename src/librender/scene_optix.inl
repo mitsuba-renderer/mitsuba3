@@ -235,6 +235,8 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
 
         return si;
     } else {
+        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
 }
@@ -304,6 +306,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
 
         return hit;
     } else {
+        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(active);
         Throw("ray_test_gpu() should only be called in GPU mode.");
     }
 }

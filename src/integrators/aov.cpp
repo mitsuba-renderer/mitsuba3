@@ -63,7 +63,7 @@ template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, SamplingIntegrator)
+    MTS_IMPORT_TYPES(Scene, Sampler)
 
     enum class Type {
         Depth,
@@ -111,7 +111,7 @@ public:
         }
 
         for (auto &kv : props.objects()) {
-            SamplingIntegrator *integrator = dynamic_cast<SamplingIntegrator *>(kv.second.get());
+            Base *integrator = dynamic_cast<Base *>(kv.second.get());
             if (!integrator)
                 Throw("Child objects must be of type 'SamplingIntegrator'!");
             m_aov_types.push_back(Type::IntegratorRGBA);
@@ -236,7 +236,7 @@ public:
 private:
     std::vector<Type> m_aov_types;
     std::vector<std::string> m_aov_names;
-    std::vector<std::pair<ref<SamplingIntegrator>, size_t>> m_integrators;
+    std::vector<std::pair<ref<Base>, size_t>> m_integrators;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(AOVIntegrator, SamplingIntegrator)

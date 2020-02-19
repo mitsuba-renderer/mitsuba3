@@ -427,12 +427,13 @@ public:
 
     MTS_INLINE
     void update_weights(WeightMatrix &p_over_f,
-                    const UnpolarizedSpectrum &p,
-                    const UnpolarizedSpectrum &f,
-                    UInt32 channel, Mask active) const {
+                        const UnpolarizedSpectrum &p,
+                        const UnpolarizedSpectrum &f,
+                        UInt32 channel, Mask active) const {
         // For two spectra p and f, computes all the ratios of the individual
         // components and multiplies them to the current values in p_over_f
         if constexpr (SpectralMis) {
+            ENOKI_MARK_USED(channel);
             for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
                 UnpolarizedSpectrum ratio = p_over_f[i] * (p / f.coeff(i));
                 masked(p_over_f[i], active) = select(isfinite(ratio), ratio, 0.f);
@@ -489,8 +490,6 @@ public:
     }
 
     MTS_DECLARE_CLASS()
-protected:
-
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumetricNullPathIntegrator, MonteCarloIntegrator);

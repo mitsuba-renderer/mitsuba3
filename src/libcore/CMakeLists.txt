@@ -105,6 +105,10 @@ endif()
 # Copy to 'dist' directory
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
+  target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
+endif()
+
 # Python bindings
 if (MTS_ENABLE_PYTHON)
   add_subdirectory(python)

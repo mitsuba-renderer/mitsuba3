@@ -63,14 +63,14 @@ template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
-    MTS_IMPORT_TYPES(BSDF, Texture)
+    MTS_IMPORT_TYPES(Texture)
 
     MaskBSDF(const Properties &props) : Base(props) {
         // Scalar-typed opacity texture
         m_opacity = props.texture<Texture>("opacity", 0.5f);
 
         for (auto &kv : props.objects()) {
-            auto *bsdf = dynamic_cast<BSDF *>(kv.second.get());
+            auto *bsdf = dynamic_cast<Base *>(kv.second.get());
             if (bsdf) {
                 if (m_nested_bsdf)
                     Throw("Cannot specify more than one child BSDF");
@@ -179,7 +179,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_opacity;
-    ref<BSDF> m_nested_bsdf;
+    ref<Base> m_nested_bsdf;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(MaskBSDF, BSDF)

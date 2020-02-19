@@ -423,12 +423,6 @@ public:
         using Quaternion4f = Quaternion<Value>;
         using Vector3f     = Vector<Value, 3>;
 
-        // Compute constants describing the layout of the 'Keyframe' data structure
-        constexpr size_t Stride      = sizeof(Keyframe);
-        constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(Float);
-        constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(Float);
-        constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
-
         // TODO remove this (fix gather with Stride!=sizeof<float>)
         if constexpr (is_diff_array_v<T>) {
             return Transform<Point<T, 4>>(m_transform.matrix);
@@ -446,6 +440,12 @@ public:
                 });
 
             Index idx1 = idx0 + 1;
+
+            // Compute constants describing the layout of the 'Keyframe' data structure
+            constexpr size_t Stride      = sizeof(Keyframe);
+            constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(Float);
+            constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(Float);
+            constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
 
             // Compute the relative time value in [0, 1]
             Value t0 = gather<Value, Stride, false>(m_keyframes.data(), idx0, active),

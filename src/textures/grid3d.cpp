@@ -131,6 +131,9 @@ public:
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
+        ENOKI_MARK_USED(it);
+        ENOKI_MARK_USED(active);
+
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
             Throw("The GridVolume texture %s was queried for a spectrum, but texture conversion "
                   "into spectra was explicitly disabled! (raw=true)",
@@ -152,6 +155,9 @@ public:
     }
 
     Float eval_1(const Interaction3f &it, Mask active = true) const override {
+        ENOKI_MARK_USED(it);
+        ENOKI_MARK_USED(active);
+
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
             Throw("eval_1(): The GridVolume texture %s was queried for a scalar value, but texture "
                   "conversion into spectra was requested! (raw=false)",
@@ -167,6 +173,9 @@ public:
 
 
     Vector3f eval_3(const Interaction3f &it, Mask active = true) const override {
+        ENOKI_MARK_USED(it);
+        ENOKI_MARK_USED(active);
+
         if constexpr (Channels != 3) {
             Throw("eval_3(): The GridVolume texture %s was queried for a 3D vector, but it has "
                   "only a single channel!", to_string());
@@ -181,7 +190,10 @@ public:
 
 
     std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
-                                                Mask active) const override {
+                                                           Mask active) const override {
+        ENOKI_MARK_USED(it);
+        ENOKI_MARK_USED(active);
+
         if constexpr (Channels != 1)
             Throw("eval_gradient() is currently only supported for single channel grids!", to_string());
         else {
@@ -209,7 +221,6 @@ public:
             return std::make_pair(select(active, result, zero<ResultType>()),
                                   select(active, gradient, zero<Vector3f>()));
         } else {
-
             if (none_or<false>(active))
                 return zero<ResultType>();
             ResultType result = interpolate<false>(p, it.wavelengths, active);
@@ -231,7 +242,7 @@ public:
      */
     template <bool with_gradient>
     MTS_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
-                                            Mask active) const {
+                                Mask active) const {
         using Index   = uint32_array_t<Float>;
         using Index3  = uint32_array_t<Point3f>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
@@ -291,6 +302,7 @@ public:
         } else {
             v000 = d000; v001 = d001; v010 = d010; v011 = d011;
             v100 = d100; v101 = d101; v110 = d110; v111 = d111;
+            ENOKI_MARK_USED(scale);
         }
 
         // Trilinear interpolation

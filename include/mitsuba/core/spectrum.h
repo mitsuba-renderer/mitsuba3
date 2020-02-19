@@ -75,18 +75,19 @@ struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, 
 
 /// Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.
 template <typename T> depolarize_t<T> depolarize(const T& spectrum) {
-    if constexpr (std::is_same_v<depolarize_t<T>, T>)
-        return spectrum;
-    else
+    if constexpr (is_polarized_v<T>) {
         // First entry of the Mueller matrix is the unpolarized spectrum
         return spectrum(0, 0);
+    } else {
+        return spectrum;
+    }
 }
 
 /**
  * Turn a spectrum into a Mueller matrix representation that only has a non-zero
  * (1,1) entry. For all non-polarized modes, this is the identity function.
  */
-template <typename T> auto unpolarized(const T& spectrum) {
+template <typename T> auto unpolarized(const T &spectrum) {
     if constexpr (is_polarized_v<T>) {
         T result = zero<T>();
         result(0, 0) = spectrum(0, 0);
@@ -298,6 +299,7 @@ template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
 template <typename Float, typename Spectrum>
 std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     if constexpr (!is_spectral_v<Spectrum>) {
+        ENOKI_MARK_USED(sample);
         // Note: wavelengths should not be used when rendering in RGB mode.
         return { std::numeric_limits<scalar_t<Float>>::quiet_NaN(), 1.f };
     } else {

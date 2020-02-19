@@ -281,11 +281,13 @@ template <typename Float_> struct CoreAliases {
     MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
 #define MTS_MASK_ARGUMENT(mask)                                                                    \
+    (void) mask;                                                                                   \
     if constexpr (is_scalar_v<Float>)                                                              \
         mask = true;
 
 #define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
     ScopedPhase scope_phase(profiler_phase);                                                       \
+    (void) mask;                                                                                   \
     if constexpr (is_scalar_v<Float>)                                                              \
         mask = true;
 

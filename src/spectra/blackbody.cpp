@@ -52,6 +52,8 @@ public:
 
             return select(active, P, 0.f);
         } else {
+            ENOKI_MARK_USED(wavelengths);
+            ENOKI_MARK_USED(active_);
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");
         }
