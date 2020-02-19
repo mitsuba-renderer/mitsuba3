@@ -13,11 +13,19 @@ MTS_PY_EXPORT(Spectrum) {
         }), "wavelength"_a, D(cie1931_y))
     .def("sample_rgb_spectrum", vectorize(&sample_rgb_spectrum<Float>), "sample"_a,
         D(sample_rgb_spectrum))
+    .def("sample_rgb_spectrum", vectorize(&sample_rgb_spectrum<Spectrum>), "sample"_a,
+        D(sample_rgb_spectrum))
     .def("pdf_rgb_spectrum", vectorize(&pdf_rgb_spectrum<Float>), "wavelengths"_a,
+        D(pdf_rgb_spectrum))
+    .def("pdf_rgb_spectrum", vectorize(&pdf_rgb_spectrum<Spectrum>), "wavelengths"_a,
         D(pdf_rgb_spectrum))
     .def("sample_uniform_spectrum", vectorize(&sample_uniform_spectrum<Float>),
         "sample"_a, D(sample_uniform_spectrum))
+    .def("sample_uniform_spectrum", vectorize(&sample_uniform_spectrum<Spectrum>),
+        "sample"_a, D(sample_uniform_spectrum))
     .def("pdf_uniform_spectrum", vectorize(&pdf_uniform_spectrum<Float>),
+        "wavelengths"_a, D(pdf_uniform_spectrum))
+    .def("pdf_uniform_spectrum", vectorize(&pdf_uniform_spectrum<Spectrum>),
         "wavelengths"_a, D(pdf_uniform_spectrum));
 
     if constexpr (is_rgb_v<Spectrum>) {

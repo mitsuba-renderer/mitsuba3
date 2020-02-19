@@ -3,12 +3,13 @@ import pytest
 import enoki as ek
 
 
-def create_camera(o, d, fov=34, fov_axis='x', s_open=1.5, s_close=5):
+def create_camera(o, d, fov=34, fov_axis='x', s_open=1.5, s_close=5, aperture=0.1, focus_dist=15):
     from mitsuba.core.xml import load_string
-    return load_string("""<sensor version='2.0.0' type='perspective'>
+    return load_string("""<sensor version='2.0.0' type='thinlens'>
                               <float name='near_clip' value='1'/>
                               <float name='far_clip' value='35'/>
-                              <float name='focus_distance' value='15'/>
+                              <float name='focus_distance' value='{focus_dist}'/>
+                              <float name='aperture_radius' value='{aperture}'/>
                               <float name='fov' value='{fov}'/>
                               <string name='fov_axis' value='{fov_axis}'/>
                               <float name='shutter_open' value='{so}'/>
@@ -23,11 +24,12 @@ def create_camera(o, d, fov=34, fov_axis='x', s_open=1.5, s_close=5):
                                   <integer name="height" value="256"/>
                               </film>
                           </sensor> """.format(ox=o[0], oy=o[1], oz=o[2],
-                                               tx=o[0]+d[0], ty=o[1]+d[1], tz=o[2]+d[2],
-                                               fov=fov, fov_axis=fov_axis, so=s_open, sc=s_close))
+                                               tx=o[0] + d[0], ty=o[1] + d[1], tz=o[2] + d[2],
+                                               fov=fov, fov_axis=fov_axis, so=s_open, sc=s_close,
+                                               aperture=aperture, focus_dist=focus_dist))
 
 
-origins    = [[1.0, 0.0, 1.5], [1.0, 4.0, 1.5]]
+origins = [[1.0, 0.0, 1.5], [1.0, 4.0, 1.5]]
 directions = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]
 
 
@@ -38,14 +40,15 @@ directions = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]
 def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     from mitsuba.core import BoundingBox3f, Vector3f, Transform4f
 
-    camera = create_camera(origin, direction, s_open=s_open, s_close=s_open + s_time)
+    camera = create_camera(
+        origin, direction, s_open=s_open, s_close=s_open + s_time)
 
     assert ek.allclose(camera.near_clip(), 1)
     assert ek.allclose(camera.far_clip(), 35)
     assert ek.allclose(camera.focus_distance(), 15)
     assert ek.allclose(camera.shutter_open(), s_open)
     assert ek.allclose(camera.shutter_open_time(), s_time)
-    assert not camera.needs_aperture_sample()
+    assert camera.needs_aperture_sample()
     assert camera.bbox() == BoundingBox3f(origin, origin)
     assert ek.allclose(camera.world_transform().eval(0).matrix,
                        Transform4f.look_at(origin, Vector3f(origin) + direction, [0, 1, 0]).matrix)
@@ -53,18 +56,22 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test02_sample_ray(variant_packet_spectral, origin, direction):
+@pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
+@pytest.mark.parametrize("focus_dist", [1, 15, 25])
+def test02_sample_ray(variant_packet_spectral, origin, direction, aperture_rad, focus_dist):
     # Check the correctness of the sample_ray() method
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum
 
-    camera = create_camera(origin, direction)
+    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f
+
+    cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist)
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
     pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
-    aperture_sample = 0 # Not being used
+    aperture_sample = [0.5, 0.5]
 
-    ray, spec_weight = camera.sample_ray(time, wav_sample, pos_sample, aperture_sample)
+    ray, spec_weight = cam.sample_ray(
+        time, wav_sample, pos_sample, aperture_sample)
 
     # Imporance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
@@ -74,26 +81,49 @@ def test02_sample_ray(variant_packet_spectral, origin, direction):
     assert ek.allclose(ray.time, time)
     assert ek.allclose(ray.o, origin)
 
-    # Check that a [0.5, 0.5] position_sample generates a ray
-    # that points in the camera direction
-    ray, _ = camera.sample_ray(0, 0, [0.5, 0.5], 0)
+    # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
+    # generates a ray that points in the camera direction
+
+    ray, _ = cam.sample_ray(0, 0, [0.5, 0.5], [0.5, 0.5])
     assert ek.allclose(ray.d, direction, atol=1e-7)
 
+    # ----------------------------------------
+    # Check correctness of aperture sampling
+
+    pos_sample = [0.5, 0.5]
+    aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
+    ray, _ = cam.sample_ray(time, wav_sample, pos_sample, aperture_sample)
+
+    ray_centered, _ = cam.sample_ray(time, wav_sample, pos_sample, [0.5, 0.5])
+
+    trafo = Transform4f(cam.world_transform().eval(time).matrix.numpy())
+    tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
+    aperture_v = trafo.transform_vector(aperture_rad * Vector3f(tmp.x, tmp.y, 0))
+
+    # NOTE: here we assume near_clip = 1.0
+
+    assert ek.allclose(ray.o, ray_centered.o + aperture_v)
+    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v))
 
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test03_sample_ray_differential(variant_packet_spectral, origin, direction):
+@pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
+@pytest.mark.parametrize("focus_dist", [1, 15, 25])
+def test03_sample_ray_diff(variant_packet_spectral, origin, direction, aperture_rad, focus_dist):
     # Check the correctness of the sample_ray_differential() method
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum
 
-    camera = create_camera(origin, direction)
+    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f
+
+    cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist)
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
     pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    aperture_sample = [0.5, 0.5]
 
-    ray, spec_weight = camera.sample_ray_differential(time, wav_sample, pos_sample, 0)
+    ray, spec_weight = cam.sample_ray_differential(
+        time, wav_sample, pos_sample, aperture_sample)
 
     # Imporance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
@@ -103,26 +133,51 @@ def test03_sample_ray_differential(variant_packet_spectral, origin, direction):
     assert ek.allclose(ray.time, time)
     assert ek.allclose(ray.o, origin)
 
+    # ----------------------------------------_
     # Check that the derivatives are orthogonal
+
     assert ek.allclose(ek.dot(ray.d_x - ray.d, ray.d_y - ray.d), 0, atol=1e-7)
 
-    # Check that a [0.5, 0.5] position_sample generates a ray
-    # that points in the camera direction
-    ray_center, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5], 0)
+    # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
+    # generates a ray that points in the camera direction
+
+    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], [0.5, 0.5])
     assert ek.allclose(ray_center.d, direction, atol=1e-7)
 
+    # ----------------------------------------
     # Check correctness of the ray derivatives
 
-    # Deltas in screen space
-    dx = 1.0 / camera.film().crop_size().x
-    dy = 1.0 / camera.film().crop_size().y
+    aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
+    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], aperture_sample)
 
-    # Sample the rays by offsetting the position_sample with the deltas
-    ray_dx, _ = camera.sample_ray_differential(0, 0, [0.5 + dx, 0.5], 0)
-    ray_dy, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5 + dy], 0)
+    # Deltas in screen space
+    dx = 1.0 / cam.film().crop_size().x
+    dy = 1.0 / cam.film().crop_size().y
+
+    # Sample the rays by offsetting the position_sample with the deltas (aperture centered)
+    ray_dx, _ = cam.sample_ray_differential(0, 0, [0.5 + dx, 0.5], aperture_sample)
+    ray_dy, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5 + dy], aperture_sample)
 
     assert ek.allclose(ray_dx.d, ray_center.d_x)
     assert ek.allclose(ray_dy.d, ray_center.d_y)
+
+    # --------------------------------------
+    # Check correctness of aperture sampling
+
+    pos_sample = [0.5, 0.5]
+    aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
+    ray, _ = cam.sample_ray(time, wav_sample, pos_sample, aperture_sample)
+
+    ray_centered, _ = cam.sample_ray(time, wav_sample, pos_sample, [0.5, 0.5])
+
+    trafo = Transform4f(cam.world_transform().eval(time).matrix.numpy())
+    tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
+    aperture_v = trafo.transform_vector(aperture_rad * Vector3f(tmp.x, tmp.y, 0))
+
+    # NOTE: here we assume near_clip = 1.0
+
+    assert ek.allclose(ray.o, ray_centered.o + aperture_v)
+    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v))
 
 
 @pytest.mark.parametrize("origin", [[1.0, 0.0, 1.5]])
@@ -136,8 +191,10 @@ def test04_fov_axis(variant_packet_spectral, origin, direction, fov):
     from mitsuba.core import sample_shifted, sample_rgb_spectrum
 
     def check_fov(camera, sample):
-        ray, _ = camera.sample_ray(0, 0, sample, 0)
-        assert ek.allclose(ek.acos(ek.dot(ray.d, direction)) * 180 / ek.pi, fov / 2)
+        # aperture position at the center
+        ray, _ = camera.sample_ray(0, 0, sample, [0.5, 0.5])
+        assert ek.allclose(ek.acos(ek.dot(ray.d, direction))
+                           * 180 / ek.pi, fov / 2)
 
     # In the configuration, aspect==1.5, so 'larger' should give the 'x'-axis
     for fov_axis in ['x', 'larger']:
@@ -149,11 +206,9 @@ def test04_fov_axis(variant_packet_spectral, origin, direction, fov):
     for fov_axis in ['y', 'smaller']:
         camera = create_camera(origin, direction, fov=fov, fov_axis=fov_axis)
         for sample in [[0.5, 0.0], [0.5, 1.0]]:
-                check_fov(camera, sample)
+            check_fov(camera, sample)
 
     # Check the 4 corners for the `diagonal` case
     camera = create_camera(origin, direction, fov=fov, fov_axis='diagonal')
     for sample in [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]:
-            check_fov(camera, sample)
-
-
+        check_fov(camera, sample)
