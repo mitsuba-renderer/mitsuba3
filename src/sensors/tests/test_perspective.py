@@ -66,7 +66,7 @@ def test02_sample_ray(variant_packet_spectral, origin, direction):
 
     ray, spec_weight = camera.sample_ray(time, wav_sample, pos_sample, aperture_sample)
 
-    # Imporance sample wavelength and weight
+    # Importance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
 
     assert ek.allclose(ray.wavelengths, wav)
@@ -95,7 +95,7 @@ def test03_sample_ray_differential(variant_packet_spectral, origin, direction):
 
     ray, spec_weight = camera.sample_ray_differential(time, wav_sample, pos_sample, 0)
 
-    # Imporance sample wavelength and weight
+    # Importance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
 
     assert ek.allclose(ray.wavelengths, wav)

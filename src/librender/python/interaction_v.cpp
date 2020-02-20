@@ -16,8 +16,8 @@ MTS_PY_EXPORT(Interaction) {
         .def_field(Interaction3f, p,           D(Interaction, p))
         // Methods
         .def(py::init<>(), D(Interaction, Interaction))
-        .def("spawn_ray",    &Interaction3f::spawn_ray,    D(Interaction, spawn_ray))
-        .def("spawn_ray_to", &Interaction3f::spawn_ray_to, D(Interaction, spawn_ray_to))
+        .def("spawn_ray",    &Interaction3f::spawn_ray, "d"_a,    D(Interaction, spawn_ray))
+        .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def_repr(Interaction3f);
     bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
@@ -109,8 +109,8 @@ MTS_PY_EXPORT(SurfaceInteraction) {
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
         .def(py::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
-        .def("to_world", &SurfaceInteraction3f::to_world, D(SurfaceInteraction, to_world))
-        .def("to_local", &SurfaceInteraction3f::to_local, D(SurfaceInteraction, to_local))
+        .def("to_world", &SurfaceInteraction3f::to_world, "v"_a, D(SurfaceInteraction, to_world))
+        .def("to_local", &SurfaceInteraction3f::to_local, "v"_a, D(SurfaceInteraction, to_local))
         .def("to_world_mueller", &SurfaceInteraction3f::to_world_mueller, "M_local"_a,
             "wi_local"_a, "wo_local"_a, D(SurfaceInteraction, to_world_mueller))
         .def("to_local_mueller", &SurfaceInteraction3f::to_local_mueller, "M_world"_a,
@@ -133,7 +133,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             "ray"_a, D(SurfaceInteraction, bsdf))
         .def("bsdf", py::overload_cast<>(&SurfaceInteraction3f::bsdf, py::const_),
             D(SurfaceInteraction, bsdf, 2))
-        .def("compute_partials", &SurfaceInteraction3f::compute_partials,
+        .def("compute_partials", &SurfaceInteraction3f::compute_partials, "ray"_a,
             D(SurfaceInteraction, compute_partials))
         .def("has_uv_partials", &SurfaceInteraction3f::has_uv_partials,
             D(SurfaceInteraction, has_uv_partials))
@@ -206,8 +206,8 @@ MTS_PY_EXPORT(MediumInteraction) {
 
         // Methods
         .def(py::init<>(), D(MediumInteraction, MediumInteraction))
-        .def("to_world", &MediumInteraction3f::to_world, D(MediumInteraction, to_world))
-        .def("to_local", &MediumInteraction3f::to_local, D(MediumInteraction, to_local))
+        .def("to_world", &MediumInteraction3f::to_world, "v"_a, D(MediumInteraction, to_world))
+        .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
 
     // Manually bind the slicing operators to handle ShapePtr properly

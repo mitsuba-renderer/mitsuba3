@@ -9,8 +9,8 @@ MTS_PY_EXPORT(BSDFSample) {
     m.def("has_flag", [](UInt32 flags, BSDFFlags f) { return has_flag(flags, f); });
 
     py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3))
-        .def(py::init<>(), D(BSDFSample3, BSDFSample3))
-        .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3, 2))
+        .def(py::init<>())
+        .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3))
         .def(py::init<const BSDFSample3f &>(), "bs"_a, "Copy constructor")
         .def_readwrite("wo", &BSDFSample3f::wo, D(BSDFSample3, wo))
         .def_readwrite("pdf", &BSDFSample3f::pdf, D(BSDFSample3, pdf))
@@ -62,7 +62,7 @@ MTS_PY_EXPORT(BSDF) {
     using PyBSDF = PyBSDF<Float, Spectrum>;
 
     auto bsdf = py::class_<BSDF, PyBSDF, Object, ref<BSDF>>(m, "BSDF", D(BSDF))
-        .def(py::init<const Properties&>())
+        .def(py::init<const Properties&>(), "props"_a)
         .def("sample", vectorize(&BSDF::sample),
             "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
         .def("eval", vectorize(&BSDF::eval),

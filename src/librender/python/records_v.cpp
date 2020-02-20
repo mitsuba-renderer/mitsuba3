@@ -47,7 +47,7 @@ MTS_PY_EXPORT(DirectionSample) {
             "Element-by-element constructor")
         .def(py::init<const SurfaceInteraction3f &, const Interaction3f &>(),
             "si"_a, "ref"_a, D(PositionSample, PositionSample))
-        .def("set_query", &DirectionSample3f::set_query, D(DirectionSample, set_query))
+        .def("set_query", &DirectionSample3f::set_query, "ray"_a, "si"_a, D(DirectionSample, set_query))
         .def_readwrite("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_repr(DirectionSample3f);

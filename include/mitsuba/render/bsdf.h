@@ -228,7 +228,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     // =============================================================
 
     /**
-     * \brief Given a surface interaction an an incident/exitant direction
+     * \brief Given a surface interaction and an incident/exitant direction
      * pair (wi, wo), create a query record to evaluate the BSDF or its
      * sampling density.
      *
@@ -273,8 +273,8 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * where 'wi' and 'wo' are the incident and outgoing direction in local
  * coordinates.
  *
- * \sa BSDFContext
- * \sa BSDFSample3
+ * \sa mitsuba.render.BSDFContext
+ * \sa mitsuba.render.BSDFSample3
  */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER BSDF : public Object {

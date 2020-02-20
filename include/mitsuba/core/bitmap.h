@@ -515,7 +515,7 @@ public:
      *
      * This convenience function calls the main <tt>accumulate()</tt>
      * implementation with <tt>size</tt> set to <tt>bitmap->size()</tt>
-     * and <tt>source_offset</tt> and <tt>target_offset</tt>tt> set to zero.
+     * and <tt>source_offset</tt> and <tt>target_offset</tt> set to zero.
      * Out-of-bounds regions are ignored. It is assumed
      * that <tt>bitmap != this</tt>.
      *

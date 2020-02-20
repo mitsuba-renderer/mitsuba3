@@ -73,7 +73,7 @@ def test02_sample_ray(variant_packet_spectral, origin, direction, aperture_rad, 
     ray, spec_weight = cam.sample_ray(
         time, wav_sample, pos_sample, aperture_sample)
 
-    # Imporance sample wavelength and weight
+    # Importance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
 
     assert ek.allclose(ray.wavelengths, wav)
@@ -125,7 +125,7 @@ def test03_sample_ray_diff(variant_packet_spectral, origin, direction, aperture_
     ray, spec_weight = cam.sample_ray_differential(
         time, wav_sample, pos_sample, aperture_sample)
 
-    # Imporance sample wavelength and weight
+    # Importance sample wavelength and weight
     wav, spec = sample_rgb_spectrum(sample_shifted(wav_sample))
 
     assert ek.allclose(ray.wavelengths, wav)
@@ -184,7 +184,7 @@ def test03_sample_ray_diff(variant_packet_spectral, origin, direction, aperture_
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])
 @pytest.mark.parametrize("fov", [34, 80])
 def test04_fov_axis(variant_packet_spectral, origin, direction, fov):
-    # Check that sampling position_sample at the extrimities of the unit square
+    # Check that sampling position_sample at the extremities of the unit square
     # along the fov_axis should generate a ray direction that make angle of fov/2
     # with the camera direction.
 

@@ -256,16 +256,18 @@ these coordinate systems are given by ``coordinate_system(wi)`` and
 outgoing direction in local coordinates.
 
 See also:
-    BSDFContext
+    mitsuba.render.BSDFContext
 
 See also:
-    BSDFSample3)doc";
+    mitsuba.render.BSDFSample3)doc";
 
 static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
@@ -532,14 +534,12 @@ Parameter ``sample2``:
     generate the sampled direction.
 
 Returns:
-    A pair (bs, value) consisting of
-
-bs: Sampling record, indicating the sampled direction, PDF values and
-other information. The contents are undefined if sampling failed.
-
-value: The BSDF value (multiplied by the cosine foreshortening factor
-when a non-delta component is sampled). A zero spectrum indicates that
-sampling failed.)doc";
+    A pair (bs, value) consisting of bs: Sampling record, indicating
+    the sampled direction, PDF values and other information. The
+    contents are undefined if sampling failed. value: The BSDF value
+    (multiplied by the cosine foreshortening factor when a non-delta
+    component is sampled). A zero spectrum indicates that sampling
+    failed.)doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 
@@ -738,7 +738,7 @@ specified offset
 
 This convenience function calls the main ``accumulate()``
 implementation with ``size`` set to ``bitmap->size()`` and
-``source_offset`` and ``target_offset``tt> set to zero. Out-of-bounds
+``source_offset`` and ``target_offset`` set to zero. Out-of-bounds
 regions are ignored. It is assumed that ``bitmap != this``.
 
 Remark:
@@ -1745,6 +1745,8 @@ static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -1806,6 +1808,8 @@ static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
 
@@ -2104,6 +2108,8 @@ static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Film_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
 static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
@@ -2359,7 +2365,7 @@ scale the distribution so that it integrates to ``1``. It can still be
 sampled (proportionally), but returned density values will reflect the
 unnormalized values.
 
-If ``build_hierarchy`` is set to ``False``, the implementation will
+If ``enable_sampling`` is set to ``False``, the implementation will
 not construct the hierarchy needed for sample warping, which saves
 memory in case this functionality is not needed (e.g. if only the
 interpolation in ``eval``() is used). In this case, ``sample``() and
@@ -2432,6 +2438,8 @@ static const char *__doc_mitsuba_ImageBlock_2 = R"doc()doc";
 static const char *__doc_mitsuba_ImageBlock_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a new image block of the requested properties
@@ -2598,6 +2606,8 @@ static const char *__doc_mitsuba_Integrator_2 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
@@ -2904,8 +2914,9 @@ values.
 
 Remark:
     The Python API exposes explicitly instantiated versions of this
-    class named Marginal2D0, Marginal2D1, and Marginal2D2 for data
-    that depends on 0, 1, and 2 parameters, respectively.)doc";
+    class named ``MarginalDiscrete2D0`` to ``MarginalDiscrete2D3`` and
+    ``MarginalContinuous2D0`` to ``MarginalContinuous2D3`` for data
+    that depends on 0 to 3 parameters.)doc";
 
 static const char *__doc_mitsuba_Marginal2D_Marginal2D = R"doc()doc";
 
@@ -2921,8 +2932,8 @@ scale the distribution so that it integrates to ``1``. It can still be
 sampled (proportionally), but returned density values will reflect the
 unnormalized values.
 
-If ``build_cdf`` is set to ``False``, the implementation will not
-construct the cdf needed for sample warping, which saves memory in
+If ``enable_sampling`` is set to ``False``, the implementation will
+not construct the cdf needed for sample warping, which saves memory in
 case this functionality is not needed (e.g. if only the interpolation
 in ``eval``() is used).)doc";
 
@@ -2936,13 +2947,17 @@ static const char *__doc_mitsuba_Marginal2D_invert_continuous = R"doc()doc";
 
 static const char *__doc_mitsuba_Marginal2D_invert_discrete = R"doc()doc";
 
+static const char *__doc_mitsuba_Marginal2D_invert_segment = R"doc()doc";
+
 static const char *__doc_mitsuba_Marginal2D_lookup = R"doc()doc";
 
-static const char *__doc_mitsuba_Marginal2D_m_conditional_cdf = R"doc()doc";
+static const char *__doc_mitsuba_Marginal2D_m_cond_cdf = R"doc()doc";
 
 static const char *__doc_mitsuba_Marginal2D_m_data = R"doc(Density values)doc";
 
-static const char *__doc_mitsuba_Marginal2D_m_marginal_cdf = R"doc(Marginal and conditional PDFs)doc";
+static const char *__doc_mitsuba_Marginal2D_m_marg_cdf = R"doc(Marginal and conditional PDFs)doc";
+
+static const char *__doc_mitsuba_Marginal2D_m_normalized = R"doc(Are the probability values normalized?)doc";
 
 static const char *__doc_mitsuba_Marginal2D_m_size = R"doc(Resolution of the discretized density function)doc";
 
@@ -2956,6 +2971,8 @@ static const char *__doc_mitsuba_Marginal2D_sample_continuous = R"doc()doc";
 
 static const char *__doc_mitsuba_Marginal2D_sample_discrete = R"doc()doc";
 
+static const char *__doc_mitsuba_Marginal2D_sample_segment = R"doc()doc";
+
 static const char *__doc_mitsuba_Marginal2D_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium = R"doc()doc";
@@ -2965,6 +2982,8 @@ static const char *__doc_mitsuba_Medium_2 = R"doc()doc";
 static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
@@ -2979,6 +2998,8 @@ static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_4 = R"doc()
 static const char *__doc_mitsuba_MediumInteraction_combined_extinction = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_medium = R"doc(Pointer to the associated medium)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when sampling the given distance "t".)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_operator_array = R"doc()doc";
 
@@ -3006,22 +3027,40 @@ static const char *__doc_mitsuba_Medium_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Medium_eval_transmittance =
-R"doc(Compute the transmittance along a ray segment
+static const char *__doc_mitsuba_Medium_eval_tr_and_pdf =
+R"doc(Compute the transmittance and PDF
 
-Computes the transmittance along a ray segment [mint, maxt] associated
-with the ray. It is assumed that the ray has a normalized direction
-value.)doc";
+This function evaluates the transmittance and PDF of sampling a
+certain free-flight distance The returned PDF takes into account if a
+medium interaction occured (mi.t <= si.t) or the ray left the medium
+(mi.t > si.t)
 
-static const char *__doc_mitsuba_Medium_get_combined_extinction = R"doc()doc";
+The evaluated PDF is spectrally varying. This allows to account for
+the fact that the free-flight distance sampling distribution can
+depend on the wavelength.
 
-static const char *__doc_mitsuba_Medium_get_scattering_coefficients = R"doc()doc";
+Returns:
+    This method returns a pair of (Transmittance, PDF).)doc";
+
+static const char *__doc_mitsuba_Medium_get_combined_extinction = R"doc(Returns the medium's majorant used for delta tracking)doc";
+
+static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
+R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
+at a given MediumInteraction mi)doc";
+
+static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
 
 static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
 
-static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc()doc";
+static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc(Intersets a ray with the medium's bounding box)doc";
+
+static const char *__doc_mitsuba_Medium_is_homogeneous = R"doc(Returns whether this medium is homogeneous)doc";
+
+static const char *__doc_mitsuba_Medium_m_has_spectral_extinction = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_m_id = R"doc(Identifier (if available))doc";
+
+static const char *__doc_mitsuba_Medium_m_is_homogeneous = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_m_phase_function = R"doc()doc";
 
@@ -3045,30 +3084,28 @@ static const char *__doc_mitsuba_Medium_operator_new_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
 
-static const char *__doc_mitsuba_Medium_sample_distance =
+static const char *__doc_mitsuba_Medium_sample_interaction =
 R"doc(Sample a free-flight distance in the medium.
 
-Should ideally importance sample with respect to the transmittance.
-
-Parameter ``scene``:
-    A pointer to the current scene
+This function samples a (tentative) free-flight distance according to
+an exponential transmittance. It is then up to the integrator to then
+decide whether the MediumInteraction corresponds to a real or null
+scattering event.
 
 Parameter ``ray``:
     Ray, along which a distance should be sampled
 
-Parameter ``sampler``:
-    Sampler to produce random numbers. Note that some media (e.g.
-    heterogenous media) may require an arbitrary number of random
-    numbers to sample a distance.
+Parameter ``sample``:
+    A uniformly distributed random sample
+
+Parameter ``channel``:
+    The channel according to which we will sample the free-flight
+    distance. This argument is only used when rendering in RGB modes.
 
 Returns:
-    This method returns both a medium and a surface interaction. If a
-    medium interaction was sampled, a valid MediumInteraction is
-    returned. If the sampled distance results in an intersection with
-    a surface, the corresponding SurfaceInteraction is returned.
-    Further, a spectrum with the sampled throughput value is returned.)doc";
-
-static const char *__doc_mitsuba_Medium_sample_interaction = R"doc()doc";
+    This method returns a MediumInteraction. The MediumInteraction
+    will always be valid, except if the ray missed the Medium's
+    bounding box.)doc";
 
 static const char *__doc_mitsuba_Medium_to_string = R"doc(Return a human-readable representation of the Medium)doc";
 
@@ -3218,6 +3255,8 @@ static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -3537,6 +3576,8 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -3669,6 +3710,8 @@ static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -3981,7 +4024,9 @@ static const char *__doc_mitsuba_ProfilerPhase_SampleEmitterRay = R"doc()doc";
 
 static const char *__doc_mitsuba_ProfilerPhase_SamplingIntegratorSample = R"doc()doc";
 
-static const char *__doc_mitsuba_ProfilerPhase_TextureEval = R"doc()doc";
+static const char *__doc_mitsuba_ProfilerPhase_TextureEvaluate = R"doc()doc";
+
+static const char *__doc_mitsuba_ProfilerPhase_TextureSample = R"doc()doc";
 
 static const char *__doc_mitsuba_Profiler_Profiler = R"doc()doc";
 
@@ -4053,6 +4098,8 @@ static const char *__doc_mitsuba_ProjectiveCamera_2 = R"doc()doc";
 static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -4278,14 +4325,6 @@ static const char *__doc_mitsuba_Properties_texture_3 =
 R"doc(Retrieve a continuous spectrum (or create flat spectrum with default
 value))doc";
 
-static const char *__doc_mitsuba_Properties_texture3d = R"doc(Retrieve a 3D texture)doc";
-
-static const char *__doc_mitsuba_Properties_texture3d_2 = R"doc(Retrieve a 3D texture (use the provided texture if no entry exists))doc";
-
-static const char *__doc_mitsuba_Properties_texture3d_3 =
-R"doc(Retrieve a 3D texture (use default constant texture if no entry
-exists))doc";
-
 static const char *__doc_mitsuba_Properties_transform = R"doc(Retrieve a 4x4 homogeneous coordinate transformation)doc";
 
 static const char *__doc_mitsuba_Properties_transform_2 =
@@ -4301,6 +4340,14 @@ static const char *__doc_mitsuba_Properties_unqueried = R"doc(Return the list of
 static const char *__doc_mitsuba_Properties_vector3f = R"doc(Retrieve a 3D vector)doc";
 
 static const char *__doc_mitsuba_Properties_vector3f_2 = R"doc(Retrieve a 3D vector (use default value if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_volume = R"doc(Retrieve a 3D texture)doc";
+
+static const char *__doc_mitsuba_Properties_volume_2 = R"doc(Retrieve a 3D texture (use the provided texture if no entry exists))doc";
+
+static const char *__doc_mitsuba_Properties_volume_3 =
+R"doc(Retrieve a 3D texture (use default constant texture if no entry
+exists))doc";
 
 static const char *__doc_mitsuba_Properties_was_queried = R"doc(Check if a certain property was queried)doc";
 
@@ -4509,6 +4556,8 @@ static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -4632,6 +4681,8 @@ static const char *__doc_mitsuba_Sampler_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
@@ -4677,6 +4728,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_2 = R"doc()doc";
 static const char *__doc_mitsuba_SamplingIntegrator_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
@@ -4764,6 +4817,8 @@ static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
 static const char *__doc_mitsuba_Scene_accel_init_cpu = R"doc(Create the ray-intersection acceleration data structure)doc";
@@ -4783,45 +4838,6 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitt
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters (const version))doc";
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
-
-static const char *__doc_mitsuba_Scene_eval_transmittance =
-R"doc(Evaluates the transmittance between two 3D points
-
-Given two points, this method will compute the fraction of radiance
-which reaches one point starting from the other.
-
-Parameter ``p1``:
-    A reference point somewhere within the scene
-
-Parameter ``p1_on_surface``:
-    This should be set to ``True`` if ``p1`` lies on a surface
-
-Parameter ``p2``:
-    A second point somewhere within the scene
-
-Parameter ``p2_on_surface``:
-    This should be set to ``True`` if ``p2`` lies on a surface
-
-Parameter ``time``:
-    The current time parameter
-
-Parameter ``wavelengths``:
-    The sampled wavelengths
-
-Parameter ``medium``:
-    A pointer to the current participating medium containing the
-    reference point ``p1`` This pointer should be ``null`` if the
-    reference point is not inside a medium.
-
-Parameter ``max_interactions``:
-    The maximum number of null interfaces which will be traversed
-    between ``p1`` and ``p2``
-
-Parameter ``sampler``:
-    A pointer to a sampler object
-
-Returns:
-    Transmittance between ``p1`` and ``p2``)doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
 
@@ -4929,43 +4945,6 @@ Returns:
     Radiance received along the sampled ray divided by the sample
     probability.)doc";
 
-static const char *__doc_mitsuba_Scene_sample_emitter_direction_attenuated =
-R"doc(Attenuated direct illumination sampling routine
-
-Given an arbitrary reference point in the scene, this method samples a
-direction from the reference point to towards an emitter. This method
-accounts for attenuation due to participating media
-
-Ideally, the implementation should importance sample the product of
-the emission profile and the geometry term between the reference point
-and the position on the emitter.
-
-Parameter ``ref``:
-    A reference point somewhere within the scene
-
-Parameter ``is_medium_interaction``:
-    This should be set to ``True`` if the reference point is inside a
-    medium
-
-Parameter ``medium``:
-    A pointer to the current participating medium containing the
-    reference point This pointer should be ``null`` if the reference
-    point is not inside a medium.
-
-Parameter ``sample``:
-    A uniformly distributed 2D vector
-
-Parameter ``sampler``:
-    A pointer to a sampler object
-
-Parameter ``test_visibility``:
-    When set to ``True``, the transmittance between the sampled
-    emitter position and and reference point is evaluated
-
-Returns:
-    Radiance received along the sampled ray divided by the sample
-    probability.)doc";
-
 static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
 
 static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sensors (const version))doc";
@@ -5013,6 +4992,8 @@ static const char *__doc_mitsuba_Sensor_2 = R"doc()doc";
 static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
@@ -5114,6 +5095,8 @@ static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
@@ -5121,6 +5104,8 @@ static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
 static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -6623,47 +6608,7 @@ static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_Texture3D = R"doc(Abstract base class for spatially-varying 3D textures.)doc";
-
-static const char *__doc_mitsuba_Texture3D_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_Texture3D = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_bbox = R"doc(Returns the bounding box of the 3d texture)doc";
-
-static const char *__doc_mitsuba_Texture3D_class = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_eval =
-R"doc(Evaluate the texture at the given surface interaction, with color
-processing.)doc";
-
-static const char *__doc_mitsuba_Texture3D_eval_1 = R"doc(Evaluate this texture as a single-channel quantity.)doc";
-
-static const char *__doc_mitsuba_Texture3D_eval_3 =
-R"doc(Evaluate this texture as a three-channel quantity with no color
-processing (e.g. normal map).)doc";
-
-static const char *__doc_mitsuba_Texture3D_eval_gradient =
-R"doc(Evaluate the texture at the given surface interaction, and compute the
-gradients of the linear interpolant as well.)doc";
-
-static const char *__doc_mitsuba_Texture3D_is_inside = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture3D_m_bbox = R"doc(Bounding box)doc";
-
-static const char *__doc_mitsuba_Texture3D_m_world_to_local = R"doc(Used to bring points in world coordinates to local coordinates.)doc";
-
-static const char *__doc_mitsuba_Texture3D_max = R"doc(Returns the maximum value of the texture over all dimensions.)doc";
-
-static const char *__doc_mitsuba_Texture3D_resolution = R"doc(Returns the resolution of the texture, defaults to "1")doc";
-
-static const char *__doc_mitsuba_Texture3D_to_string = R"doc(Returns a human-reable summary)doc";
-
-static const char *__doc_mitsuba_Texture3D_update_bbox = R"doc()doc";
+static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
@@ -7161,6 +7106,16 @@ static const char *__doc_mitsuba_Vector_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector_operator_assign_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Volume = R"doc(Abstract base class for spatially-varying 3D textures.)doc";
+
+static const char *__doc_mitsuba_Volume_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
+
 static const char *__doc_mitsuba_VolumeMetadata =
 R"doc(Holds metadata about a volume, e.g. when loaded from a Mitsuba binary
 volume file.)doc";
@@ -7182,6 +7137,40 @@ static const char *__doc_mitsuba_VolumeMetadata_shape = R"doc()doc";
 static const char *__doc_mitsuba_VolumeMetadata_transform = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeMetadata_version = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_Volume = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_bbox = R"doc(Returns the bounding box of the 3d texture)doc";
+
+static const char *__doc_mitsuba_Volume_class = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_eval =
+R"doc(Evaluate the texture at the given surface interaction, with color
+processing.)doc";
+
+static const char *__doc_mitsuba_Volume_eval_1 = R"doc(Evaluate this texture as a single-channel quantity.)doc";
+
+static const char *__doc_mitsuba_Volume_eval_3 =
+R"doc(Evaluate this texture as a three-channel quantity with no color
+processing (e.g. normal map).)doc";
+
+static const char *__doc_mitsuba_Volume_eval_gradient =
+R"doc(Evaluate the texture at the given surface interaction, and compute the
+gradients of the linear interpolant as well.)doc";
+
+static const char *__doc_mitsuba_Volume_is_inside = R"doc()doc";
+
+static const char *__doc_mitsuba_Volume_m_bbox = R"doc(Bounding box)doc";
+
+static const char *__doc_mitsuba_Volume_m_world_to_local = R"doc(Used to bring points in world coordinates to local coordinates.)doc";
+
+static const char *__doc_mitsuba_Volume_max = R"doc(Returns the maximum value of the texture over all dimensions.)doc";
+
+static const char *__doc_mitsuba_Volume_resolution = R"doc(Returns the resolution of the texture, defaults to "1")doc";
+
+static const char *__doc_mitsuba_Volume_to_string = R"doc(Returns a human-reable summary)doc";
+
+static const char *__doc_mitsuba_Volume_update_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_ZStream =
 R"doc(Transparent compression/decompression stream based on ``zlib``.
@@ -7793,7 +7782,7 @@ static const char *__doc_mitsuba_math_find_interval =
 R"doc(Find an interval in an ordered set
 
 This function performs a binary search to find an index ``i`` such
-that ``pred(i)<tt? is ``True`` and <tt>pred(i+1)`` is ``False``, where
+that ``pred(i)`` is ``True`` and ``pred(i+1)`` is ``False``, where
 ``pred`` is a user-specified predicate that monotonically decreases
 over this range (i.e. max one ``True`` -> ``False`` transition).
 
@@ -9289,9 +9278,9 @@ Given a bilinear interpolant on the unit square with corner values
 so that the resulting probability distribution matches the linear
 interpolant.
 
-The implementation first samples the marginal distribution to obtained
-``x``, followed by sampling the conditional distribution to obtain
-``y``.
+The implementation first samples the marginal distribution to obtain
+``y``, followed by sampling the conditional distribution to obtain
+``x``.
 
 Returns the sampled point and PDF for convenience.)doc";
 

@@ -78,6 +78,6 @@ Differentiable rendering
 *TODO*
 
 Vectorized rendering
--------------------
+--------------------
 
 *TODO*
