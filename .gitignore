@@ -62,7 +62,7 @@ __pycache__
 /html
 
 # Docs
-docs/generated/
+docs/generated/plugins.rst
 docs/_build/
 
 # Config
