@@ -105,7 +105,7 @@ endif()
 # Copy to 'dist' directory
 add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
+if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
   target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
 endif()
 
