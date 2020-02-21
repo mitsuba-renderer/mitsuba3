@@ -197,6 +197,7 @@ public:
             ds.dist     = sqrt(dist2);
             ds.d        = ds.d / ds.dist;
             ds.pdf      = warp::square_to_uniform_cone_pdf(zero<Vector3f>(), cos_theta_max);
+            masked(ds.pdf, ds.dist == 0.f) = 0.f;
 
             result[outside_mask] = ds;
         }
