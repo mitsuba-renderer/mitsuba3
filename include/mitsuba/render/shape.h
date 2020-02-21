@@ -3,6 +3,10 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/bbox.h>
 
+#if defined(MTS_ENABLE_OPTIX)
+#include <mitsuba/render/optix_structs.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**
@@ -307,7 +311,9 @@ public:
 
 #if defined(MTS_ENABLE_OPTIX)
     /// Return the OptiX version of this shape
-    virtual RTgeometrytriangles optix_geometry(RTcontext context);
+    virtual void optix_geometry();
+    virtual void optix_build_input(OptixBuildInput&) const;
+    virtual void optix_hit_group_data(HitGroupData&) const;
 #endif
 
     void traverse(TraversalCallback *callback) override;

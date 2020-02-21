@@ -17,9 +17,9 @@
 
 #if defined(MTS_ENABLE_OPTIX)
     #include <optix.h>
-    #include <optix_cuda_interop.h>
+    #include <optix_stubs.h>
+    #include <optix_function_table_definition.h>
 #endif
-
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -517,8 +517,6 @@ Mesh<Float, Spectrum>::surface_area() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
-    MTS_MASK_ARGUMENT(active);
-
     area_distr_ensure();
 
     using Index = replace_scalar_t<Float, ScalarIndex>;
@@ -564,9 +562,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     return ps;
 }
 
-MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask active) const {
-    MTS_MASK_ARGUMENT(active);
-
+MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
     area_distr_ensure();
     return m_area_distr.normalization();
 }
@@ -575,8 +571,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /
                                                                  const Float *cache,
                                                                  SurfaceInteraction3f &si,
                                                                  Mask active) const {
-    MTS_MASK_ARGUMENT(active);
-
     // Barycentric coordinates within triangle
     Float b1 = cache[0],
           b2 = cache[1];
@@ -641,8 +635,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /
 MTS_VARIANT std::pair<typename Mesh<Float, Spectrum>::Vector3f, typename Mesh<Float, Spectrum>::Vector3f>
 Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame,
                                          Mask active) const {
-    MTS_MASK_ARGUMENT(active);
-
     Assert(has_vertex_normals());
 
     if (!shading_frame)
@@ -826,10 +818,67 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-#define rt_check(err)  __rt_check(m_optix->context, err, __FILE__, __LINE__)
+#define rt_check(err)       __rt_check(err, __FILE__, __LINE__)
+#define rt_check_log(err)   __rt_check_log(err, __FILE__, __LINE__)
 
-extern void __rt_check(RTcontext context, RTresult errval, const char *file,
-                       const int line);
+extern void __rt_check(OptixResult errval, const char *file, const int line);
+extern void __rt_check_log(OptixResult errval, const char *file, const int line);
+
+MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+    if constexpr (is_cuda_array_v<Float>) {
+        if (keys.empty() ||
+            string::contains(keys, "vertex_positions") ||
+            string::contains(keys, "vertex_normals") ||
+            string::contains(keys, "vertex_texcoords")) {
+            UInt32 vertex_range   = arange<UInt32>(m_vertex_count),
+                vertex_range_2 = vertex_range * 2,
+                vertex_range_3 = vertex_range * 3,
+                face_range_3   = arange<UInt32>(m_face_count) * 3;
+
+            for (size_t i = 0; i < 3; ++i)
+                scatter((uint32_t*)m_optix->faces_buf + i, m_optix->faces[i], face_range_3);
+
+            for (size_t i = 0; i < 3; ++i)
+                scatter((float*)m_optix->vertex_positions_buf + i, m_optix->vertex_positions[i], vertex_range_3);
+
+            if (has_vertex_texcoords())
+                for (size_t i = 0; i < 2; ++i)
+                    scatter((float*)m_optix->vertex_texcoords_buf + i, m_optix->vertex_texcoords[i], vertex_range_2);
+
+            if (has_vertex_normals()) {
+                if (requires_gradient(m_optix->vertex_positions)) {
+                    m_optix->vertex_normals = zero<Vector3f>(m_vertex_count);
+                    Vector3f v[3] = {
+                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.x()),
+                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.y()),
+                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.z())
+                    };
+                    Normal3f n = normalize(cross(v[1] - v[0], v[2] - v[0]));
+
+                    /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
+                    by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
+                    for (int i = 0; i < 3; ++i) {
+                        Vector3f d0 = normalize(v[(i + 1) % 3] - v[i]);
+                        Vector3f d1 = normalize(v[(i + 2) % 3] - v[i]);
+                        Float face_angle = safe_acos(dot(d0, d1));
+                        scatter_add(m_optix->vertex_normals, n * face_angle, m_optix->faces[i]);
+                    }
+
+                    m_optix->vertex_normals = normalize(m_optix->vertex_normals);
+                }
+
+                for (size_t i = 0; i < 3; ++i)
+                    scatter((float*)m_optix->vertex_normals_buf + i, m_optix->vertex_normals[i], vertex_range_3);
+            }
+
+            if (m_area_distr.empty())
+                area_distr_build();
+
+            if (m_emitter)
+                m_emitter->parameters_changed({"parent"});
+        }
+    }
+}
 
 template <typename Value, size_t Dim, typename Func,
           typename Result = Array<Value, Dim>>
@@ -856,79 +905,60 @@ Result cuda_upload(size_t size, Func func) {
     return result;
 }
 
-MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext context) {
+MTS_VARIANT const uint32_t Mesh<Float, Spectrum>::triangle_input_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+
+MTS_VARIANT void Mesh<Float, Spectrum>::optix_geometry() {
     if constexpr (is_cuda_array_v<Float>) {
         using Index = replace_scalar_t<Float, ScalarIndex>;
         if (m_optix != nullptr)
-            throw std::runtime_error("OptiX geometry was already created!");
+            Throw("Mesh::optix_geometry(): OptiX geometry was already created.");
         m_optix = std::unique_ptr<OptixData>(new OptixData());
-        m_optix->context = context;
 
         /// Face indices
-        rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix->faces_buf));
-        rt_check(rtBufferSetFormat(m_optix->faces_buf, RT_FORMAT_UNSIGNED_INT3));
-        rt_check(rtBufferSetSize1D(m_optix->faces_buf, m_face_count));
+        m_optix->faces_buf = cuda_malloc(m_face_count * 3 * sizeof(uint32_t));
         m_optix->faces = cuda_upload<Index, 3>(
             m_face_count, [this](ScalarIndex i) { return face_indices(i); });
 
         // Vertex positions
-        rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix->vertex_positions_buf));
-        rt_check(rtBufferSetFormat(m_optix->vertex_positions_buf, RT_FORMAT_FLOAT3));
-        rt_check(rtBufferSetSize1D(m_optix->vertex_positions_buf, m_vertex_count));
+        m_optix->vertex_positions_buf = cuda_malloc(m_vertex_count * 3 * sizeof(float));
         m_optix->vertex_positions = cuda_upload<Float, 3>(
             m_vertex_count, [this](ScalarIndex i) { return vertex_position(i); });
 
         // Vertex texture coordinates
-        rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix->vertex_texcoords_buf));
-        rt_check(rtBufferSetFormat(m_optix->vertex_texcoords_buf, RT_FORMAT_FLOAT2));
-        rt_check(rtBufferSetSize1D(
-            m_optix->vertex_texcoords_buf, has_vertex_texcoords() ? m_vertex_count : 0));
+        m_optix->vertex_texcoords_buf = cuda_malloc(has_vertex_texcoords() ? m_vertex_count * 2 * sizeof(float) : 0);
         if (has_vertex_texcoords())
             m_optix->vertex_texcoords = cuda_upload<Float, 2>(
                 m_vertex_count, [this](ScalarIndex i) { return vertex_texcoord(i); });
 
         // Vertex normals
-        rt_check(rtBufferCreate(context, RT_BUFFER_INPUT, &m_optix->vertex_normals_buf));
-        rt_check(rtBufferSetFormat(m_optix->vertex_normals_buf, RT_FORMAT_FLOAT3));
-        rt_check(rtBufferSetSize1D(
-            m_optix->vertex_normals_buf, has_vertex_normals() ? m_vertex_count : 0));
+        m_optix->vertex_normals_buf = cuda_malloc(has_vertex_normals() ? m_vertex_count * 3 * sizeof(float) : 0);
         if (has_vertex_normals())
             m_optix->vertex_normals = cuda_upload<Float, 3>(
                 m_vertex_count, [this](ScalarIndex i) { return vertex_normal(i); });
 
-        rt_check(rtGeometryTrianglesCreate(context, &m_optix->geometry));
-        rt_check(rtGeometryTrianglesSetPrimitiveCount(m_optix->geometry, m_face_count));
-
         parameters_changed();
-
-        rt_check(rtGeometryTrianglesSetTriangleIndices(
-            m_optix->geometry, m_optix->faces_buf, 0, 3 * sizeof(unsigned int),
-            RT_FORMAT_UNSIGNED_INT3));
-
-        rt_check(rtGeometryTrianglesSetVertices(
-            m_optix->geometry, m_vertex_count, m_optix->vertex_positions_buf, 0,
-            3 * sizeof(float), RT_FORMAT_FLOAT3));
-
-        RTvariable faces_var, vertex_positions_var, vertex_normals_var, vertex_texcoords_var;
-        rt_check(rtGeometryTrianglesDeclareVariable(m_optix->geometry, "faces", &faces_var));
-        rt_check(rtGeometryTrianglesDeclareVariable(m_optix->geometry, "vertex_positions", &vertex_positions_var));
-        rt_check(rtGeometryTrianglesDeclareVariable(m_optix->geometry, "vertex_normals", &vertex_normals_var));
-        rt_check(rtGeometryTrianglesDeclareVariable(m_optix->geometry, "vertex_texcoords", &vertex_texcoords_var));
-
-        rt_check(rtVariableSetObject(faces_var, m_optix->faces_buf));
-        rt_check(rtVariableSetObject(vertex_positions_var, m_optix->vertex_positions_buf));
-        rt_check(rtVariableSetObject(vertex_normals_var, m_optix->vertex_normals_buf));
-        rt_check(rtVariableSetObject(vertex_texcoords_var, m_optix->vertex_texcoords_buf));
-
-        rt_check(rtGeometryTrianglesSetMaterialCount(m_optix->geometry, 1));
-        rt_check(rtGeometryTrianglesSetFlagsPerMaterial(m_optix->geometry, 0, RT_GEOMETRY_FLAG_DISABLE_ANYHIT));
-
-        m_optix->ready = true;
-        return m_optix->geometry;
-    } else {
-        ENOKI_MARK_USED(context);
-        return nullptr;
+        cuda_eval();
     }
+}
+
+MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
+    build_input.type                           = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
+    build_input.triangleArray.vertexFormat     = OPTIX_VERTEX_FORMAT_FLOAT3;
+    build_input.triangleArray.indexFormat      = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+    build_input.triangleArray.numVertices      = m_vertex_count;
+    build_input.triangleArray.vertexBuffers    = (CUdeviceptr*)&m_optix->vertex_positions_buf;
+    build_input.triangleArray.numIndexTriplets = m_face_count;
+    build_input.triangleArray.indexBuffer      = (CUdeviceptr)m_optix->faces_buf;
+    build_input.triangleArray.flags            = Mesh::triangle_input_flags;
+    build_input.triangleArray.numSbtRecords    = 1;
+}
+
+MTS_VARIANT void Mesh<Float, Spectrum>::optix_hit_group_data(HitGroupData& hitgroup) const {
+    hitgroup.shape_ptr           = (uintptr_t) this;
+    hitgroup.faces               = m_optix->faces_buf;
+    hitgroup.vertex_positions    = m_optix->vertex_positions_buf;
+    hitgroup.vertex_normals      = m_optix->vertex_normals_buf;
+    hitgroup.vertex_texcoords    = m_optix->vertex_texcoords_buf;
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
@@ -941,88 +971,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_parameter("vertex_texcoords", m_optix->vertex_texcoords);
     }
     Base::traverse(callback);
-}
-
-MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    if constexpr (is_cuda_array_v<Float>) {
-        // TODO only update BVH when vertex positions changed
-        if (keys.empty() ||
-            string::contains(keys, "vertex_positions") ||
-            string::contains(keys, "vertex_normals") ||
-            string::contains(keys, "vertex_texcoords")) {
-            UInt32 vertex_range   = arange<UInt32>(m_vertex_count),
-                   vertex_range_2 = vertex_range * 2,
-                   vertex_range_3 = vertex_range * 3,
-                   face_range_3   = arange<UInt32>(m_face_count) * 3;
-
-            uint32_t *faces_ptr = nullptr;
-            float *vertex_positions_ptr = nullptr;
-
-            rt_check(rtBufferGetDevicePointer(m_optix->faces_buf, 0, (void **) &faces_ptr));
-            for (size_t i = 0; i < 3; ++i)
-                scatter(faces_ptr + i, m_optix->faces[i], face_range_3);
-
-            rt_check(rtBufferGetDevicePointer(m_optix->vertex_positions_buf, 0,
-                                            (void **) &vertex_positions_ptr));
-
-            for (size_t i = 0; i < 3; ++i)
-                scatter(vertex_positions_ptr + i, m_optix->vertex_positions[i], vertex_range_3);
-
-            if (has_vertex_texcoords()) {
-                float *vertex_texcoords_ptr = nullptr;
-                rt_check(rtBufferGetDevicePointer(m_optix->vertex_texcoords_buf, 0,
-                                                (void **) &vertex_texcoords_ptr));
-                for (size_t i = 0; i < 2; ++i)
-                    scatter(vertex_texcoords_ptr + i, m_optix->vertex_texcoords[i], vertex_range_2);
-            }
-
-            if (has_vertex_normals()) {
-                if (requires_gradient(m_optix->vertex_positions)) {
-                    m_optix->vertex_normals = zero<Vector3f>(m_vertex_count);
-                    Vector3f v[3] = {
-                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.x()),
-                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.y()),
-                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.z())
-                    };
-                    Normal3f n = normalize(cross(v[1] - v[0], v[2] - v[0]));
-
-                    /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
-                    by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
-                    for (int i = 0; i < 3; ++i) {
-                        Vector3f d0 = normalize(v[(i + 1) % 3] - v[i]);
-                        Vector3f d1 = normalize(v[(i + 2) % 3] - v[i]);
-                        Float face_angle = safe_acos(dot(d0, d1));
-                        scatter_add(m_optix->vertex_normals, n * face_angle, m_optix->faces[i]);
-                    }
-
-                    m_optix->vertex_normals = normalize(m_optix->vertex_normals);
-                }
-
-                float *vertex_normals_ptr = nullptr;
-                rt_check(rtBufferGetDevicePointer(m_optix->vertex_normals_buf, 0,
-                                                (void **) &vertex_normals_ptr));
-                for (size_t i = 0; i < 3; ++i)
-                    scatter(vertex_normals_ptr + i, m_optix->vertex_normals[i], vertex_range_3);
-            }
-
-            if (m_optix->ready) {
-                // Mark acceleration data structure dirty
-                RTcontext context;
-                RTvariable accel_var;
-                RTacceleration accel;
-                rt_check(rtGeometryTrianglesGetContext(m_optix->geometry, &context));
-                rt_check(rtContextQueryVariable(context, "accel", &accel_var));
-                rt_check(rtVariableGetUserData(accel_var, sizeof(void *), (void *) &accel));
-                rt_check(rtAccelerationMarkDirty(accel));
-            }
-
-            if (m_area_distr.empty())
-                area_distr_build();
-
-            if (m_emitter)
-                m_emitter->parameters_changed({"parent"});
-        }
-    }
 }
 #endif
 

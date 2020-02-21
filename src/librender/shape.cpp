@@ -220,8 +220,14 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-MTS_VARIANT RTgeometrytriangles Shape<Float, Spectrum>::optix_geometry(RTcontext) {
+MTS_VARIANT void Shape<Float, Spectrum>::optix_geometry() {
     NotImplementedError("optix_geometry");
+}
+MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput&) const {
+    NotImplementedError("optix_build_input");
+}
+MTS_VARIANT void Shape<Float, Spectrum>::optix_hit_group_data(HitGroupData&) const {
+    NotImplementedError("optix_hit_group_data");
 }
 #endif
 

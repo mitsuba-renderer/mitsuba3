@@ -152,7 +152,7 @@ public:
 
         PositionSample3f ps;
         ps.p = fmadd(p, m_radius, m_center);
-        ps.n = p;
+        ps.n = p; // TODO should be normalized
 
         if (m_flip_normals)
             ps.n = -ps.n;
@@ -356,12 +356,12 @@ public:
         // Re-project onto the sphere to improve accuracy
         si.p = fmadd(si.sh_frame.n, m_radius, m_center);
 
-        Vector3f local   = m_world_to_object * (si.p - m_center),
-                d       = local / m_radius;
+        Vector3f local = m_world_to_object * (si.p - m_center),
+                 d     = local / m_radius;
 
-        Float   rd_2    = sqr(d.x()) + sqr(d.y()),
-                theta   = unit_angle_z(d),
-                phi     = atan2(d.y(), d.x());
+        Float    rd_2  = sqr(d.x()) + sqr(d.y()),
+                 theta = unit_angle_z(d),
+                 phi   = atan2(d.y(), d.x());
 
         masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
 
