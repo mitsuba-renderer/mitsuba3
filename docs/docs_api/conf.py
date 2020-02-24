@@ -93,63 +93,89 @@ mitsuba.set_variant('scalar_rgb')
 
 import re
 
+# Default string for members with no description
 param_no_descr_str = "*no description available*"
+# Default string for 'active' function parameter
 active_descr_str = "Mask to specify active lanes."
+# List of function parameters to not add to the docstring (will still be in the signature)
 parameters_to_skip = ['self']
 
 # Used to differentiate first and second callback for classes
-last_name = ""
+last_class_name = ""
 
-# TODO add comments here
-
-# global variables
+# Cached signature and parameter list [[name, type, default], ...] in between
+# the process_signature_callback() and process_docstring_callback callbacks()
 cached_parameters = []
 cached_signature = ""
 
+# Extracted RST text (as a list of lines)
 extracted_rst = []
 
+# Keep track of the first line of the current block in the extracted_rst text list.
 block_line_start = 0
-block_name = None
+# Keep track of the current block name
+last_block_name = None
+
+# Dictionary of {'block_name' : [start_line, end_line], ...} storeing the range of each block
+# in the extracted RST text list.
 rst_block_range = {}
 
 # NOTE this shouldn't be needed
+
+
 def sanitize_cpp_types(s):
-    # Replace C++ type from signature
+    """ Replace C++ type with python type in signature """
     # TODO it shouldn't always be 'render'
     return re.sub(r'mitsuba::([a-zA-Z\_0-9]+)[a-zA-Z\_0-9<, :>]+>', r'mitsuba.render.\1', s)
 
-def parse_signature(signature):
-    """Return the new modified string signature as well as a list of
-       parameters [name, type, default]"""
 
+def parse_signature_arguments(signature):
+    """This function parses a signature string of the form:
+           "(arg0: type0, ..., arg4: type4=default4)"
+       It creates a list of parameters [[name, type, default], ...] and
+       constructs a new signature containing only the parameter
+       names and the default types:
+           "(arg0, ..., arg4=default4)"
+    """
     signature = sanitize_cpp_types(signature)
 
     # Check for overloaded functions
     if signature == "(*args, **kwargs)":
         return '(overloaded)', []
     else:
-        # TODO improve this
-        items_tmp = re.split(r'([a-zA-Z\_0-9]+): ', signature[1:-1])
+        # Remove parenthesis
+        signature = signature[1:-1]
+        # Split the string based on 'arg: *'
+        items_tmp = re.split(r'([a-zA-Z\_0-9]+): ', signature)
+        # Remove first element as it is always ''
         items_tmp.pop(0)
+
+        # Construct parameter list and new signature
         parameters = []
         new_signature = ''
         for i in range(len(items_tmp) // 2):
-            # print(i)
-            p_name = items_tmp[2*i]
-            p_type = items_tmp[2*i+1]
+            p_name = items_tmp[2 * i]
+            p_type = items_tmp[2 * i + 1]
 
+            # Remove comma
             if p_type[-2:] == ', ':
                 p_type = p_type[:-2]
 
+            # Handle default value
             result = p_type.split(' = ')
             p_default = None
             if len(result) == 2:
                 p_type, p_default = result
 
+            # Update new signature
             if p_default:
-                new_signature += '%s=%s, ' % (p_name, p_default)
+                new_signature += '%s=%s' % (p_name, p_default)
             else:
-                new_signature += '%s, ' % p_name
+                new_signature += p_name
+
+            # If not the last parameter, add a comma
+            if i < len(items_tmp) // 2 - 1:
+                new_signature += ', '
 
             # Skip some parameters
             if p_name in parameters_to_skip:
@@ -164,6 +190,12 @@ def parse_signature(signature):
 
 
 def parse_overload_signature(signature):
+    """Parse the signature string of a overloaded function (string from the
+       docstring and not from the process_signature_callback). The signature
+       as the following form:
+          "1. name(arg0: type0, ..., arg4: type4=default4) -> return_type"
+       This function generate the same output as the parse_signature_arguments() function.
+    """
     signature = sanitize_cpp_types(signature)
 
     # Remove enumeration
@@ -178,8 +210,10 @@ def parse_overload_signature(signature):
     if len(tmp) == 2:
         signature, return_type = tmp
 
-    new_signature, parameters = parse_signature(' %s ' % signature)
+    # Parse signature arguments
+    new_signature, parameters = parse_signature_arguments(' %s ' % signature)
 
+    # Add return type to the parameter list (with name '__return')
     if return_type and not return_type == 'None':
         parameters.append(['__return', return_type, None])
 
@@ -187,6 +221,11 @@ def parse_overload_signature(signature):
 
 
 def insert_params_and_return_docstring(lines, params, next_idx, indent=''):
+    """Add parameter descriptions to the docstring if neccessary (could
+       already be added by the \param doxygen macro). Also add a line
+       for the return value if any. It returns the number of lines added
+       through this process.
+    """
     offset = 0
     for p_name, p_type, p_default in params:
         is_return = (p_name == '__return')
@@ -216,7 +255,12 @@ def insert_params_and_return_docstring(lines, params, next_idx, indent=''):
     return offset
 
 
-def process_overload_block(lines):
+def process_overload_block(lines, what):
+    """When a function is overloaded, the different flavor of that function are
+       enumerate in the docstring itself. This function parses that docstring to
+       create as many `py:function::` directive in order to have a similar doc
+       style as the other regular functions.
+    """
     # Remove first line (contains 'Overloaded function.')
     lines.pop(0)
 
@@ -236,7 +280,7 @@ def process_overload_block(lines):
         name, params, signature = parse_overload_signature(lines[idx])
 
         # Replace overload signature with '.. py:method::' directives
-        lines[idx] = '.. py:method:: %s%s' % (name, signature)
+        lines[idx] = '.. py:%s:: %s%s' % (what, name, signature)
 
         # Find where to the description of this overload ends
         if i == len(overload_indices) - 1:
@@ -246,13 +290,19 @@ def process_overload_block(lines):
 
         # Increase indent of all the overload description lines
         for j in range(next_idx - idx - 1):
-            lines[idx + j + 1] = '    ' + lines[idx + j + 1]
+            if not lines[idx + j + 1] == '':
+                lines[idx + j + 1] = '    ' + lines[idx + j + 1]
 
+        # Insert parameter and return value description to the docstring
         offset += insert_params_and_return_docstring(
             lines, params, next_idx, indent='    ')
 
 
 def process_signature_callback(app, what, name, obj, options, signature, return_annotation):
+    """ This callback will emitted when autodoc has formatted a signature for an object.
+        It parses and caches the signature arguments for function and classes so it can
+        be used in the process_docstring_callback callback.
+    """
     global cached_parameters
     global cached_signature
 
@@ -260,14 +310,16 @@ def process_signature_callback(app, what, name, obj, options, signature, return_
         # For classes we don't display any signature in the class headers
 
         # Parse the signature string
-        cached_signature, cached_parameters = parse_signature(signature)
+        cached_signature, cached_parameters = parse_signature_arguments(
+            signature)
         signature = ''
 
-    elif signature and what == 'method':
+    elif signature and what in ['method', 'function']:
         # For methods, parameter types will be add to the docstring
 
         # Parse the signature string
-        cached_signature, cached_parameters = parse_signature(signature)
+        cached_signature, cached_parameters = parse_signature_arguments(
+            signature)
         # Display modified signature in the method header
         signature = cached_signature
 
@@ -280,13 +332,17 @@ def process_signature_callback(app, what, name, obj, options, signature, return_
 
 
 def process_docstring_callback(app, what, name, obj, options, lines):
+    """ This callback will emitted when autodoc has read and processed a docstring.
+        Using the cached parameter list and signature, this function modifies the docstring
+        and extract the resulting RST code into the extracted_rst text list.
+    """
     global cached_parameters
     global cached_signature
-    global last_name
+    global last_class_name
     global extracted_rst
     global rst_block_range
     global block_line_start
-    global block_name
+    global last_block_name
 
     #----------------------------
     # Handle classes
@@ -297,7 +353,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         #   2. constructor(s) description. If the constructor is overloaded, the docstring
         #      will enumerate the constructor signature (similar to overloaded functions)
 
-        if not last_name == name:  # First call (class description)
+        if not last_class_name == name:  # First call (class description)
             # Add information about the base class if it is a mitsuba type
             if len(obj.__bases__) > 0:
                 full_base_name = str(obj.__bases__[0])[8:-2]
@@ -345,14 +401,14 @@ def process_docstring_callback(app, what, name, obj, options, lines):
                              ('__init__', cached_signature))
                 lines.insert(1, '')
             else:
-                process_overload_block(lines)
+                process_overload_block(lines, 'method')
 
     #----------------------------
-    # Handle methods
+    # Handle methods and functions
 
-    if what == 'method':
+    if what in ['method', 'function']:
         if cached_signature == '(overloaded)':
-            process_overload_block(lines)
+            process_overload_block(lines, what)
         else:
             # Find where to insert next parameter if necessary
             # For this we look for the 'Returns:', otherwise we insert at the end
@@ -365,10 +421,38 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             insert_params_and_return_docstring(
                 lines, cached_parameters, next_idx)
 
-    # Add cross-reference for every mitsuba types
+
+    # Add code-block directive and cross reference for every mitsuba types
+    in_code_block = False
+    in_bullet_item_block = False
     for i, l in enumerate(lines):
-        lines[i] = re.sub(r'(mitsuba(?:\.[a-zA-Z\_0-9]+)+)',
-                          r':py:class:`\1`', l)
+        # Process code block
+        if re.match(r'([ ]+|)```', l):
+            if not in_code_block:
+                lines[i] = l[:-3] + '.. code-block:: c'
+                lines.insert(i+1, '')
+                in_code_block = True
+            else:
+                lines[i] = ''
+                in_code_block = False
+        else:
+            # Adjust the indentation
+            if in_code_block and not l == '':
+                lines[i] = '    ' + l
+
+        # Adjust indentation for multi-line bullet list item
+        if re.match(r'([ ]+|) \* ', lines[i]):
+            in_bullet_item_block = True
+        elif lines[i] == '':
+            in_bullet_item_block = False
+        elif in_bullet_item_block:
+            lines[i] = '  ' + lines[i]
+
+        # Add cross-reference
+        if not in_code_block:
+            lines[i] = re.sub(r'(mitsuba(?:\.[a-zA-Z\_0-9]+)+)',
+                              r':py:class:`\1`', lines[i])
+
 
     #----------------------------
     # Extract RST
@@ -376,150 +460,196 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     doc_indent = '    '
     directive_indent = ''
 
-    if what in ['function', 'class'] and not last_name == name:
-        # register previous block
-        if block_name:
-            rst_block_range[block_name] = [block_line_start, len(extracted_rst)-1]
+    # Check whether this class is defined within another like (e.g. Bitmap.FileFormat),
+    # in which case the indentation will be adjusted.
+    local_class = what == 'class' and re.fullmatch(
+        r'%s\.[\w]+' % last_block_name, name)
 
+    # Check whether to start a new block
+    if what in ['function', 'class', 'module'] and not local_class and not last_class_name == name:
+        # Register previous block
+        if last_block_name:
+            rst_block_range[last_block_name] = [
+                block_line_start, len(extracted_rst) - 1]
+
+        # Start a new block
         block_line_start = len(extracted_rst)
-        block_name = name
+        last_block_name = name
 
-    if what in ['method', 'attribute', 'property']:
+    # Get rid of default 'name' property in enums
+    if what == 'property' and lines[0] == '(self: handle) -> str':
+        return
+
+    # Adjust the indentation
+    if what in ['method', 'attribute', 'property'] or local_class:
         doc_indent += '    '
         directive_indent += '    '
 
     # Don't write class directive twice
-    if not (what == 'class' and last_name == name):
+    if not (what == 'class' and last_class_name == name):
         directive_type = what
         if what == 'property':
             directive_type = 'method'
 
-        directive = '%s.. py:%s:: %s' % (directive_indent, directive_type, name)
+        # Add the corresponding RST directive
+        directive = '%s.. py:%s:: %s' % (
+            directive_indent, directive_type, name)
 
         # Only display signature for methods
-        if what == 'method':
+        if what in ['method', 'function']:
             directive += cached_signature
 
         extracted_rst.append(directive + '\n')
 
+        # 'property' fields need an extra argument to the directive
         if what == 'property':
             extracted_rst.append(doc_indent + ':property:\n')
 
         extracted_rst.append('\n')
 
-    for l in lines:
-        extracted_rst.append(doc_indent + l + '\n')
+    # Extract the docstring (if not a module)
+    if not what == 'module':
+        for l in lines:
+            if l == '':
+                extracted_rst.append('\n')
+            else:
+                extracted_rst.append(doc_indent + l + '\n')
 
     # Keep track of last class name (to distingush the two callbacks)
-    last_name = name
+    last_class_name = name
 
 
 # TODO add list of members to skip (like mitsuba.core.Vector2f)
 
 # Define the structure of the generated reference pages for the different libraries.
-api_structure = {
-    'core' : {}, # TODO
-    'render' : {
-        'BSDF': ['mitsuba.render.BSDF', 'mitsuba.render.TransportMode', 'mitsuba.render.BSDFFlags',
-                 'mitsuba.render.BSDFContext', 'mitsuba.render.BSDFSample3f',
-                 'mitsuba.render.MicrofacetDistribution', 'mitsuba.render.MicrofacetType'],
+api_doc_structure = {
+    'core': {
+        'Object': ['mitsuba.core.Object'],
+        'Properties': ['mitsuba.core.Properties'],
+        'Bitmap': ['mitsuba.core.Bitmap'],
+        'XML': [r'mitsuba.core.xml.([\w]+)'],
+        'Warp': [r'mitsuba.core.warp.([\w]+)'],
+        'Distributions': [r'mitsuba.core.([\w]+)Distribution',
+                          r'mitsuba.core.Hierarchical2D\d',
+                          r'mitsuba.core.Marginal([\w]+)2D\d'],
+        'Spline': [r'mitsuba.core.spline.([\w]+)'],
+        'Math': [r'mitsuba.core.math.([\w]+)'],
+        'Types': [r'mitsuba.core.Scalar([\w]+)',
+                  r'mitsuba.core.Vector([\w]+)',
+                  r'mitsuba.core.Point([\w]+)',
+                  r'mitsuba.core.Matrix([\w]+)',
+                  r'mitsuba.core.Bounding([\w]+)',
+                  r'mitsuba.core.Transform([\w]+)',
+                  r'mitsuba.core.AnimatedTransform'],
+    },
+    'render': {
+        'BSDF': [r'mitsuba.render.BSDF([\w]+|)', 'mitsuba.render.TransportMode',
+                 r'mitsuba.render.Microfacet([\w]+|)'],
         'Endpoint': ['mitsuba.render.Endpoint'],
-        'Emitter': ['mitsuba.render.Emitter', 'mitsuba.render.EmitterFlags'],
+        'Emitter': [r'mitsuba.render.Emitter([\w]+|)'],
         'Sensor': ['mitsuba.render.Sensor', 'mitsuba.render.ProjectiveCamera'],
-        'Medium': ['mitsuba.render.Medium', 'mitsuba.render.PhaseFunction',
-                   'mitsuba.render.PhaseFunctionContext', 'mitsuba.render.PhaseFunctionFlags'],
+        'Medium': ['mitsuba.render.Medium', r'mitsuba.render.PhaseFunction([\w]+|)'],
         'Shape': ['mitsuba.render.Shape', 'mitsuba.render.Mesh'],
         'Texture': [],
         'Film': ['mitsuba.render.Film'],
         'Sampler': ['mitsuba.render.Sampler'],
         'Scene': ['mitsuba.render.Scene', 'mitsuba.render.ShapeKDTree'],
         'Record': ['mitsuba.render.PositionSample3f', 'mitsuba.render.DirectionSample3f',
-                   'mitsuba.render.Interaction3f', 'mitsuba.render.SurfaceInteraction3f',
-                   'mitsuba.render.MediumInteraction3f']
+                   r'mitsuba.render.([\w]+)Interaction3f'],
+        'Polarization': [r'mitsuba.render.mueller.([\w]+)'],
     },
-    'python' : {} # TODO
+    'python': {}  # TODO
 }
 
-# Write to a file the extracted RST and generate the RST reference pages for the different libraries
+
 def write_rst_file_callback(app, exception):
-    # register last block
-    rst_block_range[block_name] = [block_line_start, len(extracted_rst)]
-    # print(rst_block_range)
+    """Write to a file the extracted RST and generate the RST reference
+       pages for the different libraries"""
+
+    # Register last block
+    rst_block_range[last_block_name] = [block_line_start, len(extracted_rst)]
+
+    # Given a class/fucntion "block" name, add an RST 'include' directive with the
+    # corresponding start/end-line to the output file.
+    def write_block(f, block_name):
+        f.write('.. include:: extracted_rst_api.rst\n')
+        f.write('  :start-line: %i\n' % rst_block_range[block_name][0])
+        f.write('  :end-line: %i\n' % rst_block_range[block_name][1])
+        # Add a horizontal separator line
+        f.write('\n')
+        f.write('------------\n')
+        f.write('\n')
 
     # Write extracted RST to file
-    with open('../docs/generated/extracted_rst_api.rst', 'w') as outfile:
+    with open('../docs/generated/extracted_rst_api.rst', 'w') as f:
         for l in extracted_rst:
-            outfile.write(l)
+            f.write(l)
 
-    # Generate API Reference RST according to the api_structure description
-    for lib in api_structure.keys():
-        lib_structure = api_structure[lib]
+    # Generate API Reference RST according to the api_doc_structure description
+    for lib in api_doc_structure.keys():
+        lib_structure = api_doc_structure[lib]
 
-        with open('../docs/generated/%s_api.rst' % lib, 'w') as outfile:
-            outfile.write('%s API Reference\n' % lib.title())
-            outfile.write('=' * len(lib) + '==============\n')
-            outfile.write('\n')
+        with open('../docs/generated/%s_api.rst' % lib, 'w') as f:
+            f.write('%s API Reference\n' % lib.title())
+            f.write('=' * len(lib) + '==============\n')
+            f.write('\n')
 
+            # Keep track of the added block, so to add the rest in the 'Other' section
             added_block = []
 
-            for header in lib_structure.keys():
-                # Write header
-                outfile.write('%s\n' % header)
-                outfile.write('-' * len(header) + '\n')
-                outfile.write('\n')
+            for section_name in lib_structure.keys():
+                # Write section name
+                f.write('%s\n' % section_name)
+                f.write('-' * len(section_name) + '\n')
+                f.write('\n')
 
-                for block in lib_structure[header]:
-                    outfile.write('.. include:: extracted_rst_api.rst\n')
-                    outfile.write('  :start-line: %i\n' % rst_block_range[block][0])
-                    outfile.write('  :end-line: %i\n' % rst_block_range[block][1])
-                    outfile.write('\n')
-                    outfile.write('------------\n')
-                    outfile.write('\n')
-
-
-                    added_block.append(block)
+                # Write all the blocks
+                for pattern in lib_structure[section_name]:
+                    for block_name in rst_block_range.keys():
+                        if re.fullmatch(pattern, block_name):
+                            write_block(f, block_name)
+                            added_block.append(block_name)
 
             # Add the rest into the 'Other' section
-            outfile.write('Other\n')
-            outfile.write('-----\n')
-            outfile.write('\n')
+            f.write('Other\n')
+            f.write('-----\n')
+            f.write('\n')
 
-            for block in rst_block_range.keys():
-                if block in added_block:
+            for block_name in rst_block_range.keys():
+                if block_name in added_block:
                     continue
 
-                if not block.startswith('mitsuba.%s' % lib):
+                if not block_name.startswith('mitsuba.%s' % lib):
                     continue
 
-                outfile.write('.. include:: extracted_rst_api.rst\n')
-                outfile.write('  :start-line: %i\n' % rst_block_range[block][0])
-                outfile.write('  :end-line: %i\n' % rst_block_range[block][1])
-                outfile.write('\n')
-                outfile.write('------------\n')
-                outfile.write('\n')
+                write_block(f, block_name)
 
 
-# Generate a RST file that parses the documentation of all the python module of Mitsuba.
 def generate_list_api_callback(app):
+    """Generate a RST file listing all the python members (classes or functions)
+       to be parsed and extracted. This function will recursively explore submodules
+       and packages."""
 
     import importlib
     from inspect import isclass, isfunction, ismodule, ismethod
 
-    with open('../docs/docs_api/list_api.rst', 'w') as outfile:
+    def process(f, obj, lib, name):
+        if re.match(r'__[a-zA-Z\_0-9]+__', name):
+            return
 
-        for lib in ['render', 'core']:
+        if ismodule(obj):
+            for x in dir(obj):
+                process(f, getattr(obj, x), '%s.%s' % (lib, name), x)
+        else:
+            if isclass(obj):
+                f.write('.. autoclass:: mitsuba%s.%s\n\n' % (lib, name))
+            else:
+                f.write('.. autofunction:: mitsuba%s.%s\n\n' % (lib, name))
+
+    with open('../docs/docs_api/list_api.rst', 'w') as f:
+        for lib in ['core', 'render', 'python']:
             module = importlib.import_module('mitsuba.%s' % lib)
-            for x in dir(module):
-                # Skip '__init__', '__doc__', ...
-                if re.match(r'__[a-zA-Z\_0-9]+__', x):
-                    continue
-
-                if ismodule(getattr(module, x)):
-                    outfile.write('.. automodule:: mitsuba.%s.%s\n\n' % (lib, x))
-                elif isclass(getattr(module, x)):
-                    outfile.write('.. autoclass:: mitsuba.%s.%s\n\n' % (lib, x))
-                else:
-                    outfile.write('.. autofunction:: mitsuba.%s.%s\n\n' % (lib, x))
+            process(f, module, '', lib)
 
 
 # -- Register event callbacks ----------------------------------------------
@@ -533,4 +663,3 @@ def setup(app):
     app.connect('autodoc-process-docstring', process_docstring_callback)
     app.connect('autodoc-process-signature', process_signature_callback)
     app.connect("build-finished", write_rst_file_callback)
-

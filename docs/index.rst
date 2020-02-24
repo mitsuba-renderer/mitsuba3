@@ -65,4 +65,4 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     generated/render_api
     generated/python_api
 
-    src/bibliography
+    bibliography

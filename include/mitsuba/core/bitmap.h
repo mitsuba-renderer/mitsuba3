@@ -79,8 +79,8 @@ public:
          * <ul>
          *   <li>Loading and saving of \ref Float16 / \ref Float32/ \ref
          *   UInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
-         *   <li>Loading and saving of spectral bitmaps</tt>
-         *   <li>Loading and saving of XYZ tristimulus bitmaps</tt>
+         *   <li>Loading and saving of spectral bitmaps</li>
+         *   <li>Loading and saving of XYZ tristimulus bitmaps</li>
          *   <li>Loading and saving of string-valued metadata fields</li>
          * </ul>
          *
@@ -138,7 +138,7 @@ public:
          * \brief Truevision Advanced Raster Graphics Array file format
          *
          * The following is supported:
-         * <ul><li>Loading of uncompressed 8-bit RGB/RGBA files</ul></li>
+         * <ul><li>Loading of uncompressed 8-bit RGB/RGBA files</li></ul>
          */
         TGA,
 
@@ -146,7 +146,7 @@ public:
          * \brief Windows Bitmap file format
          *
          * The following is supported:
-         * <ul><li>Loading of uncompressed 8-bit luminance and RGBA bitmaps</ul></li>
+         * <ul><li>Loading of uncompressed 8-bit luminance and RGBA bitmaps</li></ul>
          */
         BMP,
 
@@ -443,11 +443,12 @@ public:
      *   into a normalized linear-space form (any gamma of the source
      *   bitmap is removed)</li>
      * <li>gamma correction (sRGB ramp) is applied
-     *     if \c srgb_gamma is \c true</li>
+     *     if \c srgb_gamma is \c true </li>
      * <li>The corrected value is clamped against the representable range
      *   of the desired component format.</li>
      * <li>The clamped gamma-corrected value is then written to
      *   the new bitmap</li>
+     * </ul>
      *
      * If the pixel formats differ, this function will also perform basic
      * conversions (e.g. spectrum to rgb, luminance to uniform spectrum

@@ -365,8 +365,8 @@ directions))doc";
 static const char *__doc_mitsuba_BSDFSample3 = R"doc(Data structure holding the result of BSDF sampling operations.)doc";
 
 static const char *__doc_mitsuba_BSDFSample3_BSDFSample3 =
-R"doc(Given a surface interaction an an incident/exitant direction pair (wi,
-wo), create a query record to evaluate the BSDF or its sampling
+R"doc(Given a surface interaction and an incident/exitant direction pair
+(wi, wo), create a query record to evaluate the BSDF or its sampling
 density.
 
 By default, all components will be sampled regardless of what measure
@@ -534,12 +534,14 @@ Parameter ``sample2``:
     generate the sampled direction.
 
 Returns:
-    A pair (bs, value) consisting of bs: Sampling record, indicating
-    the sampled direction, PDF values and other information. The
-    contents are undefined if sampling failed. value: The BSDF value
-    (multiplied by the cosine foreshortening factor when a non-delta
-    component is sampled). A zero spectrum indicates that sampling
-    failed.)doc";
+    A pair (bs, value) consisting of
+
+bs: Sampling record, indicating the sampled direction, PDF values and
+other information. The contents are undefined if sampling failed.
+
+value: The BSDF value (multiplied by the cosine foreshortening factor
+when a non-delta component is sampled). A zero spectrum indicates that
+sampling failed.)doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 
@@ -631,9 +633,9 @@ The following is supported:
 * Loading and saving of Float16 / Float32/ UInt32 bitmaps with all
 supported RGB/Luminance/Alpha combinations
 
-* Loading and saving of spectral bitmaps</tt>
+* Loading and saving of spectral bitmaps
 
-* Loading and saving of XYZ tristimulus bitmaps</tt>
+* Loading and saving of XYZ tristimulus bitmaps
 
 * Loading and saving of string-valued metadata fields
 
