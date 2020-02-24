@@ -576,8 +576,8 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         directive = '%s.. py:%s:: %s' % (
             directive_indent, directive_type, name)
 
-        # Display signature for methods and functions (and classes for python doc)
-        if what in ['method', 'function'] or (cached_signature and is_python_doc and what == 'class'):
+        # Display signature for methods and functions
+        if what in ['method', 'function']:
             directive += cached_signature
 
         # Display signature for classes for python doc

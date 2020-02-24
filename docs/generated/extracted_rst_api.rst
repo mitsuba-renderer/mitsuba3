@@ -13616,7 +13616,7 @@
     wi: array(3,)
         Incoming direction, in local coordinates.
 
-.. py:class:: mitsuba.python.chi2.ChiSquareTest(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4)(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4)
+.. py:class:: mitsuba.python.chi2.ChiSquareTest(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4)
 
     Implements Pearson's chi-square test for goodness of fit of a distribution
     to a known reference distribution.
@@ -13726,7 +13726,7 @@
             rejected.
 
 
-.. py:class:: mitsuba.python.chi2.LineDomain(bounds=[-1.0, 1.0])(bounds=[-1.0, 1.0])
+.. py:class:: mitsuba.python.chi2.LineDomain(bounds=[-1.0, 1.0])
 
     The identity map on the line.
 
@@ -13748,7 +13748,7 @@
     wi: array(3,)
         Incoming direction, in local coordinates.
 
-.. py:class:: mitsuba.python.chi2.PlanarDomain(bounds=None)(bounds=None)
+.. py:class:: mitsuba.python.chi2.PlanarDomain(bounds=None)
 
     The identity map on the plane
 
@@ -13770,7 +13770,7 @@
 
     Regularized lower incomplete gamma function based on CEPHES
 
-.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
     Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
 
@@ -13790,7 +13790,7 @@
     ``beta_2``: controls the exponential averaging of second
     order gradient moments
 
-.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)(params, lr)
+.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
 
     Base class of optimizers (SGD, Adam)
 
@@ -13798,7 +13798,7 @@
 
         Temporarily disable the generation of gradients.
 
-.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)(params, lr, momentum=0)
+.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)
 
     Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
 
