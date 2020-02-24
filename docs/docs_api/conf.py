@@ -467,6 +467,10 @@ def process_docstring_callback(app, what, name, obj, options, lines):
                             lines[next_idx] = '    %s' % l
                     next_idx += 1
 
+            # Handle aliases (will only call the callback once)
+            if len(lines) > 0 and 'Overloaded function.' in lines[0]:
+                process_overload_block(lines, 'method')
+
         else:  # Second call (constructor(s) description)
             if not cached_signature == '(overloaded)':
                 # Increase indent to all lines

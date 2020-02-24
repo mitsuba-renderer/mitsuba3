@@ -4259,21 +4259,50 @@
 
 .. py:class:: mitsuba.core.Matrix2f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Matrix2f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Matrix2f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Matrix2f, arg0: list) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Matrix2f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Matrix2f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Matrix2f, arg0: float, arg1: float, arg2: float, arg3: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Matrix2f, arg0: enoki.scalar.Vector2f, arg1: enoki.scalar.Vector2f) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1, arg2, arg3)
+
+        Parameter ``arg0`` (float):
+            *no description available*
+
+        Parameter ``arg1`` (float):
+            *no description available*
+
+        Parameter ``arg2`` (float):
+            *no description available*
+
+        Parameter ``arg3`` (float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1)
+
+        Parameter ``arg0`` (enoki.scalar.Vector2f):
+            *no description available*
+
+        Parameter ``arg1`` (enoki.scalar.Vector2f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Matrix2f.full(value, size=1)
 
@@ -4320,21 +4349,68 @@
 
 .. py:class:: mitsuba.core.Matrix3f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Matrix3f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Matrix3f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Matrix3f, arg0: list) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Matrix3f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Matrix3f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Matrix3f, arg0: float, arg1: float, arg2: float, arg3: float, arg4: float, arg5: float, arg6: float, arg7: float, arg8: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Matrix3f, arg0: enoki.scalar.Vector3f, arg1: enoki.scalar.Vector3f, arg2: enoki.scalar.Vector3f) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+
+        Parameter ``arg0`` (float):
+            *no description available*
+
+        Parameter ``arg1`` (float):
+            *no description available*
+
+        Parameter ``arg2`` (float):
+            *no description available*
+
+        Parameter ``arg3`` (float):
+            *no description available*
+
+        Parameter ``arg4`` (float):
+            *no description available*
+
+        Parameter ``arg5`` (float):
+            *no description available*
+
+        Parameter ``arg6`` (float):
+            *no description available*
+
+        Parameter ``arg7`` (float):
+            *no description available*
+
+        Parameter ``arg8`` (float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1, arg2)
+
+        Parameter ``arg0`` (enoki.scalar.Vector3f):
+            *no description available*
+
+        Parameter ``arg1`` (enoki.scalar.Vector3f):
+            *no description available*
+
+        Parameter ``arg2`` (enoki.scalar.Vector3f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Matrix3f.full(value, size=1)
 
@@ -4381,21 +4457,92 @@
 
 .. py:class:: mitsuba.core.Matrix4f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Matrix4f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Matrix4f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Matrix4f, arg0: list) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Matrix4f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Matrix4f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Matrix4f, arg0: float, arg1: float, arg2: float, arg3: float, arg4: float, arg5: float, arg6: float, arg7: float, arg8: float, arg9: float, arg10: float, arg11: float, arg12: float, arg13: float, arg14: float, arg15: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Matrix4f, arg0: enoki.scalar.Vector4f, arg1: enoki.scalar.Vector4f, arg2: enoki.scalar.Vector4f, arg3: enoki.scalar.Vector4f) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15)
+
+        Parameter ``arg0`` (float):
+            *no description available*
+
+        Parameter ``arg1`` (float):
+            *no description available*
+
+        Parameter ``arg2`` (float):
+            *no description available*
+
+        Parameter ``arg3`` (float):
+            *no description available*
+
+        Parameter ``arg4`` (float):
+            *no description available*
+
+        Parameter ``arg5`` (float):
+            *no description available*
+
+        Parameter ``arg6`` (float):
+            *no description available*
+
+        Parameter ``arg7`` (float):
+            *no description available*
+
+        Parameter ``arg8`` (float):
+            *no description available*
+
+        Parameter ``arg9`` (float):
+            *no description available*
+
+        Parameter ``arg10`` (float):
+            *no description available*
+
+        Parameter ``arg11`` (float):
+            *no description available*
+
+        Parameter ``arg12`` (float):
+            *no description available*
+
+        Parameter ``arg13`` (float):
+            *no description available*
+
+        Parameter ``arg14`` (float):
+            *no description available*
+
+        Parameter ``arg15`` (float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0, arg1, arg2, arg3)
+
+        Parameter ``arg0`` (enoki.scalar.Vector4f):
+            *no description available*
+
+        Parameter ``arg1`` (enoki.scalar.Vector4f):
+            *no description available*
+
+        Parameter ``arg2`` (enoki.scalar.Vector4f):
+            *no description available*
+
+        Parameter ``arg3`` (enoki.scalar.Vector4f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Matrix4f.full(value, size=1)
 
@@ -7054,27 +7201,50 @@
 
 .. py:class:: mitsuba.core.Vector0f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector0f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector0f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector0f, arg0: enoki.scalar.Vector0f) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector0f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector0f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector0f):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector0f, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector0f, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector0f, arg0: enoki.scalar.Vector0d) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector0f, arg0: enoki.scalar.Vector0u) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector0f, arg0: enoki.scalar.Vector0i) -> None
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (enoki.scalar.Vector0d):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector0f, arg0: enoki.scalar.Vector0i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector0u):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector0f.empty(size=1)
 
@@ -7131,27 +7301,50 @@
 
 .. py:class:: mitsuba.core.Vector0i
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector0i) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector0i, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector0i, arg0: enoki.scalar.Vector0i) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector0i, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector0i, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector0i):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector0i, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector0i, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector0i, arg0: enoki.scalar.Vector0f) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector0i, arg0: enoki.scalar.Vector0d) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector0i, arg0: enoki.scalar.Vector0u) -> None
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (enoki.scalar.Vector0f):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector0i, arg0: enoki.scalar.Vector0u) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector0d):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector0i.empty(size=1)
 
@@ -7208,27 +7401,50 @@
 
 .. py:class:: mitsuba.core.Vector0u
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector0u) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector0u, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector0u, arg0: enoki.scalar.Vector0u) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector0u, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector0u, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector0u):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector0u, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector0u, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector0u, arg0: enoki.scalar.Vector0f) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector0u, arg0: enoki.scalar.Vector0d) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector0u, arg0: enoki.scalar.Vector0i) -> None
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (enoki.scalar.Vector0f):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector0u, arg0: enoki.scalar.Vector0i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector0d):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector0u.empty(size=1)
 
@@ -7285,27 +7501,50 @@
 
 .. py:class:: mitsuba.core.Vector1f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector1f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector1f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector1f, arg0: enoki.scalar.Vector1f) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector1f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector1f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector1f):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector1f, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector1f, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector1f, arg0: enoki.scalar.Vector1d) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector1f, arg0: enoki.scalar.Vector1u) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector1f, arg0: enoki.scalar.Vector1i) -> None
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (enoki.scalar.Vector1d):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector1f, arg0: enoki.scalar.Vector1i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector1u):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector1f.empty(size=1)
 
@@ -7362,27 +7601,50 @@
 
 .. py:class:: mitsuba.core.Vector1i
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector1i) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector1i, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector1i, arg0: enoki.scalar.Vector1i) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector1i, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector1i, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector1i):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector1i, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector1i, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector1i, arg0: enoki.scalar.Vector1f) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector1i, arg0: enoki.scalar.Vector1d) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector1i, arg0: enoki.scalar.Vector1u) -> None
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (enoki.scalar.Vector1f):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector1i, arg0: enoki.scalar.Vector1u) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector1d):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector1i.empty(size=1)
 
@@ -7439,27 +7701,50 @@
 
 .. py:class:: mitsuba.core.Vector1u
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector1u) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector1u, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector1u, arg0: enoki.scalar.Vector1u) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector1u, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector1u, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector1u):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector1u, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector1u, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector1u, arg0: enoki.scalar.Vector1f) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector1u, arg0: enoki.scalar.Vector1d) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector1u, arg0: enoki.scalar.Vector1i) -> None
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (enoki.scalar.Vector1f):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector1u, arg0: enoki.scalar.Vector1i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector1d):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector1u.empty(size=1)
 
@@ -7516,29 +7801,55 @@
 
 .. py:class:: mitsuba.core.Vector2f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector2f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector2f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector2f, arg0: enoki.scalar.Vector2f) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector2f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector2f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector2f):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector2f, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector2f, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector2f, x: float, y: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector2f, arg0: enoki.scalar.Vector2d) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector2f, arg0: enoki.scalar.Vector2u) -> None
+    .. py:method:: __init__(self, arg0)
 
-    11. __init__(self: enoki.scalar.Vector2f, arg0: enoki.scalar.Vector2i) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, x, y)
+
+        Parameter ``x`` (float):
+            *no description available*
+
+        Parameter ``y`` (float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector2f, arg0: enoki.scalar.Vector2u) -> None
+
+        11. __init__(self: enoki.scalar.Vector2f, arg0: enoki.scalar.Vector2i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector2d):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector2f.empty(size=1)
 
@@ -7595,29 +7906,55 @@
 
 .. py:class:: mitsuba.core.Vector2i
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector2i) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector2i, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector2i, arg0: enoki.scalar.Vector2i) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector2i, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector2i, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector2i):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector2i, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector2i, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector2i, x: int, y: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector2i, arg0: enoki.scalar.Vector2f) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector2i, arg0: enoki.scalar.Vector2d) -> None
+    .. py:method:: __init__(self, arg0)
 
-    11. __init__(self: enoki.scalar.Vector2i, arg0: enoki.scalar.Vector2u) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, x, y)
+
+        Parameter ``x`` (int):
+            *no description available*
+
+        Parameter ``y`` (int):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector2i, arg0: enoki.scalar.Vector2d) -> None
+
+        11. __init__(self: enoki.scalar.Vector2i, arg0: enoki.scalar.Vector2u) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector2f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector2i.empty(size=1)
 
@@ -7674,29 +8011,55 @@
 
 .. py:class:: mitsuba.core.Vector2u
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector2u) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector2u, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector2u, arg0: enoki.scalar.Vector2u) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector2u, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector2u, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector2u):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector2u, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector2u, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector2u, x: int, y: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector2u, arg0: enoki.scalar.Vector2f) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector2u, arg0: enoki.scalar.Vector2d) -> None
+    .. py:method:: __init__(self, arg0)
 
-    11. __init__(self: enoki.scalar.Vector2u, arg0: enoki.scalar.Vector2i) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, x, y)
+
+        Parameter ``x`` (int):
+            *no description available*
+
+        Parameter ``y`` (int):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector2u, arg0: enoki.scalar.Vector2d) -> None
+
+        11. __init__(self: enoki.scalar.Vector2u, arg0: enoki.scalar.Vector2i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector2f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector2u.empty(size=1)
 
@@ -7753,29 +8116,58 @@
 
 .. py:class:: mitsuba.core.Vector3f
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector3f) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector3f, arg0: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector3f, arg0: enoki.scalar.Vector3f) -> None
+        Parameter ``arg0`` (float):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector3f, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector3f, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector3f):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector3f, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector3f, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector3f, x: float, y: float, z: float) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector3f, arg0: enoki.scalar.Vector3d) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector3f, arg0: enoki.scalar.Vector3u) -> None
+    .. py:method:: __init__(self, arg0)
 
-    11. __init__(self: enoki.scalar.Vector3f, arg0: enoki.scalar.Vector3i) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, x, y, z)
+
+        Parameter ``x`` (float):
+            *no description available*
+
+        Parameter ``y`` (float):
+            *no description available*
+
+        Parameter ``z`` (float):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector3f, arg0: enoki.scalar.Vector3u) -> None
+
+        11. __init__(self: enoki.scalar.Vector3f, arg0: enoki.scalar.Vector3i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector3d):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector3f.empty(size=1)
 
@@ -7832,29 +8224,58 @@
 
 .. py:class:: mitsuba.core.Vector3i
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector3i) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector3i, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector3i, arg0: enoki.scalar.Vector3i) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector3i, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector3i, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector3i):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector3i, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector3i, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector3i, x: int, y: int, z: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector3i, arg0: enoki.scalar.Vector3f) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector3i, arg0: enoki.scalar.Vector3d) -> None
+    .. py:method:: __init__(self, arg0)
 
-    11. __init__(self: enoki.scalar.Vector3i, arg0: enoki.scalar.Vector3u) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, x, y, z)
+
+        Parameter ``x`` (int):
+            *no description available*
+
+        Parameter ``y`` (int):
+            *no description available*
+
+        Parameter ``z`` (int):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector3i, arg0: enoki.scalar.Vector3d) -> None
+
+        11. __init__(self: enoki.scalar.Vector3i, arg0: enoki.scalar.Vector3u) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector3f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector3i.empty(size=1)
 
@@ -7911,29 +8332,58 @@
 
 .. py:class:: mitsuba.core.Vector3u
 
-    Overloaded function.
 
-    1. __init__(self: enoki.scalar.Vector3u) -> None
+    .. py:method:: __init__(self)
 
-    2. __init__(self: enoki.scalar.Vector3u, arg0: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    3. __init__(self: enoki.scalar.Vector3u, arg0: enoki.scalar.Vector3u) -> None
+        Parameter ``arg0`` (int):
+            *no description available*
 
-    4. __init__(self: enoki.scalar.Vector3u, arg0: ndarray) -> None
+    .. py:method:: __init__(self, arg0)
 
-    5. __init__(self: enoki.scalar.Vector3u, arg0: torch_tensor) -> None
+        Parameter ``arg0`` (enoki.scalar.Vector3u):
+            *no description available*
 
-    6. __init__(self: enoki.scalar.Vector3u, arg0: list) -> None
+    .. py:method:: __init__(self, arg0)
 
-    7. __init__(self: enoki.scalar.Vector3u, arg0: tuple) -> None
+        Parameter ``arg0`` (ndarray):
+            *no description available*
 
-    8. __init__(self: enoki.scalar.Vector3u, x: int, y: int, z: int) -> None
+    .. py:method:: __init__(self, arg0)
 
-    9. __init__(self: enoki.scalar.Vector3u, arg0: enoki.scalar.Vector3f) -> None
+        Parameter ``arg0`` (torch_tensor):
+            *no description available*
 
-    10. __init__(self: enoki.scalar.Vector3u, arg0: enoki.scalar.Vector3d) -> None
+    .. py:method:: __init__(self, arg0)
 
-    11. __init__(self: enoki.scalar.Vector3u, arg0: enoki.scalar.Vector3i) -> None
+        Parameter ``arg0`` (list):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (tuple):
+            *no description available*
+
+    .. py:method:: __init__(self, x, y, z)
+
+        Parameter ``x`` (int):
+            *no description available*
+
+        Parameter ``y`` (int):
+            *no description available*
+
+        Parameter ``z`` (int):
+            *no description available*
+
+    .. py:method:: __init__(self, arg0)
+
+        10. __init__(self: enoki.scalar.Vector3u, arg0: enoki.scalar.Vector3d) -> None
+
+        11. __init__(self: enoki.scalar.Vector3u, arg0: enoki.scalar.Vector3i) -> None
+
+        Parameter ``arg0`` (enoki.scalar.Vector3f):
+            *no description available*
 
     .. py:method:: mitsuba.core.Vector3u.empty(size=1)
 
