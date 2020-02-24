@@ -51,6 +51,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     src/developer_guide/testing
     src/developer_guide/debugging
     src/developer_guide/building_documentation
+    src/developer_guide/polarization
 
 
 .. toctree::
