@@ -157,7 +157,7 @@ public:
          * \brief Automatically detect the file format
          *
          * Note: this flag only applies when loading a file. In this case,
-         * the source stream must support the \c seek() operation.
+         * the source stream must support the ``seek()`` operation.
          */
         Auto
     };

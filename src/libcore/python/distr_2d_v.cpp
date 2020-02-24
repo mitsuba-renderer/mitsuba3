@@ -84,7 +84,7 @@ template <typename Warp> auto bind_warp(py::module &m,
 template <typename Warp> void bind_warp_hierarchical(py::module &m, const char *name) {
     bind_warp<Warp>(m, name,
         D(Hierarchical2D),
-        D(Hierarchical2D, Hierarchical2D),
+        D(Hierarchical2D, Hierarchical2D, 2),
         D(Hierarchical2D, sample),
         D(Hierarchical2D, invert),
         D(Hierarchical2D, eval)
@@ -94,7 +94,7 @@ template <typename Warp> void bind_warp_hierarchical(py::module &m, const char *
 template <typename Warp> void bind_warp_marginal(py::module &m, const char *name) {
     bind_warp<Warp>(m, name,
         D(Marginal2D),
-        D(Marginal2D, Marginal2D),
+        D(Marginal2D, Marginal2D, 2),
         D(Marginal2D, sample),
         D(Marginal2D, invert),
         D(Marginal2D, eval)

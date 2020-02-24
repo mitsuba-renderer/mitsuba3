@@ -708,8 +708,6 @@
 
 .. autoclass:: mitsuba.python.autodiff.SGD
 
-.. autofunction:: mitsuba.python.autodiff.contextmanager
-
 .. autofunction:: mitsuba.python.autodiff.render
 
 .. autofunction:: mitsuba.python.autodiff.render_diff
@@ -717,26 +715,6 @@
 .. autofunction:: mitsuba.python.autodiff.render_torch
 
 .. autofunction:: mitsuba.python.autodiff.write_bitmap
-
-.. autofunction:: mitsuba.python.test.scenes.SCENES
-
-.. autofunction:: mitsuba.python.test.scenes.box_scene
-
-.. autofunction:: mitsuba.python.test.scenes.empty_scene
-
-.. autofunction:: mitsuba.python.test.scenes.fresolver_append_path
-
-.. autofunction:: mitsuba.python.test.scenes.make_box_scene
-
-.. autofunction:: mitsuba.python.test.scenes.make_empty_scene
-
-.. autofunction:: mitsuba.python.test.scenes.make_museum_plane_scene
-
-.. autofunction:: mitsuba.python.test.scenes.make_teapot_scene
-
-.. autofunction:: mitsuba.python.test.scenes.museum_plane_scene
-
-.. autofunction:: mitsuba.python.test.scenes.teapot_scene
 
 .. autofunction:: mitsuba.python.test.util.fresolver_append_path
 

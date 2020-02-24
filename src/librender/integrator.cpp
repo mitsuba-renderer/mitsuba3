@@ -270,7 +270,7 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pr
     if (m_rr_depth <= 0)
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
-    /*  Longest visualized path depth (\c -1 = infinite). A value of \c 1 will
+    /*  Longest visualized path depth (``-1 = infinite``). A value of \c 1 will
         visualize only directly visible light sources. \c 2 will lead to
         single-bounce (direct-only) illumination, and so on. */
     m_max_depth = props.int_("max_depth", -1);

@@ -108,9 +108,9 @@ def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
                 spp_diff=None, sensor_index=0):
     """
     Perform a differentiable of the scene `scene`. This function differs from
-    `render()` in that it splits the rendering step into two separate passes
+    ``render()`` in that it splits the rendering step into two separate passes
     that generate the primal image and gradients, respectively (assuming that
-    `unbiased=True` is specified). This is necessary to avoid correlations that
+    ``unbiased=True`` is specified). This is necessary to avoid correlations that
     would otherwise introduce bias into the resulting parameter gradients.
     """
     if unbiased:

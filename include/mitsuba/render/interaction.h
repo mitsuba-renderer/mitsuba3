@@ -169,8 +169,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /**
      * \brief Determine the target medium
      *
-     * When \c is_medium_transition() = \c true, determine the medium that
-     * contains the ray (\c this->p, \c d)
+     * When ``is_medium_transition()`` = \c true, determine the medium that
+     * contains the ``ray(this->p, d)``
      */
     MediumPtr target_medium(const Vector3f &d) const {
         return target_medium(dot(d, n));
@@ -180,8 +180,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \brief Determine the target medium based on the cosine
      * of the angle between the geometric normal and a direction
      *
-     * Returns the exterior medium when \c cos_theta > 0 and
-     * the interior medium when \c cos_theta <= 0.
+     * Returns the exterior medium when ``cos_theta > 0`` and
+     * the interior medium when ``cos_theta <= 0``.
      */
     MediumPtr target_medium(const Float &cos_theta) const {
         return select(cos_theta > 0, shape->exterior_medium(),

@@ -5,50 +5,50 @@ Chi2
 ----
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13605
-  :end-line: 13617
+  :start-line: 14148
+  :end-line: 14160
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13618
-  :end-line: 13727
+  :start-line: 14161
+  :end-line: 14260
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13728
-  :end-line: 13731
+  :start-line: 14261
+  :end-line: 14264
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13732
-  :end-line: 13736
+  :start-line: 14265
+  :end-line: 14269
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13737
-  :end-line: 13749
+  :start-line: 14270
+  :end-line: 14282
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13750
-  :end-line: 13753
+  :start-line: 14283
+  :end-line: 14286
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13754
-  :end-line: 13758
+  :start-line: 14287
+  :end-line: 14291
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13759
-  :end-line: 13762
+  :start-line: 14292
+  :end-line: 14295
 
 ------------
 
@@ -56,44 +56,44 @@ Autodiff
 --------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13772
-  :end-line: 13791
+  :start-line: 14305
+  :end-line: 14324
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13792
-  :end-line: 13799
+  :start-line: 14325
+  :end-line: 14332
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13800
-  :end-line: 13810
+  :start-line: 14333
+  :end-line: 14343
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13811
-  :end-line: 13815
+  :start-line: 14344
+  :end-line: 14348
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13816
-  :end-line: 13823
+  :start-line: 14349
+  :end-line: 14356
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13824
-  :end-line: 13825
+  :start-line: 14357
+  :end-line: 14358
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13826
-  :end-line: 13830
+  :start-line: 14359
+  :end-line: 14363
 
 ------------
 
@@ -101,50 +101,50 @@ Other
 -----
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13763
-  :end-line: 13767
+  :start-line: 14296
+  :end-line: 14300
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13768
-  :end-line: 13771
+  :start-line: 14301
+  :end-line: 14304
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13831
-  :end-line: 13839
+  :start-line: 14364
+  :end-line: 14372
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13840
-  :end-line: 13849
+  :start-line: 14373
+  :end-line: 14382
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13850
-  :end-line: 13851
+  :start-line: 14383
+  :end-line: 14384
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13852
-  :end-line: 13855
+  :start-line: 14385
+  :end-line: 14388
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13856
-  :end-line: 13859
+  :start-line: 14389
+  :end-line: 14392
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 13860
-  :end-line: 13870
+  :start-line: 14393
+  :end-line: 14403
 
 ------------
 

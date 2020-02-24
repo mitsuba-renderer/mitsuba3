@@ -209,7 +209,7 @@ public:
      * If \c enable_sampling is set to \c false, the implementation will not
      * construct the hierarchy needed for sample warping, which saves memory
      * in case this functionality is not needed (e.g. if only the interpolation
-     * in \c eval() is used). In this case, \c sample() and \c invert()
+     * in ``eval()`` is used). In this case, ``sample()`` and ``invert()``
      * can still be called without triggering undefined behavior, but they
      * will not return meaningful results.
      */
@@ -401,7 +401,7 @@ public:
         };
     }
 
-    /// Inverse of the mapping implemented in \c sample()
+    /// Inverse of the mapping implemented in ``sample()``
     std::pair<Point2f, Float> invert(Point2f sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {
@@ -647,8 +647,8 @@ protected:
  * evaluating the distribution for in-between parameter values.
  *
  * \remark The Python API exposes explicitly instantiated versions of this
- * class named \c MarginalDiscrete2D0 to \c MarginalDiscrete2D3 and \c
- * MarginalContinuous2D0 to \c MarginalContinuous2D3 for data that depends
+ * class named \c MarginalDiscrete2D0 to \c MarginalDiscrete2D3 and
+ * \c MarginalContinuous2D0 to \c MarginalContinuous2D3 for data that depends
  * on 0 to 3 parameters.
  */
 template <typename Float_, size_t Dimension_ = 0, bool Continuous = false>
@@ -682,8 +682,8 @@ public:
      *
      * If \c enable_sampling is set to \c false, the implementation will not
      * construct the cdf needed for sample warping, which saves memory in case
-     * this functionality is not needed (e.g. if only the interpolation in \c
-     * eval() is used).
+     * this functionality is not needed (e.g. if only the interpolation in
+     * ``eval()`` is used).
      */
     Marginal2D(const ScalarFloat *data,
                const ScalarVector2u &size,
@@ -822,7 +822,7 @@ public:
             return sample_discrete(sample, param, active);
     }
 
-    /// Inverse of the mapping implemented in \c sample()
+    /// Inverse of the mapping implemented in ``sample()``
     std::pair<Point2f, Float> invert(const Point2f &sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {

@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This class implements a generic thread local storage object that can be used
  * in situations where the new \c thread_local keyword is not available (e.g.
- * on Mac OS, as of 2016), or when TLS object are created dynamically (which \c
- * thread_local does not allow).
+ * on Mac OS, as of 2016), or when TLS object are created dynamically (which
+ * \c thread_local does not allow).
  *
  * The native TLS classes on Linux/MacOS/Windows only support a limited number
  * of dynamically allocated entries (usually 1024 or 1088). Furthermore, they
@@ -23,7 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
  * semantics: TLS entries are destroyed when the owning thread dies \a or when
  * the \c ThreadLocal instance is freed (whichever occurs first).
  *
- * The implementation is designed to make the \c get() operation as fast as as
+ * The implementation is designed to make the ``get()`` operation as fast as as
  * possible at the cost of more involved locking when creating or destroying
  * threads and TLS objects. To actually instantiate a TLS object with a
  * specific type, use the \ref ThreadLocal class.

@@ -13,34 +13,31 @@ class ChiSquareTest:
     distribution obtained by numerically integrating a probability density
     function over grid in the distribution's parameter domain.
 
-    Parameters
-    ----------
-
-    domain: object
+    Parameter ``domain`` (object):
        An implementation of the domain interface (``SphericalDomain``, etc.),
        which transforms between the parameter and target domain of the
        distribution
 
-    sample_func: function
+    Parameter ``sample_func`` (function):
        An importance sampling function which maps an array of uniform variates
        of size ``[sample_dim, sample_count]`` to an array of ``sample_count``
        samples on the target domain.
 
-    pdf_func: function
+    Parameter ``pdf_func`` (function):
        Function that is expected to specify the probability density of the
        samples produced by ``sample_func``. The test will try to collect
        sufficient statistical evidence to reject this hypothesis.
 
-    sample_dim: int, optional
+    Parameter ``sample_dim`` (int):
        Numer of random dimensions consumed by ``sample_func`` per sample. The
        default value is ``2``.
 
-    sample_count: int, optional
+    Parameter ``sample_count`` (int):
        Total number of samples to be generated. The test will have more
        evidence as this number tends to infinity. The default value is
        ``1000000``.
 
-    res: int, optional
+    Parameter ``res`` (int):
        Vertical resolution of the generated histograms. The horizontal
        resolution will be calculated as ``res * domain.aspect()``. The
        default value of ``101`` is intentionally an odd number to prevent
@@ -48,13 +45,12 @@ class ChiSquareTest:
        separate the domain into two parts (e.g. top hemisphere of a sphere
        parameterization).
 
-    ires: int, optional
+    Parameter ``ires`` (int):
        Number of horizontal/vertical subintervals used to numerically integrate
        the probability density over each histogram cell (using the trapezoid
        rule). The default value is ``4``.
 
-    Notes
-    -----
+    Notes:
 
     The following attributes are part of the public API:
 
@@ -223,23 +219,17 @@ class ChiSquareTest:
         """
         Run the Chi^2 test
 
-        Parameters
-        ----------
-
-        significance_level: float
+        Parameter ``significance_level`` (float):
             Denotes the desired significance level (e.g. 0.01 for a test at the
             1% significance level)
 
-        test_count: int, optional
+        Parameter ``test_count`` (int):
             Specifies the total number of statistical tests run by the user.
             This value will be used to adjust the provided significance level
             so that the combination of the entire set of tests has the provided
             significance level.
 
-        Returns
-        -------
-
-        result: bool
+        Returns → bool:
             ``True`` upon success, ``False`` if the null hypothesis was
             rejected.
 
@@ -485,13 +475,13 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     """
     Adapter to test BSDF sampling using the Chi^2 test.
 
-    Parameters
-    ----------
-    bsdf_type: string
+    Parameter ``bsdf_type`` (string):
         Name of the BSDF plugin to instantiate.
-    extra: string
+
+    Parameter ``extra`` (string):
         Additional XML used to specify the BSDF's parameters.
-    wi: array(3,)
+
+    Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
     """
 
@@ -565,13 +555,13 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
     """
     Adapter to test phase function sampling using the Chi^2 test.
 
-    Parameters
-    ----------
-    phase_type: string
+    Parameter ``phase_type`` (string):
         Name of the phase function plugin to instantiate.
-    extra: string
+
+    Parameter ``extra`` (string):
         Additional XML used to specify the phase function's parameters.
-    wi: array(3,)
+
+    Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
     """
     from mitsuba.render import MediumInteraction3f, PhaseFunctionContext

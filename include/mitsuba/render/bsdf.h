@@ -339,7 +339,7 @@ public:
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
      * components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
-     * components are supported: calling \c eval() on a perfectly specular
+     * components are supported: calling ``eval()`` on a perfectly specular
      * material will return zero.
      *
      * Note that the incident direction does not need to be explicitly

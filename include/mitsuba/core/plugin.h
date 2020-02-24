@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * Since this kind of construction method can be tiresome when
  * dynamically building scenes from Python, this class has an
- * additional Python-only method \c create(), which works as follows:
+ * additional Python-only method ``create()``, which works as follows:
  *
  * \code
  * from mitsuba.scalar_rgb.core import *

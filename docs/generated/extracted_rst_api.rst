@@ -81,6 +81,7 @@
 
     .. py:method:: __init__(self)
 
+
     .. py:method:: mitsuba.core.Appender.append(self, level, text)
 
         Append a line of text with the given log level
@@ -142,6 +143,7 @@
 
     .. py:method:: __init__(self)
 
+
     .. py:method:: mitsuba.core.ArgParser.add(overloaded)
 
 
@@ -201,8 +203,12 @@
 
     .. py:method:: __init__(self, arg0)
 
-            Initialize the AtomicFloat with a given floating point value
-            
+        Initialize the AtomicFloat with a given floating point value
+
+        Parameter ``arg0`` (float):
+            *no description available*
+
+        
 .. py:class:: mitsuba.core.Bitmap
 
     Base class: :py:class:`mitsuba.core.Object`
@@ -374,9 +380,13 @@
             Automatically detect the file format
 
             Note: this flag only applies when loading a file. In this case, the
-            source stream must support the ``seek``() operation.
+            source stream must support the ``seek()`` operation.
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:class:: mitsuba.core.Bitmap.PixelFormat
 
@@ -419,6 +429,10 @@
             Arbitrary multi-channel bitmap without a fixed interpretation
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:method:: mitsuba.core.Bitmap.accumulate(overloaded)
 
@@ -1727,6 +1741,7 @@
 
     .. py:method:: __init__(self)
 
+
     .. py:method:: mitsuba.core.DefaultFormatter.has_class(self)
 
         See also:
@@ -2019,6 +2034,7 @@
 
     .. py:method:: __init__(self)
 
+
 .. py:class:: mitsuba.core.FileResolver
 
     Base class: :py:class:`mitsuba.core.Object`
@@ -2090,14 +2106,21 @@
 
     .. py:method:: __init__(self, p, mode=EMode.ERead)
 
-            Constructs a new FileStream by opening the file pointed by ``p``.
-            
-            The file is opened in read-only or read/write mode as specified by
-            ``mode``.
-            
-            Throws if trying to open a non-existing file in with write disabled.
-            Throws an exception if the file cannot be opened / created.
-            
+        Constructs a new FileStream by opening the file pointed by ``p``.
+        
+        The file is opened in read-only or read/write mode as specified by
+        ``mode``.
+        
+        Throws if trying to open a non-existing file in with write disabled.
+        Throws an exception if the file cannot be opened / created.
+
+        Parameter ``p`` (:py:class:`mitsuba.core.filesystem.path`):
+            *no description available*
+
+        Parameter ``mode`` (:py:class:`mitsuba.core.FileStream.EMode`):
+            *no description available*
+
+        
     .. py:class:: mitsuba.core.FileStream.EMode
 
         Members:
@@ -2115,6 +2138,10 @@
             Opens (and truncates) a file in (binary) read-write mode
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:method:: mitsuba.core.FileStream.path(self)
 
@@ -2157,6 +2184,10 @@
 
     .. py:method:: __init__(self, arg0)
 
+        Parameter ``arg0`` (int):
+            *no description available*
+
+
 .. py:class:: mitsuba.core.Formatter
 
     Base class: :py:class:`mitsuba.core.Object`
@@ -2165,6 +2196,7 @@
     readable format
 
     .. py:method:: __init__(self)
+
 
     .. py:method:: mitsuba.core.Formatter.format(self, level, theClass, thread, file, line, msg)
 
@@ -2437,6 +2469,37 @@
 
     .. py:method:: __init__(self, data, param_values=[], normalize=True, enable_sampling=True)
 
+        Construct a hierarchical sample warping scheme for floating point data
+        of resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Hierarchical2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the hierarchy needed for sample warping, which saves
+        memory in case this functionality is not needed (e.g. if only the
+        interpolation in ``eval()`` is used). In this case, ``sample()`` and
+        ``invert()`` can still be called without triggering undefined
+        behavior, but they will not return meaningful results.
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][0]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``enable_sampling`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.Hierarchical2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -2456,7 +2519,7 @@
 
     .. py:method:: mitsuba.core.Hierarchical2D0.invert(self, sample, param=[], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -2525,6 +2588,37 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a hierarchical sample warping scheme for floating point data
+        of resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Hierarchical2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the hierarchy needed for sample warping, which saves
+        memory in case this functionality is not needed (e.g. if only the
+        interpolation in ``eval()`` is used). In this case, ``sample()`` and
+        ``invert()`` can still be called without triggering undefined
+        behavior, but they will not return meaningful results.
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][1]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.Hierarchical2D1.eval(self, pos, param=[0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -2544,7 +2638,7 @@
 
     .. py:method:: mitsuba.core.Hierarchical2D1.invert(self, sample, param=[0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -2613,6 +2707,37 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a hierarchical sample warping scheme for floating point data
+        of resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Hierarchical2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the hierarchy needed for sample warping, which saves
+        memory in case this functionality is not needed (e.g. if only the
+        interpolation in ``eval()`` is used). In this case, ``sample()`` and
+        ``invert()`` can still be called without triggering undefined
+        behavior, but they will not return meaningful results.
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][2]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.Hierarchical2D2.eval(self, pos, param=[0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -2632,7 +2757,7 @@
 
     .. py:method:: mitsuba.core.Hierarchical2D2.invert(self, sample, param=[0, 0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -2701,6 +2826,37 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a hierarchical sample warping scheme for floating point data
+        of resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Hierarchical2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the hierarchy needed for sample warping, which saves
+        memory in case this functionality is not needed (e.g. if only the
+        interpolation in ``eval()`` is used). In this case, ``sample()`` and
+        ``invert()`` can still be called without triggering undefined
+        behavior, but they will not return meaningful results.
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][3]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.Hierarchical2D3.eval(self, pos, param=[0, 0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -2720,7 +2876,7 @@
 
     .. py:method:: mitsuba.core.Hierarchical2D3.invert(self, sample, param=[0, 0, 0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -2982,6 +3138,10 @@
 
     .. py:method:: __init__(self, arg0)
 
+        Parameter ``arg0`` (int):
+            *no description available*
+
+
 .. py:class:: mitsuba.core.Logger
 
     Base class: :py:class:`mitsuba.core.Object`
@@ -2994,8 +3154,12 @@
 
     .. py:method:: __init__(self, arg0)
 
-            Construct a new logger with the given minimum log level
-            
+        Construct a new logger with the given minimum log level
+
+        Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.Logger.add_appender(self, arg0)
 
         Add an appender to this logger
@@ -3200,6 +3364,35 @@
 
     .. py:method:: __init__(self, data, param_values=[], normalize=True, enable_sampling=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][0]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``enable_sampling`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3219,7 +3412,7 @@
 
     .. py:method:: mitsuba.core.MarginalContinuous2D0.invert(self, sample, param=[], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3287,6 +3480,35 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][1]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalContinuous2D1.eval(self, pos, param=[0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3306,7 +3528,7 @@
 
     .. py:method:: mitsuba.core.MarginalContinuous2D1.invert(self, sample, param=[0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3374,6 +3596,35 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][2]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalContinuous2D2.eval(self, pos, param=[0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3393,7 +3644,7 @@
 
     .. py:method:: mitsuba.core.MarginalContinuous2D2.invert(self, sample, param=[0, 0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3461,6 +3712,35 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][3]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalContinuous2D3.eval(self, pos, param=[0, 0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3480,7 +3760,7 @@
 
     .. py:method:: mitsuba.core.MarginalContinuous2D3.invert(self, sample, param=[0, 0, 0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3548,6 +3828,35 @@
 
     .. py:method:: __init__(self, data, param_values=[], normalize=True, enable_sampling=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][0]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``enable_sampling`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3567,7 +3876,7 @@
 
     .. py:method:: mitsuba.core.MarginalDiscrete2D0.invert(self, sample, param=[], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3635,6 +3944,35 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][1]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalDiscrete2D1.eval(self, pos, param=[0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3654,7 +3992,7 @@
 
     .. py:method:: mitsuba.core.MarginalDiscrete2D1.invert(self, sample, param=[0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3722,6 +4060,35 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][2]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalDiscrete2D2.eval(self, pos, param=[0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3741,7 +4108,7 @@
 
     .. py:method:: mitsuba.core.MarginalDiscrete2D2.invert(self, sample, param=[0, 0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -3809,6 +4176,35 @@
 
     .. py:method:: __init__(self, data, param_values, normalize=True, build_hierarchy=True)
 
+        Construct a marginal sample warping scheme for floating point data of
+        resolution ``size``.
+        
+        ``param_res`` and ``param_values`` are only needed for conditional
+        distributions (see the text describing the Marginal2D class).
+        
+        If ``normalize`` is set to ``False``, the implementation will not re-
+        scale the distribution so that it integrates to ``1``. It can still be
+        sampled (proportionally), but returned density values will reflect the
+        unnormalized values.
+        
+        If ``enable_sampling`` is set to ``False``, the implementation will
+        not construct the cdf needed for sample warping, which saves memory in
+        case this functionality is not needed (e.g. if only the interpolation
+        in ``eval()`` is used).
+
+        Parameter ``data`` (numpy.ndarray[float32]):
+            *no description available*
+
+        Parameter ``param_values`` (List[List[float][3]]):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+        Parameter ``build_hierarchy`` (bool):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MarginalDiscrete2D3.eval(self, pos, param=[0, 0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
@@ -3828,7 +4224,7 @@
 
     .. py:method:: mitsuba.core.MarginalDiscrete2D3.invert(self, sample, param=[0, 0, 0], active=True)
 
-        Inverse of the mapping implemented in ``sample``()
+        Inverse of the mapping implemented in ``sample()``
 
         Parameter ``sample`` (enoki.scalar.Vector2f):
             *no description available*
@@ -4194,11 +4590,15 @@
 
     .. py:method:: __init__(self, capacity=512)
 
-            Creates a new memory stream, initializing the memory buffer with a
-            capacity of ``capacity`` bytes. For best performance, set this
-            argument to the estimated size of the content that will be written to
-            the stream.
-            
+        Creates a new memory stream, initializing the memory buffer with a
+        capacity of ``capacity`` bytes. For best performance, set this
+        argument to the estimated size of the content that will be written to
+        the stream.
+
+        Parameter ``capacity`` (int):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.MemoryStream.capacity(self)
 
         Return the current capacity of the underlying memory buffer
@@ -4351,8 +4751,15 @@
 
     .. py:method:: __init__(self, initstate=9600629759793949339, initseq=15726070495360670683)
 
-            Initialize the pseudorandom number generator with the seed() function
-            
+        Initialize the pseudorandom number generator with the seed() function
+
+        Parameter ``initstate`` (int):
+            *no description available*
+
+        Parameter ``initseq`` (int):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.PCG32.advance(self, arg0)
 
         Multi-step advance function (jump-ahead, jump-back)
@@ -4658,6 +5065,13 @@
     QMC integration in Mitsuba.
 
     .. py:method:: __init__(self, max_base=8161, scramble=-1)
+
+        Parameter ``max_base`` (int):
+            *no description available*
+
+        Parameter ``scramble`` (int):
+            *no description available*
+
 
     .. py:method:: mitsuba.core.RadicalInverse.base(self, arg0)
 
@@ -4975,20 +5389,24 @@
 
     .. py:method:: __init__(self, rfilter, source_res, target_res)
 
-            Create a new Resampler object that transforms between the specified
-            resolutions
-            
-            This constructor precomputes all information needed to efficiently
-            perform the desired resampling operation. For that reason, it is most
-            efficient if it can be used over and over again (e.g. to resample the
-            equal-sized rows of a bitmap)
-            
-            Parameter ``source_res``:
-                Source resolution
-            
-            Parameter ``target_res``:
-                Desired target resolution
-            
+        Create a new Resampler object that transforms between the specified
+        resolutions
+        
+        This constructor precomputes all information needed to efficiently
+        perform the desired resampling operation. For that reason, it is most
+        efficient if it can be used over and over again (e.g. to resample the
+        equal-sized rows of a bitmap)
+        
+        Parameter ``source_res`` (int):
+            Source resolution
+        
+        Parameter ``target_res`` (int):
+            Desired target resolution
+
+        Parameter ``rfilter`` (:py:class:`mitsuba.render.ReconstructionFilter`):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.Resampler.boundary_condition(self)
 
         Return the boundary condition that should be used when looking up
@@ -5082,6 +5500,10 @@
 
     .. py:method:: __init__(self, arg0)
 
+        Parameter ``arg0`` (:py:class:`mitsuba.core.ThreadEnvironment`):
+            *no description available*
+
+
 .. py:class:: mitsuba.core.Stream
 
     Base class: :py:class:`mitsuba.core.Object`
@@ -5118,6 +5540,10 @@
             < Network byte order (an alias for big endian)
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:method:: mitsuba.core.Stream.byte_order(self)
 
@@ -5587,11 +6013,15 @@
 
     .. py:method:: __init__(self, arg0)
 
-            Create a new stream appender
-            
-            Remark:
-                This constructor is not exposed in the Python bindings
-            
+        Create a new stream appender
+        
+        Remark:
+            This constructor is not exposed in the Python bindings
+
+        Parameter ``arg0`` (str):
+            *no description available*
+
+        
     .. py:method:: mitsuba.core.StreamAppender.logs_to_file(self)
 
         Does this appender log to a file
@@ -5614,15 +6044,22 @@
     style data record
 
     Remark:
-        The python API provides an additional ``dtype``() method, which
+        The python API provides an additional ``dtype()`` method, which
         returns the NumPy ``dtype`` equivalent of a given ``Struct``
         instance.
 
     .. py:method:: __init__(self, pack=False, byte_order=ByteOrder.HostByteOrder)
 
-            Create a new ``Struct`` and indicate whether the contents are packed
-            or aligned
-            
+        Create a new ``Struct`` and indicate whether the contents are packed
+        or aligned
+
+        Parameter ``pack`` (bool):
+            *no description available*
+
+        Parameter ``byte_order`` (:py:class:`mitsuba.core.Struct.ByteOrder`):
+            *no description available*
+
+        
     .. py:class:: mitsuba.core.Struct.ByteOrder
 
         Members:
@@ -5634,6 +6071,10 @@
             HostByteOrder : 
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:class:: mitsuba.core.Struct.Field
 
@@ -5733,6 +6174,10 @@
             record, replace it by the specified default value
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:class:: mitsuba.core.Struct.Type
 
@@ -5963,6 +6408,16 @@
 
     .. py:method:: __init__(self, source, target, dither=False)
 
+        Parameter ``source`` (:py:class:`mitsuba.core.Struct`):
+            *no description available*
+
+        Parameter ``target`` (:py:class:`mitsuba.core.Struct`):
+            *no description available*
+
+        Parameter ``dither`` (bool):
+            *no description available*
+
+
     .. py:method:: mitsuba.core.StructConverter.convert(self, arg0)
 
         Parameter ``arg0`` (bytes):
@@ -5997,6 +6452,10 @@
     when a thread launches another thread.
 
     .. py:method:: __init__(self, name)
+
+        Parameter ``name`` (str):
+            *no description available*
+
 
     .. py:class:: mitsuba.core.Thread.EPriority
 
@@ -6033,6 +6492,10 @@
             
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:method:: mitsuba.core.Thread.core_affinity(self)
 
@@ -6216,6 +6679,7 @@
     Used with ScopedSetThreadEnvironment
 
     .. py:method:: __init__(self)
+
 
 .. py:class:: mitsuba.core.Transform3f
 
@@ -7535,10 +7999,20 @@
 
     .. py:method:: __init__(self, child_stream, stream_type=EStreamType.EDeflateStream, level=-1)
 
-            Creates a new compression stream with the given underlying stream.
-            This new instance takes ownership of the child stream. The child
-            stream must outlive the ZStream.
-            
+        Creates a new compression stream with the given underlying stream.
+        This new instance takes ownership of the child stream. The child
+        stream must outlive the ZStream.
+
+        Parameter ``child_stream`` (:py:class:`mitsuba.core.Stream`):
+            *no description available*
+
+        Parameter ``stream_type`` (:py:class:`mitsuba.core.ZStream.EStreamType`):
+            *no description available*
+
+        Parameter ``level`` (int):
+            *no description available*
+
+        
     .. py:class:: mitsuba.core.ZStream.EStreamType
 
         Members:
@@ -7552,6 +8026,10 @@
             < A gzip-compatible stream
 
         .. py:method:: __init__(self, arg0)
+
+            Parameter ``arg0`` (int):
+                *no description available*
+
 
     .. py:method:: mitsuba.core.ZStream.child_stream(self)
 
@@ -8370,7 +8848,7 @@
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-    This function uses sample_tea_ to return single precision floating
+    This function uses sample_tea to return single precision floating
     point numbers on the interval ``[0, 1)``
 
     Parameter ``v0``:
@@ -8393,7 +8871,7 @@
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-    This function uses sample_tea_ to return single precision floating
+    This function uses sample_tea to return single precision floating
     point numbers on the interval ``[0, 1)``
 
     Parameter ``v0`` (int):
@@ -8416,7 +8894,7 @@
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-    This function uses sample_tea_ to return double precision floating
+    This function uses sample_tea to return double precision floating
     point numbers on the interval ``[0, 1)``
 
     Parameter ``v0`` (int):
@@ -9663,6 +10141,10 @@
 
     .. py:method:: __init__(self, props)
 
+        Parameter ``props`` (:py:class:`mitsuba.core.Properties`):
+            *no description available*
+
+
     .. py:method:: mitsuba.render.BSDF.component_count(self, active=True)
 
         Number of components this BSDF is comprised of.
@@ -9681,7 +10163,7 @@
         Based on the information in the supplied query context ``ctx``, this
         method will either evaluate the entire BSDF or query individual
         components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
-        components are supported: calling ``eval``() on a perfectly specular
+        components are supported: calling ``eval()`` on a perfectly specular
         material will return zero.
 
         Note that the incident direction does not need to be explicitly
@@ -10014,6 +10496,10 @@
 
     .. py:method:: __init__(self, arg0)
 
+        Parameter ``arg0`` (int):
+            *no description available*
+
+
 .. py:class:: mitsuba.render.BSDFSample3f
 
     Data structure holding the result of BSDF sampling operations.
@@ -10243,6 +10729,10 @@
         Delta function in either position or direction
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
 
 .. py:class:: mitsuba.render.Endpoint
 
@@ -10603,6 +11093,28 @@
 
     .. py:method:: __init__(self, size, channel_count, filter=None, warn_negative=True, warn_invalid=True, border=True, normalize=False)
 
+        Parameter ``size`` (enoki.scalar.Vector2i):
+            *no description available*
+
+        Parameter ``channel_count`` (int):
+            *no description available*
+
+        Parameter ``filter`` (:py:class:`mitsuba.core.ReconstructionFilter`):
+            *no description available*
+
+        Parameter ``warn_negative`` (bool):
+            *no description available*
+
+        Parameter ``warn_invalid`` (bool):
+            *no description available*
+
+        Parameter ``border`` (bool):
+            *no description available*
+
+        Parameter ``normalize`` (bool):
+            *no description available*
+
+
     .. py:method:: mitsuba.render.ImageBlock.border_size(self)
 
         Return the border region used by the reconstruction filter
@@ -10807,6 +11319,7 @@
 
     .. py:method:: __init__(self)
 
+
     .. py:method:: mitsuba.render.Interaction3f.is_valid(self)
 
         Is the current interaction valid?
@@ -10955,6 +11468,7 @@
     Stores information related to a medium scattering interaction
 
     .. py:method:: __init__(self)
+
 
     .. py:method:: mitsuba.render.MediumInteraction3f.medium
         :property:
@@ -11344,6 +11858,10 @@
 
     .. py:method:: __init__(self, arg0)
 
+        Parameter ``arg0`` (int):
+            *no description available*
+
+
 .. py:class:: mitsuba.render.MonteCarloIntegrator
 
     Base class: :py:class:`mitsuba.render.SamplingIntegrator`
@@ -11459,6 +11977,10 @@
         
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
 
 .. py:class:: mitsuba.render.PositionSample3f
 
@@ -11670,6 +12192,10 @@
     this estimator to compute all pixels of the image.
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (:py:class:`mitsuba.core.Properties`):
+            *no description available*
+
 
     .. py:method:: mitsuba.render.SamplingIntegrator.aov_names(self)
 
@@ -12295,9 +12821,22 @@
 
     .. py:method:: __init__(self, size, offset, block_size=32, passes=1)
 
-            Create a new spiral generator for the given size, offset into a larger
-            frame, and block size
-            
+        Create a new spiral generator for the given size, offset into a larger
+        frame, and block size
+
+        Parameter ``size`` (enoki.scalar.Vector2i):
+            *no description available*
+
+        Parameter ``offset`` (enoki.scalar.Vector2i):
+            *no description available*
+
+        Parameter ``block_size`` (int):
+            *no description available*
+
+        Parameter ``passes`` (int):
+            *no description available*
+
+        
     .. py:method:: mitsuba.render.Spiral.block_count(self)
 
         Return the total number of blocks
@@ -12486,8 +13025,8 @@
 
             Determine the target medium
 
-            When ``is_medium_transition``() = ``True``, determine the medium that
-            contains the ray (``this``->p, ``d``)
+            When ``is_medium_transition()`` = ``True``, determine the medium that
+            contains the ``ray(this->p, d)``
 
             Parameter ``d`` (enoki.scalar.Vector3f):
                 *no description available*
@@ -12500,8 +13039,8 @@
             Determine the target medium based on the cosine of the angle between
             the geometric normal and a direction
 
-            Returns the exterior medium when ``cos_theta`` > 0 and the interior
-            medium when ``cos_theta`` <= 0.
+            Returns the exterior medium when ``cos_theta > 0`` and the interior
+            medium when ``cos_theta <= 0``.
 
             Parameter ``cos_theta`` (float):
                 *no description available*
@@ -12756,6 +13295,10 @@
         Importance transport
 
     .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
 
 .. py:function:: mitsuba.render.eval_reflectance(type, alpha_u, alpha_v, wi, eta)
 
@@ -13607,13 +14150,13 @@
 
     Adapter to test BSDF sampling using the Chi^2 test.
 
-    Parameters
-    ----------
-    bsdf_type: string
+    Parameter ``bsdf_type`` (string):
         Name of the BSDF plugin to instantiate.
-    extra: string
+
+    Parameter ``extra`` (string):
         Additional XML used to specify the BSDF's parameters.
-    wi: array(3,)
+
+    Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
 
 .. py:class:: mitsuba.python.chi2.ChiSquareTest(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4)
@@ -13626,34 +14169,31 @@
     distribution obtained by numerically integrating a probability density
     function over grid in the distribution's parameter domain.
 
-    Parameters
-    ----------
-
-    domain: object
+    Parameter ``domain`` (object):
        An implementation of the domain interface (``SphericalDomain``, etc.),
        which transforms between the parameter and target domain of the
        distribution
 
-    sample_func: function
+    Parameter ``sample_func`` (function):
        An importance sampling function which maps an array of uniform variates
        of size ``[sample_dim, sample_count]`` to an array of ``sample_count``
        samples on the target domain.
 
-    pdf_func: function
+    Parameter ``pdf_func`` (function):
        Function that is expected to specify the probability density of the
        samples produced by ``sample_func``. The test will try to collect
        sufficient statistical evidence to reject this hypothesis.
 
-    sample_dim: int, optional
+    Parameter ``sample_dim`` (int):
        Numer of random dimensions consumed by ``sample_func`` per sample. The
        default value is ``2``.
 
-    sample_count: int, optional
+    Parameter ``sample_count`` (int):
        Total number of samples to be generated. The test will have more
        evidence as this number tends to infinity. The default value is
        ``1000000``.
 
-    res: int, optional
+    Parameter ``res`` (int):
        Vertical resolution of the generated histograms. The horizontal
        resolution will be calculated as ``res * domain.aspect()``. The
        default value of ``101`` is intentionally an odd number to prevent
@@ -13661,13 +14201,12 @@
        separate the domain into two parts (e.g. top hemisphere of a sphere
        parameterization).
 
-    ires: int, optional
+    Parameter ``ires`` (int):
        Number of horizontal/vertical subintervals used to numerically integrate
        the probability density over each histogram cell (using the trapezoid
        rule). The default value is ``4``.
 
-    Notes
-    -----
+    Notes:
 
     The following attributes are part of the public API:
 
@@ -13705,23 +14244,17 @@
 
         Run the Chi^2 test
 
-        Parameters
-        ----------
-
-        significance_level: float
+        Parameter ``significance_level`` (float):
             Denotes the desired significance level (e.g. 0.01 for a test at the
             1% significance level)
 
-        test_count: int, optional
+        Parameter ``test_count`` (int):
             Specifies the total number of statistical tests run by the user.
             This value will be used to adjust the provided significance level
             so that the combination of the entire set of tests has the provided
             significance level.
 
-        Returns
-        -------
-
-        result: bool
+        Returns → bool:
             ``True`` upon success, ``False`` if the null hypothesis was
             rejected.
 
@@ -13739,13 +14272,13 @@
 
     Adapter to test phase function sampling using the Chi^2 test.
 
-    Parameters
-    ----------
-    phase_type: string
+    Parameter ``phase_type`` (string):
         Name of the phase function plugin to instantiate.
-    extra: string
+
+    Parameter ``extra`` (string):
         Additional XML used to specify the phase function's parameters.
-    wi: array(3,)
+
+    Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
 
 .. py:class:: mitsuba.python.chi2.PlanarDomain(bounds=None)
@@ -13817,9 +14350,9 @@
 .. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp_primal=None, spp_diff=None, sensor_index=0)
 
     Perform a differentiable of the scene `scene`. This function differs from
-    `render()` in that it splits the rendering step into two separate passes
+    ``render()`` in that it splits the rendering step into two separate passes
     that generate the primal image and gradients, respectively (assuming that
-    `unbiased=True` is specified). This is necessary to avoid correlations that
+    ``unbiased=True`` is specified). This is necessary to avoid correlations that
     would otherwise introduce bias into the resulting parameter gradients.
 
 .. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)

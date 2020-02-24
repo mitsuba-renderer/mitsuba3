@@ -22,7 +22,7 @@ from pathlib import Path
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '2.4'
 
 
 # Add any paths that contain templates here, relative to this directory.

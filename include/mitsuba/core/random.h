@@ -118,7 +118,7 @@ uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
  * \brief Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * This function uses \ref sample_tea_ to return single precision floating point
+ * This function uses \ref sample_tea to return single precision floating point
  * numbers on the interval <tt>[0, 1)</tt>
  *
  * \param v0
@@ -141,7 +141,7 @@ float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4)
  * \brief Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * This function uses \ref sample_tea_ to return double precision floating point
+ * This function uses \ref sample_tea to return double precision floating point
  * numbers on the interval <tt>[0, 1)</tt>
  *
  * \param v0

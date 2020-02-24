@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Descriptor for specifying the contents and in-memory layout
  * of a POD-style data record
  *
- * \remark The python API provides an additional \c dtype() method, which
+ * \remark The python API provides an additional ``dtype()`` method, which
  * returns the NumPy \c dtype equivalent of a given \c Struct instance.
  */
 class MTS_EXPORT_CORE Struct : public Object {

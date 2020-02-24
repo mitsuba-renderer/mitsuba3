@@ -265,10 +265,6 @@ static const char *__doc_mitsuba_BSDF_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDF_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDF_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_BSDF_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_BSDFContext =
 R"doc(Context data structure for BSDF evaluation and sampling
 
@@ -412,7 +408,7 @@ multiply by the cosine foreshortening term.
 Based on the information in the supplied query context ``ctx``, this
 method will either evaluate the entire BSDF or query individual
 components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
-components are supported: calling ``eval``() on a perfectly specular
+components are supported: calling ``eval()`` on a perfectly specular
 material will return zero.
 
 Note that the incident direction does not need to be explicitly
@@ -608,7 +604,7 @@ static const char *__doc_mitsuba_Bitmap_FileFormat_Auto =
 R"doc(Automatically detect the file format
 
 Note: this flag only applies when loading a file. In this case, the
-source stream must support the ``seek``() operation.)doc";
+source stream must support the ``seek()`` operation.)doc";
 
 static const char *__doc_mitsuba_Bitmap_FileFormat_BMP =
 R"doc(Windows Bitmap file format
@@ -1745,10 +1741,6 @@ static const char *__doc_mitsuba_Emitter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Emitter_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_EmitterFlags =
 R"doc(This list of flags is used to classify the different types of
 emitters.)doc";
@@ -1808,10 +1800,6 @@ may be set to ``nullptr`` when it is surrounded by vacuum).)doc";
 static const char *__doc_mitsuba_Endpoint_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Endpoint_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_Endpoint = R"doc(//! @})doc";
 
@@ -2108,10 +2096,6 @@ static const char *__doc_mitsuba_Film_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Film_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_Film_Film = R"doc(Create a film)doc";
 
 static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
@@ -2370,8 +2354,8 @@ unnormalized values.
 If ``enable_sampling`` is set to ``False``, the implementation will
 not construct the hierarchy needed for sample warping, which saves
 memory in case this functionality is not needed (e.g. if only the
-interpolation in ``eval``() is used). In this case, ``sample``() and
-``invert``() can still be called without triggering undefined
+interpolation in ``eval()`` is used). In this case, ``sample()`` and
+``invert()`` can still be called without triggering undefined
 behavior, but they will not return meaningful results.)doc";
 
 static const char *__doc_mitsuba_Hierarchical2D_Level = R"doc()doc";
@@ -2405,7 +2389,7 @@ static const char *__doc_mitsuba_Hierarchical2D_eval =
 R"doc(Evaluate the density at position ``pos``. The distribution is
 parameterized by ``param`` if applicable.)doc";
 
-static const char *__doc_mitsuba_Hierarchical2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+static const char *__doc_mitsuba_Hierarchical2D_invert = R"doc(Inverse of the mapping implemented in ``sample()``)doc";
 
 static const char *__doc_mitsuba_Hierarchical2D_m_levels = R"doc(MIP hierarchy over linearly interpolated patches)doc";
 
@@ -2438,10 +2422,6 @@ reconstruction filters.)doc";
 static const char *__doc_mitsuba_ImageBlock_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ImageBlock_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ImageBlock_ImageBlock =
 R"doc(Construct a new image block of the requested properties
@@ -2607,10 +2587,6 @@ static const char *__doc_mitsuba_Integrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Integrator_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Integrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Integrator_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_Integrator_cancel =
@@ -2773,7 +2749,7 @@ R"doc(Statically initialize the JIT runtime
 
 This function also does a runtime-check to ensure that the host
 processor supports all instruction sets which were selected at compile
-time. If not, the application is terminated via ``abort``().)doc";
+time. If not, the application is terminated via ``abort()``.)doc";
 
 static const char *__doc_mitsuba_Jit_static_shutdown = R"doc(Release all memory used by JIT-compiled routines)doc";
 
@@ -2937,13 +2913,13 @@ unnormalized values.
 If ``enable_sampling`` is set to ``False``, the implementation will
 not construct the cdf needed for sample warping, which saves memory in
 case this functionality is not needed (e.g. if only the interpolation
-in ``eval``() is used).)doc";
+in ``eval()`` is used).)doc";
 
 static const char *__doc_mitsuba_Marginal2D_eval =
 R"doc(Evaluate the density at position ``pos``. The distribution is
 parameterized by ``param`` if applicable.)doc";
 
-static const char *__doc_mitsuba_Marginal2D_invert = R"doc(Inverse of the mapping implemented in ``sample``())doc";
+static const char *__doc_mitsuba_Marginal2D_invert = R"doc(Inverse of the mapping implemented in ``sample()``)doc";
 
 static const char *__doc_mitsuba_Marginal2D_invert_continuous = R"doc()doc";
 
@@ -2982,10 +2958,6 @@ static const char *__doc_mitsuba_Medium = R"doc()doc";
 static const char *__doc_mitsuba_Medium_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Medium_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction = R"doc(Stores information related to a medium scattering interaction)doc";
 
@@ -3255,10 +3227,6 @@ static const char *__doc_mitsuba_Mesh = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
@@ -3576,10 +3544,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_MonteCarloIntegrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
@@ -3710,10 +3674,6 @@ static const char *__doc_mitsuba_PhaseFunction = R"doc()doc";
 static const char *__doc_mitsuba_PhaseFunction_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunction_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_PhaseFunction_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_PhaseFunction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PhaseFunctionContext = R"doc()doc";
 
@@ -3846,7 +3806,7 @@ translating the XML elements into calls to create_object().
 
 Since this kind of construction method can be tiresome when
 dynamically building scenes from Python, this class has an additional
-Python-only method ``create``(), which works as follows:
+Python-only method ``create()``, which works as follows:
 
 ```
 from mitsuba.scalar_rgb.core import *
@@ -4098,10 +4058,6 @@ rendered using the traditional OpenGL pipeline.)doc";
 static const char *__doc_mitsuba_ProjectiveCamera_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ProjectiveCamera_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_ProjectiveCamera = R"doc()doc";
 
@@ -4556,10 +4512,6 @@ static const char *__doc_mitsuba_ReconstructionFilter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_ReconstructionFilter_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ReconstructionFilter_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_ReconstructionFilter_ReconstructionFilter = R"doc(Create a new reconstruction filter)doc";
 
 static const char *__doc_mitsuba_ReconstructionFilter_border_size = R"doc(Return the block border size required when rendering with this filter)doc";
@@ -4681,10 +4633,6 @@ static const char *__doc_mitsuba_Sampler_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sampler_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
@@ -4728,10 +4676,6 @@ this estimator to compute all pixels of the image.)doc";
 static const char *__doc_mitsuba_SamplingIntegrator_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_SamplingIntegrator_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_SamplingIntegrator = R"doc(//! @})doc";
 
@@ -4816,10 +4760,6 @@ static const char *__doc_mitsuba_Scene = R"doc()doc";
 static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
 
@@ -4993,10 +4933,6 @@ static const char *__doc_mitsuba_Sensor_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Sensor_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_class = R"doc()doc";
@@ -5095,19 +5031,11 @@ static const char *__doc_mitsuba_Shape_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_ShapeKDTree_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeKDTree_ShapeKDTree =
 R"doc(Create an empty kd-tree and take build-related parameters from
@@ -5658,7 +5586,7 @@ R"doc(Descriptor for specifying the contents and in-memory layout of a POD-
 style data record
 
 Remark:
-    The python API provides an additional ``dtype``() method, which
+    The python API provides an additional ``dtype()`` method, which
     returns the NumPy ``dtype`` equivalent of a given ``Struct``
     instance.)doc";
 
@@ -6024,15 +5952,15 @@ static const char *__doc_mitsuba_SurfaceInteraction_shape = R"doc(Pointer to the
 static const char *__doc_mitsuba_SurfaceInteraction_target_medium =
 R"doc(Determine the target medium
 
-When ``is_medium_transition``() = ``True``, determine the medium that
-contains the ray (``this``->p, ``d``))doc";
+When ``is_medium_transition()`` = ``True``, determine the medium that
+contains the ``ray(this->p, d)``)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_target_medium_2 =
 R"doc(Determine the target medium based on the cosine of the angle between
 the geometric normal and a direction
 
-Returns the exterior medium when ``cos_theta`` > 0 and the interior
-medium when ``cos_theta`` <= 0.)doc";
+Returns the exterior medium when ``cos_theta > 0`` and the interior
+medium when ``cos_theta <= 0``.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
 
@@ -6608,10 +6536,6 @@ static const char *__doc_mitsuba_Texture_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Texture_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Texture_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Texture_5 = R"doc()doc";
-
 static const char *__doc_mitsuba_Texture_D65 = R"doc(Convenience method returning the standard D65 illuminant.)doc";
 
 static const char *__doc_mitsuba_Texture_Texture = R"doc()doc";
@@ -6754,7 +6678,7 @@ deal), and it also has the desired cleanup semantics: TLS entries are
 destroyed when the owning thread dies *or* when the ``ThreadLocal``
 instance is freed (whichever occurs first).
 
-The implementation is designed to make the ``get``() operation as fast
+The implementation is designed to make the ``get()`` operation as fast
 as as possible at the cost of more involved locking when creating or
 destroying threads and TLS objects. To actually instantiate a TLS
 object with a specific type, use the ThreadLocal class.
@@ -7113,10 +7037,6 @@ static const char *__doc_mitsuba_Volume = R"doc(Abstract base class for spatiall
 static const char *__doc_mitsuba_Volume_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_Volume_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeMetadata =
 R"doc(Holds metadata about a volume, e.g. when loaded from a Mitsuba binary
@@ -8602,7 +8522,7 @@ static const char *__doc_mitsuba_sample_tea_float32 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
 Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-This function uses sample_tea_ to return single precision floating
+This function uses sample_tea to return single precision floating
 point numbers on the interval ``[0, 1)``
 
 Parameter ``v0``:
@@ -8624,7 +8544,7 @@ static const char *__doc_mitsuba_sample_tea_float64 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the Tiny
 Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-This function uses sample_tea_ to return double precision floating
+This function uses sample_tea to return double precision floating
 point numbers on the interval ``[0, 1)``
 
 Parameter ``v0``:

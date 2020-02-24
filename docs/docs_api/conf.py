@@ -23,7 +23,7 @@ from pathlib import Path
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '2.4'
 
 
 # Add any paths that contain templates here, relative to this directory.
@@ -415,11 +415,6 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     global block_line_start
     global last_block_name
 
-    # Check if this block should be excluded from the API documentation
-    for pattern in excluded_api:
-        if re.fullmatch(pattern, name):
-            return
-
     # True is the documentation wasn't generated with pybind11 (e.g. python script)
     is_python_doc = name.startswith('mitsuba.python.')
 
@@ -476,12 +471,16 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             if not cached_signature == '(overloaded)':
                 # Increase indent to all lines
                 for i, l in enumerate(lines):
-                    lines[i] = '        ' + l
+                    lines[i] = '    ' + l
 
                 # Insert constructor signature
                 lines.insert(0, '.. py:method:: %s%s' %
                              ('__init__', cached_signature))
                 lines.insert(1, '')
+
+                lines.insert(len(lines)-1, '')
+                insert_params_and_return_docstring(
+                    lines, cached_parameters, len(lines)-1, indent='    ')
             else:
                 process_overload_block(lines, 'method')
 
@@ -708,10 +707,16 @@ def generate_list_api_callback(app):
                 for x in dir(obj):
                     process(f, getattr(obj, x), '%s.%s' % (lib, name), x)
         else:
-            if isclass(obj):
-                f.write('.. autoclass:: mitsuba%s.%s\n\n' % (lib, name))
-            else:
-                f.write('.. autofunction:: mitsuba%s.%s\n\n' % (lib, name))
+
+            full_name = 'mitsuba%s.%s' % (lib, name)
+
+            # Check if this block should be excluded from the API documentation
+            for pattern in excluded_api:
+                if re.fullmatch(pattern, full_name):
+                    return
+
+            f.write('.. auto%s:: %s\n\n' %
+                    ('class' if isclass(obj) else 'function', full_name))
 
     with open(list_api_filename, 'w') as f:
         print('Generate API list file: %s' % list_api_filename)

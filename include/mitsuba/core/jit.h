@@ -37,7 +37,7 @@ struct MTS_EXPORT_CORE Jit {
      *
      * This function also does a runtime-check to ensure that the host
      * processor supports all instruction sets which were selected at compile
-     * time. If not, the application is terminated via \c abort().
+     * time. If not, the application is terminated via ``abort()``.
      */
     static void static_initialization();
 
