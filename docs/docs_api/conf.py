@@ -8,6 +8,7 @@
 
 import sys
 import os
+from os.path import join, realpath, dirname
 import shlex
 import subprocess
 import guzzle_sphinx_theme
@@ -120,9 +121,22 @@ last_block_name = None
 # in the extracted RST text list.
 rst_block_range = {}
 
-# NOTE this shouldn't be needed
+"""
+Define output file names:
+- list_api.rst: RST file that will be processed when building the API documentation.
+                This file gets generated before building the documentation and contains
+                autodoc directives (e.g. autoclass::, autofunction::, ...) for
+                every classes and functions of the Mitsuba python module. Those will
+                then get parsed by the callbacks defined below and extracted to the
+                `extracted_rst_api.rst` file.
 
+- extracted_rst_api.rst: RST file into which the API documentation will be extracted.
+"""
+docs_path = realpath(join(dirname(realpath(__file__)), '..'))
+list_api_filename = join(docs_path, 'docs_api/list_api.rst')
+extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 
+# TODO this shouldn't be needed
 def sanitize_cpp_types(s):
     """ Replace C++ type with python type in signature """
     # TODO it shouldn't always be 'render'
@@ -581,15 +595,17 @@ def write_rst_file_callback(app, exception):
         f.write('\n')
 
     # Write extracted RST to file
-    with open('../docs/generated/extracted_rst_api.rst', 'w') as f:
+    with open(extracted_rst_filename, 'w') as f:
+        print('Extract API doc into: %s' % extracted_rst_filename)
         for l in extracted_rst:
             f.write(l)
 
     # Generate API Reference RST according to the api_doc_structure description
     for lib in api_doc_structure.keys():
         lib_structure = api_doc_structure[lib]
-
-        with open('../docs/generated/%s_api.rst' % lib, 'w') as f:
+        lib_api_filename = join(docs_path, 'generated/%s_api.rst' % lib)
+        with open(lib_api_filename, 'w') as f:
+            print('Generate %s API RST file: %s' % (lib, lib_api_filename))
             f.write('%s API Reference\n' % lib.title())
             f.write('=' * len(lib) + '==============\n')
             f.write('\n')
@@ -646,7 +662,8 @@ def generate_list_api_callback(app):
             else:
                 f.write('.. autofunction:: mitsuba%s.%s\n\n' % (lib, name))
 
-    with open('../docs/docs_api/list_api.rst', 'w') as f:
+    with open(list_api_filename, 'w') as f:
+        print('Generate API list file: %s' % list_api_filename)
         for lib in ['core', 'render', 'python']:
             module = importlib.import_module('mitsuba.%s' % lib)
             process(f, module, '', lib)
