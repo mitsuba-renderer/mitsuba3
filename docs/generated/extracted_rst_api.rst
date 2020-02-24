@@ -1714,16 +1714,9 @@
         Returns → None:
             *no description available*
 
-.. py:function:: mitsuba.core.DEBUG(self)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-    Returns → None:
-        *no description available*
+.. py:data:: mitsuba.core.DEBUG
+    :type: bool
+    :value: False
 
 .. py:class:: mitsuba.core.DefaultFormatter
 
@@ -3136,182 +3129,41 @@
         Returns → None:
             *no description available*
 
-.. py:function:: mitsuba.core.MTS_AUTHORS(self, arg0)
+.. py:data:: mitsuba.core.MTS_AUTHORS
+    :type: str
+    :value: Realistic Graphics Lab, EPFL
 
-    str(object='') -> str
-    str(bytes_or_buffer[, encoding[, errors]]) -> str
+.. py:data:: mitsuba.core.MTS_ENABLE_EMBREE
+    :type: bool
+    :value: False
 
-    Create a new string object from the given object. If encoding or
-    errors is specified, then the object must expose a data buffer
-    that will be decoded using the given encoding and error handler.
-    Otherwise, returns the result of object.__str__() (if defined)
-    or repr(object).
-    encoding defaults to sys.getdefaultencoding().
-    errors defaults to 'strict'.
+.. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
+    :type: bool
+    :value: False
 
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
+.. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
+    :type: int
+    :value: 31
 
-    Returns → None:
-        *no description available*
+.. py:data:: mitsuba.core.MTS_VERSION
+    :type: str
+    :value: 2.0.0
 
-.. py:function:: mitsuba.core.MTS_ENABLE_EMBREE(self, arg0)
+.. py:data:: mitsuba.core.MTS_VERSION_MAJOR
+    :type: int
+    :value: 2
 
-    bool(x) -> bool
+.. py:data:: mitsuba.core.MTS_VERSION_MINOR
+    :type: int
+    :value: 0
 
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
+.. py:data:: mitsuba.core.MTS_VERSION_PATCH
+    :type: int
+    :value: 0
 
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_ENABLE_OPTIX(self, arg0)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_FILTER_RESOLUTION(self, arg0)
-
-    int(x=0) -> integer
-    int(x, base=10) -> integer
-
-    Convert a number or string to an integer, or return 0 if no arguments
-    are given.  If x is a number, return x.__int__().  For floating point
-    numbers, this truncates towards zero.
-
-    If x is not a number or if base is given, then x must be a string,
-    bytes, or bytearray instance representing an integer literal in the
-    given base.  The literal can be preceded by '+' or '-' and be surrounded
-    by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
-    Base 0 means to interpret the base from the string as an integer literal.
-    >>> int('0b100', base=0)
-    4
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_VERSION(self, arg0)
-
-    str(object='') -> str
-    str(bytes_or_buffer[, encoding[, errors]]) -> str
-
-    Create a new string object from the given object. If encoding or
-    errors is specified, then the object must expose a data buffer
-    that will be decoded using the given encoding and error handler.
-    Otherwise, returns the result of object.__str__() (if defined)
-    or repr(object).
-    encoding defaults to sys.getdefaultencoding().
-    errors defaults to 'strict'.
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_VERSION_MAJOR(self, arg0)
-
-    int(x=0) -> integer
-    int(x, base=10) -> integer
-
-    Convert a number or string to an integer, or return 0 if no arguments
-    are given.  If x is a number, return x.__int__().  For floating point
-    numbers, this truncates towards zero.
-
-    If x is not a number or if base is given, then x must be a string,
-    bytes, or bytearray instance representing an integer literal in the
-    given base.  The literal can be preceded by '+' or '-' and be surrounded
-    by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
-    Base 0 means to interpret the base from the string as an integer literal.
-    >>> int('0b100', base=0)
-    4
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_VERSION_MINOR(self, arg0)
-
-    int(x=0) -> integer
-    int(x, base=10) -> integer
-
-    Convert a number or string to an integer, or return 0 if no arguments
-    are given.  If x is a number, return x.__int__().  For floating point
-    numbers, this truncates towards zero.
-
-    If x is not a number or if base is given, then x must be a string,
-    bytes, or bytearray instance representing an integer literal in the
-    given base.  The literal can be preceded by '+' or '-' and be surrounded
-    by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
-    Base 0 means to interpret the base from the string as an integer literal.
-    >>> int('0b100', base=0)
-    4
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_VERSION_PATCH(self, arg0)
-
-    int(x=0) -> integer
-    int(x, base=10) -> integer
-
-    Convert a number or string to an integer, or return 0 if no arguments
-    are given.  If x is a number, return x.__int__().  For floating point
-    numbers, this truncates towards zero.
-
-    If x is not a number or if base is given, then x must be a string,
-    bytes, or bytearray instance representing an integer literal in the
-    given base.  The literal can be preceded by '+' or '-' and be surrounded
-    by whitespace.  The base defaults to 10.  Valid bases are 0 and 2-36.
-    Base 0 means to interpret the base from the string as an integer literal.
-    >>> int('0b100', base=0)
-    4
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
-
-.. py:function:: mitsuba.core.MTS_YEAR(self, arg0)
-
-    str(object='') -> str
-    str(bytes_or_buffer[, encoding[, errors]]) -> str
-
-    Create a new string object from the given object. If encoding or
-    errors is specified, then the object must expose a data buffer
-    that will be decoded using the given encoding and error handler.
-    Otherwise, returns the result of object.__str__() (if defined)
-    or repr(object).
-    encoding defaults to sys.getdefaultencoding().
-    errors defaults to 'strict'.
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.LogLevel`):
-        *no description available*
-
-    Returns → None:
-        *no description available*
+.. py:data:: mitsuba.core.MTS_YEAR
+    :type: str
+    :value: 2019
 
 .. py:class:: mitsuba.core.MarginalContinuous2D0
 
@@ -6728,21 +6580,13 @@
 
 .. py:class:: mitsuba.core.TraversalCallback
 
-.. py:function:: mitsuba.core.USE_EMBREE(self)
+.. py:data:: mitsuba.core.USE_EMBREE
+    :type: bool
+    :value: False
 
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-.. py:function:: mitsuba.core.USE_OPTIX(self)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
+.. py:data:: mitsuba.core.USE_OPTIX
+    :type: bool
+    :value: False
 
 .. py:class:: mitsuba.core.Vector0f
 
@@ -7716,7 +7560,7 @@
         Returns → object:
             *no description available*
 
-.. py:function:: mitsuba.core.cast_object(self)
+.. py:function:: mitsuba.core.cast_object
 
     Capsule objects let you wrap a C "void *" pointer in a Python
     object.  They're a way of passing data through the Python interpreter
@@ -7727,10 +7571,7 @@
     to other extension modules, so that extension modules can use the
     Python import mechanism to link to one another.
 
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.casters(self)
+.. py:function:: mitsuba.core.casters
 
     Capsule objects let you wrap a C "void *" pointer in a Python
     object.  They're a way of passing data through the Python interpreter
@@ -7740,9 +7581,6 @@
     They provide a way for an extension module to export a C interface
     to other extension modules, so that extension modules can use the
     Python import mechanism to link to one another.
-
-    Returns → object:
-        *no description available*
 
 .. py:function:: mitsuba.core.cie1931_xyz(wavelength)
 
@@ -7984,24 +7822,9 @@
         Returns → :py:class:`mitsuba.core.filesystem.path`:
             *no description available*
 
-.. py:function:: mitsuba.core.filesystem.preferred_separator(self, arg0)
-
-    str(object='') -> str
-    str(bytes_or_buffer[, encoding[, errors]]) -> str
-
-    Create a new string object from the given object. If encoding or
-    errors is specified, then the object must expose a data buffer
-    that will be decoded using the given encoding and error handler.
-    Otherwise, returns the result of object.__str__() (if defined)
-    or repr(object).
-    encoding defaults to sys.getdefaultencoding().
-    errors defaults to 'strict'.
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.filesystem.path`):
-        *no description available*
-
-    Returns → :py:class:`mitsuba.core.filesystem.path`:
-        *no description available*
+.. py:data:: mitsuba.core.filesystem.preferred_separator
+    :type: str
+    :value: /
 
 .. py:function:: mitsuba.core.filesystem.remove(arg0)
 
@@ -8029,27 +7852,9 @@
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.core.float_dtype(arg0, arg1)
-
-    str(object='') -> str
-    str(bytes_or_buffer[, encoding[, errors]]) -> str
-
-    Create a new string object from the given object. If encoding or
-    errors is specified, then the object must expose a data buffer
-    that will be decoded using the given encoding and error handler.
-    Otherwise, returns the result of object.__str__() (if defined)
-    or repr(object).
-    encoding defaults to sys.getdefaultencoding().
-    errors defaults to 'strict'.
-
-    Parameter ``arg0`` (:py:class:`mitsuba.core.filesystem.path`):
-        *no description available*
-
-    Parameter ``arg1`` (int):
-        *no description available*
-
-    Returns → bool:
-        *no description available*
+.. py:data:: mitsuba.core.float_dtype
+    :type: str
+    :value: f
 
 .. py:function:: mitsuba.core.get_property(cpp_type, ptr, parent)
 
@@ -8065,427 +7870,97 @@
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.core.is_monochromatic(cpp_type, ptr, parent)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.is_polarized(cpp_type, ptr, parent)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.is_rgb(cpp_type, ptr, parent)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.is_spectral(cpp_type, ptr, parent)
-
-    bool(x) -> bool
-
-    Returns True when the argument x is true, False otherwise.
-    The builtins True and False are the only two instances of the class bool.
-    The class bool is a subclass of the class int, and cannot be subclassed.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.E(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.Epsilon(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.Infinity(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.InvFourPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.InvPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.InvSqrtPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.InvSqrtTwo(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.InvSqrtTwoPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.InvTwoPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.Max(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.Min(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.OneMinusEpsilon(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.Pi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.RayEpsilon(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.RecipOverflow(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.ShadowEpsilon(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.SqrtPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.SqrtTwo(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
-
-.. py:function:: mitsuba.core.math.SqrtTwoPi(cpp_type, ptr, parent)
-
-    float(x) -> floating point number
-
-    Convert a string or number to a floating point number, if possible.
-
-    Parameter ``cpp_type`` (capsule):
-        *no description available*
-
-    Parameter ``ptr`` (capsule):
-        *no description available*
-
-    Parameter ``parent`` (handle):
-        *no description available*
-
-    Returns → object:
-        *no description available*
+.. py:data:: mitsuba.core.is_monochromatic
+    :type: bool
+    :value: False
+
+.. py:data:: mitsuba.core.is_polarized
+    :type: bool
+    :value: False
+
+.. py:data:: mitsuba.core.is_rgb
+    :type: bool
+    :value: True
+
+.. py:data:: mitsuba.core.is_spectral
+    :type: bool
+    :value: False
+
+.. py:data:: mitsuba.core.math.E
+    :type: float
+    :value: 2.7182817459106445
+
+.. py:data:: mitsuba.core.math.Epsilon
+    :type: float
+    :value: 5.960464477539063e-08
+
+.. py:data:: mitsuba.core.math.Infinity
+    :type: float
+    :value: inf
+
+.. py:data:: mitsuba.core.math.InvFourPi
+    :type: float
+    :value: 0.07957746833562851
+
+.. py:data:: mitsuba.core.math.InvPi
+    :type: float
+    :value: 0.31830987334251404
+
+.. py:data:: mitsuba.core.math.InvSqrtPi
+    :type: float
+    :value: 0.564189612865448
+
+.. py:data:: mitsuba.core.math.InvSqrtTwo
+    :type: float
+    :value: 0.7071067690849304
+
+.. py:data:: mitsuba.core.math.InvSqrtTwoPi
+    :type: float
+    :value: 0.3989422917366028
+
+.. py:data:: mitsuba.core.math.InvTwoPi
+    :type: float
+    :value: 0.15915493667125702
+
+.. py:data:: mitsuba.core.math.Max
+    :type: float
+    :value: 3.4028234663852886e+38
+
+.. py:data:: mitsuba.core.math.Min
+    :type: float
+    :value: 1.1754943508222875e-38
+
+.. py:data:: mitsuba.core.math.OneMinusEpsilon
+    :type: float
+    :value: 0.9999999403953552
+
+.. py:data:: mitsuba.core.math.Pi
+    :type: float
+    :value: 3.1415927410125732
+
+.. py:data:: mitsuba.core.math.RayEpsilon
+    :type: float
+    :value: 8.940696716308594e-05
+
+.. py:data:: mitsuba.core.math.RecipOverflow
+    :type: float
+    :value: 2.938735877055719e-39
+
+.. py:data:: mitsuba.core.math.ShadowEpsilon
+    :type: float
+    :value: 0.0008940696716308594
+
+.. py:data:: mitsuba.core.math.SqrtPi
+    :type: float
+    :value: 1.7724539041519165
+
+.. py:data:: mitsuba.core.math.SqrtTwo
+    :type: float
+    :value: 1.4142135381698608
+
+.. py:data:: mitsuba.core.math.SqrtTwoPi
+    :type: float
+    :value: 2.5066282749176025
 
 .. py:function:: mitsuba.core.math.chi2(arg0, arg1, arg2)
 
@@ -8888,8 +8363,9 @@
         Returns → Tuple[enoki.scalar.Vector3f, enoki.scalar.Vector3f]:
             *no description available*
 
-.. py:function:: mitsuba.core.sample_tea_float(overloaded)
+.. py:function:: mitsuba.core.sample_tea_float
 
+    sample_tea_float32(v0: int, v1: int, rounds: int = 4) -> float
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -14126,4 +13602,269 @@
 
     Returns → float:
         *no description available*
+
+.. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
+
+    Adapter to test BSDF sampling using the Chi^2 test.
+
+    Parameters
+    ----------
+    bsdf_type: string
+        Name of the BSDF plugin to instantiate.
+    extra: string
+        Additional XML used to specify the BSDF's parameters.
+    wi: array(3,)
+        Incoming direction, in local coordinates.
+
+.. py:class:: mitsuba.python.chi2.ChiSquareTest(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4)(domain, sample_func, pdf_func, sample_dim=2, sample_count=1000000, res=101, ires=4)
+
+    Implements Pearson's chi-square test for goodness of fit of a distribution
+    to a known reference distribution.
+
+    The implementation here specifically compares a Monte Carlo sampling
+    strategy on a 2D (or lower dimensional) space against a reference
+    distribution obtained by numerically integrating a probability density
+    function over grid in the distribution's parameter domain.
+
+    Parameters
+    ----------
+
+    domain: object
+       An implementation of the domain interface (``SphericalDomain``, etc.),
+       which transforms between the parameter and target domain of the
+       distribution
+
+    sample_func: function
+       An importance sampling function which maps an array of uniform variates
+       of size ``[sample_dim, sample_count]`` to an array of ``sample_count``
+       samples on the target domain.
+
+    pdf_func: function
+       Function that is expected to specify the probability density of the
+       samples produced by ``sample_func``. The test will try to collect
+       sufficient statistical evidence to reject this hypothesis.
+
+    sample_dim: int, optional
+       Numer of random dimensions consumed by ``sample_func`` per sample. The
+       default value is ``2``.
+
+    sample_count: int, optional
+       Total number of samples to be generated. The test will have more
+       evidence as this number tends to infinity. The default value is
+       ``1000000``.
+
+    res: int, optional
+       Vertical resolution of the generated histograms. The horizontal
+       resolution will be calculated as ``res * domain.aspect()``. The
+       default value of ``101`` is intentionally an odd number to prevent
+       issues with floating point precision at sharp boundaries that may
+       separate the domain into two parts (e.g. top hemisphere of a sphere
+       parameterization).
+
+    ires: int, optional
+       Number of horizontal/vertical subintervals used to numerically integrate
+       the probability density over each histogram cell (using the trapezoid
+       rule). The default value is ``4``.
+
+    Notes
+    -----
+
+    The following attributes are part of the public API:
+
+    messages: string
+        The implementation may generate a number of messages while running the
+        test, which can be retrieved via this attribute.
+
+    histogram: array
+        The histogram array is populated by the ``tabulate_histogram()`` method
+        and stored in this attribute.
+
+    pdf: array
+        The probability density function array is populated by the
+        ``tabulate_pdf()`` method and stored in this attribute.
+
+    p_value: float
+        The p-value of the test is computed in the ``run()`` method and stored
+        in this attribute.
+
+    .. py:method:: mitsuba.python.chi2.ChiSquareTest.tabulate_histogram()
+
+        Invoke the provided sampling strategy many times and generate a
+        histogram in the parameter domain. If ``sample_func`` returns a tuple
+        ``(positions, weights)`` instead of just positions, the samples are
+        considered to be weighted.
+
+    .. py:method:: mitsuba.python.chi2.ChiSquareTest.tabulate_pdf()
+
+        Numerically integrate the provided probability density function over
+        each cell to generate an array resembling the histogram computed by
+        ``tabulate_histogram()``. The function uses the trapezoid rule over
+        intervals discretized into ``self.ires`` separate function evaluations.
+
+    .. py:method:: mitsuba.python.chi2.ChiSquareTest.run(significance_level=0.01, test_count=1, quiet=False)
+
+        Run the Chi^2 test
+
+        Parameters
+        ----------
+
+        significance_level: float
+            Denotes the desired significance level (e.g. 0.01 for a test at the
+            1% significance level)
+
+        test_count: int, optional
+            Specifies the total number of statistical tests run by the user.
+            This value will be used to adjust the provided significance level
+            so that the combination of the entire set of tests has the provided
+            significance level.
+
+        Returns
+        -------
+
+        result: bool
+            ``True`` upon success, ``False`` if the null hypothesis was
+            rejected.
+
+
+.. py:class:: mitsuba.python.chi2.LineDomain(bounds=[-1.0, 1.0])(bounds=[-1.0, 1.0])
+
+    The identity map on the line.
+
+.. py:function:: mitsuba.python.chi2.MicrofacetAdapter(md_type, alpha, sample_visible=False)
+
+    Adapter for testing microfacet distribution sampling techniques
+    (separately from BSDF models, which are also tested)
+
+.. py:function:: mitsuba.python.chi2.PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1])
+
+    Adapter to test phase function sampling using the Chi^2 test.
+
+    Parameters
+    ----------
+    phase_type: string
+        Name of the phase function plugin to instantiate.
+    extra: string
+        Additional XML used to specify the phase function's parameters.
+    wi: array(3,)
+        Incoming direction, in local coordinates.
+
+.. py:class:: mitsuba.python.chi2.PlanarDomain(bounds=None)(bounds=None)
+
+    The identity map on the plane
+
+.. py:function:: mitsuba.python.chi2.SpectrumAdapter(value)
+
+    Adapter which permits testing 1D spectral power distributions using the
+    Chi^2 test.
+
+.. py:class:: mitsuba.python.chi2.SphericalDomain
+
+    Maps between the unit sphere and a [cos(theta), phi] parameterization.
+
+.. py:function:: mitsuba.python.util.traverse(node)
+
+    Traverse a node of Mitsuba's scene graph and return a dictionary-like
+    object that can be used to read and write associated scene parameters.
+
+.. py:function:: mitsuba.python.math.rlgamma(a, x)
+
+    Regularized lower incomplete gamma function based on CEPHES
+
+.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+
+    Implements the optimization technique presented in
+
+    "Adam: A Method for Stochastic Optimization"
+    Diederik P. Kingma and Jimmy Lei Ba
+    ICLR 2015
+
+    The method has the following parameters:
+
+    ``lr``: learning rate
+
+    ``beta_1``: controls the exponential averaging of first
+    order gradient moments
+
+    ``beta_2``: controls the exponential averaging of second
+    order gradient moments
+
+.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)(params, lr)
+
+    Base class of optimizers (SGD, Adam)
+
+    .. py:method:: mitsuba.python.autodiff.Optimizer.disable_gradients()
+
+        Temporarily disable the generation of gradients.
+
+.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)(params, lr, momentum=0)
+
+    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+
+    Implements basic stochastic gradient descent with a fixed learning rate
+    and, optionally, momentum (0.9 is a typical parameter value).
+
+    .. py:method:: mitsuba.python.autodiff.SGD.step()
+
+        Take a gradient step 
+
+.. py:function:: mitsuba.python.autodiff.render(scene, spp=None, sensor_index=0)
+
+    Render the specified Mitsuba scene and return a floating point
+    array containing RGB values and AOVs, if applicable
+
+.. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp_primal=None, spp_diff=None, sensor_index=0)
+
+    Perform a differentiable of the scene `scene`. This function differs from
+    `render()` in that it splits the rendering step into two separate passes
+    that generate the primal image and gradients, respectively (assuming that
+    `unbiased=True` is specified). This is necessary to avoid correlations that
+    would otherwise introduce bias into the resulting parameter gradients.
+
+.. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)
+
+.. py:function:: mitsuba.python.autodiff.write_bitmap(filename, data, resolution)
+
+    Write the linearized RGB image in `data` to a
+    PNG/EXR/.. file with resolution `resolution`.
+
+.. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
+
+    Function decorator that adds the mitsuba project root
+    to the FileResolver's search path. This is useful in particular
+    for tests that e.g. load scenes, and need to specify paths to resources.
+
+    The file resolver is restored to its previous state once the test's
+    execution has finished.
+
+.. py:function:: mitsuba.python.test.util.getframeinfo(frame, context=1)
+
+    Get information about a frame or traceback object.
+
+    A tuple of five things is returned: the filename, the line number of
+    the current line, the function name, a list of lines of context from
+    the source code, and the index of the current line within that list.
+    The optional second argument specifies the number of lines of context
+    to return, which are centered around the current line.
+
+.. py:function:: mitsuba.python.test.util.make_tmpfile(request, tmpdir_factory)
+
+.. py:function:: mitsuba.python.test.util.stack(context=1)
+
+    Return a list of records for the stack above the caller's frame.
+
+.. py:function:: mitsuba.python.test.util.tmpfile(request, tmpdir_factory)
+
+    Fixture to create a temporary file
+
+.. py:function:: mitsuba.python.test.util.wraps(wrapped, assigned=('__module__', '__name__', '__qualname__', '__doc__', '__annotations__'), updated=('__dict__',))
+
+    Decorator factory to apply update_wrapper() to a wrapper function
+
+    Returns a decorator that invokes update_wrapper() with the decorated
+    function as the wrapper argument and the arguments to wraps() as the
+    remaining arguments. Default arguments are as for update_wrapper().
+    This is a convenience function to simplify applying partial() to
+    update_wrapper().
 

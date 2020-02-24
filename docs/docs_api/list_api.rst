@@ -682,3 +682,71 @@
 
 .. autofunction:: mitsuba.render.srgb_model_mean
 
+.. autofunction:: mitsuba.python.chi2.BSDFAdapter
+
+.. autoclass:: mitsuba.python.chi2.ChiSquareTest
+
+.. autoclass:: mitsuba.python.chi2.LineDomain
+
+.. autofunction:: mitsuba.python.chi2.MicrofacetAdapter
+
+.. autofunction:: mitsuba.python.chi2.PhaseFunctionAdapter
+
+.. autoclass:: mitsuba.python.chi2.PlanarDomain
+
+.. autofunction:: mitsuba.python.chi2.SpectrumAdapter
+
+.. autoclass:: mitsuba.python.chi2.SphericalDomain
+
+.. autofunction:: mitsuba.python.util.traverse
+
+.. autofunction:: mitsuba.python.math.rlgamma
+
+.. autoclass:: mitsuba.python.autodiff.Adam
+
+.. autoclass:: mitsuba.python.autodiff.Optimizer
+
+.. autoclass:: mitsuba.python.autodiff.SGD
+
+.. autofunction:: mitsuba.python.autodiff.contextmanager
+
+.. autofunction:: mitsuba.python.autodiff.render
+
+.. autofunction:: mitsuba.python.autodiff.render_diff
+
+.. autofunction:: mitsuba.python.autodiff.render_torch
+
+.. autofunction:: mitsuba.python.autodiff.write_bitmap
+
+.. autofunction:: mitsuba.python.test.scenes.SCENES
+
+.. autofunction:: mitsuba.python.test.scenes.box_scene
+
+.. autofunction:: mitsuba.python.test.scenes.empty_scene
+
+.. autofunction:: mitsuba.python.test.scenes.fresolver_append_path
+
+.. autofunction:: mitsuba.python.test.scenes.make_box_scene
+
+.. autofunction:: mitsuba.python.test.scenes.make_empty_scene
+
+.. autofunction:: mitsuba.python.test.scenes.make_museum_plane_scene
+
+.. autofunction:: mitsuba.python.test.scenes.make_teapot_scene
+
+.. autofunction:: mitsuba.python.test.scenes.museum_plane_scene
+
+.. autofunction:: mitsuba.python.test.scenes.teapot_scene
+
+.. autofunction:: mitsuba.python.test.util.fresolver_append_path
+
+.. autofunction:: mitsuba.python.test.util.getframeinfo
+
+.. autofunction:: mitsuba.python.test.util.make_tmpfile
+
+.. autofunction:: mitsuba.python.test.util.stack
+
+.. autofunction:: mitsuba.python.test.util.tmpfile
+
+.. autofunction:: mitsuba.python.test.util.wraps
+

@@ -89,6 +89,7 @@ autodoc_member_order = 'bysource'
 # Set Mitsuba variant for autodoc
 import mitsuba
 mitsuba.set_variant('scalar_rgb')
+import mitsuba.python
 
 # -- Event callback for processing the docstring ----------------------------------------------
 
@@ -136,6 +137,54 @@ docs_path = realpath(join(dirname(realpath(__file__)), '..'))
 list_api_filename = join(docs_path, 'docs_api/list_api.rst')
 extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 
+
+# List of patterns defining element that shouldn't be added to the API documentation
+excluded_api = [r'mitsuba.python.test.scenes.([\w]+)', 'mitsuba.python.autodiff.contextmanager']
+
+# Define the structure of the generated reference pages for the different libraries.
+api_doc_structure = {
+    'core': {
+        'Object': ['mitsuba.core.Object'],
+        'Properties': ['mitsuba.core.Properties'],
+        'Bitmap': ['mitsuba.core.Bitmap'],
+        'XML': [r'mitsuba.core.xml.([\w]+)'],
+        'Warp': [r'mitsuba.core.warp.([\w]+)'],
+        'Distributions': [r'mitsuba.core.([\w]+)Distribution',
+                          r'mitsuba.core.Hierarchical2D\d',
+                          r'mitsuba.core.Marginal([\w]+)2D\d'],
+        'Math': [r'mitsuba.core.math.([\w]+)', r'mitsuba.core.spline.([\w]+)'],
+        'Log': [r'mitsuba.core.Log([\w]+)', 'mitsuba.core.Appender', ],
+        'Types': [r'mitsuba.core.Scalar([\w]+)',
+                  r'mitsuba.core.Vector([\w]+)',
+                  r'mitsuba.core.Point([\w]+)',
+                  r'mitsuba.core.Matrix([\w]+)',
+                  r'mitsuba.core.Bounding([\w]+)',
+                  r'mitsuba.core.Transform([\w]+)',
+                  r'mitsuba.core.AnimatedTransform'],
+    },
+    'render': {
+        'BSDF': [r'mitsuba.render.BSDF([\w]+|)', 'mitsuba.render.TransportMode',
+                 r'mitsuba.render.Microfacet([\w]+|)'],
+        'Endpoint': ['mitsuba.render.Endpoint'],
+        'Emitter': [r'mitsuba.render.Emitter([\w]+|)'],
+        'Sensor': ['mitsuba.render.Sensor', 'mitsuba.render.ProjectiveCamera'],
+        'Medium': ['mitsuba.render.Medium', r'mitsuba.render.PhaseFunction([\w]+|)'],
+        'Shape': ['mitsuba.render.Shape', 'mitsuba.render.Mesh'],
+        'Texture': [],
+        'Film': ['mitsuba.render.Film'],
+        'Sampler': ['mitsuba.render.Sampler'],
+        'Scene': ['mitsuba.render.Scene', 'mitsuba.render.ShapeKDTree'],
+        'Record': ['mitsuba.render.PositionSample3f', 'mitsuba.render.DirectionSample3f',
+                   r'mitsuba.render.([\w]+)Interaction3f'],
+        'Polarization': [r'mitsuba.render.mueller.([\w]+)'],
+    },
+    'python': {
+        'Chi2': [r'mitsuba.python.chi2.([\w]+)'],
+        'Autodiff': [r'mitsuba.python.autodiff.([\w]+)'],
+    }
+}
+
+
 # TODO this shouldn't be needed
 def sanitize_cpp_types(s):
     """ Replace C++ type with python type in signature """
@@ -143,7 +192,7 @@ def sanitize_cpp_types(s):
     return re.sub(r'mitsuba::([a-zA-Z\_0-9]+)[a-zA-Z\_0-9<, :>]+>', r'mitsuba.render.\1', s)
 
 
-def parse_signature_arguments(signature):
+def parse_signature_args(signature):
     """This function parses a signature string of the form:
            "(arg0: type0, ..., arg4: type4=default4)"
        It creates a list of parameters [[name, type, default], ...] and
@@ -208,7 +257,7 @@ def parse_overload_signature(signature):
        docstring and not from the process_signature_callback). The signature
        as the following form:
           "1. name(arg0: type0, ..., arg4: type4=default4) -> return_type"
-       This function generate the same output as the parse_signature_arguments() function.
+       This function generate the same output as the parse_signature_args() function.
     """
     signature = sanitize_cpp_types(signature)
 
@@ -225,7 +274,7 @@ def parse_overload_signature(signature):
         signature, return_type = tmp
 
     # Parse signature arguments
-    new_signature, parameters = parse_signature_arguments(' %s ' % signature)
+    new_signature, parameters = parse_signature_args(' %s ' % signature)
 
     # Add return type to the parameter list (with name '__return')
     if return_type and not return_type == 'None':
@@ -270,11 +319,15 @@ def insert_params_and_return_docstring(lines, params, next_idx, indent=''):
 
 
 def process_overload_block(lines, what):
-    """When a function is overloaded, the different flavor of that function are
+    """When a function is overloaded, the different flavors of that function are
        enumerate in the docstring itself. This function parses that docstring to
        create as many `py:function::` directive in order to have a similar doc
        style as the other regular functions.
     """
+    # Sanity check
+    if len(lines) == 0:
+        return
+
     # Remove first line (contains 'Overloaded function.')
     lines.pop(0)
 
@@ -320,27 +373,31 @@ def process_signature_callback(app, what, name, obj, options, signature, return_
     global cached_parameters
     global cached_signature
 
-    if signature and what == 'class':
-        # For classes we don't display any signature in the class headers
+    if name.startswith('mitsuba.python.'):
+        # Signatures from python scripts do not contain any argument types or
+        # return type information. So we don't need to do anything.
+        cached_signature = signature
+        cached_parameters = []
+    else:
+        if signature and what == 'class':
+            # For classes we don't display any signature in the class headers
 
-        # Parse the signature string
-        cached_signature, cached_parameters = parse_signature_arguments(
-            signature)
-        signature = ''
+            # Parse the signature string
+            cached_signature, cached_parameters = parse_signature_args(signature)
 
-    elif signature and what in ['method', 'function']:
-        # For methods, parameter types will be add to the docstring
+        elif signature and what in ['method', 'function']:
+            # For methods and functions, parameter types will be added to the docstring.
 
-        # Parse the signature string
-        cached_signature, cached_parameters = parse_signature_arguments(
-            signature)
-        # Display modified signature in the method header
-        signature = cached_signature
+            # Parse the signature string
+            cached_signature, cached_parameters = parse_signature_args(signature)
 
-        # Return type (if any) will also be added to the docstring
-        if return_annotation:
-            return_annotation = sanitize_cpp_types(return_annotation)
-            cached_parameters.append(['__return', return_annotation, None])
+            # Return type (if any) will also be added to the docstring
+            if return_annotation:
+                return_annotation = sanitize_cpp_types(return_annotation)
+                cached_parameters.append(['__return', return_annotation, None])
+        else:
+            cached_signature = ''
+            cached_parameters = []
 
     return signature, None
 
@@ -358,6 +415,17 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     global block_line_start
     global last_block_name
 
+    # Check if this block should be excluded from the API documentation
+    for pattern in excluded_api:
+        if re.fullmatch(pattern, name):
+            return
+
+    # True is the documentation wasn't generated with pybind11 (e.g. python script)
+    is_python_doc = name.startswith('mitsuba.python.')
+
+    if type(obj) in (int, float, bool, str):
+        what = 'data'
+
     #----------------------------
     # Handle classes
 
@@ -368,7 +436,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         #      will enumerate the constructor signature (similar to overloaded functions)
 
         if not last_class_name == name:  # First call (class description)
-            # Add information about the base class if it is a mitsuba type
+            # Add information about the base class if it is a Mitsuba type
             if len(obj.__bases__) > 0:
                 full_base_name = str(obj.__bases__[0])[8:-2]
                 if full_base_name.startswith('mitsuba'):
@@ -471,16 +539,13 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     #----------------------------
     # Extract RST
 
-    doc_indent = '    '
-    directive_indent = ''
-
     # Check whether this class is defined within another like (e.g. Bitmap.FileFormat),
     # in which case the indentation will be adjusted.
     local_class = what == 'class' and re.fullmatch(
         r'%s\.[\w]+' % last_block_name, name)
 
     # Check whether to start a new block
-    if what in ['function', 'class', 'module'] and not local_class and not last_class_name == name:
+    if what in ['function', 'class', 'module', 'data'] and not local_class and not last_class_name == name:
         # Register previous block
         if last_block_name:
             rst_block_range[last_block_name] = [
@@ -495,6 +560,8 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         return
 
     # Adjust the indentation
+    doc_indent = '    '
+    directive_indent = ''
     if what in ['method', 'attribute', 'property'] or local_class:
         doc_indent += '    '
         directive_indent += '    '
@@ -509,8 +576,12 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         directive = '%s.. py:%s:: %s' % (
             directive_indent, directive_type, name)
 
-        # Only display signature for methods
-        if what in ['method', 'function']:
+        # Display signature for methods and functions (and classes for python doc)
+        if what in ['method', 'function'] or (cached_signature and is_python_doc and what == 'class'):
+            directive += cached_signature
+
+        # Display signature for classes for python doc
+        if what == 'class' and is_python_doc and cached_signature:
             directive += cached_signature
 
         extracted_rst.append(directive + '\n')
@@ -519,10 +590,15 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         if what == 'property':
             extracted_rst.append(doc_indent + ':property:\n')
 
+        # 'data' fields get extra arguments
+        if what == 'data':
+            extracted_rst.append(doc_indent + ':type: %s\n' % str(type(obj))[8:-2])
+            extracted_rst.append(doc_indent + ':value: %s\n' % str(obj))
+
         extracted_rst.append('\n')
 
     # Extract the docstring (if not a module)
-    if not what == 'module':
+    if not what in ['module', 'data']:
         for l in lines:
             if l == '':
                 extracted_rst.append('\n')
@@ -531,49 +607,6 @@ def process_docstring_callback(app, what, name, obj, options, lines):
 
     # Keep track of last class name (to distingush the two callbacks)
     last_class_name = name
-
-
-# TODO add list of members to skip (like mitsuba.core.Vector2f)
-
-# Define the structure of the generated reference pages for the different libraries.
-api_doc_structure = {
-    'core': {
-        'Object': ['mitsuba.core.Object'],
-        'Properties': ['mitsuba.core.Properties'],
-        'Bitmap': ['mitsuba.core.Bitmap'],
-        'XML': [r'mitsuba.core.xml.([\w]+)'],
-        'Warp': [r'mitsuba.core.warp.([\w]+)'],
-        'Distributions': [r'mitsuba.core.([\w]+)Distribution',
-                          r'mitsuba.core.Hierarchical2D\d',
-                          r'mitsuba.core.Marginal([\w]+)2D\d'],
-        'Spline': [r'mitsuba.core.spline.([\w]+)'],
-        'Math': [r'mitsuba.core.math.([\w]+)'],
-        'Types': [r'mitsuba.core.Scalar([\w]+)',
-                  r'mitsuba.core.Vector([\w]+)',
-                  r'mitsuba.core.Point([\w]+)',
-                  r'mitsuba.core.Matrix([\w]+)',
-                  r'mitsuba.core.Bounding([\w]+)',
-                  r'mitsuba.core.Transform([\w]+)',
-                  r'mitsuba.core.AnimatedTransform'],
-    },
-    'render': {
-        'BSDF': [r'mitsuba.render.BSDF([\w]+|)', 'mitsuba.render.TransportMode',
-                 r'mitsuba.render.Microfacet([\w]+|)'],
-        'Endpoint': ['mitsuba.render.Endpoint'],
-        'Emitter': [r'mitsuba.render.Emitter([\w]+|)'],
-        'Sensor': ['mitsuba.render.Sensor', 'mitsuba.render.ProjectiveCamera'],
-        'Medium': ['mitsuba.render.Medium', r'mitsuba.render.PhaseFunction([\w]+|)'],
-        'Shape': ['mitsuba.render.Shape', 'mitsuba.render.Mesh'],
-        'Texture': [],
-        'Film': ['mitsuba.render.Film'],
-        'Sampler': ['mitsuba.render.Sampler'],
-        'Scene': ['mitsuba.render.Scene', 'mitsuba.render.ShapeKDTree'],
-        'Record': ['mitsuba.render.PositionSample3f', 'mitsuba.render.DirectionSample3f',
-                   r'mitsuba.render.([\w]+)Interaction3f'],
-        'Polarization': [r'mitsuba.render.mueller.([\w]+)'],
-    },
-    'python': {}  # TODO
-}
 
 
 def write_rst_file_callback(app, exception):
@@ -654,8 +687,26 @@ def generate_list_api_callback(app):
             return
 
         if ismodule(obj):
-            for x in dir(obj):
-                process(f, getattr(obj, x), '%s.%s' % (lib, name), x)
+            # 'python' is a package, so it needs to be treated differently
+            if name == 'python':
+                # Iterate recursively on all the python files
+                for root, dirs, files in os.walk(obj.__path__[0]):
+                    root = root.replace(obj.__path__[0], '').replace('/', '.')
+                    if root.endswith('__pycache__'):
+                        continue
+                    for f_name in files:
+                        if not f_name == '__init__.py' and f_name.endswith('.py'):
+                            module = importlib.import_module(
+                                'mitsuba.python%s.%s' % (root, f_name[:-3]))
+                            for x in dir(module):
+                                obj2 = getattr(module, x)
+                                # Skip the imported modules (e.g. enoki)
+                                if not ismodule(obj2):
+                                    process(f, obj2, '.python%s.%s' %
+                                            (root, f_name[:-3]), x)
+            else:
+                for x in dir(obj):
+                    process(f, getattr(obj, x), '%s.%s' % (lib, name), x)
         else:
             if isclass(obj):
                 f.write('.. autoclass:: mitsuba%s.%s\n\n' % (lib, name))
