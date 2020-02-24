@@ -2,8 +2,8 @@ Rendering variants
 ==================
 
 Mitsuba 2 is a *retargetable* rendering system: it can be run in different rendering
-modes that either change the representation of color (enabling spectral or polarized)
-rendering or even the basic arithmetic type used by the system (lifting the system
+modes that either change the representation of color (enabling spectral or polarized
+rendering) or even the basic arithmetic type used by the system (lifting the system
 to a vectorized renderer or enabling automatic differentiation).
 All of this is achieved with a single codebase.
 
@@ -45,8 +45,8 @@ to compute the effect of surface scattering on the polarization :cite:`Collett19
     :width: 60%
     :align: center
 
-For more details regarding the polarized rendering mode from an implementation point of view,
-please refer to the :ref:`developer_guide-polarization` chapter in the developer guide.
+For more details regarding the implementation of the polarized rendering modes, please
+refer to the :ref:`developer_guide-polarization` section in the developer guide.
 
 Differentiable rendering
 ------------------------
