@@ -436,13 +436,13 @@ public:
             ENOKI_MARK_USED(channel);
             for (size_t i = 0; i < array_size_v<Spectrum>; ++i) {
                 UnpolarizedSpectrum ratio = p_over_f[i] * (p / f.coeff(i));
-                masked(p_over_f[i], active) = select(isfinite(ratio), ratio, 0.f);
+                masked(p_over_f[i], active) = select(enoki::isfinite(ratio), ratio, 0.f);
             }
         } else {
             // If we dont do spectral MIS: We need to use a specific channel of the spectrum "p" as the PDF
             Float pdf = index_spectrum(p, channel);
             auto ratio = p_over_f * (pdf / f);
-            masked(p_over_f, active) = select(isfinite(ratio), ratio, 0.f);
+            masked(p_over_f, active) = select(enoki::isfinite(ratio), ratio, 0.f);
         }
     }
 
