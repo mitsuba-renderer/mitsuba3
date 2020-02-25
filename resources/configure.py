@@ -108,7 +108,7 @@ def write_core_config_python(f, enabled, default_variant):
     f.write('    "resources/configure.py". Please do not attempt to change it manually,\n')
     f.write('    as any changes will be overwritten."""\n\n')
 
-    f.write("PYTHON_EXECUTABLE = r"%s"\n" % sys.executable)
+    f.write('PYTHON_EXECUTABLE = r"%s"\n' % sys.executable)
     f.write('MTS_DEFAULT_VARIANT = \'%s\'\n' % default_variant)
     f.write('MTS_VARIANTS = %s\n' % str([v[0] for v in enabled]))
 
