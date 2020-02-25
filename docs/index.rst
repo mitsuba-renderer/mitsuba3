@@ -13,9 +13,9 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :caption: Getting started
 
     src/getting_started/intro
+    src/getting_started/variants
     src/getting_started/first_steps
     src/getting_started/differences_to_mitsuba1
-    src/getting_started/variants
     src/getting_started/scene_file_format
 
 .. toctree::
@@ -25,9 +25,6 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     src/python_interface/intro
     src/python_interface/parsing_xml
     src/python_interface/rendering_scene
-    src/python_interface/depth_integrator
-    src/python_interface/direct_integrator
-    src/python_interface/diffuse_bsdf
 
 
 .. toctree::
@@ -56,14 +53,32 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 
 .. toctree::
     :maxdepth: 1
-    :caption: References
-    :numbered:
+    :caption: Advanced topics
+
+    src/advanced_topics/depth_integrator
+    src/advanced_topics/direct_integrator
+    src/advanced_topics/diffuse_bsdf
+
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Plugin reference
+    :titlesonly:
 
     src/plugin_reference/intro
     generated/plugins
 
+.. toctree::
+    :maxdepth: 1
+    :caption: API reference
+
+    src/api_reference/intro
     generated/core_api
     generated/render_api
     generated/python_api
+
+.. toctree::
+    :maxdepth: 1
+    :caption: Extras
 
     bibliography

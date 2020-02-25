@@ -1,5 +1,5 @@
-Adding a custom BSDF
-====================
+Custom BSDF in Python
+=====================
 
 In this example, we will implement a simple diffuse BSDF in python using a similar approach as in
 the :ref:`integrator-direct`, extending the :code:`BSDF` base class. The code is very similar to the

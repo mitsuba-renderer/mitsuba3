@@ -1,4 +1,4 @@
-Writing a depth integrator
+Depth integrator in Python
 ==========================
 
 In this example, we show how to use the Python bindings to write a simple depth map integrator.

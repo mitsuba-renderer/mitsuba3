@@ -1,5 +1,5 @@
-Surface scattering models (BSDFs)
-=================================
+BSDFs
+=====
 
 Surface scattering models describe the manner in which light interacts
 with surfaces in the scene. They conveniently summarize the mesoscopic

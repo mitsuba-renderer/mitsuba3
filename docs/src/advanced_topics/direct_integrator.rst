@@ -1,4 +1,4 @@
-Adding a custom integrator
+Custom integrator in Python
 ===========================
 
 In the previous example, we implemented a simple depth integrator.

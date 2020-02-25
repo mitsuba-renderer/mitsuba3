@@ -1,11 +1,14 @@
-Writing and running tests
-=========================
+Testing
+=======
 
 To run the test suite, simply invoke ``pytest``:
 
 .. code-block:: bash
 
     pytest
+
+    # or to run a single test file
+    pytest src/bsdfs/tests/test_diffuse.py
 
 The build system also exposes a ``pytest`` target that executes ``setpath`` and
 parallelizes the test execution.
@@ -89,28 +92,29 @@ wrap different plugins (e.g. ``BSDF``, ``Emitter``, ...) in order to test them:
     chi2.run(significance_level=0.1)
     print(chi2.messages)
 
-Rendering test suite and Student-T test
----------------------------------------
 
-On top of test *unit tests*, the framework implements a mechanism that automatically renders a set
-of test scenes and applies the *Student-T test* to compare the resulting images and some reference
-images.
+.. Rendering test suite and Student-T test
+.. ---------------------------------------
 
-Those tests are really useful to reveal bugs at the interaction between the individual
-components of the renderer.
+.. On top of test *unit tests*, the framework implements a mechanism that automatically renders a set
+.. of test scenes and applies the *Student-T test* to compare the resulting images and some reference
+.. images.
 
-The test scenes are rendered using all the different enabled variants of the renderer, ensuring for
-instance that the ``scalar_rgb`` renders match the ``gpu_rgb`` renders.
+.. Those tests are really useful to reveal bugs at the interaction between the individual
+.. components of the renderer.
 
-To only run the rendering test suite, use the following command:
+.. The test scenes are rendered using all the different enabled variants of the renderer, ensuring for
+.. instance that the ``scalar_rgb`` renders match the ``gpu_rgb`` renders.
 
-.. code-block:: bash
+.. To only run the rendering test suite, use the following command:
 
-    pytest src/librender/tests/test_renders.py
+.. .. code-block:: bash
 
-One can easily add a scene to the ``resources/data/tests/scenes/`` folder to add it to the rendering
-test suite. Then, the missing reference images can be generated using the following command:
+..     pytest src/librender/tests/test_renders.py
 
-.. code-block:: bash
+.. One can easily add a scene to the ``resources/data/tests/scenes/`` folder to add it to the rendering
+.. test suite. Then, the missing reference images can be generated using the following command:
 
-    python src/librender/tests/test_renders.py --spp 512
+.. .. code-block:: bash
+
+..     python src/librender/tests/test_renders.py --spp 512
