@@ -546,7 +546,8 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
 
         FieldMap::iterator r = fields.end(), g = fields.end(),
                            b = fields.end(), a = fields.end(),
-                           y = fields.end();
+                           x = fields.end(), y = fields.end(),
+                           z = fields.end();
 
         for (auto it2 = range.first; it2 != range.second; ++it2) {
             if (it2->second.first == "R")
@@ -557,23 +558,33 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
                 b = it2;
             else if (it2->second.first == "A")
                 a = it2;
+            else if (it2->second.first == "X")
+                x = it2;
             else if (it2->second.first == "Y")
                 y = it2;
+            else if (it2->second.first == "Z")
+                z = it2;
         }
 
         bool has_rgb = r != fields.end() &&
                        g != fields.end() &&
                        b != fields.end(),
-             has_y   = y != fields.end(),
+             has_xyz = x != fields.end() &&
+                       y != fields.end() &&
+                       z != fields.end(),
+             has_y   = y != fields.end() && !has_xyz,
              has_a   = a != fields.end();
 
-        if (has_rgb || has_y) {
+        if (has_rgb || has_xyz || has_y) {
             ref<Bitmap> target = new Bitmap(
                 has_rgb
                 ? (has_a ? PixelFormat::RGBA
                          : PixelFormat::RGB)
-                : (has_a ? PixelFormat::YA
-                         : PixelFormat::Y),
+                : (has_xyz
+                   ? (has_a ? PixelFormat::XYZA
+                            : PixelFormat::XYZ)
+                   : (has_a ? PixelFormat::YA
+                            : PixelFormat::Y)),
                 m_component_format,
                 m_size
             );
@@ -589,6 +600,10 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
                 link_field("R", r);
                 link_field("G", g);
                 link_field("B", b);
+            } else if (has_xyz) {
+                link_field("X", x);
+                link_field("Y", y);
+                link_field("Z", z);
             } else {
                 link_field("Y", y);
             }
@@ -1463,7 +1478,7 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
     int components = 0;
     if (m_pixel_format == PixelFormat::Y)
         components = 1;
-    else if (m_pixel_format == PixelFormat::RGB)
+    else if (m_pixel_format == PixelFormat::RGB || m_pixel_format == PixelFormat::XYZ)
         components = 3;
     else
         Throw("write_jpeg(): Unsupported pixel format!");
