@@ -14763,19 +14763,36 @@
     Diederik P. Kingma and Jimmy Lei Ba
     ICLR 2015
 
-    The method has the following parameters:
+    .. py:method:: __init__(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
-    ``lr``: learning rate
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``beta_1``:
+            controls the exponential averaging of first
+            order gradient moments
+        
+        Parameter ``beta_2``:
+            controls the exponential averaging of second
+            order gradient moments
 
-    ``beta_1``: controls the exponential averaging of first
-    order gradient moments
-
-    ``beta_2``: controls the exponential averaging of second
-    order gradient moments
-
+        
 .. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
 
     Base class of optimizers (SGD, Adam)
+
+    .. py:method:: __init__(params, lr)
+
+        Parameter ``params``:
+            dictionary ``(name: variable)`` of differentiable parameters to be optimized.
+        
+        Parameter ``lr``:
+            learning rate
+
+        
+    .. py:method:: mitsuba.python.autodiff.Optimizer.set_learning_rate(lr)
+
+        Set the learning rate.
 
     .. py:method:: mitsuba.python.autodiff.Optimizer.disable_gradients()
 
@@ -14788,6 +14805,15 @@
     Implements basic stochastic gradient descent with a fixed learning rate
     and, optionally, momentum (0.9 is a typical parameter value).
 
+    .. py:method:: __init__(params, lr, momentum=0)
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``momentum``:
+            momentum factor
+
+        
     .. py:method:: mitsuba.python.autodiff.SGD.step()
 
         Take a gradient step 

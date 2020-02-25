@@ -128,6 +128,13 @@ class Optimizer:
     Base class of optimizers (SGD, Adam)
     """
     def __init__(self, params, lr):
+        """
+        Parameter ``params``:
+            dictionary ``(name: variable)`` of differentiable parameters to be optimized.
+
+        Parameter ``lr``:
+            learning rate
+        """
         self.set_learning_rate(lr)
         self.params = params
         self.state = {}
@@ -136,6 +143,7 @@ class Optimizer:
             self._reset(k)
 
     def set_learning_rate(self, lr):
+        """Set the learning rate."""
         from mitsuba.core import Float
         # Ensure that the JIT compiler does merge 'lr' into the PTX code
         # (this would trigger a recompile every time it is changed)
@@ -155,10 +163,17 @@ class Optimizer:
 
 
 class SGD(Optimizer):
+    """
+    Implements basic stochastic gradient descent with a fixed learning rate
+    and, optionally, momentum (0.9 is a typical parameter value).
+    """
     def __init__(self, params, lr, momentum=0):
         """
-        Implements basic stochastic gradient descent with a fixed learning rate
-        and, optionally, momentum (0.9 is a typical parameter value).
+        Parameter ``lr``:
+            learning rate
+
+        Parameter ``momentum``:
+            momentum factor
         """
         assert momentum >= 0 and momentum < 1
         self.momentum = momentum
@@ -202,23 +217,25 @@ class SGD(Optimizer):
 
 
 class Adam(Optimizer):
+    """
+    Implements the optimization technique presented in
+
+    "Adam: A Method for Stochastic Optimization"
+    Diederik P. Kingma and Jimmy Lei Ba
+    ICLR 2015
+    """
     def __init__(self, params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         """
-        Implements the optimization technique presented in
+        Parameter ``lr``:
+            learning rate
 
-        "Adam: A Method for Stochastic Optimization"
-        Diederik P. Kingma and Jimmy Lei Ba
-        ICLR 2015
+        Parameter ``beta_1``:
+            controls the exponential averaging of first
+            order gradient moments
 
-        The method has the following parameters:
-
-        ``lr``: learning rate
-
-        ``beta_1``: controls the exponential averaging of first
-        order gradient moments
-
-        ``beta_2``: controls the exponential averaging of second
-        order gradient moments
+        Parameter ``beta_2``:
+            controls the exponential averaging of second
+            order gradient moments
         """
         super().__init__(params, lr)
         assert beta_1 >= 0 and beta_1 < 1
