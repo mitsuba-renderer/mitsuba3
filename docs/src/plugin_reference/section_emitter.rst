@@ -3,8 +3,6 @@ Light sources (emitters)
 
 Light sources describe the manner in which light get emitted in the scene.
 
-.. todo:: Write this section
-
 .. _emitter-d65:
 
 CIE Standard Illuminant D65

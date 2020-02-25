@@ -186,6 +186,3 @@ structure of the C++ codebase.
         :monosp:`mitsuba/librender` C++ library.
     * - :code:`mitsuba.python`
       - Provides classes and functions only related to the Python part of the framework.
-
-.. todo:: re-write those descriptions
-

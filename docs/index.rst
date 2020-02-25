@@ -41,6 +41,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 .. toctree::
     :maxdepth: 1
     :caption: Developer guide
+    :titlesonly:
 
     src/developer_guide/intro
     src/developer_guide/variants_c++
