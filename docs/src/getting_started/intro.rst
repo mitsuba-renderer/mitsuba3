@@ -16,7 +16,7 @@ different set of goals.
 The most significant change of Mitsuba 2 is that it is a *retargetable*
 renderer: this means that the underlying implementations and data structures
 are specified in a generic fashion that can be transformed to accomplish a
-number of different tasks.
+number of different tasks. For example:
 
 1. In the simplest case, Mitsuba 2 is an ordinary CPU-based RGB renderer that
    processes one ray at a time similar to its predecessor `Mitsuba

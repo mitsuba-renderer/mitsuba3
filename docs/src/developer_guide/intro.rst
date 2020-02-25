@@ -28,3 +28,4 @@ Mitsuba is split into 2 basic support libraries:
   bitmap I/O, data structures, scheduling, as well as logging and plugin management.
 * The rendering library (:code:`librender`) contains abstractions needed to load and represent scenes
   containing light sources, shapes, materials, and participating media.
+

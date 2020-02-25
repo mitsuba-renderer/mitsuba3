@@ -13,6 +13,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :caption: Getting started
 
     src/getting_started/intro
+    src/getting_started/cloning
     src/getting_started/variants
     src/getting_started/first_steps
     src/getting_started/differences_to_mitsuba1
