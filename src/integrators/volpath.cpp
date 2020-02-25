@@ -56,7 +56,7 @@ public:
                      Medium, MediumPtr, PhaseFunctionContext)
 
     using WeightMatrix =
-        std::conditional_t<SpectralMis, Matrix<Float, array_size_v<Spectrum>>,
+        std::conditional_t<SpectralMis, Matrix<Float, array_size_v<UnpolarizedSpectrum>>,
                            UnpolarizedSpectrum>;
 
     VolumetricNullPathIntegratorImpl(const Properties &props) : Base(props) {}
