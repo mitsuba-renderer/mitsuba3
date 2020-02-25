@@ -72,7 +72,7 @@ template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char 
             if constexpr (array_size_v<Point> == 3)
                 bbox.def("ray_intersect",
                          [](const BBox &self, const Ray &ray) {
-                             return self.template ray_intersect(ray);
+                             return self.ray_intersect(ray);
                          }, D(BoundingBox, ray_intersect), "ray"_a);
     }
 }

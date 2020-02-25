@@ -19,7 +19,7 @@ MTS_PY_EXPORT(BoundingSphere) {
             .def("expand", &BoundingSphere3f::expand, D(BoundingSphere, expand))
             .def("ray_intersect",
                 [](const BoundingSphere3f &self, const Ray3f &ray) {
-                    return self.template ray_intersect(ray);
+                    return self.ray_intersect(ray);
                 }, D(BoundingSphere, ray_intersect), "ray"_a)
             .def(py::self == py::self)
             .def(py::self != py::self)
