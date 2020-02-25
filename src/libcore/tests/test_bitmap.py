@@ -27,7 +27,7 @@ def test_read_convert_yc(tmpdir):
     b = b.convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
     ref = [ 0.36595437, 0.27774358, 0.11499051, 1.]
     # Tests automatic Bitmap->NumPy conversion
-    assert np.allclose(np.mean(b, axis=(0, 1)), ref)
+    assert np.allclose(np.mean(b, axis=(0, 1)), ref, atol=1e-3)
     tmp_file = os.path.join(str(tmpdir), "out.exr")
     # Tests bitmap resampling filters
     rfilter = mitsuba.core.xml.load_string("<rfilter version='2.0.0' type='box'/>")
@@ -36,7 +36,7 @@ def test_read_convert_yc(tmpdir):
     b.write(tmp_file)
     b = Bitmap(tmp_file)
     os.remove(tmp_file)
-    assert np.allclose(np.mean(b, axis=(0, 1)), ref, atol=1e-5)
+    assert np.allclose(np.mean(b, axis=(0, 1)), ref, atol=1e-3)
 
 
 def test_read_write_complex_exr(tmpdir):
@@ -107,6 +107,7 @@ def test_convert_rgb_y_gamma(tmpdir):
 
 
 def test_read_write_jpeg(tmpdir):
+    np.random.seed(12345)
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.UInt8, [10, 10])
@@ -127,6 +128,7 @@ def test_read_write_jpeg(tmpdir):
 
 
 def test_read_write_png(tmpdir):
+    np.random.seed(12345)
     tmp_file = os.path.join(str(tmpdir), "out.png")
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.UInt8, [10, 10])
@@ -147,6 +149,8 @@ def test_read_write_png(tmpdir):
 
 
 def test_read_write_hdr(tmpdir):
+    np.random.seed(12345)
+
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
     ref = np.float32(np.random.random((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
@@ -158,6 +162,8 @@ def test_read_write_hdr(tmpdir):
 
 
 def test_read_write_pfm(tmpdir):
+    np.random.seed(12345)
+
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
     ref = np.float32(np.random.random((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
@@ -169,6 +175,8 @@ def test_read_write_pfm(tmpdir):
 
 
 def test_read_write_ppm(tmpdir):
+    np.random.seed(12345)
+
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 20])
     ref = np.uint8(np.random.random((20, 10, 3))*255)
     np.array(b, copy=False)[:] = ref[...]

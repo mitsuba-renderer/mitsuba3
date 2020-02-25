@@ -84,7 +84,7 @@ def test04_srgb_d65(variant_scalar_spectral):
 
 
         assert ek.allclose(srgb_d65.eval(SurfaceInteraction3f(ps, wavelengths)),
-                           d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)))
+                           d65_eval * intensity * srgb.eval(SurfaceInteraction3f(ps, wavelengths)), atol=1e-5)
 
 
 def test05_sample_rgb_spectrum(variant_scalar_spectral):
