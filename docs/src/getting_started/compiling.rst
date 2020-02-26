@@ -1,47 +1,47 @@
-First steps
-===============
+.. _sec-compiling:
 
-Compiling Mitsuba 2 from scratch requires recent versions of CMake (at least **3.9.0**)
-and Python (at least **3.6**). Further platform-specific dependencies and compilation instructions
-can be found below.
+Compiling
+=========
 
-Compiling (Linux)
------------------
+Before continuing, please make sure that you have read and followed the
+instructions on :ref:`cloning Mitsuba 2 and its dependencies <sec-cloning>` and
+:ref:`choosing desired variants <sec-variants>`.
 
-The build process under Linux requires a few external dependencies that can be installed via a package manager (e.g. apt-get under Ubuntu):
+Compiling Mitsuba 2 from scratch requires recent versions of CMake (at least
+**3.9.0**) and Python (at least **3.6**). Further platform-specific
+dependencies and compilation instructions are provided below for each operating
+system.
+
+Linux
+-----
+
+The build process under Linux requires several external dependencies that are
+easily installed using the system-provided package manager (e.g.,
+:monosp:`apt-get` under Ubuntu). 
+
+Note that recent Linux distributions include two different compilers that can
+both be used for C++ software development. `GCC <https://gcc.gnu.org>`_ is
+typically the default, and `Clang <https://clang.llvm.org>`_ can be installed
+optionally. During the development of this project, we encountered many issues
+with GCC (mis-compilations, compiler errors, segmentation faults), and strongly
+recommend that you use Clang instead.
+
+To fetch all dependencies and Clang, enter the following commands on Ubuntu:
 
 .. code-block:: bash
 
-    # Install recent versions of tools
+    # Install recent versions build tools, including Clang and libc++ (Clang's C++ library)
     sudo apt install clang-9 libc++-9-dev libc++abi-9-dev cmake ninja-build
 
-    # Install required libraries
+    # Install libraries for image I/O and the graphical user interface
     sudo apt install libz-dev libpng-dev libjpeg-dev libxrandr-dev libxinerama-dev libxcursor-dev
 
     # Install required Python packages
     sudo apt install python3-dev python3-distutils python3-setuptools
 
-
-Make sure `CC` and `CXX` variables are exported manually or inside ``~/.bashrc`` in order for CMake to find Clang:
-
-.. code-block:: bash
-
-    export CC=clang
-    export CXX=clang++
-
-Now, compilation should be as simple as running the following from inside the `mitsuba2` root directory:
-
-.. code-block:: bash
-
-    mkdir build
-    cd build
-    cmake -GNinja ..
-    ninja
-
-Optional
-^^^^^^^^
-
-Additional packages are required in order to run the tests or to generate the documentation (see :ref:`Developer guide <sec-devguide>`):
+Additional packages are required to run the included test suite or to generate HTML
+documentation (see :ref:`Developer guide <sec-devguide>`). If those are interesting to you, also
+enter the following commands:
 
 .. code-block:: bash
 
@@ -51,16 +51,45 @@ Additional packages are required in order to run the tests or to generate the do
     # For generating the documentation
     sudo apt install python3-sphinx python3-guzzle-sphinx-theme python3-sphinxcontrib.bibtex
 
+Next, please ensure that two environment variables :monosp:`CC` and
+:monosp:`CXX` are exported. You can either run these two commands manually before using CMake 
+or---even better---add them to your :monosp:`~/.bashrc` file. This ensures that
+CMake will use the correct compiler.
 
-Tested versions (Ubuntu 19.10)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. code-block:: bash
+
+    export CC=clang-9
+    export CXX=clang++-9
+
+If you installed another version of Clang, the version suffix of course has to be adjusted.
+Now, compilation should be as simple as running the following from inside the
+:monosp:`mitsuba2` root directory:
+
+.. code-block:: bash
+
+    # Create a directory where build products are stored
+    mkdir build
+    cd build
+    cmake -GNinja ..
+    ninja
+
+
+Tested versions
+^^^^^^^^^^^^^^^
+
+The above procedure will likely work on many different flavors of Linux (with
+slight adjustments for the package manager and package names). We have mainly
+worked with software environment listed below, and our instructions should work
+without modifications in that case.
+
+* Ubuntu 19.10
 * clang 9.0.0-2 (tags/RELEASE_900/final)
 * cmake 3.13.4
 * ninja 1.9.0
 * python 3.7.5
 
-Compiling (Windows)
--------------------
+Windows
+-------
 
 On Windows, a recent version of `Visual Studio 2019 <https://visualstudio.microsoft.com/vs/>`_ is required.
 Some tools such as git, CMake, or Python (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_) might
@@ -96,8 +125,8 @@ Tested versions (Windows 10)
 * Miniconda3 4.7.12.1 (64bit)
 
 
-Compiling (macOS)
------------------
+macOS
+-----
 
 On macOS, you will need to install Xcode, CMake, and `Ninja <https://ninja-build.org/>`_.
 Additionally, running the Xcode command line tools once might be necessary:
@@ -158,16 +187,10 @@ When enabling GPU (e.g. `gpu_rgb`) or autodiff (e.g. `gpu_autodiff_spectral`) va
 
 Tested versions of CUDA include 10.0, 10.1, and 10.2. Currently only OptiX 6.5 is supported.
 
-.. warning:: These components are not supported on macOS.
+.. warning::
 
-
-
-
-
-
-Frequently asked questions
---------------------------
-
-* Differentiable rendering fails with the error message "Failed to load Optix library": It is likely that the version of OptiX installed on your system is not compatible with the video driver (the two must satisfy version requirements that are detailed on the OptiX website).
-
+    Neither GPU- nor differentiable rendering currently work on MacOS, and this
+    is unlikely to change in the future since they require a CUDA-compatible
+    graphics card. Please voice your concern to Apple if you are unhappy with
+    their expulsion of NVIDIA drivers from the Mac ecosystem.
 

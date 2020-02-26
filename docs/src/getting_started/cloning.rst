@@ -1,3 +1,5 @@
+.. _sec-cloning:
+
 Cloning the repository
 ======================
 

@@ -30,9 +30,9 @@ number of different tasks. For example:
    inverse problems including computational material design and scene reconstruction.
 
 3. Another type of transformation turns Mitsuba 2 into a vectorized CPU
-   renderer that leverages leverage Single Instruction/Multiple Data (SIMD)
-   instruction sets such as AVX512 on modern CPUs to efficiently sample many
-   light paths in parallel.
+   renderer that leverages Single Instruction/Multiple Data (SIMD) instruction
+   sets such as AVX512 on modern CPUs to efficiently sample many light paths in
+   parallel.
 
 4. Yet another type of transformation rewrites physical aspects of the
    simulation: Mitsuba can be used as a monochromatic renderer, a RGB-based

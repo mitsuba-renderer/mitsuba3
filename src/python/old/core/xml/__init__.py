@@ -1,3 +1,0 @@
-"""
-Mitsuba scene XML parser
-"""
