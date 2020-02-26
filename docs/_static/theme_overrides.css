@@ -6,6 +6,10 @@ table.docutils th {
     vertical-align:middle;
 }
 
+.container {
+    width:100%;
+}
+
 .toggle .header {
     display: block;
     clear: both;

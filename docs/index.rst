@@ -31,7 +31,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 
 .. toctree::
     :maxdepth: 1
-    :caption: Optimization and inverse rendering
+    :caption: Inverse rendering
 
     src/inverse_rendering/intro
     src/inverse_rendering/optimize_diffuse

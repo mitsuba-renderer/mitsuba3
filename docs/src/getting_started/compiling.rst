@@ -10,7 +10,8 @@ instructions on :ref:`cloning Mitsuba 2 and its dependencies <sec-cloning>` and
 Compiling Mitsuba 2 from scratch requires recent versions of CMake (at least
 **3.9.0**) and Python (at least **3.6**). Further platform-specific
 dependencies and compilation instructions are provided below for each operating
-system.
+system. Some additional steps are required for GPU-based backends that are
+described at the end of this section.
 
 Linux
 -----
@@ -189,8 +190,8 @@ Tested versions of CUDA include 10.0, 10.1, and 10.2. Currently only OptiX 6.5 i
 
 .. warning::
 
-    Neither GPU- nor differentiable rendering currently work on MacOS, and this
-    is unlikely to change in the future since they require a CUDA-compatible
-    graphics card. Please voice your concern to Apple if you are unhappy with
-    their expulsion of NVIDIA drivers from the Mac ecosystem.
+    Neither GPU- nor differentiable rendering currently work on macOS, which is
+    sadly unlikely to change in the future. Mitsuba heavily relies on CUDA,
+    which was expelled from the Mac ecosystem. Please voice your concerns to
+    Apple if you are unhappy with this state of affairs.
 
