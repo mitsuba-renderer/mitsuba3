@@ -22,14 +22,14 @@ The build process under Linux requires a few external dependencies that can be i
     sudo apt install python3-dev python3-distutils python3-setuptools
 
 
-Make sure `CC` and `CXX` variables are exported manually or inside ``.bashrc`` in order for CMake to locate Clang:
+Make sure `CC` and `CXX` variables are exported manually or inside ``~/.bashrc`` in order for CMake to find Clang:
 
 .. code-block:: bash
 
     export CC=clang
     export CXX=clang++
 
-Now, compilation should be as simple as running this from inside the `mitsuba2` root directory:
+Now, compilation should be as simple as running the following from inside the `mitsuba2` root directory:
 
 .. code-block:: bash
 
@@ -66,7 +66,7 @@ On Windows, a recent version of `Visual Studio 2019 <https://visualstudio.micros
 Some tools such as git, CMake, or Python (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_) might
 need to be installed manually.
 
-From the root `mitsuba2` directory, the build can be setup configured with:
+From the root `mitsuba2` directory, the build can be configured with:
 
 .. code-block:: bash
 
@@ -75,6 +75,7 @@ From the root `mitsuba2` directory, the build can be setup configured with:
 
 
 Afterwards, open the generated ``mitsuba.sln`` file and proceed building as usual from within Visual Studio.
+You will probably also want to set the build mode to *Release* there.
 
 
 Optional
@@ -99,15 +100,15 @@ Compiling (macOS)
 -----------------
 
 On macOS, you will need to install Xcode, CMake, and `Ninja <https://ninja-build.org/>`_.
-Additionally, running the Xcode command line tools might be necessary:
+Additionally, running the Xcode command line tools once might be necessary:
 
 .. code-block:: bash
 
     xcode-select --install
 
-Note that the default Python version installed with the system is not compatible with Mitsuba 2, and a more recent version (at least 3.6) needs to be installed (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew <https://brew.sh/>`_).
+Note that the default Python version installed with macOS is not compatible with Mitsuba 2, and a more recent version (at least 3.6) needs to be installed (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_ or `Homebrew <https://brew.sh/>`_).
 
-Now, compilation should be as simple as running this from inside the `mitsuba2` root directory:
+Now, compilation should be as simple as running the following from inside the `mitsuba2` root directory:
 
 .. code-block:: bash
 
