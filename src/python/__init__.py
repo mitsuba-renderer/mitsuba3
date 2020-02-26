@@ -3,14 +3,14 @@
 import types
 import sys
 import threading
-from importlib import import_module as _import_module
+from importlib import import_module as _import
 
-if sys.version_info < (3, 5):
-    raise ImportError("Mitsuba requires Python 3.5 or greater.")
+if sys.version_info < (3, 6):
+    raise ImportError("Mitsuba requires Python 3.6 or greater.")
 
 try:
-    _import_module('mitsuba.core_ext')
-    _import_module('mitsuba.render_ext')
+    _import('mitsuba.core_ext')
+    _import('mitsuba.render_ext')
     _tls = threading.local()
 except ImportError as e:
     from .config import PYTHON_EXECUTABLE
@@ -22,8 +22,9 @@ except ImportError as e:
         pass
     elif PYTHON_EXECUTABLE != sys.executable:
         extra_msg = ("You're likely trying to use Mitsuba within a Python "
-        "binary (%s) that is different from the one for which the native "
-        "module was compiled (%s).") % (sys.executable, PYTHON_EXECUTABLE)
+                     "binary (%s) that is different from the one for which "
+                     "the native module was compiled (%s).") % (
+                         sys.executable, PYTHON_EXECUTABLE)
 
     exc = ImportError("The 'mitsuba' native modules could not be "
                       "imported. %s" % extra_msg)
@@ -78,14 +79,15 @@ class MitsubaModule(types.ModuleType):
                 for m in modules:
                     result.update(getattr(m, '__dict__'))
                 return result
-        except Exception as e:
+        except Exception:
             pass
 
         if not hasattr(_tls, 'variant'):
             raise ImportError('Before importing any packages, you '
-                'must specify the desired variant of Mitsuba using '
-                '\"mitsuba.set_variant(..)\".\nThe following variants '
-                'are available: %s.' % (", ".join(variants())))
+                              'must specify the desired variant of Mitsuba '
+                              'using \"mitsuba.set_variant(..)\".\nThe '
+                              'following variants are available: %s.' % (
+                                  ", ".join(variants())))
         else:
             raise AttributeError('Module \"%s\" has no attribute \"%s\"!' %
                                  (name, key))
@@ -106,6 +108,7 @@ for name in ['core', 'render', 'core.xml', 'core.warp', 'core.math',
 core = sys.modules['mitsuba.core']
 render = sys.modules['mitsuba.render']
 
+
 def set_variant(value):
     '''
     Mitsuba 2 can be compiled to a great variety of different variants (e.g.
@@ -115,7 +118,7 @@ def set_variant(value):
 
     Writing various different prefixes many times in import statements such as
 
-       from mitsuba.render_gpu_autodiff_spectral_polarized_ext import Integrator
+       from mitsuba.render_gpu_autodiff_spectral_ext import Integrator
        from mitsuba.core_ext import FileStream
 
     can get rather tiring. For this reason, Mitsuba uses /virtual/ Python
@@ -137,13 +140,18 @@ def set_variant(value):
     if variant() == value:
         return
 
+    if value not in variants():
+        raise ImportError('Requested an unsupported variant "%s". The '
+                          'following variants are available: %s.' % (
+                              value, ", ".join(variants())))
+
     modules = None
     try:
         modules = {
-            'mitsuba.core': (_import_module('mitsuba.core_ext'),
-                             _import_module('mitsuba.core_' + value + '_ext')),
-            'mitsuba.render': (_import_module('mitsuba.render_ext'),
-                               _import_module('mitsuba.render_' + value + '_ext'))
+            'mitsuba.core': (_import('mitsuba.core_ext'),
+                             _import('mitsuba.core_' + value + '_ext')),
+            'mitsuba.render': (_import('mitsuba.render_ext'),
+                               _import('mitsuba.render_' + value + '_ext'))
         }
     except ImportError as e:
         if not str(e).startswith('No module named'):
