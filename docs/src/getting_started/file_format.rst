@@ -159,8 +159,8 @@ the available object types:
           - `bitmap`
 
 
-Object properties
------------------
+Properties
+----------
 
 This subsection documents all of the ways in which properties can be supplied
 to objects. If you are more interested in knowing which properties a certain
@@ -373,8 +373,8 @@ parent object.
 
 .. _sec-scene-file-format-params:
 
-Default parameter values
-------------------------
+Default parameters
+------------------
 
 Scene may contain named parameters that are supplied via the command line:
 
@@ -422,7 +422,7 @@ Aliases
 -------
 
 It is sometimes useful to associate an object with multiple identifiers. This
-can be accomplished using the ``alias as=".."`` keyword:
+can be accomplished using the ``alias as=".."`` tag:
 
 .. code-block:: xml
 
