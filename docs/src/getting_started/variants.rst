@@ -3,14 +3,14 @@
 Variants
 ========
 
-Mitsuba 2 is a *retargetable* rendering system: it provides a large set of
-different *variants* that change elementary aspects of simulation---they can
-for instance replace the representation of color to support monochromatic, RGB,
-spectral, or even polarized illumination. Similarly, the basic arithmetic types
-underlying the simulation can be exchanged to perform renderings using a higher
-amount of precision, vectorization to process many light paths at once, or
-automatic differentiation to to solve inverse problems using gradient-based
-optimization. Variants are automatically created from a single generic codebase.
+Mitsuba 2 is a retargetable rendering system that provides a set of different
+system "*variants*" that change elementary aspects of simulation---they can for
+instance replace the representation of color to support monochromatic, RGB,
+spectral, or even polarized illumination. Similarly, the numerical
+representation underlying the simulation can be exchanged to perform renderings
+using a higher amount of precision, vectorization to process many light paths
+at once, or it can be mathematically differentiated to to solve inverse
+problems. All variants are automatically created from a single generic codebase.
 
 
 Choosing relevant variants
@@ -20,50 +20,48 @@ As many as 36 different variants of the renderer are presently available, shown
 in the list below. Before building Mitsuba 2, you will therefore need to decide
 which of these are relevant for your intended application.
 
-.. container:: toggle
+  .. container:: toggle
 
-    .. container:: header
+      .. container:: header
 
-        **Show/hide available variants**
+          **Show/hide available variants**
 
-    .. code-block:: bash
-
-        scalar_mono
-        scalar_mono_double
-        scalar_mono_polarized
-        scalar_mono_polarized_double
-        scalar_rgb
-        scalar_rgb_double
-        scalar_rgb_polarized
-        scalar_rgb_polarized_double
-        scalar_spectral
-        scalar_spectral_double
-        scalar_spectral_polarized
-        scalar_spectral_polarized_double
-        packet_mono
-        packet_mono_double
-        packet_mono_polarized
-        packet_mono_polarized_double
-        packet_rgb
-        packet_rgb_double
-        packet_rgb_polarized
-        packet_rgb_polarized_double
-        packet_spectral
-        packet_spectral_double
-        packet_spectral_polarized
-        packet_spectral_polarized_double
-        gpu_mono
-        gpu_mono_polarized
-        gpu_rgb
-        gpu_rgb_polarized
-        gpu_spectral
-        gpu_spectral_polarized
-        gpu_autodiff_mono
-        gpu_autodiff_mono_polarized
-        gpu_autodiff_rgb
-        gpu_autodiff_rgb_polarized
-        gpu_autodiff_spectral
-        gpu_autodiff_spectral_polarized
+      - :monosp:`scalar_mono`
+      - :monosp:`scalar_mono_double`
+      - :monosp:`scalar_mono_polarized`
+      - :monosp:`scalar_mono_polarized_double`
+      - :monosp:`scalar_rgb`
+      - :monosp:`scalar_rgb_double`
+      - :monosp:`scalar_rgb_polarized`
+      - :monosp:`scalar_rgb_polarized_double`
+      - :monosp:`scalar_spectral`
+      - :monosp:`scalar_spectral_double`
+      - :monosp:`scalar_spectral_polarized`
+      - :monosp:`scalar_spectral_polarized_double`
+      - :monosp:`packet_mono`
+      - :monosp:`packet_mono_double`
+      - :monosp:`packet_mono_polarized`
+      - :monosp:`packet_mono_polarized_double`
+      - :monosp:`packet_rgb`
+      - :monosp:`packet_rgb_double`
+      - :monosp:`packet_rgb_polarized`
+      - :monosp:`packet_rgb_polarized_double`
+      - :monosp:`packet_spectral`
+      - :monosp:`packet_spectral_double`
+      - :monosp:`packet_spectral_polarized`
+      - :monosp:`packet_spectral_polarized_double`
+      - :monosp:`gpu_mono`
+      - :monosp:`gpu_mono_polarized`
+      - :monosp:`gpu_rgb`
+      - :monosp:`gpu_rgb_polarized`
+      - :monosp:`gpu_spectral`
+      - :monosp:`gpu_spectral_polarized`
+      - :monosp:`gpu_autodiff_mono`
+      - :monosp:`gpu_autodiff_mono_polarized`
+      - :monosp:`gpu_autodiff_rgb`
+      - :monosp:`gpu_autodiff_rgb_polarized`
+      - :monosp:`gpu_autodiff_spectral`
+      - :monosp:`gpu_autodiff_spectral_polarized`
 
 
 Note that compilation time and compilation memory usage is roughly proportional
@@ -71,13 +69,13 @@ to the number of enabled variants, hence including many of them (more than
 five) may not be advisable. Mitsuba 2 developers will typically want to
 restrict themselves to 1-2 variants used by their current experiment to
 minimize edit-recompile times. Each variant is associated with an identifying
-name name that is composed of several elements:
+name name that is composed of several parts:
 
 .. image:: ../../images/variant.svg
     :width: 80%
     :align: center
 
-We will now discuss component in turn.
+We will now discuss each part in turn.
 
 Part 1: Computational backend
 -----------------------------
@@ -105,7 +103,7 @@ are available:
   Note, however, that packet mode is not a magic bullet: standard algorithms
   won't automatically be 8 or 16x faster. Packet mode requires special
   algorithms and is intended to be used by developers, whose software can
-  exploit this type of parallelism. 
+  exploit this type of parallelism.
 
 - The ``gpu`` backend offloads computation to the GPU using `Enoki's
   <https://github.com/mitsuba-renderer/enoki>`_ just-in-time (JIT) compiler
@@ -190,58 +188,90 @@ following choices are available:
 
             **Issues involving RGB-based rendering (click to expand)**
 
-        In particular, multiplication of RGB colors is a nonsensical operation,
-        which yields very different answers depending on the underlying RGB
-        color space.
+        **Problematic aspects of RGB-based color representations:** A RGB
+        rendering algorithm frequently performs two color-related operations:
+        component-wise addition to combine different sources of light, and
+        component-wise multiplication of RGB color vectors to model
+        interreflection. While addition is fine, RGB multiplication turns out
+        to be a nonsensical operation, that can give very different answers
+        depending on the underlying RGB color space.
+
+        Suppose we are rendering a scene in an sRGB color space, where a green
+        light with radiance :math:`[0, 0, 1]` reflects from a very green
+        surface with albedo :math:`[0, 0, 1]`. The component-wise
+        multiplication :math:`[0, 0, 1] \otimes [0, 0, 1] = [0, 0, 1]` tells us
+        that no light is absorbed by the surface. So good so far.
+
+        Let's now switch to a larger color space named *Rec. 2020*. That same
+        green color is no longer at the extreme of the color gamut but lies
+        somewhere inside.
 
         .. image:: ../../../resources/data/docs/images/variants/rgb-mode-issue.svg
             :width: 100%
             :align: center
 
-- Finally, ``spectral`` results in a spectral color representation spanning the
-  visible spectrum (360..830 nm). 
+        For simplicity, let's suppose it has coordinates :math:`[0, 0,
+        \frac{1}{2}]`. Now, the same calculation :math:`[0, 0,
+        \frac{1}{2}]\otimes[0, 0, \frac{1}{2}]=[0, 0, \frac{1}{4}]` tells us
+        that half of the light is absorbed by the surface, which illustrates
+        the problem with RGB multiplication. The solution to this problem is to
+        multiply colors in the spectral domain instead.
 
 
-Any RGB data provided in the input scene has to be
-  up-sampled into plausible equivalent spectra in this case.
+- Finally, ``spectral`` mode switches to a fully spectral color representation
+  spanning the visible range :math:`(360\ldots 830 \mathrm{nm})`. The
+  wavelength domain is simply treated as yet another dimension of the space of
+  light paths over which the rendering algorithm must integrate.
 
+  This improves accuracy especially in scenarios where measured spectral data
+  is available. Consider for example the two Cornell box renderings below: on
+  the left side, the spectral reflectance data of all materials is first
+  converted to RGB and rendered using the ``scalar_rgb`` variant, producing a
+  deceivingly colorful image. In contrast, the ``scalar_spectral`` variant that
+  correctly accounts for the spectral characteristics, produces a more muted
+  coloration.
 
-Compared to usual RGB rendering modes, Mitsuba 2 can also perform full spectral
-rendering by performing additional Monte Carlo integration over the (visible)
-wavelengths. This can considerably improve accuracy especially in scenarios where
-measured spectral data is available. Consider for example the two Cornell box
-renderings below: on the left side, the spectral reflectance data of all materials
-is first converted to RGB and rendering using the RGB rendering mode (``scalar_rgb``).
-In contrast, running the simulation in full spectral mode (``scalar_spectral``) results
-in a surprisingly different image.
+  .. subfigstart::
+  .. subfigure:: ../../../resources/data/docs/images/render/variants_cbox_rgb.jpg
+     :caption: RGB Mode
+  .. subfigure:: ../../../resources/data/docs/images/render/variants_cbox_spectral.jpg
+     :caption: Spectral Mode
+  .. subfigend::
+     :label: fig-cbox-spectral
 
-.. subfigstart::
-.. subfigure:: ../../../resources/data/docs/images/render/variants_cbox_rgb.jpg
-   :caption: RGB Mode
-.. subfigure:: ../../../resources/data/docs/images/render/variants_cbox_spectral.jpg
-   :caption: Spectral Mode
-.. subfigend::
-   :label: fig-cbox-spectral
-
-In case some data is only available in a RGB format (e.g. for image textures), Mitsuba 2
-performs spectral upsampling :cite:`Jakob2019Spectral` and will transform the data to
-continuous spectra that can be sampled for arbitrary wavelengths.
+  Note that Mitsuba still generates RGB output images by default even when if
+  spectral mode is active. It is also important to note that many existing
+  Mitsuba scenes only specify RGB color information. Spectral Mitsuba can still
+  render such scenes -- in this case, it determines plausible smooth spectra
+  corresponding to the specified RGB colors :cite:`Jakob2019Spectral`.
 
 Part 3: Polarization
 --------------------
 
-Optionally, Mitsuba 2 supports polarized rendering modes (e.g. `scalar_spectral_polarized`)
-which, in addition to normal radiance, also track the full polarization state of light.
-Inside the light transport simulation, *Stokes vectors* are used to parameterize
-the elliptical shape of the transverse oscillations, and *Mueller matrices* are used
-to compute the effect of surface scattering on the polarization :cite:`Collett1993PolarizedLight`.
+If desired, Mitsuba 2 can keep track of the full polarization state of light.
+Polarization refers to the property that light is an electromagnetic wave that
+oscillates perpendicularly to the direction of travel. This oscillation can
+take on infinitely many different shapes---the following image shows an example
+of *horizontal* polarization.
 
 .. image:: ../../images/polarization_wave.svg
     :width: 60%
     :align: center
 
-For more details regarding the implementation of the polarized rendering modes, please
-refer to the :ref:`developer_guide-polarization` section in the developer guide.
+Because humans do not perceive polarization, accounting for it is usually not
+necessary when rendering images that are intended to be look realistic.
+However, polarization is easily observed using a variety of measurement devices
+and cameras, and it tends to provide a wealth of information about the material
+and shape of visible objects. For this reason, polarization is a powerful tool
+for solving inverse problems, and this is one of the reasons why we chose to
+support it in Mitsuba 2.
+
+Inside the light transport simulation, *Stokes vectors* are used to
+parameterize the elliptical shape of the transverse oscillations, and *Mueller
+matrices* are used to compute the effect of surface scattering on the
+polarization :cite:`Collett1993PolarizedLight`. For more details regarding the
+implementation of the polarized rendering modes, please refer to the
+:ref:`developer_guide-polarization` section in the developer guide.
 
 
 Part 4: Precision
@@ -270,7 +300,7 @@ to compile Mitsuba:
 The default :monosp:`mitsuba.conf` file contains the following lines that
 select three variants of Mitsuba for compilation:
 
-.. code-block:: json
+.. code-block:: text
 
     "enabled": [
         "scalar_rgb",
