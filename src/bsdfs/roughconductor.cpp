@@ -52,7 +52,7 @@ rough conducting materials, such as metals.
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughconductor_copper.jpg
    :caption: Rough copper (Beckmann, :math:`\alpha=0.1`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughconductor_anisotropic_aluminium.jpg
-   :caption: Vertically brushed aluminium (Anisotropic Phong, :math:`\alpha_u=0.05,\ \alpha_v=0.3`)
+   :caption: Vertically brushed aluminium (Anisotropic Beckmann, :math:`\alpha_u=0.05,\ \alpha_v=0.3`)
 .. subfigend::
     :label: fig-bsdf-roughconductor
 
