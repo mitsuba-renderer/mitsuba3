@@ -291,9 +291,7 @@ to compile Mitsuba, e.g.:
 .. code-block:: bash
 
     cd <..mitsuba directory..>
-    mkdir build
-    cd build
-    cp ../resources/mitsuba.conf.template mitsuba.conf
+    cp resources/mitsuba.conf.template mitsuba.conf
 
 Next, open :monosp:`mitsuba.conf` in your favorite text editor and scroll down
 to the declaration of the enabled variants (around line 70):

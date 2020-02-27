@@ -16,8 +16,8 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     src/getting_started/cloning
     src/getting_started/variants
     src/getting_started/compiling
-    src/getting_started/differences_to_mitsuba1
-    src/getting_started/scene_file_format
+    src/getting_started/file_format
+    src/getting_started/differences
     src/getting_started/faq
 
 .. toctree::
