@@ -247,11 +247,11 @@ Part 3: Polarization
 If desired, Mitsuba 2 can keep track of the full polarization state of light.
 Polarization refers to the property that light is an electromagnetic wave that
 oscillates perpendicularly to the direction of travel. This oscillation can
-take on infinitely many different shapes---the following image shows an example
-of *horizontal* polarization.
+take on infinitely many different shapes---the following images shows an example
+of *horizontal* and *elliptical* polarization.
 
-.. image:: ../../images/polarization_wave.svg
-    :width: 60%
+.. image:: ../../images/polarization_wave_variations.svg
+    :width: 90%
     :align: center
 
 Because humans do not perceive polarization, accounting for it is usually not
@@ -306,7 +306,7 @@ to the declaration of the enabled variants (around line 70):
     ],
 
 The default file specifies two scalar variants that you may wish to extend or
-replace according to your requirements and the explanations given above. 
+replace according to your requirements and the explanations given above.
 You may also wish to change the default variant:
 
 .. code-block:: text
