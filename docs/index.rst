@@ -27,6 +27,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     src/python_interface/intro
     src/python_interface/parsing_xml
     src/python_interface/rendering_scene
+    src/python_interface/bsdf_eval
 
 
 .. toctree::
