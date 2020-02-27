@@ -1,7 +1,7 @@
 .. _sec-compiling:
 
-Compiling
-=========
+Compiling the system
+====================
 
 Before continuing, please make sure that you have read and followed the
 instructions on :ref:`cloning Mitsuba 2 and its dependencies <sec-cloning>` and
@@ -52,10 +52,10 @@ enter the following commands:
     # For generating the documentation
     sudo apt install python3-sphinx python3-guzzle-sphinx-theme python3-sphinxcontrib.bibtex
 
-Next, please ensure that two environment variables :monosp:`CC` and
-:monosp:`CXX` are exported. You can either run these two commands manually before using CMake 
-or---even better---add them to your :monosp:`~/.bashrc` file. This ensures that
-CMake will use the correct compiler.
+Next, ensure that two environment variables :monosp:`CC` and
+:monosp:`CXX` are exported. You can either run these two commands manually
+before using CMake or---even better---add them to your :monosp:`~/.bashrc`
+file. This ensures that CMake will always use the correct compiler.
 
 .. code-block:: bash
 
@@ -75,8 +75,8 @@ Now, compilation should be as simple as running the following from inside the
     ninja
 
 
-Tested versions
-^^^^^^^^^^^^^^^
+Tested version
+^^^^^^^^^^^^^^
 
 The above procedure will likely work on many different flavors of Linux (with
 slight adjustments for the package manager and package names). We have mainly
@@ -92,9 +92,12 @@ without modifications in that case.
 Windows
 -------
 
-On Windows, a recent version of `Visual Studio 2019 <https://visualstudio.microsoft.com/vs/>`_ is required.
-Some tools such as git, CMake, or Python (e.g. via `Miniconda 3 <https://docs.conda.io/en/latest/miniconda.html>`_) might
-need to be installed manually.
+On Windows, a recent version of `Visual Studio 2019
+<https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
+CMake, or Python (e.g. via `Miniconda 3
+<https://docs.conda.io/en/latest/miniconda.html>`_) might need to be installed
+manually. Mitsuba's build system *requires* access to Python >= 3.6 even if you
+do not plan to use Mitsuba's python interface.
 
 From the root `mitsuba2` directory, the build can be configured with:
 
@@ -104,22 +107,22 @@ From the root `mitsuba2` directory, the build can be configured with:
     cmake -G "Visual Studio 16 2019" -A x64
 
 
-Afterwards, open the generated ``mitsuba.sln`` file and proceed building as usual from within Visual Studio.
-You will probably also want to set the build mode to *Release* there.
+Afterwards, open the generated ``mitsuba.sln`` file and proceed building as
+usual from within Visual Studio. You will probably also want to set the build
+mode to *Release* there.
 
-
-Optional
-^^^^^^^^
-
-Running the test (see :ref:`Developer guide <sec-devguide>`) additionally requires pytest and NumPy to be installed, e.g. from within conda:
+Additional packages are required to run the included test suite or to generate HTML
+documentation (see :ref:`Developer guide <sec-devguide>`). If those are interesting to you, also
+enter the following commands:
 
 .. code-block:: bash
 
-    conda install pytest numpy
+    conda install pytest numpy sphinx
 
 
-Tested versions (Windows 10)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Tested version
+^^^^^^^^^^^^^^
+* Windows 10
 * Visual Studio 2019 (Community Edition) Version 16.4.5
 * cmake 3.16.4 (64bit)
 * git 2.25.1 (64bit)
@@ -148,12 +151,12 @@ Now, compilation should be as simple as running the following from inside the `m
     ninja
 
 
-Tested versions (macOS Catalina 10.15.2)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Tested version
+^^^^^^^^^^^^^^
+* macOS Catalina 10.15.2
 * Xcode 11.3.1
 * cmake 3.16.4
 * Python 3.7.3
-
 
 
 Running Mitsuba
@@ -177,21 +180,34 @@ Mitsuba can then be used to render scenes by typing
 
     mitsuba scene.xml
 
-where ``scene.xml`` is a Mitsuba scene file. Calling ``mitsuba --help`` will print additional information about various command line arguments.
+where ``scene.xml`` is a Mitsuba scene file. 
+Alternatively,
+
+.. code-block:: bash
+
+    mitsuba -m scalar-spectral-polarized scene.xml
+
+selects a specific variant that you selected in :monsp:`mitsuba.conf`. Call
+``mitsuba --help`` to print additional information about various command line
+arguments.
 
 
+GPU variants
+------------
 
-GPU & Autodiff variants
------------------------
-
-When enabling GPU (e.g. `gpu_rgb`) or autodiff (e.g. `gpu_autodiff_spectral`) variants in ``mitsuba.conf``, Mitsuba 2 additionally depends on the `NVIDIA CUDA Toolkit <https://developer.nvidia.com/cuda-downloads>`_ for computation and `NVIDIA OptiX <https://developer.nvidia.com/designworks/optix/download>`_ for ray tracing that both need to be installed manually.
-
-Tested versions of CUDA include 10.0, 10.1, and 10.2. Currently only OptiX 6.5 is supported.
+When enabling GPU variants (e.g. :monosp:`gpu_rgb`,
+:monosp:`gpu_autodiff_spectral`, etc.) in :monosp:`mitsuba.conf`, the renderer
+additionally depends on the `NVIDIA CUDA Toolkit
+<https://developer.nvidia.com/cuda-downloads>`_ for computation and `NVIDIA
+OptiX <https://developer.nvidia.com/designworks/optix/download>`_ for ray
+tracing that both need to be installed manually. Tested versions of CUDA
+include 10.0, 10.1, and 10.2. Currently only OptiX 6.5 is supported.
 
 .. warning::
 
     Neither GPU- nor differentiable rendering currently work on macOS, which is
-    sadly unlikely to change in the future. Mitsuba heavily relies on CUDA,
-    which was expelled from the Mac ecosystem. Please voice your concerns to
-    Apple if you are unhappy with this state of affairs.
+    sadly unlikely to change in the future. Apple has expelled NVIDIA graphics
+    (and therefore APIs like CUDA that Mitsuba depends on) from the Mac
+    ecosystem some years ago. Please voice your concerns to Apple if you are
+    unhappy with this state of affairs.
 

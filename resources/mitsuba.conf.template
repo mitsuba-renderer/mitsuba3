@@ -78,6 +78,11 @@
 
     "default": "scalar_spectral",
 
+    # -------------------------------------------------------------
+    # The remainder of this file defines the variants and does not
+    # need to be edited (unless you wish to create new variants).
+    # -------------------------------------------------------------
+
     # Scalar variant definitions
 
     "scalar_mono": {

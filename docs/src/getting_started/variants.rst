@@ -1,7 +1,7 @@
 .. _sec-variants:
 
-Variants
-========
+Choosing variants
+=================
 
 Mitsuba 2 is a retargetable rendering system that provides a set of different
 system "*variants*" that change elementary aspects of simulation---they can for
@@ -11,10 +11,6 @@ representation underlying the simulation can be exchanged to perform renderings
 using a higher amount of precision, vectorization to process many light paths
 at once, or it can be mathematically differentiated to to solve inverse
 problems. All variants are automatically created from a single generic codebase.
-
-
-Choosing relevant variants
---------------------------
 
 As many as 36 different variants of the renderer are presently available, shown
 in the list below. Before building Mitsuba 2, you will therefore need to decide
@@ -264,7 +260,8 @@ However, polarization is easily observed using a variety of measurement devices
 and cameras, and it tends to provide a wealth of information about the material
 and shape of visible objects. For this reason, polarization is a powerful tool
 for solving inverse problems, and this is one of the reasons why we chose to
-support it in Mitsuba 2.
+support it in Mitsuba 2. Note that accounting for polarization comes at a
+cost---roughly a 1.5-2X increase in rendering time.
 
 Inside the light transport simulation, *Stokes vectors* are used to
 parameterize the elliptical shape of the transverse oscillations, and *Mueller
@@ -277,37 +274,55 @@ implementation of the polarized rendering modes, please refer to the
 Part 4: Precision
 -----------------
 
-- default: Mitsuba normally uses single precision for all computation.
+Mitsuba 2 normally relies on single precision (32 bit) arithmetic, but double
+precision (64 bit) is optionally available. We find this particularly helpful
+for debugging: whether or not an observed problem arises due to floating point
+imprecisions can normally be determined after switching to double precision.
+Note that double precision currently not available for ``gpu_*`` variants. This
+is because OptiX performs ray tracing in single precision.
 
-- ``double``: Sometimes, it can be useful to compile a higher-precision version
-  of the renderer to determine if an issue arises due to insufficient floating
-  point accuracy.
-
-
-The :monosp:`mitsuba.conf` file
---------------------------------
+Configuring :monosp:`mitsuba.conf`
+----------------------------------
 
 Mitsuba 2 variants are specified in the file :monosp:`mitsuba.conf`. To get
 started, first copy the default template to the directory where you intend
-to compile Mitsuba:
+to compile Mitsuba, e.g.:
 
 .. code-block:: bash
 
+    cd <..mitsuba directory..>
     mkdir build
     cd build
-    cp <..mitsuba directory..>/resources/mitsuba.conf.template mitsuba.conf
+    cp ../resources/mitsuba.conf.template mitsuba.conf
 
-The default :monosp:`mitsuba.conf` file contains the following lines that
-select three variants of Mitsuba for compilation:
+Next, open :monosp:`mitsuba.conf` in your favorite text editor and scroll down
+to the declaration of the enabled variants (around line 70):
 
 .. code-block:: text
 
     "enabled": [
         "scalar_rgb",
-        "scalar_spectral",
-        "packet_rgb"
+        "scalar_spectral"
     ],
 
+The default file specifies two scalar variants that you may wish to extend or
+replace according to your requirements and the explanations given above. 
+You may also wish to change the default variant:
 
+.. code-block:: text
 
-These 3 feature dimensions can then be concatenated into variant names like ``scalar_rgb_double``.
+    # If mitsuba is launched without any specific mode parameter,
+    # the configuration below will be used by default
+
+    "default": "scalar_spectral",
+
+The remainder of this file lists the C++ types defining the available variants
+and can safely be ignored.
+
+TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
+``packet_rgb`` or ``packet_spectral`` for CPU rendering, or one of
+``gpu_autodiff_rgb`` or ``gpu_autodiff_spectral`` for differentiable GPU
+rendering.
+
+Once you are finished with :monosp:`mitsuba.conf`, proceed to the next section
+on :ref:`compiling the system <sec-compiling>`.
