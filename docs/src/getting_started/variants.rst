@@ -247,7 +247,7 @@ Part 3: Polarization
 If desired, Mitsuba 2 can keep track of the full polarization state of light.
 Polarization refers to the property that light is an electromagnetic wave that
 oscillates perpendicularly to the direction of travel. This oscillation can
-take on infinitely many different shapes---the following images shows an example
+take on infinitely many different shapes---the following images show examples
 of *horizontal* and *elliptical* polarization.
 
 .. image:: ../../images/polarization_wave_variations.svg
