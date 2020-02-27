@@ -211,3 +211,14 @@ include 10.0, 10.1, and 10.2. Currently only OptiX 6.5 is supported.
     ecosystem some years ago. Please voice your concerns to Apple if you are
     unhappy with this state of affairs.
 
+
+Embree
+------
+
+Mitsuba's ``scalar`` and ``packet`` backends can optionally use Intel's Embree
+library for ray tracing instead of the builtin kd-tree in Mitsuba 2. To do so,
+invoke CMake with the ``-DMTS_ENABLE_EMBREE=1`` parameter or use a visual CMake
+tool like ``cmake-gui`` or ``ccmake`` to flip the value of this parameter.
+Embree tends to be faster but lacks some features such as support for double
+precision ray intersection. Currently, only triangle meshes are supported by
+Mitsuba's Embree integration, though this is likely to be fixed in the future.
