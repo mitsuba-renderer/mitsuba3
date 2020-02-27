@@ -35,7 +35,7 @@ NAMESPACE_BEGIN(xml)
 
 // Set of supported XML tags
 enum class Tag {
-    Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB, SRGB,
+    Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
     NamedReference, Include, Alias, Default, Invalid
 };
@@ -138,7 +138,6 @@ void register_class(const Class *class_) {
         (*tags)["ref"]        = Tag::NamedReference;
         (*tags)["spectrum"]   = Tag::Spectrum;
         (*tags)["rgb"]        = Tag::RGB;
-        (*tags)["srgb"]       = Tag::SRGB;
         (*tags)["include"]    = Tag::Include;
         (*tags)["alias"]      = Tag::Alias;
         (*tags)["default"]    = Tag::Default;
