@@ -195,13 +195,13 @@ arguments.
 GPU variants
 ------------
 
-When enabling GPU variants (e.g. :monosp:`gpu_rgb`,
-:monosp:`gpu_autodiff_spectral`, etc.) in :monosp:`mitsuba.conf`, the renderer
-additionally depends on the `NVIDIA CUDA Toolkit
-<https://developer.nvidia.com/cuda-downloads>`_ for computation and `NVIDIA
-OptiX <https://developer.nvidia.com/designworks/optix/download>`_ for ray
-tracing that both need to be installed manually. Tested versions of CUDA
-include 10.0, 10.1, and 10.2. Currently only OptiX 6.5 is supported.
+Variants of Mitsuba that run on the GPU (e.g. :monosp:`gpu_rgb`,
+:monosp:`gpu_autodiff_spectral`, etc.) additionally depend on the `NVIDIA CUDA
+Toolkit <https://developer.nvidia.com/cuda-downloads>`_ and `NVIDIA OptiX
+<https://developer.nvidia.com/designworks/optix/download>`_ that both need to
+be installed manually. Tested versions of CUDA include 10.0, 10.1, and 10.2.
+Only OptiX 6.5 is supported at this moment (in particular, compilation fails
+when OptiX 7 is installed).
 
 .. warning::
 

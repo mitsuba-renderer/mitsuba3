@@ -785,7 +785,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         if (!expanded.empty())
                             obj = expanded[0];
                         props.set_object(node.attribute("name").value(), obj);
-
                     } else {
                         /* Parse wavelength:value pairs, where wavelengths are expected to be
                            specified in increasing order. Automatically detect whether wavelengths

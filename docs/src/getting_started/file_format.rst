@@ -159,8 +159,8 @@ the available object types:
           - `bitmap`
 
 
-Property type
--------------
+Object properties
+-----------------
 
 This subsection documents all of the ways in which properties can be supplied
 to objects. If you are more interested in knowing which properties a certain
@@ -202,14 +202,7 @@ Passing strings is similarly straightforward:
 Vectors, Positions
 ******************
 
-Points and vectors can be specified using two different notations:
-
-.. code-block:: xml
-
-    <point name="point_property" x="3" y="4" z="5"/>
-    <vector name="vector_property" x="3" y="4" z="5"/>
-
-or
+Points and vectors can be specified as follows:
 
 .. code-block:: xml
 
@@ -222,7 +215,7 @@ or
     centimeters, inches, etc.). The only requirement is that you consistently
     use one convention throughout the scene specification.
 
-Color data
+RGB Colors
 **********
 
 In Mitsuba, colors are either specified using the ``<rgb>`` or ``<spectrum>`` tags.
@@ -246,61 +239,103 @@ all of these these possibilities. An example is shown below:
 
 
 Color spectra
-****************
+*************
 
-.. todo::  Write this section
+A more accurate way or specifying color information involves the ``<spectrum>``
+tag, which records a reflectance/intensity value for multiple discrete
+wavelengths specified in *nanometers*.
 
+.. code-block:: xml
+
+    <spectrum name="color_property" value="400:0.56, 500:0.18, 600:0.58, 700:0.24"/>
+
+The resulting spectrum uses linearly interpolation for in-between wavelengths
+and equals zero outside of the specified wavelength range. The following short-hand
+notation creates a spectrum that is uniform across wavelengths:
+
+.. code-block:: xml
+
+    <spectrum name="color_property" value="0.5"/>
+
+When spectral power or reflectance distributions are obtained from measurements
+(e.g. at 10nm intervals), they are usually quite unwieldy and can clutter the
+scene description. For this reason, there is yet another way to pass a spectrum
+by loading it from an external file:
+
+.. code-block:: xml
+
+    <spectrum name="color_property" filename="measured_spectrum.spd"/>
+
+The file should contain a single measurement per line, with the corresponding
+wavelength in nanometers and the measured value separated by a space. Comments
+are allowed. Here is an example:
+
+.. code-block:: text
+
+    # This file contains a measured spectral power/reflectance distribution
+    406.13 0.703313
+    413.88 0.744563
+    422.03 0.791625
+    430.62 0.822125
+    435.09 0.834000
+    ...
 
 Transformations
 ***************
 
-Transformations are the only kind of property that require more than a single tag. The idea is that starting with the identity, one can build up a transformation using a sequence of commands. For instance a transformation that does a translation followed by a rotation might be written like this:
+Transformations are the only kind of property that require more than a single
+tag. The idea is that, starting with the identity, one can build up a
+transformation using a sequence of commands. For instance, a transformation
+that does a translation followed by a rotation might be written like this:
 
 .. code-block:: xml
 
     <transform name="trafo_property">
-        <translate x="-1" y="3" z="4"/>
+        <translate value="-1, 3, 4"/>
         <rotate y="1" angle="45"/>
     </transform>
 
-Mathematically, each incremental transformation in the sequence is left-multiplied onto the current one. The following choices are available:
+
+Mathematically, each incremental transformation in the sequence is
+left-multiplied onto the current one. The following choices are available:
 
 * Translations:
 
-    .. code-block:: xml
+  .. code-block:: xml
 
-        <translate x="-1" y="3" z="4"/>
+      <translate value="-1, 3, 4"/>
 
 * Counter-clockwise rotations around a specified axis. The angle is given in degrees:
 
-    .. code-block:: xml
+  .. code-block:: xml
 
-        <rotate x="0.701" y="0.701" z="0" angle="180"/>
+      <rotate value="0.701, 0.701, 0" angle="180"/>
 
 * Scaling operation. The coefficients may also be negative to obtain a flip:
 
-    .. code-block:: xml
+  .. code-block:: xml
 
-        <scale value="5"/> <!-- uniform scale -->
-        <scale x="2" y="1" z="-1"/> <!-- non-unform scale -->
+      <scale value="5"/>        <!-- uniform scale -->
+      <scale value="2, 1, -1"/> <!-- non-uniform scale -->
 
-* Explicit 4x4 matrices:
+* Explicit 4x4 matrices in row-major order:
 
-    .. code-block:: xml
+  .. code-block:: xml
 
-        <matrix value="0 -0.53 0 -1.79 0.92 0 0 8.03 0 0 0.53 0 0 0 0 1"/>
+      <matrix value="0 -0.53 0 -1.79 0.92 0 0 8.03 0 0 0.53 0 0 0 0 1"/>
 
-* `lookat` transformations -- this is primarily useful for setting up cameras. The `origin` coordinates specify the camera origin, `target` is the point that the camera will look at, and the (optional) `up` parameter determines the *upward* direction in the filnal rendered image.
+* `lookat` transformations -- this is primarily useful for setting up cameras. The `origin` coordinates specify the camera origin, `target` is the point that the camera will look at, and the (optional) `up` parameter determines the *upward* direction in the final rendered image.
 
-    .. code-block:: xml
+  .. code-block:: xml
 
-        <lookat origin="10, 50, -800" target="0, 0, 0" up="0, 1, 0"/>
-
+      <lookat origin="10, 50, -800" target="0, 0, 0" up="0, 1, 0"/>
 
 References
 ----------
 
-Quite often, you will find yourself using a object (such as a material) in many places. To avoid having to declare it over and over again, which wastes memory,, you can make use of references. Here is an example of how this works:
+Quite often, you will find yourself using an object (such as a material) in
+many places. To avoid having to declare it over and over again, which wastes
+memory, you can make use of references. Here is an example of how this works:
 
 .. code-block:: xml
 
@@ -317,38 +352,29 @@ Quite often, you will find yourself using a object (such as a material) in many 
 
         <shape type="obj">
             <string name="filename" value="meshes/my_shape.obj"/>
+
             <!-- Reference the material named my_material -->
             <ref id="my_material"/>
         </shape>
     </scene>
 
-By providing a unique `id` attribute in the object declaration, the object is bound to that identifier upon instantiation. Referencing this identifier at a later point (using the :code:`<ref id=".."/>` tag) will add the instance to the parent object.
+By providing a unique `id` attribute in the object declaration, the object is
+bound to that identifier upon instantiation. Referencing this identifier at a
+later point (using the ``<ref id=".."/>`` tag) will add the instance to the
+parent object.
 
-.. note:: Note that while this feature is meant to efficiently handle materials, textures and particiapating media that are referenced from multiple places, it cannot be used to instantiate geometry. (an `instance` plugin should be release for that purpose in an upcoming version the framework).
+.. note::
 
-
-Include
--------
-
-A scene can be split into multiple pieces for better readability. To include an external file, please ue the following command:
-
-.. code-block:: xml
-
-    <include filename="nested-scene.xml"/>
-
-In this case, the file :code:`nested-scene.xml` must be a proper scene file with a :code:`<scene>` tag at the root.
-
-This feature is sometimes very convenient in conjunction with the :code:`-D key=value` flag of the `mitsuba` command line renderer. This lets you include different parts of a scene configuration by changing the command line parameters (and without having to touch the XML file):
-
-.. code-block:: xml
-
-    <include filename="nested-scene-$version.xml"/>
-
+    Note that while this feature is meant to efficiently handle materials,
+    textures, and particiapating media that are referenced from multiple
+    places, it cannot be used to instantiate geometry. (the `instance` plugin
+    should be used for that purpose. This is not yet part of Mitsuba 2
+    but will be added at a later point.)
 
 .. _sec-scene-file-format-params:
 
-Default parameters
-------------------
+Default parameter values
+------------------------
 
 Scene may contain named parameters that are supplied via the command line:
 
@@ -358,7 +384,10 @@ Scene may contain named parameters that are supplied via the command line:
         <rgb name="reflectance" value="$reflectance"/>
     </bsdf>
 
-In this case, an error will occur when loading the scene without an explicit command line argument of the form :code:`-Dreflectanc=something`. For convenience, it is possible to specify a default parameter value that take precedence when no command line arguments are given. The syntax for this is:
+In this case, an error will be raised when the scene is loaded without an
+explicit command line argument of the form ``-Dreflectance=...``. For
+convenience, it is possible to specify a default parameter value that take
+precedence when no command line arguments are given. The syntax for this is:
 
 .. code-block:: xml
 
@@ -367,15 +396,39 @@ In this case, an error will occur when loading the scene without an explicit com
 and must precede the occurrences of the parameter in the XML file.
 
 
+Including external files
+------------------------
+
+A scene can be split into multiple pieces for better readability. To include an
+external file, please use the following command:
+
+.. code-block:: xml
+
+    <include filename="nested-scene.xml"/>
+
+In this case, the file ``nested-scene.xml`` must be a proper scene file with a
+``<scene>`` tag at the root.
+
+This feature is often very convenient in conjunction with the ``-D key=value``
+flag of the ``mitsuba`` command line renderer. This enables including different
+variants of a scene configuration by changing the command line parameters,
+without without having to touch the XML file:
+
+.. code-block:: xml
+
+    <include filename="nested-scene-$version.xml"/>
+
 Aliases
 -------
 
-Sometimes, it can be useful to associate an object with multiple identifiers. This can be accomplished using the :code:`alias as=".."` keyword:
+It is sometimes useful to associate an object with multiple identifiers. This
+can be accomplished using the ``alias as=".."`` keyword:
 
 .. code-block:: xml
 
     <bsdf type="diffuse" id="my_material_1"/>
     <alias id="my_material_1" as="my_material_2"/>
 
-After this statement, the diffuse scattering model will be bound to *both* identifiers :code:`my_material_1` and :code:`my_material_2`.
+After this statement, the diffuse scattering model will be bound to *both*
+identifiers ``my_material_1`` and ``my_material_2``.
 
