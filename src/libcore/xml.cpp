@@ -7,6 +7,7 @@
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/object.h>
@@ -759,10 +760,17 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 break;
 
             case Tag::Spectrum: {
-                    check_attributes(src, node, { "name", "value" });
-                    std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
+                    check_attributes(src, node, { "name", "value", "filename" }, false);
 
-                    if (tokens.size() == 1) {
+                    bool has_value = !node.attribute("value").empty(),
+                         has_filename = !node.attribute("filename").empty(),
+                         is_constant = has_value && string::tokenize(node.attribute("value").value()).size() == 1;
+                    if (has_value == has_filename) {
+                        src.throw_error(node, "'spectrum' tag requires one of \"value\" or \"filename\" attributes");
+                    } else if (is_constant) {
+                        /* A constant spectrum is specified. */
+                        std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
+
                         Properties props2("uniform");
                         ScalarFloat value;
                         try {
@@ -786,50 +794,83 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             obj = expanded[0];
                         props.set_object(node.attribute("name").value(), obj);
                     } else {
-                        /* Parse wavelength:value pairs, where wavelengths are expected to be
-                           specified in increasing order. Automatically detect whether wavelengths
-                           are regularly sampled, and instantiate the appropriate spectrum plugin. */
+                        /* Parse wavelength:value pairs, either inlined or from an external file.
+                           Wavelengths are expected to be specified in increasing order. */
                         std::vector<Float> wavelengths, values;
-                        bool is_regular = true;
-                        Float interval = 0.f;
+                        if (has_value) {
+                            std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
+
+                            for (const std::string &token : tokens) {
+                                std::vector<std::string> pair = string::tokenize(token, ":");
+                                if (pair.size() != 2)
+                                    src.throw_error(node, "invalid spectrum (expected wavelength:value pairs)");
+
+                                Float wavelength, value;
+                                try {
+                                    wavelength = detail::stof(pair[0]);
+                                    value = detail::stof(pair[1]);
+                                } catch (...) {
+                                    src.throw_error(node, "could not parse wavelength:value pair: \"%s\"", token);
+                                }
+
+                                wavelengths.push_back(wavelength);
+                                values.push_back(value);
+                            }
+                        } else if (has_filename) {
+                            auto fs = Thread::thread()->file_resolver();
+                            fs::path file_path = fs->resolve(node.attribute("filename").value());
+                            if (!fs::exists(file_path))
+                                src.throw_error(node, "\"%s\": file does not exist!", file_path);
+
+                            Log(Info, "Loading spectral data file \"%s\" ..", file_path);
+                            ref<FileStream> file = new FileStream(file_path);
+
+                            std::string line, rest;
+                            Float wav, value;
+                            while (true) {
+                                try {
+                                    line = file->read_line();
+                                    if (line.size() == 0 || line[0] == '#')
+                                        continue;
+
+                                    std::istringstream iss(line);
+                                    iss >> wav;
+                                    iss >> value;
+                                    if (iss >> rest)
+                                        src.throw_error(node, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
+                                    wavelengths.push_back(wav);
+                                    values.push_back(value);
+                                } catch (std::exception &) {
+                                    break;
+                                }
+                            }
+                        }
 
                         /* Values are scaled so that integrating the spectrum against the CIE curves
-                           and converting to sRGB yields (1, 1, 1) for D65. */
+                               and converting to sRGB yields (1, 1, 1) for D65. */
                         Float unit_conversion = 1.f;
                         if (within_emitter || ctx.color_mode != ColorMode::Spectral)
                             unit_conversion = MTS_CIE_Y_NORMALIZATION;
 
-                        for (const std::string &token : tokens) {
-                            std::vector<std::string> pair = string::tokenize(token, ":");
-                            if (pair.size() != 2)
-                                src.throw_error(node, "invalid spectrum (expected wavelength:value pairs)");
+                        /* Detect whether wavelengths are regularly sampled and potentailly
+                           apply a apply the conversion factor. */
+                        bool is_regular = true;
+                        Float interval = 0.f;
 
-                            Float wavelength, value;
-                            try {
-                                wavelength = detail::stof(pair[0]);
-                                value = detail::stof(pair[1]);
-                            } catch (...) {
-                                src.throw_error(node, "could not parse wavelength:value pair: \"%s\"", token);
-                            }
+                        for (size_t n = 0; n < wavelengths.size(); ++n) {
+                            values[n] *= unit_conversion;
 
-                            wavelengths.push_back(wavelength);
-                            values.push_back(unit_conversion * value);
-
-                            size_t n = wavelengths.size();
-                            if (n <= 1)
+                            if (n <= 0)
                                 continue;
 
-                            Float distance = (wavelengths[n - 1] - wavelengths[n - 2]);
+                            Float distance = (wavelengths[n] - wavelengths[n - 1]);
                             if (distance < 0.f)
                                 src.throw_error(node, "wavelengths must be specified in increasing order");
-                            if (n == 2)
+                            if (n == 1)
                                 interval = distance;
                             else if (std::abs(distance - interval) > math::Epsilon<Float>)
                                 is_regular = false;
                         }
-
-                        if (!is_regular)
-                            Throw("Not implemented yet: irregularly sampled spectra");
 
                         Properties props2;
 

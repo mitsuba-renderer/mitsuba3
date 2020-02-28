@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Linear interpolant of a regularly sampled spectrum
+/// Linear interpolant of an irregularly sampled spectrum
 template <typename Float, typename Spectrum>
 class IrregularSpectrum final : public Texture<Float, Spectrum> {
 public:
