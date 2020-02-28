@@ -1,10 +1,10 @@
-Evaluating a BSDF
-=================
+Custom applications
+===================
 
-The Python API can also be used to interface with more low-level components
-of the renderer directly, without rendering an image.
-In this section for example, we instatiate a :ref:`bsdf-roughconductor`
-BSDF plugin and evaluate it for some incident and outgoing direction pairs.
+The Python API can also be used to directly interface with lower-level
+components of the renderer. In this section, we show how to instantiate a
+:ref:`rough conductor <bsdf-roughconductor>` BSDF and plot its output for some
+combinations of incident and outgoing directions.
 
 .. code-block:: python
 
@@ -14,14 +14,17 @@ BSDF plugin and evaluate it for some incident and outgoing direction pairs.
     # Set the desired mitsuba variant
     mitsuba.set_variant('packet_rgb')
 
-    from mitsuba.render import SurfaceInteraction3f, BSDFContext
+    from mitsuba.core import Float, Vector3f
     from mitsuba.core.xml import load_string
+    from mitsuba.render import SurfaceInteraction3f, BSDFContext
 
-    # Create unit directions from spherical coordinates
+
     def sph_dir(theta, phi):
+        """ Map spherical to Euclidean coordinates """
         st, ct = ek.sincos(theta)
         sp, cp = ek.sincos(phi)
-        return mitsuba.core.Vector3f(cp*st, sp*st, ct)
+        return Vector3f(cp*st, sp*st, ct)
+
 
     # Load desired BSDF plugin
     bsdf = load_string("""<bsdf version='2.0.0' type='roughconductor'>
@@ -32,22 +35,22 @@ BSDF plugin and evaluate it for some incident and outgoing direction pairs.
     # Create a (dummy) surface interaction to use for the evaluation
     si = SurfaceInteraction3f()
 
-    # Specify incident direction with 45 degrees elevation
-    si.wi = sph_dir(ek.pi*45.0/180.0, 0.0)
+    # Specify an incident direction with 45 degrees elevation
+    si.wi = sph_dir(ek.pi * 45 / 180, 0.0)
 
-    # Create a record that can carry additional information about the BSDF query
-    ctx = BSDFContext()
-
-    # Create large packet of outgoing directions from a grid in spherical coordinates
+    # Create grid in spherical coordinates and map it onto the sphere
     res = 300
-    theta_os = ek.linspace(ek.dynamic.Float32, 0, ek.pi, res)
-    phi_os   = ek.linspace(ek.dynamic.Float32, 0, 2*ek.pi, 2*res)
-    theta_o, phi_o = ek.meshgrid(theta_os, phi_os)
+    theta_o, phi_o = ek.meshgrid(
+        ek.linspace(Float, 0,     ek.pi,     res),
+        ek.linspace(Float, 0, 2 * ek.pi, 2 * res)
+    )
     wo = sph_dir(theta_o, phi_o)
 
-    # Evaluate the whole packet (18000 directions) at once
-    values = bsdf.eval(ctx, si, wo)
-The generated array of values can then be further processed in NumPy or plotted with matplotlib:
+    # Evaluate the whole array (18000 directions) at once
+    values = bsdf.eval(BSDFContext(), si, wo)
+
+The generated array of values can then be further processed in NumPy or plotted
+using :monosp:`matplotlib`:
 
 .. code-block:: python
 
@@ -55,24 +58,28 @@ The generated array of values can then be further processed in NumPy or plotted 
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-    # Extract red channel and bring data back into 2D grid
-    values_r = np.array(values)[:,0]
-    values_r = values_r.reshape(2*res, res).T
+    # Extract red channel of BRDF values and reshape into 2D grid
+    values_r = np.array(values)[:, 0]
+    values_r = values_r.reshape(2 * res, res).T
 
     # Plot values for spherical coordinates
-    plt.figure()
-    ax = plt.gca()
+    fig, ax = plt.subplots(figsize=(12, 7))
 
-    im = ax.imshow(values_r, extent=[0, 2*np.pi, np.pi, 0], cmap='jet', interpolation='bicubic')
+    im = ax.imshow(values_r, extent=[0, 2 * np.pi, np.pi, 0],
+                   cmap='jet', interpolation='bicubic')
+
     ax.set_xlabel(r'$\phi_o$', size=14)
-    ax.set_xticks([0, np.pi, 2*np.pi]); ax.set_xticklabels(['0', '$\pi$', '$2\pi$'])
+    ax.set_xticks([0, np.pi, 2 * np.pi])
+    ax.set_xticklabels(['0', '$\\pi$', '$2\\pi$'])
     ax.set_ylabel(r'$\theta_o$', size=14)
-    ax.set_yticks([0, np.pi/2, np.pi]); ax.set_yticklabels(['0', '$\pi/2$', '$\pi$'])
+    ax.set_yticks([0, np.pi / 2, np.pi])
+    ax.set_yticklabels(['0', '$\\pi/2$', '$\\pi$'])
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.05)
     plt.colorbar(im, cax=cax)
 
+    # fig.savefig("bsdf_eval.jpg", dpi=150, bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
@@ -83,6 +90,9 @@ This creates the following visualization:
     :align: center
 
 
-.. note:: The full Python script of this tutorial can be found in the file: :code:`docs/examples/05_bsdf_eval/bsdf_eval.py`.
+.. note::
+
+    The full Python script of this tutorial can be found in the file:
+    :file:`docs/examples/05_bsdf_eval/bsdf_eval.py`.
 
 

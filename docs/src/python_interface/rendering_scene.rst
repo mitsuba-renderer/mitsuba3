@@ -38,18 +38,19 @@ After rendering, it is possible to write out the rendered data as an HDR OpenEXR
     film.set_destination_file('/path/to/output.exr')
     film.develop()
 
-One can also write out a tonemapped JPG of the same rendering using the ``Bitmap`` class:
+One can also write out a gamma tone-mapped JPEG file of the same rendering
+using the :py:class:`mitsuba.core.Bitmap` class:
 
 .. code-block:: python
 
-    # Write out a tonemapped JPG of the same rendering
+    # Write out a tone-mapped JPG of the same rendering
     from mitsuba.core import Struct
-    bmp = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True)
-    bmp.write('/path/to/output.jpg')
+    img = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True)
+    img.write('/path/to/output.jpg')
 
-The ``raw`` argument in :code:`film.bitmap()` specifies that we are interested in the raw
-data of the film in order to convert it ourself into the desired format. When passing ``False``,
-the data will automatically be converted into the format specified in the scene file.
+The ``raw=True`` argument in :code:`film.bitmap()` specifies that we are
+interested in the raw film contents to be able to perform a conversion into the
+desired output format ourselves.
 
 The data stored in the ``Bitmap`` object can also be cast into a NumPy array for further processing
 in Python:
@@ -57,11 +58,12 @@ in Python:
 .. code-block:: python
 
     # Get linear pixel values as a NumPy array for further processing
-    bmp = bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False)
+    img = img.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, srgb_gamma=False)
     import numpy as np
-    image_np = np.array(bmp)
+    image_np = np.array(img)
     print(image_np.shape)
 
-.. note:: The full Python script of this tutorial can be found in the file: ``docs/examples/01_render_scene/render_scene.py``.
+.. note::
 
-
+    The full Python script of this tutorial can be found in the file:
+    :file:`docs/examples/01_render_scene/render_scene.py`.
