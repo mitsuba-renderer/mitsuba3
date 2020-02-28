@@ -126,7 +126,7 @@ def generate(build_dir):
         # process_src(f, 'textures')
         # process_src(f, 'subsurface')
         # process_src(f, 'medium', 'section_media')
-        process_src(f, 'phasefunctions', ordering=PHASE_ORDERING)
+        process_src(f, 'phase', ordering=PHASE_ORDERING)
         # process_src(f, 'volume', 'section_volumes')
         process_src(f, 'emitters', 'section_emitter', EMITTER_ORDERING)
         process_src(f, 'sensors', 'section_sensor', SENSOR_ORDERING)

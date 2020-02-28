@@ -642,6 +642,7 @@ def write_rst_file_callback(app, exception):
         lib_api_filename = join(docs_path, 'generated/%s_api.rst' % lib)
         with open(lib_api_filename, 'w') as f:
             print('Generate %s API RST file: %s' % (lib, lib_api_filename))
+            f.write('.. _sec-api-%s:\n\n' % lib)
             f.write('%s API Reference\n' % lib.title())
             f.write('=' * len(lib) + '==============\n')
             f.write('\n')

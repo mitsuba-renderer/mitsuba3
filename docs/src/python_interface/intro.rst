@@ -1,65 +1,79 @@
+.. _sec-python:
+
 Introduction
 ==============
 
-Mitsuba 2 has extensive Python bindings. All plugins come with Python bindings, which means that it
-is possible to write vectorized or differentiable integrators entirely in Python.
-The bindings can not only be used to write integrators, but also for more specialized applications,
-where the output is not necessarily an image.
-The user can access scene intersection routines, BSDF evaluations and emitters entirely from Python.
+Mitsuba 2 provides extremely fine-grained Python bindings to essentially every
+function in the system. This makes it possible to import the renderer into a
+Jupyter notebook and develop new algorithms interactively while visualizing
+their behavior using plots. 
 
-We provide several examples of how the Python bindings can be used.
-In this part of the documentation, we focus entirely on the use of the bindings for forward
-rendering applications. A seperate group of tutorials describes how to use Mitsuba 2 for
-differentiable rendering.
+Ray intersections, BSDF evaluations and emitters, and numerous other system
+components can be queried and sampled through an efficient vectorized
+interface, enabling the design of non-traditional applications that do not
+necessarily produce a rendering as output. The bindings blur the boundaries
+between C++ and the Python world: it is for instance possible to to implement a
+new Mitsuba plugin (e.g. a BSDF) using Python and use it to render an image,
+where most rendering code runs in C++. Several Mitsuba variants heavily rely on
+JIT compilation, and such Python extensions are jointly JIT-compiled along with
+other C++ portions of the system.
 
-Moreover, the large automated test suite written in Python is an excellent source of examples.
+Mitsuba's automated test suite is entirely written in Python, which ensures the
+completeness and correctness of the Python bindings and also serves as an
+excellent source of Python example code.
 
+This remainder of this section provides a number of examples on using the
+Python API and points out additional sources of information. For now, we focus
+on the use of the bindings for "forward" rendering applications. A separate set
+of tutorials describes applications to differentiable and inverse rendering.
 
-Import Python bindings
+Importing the renderer
 ----------------------
 
-Mitsuba 2 can be compiled to a great variety of different variants (e.g. :code:`'scalar_rgb'`,
-:code:`'gpu_spectral'`, etc.) that each have their own Python bindings in
-addition to generic/non-templated code that lives in yet another module. Writing various different
-prefixes many times in import statements such as
+Mitsuba 2 ships with many different system variants, each of which provides its
+own set of Python bindings that are necessarily different from others due to
+the replacement of types in function signatures. 
 
-.. code-block:: python
-
-    from mitsuba.render_gpu_spectral_ext import Integrator
-    from mitsuba.core_ext import FileStream
-
-can get rather tiring. For this reason, Mitsuba uses *virtual* Python modules that dynamically
-resolve import statements to the right destination. The desired Mitsuba variant should be specified
-via this function. The above example then simplifies to
+To import Mitsuba into Python, you will first have to import the central
+:code:`mitsuba` module and set the desired variant. Following this, specific
+classes can be imported.
 
 .. code-block:: python
 
     import mitsuba
 
-    mitsuba.set_variant('gpu_spectral')
+    mitsuba.set_variant('gpu_autodiff_spectral')
 
-    from mitsuba.render import Integrator
+    # set_variant() call must precede the following two lines
     from mitsuba.core import FileStream
+    from mitsuba.render import Integrator
 
-The variant name can be changed at any time and will only apply to future imports. The variant name
-is a per-thread property, hence multiple independent threads can execute code in separate variants.
-Other helper functions are provided in Python in order to interact with the available variants:
+Behind the scenes, Mitsuba exposes a *virtual* Python module that dynamically
+resolves import statements to the right destination (as specified via
+``set_variant()``). The variant name can be changed at any time and will then
+apply to future imports. The variant name is a per-thread property, hence
+multiple independent threads can execute code in separate variants.
+
+Other helper functions are provided in Python in order to interact with the
+available variants:
 
 .. code-block:: python
 
-    # Returns the list of names of the different variants available
-    mitsuba.variants() # e.g. ['scalar_rgb', 'gpu_spectral']
+    # Returns the list of available system variants
+    mitsuba.variants() # e.g. ['scalar_rgb', 'gpu_autodiff_spectral']
 
     # Returns the name of the current variant
-    mitsuba.variant() # e.g. 'scalar_rgb'
+    mitsuba.variant() # e.g. 'gpu_autodiff_spectral'
 
 
-Python API documentation
-------------------------
+API documentation
+-----------------
 
-The Python bindings exports comprehensive Python-style docstrings, hence it is possible to get
-information on classes, function, or entire namespaces within using the :code:`help` Python function
-after having set the desired variant:
+Extensive API documentation is available as part of this document. See the
+:ref:`sec-api` section for details.
+
+The Python bindings furthermore export docstrings, making it is possible to
+obtain information on classes, function via the ``help()`` function:
 
 .. code-block:: python
 
@@ -79,16 +93,6 @@ after having set the desired variant:
     # |  metadata, and the gamma setting can be stored as well. Please see the
     # |  class methods and enumerations for further detail.
     # |
-    # |  Method resolution order:
-    # |      Bitmap
-    # |      Object
-    # |      pybind11_builtins.pybind11_object
-    # |      builtins.object
-    # |
-    # |  Methods defined here:
-    # |
-    # |  __eq__(...)
-    # |      __eq__(self: mitsuba.core.Bitmap, arg0: mitsuba.core.Bitmap) -> bool
     # ...
 
 

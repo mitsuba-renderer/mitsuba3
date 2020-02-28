@@ -1,3 +1,5 @@
+.. _sec-api-render:
+
 Render API Reference
 ====================
 

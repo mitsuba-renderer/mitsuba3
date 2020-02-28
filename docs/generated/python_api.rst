@@ -1,3 +1,5 @@
+.. _sec-api-python:
+
 Python API Reference
 ====================
 

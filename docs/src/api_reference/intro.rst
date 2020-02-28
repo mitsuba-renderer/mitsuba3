@@ -1,14 +1,28 @@
-.. _apis:
+.. _sec-api:
 
-API reference
-=============
+Introduction
+============
 
-This API reference documentation is automatically generated leveraging the
-`Autodoc <http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.htm>`_ Sphinx extension.
+This API reference documentation was automatically generated using the `Autodoc
+<http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.htm>`_ Sphinx
+extension.
 
-It reads the documentation from the `mitsuba` Python module, therefore signatures and types follow
-the Python API. As those bindings try to mimic the C++ API as closely as possible, this API
-documentation is still relevant and informative with regards to the C++ codebase.
+Autodoc automatically processes the documentation of Mitsuba's Python bindings,
+hence all C++ function and class signatures are documented through their Python
+counterparts. Mitsuba's bindings mimic the C++ API as closely as possible,
+hence this documentation should still prove valuable even for C++ developers.
 
-.. warning:: Only the ``scalar_rgb`` variant of the API is documented here, which cover most of the
-             framework.
+The documentation is split into three-submodules:
+
+- :ref:`sec-api-core`
+- :ref:`sec-api-render`
+- :ref:`sec-api-python`
+
+.. warning::
+
+    The documentation was extracted from the ``scalar_rgb`` variant of the
+    renderer. Other variants will use different types in many function and
+    attribute signatures. Such changes should mostly be "obvious" from the
+    context. For example, ``scalar_spectral`` will replace all RGB types by
+    color spectra, and ``gpu_rgb`` will replace scalar floating point values
+    with Enoki CUDA arrays, etc.

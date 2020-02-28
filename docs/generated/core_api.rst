@@ -1,3 +1,5 @@
+.. _sec-api-core:
+
 Core API Reference
 ==================
 
