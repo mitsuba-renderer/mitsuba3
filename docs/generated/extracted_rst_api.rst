@@ -3303,7 +3303,7 @@
 
 .. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
     :type: bool
-    :value: False
+    :value: True
 
 .. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
     :type: int
@@ -14596,6 +14596,95 @@
     Returns → float:
         *no description available*
 
+.. py:function:: mitsuba.python.math.rlgamma(a, x)
+
+    Regularized lower incomplete gamma function based on CEPHES
+
+.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+
+    Implements the optimization technique presented in
+
+    "Adam: A Method for Stochastic Optimization"
+    Diederik P. Kingma and Jimmy Lei Ba
+    ICLR 2015
+
+    .. py:method:: __init__(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``beta_1``:
+            controls the exponential averaging of first
+            order gradient moments
+        
+        Parameter ``beta_2``:
+            controls the exponential averaging of second
+            order gradient moments
+
+        
+.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
+
+    Base class of optimizers (SGD, Adam)
+
+    .. py:method:: __init__(params, lr)
+
+        Parameter ``params``:
+            dictionary ``(name: variable)`` of differentiable parameters to be optimized.
+        
+        Parameter ``lr``:
+            learning rate
+
+        
+    .. py:method:: mitsuba.python.autodiff.Optimizer.set_learning_rate(lr)
+
+        Set the learning rate.
+
+    .. py:method:: mitsuba.python.autodiff.Optimizer.disable_gradients()
+
+        Temporarily disable the generation of gradients.
+
+.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)
+
+    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+
+    Implements basic stochastic gradient descent with a fixed learning rate
+    and, optionally, momentum (0.9 is a typical parameter value).
+
+    .. py:method:: __init__(params, lr, momentum=0)
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``momentum``:
+            momentum factor
+
+        
+    .. py:method:: mitsuba.python.autodiff.SGD.step()
+
+        Take a gradient step 
+
+.. py:function:: mitsuba.python.autodiff.render(scene, spp=None, sensor_index=0)
+
+    Render the specified Mitsuba scene and return a floating point
+    array containing RGB values and AOVs, if applicable
+
+.. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp_primal=None, spp_diff=None, sensor_index=0)
+
+    Perform a differentiable of the scene `scene`. This function differs from
+    ``render()`` in that it splits the rendering step into two separate passes
+    that generate the primal image and gradients, respectively (assuming that
+    ``unbiased=True`` is specified). This is necessary to avoid correlations that
+    would otherwise introduce bias into the resulting parameter gradients.
+
+.. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)
+
+.. py:function:: mitsuba.python.autodiff.write_bitmap(filename, data, resolution)
+
+    Write the linearized RGB image in `data` to a
+    PNG/EXR/.. file with resolution `resolution`.
+
 .. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
 
     Adapter to test BSDF sampling using the Chi^2 test.
@@ -14749,94 +14838,27 @@
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
-.. py:function:: mitsuba.python.math.rlgamma(a, x)
+    This dictionary exposes multiple non-standard methods:
 
-    Regularized lower incomplete gamma function based on CEPHES
+    1. ``keep(self, keys: list) -> None:``
 
-.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+       Reduce the size of the dictionary by only keeping elements,
+       whose keys are part of the provided list 'keys'.
 
-    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+    2. ``update(self) -> None:``
 
-    Implements the optimization technique presented in
+       This function should be called at the end of a sequence of writes
+       to the dictionary. It automatically notifies all modified Mitsuba
+       objects and their parent objects that they should refresh their
+       internal state. For instance, the scene may rebuild the kd-tree
+       when a shape was modified, etc.
 
-    "Adam: A Method for Stochastic Optimization"
-    Diederik P. Kingma and Jimmy Lei Ba
-    ICLR 2015
+    3. ``torch(self) -> dict:``
 
-    .. py:method:: __init__(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+       Converts all Enoki arrays into PyTorch arrays and return them as a
+       dictionary. This is mainly useful when using PyTorch to optimize a
+       Mitsuba scene.
 
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``beta_1``:
-            controls the exponential averaging of first
-            order gradient moments
-        
-        Parameter ``beta_2``:
-            controls the exponential averaging of second
-            order gradient moments
-
-        
-.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
-
-    Base class of optimizers (SGD, Adam)
-
-    .. py:method:: __init__(params, lr)
-
-        Parameter ``params``:
-            dictionary ``(name: variable)`` of differentiable parameters to be optimized.
-        
-        Parameter ``lr``:
-            learning rate
-
-        
-    .. py:method:: mitsuba.python.autodiff.Optimizer.set_learning_rate(lr)
-
-        Set the learning rate.
-
-    .. py:method:: mitsuba.python.autodiff.Optimizer.disable_gradients()
-
-        Temporarily disable the generation of gradients.
-
-.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)
-
-    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
-
-    Implements basic stochastic gradient descent with a fixed learning rate
-    and, optionally, momentum (0.9 is a typical parameter value).
-
-    .. py:method:: __init__(params, lr, momentum=0)
-
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``momentum``:
-            momentum factor
-
-        
-    .. py:method:: mitsuba.python.autodiff.SGD.step()
-
-        Take a gradient step 
-
-.. py:function:: mitsuba.python.autodiff.render(scene, spp=None, sensor_index=0)
-
-    Render the specified Mitsuba scene and return a floating point
-    array containing RGB values and AOVs, if applicable
-
-.. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp_primal=None, spp_diff=None, sensor_index=0)
-
-    Perform a differentiable of the scene `scene`. This function differs from
-    ``render()`` in that it splits the rendering step into two separate passes
-    that generate the primal image and gradients, respectively (assuming that
-    ``unbiased=True`` is specified). This is necessary to avoid correlations that
-    would otherwise introduce bias into the resulting parameter gradients.
-
-.. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)
-
-.. py:function:: mitsuba.python.autodiff.write_bitmap(filename, data, resolution)
-
-    Write the linearized RGB image in `data` to a
-    PNG/EXR/.. file with resolution `resolution`.
 
 .. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
 

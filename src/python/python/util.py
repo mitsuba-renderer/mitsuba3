@@ -2,6 +2,28 @@ def traverse(node):
     """
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
+
+    This dictionary exposes multiple non-standard methods:
+
+    1. ``keep(self, keys: list) -> None``:
+
+       Reduce the size of the dictionary by only keeping elements,
+       whose keys are part of the provided list 'keys'.
+
+    2. ``update(self) -> None``:
+
+       This function should be called at the end of a sequence of writes
+       to the dictionary. It automatically notifies all modified Mitsuba
+       objects and their parent objects that they should refresh their
+       internal state. For instance, the scene may rebuild the kd-tree
+       when a shape was modified, etc.
+
+    3. ``torch(self) -> dict``:
+
+       Converts all Enoki arrays into PyTorch arrays and return them as a
+       dictionary. This is mainly useful when using PyTorch to optimize a
+       Mitsuba scene.
+
     """
     from mitsuba.core import TraversalCallback, \
         set_property, get_property
@@ -96,7 +118,7 @@ def traverse(node):
             return ParameterMapItemIterator(self)
 
         def torch(self):
-            return { k : v.torch().requires_grad_() for k, v in self.items() }
+            return {k: v.torch().requires_grad_() for k, v in self.items()}
 
         def update(self):
             work_list = sorted(set(self.update_list), key=lambda x: x[0])
@@ -104,10 +126,10 @@ def traverse(node):
                 node.parameters_changed()
             self.update_list.clear()
 
-        def keep(self, values):
-            values = set(values)
+        def keep(self, keys):
+            keys = set(keys)
             self.properties = {
-                k:v for k, v in self.properties.items() if k in values
+                k: v for k, v in self.properties.items() if k in keys
             }
 
     return ParameterMap(cb.properties, cb.hierarchy)

@@ -15,10 +15,6 @@ parallelizes the test execution.
 
 .. code-block:: bash
 
-    # if using Makefiles
-    make pytest
-
-    # if using ninja
     ninja pytest
 
 
