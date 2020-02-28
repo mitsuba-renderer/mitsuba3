@@ -1,18 +1,16 @@
 Parsing XML code
 =================
 
-The :code:`mitsuba.core.xml` sub-module provides two methods for parsing XML code following the
-scene format convention. :code:`load_file` to parses XML files and :code:`load_string` to parses
-XML strings.
+Mitsuba provides two functions for parsing data expressed in :ref:`Mitsuba's
+XML scene description language <sec-file-format>`:
+:py:func:`mitsuba.core.xml.load_file` to load files on disk, and
+:py:func:`mitsuba.core.xml.load_string` to load arbitrary strings.
 
 Loading a scene
 ---------------
 
-When dealing with relative path in the scene description, the XML parser relies on the thread local
-:code:`FileResolver` for resolving the full paths. It is therefore necessary to add the scene directory to
-the :code:`FileResolver`'s search path in order to properly load the scene's data (e.g. mesh, textures, ...).
-
-Here is a simple Python example on how to load a Mitsuba scene from an XML file:
+Here is a complete Python example on how to load a Mitsuba scene from an XML
+file:
 
 .. code-block:: python
 
@@ -31,11 +29,18 @@ Here is a simple Python example on how to load a Mitsuba scene from an XML file:
     # Load the scene for an XML file
     scene = load_file(filename)
 
+Because the scene may reference external resources like meshes and textures
+using relative paths specified in the XML file, Mitsuba must be informed where
+to look for such files. The code above does this via the thread-local
+:py:class:`mitsuba.core.FileResolver` class.
+
 
 Passing arguments to the scene
 ------------------------------
 
-As explained in :ref:`sec-scene-file-format-params`, a scene file can contained named parameters:
+As explained in the discussion of :ref:`Mitsuba's scene description language
+<sec-scene-file-format-params>`, a scene file can contained named parameters
+prefixed with a ``$`` sign:
 
 .. code-block:: xml
     :name: cbox-xml
@@ -47,7 +52,8 @@ As explained in :ref:`sec-scene-file-format-params`, a scene file can contained 
         <integer name="sample_count" value="$spp"/>
     </sampler>
 
-In Python, it is possible to set those parameters when loading the scene using the :code:`parameters` argument:
+These parameters can be specified from Python when loading the scene, using
+the ``parameters=`` argument.
 
 .. code-block:: python
 
@@ -58,7 +64,7 @@ Loading a Mitsuba object
 ------------------------
 
 It is also possible to create an instance of a single Mitsuba object (e.g. a BSDF) using
-the XML parser in Python, as shown in the following Python snippet:
+the XML parser, as shown in the following Python snippet:
 
 .. code-block:: python
 
@@ -67,3 +73,6 @@ the XML parser in Python, as shown in the following Python snippet:
     from mitsuba.core.xml import load_string
 
     diffuse_bsdf = load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
+
+Mitsuba's test suite frequently makes use of this approach to inspect the
+behavior of individual system components.

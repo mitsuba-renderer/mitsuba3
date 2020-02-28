@@ -35,7 +35,7 @@ own set of Python bindings that are necessarily different from others due to
 the replacement of types in function signatures. 
 
 To import Mitsuba into Python, you will first have to import the central
-:code:`mitsuba` module and set the desired variant. Following this, specific
+``mitsuba`` module and set the desired variant. Following this, specific
 classes can be imported.
 
 .. code-block:: python
@@ -96,34 +96,103 @@ obtain information on classes, function via the ``help()`` function:
     # ...
 
 
+Basic arithmetic types
+----------------------
 
+Mitsuba heavily relies on the `Enoki
+<https://enoki.readthedocs.io/en/master/intro.html>`_ library for elementary
+arithmetic types, mathematical operations, vectors, matrices, and so on. Enoki
+is used both on the C++ and Python side, and we recommend that you read its
+documentation before developing any Mitsuba code.
 
-Enoki aliases
--------------
-
-In order to let the user write generic code in Python that is valid for the different variants of
-the renderer, :code:`mitsuba.core` provides aliases for basic types like :code:`Float`,
-:code:`UInt32`, etc, as well as for |enoki| types such as :code:`Vector2f`, :code:`Vector3f`,
-:code:`Vector2i`, :code:`Point3f`, etc.
+One important point to note is that elementary types like floating point
+numbers, vectors, etc., depend on the current variant. Mitsuba exports aliases
+to these types for convenience. For instance, consider the following snippet
 
 .. code-block:: python
 
     import mitsuba
+    mitsuba.set_variant('scalar_rgb')
+    from mitsuba.core import Float
+
+The imported ``Float`` type is simply a builtin Python ``float`` because the
+renderer is operating in scalar mode. But more complex types would be used in
+the vectorized ``packet_*`` or ``gpu_*`` backends, and these also propagate
+into derived array types like vectors or matrices.
+
+.. code-block:: python
 
     mitsuba.set_variant('packet_rgb')
-    from mitsuba.core import Float
-    # Float = enoki.dynamic.Float (aka DynamicArray<Packet<float>)
-    from mitsuba.core import Vector2f
-    # Vector2f = enoki.dynamic.Vector2f (aka Array<DynamicArray<Packet<float>, 2>)
+    from mitsuba.core import Float, Vector3f
+    # Float    = enoki.dynamic.Float32  (a.k.a. enoki::DynamicArray<Packet<float>>)
+    # Vector3f = enoki.dynamic.Vector3f (a.k.a. enoki::Array<DynamicArray<Packet<float>, 3>>)
 
     mitsuba.set_variant('gpu_rgb')
-    from mitsuba.core import Float
-    # Float = enoki.cuda.Float (aka CUDAArray<float>)
-    from mitsuba.core import Vector2f
-    # Vector2f = enoki.cuda.Vector2f (aka Array<CUDAArray<float>, 2>)
+    from mitsuba.core import Float, Vector3f
+    # Float    = enoki.cuda.Float32  (a.k.a. enoki::CUDAArray<float>)
+    # Vector3f = enoki.cuda.Vector3f (a.k.a. enoki::Array<enoki::CUDAArray<float>, 3>>)
 
-In the following Python snippet, we show how one can use those aliases to write generic
-code that can run on the CPU or the GPU, depending on the choosen variant.
+In some cases, it may be desirable to work with *scalar* numbers and vectors even working
+with a vectorized backend. Simply add the ``Scalar`` prefix before any type name in this
+case.
+
+.. code-block:: python
+
+    mitsuba.set_variant('gpu_rgb')
+    from mitsuba.core import ScalarFloat, ScalarVector3f
+    # ScalarFloat    = float
+    # ScalarVector3f = enoki.scalar.Vector3f (a.k.a. enoki::Array<float, 3>>)
+
+Altogether, the following basic types are provided:
+
+.. figtable::
+    :label: table-basic-types
+    :caption: This table lists Mitsuba's built-in arithmetic and array types.
+
+    .. list-table::
+        :widths: 17 30
+        :header-rows: 1
+
+        * - Type name
+          - Description
+        * - ``Mask``
+          - Result of a comparison involving an arithmetic type like ``Float``.
+        * - ``Float``
+          - Default floating point type (which could be single or double precision)
+        * - ``Float32``
+          - Single precision floating point type
+        * - ``Float64``
+          - Double precision floating point type
+        * - ``UInt32``
+          - Unsigned 32-bit integer
+        * - ``Int32``
+          - Signed 32-bit integer
+        * - ``UInt64``
+          - Unsigned 64-bit integer
+        * - ``Int64``
+          - Signed 64-bit integer
+        * - ``Normal3f``
+          - 3D normal vector
+        * - ``Color[0-4]f``
+          - Color vector with floating point components of the default precision (0 to 4 dimensions).
+        * - ``Vector[0-4]f``
+          - Vector with floating point components of the default precision (0 to 4 dimensions)
+        * - ``Point[0-4]f``
+          - Point with floating point components of the default precision (0 to 4 dimensions)
+        * - ``Vector[0-4]i``
+          - Vector with signed 32-bit integer components (0 to 4 dimensions)
+        * - ``Point[0-4]i``
+          - Point with signed 32-bit integer components (0 to 4 dimensions)
+        * - ``Vector[0-4]u``
+          - Vector with unsigned signed 32-bit integer components (0 to 4 dimensions)
+        * - ``Point[0-4]u``
+          - Point with unsigned signed 32-bit integer components (0 to 4 dimensions)
+        * - ``Matrix[2-4]f``
+          - Matrix with floating point components of the default precision (2 to 4 dimensions)
+
+In the following Python snippet, we show how one can use those aliases to write
+generic code that can run on the CPU or the GPU, depending on the chosen
+variant.
 
 .. code-block:: python
 
@@ -131,50 +200,41 @@ code that can run on the CPU or the GPU, depending on the choosen variant.
     import mitsuba
 
     # Choose the variant
-    mitsuba.set_variant('packet_rgb') # valid code with other variants, e.g. 'gpu_rgb'
+    mitsuba.set_variant('packet_rgb') # also works on the GPU, e.g. with 'gpu_rgb'
 
     from mitsuba.core import Float, UInt64, Vector2f, PCG32
 
-    # Generate 1000^2 samples in the unit square
-    sample_count = 1000
-    rng = PCG32(initseq=ek.arange(UInt64, sample_count))
+    # PCG32 is a pseudo-random number generator.
+    # Configure it for returning 1000 values at a time
+    rng = PCG32(initseq=ek.arange(UInt64, 1000))
+
+    # Generate 1000 uniform random variates on [0, 1]^2
     samples = Vector2f(rng.next_float32(), rng.next_float32())
 
-    # Project the 2D grid onto a unit sphere
+    # Warp the uniform variates into uniformly distributed points on the sphere
     pos = mitsuba.core.warp.square_to_uniform_sphere(samples)
 
 
-Numpy integration
------------------
+NumPy and PyTorch integration
+-----------------------------
 
-The |enoki| Python bindings rely on `implicit conversion
-<https://pybind11.readthedocs.io/en/stable/advanced/classes.html#implicit-conversions>`_ and the
-`buffer protocol
-<https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html#buffer-protocol>`_ to
-automatically cast |numpy| arrays into the right |enoki| type. This allows the users to
-directly pass |numpy| arrays to Mitsuba functions as in the following example:
+Enoki arrays interoperate with standard Python array libraries like NumPy
+PyTorch. For instance, in the previous example, we could have replaced the
+assignment to the ``samples`` variable by
 
 .. code-block:: python
 
     import numpy as np
-    import mitsuba
-
-    # Choose the variant
-    mitsuba.set_variant("packet_rgb") # valid code with other variants, e.g. 'gpu_rgb'
-
-    # Generate 1000^2 samples in the unit square using Numpy
-    sample_count = 1000
     samples = np.random.random((sample_count, 2))
 
-    # Project the 2D grid onto a unit sphere (implicit conversion to enoki type)
-    pos = mitsuba.core.warp.square_to_uniform_sphere(samples)
-
+and the subsequent ``square_to_uniform_sphere`` call would have performed an
+implicit conversion. Similarly, Enoki arrays can be cast into PyTorch or NumPy
+arrays and plotted using libraries like Matplotlib.
 
 Submodules
 ----------
 
-The Mitsuba Python bindings are split into different Python submodules, following the folder
-structure of the C++ codebase.
+The Mitsuba Python bindings are split into three submodules:
 
 .. list-table::
     :widths: 30 70
@@ -182,11 +242,18 @@ structure of the C++ codebase.
 
     * - Submodule name
       - Description
-    * - :code:`mitsuba.core`
-      - Contains the Python bindings for the classes and functions of the
-        :monosp:`mitsuba/libcore` C++ library.
-    * - :code:`mitsuba.render`
-      - Contains the Python bindings for the classes and functions of the
-        :monosp:`mitsuba/librender` C++ library.
-    * - :code:`mitsuba.python`
-      - Provides classes and functions only related to the Python part of the framework.
+    * - ``mitsuba.core``
+      - Python bindings for the :monosp:`libcore` C++ library, which contains
+        core functionality that is not directly related to rendering
+        algorithms. (→ :ref:`sec-api-core`)
+    * - ``mitsuba.render``
+      - Python bindings for the :monosp:`librender` C++ library, which contains
+        interfaces of components like rendering algorithms, sensors, emitters,
+        textures, participating media, etc. (→ :ref:`sec-api-render`)
+    * - ``mitsuba.python``
+      - Higher-level functionality that is developed in Python: infrastructure
+        for automatic differentiation, testing (Chi^2 test), etc. (→
+        :ref:`sec-api-python`)
+
+
+The :ref:`API reference <sec-api>` provides further details on their contents.

@@ -1,3 +1,5 @@
+.. _sec-file-format:
+
 Scene file format
 =================
 

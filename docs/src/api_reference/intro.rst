@@ -14,9 +14,9 @@ hence this documentation should still prove valuable even for C++ developers.
 
 The documentation is split into three-submodules:
 
-- :ref:`sec-api-core`
-- :ref:`sec-api-render`
-- :ref:`sec-api-python`
+- :ref:`sec-api-core`: Core functionality that is not directly related to rendering algorithms.
+- :ref:`sec-api-render`: Interfaces of components like rendering algorithms, sensors, emitters, textures, participating media, etc.
+- :ref:`sec-api-python`: Higher-level functionality that is written in Python: infrastructure for automatic differentiation, testing (Chi^2 test), etc.
 
 .. warning::
 
