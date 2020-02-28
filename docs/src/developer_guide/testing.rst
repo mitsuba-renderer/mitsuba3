@@ -22,18 +22,19 @@ parallelizes the test execution.
     ninja pytest
 
 
-Chi Square tests
-----------------
+Chi^2 tests
+-----------
 
-The ``mitsuba.python.chi2`` module implements the Pearson's chi-square test for testing goodness of
-fit of a distribution to a known reference distribution.
+The ``mitsuba.python.chi2`` module implements the Pearson's chi-square test for
+testing goodness of fit of a distribution to a known reference distribution.
 
-The implementation specifically compares a Monte Carlo sampling strategy on a 2D (or lower
-dimensional) space against a reference distribution obtained by numerically integrating a
-probability density function over grid in the distribution's parameter domain.
+The implementation specifically compares a Monte Carlo sampling strategy on a
+2D (or lower dimensional) space against a reference distribution obtained by
+numerically integrating a probability density function over grid in the
+distribution's parameter domain.
 
-This is used extensively throughout the test suite to valid the implementation of ``BSDFs``,
-``Emitters``, and other sampling code.
+This is used extensively throughout the test suite to valid the implementation
+of ``BSDFs``, ``Emitters``, and other sampling code.
 
 It is possible to test your own sampling code in the following way:
 
@@ -59,19 +60,19 @@ It is possible to test your own sampling code in the following way:
         sample_dim=2
     )
 
-    chi2.run(significance_level=0.1)
-    print(chi2.messages)
+    assert chi2.run()
 
-In case of failure, the target density and histogram were written to ``chi2_data.py`` which can
-simply be run to plot the data:
+In case of failure, the target density and histogram were written to
+``chi2_data.py`` which can simply be run to plot the data:
 
 .. code-block:: bash
 
     python chi2_data.py
 
 
-The ``mitsuba.python.chi2`` module also provides a set of ``Adapter`` functions which can be used to
-wrap different plugins (e.g. ``BSDF``, ``Emitter``, ...) in order to test them:
+The ``mitsuba.python.chi2`` module also provides a set of ``Adapter`` functions
+which can be used to wrap different plugins (e.g. ``BSDF``, ``Emitter``, ...)
+in order to test them:
 
 .. code-block:: python
 
@@ -89,8 +90,7 @@ wrap different plugins (e.g. ``BSDF``, ``Emitter``, ...) in order to test them:
         sample_dim=3
     )
 
-    chi2.run(significance_level=0.1)
-    print(chi2.messages)
+    assert chi2.run()
 
 
 .. Rendering test suite and Student-T test
