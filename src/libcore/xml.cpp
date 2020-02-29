@@ -847,13 +847,13 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         }
 
                         /* Values are scaled so that integrating the spectrum against the CIE curves
-                               and converting to sRGB yields (1, 1, 1) for D65. */
+                           and converting to sRGB yields (1, 1, 1) for D65. */
                         Float unit_conversion = 1.f;
                         if (within_emitter || ctx.color_mode != ColorMode::Spectral)
                             unit_conversion = MTS_CIE_Y_NORMALIZATION;
 
                         /* Detect whether wavelengths are regularly sampled and potentailly
-                           apply a apply the conversion factor. */
+                           apply the conversion factor. */
                         bool is_regular = true;
                         Float interval = 0.f;
 
@@ -926,11 +926,16 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                             color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Float) steps;
                             color = xyz_to_srgb(color);
 
-                            if (!within_emitter && any(color < 0.f || color > 1.f)) {
+                            /// Spectral IOR values are unbounded and require special handling
+                            std::string name = node.attribute("name").value();
+                            bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
+                                          name == "ext_ior";
+
+                            if (!(within_emitter || is_ior) && any(color < 0.f || color > 1.f)) {
                                 Log(Warn, "Spectrum (at %s): clamping out-of-gamut color %s",
                                     src.offset(node.offset_debug()), color);
                                 color = clamp(color, 0.f, 1.f);
-                            } else if (within_emitter && any(color < 0.f)) {
+                            } else if ((within_emitter || is_ior) && any(color < 0.f)) {
                                 Log(Warn, "Spectrum (at %s): clamping out-of-gamut emission %s",
                                     src.offset(node.offset_debug()), color);
                                 color = max(color, 0.f);
@@ -941,12 +946,6 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 props3 = Properties("uniform");
                                 props3.set_float("value", luminance(color));
                             } else {
-                                std::string name = node.attribute("name").value();
-
-                                /// Spectral IOR values are unbounded and require special handling
-                                bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
-                                              name == "ext_ior";
-
                                 props3 = Properties(within_emitter ? "srgb_d65" : "srgb");
                                 props3.set_color("color", color);
 
