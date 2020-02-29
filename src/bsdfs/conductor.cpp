@@ -16,9 +16,12 @@ Smooth conductor (:monosp:`conductor`)
 
 .. pluginparameters::
 
+ * - material
+   - |string|
+   - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
  * - eta, k
    - |spectrum| or |texture|
-   - Real and imaginary components of the material's index of refraction. (Default: 0.0/1.0)
+   - Real and imaginary components of the material's index of refraction. (Default: based on the value of :monosp:`material`)
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component.
@@ -40,6 +43,19 @@ In contrast to dielectric materials, conductors do not transmit
 any light. Their index of refraction is complex-valued and tends to undergo
 considerable changes throughout the visible color spectrum.
 
+To facilitate the tedious task of specifying spectrally-varying index of
+refraction information, Mitsuba 2 ships with a set of measured data for
+several materials, where visible-spectrum information was publicly
+available [#f1]_.
+
+Note that :num:`conductor-ior-list` also includes several popular optical
+coatings, which are not actually conductors. These materials can also
+be used with this plugin, though note that the plugin will ignore any
+refraction component that the actual material might have had.
+There is also a special material profile named :monosp:`none`, which disables
+the computation of Fresnel reflectances and produces an idealized
+100% reflecting mirror.
+
 When using this plugin, you should ideally one of the :monosp:`spectral` modes
 of the renderer to get the most accurate results. While it also works
 in RGB mode, the computations will be more approximate in nature.
@@ -47,18 +63,137 @@ Also note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
 consider using the :ref:`bsdf-twosided` BRDF adapter plugin.
 
-The following XML snippet describes a material definition for aluminium:
+The following XML snippet describes a material definition for gold:
 
 .. code-block:: xml
-    :name: lst-conductor-aluminium
+    :name: lst-conductor-gold
 
     <bsdf type="conductor">
-        <spectrum name="eta" value="0.789000"/>
-        <spectrum name="k" value="6.150000"/>
+        <string name="material" value="Au"/>
+    </bsdf>
+
+It is also possible to load spectrally varying index of refraction data from
+two external files containing the real and imaginary components,
+respectively (see :ref:`Scene format <sec-file-format>` for details on the file format):
+
+.. code-block:: xml
+    :name: lst-conductor-files
+
+    <bsdf type="conductor">
+        <spectrum name="eta" filename="conductorIOR.eta.spd"/>
+        <spectrum name="k" filename="conductorIOR.k.spd"/>
     </bsdf>
 
 In *polarized* rendering modes, the material automatically switches to a polarized
 implementation of the Fresnel equations.
+
+.. figtable::
+    :label: conductor-ior-list
+    :caption: This table lists all supported materials that can be passed into the
+       :ref:`conductor <bsdf-conductor>` and :ref:`roughconductor <bsdf-roughconductor>`
+       plugins. Note that some of them are not actually conductors---this is not a
+       problem, they can be used regardless (though only the reflection component
+       and no transmission will be simulated). In most cases, there are multiple
+       entries for each material, which represent measurements by different
+       authors.
+    :alt: List table
+
+    .. list-table::
+        :widths: 15 30 15 30
+        :header-rows: 1
+
+        * - Preset(s)
+          - Description
+          - Preset(s)
+          - Description
+        * - a-C
+          - Amorphous carbon
+          - Na\_palik
+          - Sodium
+        * - Ag
+          - Silver
+          - Nb, Nb\_palik
+          - Niobium
+        * - Al
+          - Aluminium
+          - Ni\_palik
+          - Nickel
+        * - AlAs, AlAs\_palik
+          - Cubic aluminium arsenide
+          - Rh, Rh\_palik
+          - Rhodium
+        * - AlSb, AlSb\_palik
+          - Cubic aluminium antimonide
+          - Se, Se\_palik
+          - Selenium
+        * - Au
+          - Gold
+          - SiC, SiC\_palik
+          - Hexagonal silicon carbide
+        * - Be, Be\_palik
+          - Polycrystalline beryllium
+          - SnTe, SnTe\_palik
+          - Tin telluride
+        * - Cr
+          - Chromium
+          - Ta, Ta\_palik
+          - Tantalum
+        * - CsI, CsI\_palik
+          - Cubic caesium iodide
+          - Te, Te\_palik
+          - Trigonal tellurium
+        * - Cu, Cu\_palik
+          - Copper
+          - ThF4, ThF4\_palik
+          - Polycryst. thorium (IV) fluoride
+        * - Cu2O, Cu2O\_palik
+          - Copper (I) oxide
+          - TiC, TiC\_palik
+          - Polycrystalline titanium carbide
+        * - CuO, CuO\_palik
+          - Copper (II) oxide
+          - TiN, TiN\_palik
+          - Titanium nitride
+        * - d-C, d-C\_palik
+          - Cubic diamond
+          - TiO2, TiO2\_palik
+          - Tetragonal titan. dioxide
+        * - Hg, Hg\_palik
+          - Mercury
+          - VC, VC\_palik
+          - Vanadium carbide
+        * - HgTe, HgTe\_palik
+          - Mercury telluride
+          - V\_palik
+          - Vanadium
+        * - Ir, Ir\_palik
+          - Iridium
+          - VN, VN\_palik
+          - Vanadium nitride
+        * - K, K\_palik
+          - Polycrystalline potassium
+          - W
+          - Tungsten
+        * - Li, Li\_palik
+          - Lithium
+          -
+          -
+        * - MgO, MgO\_palik
+          - Magnesium oxide
+          -
+          -
+        * - Mo, Mo\_palik
+          - Molybdenum
+          - none
+          - No mat. profile (100% reflecting mirror)
+
+.. rubric:: Footnotes
+
+.. [#f1] These index of refraction values are identical to the data distributed
+    with PBRT. They are originally from the (`Luxpop database <http://www.luxpop.com>`_)
+    and are based on data by Palik et al. :cite:`Palik1998Handbook` and measurements
+    of atomic scattering factors made by the Center For X-Ray Optics (CXRO) at
+    Berkeley and the Lawrence Livermore National Laboratory (LLNL).
 
  */
 

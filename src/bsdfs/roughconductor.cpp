@@ -32,9 +32,12 @@ Rough conductor material (:monosp:`roughconductor`)
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
      parameter to initialize both :monosp:`alpha_u` and :monosp:`alpha_v` to the same value. (Default: 0.1)
+ * - material
+   - |string|
+   - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
  * - eta, k
    - |spectrum| or |texture|
-   - Real and imaginary components of the material's index of refraction. (Default: 0.0/1.0)
+   - Real and imaginary components of the material's index of refraction. (Default: based on the value of :monosp:`material`)
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
@@ -76,14 +79,14 @@ distributions and has a texturable roughness parameter.
 To facilitate the tedious task of specifying spectrally-varying index of
 refraction information, this plugin can access a set of measured materials
 for which visible-spectrum information was publicly available
-(see Table :num:`ior-table-list` for the full list).
+(see Table :num:`conductor-ior-list` for the full list).
 There is also a special material profile named :monosp:`none`, which disables
 the computation of Fresnel reflectances and produces an idealized
 100% reflecting mirror.
 
 When no parameters are given, the plugin activates the default settings,
-which describe copper with a medium amount of roughness modeled using a
-Beckmann distribution.
+which describe a 100% reflective mirror with a medium amount of roughness modeled
+using a Beckmann distribution.
 
 To get an intuition about the effect of the surface roughness parameter
 :math:`\alpha`, consider the following approximate classification: a value of
@@ -99,8 +102,7 @@ The following XML snippet describes a material definition for brushed aluminium:
     :name: lst-roughconductor-aluminium
 
     <bsdf type="roughconductor">
-        <spectrum name="eta" value="0.789000"/>
-        <spectrum name="k" value="6.150000"/>
+        <string name="material" value="Al"/>
         <string name="distribution" value="ggx"/>
         <float name="alphaU" value="0.05"/>
         <float name="alphaV" value="0.3"/>
