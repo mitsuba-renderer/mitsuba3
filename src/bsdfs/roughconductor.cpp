@@ -140,8 +140,15 @@ public:
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughConductor(const Properties &props) : Base(props) {
-        m_eta = props.texture<Texture>("eta", 0.f);
-        m_k   = props.texture<Texture>("k", 1.f);
+        std::string material = props.string("material", "none");
+        if (props.has_property("eta") || material == "none") {
+            m_eta = props.texture<Texture>("eta", 0.f);
+            m_k   = props.texture<Texture>("k",   1.f);
+            if (material != "none")
+                Throw("Should specify either (eta, k) or material, not both.");
+        } else {
+            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
+        }
 
         mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();

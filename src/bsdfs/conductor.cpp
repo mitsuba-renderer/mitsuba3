@@ -2,6 +2,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/fresnel.h>
+#include <mitsuba/render/ior.h>
 #include <mitsuba/render/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -73,8 +74,15 @@ public:
 
         m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
 
-        m_eta = props.texture<Texture>("eta", 0.f);
-        m_k   = props.texture<Texture>("k",   1.f);
+        std::string material = props.string("material", "none");
+        if (props.has_property("eta") || material == "none") {
+            m_eta = props.texture<Texture>("eta", 0.f);
+            m_k   = props.texture<Texture>("k",   1.f);
+            if (material != "none")
+                Throw("Should specify either (eta, k) or material, not both.");
+        } else {
+            std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
+        }
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

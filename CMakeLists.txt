@@ -550,6 +550,8 @@ endmacro()
 
 add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2spec_opt_run)
 
+file(COPY resources/data/ior DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/dist/data)
+
 add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
 set_property(TARGET dist-copy PROPERTY FOLDER misc)
 

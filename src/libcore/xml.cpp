@@ -7,7 +7,6 @@
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/object.h>
@@ -817,33 +816,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                 values.push_back(value);
                             }
                         } else if (has_filename) {
-                            auto fs = Thread::thread()->file_resolver();
-                            fs::path file_path = fs->resolve(node.attribute("filename").value());
-                            if (!fs::exists(file_path))
-                                src.throw_error(node, "\"%s\": file does not exist!", file_path);
-
-                            Log(Info, "Loading spectral data file \"%s\" ..", file_path);
-                            ref<FileStream> file = new FileStream(file_path);
-
-                            std::string line, rest;
-                            Float wav, value;
-                            while (true) {
-                                try {
-                                    line = file->read_line();
-                                    if (line.size() == 0 || line[0] == '#')
-                                        continue;
-
-                                    std::istringstream iss(line);
-                                    iss >> wav;
-                                    iss >> value;
-                                    if (iss >> rest)
-                                        src.throw_error(node, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
-                                    wavelengths.push_back(wav);
-                                    values.push_back(value);
-                                } catch (std::exception &) {
-                                    break;
-                                }
-                            }
+                            spectrum_from_file(node.attribute("filename").value(), wavelengths, values);
                         }
 
                         /* Values are scaled so that integrating the spectrum against the CIE curves
@@ -892,54 +865,13 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                         // In non-spectral mode, pre-integrate against the CIE matching curves
                         if (ctx.color_mode != ColorMode::Spectral) {
-                            Color3f color = zero<Color3f>();
-
-                            const int steps = 1000;
-                            for (int i = 0; i < steps; ++i) {
-                                Float x = MTS_WAVELENGTH_MIN +
-                                          (i / (Float) (steps - 1)) *
-                                              (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
-
-                                if (x < wavelengths.front() || x > wavelengths.back())
-                                    continue;
-
-                                // Find interval containing 'x'
-                                UInt32 index = math::find_interval(
-                                    (uint32_t) wavelengths.size(),
-                                    [&](uint32_t idx) {
-                                        return wavelengths[idx] <= x;
-                                    });
-
-                                Float x0 = wavelengths[index],
-                                      x1 = wavelengths[index + 1],
-                                      y0 = values[index],
-                                      y1 = values[index + 1];
-
-                                // Linear interpolant at 'x'
-                                Float y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
-
-                                Color3f xyz = cie1931_xyz(x);
-                                color += xyz * y;
-                            }
-
-                            // Last specified value repeats implicitly
-                            color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Float) steps;
-                            color = xyz_to_srgb(color);
 
                             /// Spectral IOR values are unbounded and require special handling
                             std::string name = node.attribute("name").value();
                             bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
                                           name == "ext_ior";
 
-                            if (!(within_emitter || is_ior) && any(color < 0.f || color > 1.f)) {
-                                Log(Warn, "Spectrum (at %s): clamping out-of-gamut color %s",
-                                    src.offset(node.offset_debug()), color);
-                                color = clamp(color, 0.f, 1.f);
-                            } else if ((within_emitter || is_ior) && any(color < 0.f)) {
-                                Log(Warn, "Spectrum (at %s): clamping out-of-gamut emission %s",
-                                    src.offset(node.offset_debug()), color);
-                                color = max(color, 0.f);
-                            }
+                            Color3f color = spectrum_to_rgb(wavelengths, values, !(within_emitter || is_ior));
 
                             Properties props3;
                             if (ctx.color_mode == ColorMode::Monochromatic) {

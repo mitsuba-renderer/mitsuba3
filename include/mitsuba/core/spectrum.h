@@ -3,6 +3,8 @@
 #include <utility>
 
 #include <enoki/matrix.h>
+#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
@@ -306,6 +308,86 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
         return sample_rgb_spectrum(wav_sample);
     }
+}
+
+inline void spectrum_from_file(const std::string &filename,
+                               std::vector<float> &wavelengths,
+                               std::vector<float> &values) {
+    auto fs = Thread::thread()->file_resolver();
+    fs::path file_path = fs->resolve(filename);
+    if (!fs::exists(file_path))
+        Log(Error, "\"%s\": file does not exist!", file_path);
+
+    Log(Info, "Loading spectral data file \"%s\" ..", file_path);
+    ref<FileStream> file = new FileStream(file_path);
+
+    std::string line, rest;
+    float wav, value;
+    while (true) {
+        try {
+            line = file->read_line();
+            if (line.size() == 0 || line[0] == '#')
+                continue;
+
+            std::istringstream iss(line);
+            iss >> wav;
+            iss >> value;
+            if (iss >> rest)
+                Log(Error, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
+            wavelengths.push_back(wav);
+            values.push_back(value);
+        } catch (std::exception &) {
+            break;
+        }
+    }
+}
+
+inline Color<float, 3> spectrum_to_rgb(std::vector<float> &wavelengths,
+                                       std::vector<float> &values,
+                                       bool bounded=true) {
+    Color<float, 3> color = 0.f;
+
+    const int steps = 1000;
+    for (int i = 0; i < steps; ++i) {
+        float x = MTS_WAVELENGTH_MIN +
+                  (i / (float) (steps - 1)) *
+                      (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+
+        if (x < wavelengths.front() || x > wavelengths.back())
+            continue;
+
+        // Find interval containing 'x'
+        uint32_t index = math::find_interval(
+            (uint32_t) wavelengths.size(),
+            [&](uint32_t idx) {
+                return wavelengths[idx] <= x;
+            });
+
+        float x0 = wavelengths[index],
+              x1 = wavelengths[index + 1],
+              y0 = values[index],
+              y1 = values[index + 1];
+
+        // Linear interpolant at 'x'
+        float y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
+
+        Color<float, 3> xyz = cie1931_xyz(x);
+        color += xyz * y;
+    }
+
+    // Last specified value repeats implicitly
+    color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (float) steps;
+    color = xyz_to_srgb(color);
+
+    if (bounded && any(color < 0.f || color > 1.f)) {
+        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
+        color = clamp(color, 0.f, 1.f);
+    } else if (!bounded && any(color < 0.f)) {
+        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
+        color = max(color, 0.f);
+    }
+
+    return color;
 }
 
 NAMESPACE_END(mitsuba)
