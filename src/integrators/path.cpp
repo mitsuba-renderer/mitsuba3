@@ -116,7 +116,7 @@ public:
 
         Spectrum throughput(1.f), result(0.f);
 
-        /* ---------------------- First intersection ---------------------- */
+        // ---------------------- First intersection ----------------------
 
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
         Mask valid_ray = si.is_valid();
@@ -124,7 +124,7 @@ public:
 
         for (int depth = 1;; ++depth) {
 
-            /* ---------------- Intersection with emitters ---------------- */
+            // ---------------- Intersection with emitters ----------------
 
             if (any_or<true>(neq(emitter, nullptr)))
                 result[active] += emission_weight * throughput * emitter->eval(si, active);
@@ -149,7 +149,7 @@ public:
                 ((!is_cuda_array_v<Float> || m_max_depth < 0) && none(active)))
                 break;
 
-            /* --------------------- Emitter sampling --------------------- */
+            // --------------------- Emitter sampling ---------------------
 
             BSDFContext ctx;
             BSDFPtr bsdf = si.bsdf(ray);
@@ -172,7 +172,7 @@ public:
                 result[active_e] += mis * throughput * bsdf_val * emitter_val;
             }
 
-            /* ----------------------- BSDF sampling ---------------------- */
+            // ----------------------- BSDF sampling ----------------------
 
             // Sample BSDF * cos(theta)
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),

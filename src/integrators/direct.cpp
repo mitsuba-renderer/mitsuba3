@@ -123,7 +123,8 @@ public:
 
         Spectrum result(0.f);
 
-        /* ----------------------- Visible emitters ----------------------- */
+        // ----------------------- Visible emitters -----------------------
+
         EmitterPtr emitter_vis = si.emitter(scene, active);
         if (any_or<true>(neq(emitter_vis, nullptr)))
             result += emitter_vis->eval(si, active);
@@ -132,7 +133,8 @@ public:
         if (none_or<false>(active))
             return { result, valid_ray };
 
-        /* ----------------------- Emitter sampling ----------------------- */
+        // ----------------------- Emitter sampling -----------------------
+
         BSDFContext ctx;
         BSDFPtr bsdf = si.bsdf(ray);
         Mask sample_emitter = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
@@ -162,7 +164,8 @@ public:
             }
         }
 
-        /* ------------------------ BSDF sampling ------------------------- */
+        // ------------------------ BSDF sampling -------------------------
+
         for (size_t i = 0; i < m_bsdf_samples; ++i) {
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
                                                sampler->next_2d(active), active);
