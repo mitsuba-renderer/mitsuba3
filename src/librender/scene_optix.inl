@@ -64,7 +64,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         else if (strstr(var_names[i], "_mask") != nullptr ||
                  strstr(var_names[i], "_hit") != nullptr)
             fmt = RT_FORMAT_UNSIGNED_BYTE;
-        rt_check(rtBufferCreate(s.context, RT_BUFFER_INPUT, &s.var_buf[i]));
+        rt_check(rtBufferCreate(s.context, RT_BUFFER_INPUT | RT_BUFFER_COPY_ON_DIRTY, &s.var_buf[i]));
         rt_check(rtBufferSetFormat(s.var_buf[i], fmt));
         rt_check(rtBufferSetSize1D(s.var_buf[i], 0));
         rt_check(rtBufferSetDevicePointer(s.var_buf[i], kDeviceID, (void *) 8));
