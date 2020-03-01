@@ -1,13 +1,14 @@
 from contextlib import contextmanager
 import enoki as ek
 
+
 def render(scene, spp=None, sensor_index=0):
     """
     Render the specified Mitsuba scene and return a floating point
     array containing RGB values and AOVs, if applicable
     """
-    from mitsuba.core import (Float, UInt32, UInt64, Vector2f, Mask,
-        is_monochromatic, is_rgb, is_polarized)
+    from mitsuba.core import (Float, UInt32, UInt64, Vector2f,
+                              is_monochromatic, is_rgb, is_polarized)
     from mitsuba.render import ImageBlock
 
     sensor = scene.sensors()[sensor_index]
@@ -23,7 +24,7 @@ def render(scene, spp=None, sensor_index=0):
 
     pos //= spp
     scale = Vector2f(1.0 / film_size[0], 1.0 / film_size[1])
-    pos = Vector2f(Float(pos  % int(film_size[0])),
+    pos = Vector2f(Float(pos % int(film_size[0])),
                    Float(pos // int(film_size[0])))
 
     pos += sampler.next_2d()
@@ -49,16 +50,15 @@ def render(scene, spp=None, sensor_index=0):
         rgb = spec
     else:
         from mitsuba.core import spectrum_to_xyz, xyz_to_srgb
-        xyz = spectrum_to_xyz(spec_u, rays.wavelengths, active)
+        xyz = spectrum_to_xyz(spec, rays.wavelengths)
         rgb = xyz_to_srgb(xyz)
         del xyz
 
     aovs.insert(0, Float(1.0))
     for i in range(len(rgb)):
-        aovs.insert(i+1, rgb[i])
+        aovs.insert(i + 1, rgb[i])
     del rgb, spec, weights, rays
 
-    rfilter = film.reconstruction_filter()
     block = ImageBlock(
         size=film.crop_size(),
         channel_count=len(aovs),
@@ -98,7 +98,9 @@ def write_bitmap(filename, data, resolution):
     data = np.array(data.numpy())
     data = data.reshape(*resolution, -1)
     bitmap = Bitmap(data)
-    if filename.endswith('.png') or filename.endswith('.jpg'):
+    if filename.endswith('.png') or \
+       filename.endswith('.jpg') or \
+       filename.endswith('.jpeg'):
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)
     bitmap.write(filename)
@@ -107,11 +109,16 @@ def write_bitmap(filename, data, resolution):
 def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
                 spp_diff=None, sensor_index=0):
     """
-    Perform a differentiable of the scene `scene`. This function differs from
-    ``render()`` in that it splits the rendering step into two separate passes
-    that generate the primal image and gradients, respectively (assuming that
-    ``unbiased=True`` is specified). This is necessary to avoid correlations that
-    would otherwise introduce bias into the resulting parameter gradients.
+    Perform a differentiable of the scene `scene`.
+
+    This function differs from ``render()`` in that it splits the rendering
+    step into two separate passes that generate the primal image and gradients,
+    respectively (assuming that ``unbiased=True`` is specified). This is
+    necessary to avoid correlations that would otherwise introduce bias into
+    the resulting parameter gradients.
+
+    The number of samples per pixel can be specified separately for both primal
+    and derivative passes.
     """
     if unbiased:
         with optimizer.disable_gradients():
@@ -125,12 +132,13 @@ def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
 
 class Optimizer:
     """
-    Base class of optimizers (SGD, Adam)
+    Base class of all gradient-based optimizers (currently SGD and Adam)
     """
     def __init__(self, params, lr):
         """
         Parameter ``params``:
-            dictionary ``(name: variable)`` of differentiable parameters to be optimized.
+            dictionary ``(name: variable)`` of differentiable parameters to be
+            optimized.
 
         Parameter ``lr``:
             learning rate
@@ -193,7 +201,7 @@ class SGD(Optimizer):
                     self._reset(k)
 
                 self.state[k] = self.momentum * self.state[k] + \
-                                self.lr_v * g_p
+                    self.lr_v * g_p
                 value = ek.detach(p) - self.state[k]
             else:
                 value = ek.detach(p) - self.lr_v * g_p
@@ -213,7 +221,7 @@ class SGD(Optimizer):
 
     def __repr__(self):
         return ('SGD[\n  lr = %.2g,\n  momentum = %.2g\n]') % \
-                (self.lr, self.momentum)
+            (self.lr, self.momentum)
 
 
 class Adam(Optimizer):
@@ -248,7 +256,6 @@ class Adam(Optimizer):
         self.beta_1_t = ek.detach(Float(1, literal=False))
         self.beta_2_t = ek.detach(Float(1, literal=False))
 
-
     def step(self):
         self.beta_1_t *= self.beta_1
         self.beta_2_t *= self.beta_2
@@ -276,11 +283,14 @@ class Adam(Optimizer):
         """ Zero-initializes the internal state associated with a parameter """
         p = self.params[key]
         size = ek.slices(p)
-        self.state[key] = (ek.detach(type(p).zero(size)), ek.detach(type(p).zero(size)))
+        self.state[key] = (ek.detach(type(p).zero(size)),
+                           ek.detach(type(p).zero(size)))
 
     def __repr__(self):
         return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},'
-                '\n  beta_2 = {:.2g}\n]').format(self.lr, self.beta_1, self.beta_2)
+                '\n  beta_2 = {:.2g}\n]').format(self.lr, self.beta_1,
+                                                 self.beta_2)
+
 
 def render_torch(scene, params=None, **kwargs):
     from mitsuba.core import Float
@@ -301,9 +311,8 @@ def render_torch(scene, params=None, **kwargs):
                     spp = None
                     sensor_index = 0
                     unbiased = True
-                    primal = None
 
-                    params_todo = { }
+                    params_todo = {}
                     ctx.inputs = [None, None]
                     for k, v in args.items():
                         if k == 'spp':
@@ -328,13 +337,15 @@ def render_torch(scene, params=None, **kwargs):
                         if unbiased:
                             for k in params.keys():
                                 ek.set_requires_gradient(params[k], False)
-                            result = render(scene, spp=spp, sensor_index=sensor_index).torch()
+                            result = render(scene, spp=spp,
+                                            sensor_index=sensor_index).torch()
 
                         for k, v in params_todo.items():
                             params[k] = v
                         params.update()
 
-                    ctx.output = render(scene, spp=spp, sensor_index=sensor_index)
+                    ctx.output = render(scene, spp=spp,
+                                        sensor_index=sensor_index)
 
                     if result is None:
                         result = ctx.output.torch()
@@ -342,7 +353,8 @@ def render_torch(scene, params=None, **kwargs):
                     ek.cuda_malloc_trim()
                     return result
                 except Exception as e:
-                    print("render_torch(): critical exception during forward pass: %s" % str(e))
+                    print("render_torch(): critical exception during "
+                          "forward pass: %s" % str(e))
                     raise e
 
             @staticmethod
@@ -350,22 +362,25 @@ def render_torch(scene, params=None, **kwargs):
                 try:
                     ek.set_gradient(ctx.output, ek.detach(Float(grad_output)))
                     Float.backward()
-                    result = tuple(ek.gradient(i).torch() if i is not None else None
+                    result = tuple(ek.gradient(i).torch() if i is not None
+                                   else None
                                    for i in ctx.inputs)
                     del ctx.output
                     del ctx.inputs
                     ek.cuda_malloc_trim()
                     return result
                 except Exception as e:
-                    print("render_torch(): critical exception during backwardpass: %s" % str(e))
+                    print("render_torch(): critical exception during "
+                          "backward pass: %s" % str(e))
                     raise e
 
         render_torch = Render.apply
         ns['render_torch_helper'] = render_torch
 
     result = render_torch(scene, params,
-        *[num for elem in kwargs.items() for num in elem])
+                          *[num for elem in kwargs.items() for num in elem])
 
-    sensor_index = 0 if 'sensor_index' not in kwargs else kwargs['sensor_index']
+    sensor_index = 0 if 'sensor_index' not in kwargs \
+        else kwargs['sensor_index']
     crop_size = scene.sensors()[sensor_index].film().crop_size()
     return result.reshape(crop_size[1], crop_size[0], -1)

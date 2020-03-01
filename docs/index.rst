@@ -35,10 +35,9 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :caption: Inverse rendering
 
     src/inverse_rendering/intro
-    src/inverse_rendering/optimize_diffuse
-    src/inverse_rendering/optimize_texture
-    src/inverse_rendering/optimize_volume
-    src/inverse_rendering/integration_pytorch
+    src/inverse_rendering/diff_render
+    src/inverse_rendering/advanced
+    src/inverse_rendering/pytorch
 
 
 .. toctree::
@@ -85,4 +84,4 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :maxdepth: 1
     :caption: Extras
 
-    bibliography
+    zz_bibliography

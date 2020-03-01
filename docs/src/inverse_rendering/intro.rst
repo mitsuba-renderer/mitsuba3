@@ -29,22 +29,23 @@ currently not supported for performance reasons, but we have some ideas on
 making this faster and plan to incorporate them in the future.
 
 Differentiable calculations using Enoki
-=======================================
+---------------------------------------
 
-Mitsuba's ability to differentiate entire rendering algorithms builds on
-differentiable CUDA array types provided by the Enoki library. Both are
-explained in detail in the Enoki documentation. In particular, the section on
-`GPU arrays <https://enoki.readthedocs.io/en/master/gpu.html>`_ describes the
-underlying *just-in-time* (JIT) compiler, which fuses simple operations like
-additions and multiplications into larger computational kernels that can be
-executed on CUDA-capable GPUs. The linked document also discusses key
-differences compared to superficially similar frameworks like PyTorch and
-TensorFlow. The section on `Automatic differentiation
+Mitsuba's ability to automatically differentiate entire rendering algorithms
+builds on differentiable CUDA array types provided by the Enoki library. Both
+are explained in the Enoki documentation: the section on `GPU arrays
+<https://enoki.readthedocs.io/en/master/gpu.html>`_ describes the underlying
+*just-in-time* (JIT) compiler, which fuses simple operations like additions and
+multiplications into larger computational kernels that can be executed on
+CUDA-capable GPUs. The linked document also discusses key differences compared
+to superficially similar frameworks like PyTorch and TensorFlow. The section on
+`Automatic differentiation
 <https://enoki.readthedocs.io/en/master/autodiff.html>`_ describes how Enoki
 records and simplifies computation graphs and uses them to propagate
-derivatives in forward or reverse mode.
+derivatives in forward or reverse mode. We recommend that you familiarize
+yourself with both of these documents.
 
-These differentiable types are automatically imported when variant starting
+Enoki's differentiable types are automatically imported when variant starting
 with ``gpu_autodiff_*`` is specified. They are used in both C++ and Python,
 hence it is possible to differentiate larger computations that are partly
 implemented in each language. The following program shows a simple example
@@ -75,163 +76,4 @@ calculation conducted in Python, which differentiates the function
 
     # Prints: [2, 4, 6]
     print(ek.gradient(x))
-
-Enumerating scene parameters
-============================
-
-We now progressively build up a simple example application that showcases
-differentiation and optimization of a light transport simulation involving the
-well-known Cornell Box scene that can be downloaded `here
-<http://mitsuba-renderer.org/scenes/cbox.zip>`_.
-
-Since differentiable rendering requires a starting guess (i.e. an initial scene
-configuration), most applications of differentiable rendering will begin by
-loading an existing scene and enumerating and selecting scene parameters that
-will subsequently be differentiated:
-
-.. code-block:: python
-
-    import enoki as ek
-    import mitsuba
-    mitsuba.set_variant('gpu_autodiff_rgb')
-
-    from mitsuba.core import Thread
-    from mitsuba.core.xml import load_file
-    from mitsuba.python.util import traverse
-
-    # Load the Cornell Box
-    Thread.thread().file_resolver().append('cbox')
-    scene = load_file('cbox/cbox.xml')
-
-    # Find differentiable scene parameters
-    params = traverse(scene)
-    print(params)
-
-The call to :py:func:`mitsuba.python.util.traverse()` in the second-to-last
-line returns a dictionary-like parameter map object, which exposes modifiable
-and differentiable scene parameters. Printing its contents yields the following
-output (abbreviated):
-
-.. code-block:: text
-
-    ParameterMap[
-        ...
-        box.reflectance.value,
-        white.reflectance.value,
-        red.reflectance.value,
-        green.reflectance.value,
-        light.reflectance.value,
-        ...
-        OBJMesh.emitter.radiance.value,
-        OBJMesh.vertex_count,
-        OBJMesh.face_count,
-        OBJMesh.faces,
-        OBJMesh.vertex_positions,
-        OBJMesh.vertex_normals,
-        OBJMesh.vertex_texcoords,
-        OBJMesh_1.vertex_count,
-        OBJMesh_1.face_count,
-        OBJMesh_1.faces,
-        OBJMesh_1.vertex_positions,
-        OBJMesh_1.vertex_normals,
-        OBJMesh_1.vertex_texcoords,
-        ...
-    ]
-
-The Cornell box scene consists of a single light source, and multiple multiple
-meshes and BRDFs. Each component contributes certain entries to the above
-list---for instance, meshes specify their face and vertex counts in addition to
-per-face (``.faces``) and per-vertex data (``.vertex_positions``, ``.vertex_normals``,
-``.vertex_texcoords``). Each BRDF adds a ``.reflectance.value`` entry. Not all
-of these parameters are differentiable---some, e.g., store integer values.
-
-The names are generated using a simple naming scheme based on the position in
-the scene graph and class name of the underlying implementation. Whenever an
-object was assigned a unique identifier in the XML scene description, this
-identifier has precedence. For instance, The ``red.reflectance.value`` entry
-corresponds to the albedo of the following declaration in the original
-scene description:
-
-.. code-block:: xml
-
-    <bsdf type="diffuse" id="red">
-        <spectrum name="reflectance" value="400:0.04, 404:0.046, ..., 696:0.635, 700:0.642"/>
-    </bsdf>
-
-We can also query the ``ParameterMap`` to see the actual parameter values:
-
-.. code-block:: python
-
-    print(params['red.reflectance.value'])
-
-    # Prints:
-    # [[0.569717, 0.0430141, 0.0443234]]
-
-In this case, we can see how Mitsuba converted the original spectral curve into
-an RGB value due to the ``gpu_autodiff_rgb`` variant being used to run this
-example. We can also change individual parameters without having to reload the
-scene. The call to the ``update()`` method at the end is mandatory to inform
-changed scene objects that they should update their internal state
-
-.. code-block:: python
-
-    params['red.reflectance.value'] = [.1, .2, .3]
-    params.update()
-
-In many cases, the parameter map will be extremely large, and our main interest
-is to optimize a small subset of the available parameters. The
-``ParameterMap.keep()`` method discards all entries except for those contained
-in the specified list of keys.
-
-.. code-block:: python
-
-    params.keep(['red.reflectance.value'])
-    print(params)
-
-    # Prints:
-    # ParameterMap[
-    #     red.reflectance.value
-    # ]
-
-
-Differentiating a simple rendering
-==================================
-
-.. code-block:: python
-
-    params = traverse(scene)
-    params.keep(['red.reflectance.value'])
-
-    # Print current value and save a copy
-    param_ref = Vector3f(params['red.reflectance.value'])
-
-    # Render a reference image
-    image_ref = render(scene)
-    crop_size = scene.sensors()[0].film().crop_size()
-    write_bitmap('out.png', image_ref, crop_size)
-
-    # Now, change the parameter to something else
-    params['red.reflectance.value'] = [.9, .9, .9]
-    params.update()
-
-    opt = Adam(params, lr=.025)
-
-    for it in range(100):
-        # Perform a differentiable rendering of the scene
-        image = render_diff(scene, opt, unbiased=True)
-
-        write_bitmap('out_%03i.png' % it, image, crop_size)
-
-        # Note: printing the loss is not hugely informative
-        # since it is almost purely MC noise
-        loss_val = ek.hsum(ek.sqr(image - image_ref)) / len(image)
-
-        # Instead, check convergence to the known parameter
-        param = params['red.reflectance.value']
-        testing_loss_val = ek.hsum(ek.sqr(param_ref - param))
-        print('Iteration %03i: testing loss=%g\r' % (it, testing_loss_val[0]), end='')
-
-        ek.backward(loss_val)
-        opt.step()
-    print()
 

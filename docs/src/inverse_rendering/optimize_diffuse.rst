@@ -1,2 +1,0 @@
-Optimizing a diffuse BSDF
-==========================

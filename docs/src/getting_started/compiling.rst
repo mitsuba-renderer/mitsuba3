@@ -187,7 +187,7 @@ Alternatively,
 
     mitsuba -m scalar-spectral-polarized scene.xml
 
-selects a specific variant that you selected in :monsp:`mitsuba.conf`. Call
+selects a specific variant that you selected in :monosp:`mitsuba.conf`. Call
 ``mitsuba --help`` to print additional information about various command line
 arguments.
 

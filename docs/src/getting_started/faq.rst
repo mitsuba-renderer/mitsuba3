@@ -26,3 +26,29 @@ Frequently asked questions
     It is likely that the version of OptiX installed on your system is not
     compatible with the video driver (the two must satisfy version requirements
     that are detailed on the OptiX website)
+
+- Citing Mitsuba 2 in scientific literature.
+
+  Please use the following BibTeX entry to cite Mitsuba 2 in research articles, books, etc.
+
+  .. code-block:: bibtex
+
+      @article{NimierDavidVicini2019Mitsuba2,
+          author = {Merlin Nimier-David and Delio Vicini and Tizian Zeltner and Wenzel Jakob},
+          title = {Mitsuba 2: A Retargetable Forward and Inverse Renderer},
+          journal = {Transactions on Graphics (Proceedings of SIGGRAPH Asia)},
+          volume = {38},
+          number = {6},
+          year = {2019},
+          month = dec,
+          doi = {10.1145/3355089.3356498}
+      }
+
+  Here is a plain-text version of the above: 
+
+      Merlin Nimier-David, Delio Vicini, Tizian Zeltner, and Wenzel Jakob.
+      2019. Mitsuba 2: A Retargetable Forward and Inverse Renderer. In
+      Transactions on Graphics (Proceedings of SIGGRAPH Asia)
+      38(6).
+
+  A pre-print of this article is freely available `here <http://rgl.epfl.ch/publications/NimierDavidVicini2019Mitsuba2>`_.

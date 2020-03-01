@@ -1,3 +1,5 @@
+.. _sec-rendering-scene:
+
 Rendering a scene
 =================
 
