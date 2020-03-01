@@ -105,7 +105,7 @@ def write_bitmap(filename, data, resolution):
        filename.endswith('.jpeg'):
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)
-    bitmap.write(filename)
+    bitmap.write_async(filename, quality=0 if filename.endswith('png') else -1)
 
 
 def render_diff(scene, optimizer, unbiased=True, spp=None,

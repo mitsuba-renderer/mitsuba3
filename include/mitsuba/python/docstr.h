@@ -1011,6 +1011,8 @@ recommended as the default for lossy compression. The default argument
 (-1) causes the implementation to switch to the lossless PIZ
 compressor.)doc";
 
+static const char *__doc_mitsuba_Bitmap_write_async = R"doc(Equivalent to \ref write(), but executes asynchronously on a different thread)doc";
+
 static const char *__doc_mitsuba_Bitmap_write_jpeg = R"doc(Save a file using the JPEG file format)doc";
 
 static const char *__doc_mitsuba_Bitmap_write_openexr = R"doc(Write a file using the OpenEXR file format)doc";

@@ -151,6 +151,11 @@ MTS_PY_EXPORT(Bitmap) {
                 &Bitmap::write, py::const_),
             "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
             D(Bitmap, write, 2), py::call_guard<py::gil_scoped_release>())
+        .def("write_async",
+            py::overload_cast<const fs::path &, Bitmap::FileFormat, int>(
+                &Bitmap::write_async, py::const_),
+            "path"_a, "format"_a = Bitmap::FileFormat::Auto, "quality"_a = -1,
+            D(Bitmap, write_async))
         .def("split", &Bitmap::split, D(Bitmap, split))
         .def_static("detect_file_format", &Bitmap::detect_file_format, D(Bitmap, detect_file_format))
         .def_property_readonly("__array_interface__", [](Bitmap &bitmap) -> py::object {

@@ -356,6 +356,10 @@ public:
     void write(const fs::path &path, FileFormat format = FileFormat::Auto,
                int quality = -1) const;
 
+    /// Equivalent to \ref write(), but executes asynchronously on a different thread
+    void write_async(const fs::path &path, FileFormat format = FileFormat::Auto,
+                     int quality = -1) const;
+
     /**
      * \brief Up- or down-sample this image to a different resolution
      *

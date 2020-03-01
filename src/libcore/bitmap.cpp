@@ -769,6 +769,28 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
     }
 }
 
+void Bitmap::write_async(const fs::path &path_, FileFormat format_, int quality_) const {
+    class WriteTask : public tbb::task {
+        ref<const Bitmap> bitmap;
+        fs::path path;
+        FileFormat format;
+        int quality;
+
+    public:
+        WriteTask(const Bitmap *bitmap, fs::path path, FileFormat format, int quality)
+            : bitmap(bitmap), path(path), format(format), quality(quality) { }
+
+        tbb::task* execute() override {
+            bitmap->write(path, format, quality);
+            return nullptr;
+        }
+    };
+
+    WriteTask *t = new (tbb::task::allocate_root())
+        WriteTask(this, path_, format_, quality_);
+    tbb::task::enqueue(*t);
+}
+
 bool Bitmap::operator==(const Bitmap &bitmap) const {
     if (m_pixel_format != bitmap.m_pixel_format ||
         m_component_format != bitmap.m_component_format ||
