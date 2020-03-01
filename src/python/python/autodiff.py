@@ -64,7 +64,7 @@ def render(scene, spp=None, sensor_index=0):
         channel_count=len(aovs),
         filter=film.reconstruction_filter(),
         warn_negative=False,
-        warn_invalid=True,
+        warn_invalid=False,
         border=False
     )
 
@@ -106,8 +106,8 @@ def write_bitmap(filename, data, resolution):
     bitmap.write(filename)
 
 
-def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
-                spp_diff=None, sensor_index=0):
+def render_diff(scene, optimizer, unbiased=True, spp=None,
+                spp_primal=None, spp_diff=None, sensor_index=0):
     """
     Perform a differentiable of the scene `scene`.
 
@@ -119,7 +119,16 @@ def render_diff(scene, optimizer, unbiased=True, spp_primal=None,
 
     The number of samples per pixel can be specified separately for both primal
     and derivative passes.
+
+    The number of samples per pixel per pass can be specified separately for
+    both primal (``spp_primal``) and derivative (``spp_diff``) passes or
+    jointly for both (``spp``).
     """
+
+    if spp is not None:
+        spp_primal = spp
+        spp_diff = spp
+
     if unbiased:
         with optimizer.disable_gradients():
             image = render(scene, spp=spp_primal, sensor_index=sensor_index)

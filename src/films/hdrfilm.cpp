@@ -175,16 +175,6 @@ public:
                 m_component_format = Struct::Type::Float32;
             }
         }
-
-        const std::vector<std::string> &keys = props.property_names();
-        for (size_t i = 0; i < keys.size(); ++i) {
-            std::string key = string::to_lower(keys[i]);
-            key.erase(std::remove_if(key.begin(), key.end(), ::isspace), key.end());
-
-            if ((string::starts_with(key, "metadata['") && string::ends_with(key, "']")) ||
-                (string::starts_with(key, "label[")     && string::ends_with(key, "]")))
-                props.mark_queried(keys[i]);
-        }
     }
 
     void set_destination_file(const fs::path &dest_file) override {

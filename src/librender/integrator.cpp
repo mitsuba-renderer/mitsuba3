@@ -127,31 +127,30 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
             }
         );
     } else {
-        for (size_t i = 0; i < n_passes; i++) {
-            ScalarUInt32 total_sample_count = hprod(film_size) * (uint32_t) samples_per_pass;
+        ref<Sampler> sampler = sensor->sampler();
 
-            ref<Sampler> sampler = sensor->sampler();
+        ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
+        ScalarUInt32 total_sample_count = hprod(film_size) * (uint32_t) samples_per_pass;
+        if (!sampler->ready())
             sampler->seed(arange<UInt64>(total_sample_count));
 
-            ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
+        UInt32 idx = arange<UInt32>(total_sample_count);
+        if (samples_per_pass != 1)
+            idx /= samples_per_pass;
 
-            ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
-                                                   film->reconstruction_filter(),
-                                                   !has_aovs);
-            block->clear();
+        ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
+                                               film->reconstruction_filter(),
+                                               !has_aovs);
+        block->clear();
+        Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
+                                Float(idx / uint32_t(film_size[0])));
+        std::vector<Float> aovs(channels.size());
 
-            UInt32 idx = arange<UInt32>(total_sample_count);
-            if (samples_per_pass != 1)
-                idx /= samples_per_pass;
-
-            Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
-                                    Float(idx / uint32_t(film_size[0])));
-
-            std::vector<Float> aovs(channels.size());
+        for (size_t i = 0; i < n_passes; i++)
             render_sample(scene, sensor, sampler, block, aovs.data(),
                           pos, diff_scale_factor);
-            film->put(block);
-        }
+
+        film->put(block);
     }
 
     if (!m_stop)
@@ -215,13 +214,14 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_sample(
         aperture_sample = sampler->next_2d(active);
 
     Float time = sensor->shutter_open();
-    if (sensor->shutter_open_time() > 0)
+    if (sensor->shutter_open_time() > 0.f)
         time += sampler->next_1d(active) * sensor->shutter_open_time();
 
     Float wavelength_sample = sampler->next_1d(active);
 
     Vector2f adjusted_position =
-        (position_sample - sensor->film()->crop_offset()) / sensor->film()->crop_size();
+        (position_sample - sensor->film()->crop_offset()) /
+        sensor->film()->crop_size();
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
         time, wavelength_sample, adjusted_position, aperture_sample);
