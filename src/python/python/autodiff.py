@@ -18,10 +18,12 @@ def render(scene, spp=None, sensor_index=0):
     if spp is None:
         spp = sampler.sample_count()
 
-    pos = ek.arange(UInt64, ek.hprod(film_size) * spp)
-    if not sampler.ready():
-        sampler.seed(pos)
+    total_sample_count = ek.hprod(film_size) * spp
 
+    if sampler.wavefront_size() != total_sample_count:
+        sampler.seed(ek.arange(UInt64, total_sample_count))
+
+    pos = ek.arange(UInt32, total_sample_count)
     pos //= spp
     scale = Vector2f(1.0 / film_size[0], 1.0 / film_size[1])
     pos = Vector2f(Float(pos % int(film_size[0])),

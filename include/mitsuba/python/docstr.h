@@ -4654,7 +4654,7 @@ static const char *__doc_mitsuba_Sampler_next_1d = R"doc(Retrieve the next compo
 
 static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two component values from the current sample)doc";
 
-static const char *__doc_mitsuba_Sampler_ready = R"doc(Check whether the sampler is ready (i.e. properly seeded))doc";
+static const char *__doc_mitsuba_Sampler_wavefront_size = R"doc(Return the size of the wavefront, or 0 if not seeded.)doc";
 
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 

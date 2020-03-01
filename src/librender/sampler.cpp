@@ -13,8 +13,6 @@ MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::seed(UInt64) { NotImplementedError("seed"); }
 
-MTS_VARIANT bool Sampler<Float, Spectrum>::ready() const { return true; }
-
 MTS_VARIANT Float Sampler<Float, Spectrum>::next_1d(Mask) { NotImplementedError("next_1d"); }
 
 MTS_VARIANT typename Sampler<Float, Spectrum>::Point2f Sampler<Float, Spectrum>::next_2d(Mask) {

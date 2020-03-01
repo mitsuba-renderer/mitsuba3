@@ -6,7 +6,7 @@ MTS_PY_EXPORT(Sampler) {
     MTS_PY_CLASS(Sampler, Object)
         .def_method(Sampler, clone)
         .def_method(Sampler, sample_count)
-        .def_method(Sampler, ready)
+        .def_method(Sampler, wavefront_size)
         .def("seed", vectorize(&Sampler::seed),
              "seed_value"_a, D(Sampler, seed))
         .def("next_1d", vectorize(&Sampler::next_1d),

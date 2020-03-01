@@ -131,7 +131,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
         ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
         ScalarUInt32 total_sample_count = hprod(film_size) * (uint32_t) samples_per_pass;
-        if (!sampler->ready())
+        if (sampler->wavefront_size() != total_sample_count)
             sampler->seed(arange<UInt64>(total_sample_count));
 
         UInt32 idx = arange<UInt32>(total_sample_count);

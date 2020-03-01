@@ -86,8 +86,12 @@ public:
         return Point2f(f1, f2);
     }
 
-    bool ready() const override {
-        return m_rng != nullptr;
+    /// Return the size of the wavefront (or 0, if not seeded)
+    size_t wavefront_size() const override {
+        if (m_rng == nullptr)
+            return 0;
+        else
+            return enoki::slices(m_rng->state);
     }
 
     std::string to_string() const override {
