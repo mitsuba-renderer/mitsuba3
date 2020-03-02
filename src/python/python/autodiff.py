@@ -238,7 +238,20 @@ class Optimizer:
 class SGD(Optimizer):
     """
     Implements basic stochastic gradient descent with a fixed learning rate
-    and, optionally, momentum (0.9 is a typical parameter value).
+    and, optionally, momentum :cite:`Sutskever2013Importance` (0.9 is a typical
+    parameter value for the ``momentum`` parameter).
+
+    The momentum-based SGD uses the update equation
+
+    .. math::
+
+        v_{i+1} &= \mu v_i +  g_{i+1}\\
+        p_{i+1} &= p_i + \varepsilon \cdot v_{i+1},
+
+    where :math:`v` is the velocity, :math:`p` are the positions,
+    :math:`\varepsilon` is the learning rate, and :math:`\mu` is
+    the momentum parameter.
+
     """
     def __init__(self, params, lr, momentum=0):
         """
@@ -249,6 +262,7 @@ class SGD(Optimizer):
             momentum factor
         """
         assert momentum >= 0 and momentum < 1
+        assert lr > 0
         self.momentum = momentum
         super().__init__(params, lr)
 
@@ -265,9 +279,8 @@ class SGD(Optimizer):
                     # Reset state if data size has changed
                     self._reset(k)
 
-                self.state[k] = self.momentum * self.state[k] + \
-                    self.lr_v * g_p
-                value = ek.detach(p) - self.state[k]
+                self.state[k] = self.momentum * self.state[k] + g_p
+                value = ek.detach(p) - self.lr_v * self.state[k]
             else:
                 value = ek.detach(p) - self.lr_v * g_p
 
@@ -291,11 +304,8 @@ class SGD(Optimizer):
 
 class Adam(Optimizer):
     """
-    Implements the optimization technique presented in
-
-    "Adam: A Method for Stochastic Optimization"
-    Diederik P. Kingma and Jimmy Lei Ba
-    ICLR 2015
+    Implements the Adam optimizer presented in the paper *Adam: A Method for
+    Stochastic Optimization* by Kingman and Ba, ICLR 2015.
     """
     def __init__(self, params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
         """
@@ -311,24 +321,27 @@ class Adam(Optimizer):
             order gradient moments
         """
         super().__init__(params, lr)
-        assert beta_1 >= 0 and beta_1 < 1
-        assert beta_2 >= 0 and beta_2 < 1
+
+        assert 0 <= beta_1 < 1 and 0 <= beta_2 < 1 \
+            and lr > 0 and epsilon > 0
+
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.epsilon = epsilon
-
-        from mitsuba.core import Float
-        self.beta_1_t = ek.detach(Float(1, literal=False))
-        self.beta_2_t = ek.detach(Float(1, literal=False))
+        self.t = 0
 
     def step(self):
-        self.beta_1_t *= self.beta_1
-        self.beta_2_t *= self.beta_2
-        lr_t = self.lr * ek.sqrt(1 - self.beta_2_t) / (1 - self.beta_1_t)
+        """ Take a gradient step """
+        self.t += 1
+
+        from mitsuba.core import Float
+        lr_t = ek.detach(Float(self.lr * ek.sqrt(1 - self.beta_2**self.t) /
+                               (1 - self.beta_1**self.t), literal=False))
 
         for k, p in self.params.items():
             g_p = ek.gradient(p)
             size = ek.slices(g_p)
+
             if size == 0:
                 continue
             elif size != ek.slices(self.state[k][0]):
@@ -339,6 +352,7 @@ class Adam(Optimizer):
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * ek.sqr(g_p)
             self.state[k] = (m_t, v_t)
+
             u = ek.detach(p) - lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
             u = type(p)(u)
             ek.set_requires_gradient(u)
@@ -352,9 +366,11 @@ class Adam(Optimizer):
                            ek.detach(type(p).zero(size)))
 
     def __repr__(self):
-        return ('Adam[\n  lr = {:.2g},\n  beta_1 = {:.2g},'
-                '\n  beta_2 = {:.2g}\n]').format(self.lr, self.beta_1,
-                                                 self.beta_2)
+        return ('Adam[\n'
+                '  lr = %g,\n'
+                '  betas = (%g, %g),\n'
+                '  eps = %g\n'
+                ']' % (self.lr, self.beta_1, self.beta_2, self.epsilon))
 
 
 def render_torch(scene, params=None, **kwargs):
@@ -377,7 +393,6 @@ def render_torch(scene, params=None, **kwargs):
                     sensor_index = 0
                     unbiased = True
 
-                    params_todo = {}
                     ctx.inputs = [None, None]
                     for k, v in args.items():
                         if k == 'spp':
@@ -386,30 +401,31 @@ def render_torch(scene, params=None, **kwargs):
                             sensor_index = v
                         elif k == 'unbiased':
                             unbiased = v
-                        else:
-                            value = type(params[k])(v)
-                            ek.set_requires_gradient(value, v.requires_grad)
-                            params_todo[k] = value
+                        elif params is not None:
+                            params[k] = type(params[k])(v)
                             ctx.inputs.append(None)
-                            ctx.inputs.append(value)
-                            continue
+                            ctx.inputs.append(params[k] if v.requires_grad
+                                              else None)
 
                         ctx.inputs.append(None)
                         ctx.inputs.append(None)
+
+                    if type(spp) is not tuple:
+                        spp = (spp, spp)
 
                     result = None
                     if params is not None:
-                        if unbiased:
-                            for k in params.keys():
-                                ek.set_requires_gradient(params[k], False)
-                            result = render(scene, spp=spp,
-                                            sensor_index=sensor_index).torch()
-
-                        for k, v in params_todo.items():
-                            params[k] = v
                         params.update()
 
-                    ctx.output = render(scene, spp=spp,
+                        if unbiased:
+                            result = render(scene, spp=spp[0],
+                                            sensor_index=sensor_index).torch()
+
+                    for v in ctx.inputs:
+                        if v is not None:
+                            ek.set_requires_gradient(v)
+
+                    ctx.output = render(scene, spp=spp[1],
                                         sensor_index=sensor_index)
 
                     if result is None:
