@@ -29,7 +29,7 @@ class ChiSquareTest:
        sufficient statistical evidence to reject this hypothesis.
 
     Parameter ``sample_dim`` (int):
-       Numer of random dimensions consumed by ``sample_func`` per sample. The
+       Number of random dimensions consumed by ``sample_func`` per sample. The
        default value is ``2``.
 
     Parameter ``sample_count`` (int):
