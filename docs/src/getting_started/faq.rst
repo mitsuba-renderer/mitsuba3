@@ -11,7 +11,7 @@ Frequently asked questions
     VirtualBox, QEmu, etc. This is not recommended: most of these virtual
     machines expose "funky" virtualized processors that are missing standard
     instructions extensions, which breaks compilation. You can work around this
-    ssue by completely disabling vectorization at some cost in performance. In
+    issue by completely disabling vectorization at some cost in performance. In
     this case, add the following line to the top-level :monosp:`CMakeLists.txt`
     file (e.g. in line 4 after the :monosp:`project()` declaration).
 
@@ -29,7 +29,8 @@ Frequently asked questions
 
 - Citing Mitsuba 2 in scientific literature.
 
-  Please use the following BibTeX entry to cite Mitsuba 2 in research articles, books, etc.
+  Please use the following BibTeX entry to cite Mitsuba 2 in research articles,
+  books, etc.
 
   .. code-block:: bibtex
 
@@ -51,4 +52,5 @@ Frequently asked questions
       Transactions on Graphics (Proceedings of SIGGRAPH Asia)
       38(6).
 
-  A pre-print of this article is freely available `here <http://rgl.epfl.ch/publications/NimierDavidVicini2019Mitsuba2>`_.
+  A pre-print of this article is available `here
+  <http://rgl.epfl.ch/publications/NimierDavidVicini2019Mitsuba2>`_.

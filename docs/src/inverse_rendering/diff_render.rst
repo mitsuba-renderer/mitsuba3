@@ -44,7 +44,7 @@ differentiated:
     params = traverse(scene)
     print(params)
 
-The call to :py:func:`mitsuba.python.util.traverse()` in the second-to-last
+The call to :py:func:`~mitsuba.python.util.traverse()` in the second-to-last
 line serves this purpose. It returns a dictionary-like ``ParameterMap``
 instance, which exposes modifiable and differentiable scene parameters. Passing
 it to ``print()`` yields the following summary (abbreviated):
@@ -108,11 +108,6 @@ Here, we can see how Mitsuba converted the original spectral curve from the
 above XML fragment into an RGB value due to the ``gpu_autodiff_rgb`` variant
 being used to run this example.
 
-.. code-block:: python
-
-    params['red.reflectance.value'] = [.6, .0, .0]
-    params.update()
-
 In most cases, we will only be interested in differentiating a small subset of
 the (typically very large) parameter map. Use the ``ParameterMap.keep()``
 method to discard all entries except for the specified list of keys.
@@ -140,16 +135,16 @@ Problem statement
 
 In contrast to the :ref:`previous example <sec-rendering-scene>` on using the
 Python API to render images, the differentiable rendering path involves two
-different specialized functions :py:func:`mitsuba.python.autodiff.render()` and
-:py:func:`mitsuba.python.autodiff.render_diff()` that don't involve the scene's
+different specialized functions :py:func:`~mitsuba.python.autodiff.render()` and
+:py:func:`~mitsuba.python.autodiff.render_diff()` that don't involve the scene's
 film and directly return GPU arrays containing the generated image (the
 difference between the two will be explained shortly). The function
-:py:func:`mitsuba.python.autodiff.write_bitmap()` reshapes the output into an
+:py:func:`~mitsuba.python.autodiff.write_bitmap()` reshapes the output into an
 image of the correct size and exports it to any of the supported image formats
 (OpenEXR, PNG, JPG, RGBE, PFM) while automatically performing format conversion
-and gamma correction for 8 bit formats.
+and gamma correction in the case of an 8-bit output format.
 
-Using this functionality, we will now generate a reference image using eight
+Using this functionality, we will now generate a reference image using 8
 samples per pixel (``spp``).
 
 .. code-block:: python
@@ -166,13 +161,14 @@ the red wall and then try to recover the original color using differentiation
 along with the reference image generated above.
 
 For this, let's first change the current color value: the parameter map enables
-such changes without having to reload the scene. The call to the ``update()``
-method at the end is mandatory to inform changed scene objects that they should
-refresh their internal state.
+such changes without having to reload the scene. The call to the
+:py:meth:`~mitsuba.python.util.ParameterMap.update()` method at the end is
+mandatory to inform changed scene objects that they should refresh their
+internal state.
 
 .. code-block:: python
 
-    # Change the parameter to something else
+    # Change the left wall into a bright white surface
     params['red.reflectance.value'] = [.9, .9, .9]
     params.update()
 
@@ -190,10 +186,14 @@ discusses standalone mode, and the section on :ref:`PyTorch integration
 <sec-pytorch>` shows how to adapt the example code for PyTorch.
 
 Mitsuba ships with standard optimizers including *Stochastic Gradient Descent*
-(SGD) and *SGD with momentum* (both in :py:class:`mitsuba.python.autodiff.SGD`)
-and *Adam* :cite:`kingma2014adam` (:py:class:`mitsuba.python.autodiff.Adam`).
-We will instantiate the latter and optimize the ``ParameterMap`` ``params``
-with a learning rate of 0.2.
+(:py:class:`~mitsuba.python.autodiff.SGD`) with and without momentum, as well
+as :py:class:`~mitsuba.python.autodiff.Adam` :cite:`kingma2014adam` We will
+instantiate the latter and optimize our reduced
+:py:class:`~mitsuba.python.util.ParameterMap` ``params`` with a learning rate
+of 0.2. The optimizer class automatically requests derivative information for
+selected parameters and updates their value after each step, hence it is not
+necessary to directly modify ``params`` or call ``ek.set_requires_gradient`` as
+explained in the introduction.
 
 .. code-block:: python
 
@@ -224,15 +224,13 @@ rendering iterations.
     \mathbb{E}[Y]` due to correlations between :math:`X` and :math:`Y` that
     result from this sample re-use. 
 
-    The :py:func:`mitsuba.python.autodiff.render_diff()` function used above
-    extends the simpler :py:func:`mitsuba.python.autodiff.render()` function
+    The :py:func:`~mitsuba.python.autodiff.render_diff()` function used above
+    extends the simpler :py:func:`~mitsuba.python.autodiff.render()` function
     with the ability to generate an *unbiased* estimate that de-correlates
     primal and derivative components, which boils down to rendering the image
-    twice.
-
-    This naturally comes at some cost in performance :math:`(\sim 1.6 \times)`,
-    and sometimes biased gradients are good enough. In this case, specify
-    ``biased=True``.
+    twice and naturally comes at some cost in performance :math:`(\sim 1.6
+    \times\!)`. Often, biased gradients are good enough, in which case
+    ``unbiased=False`` should be specified instead.
 
 .. note::
 
@@ -261,10 +259,11 @@ gradient steps.
         opt.step()
 
 We can also plot the error during each iteration. Note that it makes little
-sense to visualize the objective ``ob_val``: differences between ``image`` and
-``image_ref`` are by far dominated by Monte Carlo noise that is not related to
-the parameter being optimized. Since we previously know the true target parameter
-in this scene, we can validate the convergence of the iteration:
+sense to visualize the objective ``ob_val``, since differences between
+``image`` and ``image_ref`` are by far dominated by Monte Carlo noise that is
+not related to the parameter being optimized. Since we know the "true" target
+parameter in this scene (previously stored in ``param_ref``), we can validate
+the convergence of the iteration:
 
 .. code-block:: python
 
@@ -272,12 +271,14 @@ in this scene, we can validate the convergence of the iteration:
         print('Iteration %03i: error=%g' % (it, err_ref[0]))
 
 The following video shows a recording of the convergence during the first 100
-iterations:
+iterations. The gradient steps quickly recover the original red color of the
+left wall.
 
 .. raw:: html
 
     <center>
-        <video controls loop autoplay muted src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2020/03/02/convergence.mp4"></video>
+        <video controls loop autoplay muted
+        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2020/03/02/convergence.mp4"></video>
     </center>
 
 Note the oscillatory behavior, which is also visible in the convergence plot
@@ -288,16 +289,68 @@ aggressively.
     :width: 50%
     :align: center
 
-
 .. note::
 
-    **Efficiency**: this optimization should finish very quickly. On an NVIDIA
-    Titan RTX, it takes roughly 40 ms per iteration when the ``write_bitmap``
-    routine is commented out, and 25 ms per iteration when furthermore setting
-    ``unbiased=False``.
+    **Regarding efficiency**: this optimization should finish very quickly. On
+    an NVIDIA Titan RTX, it takes roughly 40 ms per iteration when the
+    ``write_bitmap`` routine is commented out, and 25 ms per iteration when
+    furthermore setting ``unbiased=False``.
 
     We have noticed that simultaneous GPU usage by another application (e.g.
     Chrome or Firefox) that appears completely innocuous (YouTube open in a
     tab, etc.) can reduce differentiable rendering performance ten-fold. If you
     find that your numbers are very different from the ones mentioned above,
     try closing all other software.
+
+.. note::
+
+    The full Python script of this tutorial can be found in the file:
+    :file:`docs/examples/10_diff_render/invert_cbox.py`.
+
+
+Forward-mode differentiation
+----------------------------
+
+The previous example demonstrated reverse-mode differentiation (a.k.a.
+backpropagation) where a desired small change to the output image is converted
+into a small change to the scene parameters. Mitsuba and Enoki also support
+differentiating in the other direction, i.e., from input parameter to output
+image. This is known as *forward mode* and can be very educational to visualize
+the effect of individual scene parameters on the rendered image.
+
+.. code-block:: python
+
+    # Keep track of derivatives with respect to one parameter
+    param_0 = params['red.reflectance.value']
+    ek.set_requires_gradient(param_0)
+
+    # Differentiable calculation
+    image = render(scene, spp=32)
+
+    # Assign the gradient [1, 1, 1] to the 'red.reflectance.value' input
+    ek.set_gradient(param_0, [1, 1, 1], backward=False)
+
+    # Forward-propagate previously assigned gradients
+    from mitsuba.core import Float
+    Float.forward()
+
+    # The gradients have been propagated to the output image
+    image_grad = ek.gradient(image)
+
+    # .. write them to a PNG file
+    crop_size = scene.sensors()[0].film().crop_size()
+    write_bitmap('out.png', image_grad, crop_size)
+
+Note that the simpler rendering function
+:py:func:`~mitsuba.python.autodiff.render()` is used here instead of the
+unbiased variant :py:func:`~mitsuba.python.autodiff.render_diff()`, which is
+only relevant for reverse mode.
+
+.. image:: ../../../resources/data/docs/images/autodiff/forward.jpg
+    :width: 50%
+    :align: center
+
+.. note::
+
+    The full Python script of this tutorial can be found in the file:
+    :file:`docs/examples/10_diff_render/forward_diff.py`.

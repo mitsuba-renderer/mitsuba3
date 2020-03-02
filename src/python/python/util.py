@@ -6,15 +6,15 @@ class ParameterMap:
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~mitsuba.python.autodiff.ParameterMap.torch()`,
-    :py:meth:`~mitsuba.python.autodiff.ParameterMap.update()`, and
-    :py:meth:`~mitsuba.python.autodiff.ParameterMap.keep()`.
+    specifically :py:meth:`~mitsuba.python.util.ParameterMap.torch()`,
+    :py:meth:`~mitsuba.python.util.ParameterMap.update()`, and
+    :py:meth:`~mitsuba.python.util.ParameterMap.keep()`.
     """
 
     def __init__(self, properties, hierarchy):
         """
         Private constructor (use
-        :py:func:`mitsuba.python.autodiff.traverse()` instead)
+        :py:func:`mitsuba.python.util.traverse()` instead)
         """
         self.properties = properties
         self.hierarchy = hierarchy
@@ -103,7 +103,7 @@ def traverse(node: 'mitsuba.core.Object') -> ParameterMap:
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
-    See also :py:class:`mitsuba.python.autodiff.ParameterMap`.
+    See also :py:class:`mitsuba.python.util.ParameterMap`.
     """
     from mitsuba.core import TraversalCallback
 
