@@ -11,8 +11,8 @@ From the ``build`` folder, one can run the following commands:
     Generates the ``docstr.h`` file from the C++ headers. This will be used by pybind11 to add
     docstrings to the python bindings.
 
-    .. note:: This step is only necessary if documentation/comments has be changed in the header
-              files (in which case the python bindings will need to be built again).
+    .. note:: This step is only necessary if documentation/comments have changed in the header
+              files (in which case the python bindings will need to be built again after calling this).
 
 ``make mkdoc-api``:
     Extracts the python binding's documentation for all the members (classes, functions, ...) of the
@@ -23,7 +23,7 @@ From the ``build`` folder, one can run the following commands:
     and ``python_api.rst`` which include different parts of the extracted RST to form the final
     API documentation.
 
-    .. note:: This step is only necessary if documentation/comments has be changed in the header
+    .. note:: This step is only necessary if documentation/comments have changed in the header
               files. It should be ran after calling ``make docstrings`` and rebuilding the python
               bindings.
 

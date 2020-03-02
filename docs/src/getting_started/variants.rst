@@ -65,7 +65,7 @@ to the number of enabled variants, hence including many of them (more than
 five) may not be advisable. Mitsuba 2 developers will typically want to
 restrict themselves to 1-2 variants used by their current experiment to
 minimize edit-recompile times. Each variant is associated with an identifying
-name name that is composed of several parts:
+name that is composed of several parts:
 
 .. image:: ../../images/variant.svg
     :width: 80%
@@ -235,7 +235,7 @@ following choices are available:
   .. subfigend::
      :label: fig-cbox-spectral
 
-  Note that Mitsuba still generates RGB output images by default even when if
+  Note that Mitsuba still generates RGB output images by default even when
   spectral mode is active. It is also important to note that many existing
   Mitsuba scenes only specify RGB color information. Spectral Mitsuba can still
   render such scenes -- in this case, it determines plausible smooth spectra

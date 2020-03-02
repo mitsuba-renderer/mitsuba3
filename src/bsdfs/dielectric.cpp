@@ -99,58 +99,58 @@ implementation of the Fresnel equations.
     :alt: List table
 
     .. list-table::
-        :widths: 30 25 30 15
+        :widths: 35 25 35 25
         :header-rows: 1
 
         * - Name
           - Value
           - Name
           - Value
-        * - vacuum
+        * - :paramtype:`vacuum`
           - 1.0
-          - acetone
+          - :paramtype:`acetone`
           - 1.36
-        * - bromine
+        * - :paramtype:`bromine`
           - 1.661
-          - bk7
+          - :paramtype:`bk7`
           - 1.5046
-        * - helium
+        * - :paramtype:`helium`
           - 1.00004
-          - ethanol
+          - :paramtype:`ethanol`
           - 1.361
-        * - water ice
+        * - :paramtype:`water ice`
           - 1.31
-          - sodium chloride
+          - :paramtype:`sodium chloride`
           - 1.544
-        * - hydrogen
+        * - :paramtype:`hydrogen`
           - 1.00013
-          - carbon tetrachloride
+          - :paramtype:`carbon tetrachloride`
           - 1.461
-        * - fused quartz
+        * - :paramtype:`fused quartz`
           - 1.458
-          - amber
+          - :paramtype:`amber`
           - 1.55
-        * - air
+        * - :paramtype:`air`
           - 1.00028
-          - glycerol
+          - :paramtype:`glycerol`
           - 1.4729
-        * - pyrex
+        * - :paramtype:`pyrex`
           - 1.470
-          - pet
+          - :paramtype:`pet`
           - 1.575
-        * - carbon dioxide
+        * - :paramtype:`carbon dioxide`
           - 1.00045
-          - benzene
+          - :paramtype:`benzene`
           - 1.501
-        * - acrylic glass
+        * - :paramtype:`acrylic glass`
           - 1.49
-          - diamond
+          - :paramtype:`diamond`
           - 2.419
-        * - water
+        * - :paramtype:`water`
           - 1.3330
-          - silicone oil
+          - :paramtype:`silicone oil`
           - 1.52045
-        * - polypropylene
+        * - :paramtype:`polypropylene`
           - 1.49
           -
           -

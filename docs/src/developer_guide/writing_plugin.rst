@@ -1,8 +1,8 @@
-Writing a C++ plugin
-====================
+Writing plugins in C++
+======================
 
-Pluging example
-***************
+Plugin example
+**************
 
 A basic plugin definition might look as follows:
 
