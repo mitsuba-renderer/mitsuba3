@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 from typing import Union, Tuple
 import enoki as ek
-import mitsuba
 
 
 def _render_helper(scene, spp=None, sensor_index=0):
@@ -125,16 +124,16 @@ def render(scene,
 
     Parameter ``spp`` (``None``, ``int``, or a 2-tuple ``(int, int)``):
 
-        Specifies the number of samples per pixel to be used for rendering,
-        overriding the value that is specified in the scene. If ``spp=None``,
-        the original value takes precedence. If ``spp`` is a 2-tuple
-        ``(spp_primal: int, spp_deriv: int)``, the first element specifies the
-        number of samples for the *primal* pass, and the second specifies the
-        number of samples for the *derivative* pass. See the explanation of the
-        ``unbiased`` parameter for further detail on what these mean.
+       Specifies the number of samples per pixel to be used for rendering,
+       overriding the value that is specified in the scene. If ``spp=None``,
+       the original value takes precedence. If ``spp`` is a 2-tuple
+       ``(spp_primal: int, spp_deriv: int)``, the first element specifies the
+       number of samples for the *primal* pass, and the second specifies the
+       number of samples for the *derivative* pass. See the explanation of the
+       ``unbiased`` parameter for further detail on what these mean.
 
-        Memory usage is roughly proportional to the ``spp``, value, hence this
-        parameter should be reduced if you encounter out-of-memory errors.
+       Memory usage is roughly proportional to the ``spp``, value, hence this
+       parameter should be reduced if you encounter out-of-memory errors.
 
     Parameter ``unbiased`` (``bool``):
 
@@ -171,7 +170,6 @@ def render(scene,
 
         When the scene contains more than one sensor/camera, this parameter
         can be specified to select the desired sensor.
-
     """
     if unbiased:
         if optimizer is None:
@@ -245,14 +243,16 @@ class SGD(Optimizer):
 
     .. math::
 
-        v_{i+1} &= \mu v_i +  g_{i+1}\\
-        p_{i+1} &= p_i + \varepsilon \cdot v_{i+1},
+        v_{i+1} = \\mu \\cdot v_i +  g_{i+1}
+
+    .. math::
+        p_{i+1} = p_i + \\varepsilon \\cdot v_{i+1},
 
     where :math:`v` is the velocity, :math:`p` are the positions,
-    :math:`\varepsilon` is the learning rate, and :math:`\mu` is
+    :math:`\\varepsilon` is the learning rate, and :math:`\\mu` is
     the momentum parameter.
-
     """
+
     def __init__(self, params, lr, momentum=0):
         """
         Parameter ``lr``:
@@ -465,3 +465,7 @@ def render_torch(scene, params=None, **kwargs):
         else kwargs['sensor_index']
     crop_size = scene.sensors()[sensor_index].film().crop_size()
     return result.reshape(crop_size[1], crop_size[0], -1)
+
+
+del Union
+del Tuple

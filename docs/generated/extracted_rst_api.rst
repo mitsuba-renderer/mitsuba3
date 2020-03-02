@@ -3320,7 +3320,7 @@
 
 .. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
     :type: bool
-    :value: True
+    :value: False
 
 .. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
     :type: int
@@ -9206,7 +9206,7 @@
         Desired number of evalution points. Must be an odd number bigger
         than 3.
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -9224,7 +9224,7 @@
         Desired number of evalution points. Must be an odd number bigger
         than 3.
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -9245,7 +9245,7 @@
     Parameter ``n`` (int):
         Desired number of evalution points
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -9269,7 +9269,7 @@
     Parameter ``n`` (int):
         Desired number of evalution points
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -14613,6 +14613,51 @@
     Returns → float:
         *no description available*
 
+.. py:class:: mitsuba.python.util.ParameterMap(properties, hierarchy)
+
+    Dictionary-like object that references various parameters used in a Mitsuba
+    scene graph. Parameters can be read and written using standard syntax
+    (``parameter_map[key]``). The class exposes several non-standard functions,
+    specifically :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.torch`()`,
+    :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.update`()`, and
+    :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.keep`()`.
+
+    .. py:method:: __init__(properties, hierarchy)
+
+        Private constructor (use
+        :py:func:`:py:class:`mitsuba.python.util.traverse`()` instead)
+
+        
+    .. py:method:: mitsuba.python.util.ParameterMap.torch() -> dict
+
+        Converts all Enoki arrays into PyTorch arrays and return them as a
+        dictionary. This is mainly useful when using PyTorch to optimize a
+        Mitsuba scene.
+
+    .. py:method:: mitsuba.python.util.ParameterMap.update() -> None
+
+        This function should be called at the end of a sequence of writes
+        to the dictionary. It automatically notifies all modified Mitsuba
+        objects and their parent objects that they should refresh their
+        internal state. For instance, the scene may rebuild the kd-tree
+        when a shape was modified, etc.
+
+    .. py:method:: mitsuba.python.util.ParameterMap.keep(keys: list) -> None
+
+        Reduce the size of the dictionary by only keeping elements,
+        whose keys are part of the provided list 'keys'.
+
+.. py:function:: mitsuba.python.util.traverse(node: mitsuba.core.Object) -> mitsuba.python.util.ParameterMap
+
+    Traverse a node of Mitsuba's scene graph and return a dictionary-like
+    object that can be used to read and write associated scene parameters.
+
+    See also :py:class:`:py:class:`mitsuba.python.util.ParameterMap``.
+
+.. py:function:: mitsuba.python.math.rlgamma(a, x)
+
+    Regularized lower incomplete gamma function based on CEPHES
+
 .. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
 
     Adapter to test BSDF sampling using the Chi^2 test.
@@ -14761,46 +14806,12 @@
 
     Maps between the unit sphere and a [cos(theta), phi] parameterization.
 
-.. py:function:: mitsuba.python.util.traverse(node)
-
-    Traverse a node of Mitsuba's scene graph and return a dictionary-like
-    object that can be used to read and write associated scene parameters.
-
-    This dictionary exposes multiple non-standard methods:
-
-    1. ``keep(self, keys: list) -> None``:
-
-       Reduce the size of the dictionary by only keeping elements,
-       whose keys are part of the provided list 'keys'.
-
-    2. ``update(self) -> None``:
-
-       This function should be called at the end of a sequence of writes
-       to the dictionary. It automatically notifies all modified Mitsuba
-       objects and their parent objects that they should refresh their
-       internal state. For instance, the scene may rebuild the kd-tree
-       when a shape was modified, etc.
-
-    3. ``torch(self) -> dict``:
-
-       Converts all Enoki arrays into PyTorch arrays and return them as a
-       dictionary. This is mainly useful when using PyTorch to optimize a
-       Mitsuba scene.
-
-
-.. py:function:: mitsuba.python.math.rlgamma(a, x)
-
-    Regularized lower incomplete gamma function based on CEPHES
-
 .. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
     Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
 
-    Implements the optimization technique presented in
-
-    "Adam: A Method for Stochastic Optimization"
-    Diederik P. Kingma and Jimmy Lei Ba
-    ICLR 2015
+    Implements the Adam optimizer presented in the paper *Adam: A Method for
+    Stochastic Optimization* by Kingman and Ba, ICLR 2015.
 
     .. py:method:: __init__(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
@@ -14816,6 +14827,10 @@
             order gradient moments
 
         
+    .. py:method:: mitsuba.python.autodiff.Adam.step()
+
+        Take a gradient step 
+
 .. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
 
     Base class of all gradient-based optimizers (currently SGD and Adam)
@@ -14843,7 +14858,21 @@
     Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
 
     Implements basic stochastic gradient descent with a fixed learning rate
-    and, optionally, momentum (0.9 is a typical parameter value).
+    and, optionally, momentum :cite:`Sutskever2013Importance` (0.9 is a typical
+    parameter value for the ``momentum`` parameter).
+
+    The momentum-based SGD uses the update equation
+
+    .. math::
+
+        v_{i+1} = \mu \cdot v_i +  g_{i+1}
+
+    .. math::
+        p_{i+1} = p_i + \varepsilon \cdot v_{i+1},
+
+    where :math:`v` is the velocity, :math:`p` are the positions,
+    :math:`\varepsilon` is the learning rate, and :math:`\mu` is
+    the momentum parameter.
 
     .. py:method:: __init__(params, lr, momentum=0)
 
@@ -14858,34 +14887,71 @@
 
         Take a gradient step 
 
-.. py:function:: mitsuba.python.autodiff.render(scene, spp=None, sensor_index=0)
+.. py:function:: mitsuba.python.autodiff._render_helper(scene, spp=None, sensor_index=0)
 
-    Render the specified Mitsuba scene and return a floating point
-    array containing RGB values and AOVs, if applicable
+    Internally used function: render the specified Mitsuba scene and return a
+    floating point array containing RGB values and AOVs, if applicable
 
-.. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp=None, spp_primal=None, spp_diff=None, sensor_index=0)
+.. py:function:: mitsuba.python.autodiff.render(scene, spp: Union[None, int, Tuple[int, int]] = None, unbiased=False, optimizer: mitsuba.python.autodiff.Optimizer = None, sensor_index=0)
 
-    Perform a differentiable of the scene `scene`.
+    Perform a differentiable of the scene `scene`, returning a floating point
+    array containing RGB values and AOVs, if applicable.
 
-    This function differs from ``render()`` in that it splits the rendering
-    step into two separate passes that generate the primal image and gradients,
-    respectively (assuming that ``unbiased=True`` is specified). This is
-    necessary to avoid correlations that would otherwise introduce bias into
-    the resulting parameter gradients.
+    Parameter ``spp`` (``None``, ``int``, or a 2-tuple ``(int, int)``):
 
-    The number of samples per pixel can be specified separately for both primal
-    and derivative passes.
+       Specifies the number of samples per pixel to be used for rendering,
+       overriding the value that is specified in the scene. If ``spp=None``,
+       the original value takes precedence. If ``spp`` is a 2-tuple
+       ``(spp_primal: int, spp_deriv: int)``, the first element specifies the
+       number of samples for the *primal* pass, and the second specifies the
+       number of samples for the *derivative* pass. See the explanation of the
+       ``unbiased`` parameter for further detail on what these mean.
 
-    The number of samples per pixel per pass can be specified separately for
-    both primal (``spp_primal``) and derivative (``spp_diff``) passes or
-    jointly for both (``spp``).
+       Memory usage is roughly proportional to the ``spp``, value, hence this
+       parameter should be reduced if you encounter out-of-memory errors.
+
+    Parameter ``unbiased`` (``bool``):
+
+        One potential issue when naively differentiating a rendering algorithm
+        is that the same set of Monte Carlo sample is used to generate both the
+        primal output (i.e. the image) along with derivative output. When the
+        rendering algorithm and objective are jointly differentiated, we end up
+        with expectations of products that do *not* satisfy the equality
+        :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\, \mathbb{E}[Y]` due to
+        correlations between :math:`X` and :math:`Y` that result from this
+        sample re-use.
+
+        When ``unbiased=True``, the ``render()`` function will generate an
+        *unbiased* estimate that de-correlates primal and derivative
+        components, which boils down to rendering the image twice and naturally
+        comes at some cost in performance :math:`(\sim 1.6      imes\!)`. Often,
+        biased gradients are good enough, in which case ``unbiased=False``
+        should be specified instead.
+
+        The number of samples per pixel per pass can be specified separately
+        for both passes by passing a tuple to the ``spp`` parameter.
+
+        Note that unbiased mode is only relevant for reverse-mode
+        differentiation. It is not needed when visualizing parameter gradients
+        in image space using forward-mode differentiation.
+
+    Parameter ``optimizer`` (:py:class:`:py:class:`mitsuba.python.autodiff.Optimizer``):
+
+        The optimizer referencing relevant scene parameters must be specified
+        when ``unbiased=True``. Otherwise, there is no need to provide this
+        parameter.
+
+    Parameter ``sensor_index`` (``int``):
+
+        When the scene contains more than one sensor/camera, this parameter
+        can be specified to select the desired sensor.
 
 .. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)
 
 .. py:function:: mitsuba.python.autodiff.write_bitmap(filename, data, resolution)
 
-    Write the linearized RGB image in `data` to a
-    PNG/EXR/.. file with resolution `resolution`.
+    Write the linearized RGB image in `data` to a PNG/EXR/.. file with
+    resolution `resolution`.
 
 .. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
 
