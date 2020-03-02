@@ -190,10 +190,10 @@ discusses standalone mode, and the section on :ref:`PyTorch integration
 <sec-pytorch>` shows how to adapt the example code for PyTorch.
 
 Mitsuba ships with standard optimizers including *Stochastic Gradient Descent*
-(SGD) and *Nesterov-Accelerated SGD* (both in
-:py:class:`mitsuba.python.autodiff.SGD`) and *Adam* :cite:`kingma2014adam`
-(:py:class:`mitsuba.python.autodiff.Adam`). We will instantiate the latter and
-optimize the ``ParameterMap`` ``params`` with a learning rate of 0.2.
+(SGD) and *SGD with momentum* (both in :py:class:`mitsuba.python.autodiff.SGD`)
+and *Adam* :cite:`kingma2014adam` (:py:class:`mitsuba.python.autodiff.Adam`).
+We will instantiate the latter and optimize the ``ParameterMap`` ``params``
+with a learning rate of 0.2.
 
 .. code-block:: python
 
@@ -212,16 +212,38 @@ rendering iterations.
 
         write_bitmap('out_%03i.png' % it, image, crop_size)
 
-One potential issue when naively differentiating a rendering algorithm is that
-the same set of Monte Carlo sample is used to generate both the primal output
-(i.e. the image) along with derivative output. When the rendering algorithm and
-objective are jointly differentiated, we end up with expectations of product s
-that do *not* satisfy the equality :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\,
-\mathbb{E}[Y]` due to correlations between :math:`X` and :math:`Y` that result
-from this re-use. The :py:func:`mitsuba.python.autodiff.render_diff()` function
-used above has the ability to generate an *unbiased* estimate that
-de-correlates primal and derivative components, which boils down to rendering
-the image twice.
+
+.. note::
+
+    **Regarding bias in gradients**: One potential issue when naively
+    differentiating a rendering algorithm is that the same set of Monte Carlo
+    sample is used to generate both the primal output (i.e. the image) along
+    with derivative output. When the rendering algorithm and objective are
+    jointly differentiated, we end up with expectations of products that do
+    *not* satisfy the equality :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\,
+    \mathbb{E}[Y]` due to correlations between :math:`X` and :math:`Y` that
+    result from this sample re-use. 
+
+    The :py:func:`mitsuba.python.autodiff.render_diff()` function used above
+    extends the simpler :py:func:`mitsuba.python.autodiff.render()` function
+    with the ability to generate an *unbiased* estimate that de-correlates
+    primal and derivative components, which boils down to rendering the image
+    twice.
+
+    This naturally comes at some cost in performance :math:`(\sim 1.6 \times)`,
+    and sometimes biased gradients are good enough. In this case, specify
+    ``biased=True``.
+
+.. note::
+
+    **Regarding the number of samples per pixel**: An extremely low number of
+    samples per pixel (``spp=1``) is being used in the differentiable rendering
+    iterations above, which produces both noisy renderings and noisy gradients.
+    Alternatively, we could have used many more samples to take correspondingly
+    larger gradient steps (i.e. a higher ``lr=..`` parameter to the optimizer).
+    We generally find the first variant with few samples preferable, since it
+    greatly reduces memory usage and is more adaptive to changes in the
+    parameter value.
 
 Still within the ``for`` loop, we can now evaluate a suitable objective
 function, propagate derivatives with respect to the objective, and take
@@ -249,12 +271,13 @@ in this scene, we can validate the convergence of the iteration:
         err_ref = ek.hsum(ek.sqr(param_ref - params['red.reflectance.value']))
         print('Iteration %03i: error=%g' % (it, err_ref[0]))
 
-The following video shows a recording of the convergence during the first 100 iterations:
+The following video shows a recording of the convergence during the first 100
+iterations:
 
 .. raw:: html
 
     <center>
-        <video loop autoplay src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2020/03/02/convergence.mp4"></video>
+        <video controls loop autoplay muted src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2020/03/02/convergence.mp4"></video>
     </center>
 
 Note the oscillatory behavior, which is also visible in the convergence plot
@@ -264,3 +287,17 @@ aggressively.
 .. image:: ../../../resources/data/docs/images/autodiff/convergence.png
     :width: 50%
     :align: center
+
+
+.. note::
+
+    **Efficiency**: this optimization should finish very quickly. On an NVIDIA
+    Titan RTX, it takes roughly 40 ms per iteration when the ``write_bitmap``
+    routine is commented out, and 25 ms per iteration when furthermore setting
+    ``unbiased=False``.
+
+    We have noticed that simultaneous GPU usage by another application (e.g.
+    Chrome or Firefox) that appears completely innocuous (YouTube open in a
+    tab, etc.) can reduce differentiable rendering performance ten-fold. If you
+    find that your numbers are very different from the ones mentioned above,
+    try closing all other software.
