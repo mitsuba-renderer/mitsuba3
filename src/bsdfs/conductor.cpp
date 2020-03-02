@@ -21,7 +21,7 @@ Smooth conductor (:monosp:`conductor`)
    - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
  * - eta, k
    - |spectrum| or |texture|
-   - Real and imaginary components of the material's index of refraction. (Default: based on the value of :monosp:`material`)
+   - Real and imaginary components of the material's index of refraction. (Default: based on the value of :paramtype:`material`)
  * - specular_reflectance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular reflection component.
@@ -52,7 +52,7 @@ Note that :num:`conductor-ior-list` also includes several popular optical
 coatings, which are not actually conductors. These materials can also
 be used with this plugin, though note that the plugin will ignore any
 refraction component that the actual material might have had.
-There is also a special material profile named :monosp:`none`, which disables
+There is also a special material profile named :paramtype:`none`, which disables
 the computation of Fresnel reflectances and produces an idealized
 100% reflecting mirror.
 
@@ -106,85 +106,85 @@ implementation of the Fresnel equations.
           - Description
           - Preset(s)
           - Description
-        * - a-C
+        * - :paramtype:`a-C`
           - Amorphous carbon
-          - Na\_palik
+          - :paramtype:`Na_palik`
           - Sodium
-        * - Ag
+        * - :paramtype:`Ag`
           - Silver
-          - Nb, Nb\_palik
+          - :paramtype:`Nb`, :paramtype:`Nb_palik`
           - Niobium
-        * - Al
+        * - :paramtype:`Al`
           - Aluminium
-          - Ni\_palik
+          - :paramtype:`Ni_palik`
           - Nickel
-        * - AlAs, AlAs\_palik
+        * - :paramtype:`AlAs`, :paramtype:`AlAs_palik`
           - Cubic aluminium arsenide
-          - Rh, Rh\_palik
+          - :paramtype:`Rh`, :paramtype:`Rh_palik`
           - Rhodium
-        * - AlSb, AlSb\_palik
+        * - :paramtype:`AlSb`, :paramtype:`AlSb_palik`
           - Cubic aluminium antimonide
-          - Se, Se\_palik
+          - :paramtype:`Se`, :paramtype:`Se_palik`
           - Selenium
-        * - Au
+        * - :paramtype:`Au`
           - Gold
-          - SiC, SiC\_palik
+          - :paramtype:`SiC`, :paramtype:`SiC_palik`
           - Hexagonal silicon carbide
-        * - Be, Be\_palik
+        * - :paramtype:`Be`, :paramtype:`Be_palik`
           - Polycrystalline beryllium
-          - SnTe, SnTe\_palik
+          - :paramtype:`SnTe`, :paramtype:`SnTe_palik`
           - Tin telluride
-        * - Cr
+        * - :paramtype:`Cr`
           - Chromium
-          - Ta, Ta\_palik
+          - :paramtype:`Ta`, :paramtype:`Ta_palik`
           - Tantalum
-        * - CsI, CsI\_palik
+        * - :paramtype:`CsI`, :paramtype:`CsI_palik`
           - Cubic caesium iodide
-          - Te, Te\_palik
+          - :paramtype:`Te`, :paramtype:`Te_palik`
           - Trigonal tellurium
-        * - Cu, Cu\_palik
+        * - :paramtype:`Cu`, :paramtype:`Cu_palik`
           - Copper
-          - ThF4, ThF4\_palik
+          - :paramtype:`ThF4`, :paramtype:`ThF4_palik`
           - Polycryst. thorium (IV) fluoride
-        * - Cu2O, Cu2O\_palik
+        * - :paramtype:`Cu2O`, :paramtype:`Cu2O_palik`
           - Copper (I) oxide
-          - TiC, TiC\_palik
+          - :paramtype:`TiC`, :paramtype:`TiC_palik`
           - Polycrystalline titanium carbide
-        * - CuO, CuO\_palik
+        * - :paramtype:`CuO`, :paramtype:`CuO_palik`
           - Copper (II) oxide
-          - TiN, TiN\_palik
+          - :paramtype:`TiN`, :paramtype:`TiN_palik`
           - Titanium nitride
-        * - d-C, d-C\_palik
+        * - :paramtype:`d-C`, :paramtype:`d-C_palik`
           - Cubic diamond
-          - TiO2, TiO2\_palik
+          - :paramtype:`TiO2`, :paramtype:`TiO2_palik`
           - Tetragonal titan. dioxide
-        * - Hg, Hg\_palik
+        * - :paramtype:`Hg`, :paramtype:`Hg_palik`
           - Mercury
-          - VC, VC\_palik
+          - :paramtype:`VC`, :paramtype:`VC_palik`
           - Vanadium carbide
-        * - HgTe, HgTe\_palik
+        * - :paramtype:`HgTe`, :paramtype:`HgTe_palik`
           - Mercury telluride
-          - V\_palik
+          - :paramtype:`V_palik`
           - Vanadium
-        * - Ir, Ir\_palik
+        * - :paramtype:`Ir`, :paramtype:`Ir_palik`
           - Iridium
-          - VN, VN\_palik
+          - :paramtype:`VN`, :paramtype:`VN_palik`
           - Vanadium nitride
-        * - K, K\_palik
+        * - :paramtype:`K`, :paramtype:`K_palik`
           - Polycrystalline potassium
-          - W
+          - :paramtype:`W`
           - Tungsten
-        * - Li, Li\_palik
+        * - :paramtype:`Li`, :paramtype:`Li_palik`
           - Lithium
           -
           -
-        * - MgO, MgO\_palik
+        * - :paramtype:`MgO`, :paramtype:`MgO_palik`
           - Magnesium oxide
           -
           -
-        * - Mo, Mo\_palik
+        * - :paramtype:`Mo`, :paramtype:`Mo_palik`
           - Molybdenum
-          - none
+          - :paramtype:`none`
           - No mat. profile (100% reflecting mirror)
 
 .. rubric:: Footnotes
