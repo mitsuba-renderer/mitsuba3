@@ -48,10 +48,6 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
         (e.g. :monosp:`y` when :monosp:`width` < :monosp:`height`)
 
      The default is :monosp:`x`.
- * - shutter_open, shutter_close
-   - |float|
-   - Specifies the time interval of the measurement---this is only relevant when the scene is in
-     motion. (Default: 0)
  * - near_clip, far_clip
    - |float|
    - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
@@ -66,10 +62,11 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
    :label: fig-thinlens
 
 This plugin implements a simple perspective camera model with a thin lens
-at its circular aperture. It is very similar to the \pluginref{perspective} plugin
-except that the extra lens element permits rendering with a
-specifiable (i.e. non-infinite) depth of field. To configure this, it has two
-extra parameters named :monosp:`aperture_radius` and :monosp:`focus_distance`.
+at its circular aperture. It is very similar to the
+:ref:`perspective <sensor-perspective>` plugin except that the extra lens element
+permits rendering with a specifiable (i.e. non-infinite) depth of field.
+To configure this, it has two extra parameters named :monosp:`aperture_radius`
+and :monosp:`focus_distance`.
 
 By default, the camera's field of view is specified using a 35mm film
 equivalent focal length, which is first converted into a diagonal field

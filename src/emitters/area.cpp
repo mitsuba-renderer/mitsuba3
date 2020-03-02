@@ -19,7 +19,7 @@ Area light (:monosp:`area`)
  * - radiance
    - |spectrum|
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
-     (Default: :ref:`emitter-d65`)
+     (Default: :ref:`d65 <emitter-d65>`)
 
 This plugin implements an area light, i.e. a light source that emits
 diffuse illumination from the exterior of an arbitrary shape.

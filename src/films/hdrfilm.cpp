@@ -30,7 +30,7 @@ High dynamic range film (:monosp:`hdrfilm`)
    - |string|
    - Specifies the desired pixel format of output images. The options are :monosp:`luminance`,
      :monosp:`luminance_alpha`, :monosp:`rgb`, :monosp:`rgba`, :monosp:`xyz` and :monosp:`xyza`.
-     (Default: :monosp:`rgb`)
+     (Default: :monosp:`rgba`)
  * - component_format
    - |string|
    - Specifies the desired floating  point component format of output images. The options are
@@ -38,8 +38,8 @@ High dynamic range film (:monosp:`hdrfilm`)
  * - crop_offset_y, crop_offset_y, crop_width, crop_height
    - |int|
    - These parameters can optionally be provided to select a sub-rectangle
-     of the output. In this case, Mitsuba will only render the requested
-     regions. (Default: Unused)
+     of the output. In this case, only the requested regions
+     will be rendered. (Default: Unused)
  * - high_quality_edges
    - |bool|
    - If set to |true|, regions slightly outside of the film plane will also be sampled. This may
@@ -56,12 +56,14 @@ possible by not performing any kind of post processing, such as gamma correction
 will record linear radiance values.
 
 When writing OpenEXR files, the film will either produce a luminance, luminance/alpha, RGB(A),
-XYZ(A) tristimulus, or spectrum/spectrum-alpha-based bitmap having a :monosp:`float16`,
+or XYZ(A) tristimulus bitmap having a :monosp:`float16`,
 :monosp:`float32`, or :monosp:`uint32`-based internal representation based on the chosen parameters.
-The default configuration is RGB with a :monosp:`float16` component format, which is appropriate for
-most purposes. Note that the spectral output options only make sense when using a custom build of
-Mitsuba that has spectral rendering enabled (this is not the case for the downloadable release
-builds).
+The default configuration is RGBA with a :monosp:`float16` component format, which is appropriate for
+most purposes.
+
+For OpenEXR files, Mitsuba 2 also supports fully general multi-channel output; refer to
+the :ref:`aov <integrator-aov>` or :ref:`stokes <integrator-stokes>` plugins for
+details on how this works.
 
 The plugin can also write RLE-compressed files in the Radiance RGBE format pioneered by Greg Ward
 (set :monosp:`file_format=rgbe`), as well as the Portable Float Map format

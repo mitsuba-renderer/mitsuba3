@@ -29,20 +29,17 @@ Serialized mesh loader (:monosp:`serialized`)
    - When set to |true|, any existing or computed vertex normals are
      discarded and \emph{face normals} will instead be used during rendering.
      This gives the rendered object a faceted appearance.(Default: |false|)
- * - flip_tex_coords
-   - |bool|
-   - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
-     (Default: none (i.e. object space = world space))
+     (Default: none, i.e. object space = world space)
 
 The serialized mesh format represents the most space and time-efficient way
-of getting geometry information into Mitsuba. It stores indexed triangle meshes
+of getting geometry information into Mitsuba 2. It stores indexed triangle meshes
 in a lossless gzip-based encoding that (after decompression) nicely matches up
 with the internally used data structures. Loading such files is considerably
-faster than the :ref:`shape-ply` plugin and orders of magnitude faster than
-the :ref:`shape-obj` plugin.
+faster than the :ref:`ply <shape-ply>` plugin and orders of magnitude faster than
+the :ref:`obj <shape-obj>` plugin.
 
 Format description
 ******************

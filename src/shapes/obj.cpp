@@ -23,15 +23,15 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
  * - face_normals
    - |bool|
    - When set to |true|, any existing or computed vertex normals are
-     discarded and \emph{face normals} will instead be used during rendering.
-     This gives the rendered object a faceted appearance.(Default: |false|)
+     discarded and *face normals* will instead be used during rendering.
+     This gives the rendered object a faceted appearance. (Default: |false|)
  * - flip_tex_coords
    - |bool|
    - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
-     (Default: none (i.e. object space $=$ world space))
+     (Default: none, i.e. object space = world space)
 
 This plugin implements a simple loader for Wavefront OBJ files. It handles
 meshes containing triangles and quadrilaterals, and it also imports vertex normals

@@ -14,10 +14,16 @@ Lanczos filter (:monosp:`lanczos`)
 
 This is a windowed version of the theoretically optimal low-pass filter. It
 is generally one of the best available filters in terms of producing sharp
-high-quality output. Its main disadvantage is that it produces ringing
+high-quality output. Its main disadvantage is that it produces strong ringing
 around discontinuities, which can become a serious problem when rendering
 bright objects with sharp edges (a directly visible light source will for
-instance have black fringing artifacts around it).
+instance have black fringing artifacts around it). This is also the
+computationally slowest reconstruction filter.
+
+This plugin has an :paramtype:`integer`-valued parameter named
+:paramtype:`lobes`, that sets the desired number of filter side-lobes. The
+higher, the closer the filter will approximate an optimal low-pass filter, but
+this also increases ringing. Values of 2 or 3 are common (3 is the default).
 
  */
 template <typename Float, typename Spectrum>

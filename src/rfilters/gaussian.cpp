@@ -12,10 +12,14 @@ Gaussian filter (:monosp:`gaussian`)
 ------------------------------------
 
 This is a windowed Gaussian filter with configurable standard deviation.
-It often produces pleasing results, but may introduce too much blurring.
+It often produces pleasing results, and never suffers from ringing, but may
+occasionally introduce too much blurring.
 
 When no reconstruction filter is explicitly requested, this is the default
 choice in Mitsuba.
+
+Takes a standard deviation parameter (:paramtype:`stddev`) which is set to 0.5
+pixels be default.
 
  */
 

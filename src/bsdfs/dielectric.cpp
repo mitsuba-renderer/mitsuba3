@@ -36,15 +36,17 @@ Smooth dielectric material (:monosp:`dielectric`)
     :label: fig-bsdf-dielectric
 
 This plugin models an interface between two dielectric materials having mismatched
-indices of refraction (for instance, water and air). Exterior and interior IOR values
+indices of refraction (for instance, water ↔ air). Exterior and interior IOR values
 can be specified independently, where "exterior" refers to the side that contains
 the surface normal. When no parameters are given, the plugin activates the defaults, which
-describe a borosilicate glass BK7/air interface.
+describe a borosilicate glass (BK7) ↔ air interface.
 
 In this model, the microscopic structure of the surface is assumed to be perfectly
 smooth, resulting in a degenerate BSDF described by a Dirac delta distribution.
-This means that for any given incoming ray of light, the model always scatters into a discrete set of directions, as opposed to a continuum.
-For a similar model that instead describes a rough surface microstructure, take a look at the :ref:`roughdielectric <bsdf-roughdielectric>` plugin.
+This means that for any given incoming ray of light, the model always scatters into
+a discrete set of directions, as opposed to a continuum. For a similar model that
+instead describes a rough surface microstructure, take a look at the
+:ref:`roughdielectric <bsdf-roughdielectric>` plugin.
 
 This snippet describes a simple air-to-water interface
 
@@ -59,13 +61,14 @@ This snippet describes a simple air-to-water interface
     <shape>
 
 When using this model, it is crucial that the scene contains
-meaningful and mutually compatible indices of refraction changes---see
-Figure :num:`fig-glass-explanation` for a description of what this entails.
+meaningful and mutually compatible indices of refraction changes---see the
+section about :ref:`correctness considerations <bsdf-correctness>` for a
+description of what this entails.
 
 In many cases, we will want to additionally describe the *medium* within a
 dielectric material. This requires the use of a rendering technique that is
-aware of media (e.g. the volumetric path tracer). An example of how one might
-describe a slightly absorbing piece of glass is shown below:
+aware of media (e.g. the :ref:`volumetric path tracer <integrator-volpath>`).
+An example of how one might describe a slightly absorbing piece of glass is shown below:
 
 .. code-block:: xml
     :name: dielectric-glass
@@ -83,16 +86,21 @@ describe a slightly absorbing piece of glass is shown below:
     <shape>
 
 In *polarized* rendering modes, the material automatically switches to a polarized
-implementation of the Fresnel equations.
+implementation of the underlying Fresnel equations that quantify the reflectance and
+transmission.
 
 .. note::
 
     Dispersion is currently unsupported but will be enabled in a future release.
 
+Instead of specifying numerical values for the indices of refraction, Mitsuba 2
+comes with a list of presets that can be specified with the :paramtype:`material`
+parameter:
+
 .. figtable::
     :label: ior-table-list
     :caption: This table lists all supported material names
-       along with along with their associated index of re-fraction at standard conditions.
+       along with along with their associated index of refraction at standard conditions.
        These material names can be used with the plugins :ref:`dielectric <bsdf-dielectric>`,
        :ref:`roughdielectric <bsdf-roughdielectric>`, :ref:`plastic <bsdf-plastic>`
        , as well as :ref:`roughplastic <bsdf-roughplastic>`.

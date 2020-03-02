@@ -16,6 +16,17 @@ Rough conductor material (:monosp:`roughconductor`)
 
 .. pluginparameters::
 
+ * - material
+   - |string|
+   - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
+ * - eta, k
+   - |spectrum| or |texture|
+   - Real and imaginary components of the material's index of refraction. (Default: based on the value of :monosp:`material`)
+ * - specular_reflectance
+   - |spectrum| or |texture|
+   - Optional factor that can be used to modulate the specular reflection component.
+     Note that for physical realism, this parameter should never be touched. (Default: 1.0)
+
  * - distribution
    - |string|
    - Specifies the type of microfacet normal distribution used to model the surface roughness.
@@ -32,21 +43,11 @@ Rough conductor material (:monosp:`roughconductor`)
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
      parameter to initialize both :monosp:`alpha_u` and :monosp:`alpha_v` to the same value. (Default: 0.1)
- * - material
-   - |string|
-   - Name of the material preset, see :num:`conductor-ior-list`. (Default: none)
- * - eta, k
-   - |spectrum| or |texture|
-   - Real and imaginary components of the material's index of refraction. (Default: based on the value of :monosp:`material`)
  * - sample_visible
    - |bool|
    - Enables a sampling technique proposed by Heitz and D'Eon :cite:`Heitz1014Importance`, which
      focuses computation on the visible parts of the microfacet normal distribution, considerably
      reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
- * - specular_reflectance
-   - |spectrum| or |texture|
-   - Optional factor that can be used to modulate the specular reflection component.
-     Note that for physical realism, this parameter should never be touched. (Default: 1.0)
 
 This plugin implements a realistic microfacet scattering model for rendering
 rough conducting materials, such as metals.
@@ -62,27 +63,25 @@ rough conducting materials, such as metals.
 
 Microfacet theory describes rough surfaces as an arrangement of unresolved
 and ideally specular facets, whose normal directions are given by a
-specially chosen \emph{microfacet distribution}. By accounting for shadowing
+specially chosen *microfacet distribution*. By accounting for shadowing
 and masking effects between these facets, it is possible to reproduce the
 important off-specular reflections peaks observed in real-world measurements
 of such materials.
 
 This plugin is essentially the *roughened* equivalent of the (smooth) plugin
-:ref:`bsdf-conductor`. For very low values of :math:`\alpha`, the two will
+:ref:`conductor <bsdf-conductor>`. For very low values of :math:`\alpha`, the two will
 be identical, though scenes using this plugin will take longer to render
 due to the additional computational burden of tracking surface roughness.
 
 The implementation is based on the paper *Microfacet Models
 for Refraction through Rough Surfaces* by Walter et al.
-:cite:`Walter07Microfacet`. It supports three different types of microfacet
-distributions and has a texturable roughness parameter.
+:cite:`Walter07Microfacet` and it supports two different types of microfacet
+distributions.
+
 To facilitate the tedious task of specifying spectrally-varying index of
 refraction information, this plugin can access a set of measured materials
 for which visible-spectrum information was publicly available
-(see Table :num:`conductor-ior-list` for the full list).
-There is also a special material profile named :monosp:`none`, which disables
-the computation of Fresnel reflectances and produces an idealized
-100% reflecting mirror.
+(see the corresponding table in the :ref:`conductor <bsdf-conductor>` reference).
 
 When no parameters are given, the plugin activates the default settings,
 which describe a 100% reflective mirror with a medium amount of roughness modeled
@@ -110,6 +109,7 @@ The following XML snippet describes a material definition for brushed aluminium:
 
 Technical details
 *****************
+
 All microfacet distributions allow the specification of two distinct
 roughness values along the tangent and bitangent directions. This can be
 used to provide a material with a *brushed* appearance. The alignment
@@ -121,17 +121,18 @@ Since Mitsuba 0.5.1, this plugin uses a new importance sampling technique
 contributed by Eric Heitz and Eugene D'Eon, which restricts the sampling
 domain to the set of visible (unmasked) microfacet normals. The previous
 approach of sampling all normals is still available and can be enabled
-by setting :monosp:`sample_visible` to :monosp:`false`.
+by setting :monosp:`sample_visible` to :monosp:`false`. However this will lead
+to significantly slower convergence.
 
 When using this plugin, you should ideally compile Mitsuba with support for
 spectral rendering to get the most accurate results. While it also works
 in RGB mode, the computations will be more approximate in nature.
 Also note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
-consider using the :ref:`bsdf-twosided` BRDF adapter.
+consider using the :ref:`twosided <bsdf-twosided>` BRDF adapter.
 
 In *polarized* rendering modes, the material automatically switches to a polarized
-implementation of the Fresnel equations.
+implementation of the underlying Fresnel equations.
 
  */
 
@@ -155,7 +156,6 @@ public:
         mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();
         m_sample_visible = distr.sample_visible();
-
 
         m_alpha_u = distr.alpha_u();
         m_alpha_v = distr.alpha_v();

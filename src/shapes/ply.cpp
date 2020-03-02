@@ -27,12 +27,12 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
  * - face_normals
    - |bool|
    - When set to |true|, any existing or computed vertex normals are
-     discarded and **face normals** will instead be used during rendering.
-     This gives the rendered object a faceted appearance.(Default: |false|)
+     discarded and *face normals* will instead be used during rendering.
+     This gives the rendered object a faceted appearance. (Default: |false|)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.
-     (Default: none (i.e. object space $=$ world space))
+     (Default: none, i.e. object space = world space)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_ply_bunny.jpg
@@ -43,10 +43,10 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
    :label: fig-ply
 
 This plugin implements a fast loader for the Stanford PLY format (both
-the ASCII and binary format). It is based on the :monosp:`libply` library by
-Ares Lagae (http://people.cs.kuleuven.be/~ares.lagae/libply).
+the ASCII and binary format). It is based on the
+`libply library <http://people.cs.kuleuven.be/~ares.lagae/libply>`_ by Ares Lagae.
 The current plugin implementation supports triangle meshes with optional
-UV coordinates, vertex normals, and vertex colors.
+UV coordinates and vertex normals.
 
  */
 

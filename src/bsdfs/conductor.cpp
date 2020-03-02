@@ -36,32 +36,19 @@ Smooth conductor (:monosp:`conductor`)
     :label: fig-bsdf-conductor
 
 This plugin implements a perfectly smooth interface to a conducting material,
-such as a metal. For a similar model that instead describes a rough surface
-microstructure, take a look at the separately available
-:ref:`bsdf-roughconductor` plugin.
+such as a metal that is described using a Dirac delta distribution. For a
+similar model that instead describes a rough surface microstructure, take a look
+at the separately available :ref:`roughconductor <bsdf-roughconductor>` plugin.
 In contrast to dielectric materials, conductors do not transmit
 any light. Their index of refraction is complex-valued and tends to undergo
 considerable changes throughout the visible color spectrum.
 
-To facilitate the tedious task of specifying spectrally-varying index of
-refraction information, Mitsuba 2 ships with a set of measured data for
-several materials, where visible-spectrum information was publicly
-available [#f1]_.
-
-Note that :num:`conductor-ior-list` also includes several popular optical
-coatings, which are not actually conductors. These materials can also
-be used with this plugin, though note that the plugin will ignore any
-refraction component that the actual material might have had.
-There is also a special material profile named :paramtype:`none`, which disables
-the computation of Fresnel reflectances and produces an idealized
-100% reflecting mirror.
-
-When using this plugin, you should ideally one of the :monosp:`spectral` modes
-of the renderer to get the most accurate results. While it also works
+When using this plugin, you should ideally enable one of the :monosp:`spectral`
+modes of the renderer to get the most accurate results. While it also works
 in RGB mode, the computations will be more approximate in nature.
 Also note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
-consider using the :ref:`bsdf-twosided` BRDF adapter plugin.
+consider using the :ref:`twosided <bsdf-twosided>` BRDF adapter plugin.
 
 The following XML snippet describes a material definition for gold:
 
@@ -85,7 +72,12 @@ respectively (see :ref:`Scene format <sec-file-format>` for details on the file 
     </bsdf>
 
 In *polarized* rendering modes, the material automatically switches to a polarized
-implementation of the Fresnel equations.
+implementation of the underlying Fresnel equations.
+
+To facilitate the tedious task of specifying spectrally-varying index of
+refraction information, Mitsuba 2 ships with a set of measured data for several
+materials, where visible-spectrum information was publicly
+available:
 
 .. figtable::
     :label: conductor-ior-list
@@ -187,13 +179,15 @@ implementation of the Fresnel equations.
           - :paramtype:`none`
           - No mat. profile (100% reflecting mirror)
 
-.. rubric:: Footnotes
+These index of refraction values are identical to the data distributed
+with PBRT. They are originally from the `Luxpop database <http://www.luxpop.com>`_
+and are based on data by Palik et al. :cite:`Palik1998Handbook` and measurements
+of atomic scattering factors made by the Center For X-Ray Optics (CXRO) at
+Berkeley and the Lawrence Livermore National Laboratory (LLNL).
 
-.. [#f1] These index of refraction values are identical to the data distributed
-    with PBRT. They are originally from the (`Luxpop database <http://www.luxpop.com>`_)
-    and are based on data by Palik et al. :cite:`Palik1998Handbook` and measurements
-    of atomic scattering factors made by the Center For X-Ray Optics (CXRO) at
-    Berkeley and the Lawrence Livermore National Laboratory (LLNL).
+There is also a special material profile named :paramtype:`none`, which disables
+the computation of Fresnel reflectances and produces an idealized
+100% reflecting mirror.
 
  */
 

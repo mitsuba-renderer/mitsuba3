@@ -19,8 +19,9 @@ Independent sampler (:monosp:`independent`)
    - Number of samples per pixel (Default: 4)
 
 The independent sampler produces a stream of independent and uniformly
-distributed pseudorandom numbers. Internally, it relies on a fast SIMD version
-of the Mersenne Twister random number generator :cite:`Saito2008SIMD`.
+distributed pseudorandom numbers. Internally, it relies on the
+`PCG32 random number generator <https://www.pcg-random.org/>`_ by
+by Melissa O’Neill.
 
 This is the most basic sample generator; because no precautions are taken to avoid
 sample clumping, images produced using this plugin will usually take longer to converge.

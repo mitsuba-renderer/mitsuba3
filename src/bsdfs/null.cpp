@@ -18,6 +18,11 @@ Null material (:monosp:`null`)
 
 This plugin models a completely invisible surface material.
 Light will not interact with this BSDF in any way.
+
+Internally, this is implemented as a forward-facing Dirac delta distribution.
+Note that the standard :ref:`path tracer <integrator-path>` does not have a good sampling strategy to deal with this,
+but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
+
 The main purpose of this material is to be used as the BSDF of a shape enclosing a participating medium.
 
  */

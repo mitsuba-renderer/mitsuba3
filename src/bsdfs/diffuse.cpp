@@ -22,7 +22,7 @@ Smooth diffuse material (:monosp:`diffuse`)
 The smooth diffuse material (also referred to as *Lambertian*)
 represents an ideally diffuse material with a user-specified amount of
 reflectance. Any received illumination is scattered so that the surface
-looks the same independently of the direction of observation. |spectrum|
+looks the same independently of the direction of observation.
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_diffuse_plain.jpg
@@ -40,7 +40,7 @@ of 50% reflectance.
 
 Note that this material is one-sided---that is, observed from the
 back side, it will be completely black. If this is undesirable,
-consider using the :ref:`bsdf-twosided` BRDF adapter plugin.
+consider using the :ref:`twosided <bsdf-twosided>` BRDF adapter plugin.
 The following XML snippet describes a diffuse material,
 whose reflectance is specified as an sRGB color:
 

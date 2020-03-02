@@ -30,7 +30,7 @@ Blended material (:monosp:`blendbsdf`)
     :label: fig-bsdf-blendbsdf
 
 This plugin implements a *blend* material, which represents
-linear combinations of two BSDF instances. Any surface scattering model in Mitsuba (be it smooth,
+linear combinations of two BSDF instances. Any surface scattering model in Mitsuba 2 (be it smooth,
 rough, reflecting, or transmitting) can be mixed with others in this manner to synthesize new models.
 
 The following XML snippet describes the material shown above:
@@ -43,7 +43,6 @@ The following XML snippet describes the material shown above:
             <string name="filename" value="pattern.png"/>
         </texture>
         <bsdf type="conductor">
-            <spectrum name="specular_reflectance" value="1"/>
         </bsdf>
         <bsdf type="roughplastic">
             <spectrum name="diffuse_reflectance" value="0.1"/>

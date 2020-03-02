@@ -23,17 +23,19 @@ Disk (:monosp:`disk`)
 
 .. pluginparameters::
 
- * - to_world
-   - |transform|
-   - Specifies a linear object-to-world transformation. Note that non-uniform scales are not
-     permitted! (Default: none (i.e. object space = world space))
  * - flip_normals
    - |bool|
    - Is the disk inverted, i.e. should the normal vectors be flipped? (Default: |false|)
+ * - to_world
+   - |transform|
+   - Specifies a linear object-to-world transformation. Note that non-uniform scales are not
+     permitted! (Default: none, i.e. object space = world space)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_disk.jpg
-   :caption: Rendering with an disk emitter and a textured disk, showing the default parameterization.
+   :caption: Basic example
+.. subfigure:: ../../resources/data/docs/images/render/shape_disk_parameterization.jpg
+   :caption: A textured disk with the default parameterization
 .. subfigend::
    :label: fig-disk
 
@@ -45,29 +47,19 @@ surface normal points into the positive Z-direction.
 To change the disk scale, rotation, or translation, use the
 :monosp:`to_world` parameter.
 
-The following XML snippet showcases a simple example involving two disk instances:
+The following XML snippet instantiates an example of a textured disk shape:
 
 .. code-block:: xml
 
-    <scene version="2.0.0">
-        <shape type="disk">
-            <bsdf type="diffuse">
-                <texture name="reflectance" type="checkerboard">
-                    <float name="uvscale" value="5"/>
-                </texture>
-            </bsdf>
-        </shape>
-        <shape type="disk">
-            <transform name="to_world">
-                <rotate x="1" angle="90"/>
-                <scale value="0.3"/>
-                <translate y="1" z="0.3"/>
-            </transform>
-            <emitter type="area">
-                <spectrum name="intensity" value="4"/>
-            </emitter>
-        </shape>
-    </scene>
+    <shape type="disk">
+        <bsdf type="diffuse">
+            <texture name="reflectance" type="checkerboard">
+                <transform name="to_uv">
+                    <scale x="2" y="10" />
+                </transform>
+            </texture>
+        </bsdf>
+    </shape>
 
 .. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
 

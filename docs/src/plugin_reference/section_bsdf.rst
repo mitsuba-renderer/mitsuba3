@@ -1,30 +1,39 @@
+.. _sec-bsdfs:
+
 BSDFs
 =====
+
+    .. image:: ../../resources/data/docs/images/bsdf/bsdf_overview.jpg
+        :width: 100%
+        :align: center
+
+    Schematic overview of the most important surface scattering models in Mitsuba 2.
+    The arrows indicate possible outcomes of an interaction with a surface that has
+    the respective model applied to it.
 
 Surface scattering models describe the manner in which light interacts
 with surfaces in the scene. They conveniently summarize the mesoscopic
 scattering processes that take place within the material and
 cause it to look the way it does.
-This represents one central component of the material system in Mitsuba---another
+This represents one central component of the material system in Mitsuba 2---another
 part of the renderer concerns itself with what happens
 *in between* surface interactions. For more information on this aspect,
-please refer to Sections~\ref{sec:media} and \ref{sec:subsurface}.
+please refer to the sections regarding participating media.
 This section presents an overview of all surface scattering models that are
 supported, along with their parameters.
 
-To achieve realistic results, Mitsuba comes with a library of both
-general-purpose surface scattering models (smooth or rough glass, metal,
-plastic, etc.) and specializations to particular materials (woven cloth,
-masks, etc.). Some model plugins fit neither category and can best be described
-as modifiers that are applied on top of one or more scattering models.
+To achieve realistic results, Mitsuba 2 comes with a library of general-purpose
+surface scattering models such as glass, metal, or plastic.
+Some model plugins can also act as modifiers that are applied on top of one or
+more scattering models.
 
 Throughout the documentation and within the scene description
-language,  the word BSDF is used synonymously with the term *surface
+language, the word BSDF is used synonymously with the term *surface
 scattering model*. This is an abbreviation for *Bidirectional
 Scattering Distribution Function*, a more precise technical
 term.
 
-In Mitsuba, BSDFs are assigned to *shapes*, which describe the visible surfaces in
+In Mitsuba 2, BSDFs are assigned to *shapes*, which describe the visible surfaces in
 the scene. In the scene description language, this assignment can
 either be performed by nesting BSDFs within shapes, or they can
 be named and then later referenced by their name.
@@ -32,7 +41,7 @@ The following fragment shows an example of both kinds of usages:
 
 .. code-block:: xml
 
-    <scene version=2.0>
+    <scene version=2.0.0>
         <!-- Creating a named BSDF for later use -->
         <bsdf type=".. BSDF type .." id="my_named_material">
             <!-- BSDF parameters go here -->
@@ -52,8 +61,9 @@ The following fragment shows an example of both kinds of usages:
     </scene>
 
 It is generally more economical to use named BSDFs when they
-are used in several places, since this reduces Mitsuba's internal
-memory usage.
+are used in several places, since this reduces the internal memory usage.
+
+.. _bsdf-correctness:
 
 Correctness considerations
 --------------------------
@@ -75,7 +85,7 @@ the desk and then *reduce* the material's reflectance---after all, it is quite u
 one could find a real-world desk that reflects 90% of all incident light.
 
 As another example of the necessity for a meaningful material description, consider
-the glass model illustrated in Figure :num:`fig-glass-explanation`. Here, careful thinking
+the glass model illustrated in the figure below. Here, careful thinking
 is needed to decompose the object into boundaries that mark index of
 refraction-changes. If this is done incorrectly and a beam of light can
 potentially pass through a sequence of incompatible index of refraction changes (e.g. 1.00 to 1.33

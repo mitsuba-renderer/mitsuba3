@@ -14,7 +14,7 @@ Simple tent (triangular) filter. This reconstruction filter never suffers
 from ringing and usually causes less aliasing than a naive box filter. When
 rendering scenes with sharp brightness discontinuities, this may be useful;
 otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
-or Lanczos Sinc)
+or Lanczos Sinc).
 
  */
 

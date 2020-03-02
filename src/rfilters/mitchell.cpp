@@ -11,11 +11,13 @@ NAMESPACE_BEGIN(mitsuba)
 Mitchell filter (:monosp:`mitchell`)
 ------------------------------------
 
-Separable cubic spline reconstruction filter by Mitchell and Netravali.
+Separable cubic spline reconstruction filter by Mitchell and Netravali :cite:`MitchellNetravali88`.
 This is often a good compromise between sharpness and ringing.
 
-D. Mitchell, A. Netravali, Reconstruction filters for computer graphics,
-Proceedings of SIGGRAPH 88, Computer Graphics 22(4), pp. 221-228, 1988.
+This plugin has two :paramtype:`float`-valued parameters :paramtype:`B` and
+:paramtype:`C` that correspond to the two parameters in the original paper.
+By default, these are set to the recommended value of :math:`1/3`, but can be
+tweaked if desired.
 
  */
 

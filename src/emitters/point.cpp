@@ -19,7 +19,7 @@ Point light source (:monosp:`point`)
  * - intensity
    - |spectrum|
    - Specifies the radiant intensity in units of power per unit steradian.
-     (Default: :ref:`emitter-d65`)
+     (Default: :ref:`d65 <emitter-d65>`)
  * - position
    - |point|
    - Alternative parameter for specifying the light source position.
@@ -27,7 +27,7 @@ Point light source (:monosp:`point`)
      a time.
  * - to_world
    - |transform|
-   - Specifies an optional sensor-to-world transformation.
+   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
 
 This emitter plugin implements a simple point light source, which
 uniformly radiates illumination into all directions.

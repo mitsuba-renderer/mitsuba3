@@ -40,7 +40,7 @@ Cylinder (:monosp:`cylinder`)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation. Note that non-uniform scales are
-     not permitted! (Default: none (i.e. object space = world space))
+     not permitted! (Default: none, i.e. object space = world space)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/shape_cylinder_onesided.jpg
@@ -53,11 +53,11 @@ Cylinder (:monosp:`cylinder`)
 This shape plugin describes a simple cylinder intersection primitive.
 It should always be preferred over approximations modeled using
 triangles. Note that the cylinder does not have endcaps -- also,
-it's interior has inward-facing normals, which most scattering
-models in Mitsuba will treat as fully absorbing. If this is not
-desirable, consider using the :ref:`bsdf-twosided` plugin.
+its normals point outward, which means that the inside will be treated
+as fully absorbing by most material models. If this is not
+desirable, consider using the :ref:`twosided <bsdf-twosided>` plugin.
 
-A simple example for instantiating a cylinder, whose interior is visible
+A simple example for instantiating a cylinder, whose interior is visible:
 
 .. code-block:: xml
 

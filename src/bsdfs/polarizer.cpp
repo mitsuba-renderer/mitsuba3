@@ -48,6 +48,12 @@ of 90 degrees.
         <spectrum name="theta" value="90"/>
     </bsdf>
 
+Apart from a change of polarization, light does not interact with this material
+in any way and does not change its direction.
+Internally, this is implemented as a forward-facing Dirac delta distribution.
+Note that the standard :ref:`path tracer <integrator-path>` does not have a good sampling strategy to deal with this,
+but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
+
 In *unpolarized* rendering modes, the behaviour defaults to a non-polarizing
 transmitting material that absorbs 50% of the incident illumination.
 

@@ -25,23 +25,34 @@ Environment emitter (:monosp:`envmap`)
  * - scale
    - |Float|
    - A scale factor that is applied to the radiance values stored in the input image. (Default: 1.0)
+ * - to_world
+   - |transform|
+   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
 
 This plugin provides a HDRI (high dynamic range imaging) environment map,
-which is a type of light source that is well-suited for representing *natural*
+which is a type of light source that is well-suited for representing "natural"
 illumination.
 
 The implementation loads a captured illumination environment from a image in
-latitude-longitude format and turns it into an infinitely distant emitter.
-The image could either be a processed photograph or a rendering made using the
-spherical sensor.
+latitude-longitude format and turns it into an infinitely distant emitter. The
+conventions of this mapping are shown in this image:
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/emitter/emitter_envmap_example.jpg
+   :caption: The museum environment map by Bernhard Vogl that is used in
+             many example renderings in this documentation.
+.. subfigure:: ../../resources/data/docs/images/emitter/emitter_envmap_axes.jpg
+   :caption: Coordinate conventions used when mapping the input image onto the sphere.
+.. subfigend::
+   :label: fig-envmap-mapping
 
 The plugin can work with all types of images that are natively supported by Mitsuba
 (i.e. JPEG, PNG, OpenEXR, RGBE, TGA, and BMP). In practice, a good environment
 map will contain high-dynamic range data that can only be represented using the
 OpenEXR or RGBE file formats.
-High quality free light probes are available on Paul Debevec's website
-(http://gl.ict.usc.edu/Data/HighResProbes) and Bernhard Vogl's website
-(http://dativ.at/lightprobes/).
+High quality free light probes are available on
+`Paul Debevec's <http://gl.ict.usc.edu/Data/HighResProbes>`_ and
+`Bernhard Vogl's <http://dativ.at/lightprobes/>`_ websites.
 
  */
 
