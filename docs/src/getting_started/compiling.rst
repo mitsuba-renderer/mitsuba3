@@ -18,7 +18,7 @@ Linux
 
 The build process under Linux requires several external dependencies that are
 easily installed using the system-provided package manager (e.g.,
-:monosp:`apt-get` under Ubuntu). 
+:monosp:`apt-get` under Ubuntu).
 
 Note that recent Linux distributions include two different compilers that can
 both be used for C++ software development. `GCC <https://gcc.gnu.org>`_ is
@@ -180,7 +180,7 @@ Mitsuba can then be used to render scenes by typing
 
     mitsuba scene.xml
 
-where ``scene.xml`` is a Mitsuba scene file. 
+where ``scene.xml`` is a Mitsuba scene file.
 Alternatively,
 
 .. code-block:: bash
@@ -210,6 +210,30 @@ when OptiX 7 is installed).
     (and therefore APIs like CUDA that Mitsuba depends on) from the Mac
     ecosystem some years ago. Please voice your concerns to Apple if you are
     unhappy with this state of affairs.
+
+In case your CUDA installation is not automatically found by CMake (for instance
+because the directory is not in `PATH`), you need to either set the environment variable
+`CUDACXX` or the CMake cache entry `CMAKE_CUDA_COMPILER` to the full path to the
+compiler. E.g.
+
+.. code-block:: bash
+
+    # Environment variable
+    export CUDACXX=/usr/local/cuda/bin/nvcc
+
+    # or
+
+    # As part of the CMake process
+    cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
+
+
+Similarly, if OptiX is not automatically detected, its location can be specified
+during the CMake process with the `MTS_OPTIX_PATH` cache entry:
+
+
+.. code-block:: bash
+
+    cmake .. -DMTS_OPTIX_PATH=/opt/optix
 
 
 Embree
