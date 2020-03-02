@@ -8,22 +8,35 @@ differentiation and optimization of a light transport simulation involving the
 well-known Cornell Box scene that can be downloaded `here
 <http://mitsuba-renderer.org/scenes/cbox.zip>`_.
 
-Please make the following two changes to the ``cbox.xml`` file: ``ldsampler``
-must be replaced by ``independent``, and the integrator at the top should be
-defined as follows:
+Please make the following three changes to the ``cbox.xml`` file:
 
-.. code-block:: xml
+1. ``ldsampler`` must be replaced by ``independent`` (``ldsampler`` has not yet
+   been ported to Mitsuba 2)
 
-    <integrator type="path">
-        <integer name="maxDepth" value="3"/>
-    </integrator>
+2. The integrator at the top should be defined as follows:
+
+   .. code-block:: xml
+
+       <integrator type="path">
+           <integer name="maxDepth" value="3"/>
+       </integrator>
+
+3. The film should specify a box reconstruction filter instead of ``gaussian``.
+
+   .. code-block:: xml
+
+       <rfilter type="box"/>
+
+In the context of differentiable rendering, we are typically interested in
+rendering many fairly low-quality images as quickly as possible, and the above
+changes reduce the quality of the rendered images accordingly.
 
 Enumerating scene parameters
 ----------------------------
 
 Since differentiable rendering requires a starting guess (i.e. an initial scene
-configuration), most applications will begin by loading an existing scene and
-enumerating and selecting scene parameters that will subsequently be
+configuration), most applications will begin by loading the Cornell box scene
+and enumerating and selecting scene parameters that will subsequently be
 differentiated:
 
 .. code-block:: python
@@ -134,11 +147,10 @@ Problem statement
 -----------------
 
 In contrast to the :ref:`previous example <sec-rendering-scene>` on using the
-Python API to render images, the differentiable rendering path involves two
-different specialized functions :py:func:`~mitsuba.python.autodiff.render()` and
-:py:func:`~mitsuba.python.autodiff.render_diff()` that don't involve the scene's
-film and directly return GPU arrays containing the generated image (the
-difference between the two will be explained shortly). The function
+Python API to render images, the differentiable rendering path involves a
+specialized function :py:func:`~mitsuba.python.autodiff.render()` that does not
+involve the scene's film and directly return GPU arrays containing the
+generated image. The function
 :py:func:`~mitsuba.python.autodiff.write_bitmap()` reshapes the output into an
 image of the correct size and exports it to any of the supported image formats
 (OpenEXR, PNG, JPG, RGBE, PFM) while automatically performing format conversion
@@ -150,7 +162,7 @@ samples per pixel (``spp``).
 .. code-block:: python
 
     # Render a reference image (no derivatives used yet)
-    from mitsuba.python.autodiff import render, render_diff, write_bitmap
+    from mitsuba.python.autodiff import render, render, write_bitmap
     image_ref = render(scene, spp=8)
     crop_size = scene.sensors()[0].film().crop_size()
     write_bitmap('out_ref.png', image_ref, crop_size)
@@ -208,7 +220,7 @@ rendering iterations.
 
     for it in range(100):
         # Perform a differentiable rendering of the scene
-        image = render_diff(scene, opt, unbiased=True, spp=1)
+        image = render(scene, optimizer=opt, unbiased=True, spp=1)
 
         write_bitmap('out_%03i.png' % it, image, crop_size)
 
@@ -222,15 +234,15 @@ rendering iterations.
     jointly differentiated, we end up with expectations of products that do
     *not* satisfy the equality :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\,
     \mathbb{E}[Y]` due to correlations between :math:`X` and :math:`Y` that
-    result from this sample re-use. 
+    result from this sample re-use.
 
-    The :py:func:`~mitsuba.python.autodiff.render_diff()` function used above
-    extends the simpler :py:func:`~mitsuba.python.autodiff.render()` function
-    with the ability to generate an *unbiased* estimate that de-correlates
-    primal and derivative components, which boils down to rendering the image
-    twice and naturally comes at some cost in performance :math:`(\sim 1.6
-    \times\!)`. Often, biased gradients are good enough, in which case
-    ``unbiased=False`` should be specified instead.
+    The ``unbiased=True`` parameter to the
+    :py:func:`~mitsuba.python.autodiff.render()` function switches the function
+    into a special unbiased mode that de-correlates primal and derivative
+    components, which boils down to rendering the image twice and naturally
+    comes at some cost in performance :math:`(\sim 1.6 \times\!)`. Often,
+    biased gradients are good enough, in which case ``unbiased=False`` should
+    be specified instead.
 
 .. note::
 
@@ -292,8 +304,8 @@ aggressively.
 .. note::
 
     **Regarding efficiency**: this optimization should finish very quickly. On
-    an NVIDIA Titan RTX, it takes roughly 40 ms per iteration when the
-    ``write_bitmap`` routine is commented out, and 25 ms per iteration when
+    an NVIDIA Titan RTX, it takes roughly 50 ms per iteration when the
+    ``write_bitmap`` routine is commented out, and 27 ms per iteration when
     furthermore setting ``unbiased=False``.
 
     We have noticed that simultaneous GPU usage by another application (e.g.
@@ -341,10 +353,6 @@ the effect of individual scene parameters on the rendered image.
     crop_size = scene.sensors()[0].film().crop_size()
     write_bitmap('out.png', image_grad, crop_size)
 
-Note that the simpler rendering function
-:py:func:`~mitsuba.python.autodiff.render()` is used here instead of the
-unbiased variant :py:func:`~mitsuba.python.autodiff.render_diff()`, which is
-only relevant for reverse mode.
 
 .. image:: ../../../resources/data/docs/images/autodiff/forward.jpg
     :width: 50%

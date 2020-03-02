@@ -1,11 +1,13 @@
 from contextlib import contextmanager
+from typing import Union, Tuple
 import enoki as ek
+import mitsuba
 
 
-def render(scene, spp=None, sensor_index=0):
+def _render_helper(scene, spp=None, sensor_index=0):
     """
-    Render the specified Mitsuba scene and return a floating point
-    array containing RGB values and AOVs, if applicable
+    Internally used function: render the specified Mitsuba scene and return a
+    floating point array containing RGB values and AOVs, if applicable
     """
     from mitsuba.core import (Float, UInt32, UInt64, Vector2f,
                               is_monochromatic, is_rgb, is_polarized)
@@ -92,11 +94,15 @@ def render(scene, spp=None, sensor_index=0):
 
 def write_bitmap(filename, data, resolution):
     """
-    Write the linearized RGB image in `data` to a
-    PNG/EXR/.. file with resolution `resolution`.
+    Write the linearized RGB image in `data` to a PNG/EXR/.. file with
+    resolution `resolution`.
     """
     import numpy as np
     from mitsuba.core import Bitmap, Struct
+
+    if type(data).__name__ == 'Tensor':
+        data = data.detach().cpu()
+
     data = np.array(data.numpy())
     data = data.reshape(*resolution, -1)
     bitmap = Bitmap(data)
@@ -108,36 +114,84 @@ def write_bitmap(filename, data, resolution):
     bitmap.write_async(filename, quality=0 if filename.endswith('png') else -1)
 
 
-def render_diff(scene, optimizer, unbiased=True, spp=None,
-                spp_primal=None, spp_diff=None, sensor_index=0):
+def render(scene,
+           spp: Union[None, int, Tuple[int, int]] = None,
+           unbiased=False,
+           optimizer: 'mitsuba.python.autodiff.Optimizer' = None,
+           sensor_index=0):
     """
-    Perform a differentiable of the scene `scene`.
+    Perform a differentiable of the scene `scene`, returning a floating point
+    array containing RGB values and AOVs, if applicable.
 
-    This function differs from ``render()`` in that it splits the rendering
-    step into two separate passes that generate the primal image and gradients,
-    respectively (assuming that ``unbiased=True`` is specified). This is
-    necessary to avoid correlations that would otherwise introduce bias into
-    the resulting parameter gradients.
+    Parameter ``spp`` (``None``, ``int``, or a 2-tuple ``(int, int)``):
 
-    The number of samples per pixel can be specified separately for both primal
-    and derivative passes.
+        Specifies the number of samples per pixel to be used for rendering,
+        overriding the value that is specified in the scene. If ``spp=None``,
+        the original value takes precedence. If ``spp`` is a 2-tuple
+        ``(spp_primal: int, spp_deriv: int)``, the first element specifies the
+        number of samples for the *primal* pass, and the second specifies the
+        number of samples for the *derivative* pass. See the explanation of the
+        ``unbiased`` parameter for further detail on what these mean.
 
-    The number of samples per pixel per pass can be specified separately for
-    both primal (``spp_primal``) and derivative (``spp_diff``) passes or
-    jointly for both (``spp``).
+        Memory usage is roughly proportional to the ``spp``, value, hence this
+        parameter should be reduced if you encounter out-of-memory errors.
+
+    Parameter ``unbiased`` (``bool``):
+
+        One potential issue when naively differentiating a rendering algorithm
+        is that the same set of Monte Carlo sample is used to generate both the
+        primal output (i.e. the image) along with derivative output. When the
+        rendering algorithm and objective are jointly differentiated, we end up
+        with expectations of products that do *not* satisfy the equality
+        :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\, \mathbb{E}[Y]` due to
+        correlations between :math:`X` and :math:`Y` that result from this
+        sample re-use.
+
+        When ``unbiased=True``, the ``render()`` function will generate an
+        *unbiased* estimate that de-correlates primal and derivative
+        components, which boils down to rendering the image twice and naturally
+        comes at some cost in performance :math:`(\sim 1.6 \times\!)`. Often,
+        biased gradients are good enough, in which case ``unbiased=False``
+        should be specified instead.
+
+        The number of samples per pixel per pass can be specified separately
+        for both passes by passing a tuple to the ``spp`` parameter.
+
+        Note that unbiased mode is only relevant for reverse-mode
+        differentiation. It is not needed when visualizing parameter gradients
+        in image space using forward-mode differentiation.
+
+    Parameter ``optimizer`` (:py:class:`mitsuba.python.autodiff.Optimizer`):
+
+        The optimizer referencing relevant scene parameters must be specified
+        when ``unbiased=True``. Otherwise, there is no need to provide this
+        parameter.
+
+    Parameter ``sensor_index`` (``int``):
+
+        When the scene contains more than one sensor/camera, this parameter
+        can be specified to select the desired sensor.
+
     """
-
-    if spp is not None:
-        spp_primal = spp
-        spp_diff = spp
-
     if unbiased:
+        if optimizer is None:
+            raise Exception('render(): unbiased=True requires that an '
+                            'optimizer is specified!')
+        if not type(spp) is tuple:
+            spp = (spp, spp)
+
         with optimizer.disable_gradients():
-            image = render(scene, spp=spp_primal, sensor_index=sensor_index)
-        image_diff = render(scene, spp=spp_diff, sensor_index=sensor_index)
+            image = _render_helper(scene, spp=spp[0],
+                                   sensor_index=sensor_index)
+        image_diff = _render_helper(scene, spp=spp[1],
+                                    sensor_index=sensor_index)
         ek.reattach(image, image_diff)
     else:
-        image = render(scene, spp=spp_diff, sensor_index=sensor_index)
+        if type(spp) is tuple:
+            raise Exception('render(): unbiased=False requires that spp '
+                            'is either an integer or None!')
+        image = _render_helper(scene, spp=spp, sensor_index=sensor_index)
+
     return image
 
 
