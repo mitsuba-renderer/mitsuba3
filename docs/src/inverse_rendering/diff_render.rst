@@ -8,6 +8,16 @@ differentiation and optimization of a light transport simulation involving the
 well-known Cornell Box scene that can be downloaded `here
 <http://mitsuba-renderer.org/scenes/cbox.zip>`_.
 
+Please make the following two changes to the ``cbox.xml`` file: ``ldsampler``
+must be replaced by ``independent``, and the integrator at the top should be
+defined as follows:
+
+.. code-block:: xml
+
+    <integrator type="path">
+        <integer name="maxDepth" value="3"/>
+    </integrator>
+
 Enumerating scene parameters
 ----------------------------
 
@@ -96,7 +106,7 @@ We can also query the ``ParameterMap`` to see the actual parameter value:
 
 Here, we can see how Mitsuba converted the original spectral curve from the
 above XML fragment into an RGB value due to the ``gpu_autodiff_rgb`` variant
-being used to run this example. 
+being used to run this example.
 
 .. code-block:: python
 
@@ -125,27 +135,28 @@ Let's also make a backup copy of this color value for later use.
     param_ref = Color3f(params['red.reflectance.value'])
 
 
-Differentiating a rendering
----------------------------
+Problem statement
+-----------------
 
 In contrast to the :ref:`previous example <sec-rendering-scene>` on using the
 Python API to render images, the differentiable rendering path involves two
 different specialized functions :py:func:`mitsuba.python.autodiff.render()` and
 :py:func:`mitsuba.python.autodiff.render_diff()` that don't involve the scene's
 film and directly return GPU arrays containing the generated image (the
-difference between the two will be explained shortly.) The function
+difference between the two will be explained shortly). The function
 :py:func:`mitsuba.python.autodiff.write_bitmap()` reshapes the output into an
 image of the correct size and exports it to any of the supported image formats
 (OpenEXR, PNG, JPG, RGBE, PFM) while automatically performing format conversion
 and gamma correction for 8 bit formats.
 
-Using this functionality, we will now generate a reference image.
+Using this functionality, we will now generate a reference image using eight
+samples per pixel (``spp``).
 
 .. code-block:: python
 
     # Render a reference image (no derivatives used yet)
     from mitsuba.python.autodiff import render, render_diff, write_bitmap
-    image_ref = render(scene)
+    image_ref = render(scene, spp=8)
     crop_size = scene.sensors()[0].film().crop_size()
     write_bitmap('out_ref.png', image_ref, crop_size)
 
@@ -161,30 +172,34 @@ refresh their internal state.
 
 .. code-block:: python
 
-    # Now, change the parameter to something else
+    # Change the parameter to something else
     params['red.reflectance.value'] = [.9, .9, .9]
     params.update()
 
+Gradient-based optimization
+---------------------------
 
-Mitsuba can optimize scene parameters in *standalone mode* using optimization
-algorithms implemented on top of Enoki, or by integrating with PyTorch. We
-generally recommend standalone mode unless your computation contains elements
-where PyTorch provides a clear advantage (for example, neural network building
-blocks like fully connected layers or convolutions). The remainder of this
-section discusses standalone mode, and the section on :ref:`PyTorch integration
+Mitsuba can either optimize scene parameters in *standalone mode* using
+optimization algorithms implemented on top of Enoki, or it can be used as a
+differentiable node within a larger PyTorch computation graph. Communication
+between PyTorch and Enoki causes certain overheads, hence we generally
+recommend standalone mode unless your computation contains elements where
+PyTorch provides a clear advantage (for example, neural network building blocks
+like fully connected layers or convolutions). The remainder of this section
+discusses standalone mode, and the section on :ref:`PyTorch integration
 <sec-pytorch>` shows how to adapt the example code for PyTorch.
 
 Mitsuba ships with standard optimizers including *Stochastic Gradient Descent*
 (SGD) and *Nesterov-Accelerated SGD* (both in
 :py:class:`mitsuba.python.autodiff.SGD`) and *Adam* :cite:`kingma2014adam`
 (:py:class:`mitsuba.python.autodiff.Adam`). We will instantiate the latter and
-optimize the ``ParameterMap`` ``params`` with a learning rate of 0.025.
+optimize the ``ParameterMap`` ``params`` with a learning rate of 0.2.
 
 .. code-block:: python
 
     # Construct an Adam optimizer that will adjust the parameters 'params'
     from mitsuba.python.autodiff import Adam
-    opt = Adam(params, lr=.025)
+    opt = Adam(params, lr=.2)
 
 The remaining commands are all part of a loop that executes 100 differentiable
 rendering iterations.
@@ -193,23 +208,59 @@ rendering iterations.
 
     for it in range(100):
         # Perform a differentiable rendering of the scene
-        image = render_diff(scene, opt, unbiased=True)
+        image = render_diff(scene, opt, unbiased=True, spp=1)
 
         write_bitmap('out_%03i.png' % it, image, crop_size)
 
+One potential issue when naively differentiating a rendering algorithm is that
+the same set of Monte Carlo sample is used to generate both the primal output
+(i.e. the image) along with derivative output. When the rendering algorithm and
+objective are jointly differentiated, we end up with expectations of product s
+that do *not* satisfy the equality :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\,
+\mathbb{E}[Y]` due to correlations between :math:`X` and :math:`Y` that result
+from this re-use. The :py:func:`mitsuba.python.autodiff.render_diff()` function
+used above has the ability to generate an *unbiased* estimate that
+de-correlates primal and derivative components, which boils down to rendering
+the image twice.
+
+Still within the ``for`` loop, we can now evaluate a suitable objective
+function, propagate derivatives with respect to the objective, and take
+gradient steps.
+
 .. code-block:: python
 
+        # Objective: MSE between 'image' and 'image_ref'
+        ob_val = ek.hsum(ek.sqr(image - image_ref)) / len(image)
 
-        # Note: printing the loss is not hugely informative
-        # since it is almost purely MC noise
-        loss_val = ek.hsum(ek.sqr(image - image_ref)) / len(image)
+        # Back-propagate errors to input parameters
+        ek.backward(ob_val)
 
-        # Instead, check convergence to the known parameter
-        param = params['red.reflectance.value']
-        testing_loss_val = ek.hsum(ek.sqr(param_ref - param))
-        print('Iteration %03i: testing loss=%g\r' % (it, testing_loss_val[0]), end='')
-
-        ek.backward(loss_val)
+        # Optimizer: take a gradient step
         opt.step()
-    print()
 
+We can also plot the error during each iteration. Note that it makes little
+sense to visualize the objective ``ob_val``: differences between ``image`` and
+``image_ref`` are by far dominated by Monte Carlo noise that is not related to
+the parameter being optimized. Since we previously know the true target parameter
+in this scene, we can validate the convergence of the iteration:
+
+.. code-block:: python
+
+        err_ref = ek.hsum(ek.sqr(param_ref - params['red.reflectance.value']))
+        print('Iteration %03i: error=%g' % (it, err_ref[0]))
+
+The following video shows a recording of the convergence during the first 100 iterations:
+
+.. raw:: html
+
+    <center>
+        <video loop autoplay src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2020/03/02/convergence.mp4"></video>
+    </center>
+
+Note the oscillatory behavior, which is also visible in the convergence plot
+shown below. This generally indicates that the learning rate is set too
+aggressively.
+
+.. image:: ../../../resources/data/docs/images/autodiff/convergence.png
+    :width: 50%
+    :align: center
