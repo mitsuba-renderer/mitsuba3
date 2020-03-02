@@ -944,7 +944,7 @@ protected:
         UInt32 offset_marg = slice_offset * n_marg;
 
         auto fetch_marginal = [&](UInt32 idx, Mask mask)
-                                  ENOKI_INLINE_LAMBDA -> Float {
+                                  ENOKI_INLINE_LAMBDA {
             return lookup(m_marg_cdf.data(), offset_marg + idx,
                           n_marg, param_weight, mask);
         };
@@ -1092,7 +1092,7 @@ protected:
         UInt32 offset_marg = slice_offset * n_marg;
 
         auto fetch_marginal = [&](UInt32 idx, Mask mask)
-                                  ENOKI_INLINE_LAMBDA -> Float {
+                                  ENOKI_INLINE_LAMBDA {
             return lookup(m_marg_cdf.data(), offset_marg + idx,
                           n_marg, param_weight, mask);
         };
@@ -1124,7 +1124,7 @@ protected:
 
         // Sample the column next
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
-                                     ENOKI_INLINE_LAMBDA -> Float {
+                                     ENOKI_INLINE_LAMBDA {
             idx += offset_cond;
             Float v0 = lookup(m_cond_cdf.data(),
                               idx, n_cond, param_weight, mask),
@@ -1209,7 +1209,7 @@ protected:
             slice_offset * n_cond + pos.y() * (m_size.x() - 1);
 
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
-                                     ENOKI_INLINE_LAMBDA -> Float {
+                                     ENOKI_INLINE_LAMBDA {
             idx += offset_cond;
             Float v0 = lookup(m_cond_cdf.data(),
                               idx, n_cond, param_weight, mask),
