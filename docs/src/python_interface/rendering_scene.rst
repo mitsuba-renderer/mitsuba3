@@ -8,17 +8,7 @@ loaded, it can be rendered as follows:
 
 .. code-block:: python
 
-    import os
-    import mitsuba
-    mitsuba.set_variant('scalar_rgb')
-    from mitsuba.core import Bitmap, hread
-    from mitsuba.core.xml import load_file
-
-    # Absolute or relative path to the XML file
-    filename = 'path/to/my/scene.xml'
-
-    # Add the scene directory to the FileResolver's search path
-    Thread.thread().file_resolver().append(os.path.dirname(filename))
+    ...
 
     # Load the scene for an XML file
     scene = load_file(filename)
@@ -34,7 +24,7 @@ After rendering, it is possible to write out the rendered data as an HDR OpenEXR
 .. code-block:: python
 
     # The rendered data is stored in the film
-    film = scene.sensors()[0].film()
+    film = sensor.film()
 
     # Write out data as high dynamic range OpenEXR file
     film.set_destination_file('/path/to/output.exr')
@@ -54,6 +44,8 @@ The ``raw=True`` argument in :code:`film.bitmap()` specifies that we are
 interested in the raw film contents to be able to perform a conversion into the
 desired output format ourselves.
 
+See :py:meth:`mitsuba.core.Bitmap.convert` for more information regarding the bitmap convertion routine.
+
 The data stored in the ``Bitmap`` object can also be cast into a NumPy array for further processing
 in Python:
 
@@ -68,4 +60,48 @@ in Python:
 .. note::
 
     The full Python script of this tutorial can be found in the file:
-    :file:`docs/examples/01_render_scene/render_scene.py`.
+    :file:`docs/examples/01_render_scene/render_scene.py`
+
+
+Full rendering pipeline in Python
+---------------------------------
+
+In the following section, we show how to use the Python bindings to write a simple depth map
+renderer, including ray generation and pixel value splatting, purely in Python.
+
+While this being more work than calling the ``render()`` method from the integrator directly, it
+can be useful when prototyping more complex rendering algorithms that require finer control over the
+rendering pipeline (e.g. photon mapper, light tracer, ...).
+
+Similar to before, we import a number of modules and load the scene from disk:
+
+.. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
+   :language: python
+   :lines: 1-20
+
+In this example we use the packet variant of Mitsuba. This means all calls to Mitsuba functions will
+be vectorized and we avoid expensive for-loops in Python. The same code will work for `gpu` variants
+of the renderer as well.
+
+Instead of calling the scene's existing integrator as before, we will now manually trace rays
+through each pixel of the image:
+
+.. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
+   :language: python
+   :lines: 22-52
+
+After computing the surface intersections for all the rays, we then extract the depth values
+
+.. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
+   :language: python
+   :lines: 54-59
+
+We then splat these depth values to an :code:`ImageBlock`, which is an image data structure that
+handles averaging over samples and accounts for the pixel filter. The :code:`ImageBlock` is then
+converted to a :code:`Bitmap` object and the resulting image saved to disk.
+
+.. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
+   :language: python
+   :lines: 61-79
+
+.. note:: The code for this example can be found in :code:`docs/examples/02_depth_integrator/depth_integrator.py`

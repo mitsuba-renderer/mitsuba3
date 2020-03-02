@@ -1,9 +1,62 @@
-Custom integrator in Python
-===========================
+Writing plugins in Python
+=========================
 
-In the previous example, we implemented a simple depth integrator.
-In this example, we will implement a more complex rendering method.
-This integrator will render an image with direct illumination from arbitrary light sources.
+In Mitsuba 2, the Python bindings provide a mechanism to implement custom plugins directly in Python.
+This can be achieved by extending one of the plugin's base class (e.g. `BSDF`, `Emitter`) and
+overwriting the class methods (e.g. ``sample()``, ``eval()``, ...). This mechanism leverages the
+`trampoline feature <https://pybind11.readthedocs.io/en/stable/advanced/classes.html#overriding-virtual-functions-in-python>`_ of *pybind11*.
+
+The custom Python plugin can then be registered to the XML parser by calling one of the
+``register_<type>(name, constructor)`` Python function as described later in the examples. By doing
+so, it is possible to refer to this new plugin in the XML scene description file as with any other
+C++ plugins.
+
+.. note:: This mechanism currently only supports custom Python plugins for `BSDF`, `Emitter` and
+          `Integrator`.
+
+The rest of this section discusses various examples using this mechanism:
+
+
+BSDF example
+------------
+
+In this example, we will implement a simple diffuse BSDF in Python by extending the :code:`BSDF`
+base class. The code is very similar to the diffuse BSDF implemented in C++
+(in :code:`src/bsdf/diffuse.cpp`).
+
+The BSDF class need to implement the following 3 methods: :code:`sample`, :code:`eval` and :code:`pdf`:
+
+.. literalinclude:: ../../examples/04_diffuse_bsdf/diffuse_bsdf.py
+   :language: python
+   :lines: 14-64
+
+After defining this new BSDF class, we have to register it as a plugin.
+This allows Mitsuba to instantiate this new BSDF when loading a scene:
+
+.. literalinclude:: ../../examples/04_diffuse_bsdf/diffuse_bsdf.py
+   :language: python
+   :lines: 66
+
+The :code:`register_bsdf` function takes the name of our new plugin and a function to construct new
+instances. After that, we can use our new BSDF in a XML scene file by specifying
+
+.. code-block:: xml
+
+    <BSDF type="mydiffusebsdf"/>
+
+The scene can then rendered by calling the standard :code:`render` function:
+
+.. literalinclude:: ../../examples/04_diffuse_bsdf/diffuse_bsdf.py
+   :language: python
+   :lines: 68-77
+
+.. note:: The code for this example can be found in :code:`docs/examples/04_diffuse_bsdf/diffuse_bsdf.py`
+
+
+Integrator example
+------------------
+
+In this example, we will implement custom direct illumination integrator using the same mechanism.
 The resulting image will have realistic shadows and shading, but no global illumination.
 
 The main rendering routing can be implemented in around 30 lines of code:
@@ -12,7 +65,8 @@ The main rendering routing can be implemented in around 30 lines of code:
    :language: python
    :lines: 22-55
 
-The code is very similar to the direct illumination integrator implemented in C++ (in :code:`src/integrators/direct.cpp`).
+The code is very similar to the direct illumination integrator implemented in C++
+(in :code:`src/integrators/direct.cpp`).
 The function takes the current scene, sampler and array of rays as arguments.
 The :code:`active` argument specifies which lanes are active.
 
@@ -71,6 +125,6 @@ The scene is then rendered by calling the standard :code:`render` function:
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
-   :lines: 78-88
+   :lines: 76-85
 
-.. note:: The code for this example can be found in :code:`docs/examples/03_direct_integrator/direct_integrator.py`.
+.. note:: The code for this example can be found in :code:`docs/examples/03_direct_integrator/direct_integrator.py`

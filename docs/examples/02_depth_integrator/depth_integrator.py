@@ -5,21 +5,18 @@ import mitsuba
 # Set the desired mitsuba variant
 mitsuba.set_variant('packet_rgb')
 
-from mitsuba.core import Float, UInt32, UInt64, Vector2f, Vector3f, Bitmap, Struct, Thread
+from mitsuba.core import Float, UInt64, Vector2f, Vector3f
+from mitsuba.core import Bitmap, Struct, Thread
 from mitsuba.core.xml import load_file
 from mitsuba.render import ImageBlock
 
+# Absolute or relative path to the XML file
+filename = 'path/to/my/scene.xml'
 
-SCENE_DIR = '../../../resources/data/scenes/'
-filename = os.path.join(SCENE_DIR, 'cbox/cbox.xml')
+# Add the scene directory to the FileResolver's search path
+Thread.thread().file_resolver().append(os.path.dirname(filename))
 
-# Append the directory containing the scene to the "file resolver".
-# This is needed since the scene specifies meshes and textures
-# using relative paths.
-directory_name = os.path.dirname(filename)
-Thread.thread().file_resolver().append(directory_name)
-
-# Load the actual scene
+# Load the scene
 scene = load_file(filename)
 
 # Instead of calling the scene's integrator, we build our own small integrator

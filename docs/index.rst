@@ -58,10 +58,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :maxdepth: 1
     :caption: Advanced topics
 
-    src/advanced_topics/depth_integrator
-    src/advanced_topics/direct_integrator
-    src/advanced_topics/diffuse_bsdf
-
+    src/advanced_topics/custom_plugins
 
 .. toctree::
     :maxdepth: 1

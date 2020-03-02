@@ -73,12 +73,9 @@ class MyDirectIntegrator(SamplingIntegrator):
 # Register our integrator such that the XML file loader can instantiate it when loading a scene
 register_integrator("mydirectintegrator", lambda props: MyDirectIntegrator(props))
 
-SCENE_DIR = '../../../resources/data/scenes/'
-
 # Load an XML file which specifies "mydirectintegrator" as the scene's integrator
-filename = os.path.join(SCENE_DIR, 'cbox/cbox-custom-integrator.xml')
-directory_name = os.path.dirname(filename)
-Thread.thread().file_resolver().append(directory_name)
+filename = 'path/to/my/scene.xml'
+Thread.thread().file_resolver().append(os.path.dirname(filename))
 scene = load_file(filename)
 
 scene.integrator().render(scene, scene.sensors()[0])

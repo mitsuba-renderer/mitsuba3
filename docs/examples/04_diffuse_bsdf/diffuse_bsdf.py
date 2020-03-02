@@ -65,12 +65,9 @@ class MyDiffuseBSDF(BSDF):
 # Register our BSDF such that the XML file loader can instantiate it when loading a scene
 register_bsdf("mydiffusebsdf", lambda props: MyDiffuseBSDF(props))
 
-SCENE_DIR = '../../../resources/data/scenes/'
-
-# Load an XML file which specifies "mydiffusebsdf" as the scene's integrator
-filename = os.path.join(SCENE_DIR, 'cbox/cbox-custom-bsdf.xml')
-directory_name = os.path.dirname(filename)
-Thread.thread().file_resolver().append(directory_name)
+# Load an XML file which specifies "mydiffusebsdf" as material
+filename = 'path/to/my/scene.xml'
+Thread.thread().file_resolver().append(os.path.dirname(filename))
 scene = load_file(filename)
 
 scene.integrator().render(scene, scene.sensors()[0])
