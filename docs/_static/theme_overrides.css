@@ -205,3 +205,6 @@ dd {
 	margin-bottom: 0;
 }
 
+div#bibliography span.brackets {
+    color: #333;
+}
