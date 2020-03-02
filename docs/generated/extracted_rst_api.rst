@@ -835,6 +835,23 @@
             Parameter ``path`` (:py:class:`mitsuba.core.filesystem.path`):
                 *no description available*
 
+    .. py:method:: mitsuba.core.Bitmap.write_async(self, path, format=FileFormat.Auto, quality=-1)
+
+        Equivalent to write(), but executes asynchronously on a different
+        thread
+
+        Parameter ``path`` (:py:class:`mitsuba.core.filesystem.path`):
+            *no description available*
+
+        Parameter ``format`` (:py:class:`mitsuba.core.Bitmap.FileFormat`):
+            *no description available*
+
+        Parameter ``quality`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
 .. py:class:: mitsuba.core.BoundingBox2f
 
     Generic n-dimensional bounding box data structure
@@ -12602,13 +12619,6 @@
         Returns → enoki.scalar.Vector2f:
             *no description available*
 
-    .. py:method:: mitsuba.render.Sampler.ready(self)
-
-        Check whether the sampler is ready (i.e. properly seeded)
-
-        Returns → bool:
-            *no description available*
-
     .. py:method:: mitsuba.render.Sampler.sample_count(self)
 
         Return the number of samples per pixel
@@ -12628,6 +12638,13 @@
             *no description available*
 
         Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Sampler.wavefront_size(self)
+
+        Return the size of the wavefront (or 0, if not seeded)
+
+        Returns → int:
             *no description available*
 
 .. py:class:: mitsuba.render.SamplingIntegrator
@@ -14596,95 +14613,6 @@
     Returns → float:
         *no description available*
 
-.. py:function:: mitsuba.python.math.rlgamma(a, x)
-
-    Regularized lower incomplete gamma function based on CEPHES
-
-.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-
-    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
-
-    Implements the optimization technique presented in
-
-    "Adam: A Method for Stochastic Optimization"
-    Diederik P. Kingma and Jimmy Lei Ba
-    ICLR 2015
-
-    .. py:method:: __init__(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
-
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``beta_1``:
-            controls the exponential averaging of first
-            order gradient moments
-        
-        Parameter ``beta_2``:
-            controls the exponential averaging of second
-            order gradient moments
-
-        
-.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
-
-    Base class of optimizers (SGD, Adam)
-
-    .. py:method:: __init__(params, lr)
-
-        Parameter ``params``:
-            dictionary ``(name: variable)`` of differentiable parameters to be optimized.
-        
-        Parameter ``lr``:
-            learning rate
-
-        
-    .. py:method:: mitsuba.python.autodiff.Optimizer.set_learning_rate(lr)
-
-        Set the learning rate.
-
-    .. py:method:: mitsuba.python.autodiff.Optimizer.disable_gradients()
-
-        Temporarily disable the generation of gradients.
-
-.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)
-
-    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
-
-    Implements basic stochastic gradient descent with a fixed learning rate
-    and, optionally, momentum (0.9 is a typical parameter value).
-
-    .. py:method:: __init__(params, lr, momentum=0)
-
-        Parameter ``lr``:
-            learning rate
-        
-        Parameter ``momentum``:
-            momentum factor
-
-        
-    .. py:method:: mitsuba.python.autodiff.SGD.step()
-
-        Take a gradient step 
-
-.. py:function:: mitsuba.python.autodiff.render(scene, spp=None, sensor_index=0)
-
-    Render the specified Mitsuba scene and return a floating point
-    array containing RGB values and AOVs, if applicable
-
-.. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp_primal=None, spp_diff=None, sensor_index=0)
-
-    Perform a differentiable of the scene `scene`. This function differs from
-    ``render()`` in that it splits the rendering step into two separate passes
-    that generate the primal image and gradients, respectively (assuming that
-    ``unbiased=True`` is specified). This is necessary to avoid correlations that
-    would otherwise introduce bias into the resulting parameter gradients.
-
-.. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)
-
-.. py:function:: mitsuba.python.autodiff.write_bitmap(filename, data, resolution)
-
-    Write the linearized RGB image in `data` to a
-    PNG/EXR/.. file with resolution `resolution`.
-
 .. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
 
     Adapter to test BSDF sampling using the Chi^2 test.
@@ -14724,7 +14652,7 @@
        sufficient statistical evidence to reject this hypothesis.
 
     Parameter ``sample_dim`` (int):
-       Numer of random dimensions consumed by ``sample_func`` per sample. The
+       Number of random dimensions consumed by ``sample_func`` per sample. The
        default value is ``2``.
 
     Parameter ``sample_count`` (int):
@@ -14840,12 +14768,12 @@
 
     This dictionary exposes multiple non-standard methods:
 
-    1. ``keep(self, keys: list) -> None:``
+    1. ``keep(self, keys: list) -> None``:
 
        Reduce the size of the dictionary by only keeping elements,
        whose keys are part of the provided list 'keys'.
 
-    2. ``update(self) -> None:``
+    2. ``update(self) -> None``:
 
        This function should be called at the end of a sequence of writes
        to the dictionary. It automatically notifies all modified Mitsuba
@@ -14853,12 +14781,111 @@
        internal state. For instance, the scene may rebuild the kd-tree
        when a shape was modified, etc.
 
-    3. ``torch(self) -> dict:``
+    3. ``torch(self) -> dict``:
 
        Converts all Enoki arrays into PyTorch arrays and return them as a
        dictionary. This is mainly useful when using PyTorch to optimize a
        Mitsuba scene.
 
+
+.. py:function:: mitsuba.python.math.rlgamma(a, x)
+
+    Regularized lower incomplete gamma function based on CEPHES
+
+.. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+
+    Implements the optimization technique presented in
+
+    "Adam: A Method for Stochastic Optimization"
+    Diederik P. Kingma and Jimmy Lei Ba
+    ICLR 2015
+
+    .. py:method:: __init__(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``beta_1``:
+            controls the exponential averaging of first
+            order gradient moments
+        
+        Parameter ``beta_2``:
+            controls the exponential averaging of second
+            order gradient moments
+
+        
+.. py:class:: mitsuba.python.autodiff.Optimizer(params, lr)
+
+    Base class of all gradient-based optimizers (currently SGD and Adam)
+
+    .. py:method:: __init__(params, lr)
+
+        Parameter ``params``:
+            dictionary ``(name: variable)`` of differentiable parameters to be
+            optimized.
+        
+        Parameter ``lr``:
+            learning rate
+
+        
+    .. py:method:: mitsuba.python.autodiff.Optimizer.set_learning_rate(lr)
+
+        Set the learning rate.
+
+    .. py:method:: mitsuba.python.autodiff.Optimizer.disable_gradients()
+
+        Temporarily disable the generation of gradients.
+
+.. py:class:: mitsuba.python.autodiff.SGD(params, lr, momentum=0)
+
+    Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
+
+    Implements basic stochastic gradient descent with a fixed learning rate
+    and, optionally, momentum (0.9 is a typical parameter value).
+
+    .. py:method:: __init__(params, lr, momentum=0)
+
+        Parameter ``lr``:
+            learning rate
+        
+        Parameter ``momentum``:
+            momentum factor
+
+        
+    .. py:method:: mitsuba.python.autodiff.SGD.step()
+
+        Take a gradient step 
+
+.. py:function:: mitsuba.python.autodiff.render(scene, spp=None, sensor_index=0)
+
+    Render the specified Mitsuba scene and return a floating point
+    array containing RGB values and AOVs, if applicable
+
+.. py:function:: mitsuba.python.autodiff.render_diff(scene, optimizer, unbiased=True, spp=None, spp_primal=None, spp_diff=None, sensor_index=0)
+
+    Perform a differentiable of the scene `scene`.
+
+    This function differs from ``render()`` in that it splits the rendering
+    step into two separate passes that generate the primal image and gradients,
+    respectively (assuming that ``unbiased=True`` is specified). This is
+    necessary to avoid correlations that would otherwise introduce bias into
+    the resulting parameter gradients.
+
+    The number of samples per pixel can be specified separately for both primal
+    and derivative passes.
+
+    The number of samples per pixel per pass can be specified separately for
+    both primal (``spp_primal``) and derivative (``spp_diff``) passes or
+    jointly for both (``spp``).
+
+.. py:function:: mitsuba.python.autodiff.render_torch(scene, params=None, **kwargs)
+
+.. py:function:: mitsuba.python.autodiff.write_bitmap(filename, data, resolution)
+
+    Write the linearized RGB image in `data` to a
+    PNG/EXR/.. file with resolution `resolution`.
 
 .. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
 

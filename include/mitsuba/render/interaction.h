@@ -357,7 +357,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     using Spectrum = Spectrum_;
     MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
-    using Index            = typename CoreAliases::UInt32;
+    using Index = typename CoreAliases::UInt32;
 
     // Make parent fields/functions visible
     MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, is_valid)

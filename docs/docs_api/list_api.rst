@@ -682,22 +682,6 @@
 
 .. autofunction:: mitsuba.render.srgb_model_mean
 
-.. autofunction:: mitsuba.python.math.rlgamma
-
-.. autoclass:: mitsuba.python.autodiff.Adam
-
-.. autoclass:: mitsuba.python.autodiff.Optimizer
-
-.. autoclass:: mitsuba.python.autodiff.SGD
-
-.. autofunction:: mitsuba.python.autodiff.render
-
-.. autofunction:: mitsuba.python.autodiff.render_diff
-
-.. autofunction:: mitsuba.python.autodiff.render_torch
-
-.. autofunction:: mitsuba.python.autodiff.write_bitmap
-
 .. autofunction:: mitsuba.python.chi2.BSDFAdapter
 
 .. autoclass:: mitsuba.python.chi2.ChiSquareTest
@@ -715,6 +699,22 @@
 .. autoclass:: mitsuba.python.chi2.SphericalDomain
 
 .. autofunction:: mitsuba.python.util.traverse
+
+.. autofunction:: mitsuba.python.math.rlgamma
+
+.. autoclass:: mitsuba.python.autodiff.Adam
+
+.. autoclass:: mitsuba.python.autodiff.Optimizer
+
+.. autoclass:: mitsuba.python.autodiff.SGD
+
+.. autofunction:: mitsuba.python.autodiff.render
+
+.. autofunction:: mitsuba.python.autodiff.render_diff
+
+.. autofunction:: mitsuba.python.autodiff.render_torch
+
+.. autofunction:: mitsuba.python.autodiff.write_bitmap
 
 .. autofunction:: mitsuba.python.test.util.fresolver_append_path
 

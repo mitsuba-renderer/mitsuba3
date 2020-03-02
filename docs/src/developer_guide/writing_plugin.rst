@@ -80,6 +80,8 @@ For example:
     using Base::some_method;
 
 
+.. _macro-import-core-types:
+
 :monosp:`MTS_IMPORT_CORE_TYPES()`
 ---------------------------------
 
@@ -106,6 +108,8 @@ For example:
     using BoundingBox3f = BoundingBox<Point3f>;
     // ...
 
+
+.. _macro-import-types:
 
 :monosp:`MTS_IMPORT_TYPES(...)`
 -------------------------------

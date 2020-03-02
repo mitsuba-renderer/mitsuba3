@@ -22,7 +22,9 @@ NAMESPACE_BEGIN(mitsuba)
  * additional Python-only method ``create()``, which works as follows:
  *
  * \code
- * from mitsuba.scalar_rgb.core import *
+ * import mitsuba
+ * mitsuba.set_variant('scalar_rgb')
+ * from mitsuba.core import *
  *
  * pmgr = PluginManager.instance()
  * camera = pmgr.create({
@@ -33,7 +35,7 @@ NAMESPACE_BEGIN(mitsuba)
  *         Vector3f(0, 1, 0)
  *     ),
  *     "film" : {
- *         "type" : "ldrfilm",
+ *         "type" : "hdrfilm",
  *         "width" : 1920,
  *         "height" : 1080
  *     }
@@ -43,7 +45,7 @@ NAMESPACE_BEGIN(mitsuba)
  * The above snippet constructs a \ref Camera instance from a
  * plugin named \c perspective.so/dll/dylib and adds a child object
  * named \c film, which is a \ref Film instance loaded from the
- * plugin \c ldrfilm.so/dll/dylib. By the time the function
+ * plugin \c hdrfilm.so/dll/dylib. By the time the function
  * returns, the object hierarchy has already been assembled.
  */
 class MTS_EXPORT_CORE PluginManager : public Object {
