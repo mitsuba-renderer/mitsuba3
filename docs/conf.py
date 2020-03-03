@@ -12,6 +12,17 @@ import shlex
 import subprocess
 import guzzle_sphinx_theme
 
+from sphinx.writers.html5 import HTML5Translator
+
+# Work around an odd exception on readthedocs.org
+vr = HTML5Translator.visit_reference
+def replacement(self, node):
+    if 'refuri' not in node and 'refid' not in node:
+        print(node)
+        return
+    vr(self, node)
+HTML5Translator.visit_reference = replacement
+
 from pathlib import Path
 
 # If extensions (or modules to document with autodoc) are in another directory,
