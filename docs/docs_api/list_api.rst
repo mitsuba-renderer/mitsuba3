@@ -698,8 +698,6 @@
 
 .. autoclass:: mitsuba.python.chi2.SphericalDomain
 
-.. autoclass:: mitsuba.python.util.ParameterMap
-
 .. autofunction:: mitsuba.python.util.traverse
 
 .. autofunction:: mitsuba.python.math.rlgamma
@@ -710,9 +708,9 @@
 
 .. autoclass:: mitsuba.python.autodiff.SGD
 
-.. autofunction:: mitsuba.python.autodiff._render_helper
-
 .. autofunction:: mitsuba.python.autodiff.render
+
+.. autofunction:: mitsuba.python.autodiff.render_diff
 
 .. autofunction:: mitsuba.python.autodiff.render_torch
 

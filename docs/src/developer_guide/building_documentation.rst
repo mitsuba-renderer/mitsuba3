@@ -18,9 +18,6 @@ From the ``build`` folder, one can run the following commands:
         the header files (in which case the python bindings will need to be
         built again after calling this).
 
-``ninja`` (without arguments):
-    Next, compile the renderer & python bindings.
-
 ``ninja mkdoc-api``:
     Extract documentation (classes, functions, of both Python & C++ portions)
     of the ``scalar_rgb`` variant using `Autodoc
@@ -34,7 +31,7 @@ From the ``build`` folder, one can run the following commands:
         This step is only necessary if documentation/comments have changed in
         the header files.
 
-``make mkdoc``:
+``ninja mkdoc``:
     Generate the final HTML documentation including the extracted API and
     plugin documentation. The output will be stored in the ``html``
     subdirectory.
