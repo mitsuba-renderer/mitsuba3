@@ -46,7 +46,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :titlesonly:
 
     src/developer_guide/intro
-    src/developer_guide/variants_c++
+    src/developer_guide/variants_cpp
     src/developer_guide/writing_plugin
     src/developer_guide/testing
     src/developer_guide/debugging
