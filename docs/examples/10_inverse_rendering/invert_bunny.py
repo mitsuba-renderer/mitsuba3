@@ -6,14 +6,15 @@ import enoki as ek
 import mitsuba
 mitsuba.set_variant('gpu_autodiff_rgb')
 
-from mitsuba.core import Float
+from mitsuba.core import Float, Thread
 from mitsuba.core.xml import load_file
 from mitsuba.python.util import traverse
 from mitsuba.python.autodiff import render, write_bitmap, Adam
 import time
 
 # Load example scene
-scene = load_file('bunny.xml')
+Thread.thread().file_resolver().append('bunny')
+scene = load_file('bunny/bunny.xml')
 
 # Find differentiable scene parameters
 params = traverse(scene)
