@@ -682,12 +682,6 @@
 
 .. autofunction:: mitsuba.render.srgb_model_mean
 
-.. autoclass:: mitsuba.python.util.ParameterMap
-
-.. autofunction:: mitsuba.python.util.traverse
-
-.. autofunction:: mitsuba.python.math.rlgamma
-
 .. autofunction:: mitsuba.python.chi2.BSDFAdapter
 
 .. autoclass:: mitsuba.python.chi2.ChiSquareTest
@@ -703,6 +697,12 @@
 .. autofunction:: mitsuba.python.chi2.SpectrumAdapter
 
 .. autoclass:: mitsuba.python.chi2.SphericalDomain
+
+.. autoclass:: mitsuba.python.util.ParameterMap
+
+.. autofunction:: mitsuba.python.util.traverse
+
+.. autofunction:: mitsuba.python.math.rlgamma
 
 .. autoclass:: mitsuba.python.autodiff.Adam
 

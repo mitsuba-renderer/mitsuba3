@@ -535,7 +535,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
 
         # Add cross-reference
         if not in_code_block:
-            lines[i] = re.sub(r'(mitsuba(?:\.[a-zA-Z\_0-9]+)+)',
+            lines[i] = re.sub(r'(?<!`)(mitsuba(?:\.[a-zA-Z\_0-9]+)+)',
                               r':py:class:`\1`', lines[i])
 
 

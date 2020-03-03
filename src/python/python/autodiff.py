@@ -123,7 +123,6 @@ def render(scene,
     array containing RGB values and AOVs, if applicable.
 
     Parameter ``spp`` (``None``, ``int``, or a 2-tuple ``(int, int)``):
-
        Specifies the number of samples per pixel to be used for rendering,
        overriding the value that is specified in the scene. If ``spp=None``,
        the original value takes precedence. If ``spp`` is a 2-tuple
@@ -136,7 +135,6 @@ def render(scene,
        parameter should be reduced if you encounter out-of-memory errors.
 
     Parameter ``unbiased`` (``bool``):
-
         One potential issue when naively differentiating a rendering algorithm
         is that the same set of Monte Carlo sample is used to generate both the
         primal output (i.e. the image) along with derivative output. When the
@@ -161,13 +159,11 @@ def render(scene,
         in image space using forward-mode differentiation.
 
     Parameter ``optimizer`` (:py:class:`mitsuba.python.autodiff.Optimizer`):
-
         The optimizer referencing relevant scene parameters must be specified
         when ``unbiased=True``. Otherwise, there is no need to provide this
         parameter.
 
     Parameter ``sensor_index`` (``int``):
-
         When the scene contains more than one sensor/camera, this parameter
         can be specified to select the desired sensor.
     """

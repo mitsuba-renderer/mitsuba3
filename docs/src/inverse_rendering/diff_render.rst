@@ -58,7 +58,7 @@ differentiated:
     print(params)
 
 The call to :py:func:`~mitsuba.python.util.traverse()` in the second-to-last
-line serves this purpose. It returns a dictionary-like ``ParameterMap``
+line serves this purpose. It returns a dictionary-like :py:class:`mitsuba.python.util.ParameterMap`
 instance, which exposes modifiable and differentiable scene parameters. Passing
 it to ``print()`` yields the following summary (abbreviated):
 
@@ -108,7 +108,7 @@ declaration in the original scene description:
         <spectrum name="reflectance" value="400:0.04, 404:0.046, ..., 696:0.635, 700:0.642"/>
     </bsdf>
 
-We can also query the ``ParameterMap`` to see the actual parameter value:
+We can also query the :py:class:`~mitsuba.python.util.ParameterMap` to see the actual parameter value:
 
 .. code-block:: python
 
@@ -122,7 +122,7 @@ above XML fragment into an RGB value due to the ``gpu_autodiff_rgb`` variant
 being used to run this example.
 
 In most cases, we will only be interested in differentiating a small subset of
-the (typically very large) parameter map. Use the ``ParameterMap.keep()``
+the (typically very large) parameter map. Use the :py:meth:`ParameterMap.keep() <mitsuba.python.util.ParameterMap.keep()>`
 method to discard all entries except for the specified list of keys.
 
 .. code-block:: python
@@ -174,7 +174,7 @@ along with the reference image generated above.
 
 For this, let's first change the current color value: the parameter map enables
 such changes without having to reload the scene. The call to the
-:py:meth:`~mitsuba.python.util.ParameterMap.update()` method at the end is
+:py:meth:`ParameterMap.update() <mitsuba.python.util.ParameterMap.update()>` method at the end is
 mandatory to inform changed scene objects that they should refresh their
 internal state.
 
@@ -348,7 +348,7 @@ instead of using an :py:class:`mitsuba.python.autodiff.Optimizer`).
 
 Once the computation has been recorded, we can specify a perturbation with
 respect to the previously flagged parameter and forward-propagate it through
-the graph. 
+the graph.
 
 .. code-block:: python
 

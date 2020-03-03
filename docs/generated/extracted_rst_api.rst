@@ -3320,7 +3320,7 @@
 
 .. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
     :type: bool
-    :value: False
+    :value: True
 
 .. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
     :type: int
@@ -9206,7 +9206,7 @@
         Desired number of evalution points. Must be an odd number bigger
         than 3.
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -9224,7 +9224,7 @@
         Desired number of evalution points. Must be an odd number bigger
         than 3.
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -9245,7 +9245,7 @@
     Parameter ``n`` (int):
         Desired number of evalution points
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -9269,7 +9269,7 @@
     Parameter ``n`` (int):
         Desired number of evalution points
 
-    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 8ul> >, enoki::DynamicArray<enoki::Packet<float, 8ul> >]:
+    Returns → Tuple[enoki::DynamicArray<enoki::Packet<float, 16ul> >, enoki::DynamicArray<enoki::Packet<float, 16ul> >]:
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
@@ -14613,51 +14613,6 @@
     Returns → float:
         *no description available*
 
-.. py:class:: mitsuba.python.util.ParameterMap(properties, hierarchy)
-
-    Dictionary-like object that references various parameters used in a Mitsuba
-    scene graph. Parameters can be read and written using standard syntax
-    (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.torch`()`,
-    :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.update`()`, and
-    :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.keep`()`.
-
-    .. py:method:: __init__(properties, hierarchy)
-
-        Private constructor (use
-        :py:func:`:py:class:`mitsuba.python.util.traverse`()` instead)
-
-        
-    .. py:method:: mitsuba.python.util.ParameterMap.torch() -> dict
-
-        Converts all Enoki arrays into PyTorch arrays and return them as a
-        dictionary. This is mainly useful when using PyTorch to optimize a
-        Mitsuba scene.
-
-    .. py:method:: mitsuba.python.util.ParameterMap.update() -> None
-
-        This function should be called at the end of a sequence of writes
-        to the dictionary. It automatically notifies all modified Mitsuba
-        objects and their parent objects that they should refresh their
-        internal state. For instance, the scene may rebuild the kd-tree
-        when a shape was modified, etc.
-
-    .. py:method:: mitsuba.python.util.ParameterMap.keep(keys: list) -> None
-
-        Reduce the size of the dictionary by only keeping elements,
-        whose keys are part of the provided list 'keys'.
-
-.. py:function:: mitsuba.python.util.traverse(node: mitsuba.core.Object) -> mitsuba.python.util.ParameterMap
-
-    Traverse a node of Mitsuba's scene graph and return a dictionary-like
-    object that can be used to read and write associated scene parameters.
-
-    See also :py:class:`:py:class:`mitsuba.python.util.ParameterMap``.
-
-.. py:function:: mitsuba.python.math.rlgamma(a, x)
-
-    Regularized lower incomplete gamma function based on CEPHES
-
 .. py:function:: mitsuba.python.chi2.BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None)
 
     Adapter to test BSDF sampling using the Chi^2 test.
@@ -14806,6 +14761,51 @@
 
     Maps between the unit sphere and a [cos(theta), phi] parameterization.
 
+.. py:class:: mitsuba.python.util.ParameterMap(properties, hierarchy)
+
+    Dictionary-like object that references various parameters used in a Mitsuba
+    scene graph. Parameters can be read and written using standard syntax
+    (``parameter_map[key]``). The class exposes several non-standard functions,
+    specifically :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.torch`()`,
+    :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.update`()`, and
+    :py:meth:`~:py:class:`mitsuba.python.util.ParameterMap.keep`()`.
+
+    .. py:method:: __init__(properties, hierarchy)
+
+        Private constructor (use
+        :py:func:`mitsuba.python.util.traverse()` instead)
+
+        
+    .. py:method:: mitsuba.python.util.ParameterMap.torch() -> dict
+
+        Converts all Enoki arrays into PyTorch arrays and return them as a
+        dictionary. This is mainly useful when using PyTorch to optimize a
+        Mitsuba scene.
+
+    .. py:method:: mitsuba.python.util.ParameterMap.update() -> None
+
+        This function should be called at the end of a sequence of writes
+        to the dictionary. It automatically notifies all modified Mitsuba
+        objects and their parent objects that they should refresh their
+        internal state. For instance, the scene may rebuild the kd-tree
+        when a shape was modified, etc.
+
+    .. py:method:: mitsuba.python.util.ParameterMap.keep(keys: list) -> None
+
+        Reduce the size of the dictionary by only keeping elements,
+        whose keys are part of the provided list 'keys'.
+
+.. py:function:: mitsuba.python.util.traverse(node: mitsuba.core.Object) -> mitsuba.python.util.ParameterMap
+
+    Traverse a node of Mitsuba's scene graph and return a dictionary-like
+    object that can be used to read and write associated scene parameters.
+
+    See also :py:class:`mitsuba.python.util.ParameterMap`.
+
+.. py:function:: mitsuba.python.math.rlgamma(a, x)
+
+    Regularized lower incomplete gamma function based on CEPHES
+
 .. py:class:: mitsuba.python.autodiff.Adam(params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
     Base class: :py:class:`mitsuba.python.autodiff.Optimizer`
@@ -14898,7 +14898,6 @@
     array containing RGB values and AOVs, if applicable.
 
     Parameter ``spp`` (``None``, ``int``, or a 2-tuple ``(int, int)``):
-
        Specifies the number of samples per pixel to be used for rendering,
        overriding the value that is specified in the scene. If ``spp=None``,
        the original value takes precedence. If ``spp`` is a 2-tuple
@@ -14911,7 +14910,6 @@
        parameter should be reduced if you encounter out-of-memory errors.
 
     Parameter ``unbiased`` (``bool``):
-
         One potential issue when naively differentiating a rendering algorithm
         is that the same set of Monte Carlo sample is used to generate both the
         primal output (i.e. the image) along with derivative output. When the
@@ -14935,14 +14933,12 @@
         differentiation. It is not needed when visualizing parameter gradients
         in image space using forward-mode differentiation.
 
-    Parameter ``optimizer`` (:py:class:`:py:class:`mitsuba.python.autodiff.Optimizer``):
-
+    Parameter ``optimizer`` (:py:class:`mitsuba.python.autodiff.Optimizer`):
         The optimizer referencing relevant scene parameters must be specified
         when ``unbiased=True``. Otherwise, there is no need to provide this
         parameter.
 
     Parameter ``sensor_index`` (``int``):
-
         When the scene contains more than one sensor/camera, this parameter
         can be specified to select the desired sensor.
 
