@@ -27,8 +27,8 @@ sampler = sensor.sampler()
 film_size = film.crop_size()
 spp = 32
 
-# Sample pixel positions in the image plane
-# Inside of each pixels, we randomly choose starting locations for our rays
+# Enumerate discrete sample & pixel indices, and uniformly sample
+# positions within each pixel.
 pos = ek.arange(UInt64, ek.hprod(film_size) * spp)
 if not sampler.ready():
     sampler.seed(pos)
@@ -55,7 +55,7 @@ surface_interaction = scene.ray_intersect(rays)
 # of the sampled surface interaction
 result = surface_interaction.t
 
- # set values to zero if no intersection occured
+# Set to zero if no intersection was found
 result[~surface_interaction.is_valid()] = 0
 
 block = ImageBlock(
@@ -65,7 +65,7 @@ block = ImageBlock(
     border=False
 )
 block.clear()
-# Imageblock expects RGB values (Array of size (n, 3))
+# ImageBlock expects RGB values (Array of size (n, 3))
 block.put(position_sample, rays.wavelengths, Vector3f(result, result, result), 1)
 
 # Write out the result from the ImageBlock

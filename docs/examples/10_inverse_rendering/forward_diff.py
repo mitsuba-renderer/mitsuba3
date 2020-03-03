@@ -21,6 +21,7 @@ params = traverse(scene)
 param_0 = params['red.reflectance.value']
 ek.set_requires_gradient(param_0)
 
+# Differentiable simulation
 image = render(scene, spp=32)
 
 # Assign the gradient [1, 1, 1] to the 'red.reflectance.value' input

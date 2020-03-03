@@ -3,6 +3,22 @@
 Integration with PyTorch
 ========================
 
+We briefly show how the example from the earlier section on
+:ref:`differentiable rendering <sec-differentiable-rendering>` can be made to
+work when combining differentiable rendering with an optimization expressed
+using PyTorch. The ability to combine these frameworks enables sandwiching
+Mitsuba 2 between neural layers and differentiating the combination end-to-end.
+
+Note that communication and synchronization between Enoki and PyTorch along
+with the complexity of traversing two separate computation graph data
+structures causes an overhead of roughly :math:`1.7\times` compared to
+optimization implemented using only Enoki. We generally recommend sticking with
+Enoki unless the problem requires neural network building blocks like fully
+connected layers or convolutions, where PyTorch provides a clear advantage.
+
+As before, we specify the relevant variant, load the scene, and retain
+relevant differentiable parameters.
+
 .. code-block:: python
 
     import mitsuba
@@ -25,14 +41,29 @@ Integration with PyTorch
     # Discard all parameters except for one we want to differentiate
     params.keep(['red.reflectance.value'])
 
+The ``.torch()`` method can be used to convert any Enoki CUDA type
+into a corresponding PyTorch tensor.
+
+.. code-block:: python
+
     # Print the current value and keep a backup copy
     param_ref = params['red.reflectance.value'].torch()
     print(param_ref)
+
+The :py:func:`~mitsuba.python.autodiff.render_torch()` function works
+analogously to :py:func:`~mitsuba.python.autodiff.render()` except that it
+returns a PyTorch tensor.
+
+.. code-block:: python
 
     # Render a reference image (no derivatives used yet)
     image_ref = render_torch(scene, spp=8)
     crop_size = scene.sensors()[0].film().crop_size()
     write_bitmap('out.png', image_ref, crop_size)
+
+As before, we change one of the input parameters and initialize an optimizer.
+
+.. code-block:: python
 
     # Change the left wall into a bright white surface
     params['red.reflectance.value'] = [.9, .9, .9]
@@ -45,15 +76,27 @@ Integration with PyTorch
     opt = torch.optim.Adam(params_torch.values(), lr=.2)
     objective = torch.nn.MSELoss()
 
-    time_a = time.time()
+Note that the scene parameters are effectively duplicated: we represent them
+once using Enoki arrays (``params``), and once using PyTorch arrays
+(``params_torch``). To perform a differentiable rendering, the function
+:py:func:`~mitsuba.python.autodiff.render_torch()` requires that both are given
+as arguments. Due to technical specifics of how PyTorch detects differentiable
+parameters, it is furthermore necessary that ``params_torch`` is expanded into
+a list of keyword arguments (``**params_torch``). The function then keeps both
+representation in sync and creates an interface between the underlying
+computation graphs.
+
+The main optimization loop looks as follows:
+
+.. code-block:: python
 
     for it in range(100):
         # Zero out gradients before each iteration
         opt.zero_grad()
 
         # Perform a differentiable rendering of the scene
-        image = render_torch(scene, params, unbiased=True, spp=1,
-                             **params_torch)
+        image = render_torch(scene, params=params, unbiased=True,
+                             spp=1, **params_torch)
 
         write_bitmap('out_%03i.png' % it, image, crop_size)
 
@@ -68,9 +111,4 @@ Integration with PyTorch
 
         # Compare iterate against ground-truth value
         err_ref = objective(params_torch['red.reflectance.value'], param_ref)
-        print('Iteration %03i: error=%g' % (it, err_ref), end='\r')
-
-    time_b = time.time()
-
-    print()
-    print('%f ms per iteration' % (((time_b - time_a) * 1000) / 100))
+        print('Iteration %03i: error=%g' % (it, err_ref * 3))

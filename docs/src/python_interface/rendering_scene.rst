@@ -63,15 +63,15 @@ in Python:
     :file:`docs/examples/01_render_scene/render_scene.py`
 
 
-Full rendering pipeline in Python
----------------------------------
+Custom rendering pipeline in Python
+------------------------------------
 
-In the following section, we show how to use the Python bindings to write a simple depth map
-renderer, including ray generation and pixel value splatting, purely in Python.
-
-While this being more work than calling the ``render()`` method from the integrator directly, it
-can be useful when prototyping more complex rendering algorithms that require finer control over the
-rendering pipeline (e.g. photon mapper, light tracer, ...).
+In the following section, we show how to use the Python bindings to write a
+simple depth map renderer, including ray generation and pixel value splatting,
+purely in Python. While this is of course much more work than simply calling
+the integrator's ``render()``, this fine-grained level of control can be useful
+in certain applications. Please also refer to the related section on
+:ref:`developing custom plugins in Python <sec-custom-plugins>`.
 
 Similar to before, we import a number of modules and load the scene from disk:
 
@@ -79,12 +79,12 @@ Similar to before, we import a number of modules and load the scene from disk:
    :language: python
    :lines: 1-20
 
-In this example we use the packet variant of Mitsuba. This means all calls to Mitsuba functions will
-be vectorized and we avoid expensive for-loops in Python. The same code will work for `gpu` variants
-of the renderer as well.
+In this example we use the packet variant of Mitsuba. This means all calls to
+Mitsuba functions will be vectorized and we avoid expensive for-loops in
+Python. The same code will work for `gpu` variants of the renderer as well.
 
-Instead of calling the scene's existing integrator as before, we will now manually trace rays
-through each pixel of the image:
+Instead of calling the scene's existing integrator as before, we will now
+manually trace rays through each pixel of the image:
 
 .. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
    :language: python

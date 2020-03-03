@@ -323,12 +323,19 @@ aggressively.
 Forward-mode differentiation
 ----------------------------
 
-The previous example demonstrated reverse-mode differentiation (a.k.a.
-backpropagation) where a desired small change to the output image is converted
-into a small change to the scene parameters. Mitsuba and Enoki also support
-differentiating in the other direction, i.e., from input parameter to output
-image. This is known as *forward mode* and can be very educational to visualize
-the effect of individual scene parameters on the rendered image.
+The previous example demonstrated *reverse-mode differentiation* (a.k.a.
+backpropagation) where a desired small change to the output image was converted
+into a small change to the scene parameters. Mitsuba and Enoki can also
+propagate derivatives in the other direction, i.e., from input parameters to
+the output image. This technique, known as *forward mode differentiation*, is
+not usable for optimization, as each parameter must be handled using a separate
+rendering pass. That said, this mode can be very educational since it enables
+visualizations of the effect of individual scene parameters on the rendered
+image.
+
+Forward mode differentiable rendering begins analogously to reverse mode, by
+declaring parameters and marking them as differentiable (we do so manually
+instead of using an :py:class:`mitsuba.python.autodiff.Optimizer`).
 
 .. code-block:: python
 
@@ -336,8 +343,14 @@ the effect of individual scene parameters on the rendered image.
     param_0 = params['red.reflectance.value']
     ek.set_requires_gradient(param_0)
 
-    # Differentiable calculation
+    # Differentiable simulation
     image = render(scene, spp=32)
+
+Once the computation has been recorded, we can specify a perturbation with
+respect to the previously flagged parameter and forward-propagate it through
+the graph. 
+
+.. code-block:: python
 
     # Assign the gradient [1, 1, 1] to the 'red.reflectance.value' input
     ek.set_gradient(param_0, [1, 1, 1], backward=False)
@@ -346,6 +359,13 @@ the effect of individual scene parameters on the rendered image.
     from mitsuba.core import Float
     Float.forward()
 
+See Enoki's documentation regarding `automatic differentiation
+<https://enoki.readthedocs.io/en/master/autodiff.html>`_ for further details on
+these steps.
+Finally, we can write the resulting gradient visualization to disk.
+
+.. code-block:: python
+
     # The gradients have been propagated to the output image
     image_grad = ek.gradient(image)
 
@@ -353,10 +373,14 @@ the effect of individual scene parameters on the rendered image.
     crop_size = scene.sensors()[0].film().crop_size()
     write_bitmap('out.png', image_grad, crop_size)
 
+This should produce a result similar to the following image:
 
 .. image:: ../../../resources/data/docs/images/autodiff/forward.jpg
     :width: 50%
     :align: center
+
+Observe how changing the color of the red wall has a global effect on the
+entire image due to global illumination.
 
 .. note::
 

@@ -208,3 +208,10 @@ dd {
 div#bibliography span.brackets {
     color: #333;
 }
+
+/* margins for images */
+
+img {
+    margin-top:1.5em;
+    margin-bottom:1.5em;
+}

@@ -1,5 +1,7 @@
-Writing plugins in Python
-=========================
+.. _sec-custom-plugins:
+
+Custom plugins in Python
+========================
 
 In Mitsuba 2, the Python bindings provide a mechanism to implement custom plugins directly in Python.
 This can be achieved by extending one of the plugin's base class (e.g. `BSDF`, `Emitter`) and

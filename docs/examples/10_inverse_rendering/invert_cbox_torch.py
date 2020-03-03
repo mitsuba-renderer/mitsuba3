@@ -50,8 +50,8 @@ for it in range(iterations):
     opt.zero_grad()
 
     # Perform a differentiable rendering of the scene
-    image = render_torch(scene, params, unbiased=True, spp=1,
-                         **params_torch)
+    image = render_torch(scene, params=params, unbiased=True,
+                         spp=1, **params_torch)
 
     write_bitmap('out_%03i.png' % it, image, crop_size)
 
