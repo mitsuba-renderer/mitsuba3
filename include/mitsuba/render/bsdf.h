@@ -274,7 +274,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * coordinates.
  *
  * \sa mitsuba.render.BSDFContext
- * \sa mitsuba.render.BSDFSample3
+ * \sa mitsuba.render.BSDFSample3f
  */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER BSDF : public Object {
