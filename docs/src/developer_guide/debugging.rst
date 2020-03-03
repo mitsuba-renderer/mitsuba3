@@ -11,7 +11,7 @@ facilitates the use of debuggers like `LLDB <https://lldb.llvm.org/>`_ or `GDB
 When using a debugger, the stringified versions of vectors and spectra are
 needlessly verbose and reveal various private implementation details of the
 Enoki library. For instance, printing a simple statically sized 3D vector like
-``Array<float, 3>(1, 2, 3)`` in LLDB yields
+``Vector3f(1, 2, 3)`` in LLDB yields
 
 .. code-block:: text
 
@@ -23,7 +23,8 @@ Enoki library. For instance, printing a simple statically sized 3D vector like
       }
     }
 
-Dynamic arrays (e.g. ``FloatX(1, 2, 3)``) are even worse, as the values are
+Dynamic arrays used in vectorized backends (e.g.
+``DynamicArray<Packet<Float>>(1, 2, 3)``) are even worse, as the values are
 obscured behind a pointer:
 
 .. code-block:: text

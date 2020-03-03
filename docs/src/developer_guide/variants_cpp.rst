@@ -99,7 +99,7 @@ logic can no longer be carried out using ordinary ``if`` statements.
 
 The alternative operation ``enoki::select(mask, arg1, arg2)`` takes a *mask*
 argument (typically the result of a comparison) and evaluates ``(mask ? arg1 :
-arg2)`` in parallel for each lane. We refer to the `Enoki documentation
+arg2)`` in parallel for each lane. We refer to `Enoki's documentation
 <https://enoki.readthedocs.io/en/master/basics.html#working-with-masks>`_ for
 further information on working with masks. The following shows an example
 contrasting these two cases:
@@ -212,9 +212,10 @@ documentation <https://enoki.readthedocs.io/en/master/calls.html>`_.
 Variant-specific code
 ---------------------
 
-The C++17 ``if constexpr`` statement if often used throughout the codebase to write code specific to
-a variant. For instance the following C++ snippet will handle differently the *spectral* result of
-some computations, depending on the color representation of the variant being compiled:
+The C++17 ``if constexpr`` statement is often used throughout the codebase to
+restrict code fragments to specific variants. For instance the following C++
+snippet converts a spectrum to an XYZ tristimulus value, which crucially
+depends on the color representation of the variant being compiled.
 
 .. code-block:: c++
 
@@ -230,8 +231,13 @@ some computations, depending on the color representation of the variant being co
     else
         xyz = spectrum_to_xyz(result, ray.wavelengths, active);
 
-The ``if constexpr`` statement being resolved at *compile-time*, this doesn't introduce any branch
-in the code generated, so no performance penalty.
+Since ``if constexpr`` is resolved at compile-time, this branch does not cause
+any runtime overheads. Another useful feature of ``if constexpr`` is that it
+suppresses compilation errors in disabled branches. This makes it possible to
+generic code that could potentially produce compilation errors when expressed
+using ordinary (non-``constexpr``) ``if`` statements (for example, by accessing
+a member of a class that may not exist in all variants).
 
-For this purpose, the framework implements various *type-traits* specific to the renderer, which can
-be found in ``include/mitsuba/core/traits.h``.
+Mitsuba provides various *type-traits* such as ``is_monochromatic_v`` to query
+variant-specific properties. They can be found in
+:file:`include/mitsuba/core/traits.h`.
