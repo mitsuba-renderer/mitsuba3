@@ -31,7 +31,7 @@ The horizontally polarized light (with :math:`\mathbf{s} = [1, 1, 0, 0]`) shown 
     :align: center
 
 
-During rendering, light will of course also interact with matter which will generally affect its polarization state. This change is desribed with a *Mueller matrix* :math:`\mathbf{M} \in \mathbb{R}^{4\times4}`. After a reflection (or transmission), the incident (:math:`\mathbf{s}_i`) and outgoing (:math:`\mathbf{s}_o`) Stokes vectors are related with :math:`\mathbf{s}_o = \mathbf{M}\mathbf{s}_i`. This raises the same questions about reference frames as in the Stokes vector case, only that now *two* frames need to be defined for both incident and outgoing direction of the interaction:
+During rendering, light will of course also interact with matter which will generally affect its polarization state. This change is described by a *Mueller matrix* :math:`\mathbf{M} \in \mathbb{R}^{4\times4}`. After a reflection (or transmission), the incident (:math:`\mathbf{s}_i`) and outgoing (:math:`\mathbf{s}_o`) Stokes vectors are related by :math:`\mathbf{s}_o = \mathbf{M}\mathbf{s}_i`. This raises the same questions about reference frames as in the Stokes vector case, only that now *two* frames need to be defined for both incident and outgoing direction of the interaction:
 
 .. image:: ../../images/polarization_mueller_matrix.svg
     :width: 100%

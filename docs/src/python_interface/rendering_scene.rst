@@ -63,6 +63,8 @@ in Python:
     :file:`docs/examples/01_render_scene/render_scene.py`
 
 
+.. _sec-rendering-scene-custom:
+
 Custom rendering pipeline in Python
 ------------------------------------
 

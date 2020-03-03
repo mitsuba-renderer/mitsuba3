@@ -3,30 +3,39 @@
 Custom plugins in Python
 ========================
 
-In Mitsuba 2, the Python bindings provide a mechanism to implement custom plugins directly in Python.
-This can be achieved by extending one of the plugin's base class (e.g. `BSDF`, `Emitter`) and
-overwriting the class methods (e.g. ``sample()``, ``eval()``, ...). This mechanism leverages the
-`trampoline feature <https://pybind11.readthedocs.io/en/stable/advanced/classes.html#overriding-virtual-functions-in-python>`_ of *pybind11*.
+Mitsuba 2 provides a mechanism to implement custom plugins *directly in
+Python*. To do so, simply extend a base class (e.g. `BSDF`, `Emitter`) and
+override its class methods (e.g. ``sample()``, ``eval()``, ...). This leverages
+the `trampoline feature
+<https://pybind11.readthedocs.io/en/stable/advanced/classes.html#overriding-virtual-functions-in-python>`_
+of *pybind11*.
 
-The custom Python plugin can then be registered to the XML parser by calling one of the
-``register_<type>(name, constructor)`` Python function as described later in the examples. By doing
-so, it is possible to refer to this new plugin in the XML scene description file as with any other
-C++ plugins.
+The new plugin can then be registered with the XML parser by calling one of
+several ``register_<type>(name, constructor)`` functions, making it accessible
+in the XML scene language like any other C++ plugin.
 
-.. note:: This mechanism currently only supports custom Python plugins for `BSDF`, `Emitter` and
-          `Integrator`.
+.. warning::
 
-The rest of this section discusses various examples using this mechanism:
+    Only ``gpu_*`` variants will produce reasonable performance
+    when using such Python implementations of core system components (since
+    they can be JIT-compiled along with other system components). We plan to
+    extend this feature to further variant types in the future.
+
+    Furthermore, only ``BSDF``, ``Emitter``, and ``Integrator`` plugins can
+    currently be implemented in Python.
+
+The remainder of this section discusses several examples.
 
 
 BSDF example
 ------------
 
-In this example, we will implement a simple diffuse BSDF in Python by extending the :code:`BSDF`
-base class. The code is very similar to the diffuse BSDF implemented in C++
-(in :code:`src/bsdf/diffuse.cpp`).
+In this example, we will implement a simple diffuse BSDF in Python by extending
+the :code:`BSDF` base class. The code is very similar to the diffuse BSDF
+implemented in C++ (in :code:`src/bsdf/diffuse.cpp`).
 
-The BSDF class need to implement the following 3 methods: :code:`sample`, :code:`eval` and :code:`pdf`:
+The BSDF class need to implement the following 3 methods: :code:`sample`,
+:code:`eval` and :code:`pdf`:
 
 .. literalinclude:: ../../examples/04_diffuse_bsdf/diffuse_bsdf.py
    :language: python
@@ -44,7 +53,7 @@ instances. After that, we can use our new BSDF in a XML scene file by specifying
 
 .. code-block:: xml
 
-    <BSDF type="mydiffusebsdf"/>
+    <bsdf type="mydiffusebsdf"/>
 
 The scene can then rendered by calling the standard :code:`render` function:
 
@@ -72,25 +81,31 @@ The code is very similar to the direct illumination integrator implemented in C+
 The function takes the current scene, sampler and array of rays as arguments.
 The :code:`active` argument specifies which lanes are active.
 
-Similar to before, we first intersect the rays with the scene.
-We then first evaluate the radiance of directly visible emitters.
-Then, we explicitly sample positions on emitters and evaluate their contributions.
-Additionally, we sample a ray direction according to the BSDF and evaluate whether these rays also hit some emitters.
-These different contributions are then combined using multiple importance sampling to reduce variance.
+We first intersect the provided rays against the scene and evaluate the
+radiance of directly visible emitters. Then, we explicitly sample positions on
+emitters and evaluate their contributions. Additionally, we sample a ray
+direction according to the BSDF and evaluate whether these rays also hit some
+emitters. These different contributions are then combined using multiple
+importance sampling to reduce variance.
 
-This function will be invoked for an array of different rays, hence each ray can then potentially hit a surface with a different BSDF.
-Therefore, :code:`bsdf = si.bsdf(rays)` will be an array of different BSDF pointers.
-To then call member functions of these different BSDFs, we have to invoke the according vectorized functions, e.g.
+This function will be invoked for an array of different rays, hence each ray
+can then potentially hit a surface with a different BSDF. Therefore,
+:code:`bsdf = si.bsdf(rays)` will be an array of different BSDF pointers. To
+then call member functions of these different BSDFs, we invoke special dispatch
+functions for vectorized method calls:
 
 .. literalinclude:: ../../examples/03_direct_integrator/direct_integrator.py
    :language: python
    :lines: 38-39
 
-This ensures that implementation provided by the different BSDF models will be called.
-Other than that, the code and used interfaces are nearly identical to the C++ version.
-Please refer to the documentation of the C++ types for details on the different functions and objects.
+This will ensure that the C++ or Python implementation of the right BSDF model
+is invoked for each variant. Other than that, the code and used interfaces are
+nearly identical to the C++ version. Please refer to the documentation of the
+C++ types for details on the different functions and objects.
 
-When implementing the depth integrator, we did a lot of manual work to correctly sample rays from the camera and splatting samples into the film.
+When implementing the depth integrator in the section on
+:ref:`custom rendering pipelines <sec-rendering-scene-custom>`, considerable work was
+necessary to correctly sample rays from the camera and splat samples into the film.
 While this can be very useful for certain applications, it is also a bit tedious.
 In many cases, we simply want to implement a custom integrator and not bother with how camera rays are exactly generated.
 In this example, we will therefore use a more elegant mechanism, which allows to simply extend the :code:`SamplingIntegrator` base class.
