@@ -9,6 +9,44 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _texture-bitmap:
+
+Bitmap texture (:monosp:`bitmap`)
+---------------------------------
+
+.. pluginparameters::
+
+ * - filename
+   - |string|
+   - Filename of the bitmap to be loaded
+ * - raw
+   - |bool|
+   - Should the transformation to the stored color data
+     (e.g. sRGB to linear, spectral upsampling) be disabled? (Default: false)
+ * - to_uv
+   - |transform|
+   - Specifies an optional uv transformation.  (Default: none, i.e. emitter space = world space)
+
+This plugin provides a bitmap texture source that performs bilinearly interpolated
+lookups on JPEG, PNG, OpenEXR, RGBE, TGA, and BMP files.
+
+When loading the plugin, the data is first converted into a usable color representation
+for the renderer:
+
+* In :monosp:`rgb` modes, sRGB textures are converted into linear color space.
+* In :monosp:`spectral` modes, sRGB textures are *spectrally upsampled* to plausible
+  smooth spectra :cite:`Jakob2019Spectral` and store an intermediate representation
+  used to query them during rendering.
+* In :monosp:`monochrome` modes, sRGB textures are converted to grayscale.
+
+These conversions can alternatively be disabled with the :paramtype:`raw` flag,
+e.g. when textured data is already in linear space or does not represent colors
+at all.
+
+ */
+
 // Forward declaration of specialized bitmap texture
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class BitmapTextureImpl;

@@ -5,6 +5,33 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _texture-checkerboard:
+
+Checkerboard texture (:monosp:`checkerboard`)
+---------------------------------------------
+
+.. pluginparameters::
+
+ * - color0, color1
+   - |spectrum| or |texture|
+   - Color values for the two differently-colored patches (Default: 0.4 and 0.2)
+ * - to_uv
+   - |transform|
+   - Specifies an optional uv transformation.  (Default: none, i.e. emitter space = world space)
+
+This plugin provides a simple procedural checkerboard texture with customizable colors.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/texture_checkerboard.jpg
+   :caption: Checkerboard applied to the material test object as well as the ground plane.
+.. subfigend::
+    :label: fig-texture-checkerboard
+
+
+ */
+
 template <typename Float, typename Spectrum>
 class Checkerboard final : public Texture<Float, Spectrum> {
 public:

@@ -28,6 +28,8 @@ BSDF_ORDERING = ['diffuse',
                  'mask',
                  'twosided']
 
+TEXTURE_ORDERING = ['bitmap',
+                    'checkerboard']
 
 EMITTER_ORDERING = ['area',
                     'point',
@@ -48,9 +50,9 @@ FILM_ORDERING = ['hdrfilm']
 RFILTER_ORDERING = ['box',
                     'tent',
                     'gaussian',
+                    'mitchell',
                     'catmullrom',
-                    'lanczos',
-                    'mitchell']
+                    'lanczos']
 
 PHASE_ORDERING = ['isotropic',
                   'hg']
@@ -123,7 +125,7 @@ def generate(build_dir):
     with open(os.path.join(build_dir, 'plugins.rst'), 'w') as f:
         process_src(f, 'shapes', 'section_shape', SHAPE_ORDERING)
         process_src(f, 'bsdfs', 'section_bsdf', BSDF_ORDERING)
-        # process_src(f, 'textures')
+        process_src(f, 'textures', 'section_texture', TEXTURE_ORDERING)
         # process_src(f, 'subsurface')
         # process_src(f, 'medium', 'section_media')
         process_src(f, 'phase', ordering=PHASE_ORDERING)
