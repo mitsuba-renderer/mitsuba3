@@ -14,39 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
  * the \ref create_object() methods. The generated instances are then
  * assembled into a final object graph, such as a scene. One such
  * examples is the \ref SceneHandler class, which parses an XML
- * scene file by esentially translating the XML elements into calls
+ * scene file by essentially translating the XML elements into calls
  * to \ref create_object().
- *
- * Since this kind of construction method can be tiresome when
- * dynamically building scenes from Python, this class has an
- * additional Python-only method ``create()``, which works as follows:
- *
- * \code
- * import mitsuba
- * mitsuba.set_variant('scalar_rgb')
- * from mitsuba.core import *
- *
- * pmgr = PluginManager.instance()
- * camera = pmgr.create({
- *     "type" : "perspective",
- *     "to_world" : Transform.look_at(
- *         Point3f(0, 0, -10),
- *         Point3f(0, 0, 0),
- *         Vector3f(0, 1, 0)
- *     ),
- *     "film" : {
- *         "type" : "hdrfilm",
- *         "width" : 1920,
- *         "height" : 1080
- *     }
- * })
- * \endcode
- *
- * The above snippet constructs a \ref Camera instance from a
- * plugin named \c perspective.so/dll/dylib and adds a child object
- * named \c film, which is a \ref Film instance loaded from the
- * plugin \c hdrfilm.so/dll/dylib. By the time the function
- * returns, the object hierarchy has already been assembled.
  */
 class MTS_EXPORT_CORE PluginManager : public Object {
 public:
