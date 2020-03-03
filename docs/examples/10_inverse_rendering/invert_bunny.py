@@ -26,18 +26,16 @@ param_ref = Float(params['my_envmap.data'])
 params.keep(['my_envmap.data'])
 
 # Render a reference image (no derivatives used yet)
-image_ref = render(scene, spp=1)
+image_ref = render(scene, spp=16)
 crop_size = scene.sensors()[0].film().crop_size()
 write_bitmap('out_ref.png', image_ref, crop_size)
 
 # Change to a uniform white lighting environment
-params['my_envmap.data'] = ek.full(Float, 1.0, len(params['my_envmap.data']))
+params['my_envmap.data'] = ek.full(Float, 1.0, len(param_ref))
 params.update()
 
 # Construct an Adam optimizer that will adjust the parameters 'params'
-#  opt = Adam(params, lr=.02)
 opt = Adam(params, lr=.02)
-print(opt)
 
 time_a = time.time()
 
