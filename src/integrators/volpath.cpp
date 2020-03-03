@@ -16,6 +16,16 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum, bool SpectralMis>
 class VolumetricNullPathIntegratorImpl;
 
+
+/**!
+
+.. _integrator-volpath:
+
+Volumetric path tracer with null scattering (:monosp:`volpath`)
+---------------------------------------------------------------
+
+.. todo:: Not documented yet.
+*/
 template <typename Float, typename Spectrum>
 class VolumetricNullPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
 
