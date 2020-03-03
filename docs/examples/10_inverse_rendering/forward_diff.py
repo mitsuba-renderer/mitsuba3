@@ -35,4 +35,6 @@ image_grad = ek.gradient(image)
 
 # .. write them to a PNG file
 crop_size = scene.sensors()[0].film().crop_size()
-write_bitmap('out.png', image_grad, crop_size)
+fname = 'out.png'
+write_bitmap(fname, image_grad, crop_size)
+print('Wrote forward differentiation image to: {}'.format(fname))

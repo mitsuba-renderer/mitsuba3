@@ -11,7 +11,8 @@ well-known Cornell Box scene that can be downloaded `here
 Please make the following three changes to the ``cbox.xml`` file:
 
 1. ``ldsampler`` must be replaced by ``independent`` (``ldsampler`` has not yet
-   been ported to Mitsuba 2)
+   been ported to Mitsuba 2). Note that the sample count specified here will be overriden
+   in the optimization script below.
 
 2. The integrator at the top should be defined as follows:
 

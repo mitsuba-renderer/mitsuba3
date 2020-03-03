@@ -27,6 +27,13 @@ Frequently asked questions
     compatible with the video driver (the two must satisfy version requirements
     that are detailed on the OptiX website)
 
+- Differentiable rendering fails with an error message similar to ":monosp:`RuntimeError:
+  cuda_malloc(): out of memory!`".
+
+    The rendering or autodiff graph exhausted your GPU's memory. Try reducing the sample count
+    and / or resolution. If high sample count renders are necessary, it is possible to split computation
+    in several low sample count passes and average together the gradients.
+
 - Citing Mitsuba 2 in scientific literature.
 
   Please use the following BibTeX entry to cite Mitsuba 2 in research articles,
@@ -45,7 +52,7 @@ Frequently asked questions
           doi = {10.1145/3355089.3356498}
       }
 
-  Here is a plain-text version of the above: 
+  Here is a plain-text version of the above:
 
       Merlin Nimier-David, Delio Vicini, Tizian Zeltner, and Wenzel Jakob.
       2019. Mitsuba 2: A Retargetable Forward and Inverse Renderer. In
