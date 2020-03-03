@@ -20,7 +20,7 @@ Independent sampler (:monosp:`independent`)
 
 The independent sampler produces a stream of independent and uniformly
 distributed pseudorandom numbers. Internally, it relies on the
-`PCG32 random number generator <https://www.pcg-random.org/>`_ by
+`PCG32 random number generator <https://www.pcg-random.org/>`_ 
 by Melissa O’Neill.
 
 This is the most basic sample generator; because no precautions are taken to avoid
