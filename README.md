@@ -19,8 +19,8 @@
 | [![docs][1]][2] |
 
 
-[1]: https://readthedocs.org/projects/mitsuba2/badge/?version=master
-[2]: http://mitsuba2.readthedocs.org/en/master
+[1]: https://readthedocs.org/projects/mitsuba2/badge/?version=latest
+[2]: http://mitsuba2.readthedocs.org/en/latest
 
 Mitsuba 2 is a research-oriented rendering system written in portable C++17. It
 consists of a small set of core libraries and a wide variety of plugins that
