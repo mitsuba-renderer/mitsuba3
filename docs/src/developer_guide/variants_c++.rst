@@ -15,7 +15,7 @@ You will quickly notice that most of them are templated over the following two t
 In C++, those two template parameters embody the *computational backend* and *color representation*
 components of the variants, respectively.
 
-The C++ *meaning* of those template parameters for a specific variant are defined in the
+The C++ *meaning* of those template parameters for a specific variant is defined in the
 ``mitsuba.conf`` file. For instance
 
 .. code-block:: text
@@ -25,28 +25,29 @@ The C++ *meaning* of those template parameters for a specific variant are define
         "spectrum": "Color<Float, 3>"
     },
 
-indicates that every class / function templated over `Float` and/or `Spectrum` will be compiled with
-the following template parameters for the `scalar_rgb` variant:
+indicates that every class / function templated over `Float` and/or `Spectrum` will be
+`explicitly instantiated <https://en.cppreference.com/w/cpp/language/class_template#Explicit_instantiation>`_
+with the following template parameters for the `scalar_rgb` variant:
 
 .. code-block::
 
     Float    = float;
     Spectrum = Color<Float, 3>;
 
-Those C++ symbols will be added to the shared libraries (``libmitsuba-core.so``,
-``libmitsuba-render.so``, ``plugin/diffuse.so``, ...). At runtime, the user-specified variant will
+The resulting C++ symbols will be added to the shared libraries (``dist/libmitsuba-core.so``,
+``dist/libmitsuba-render.so``, ``dist/plugin/*.so``, ...). At runtime, the user-specified variant will
 determine the set of symbols to be used by the renderer.
 
 .. note:: The ``MTS_VARIANT`` macro is a shorthand notation for
           ``template <typename Float, typename Spectum>``
 
 
-Aliases macros
---------------
+Macros for aliases
+------------------
 
 The framework provides helper macros to generate a sequence of alias declarations based on
-the type of `Float` and `Spectrum`. The user can simply call this macro at the begining of a
-templated function to then be able to use other templated Mitsuba types (e.g. `Vector2f`, `Ray3f`,
+the type of `Float` and `Spectrum`. By calling this macro at the begining of a
+templated function, we are then able to use other templated Mitsuba types (e.g. `Vector2f`, `Ray3f`,
 `SurfaceInteraction`, ...) as if they were not templated.
 
 .. code-block:: c++
@@ -59,7 +60,7 @@ templated function to then be able to use other templated Mitsuba types (e.g. `V
         # Can now use those types as if they were not templated
         Point3f p(4.f, 3.f, 0.f);
         Vector3f v(1.f, 0.f, 0.f);
-        auto ray = Ray3f(p, v);
+        Ray3f ray(p, v);
         std::cout << ray << std::endl;
     }
 
@@ -72,10 +73,16 @@ Those macros are described in more detail in the next chapter:
 Branching and masking
 ---------------------
 
-When dealing with *array-based* computational backends (e.g. `packet`, `gpu`), it is necessary to
-adapt any C++ branching logic (e.g. ``if`` statements) to account for the different lanes.
+When dealing with *array-based* computational backends (e.g. ``packet_*``, ``gpu_*``), it is
+necessary to adapt C++ branching logic (e.g. ``if`` statements). For instance, as demonstrated in
+the following C++ snippet, the result of a ray intersection routine (here a
+:py:class:`~mitsuba.render.SurfaceInteraction3f` struct) carries information of a single
+intersection. Conditional logic in this case can simply be handle using ``if`` statements.
 
-For instance, a condition might only be |true| for a subset of the lanes in the array.
+On the other hand, with *array-based* variants (e.g. `gpu_rgb`) the ``si`` variable carries
+information of an array of intersections. As a condition might only be |true| for a subset of the
+intersection this array, it is not possible to rely on ``if`` statement anymore. Here we use the
+``enoki::select`` routine instead.
 
 .. code-block:: c++
 
@@ -102,10 +109,10 @@ For instance, a condition might only be |true| for a subset of the lanes in the 
 
 
 Moreover, most of the functions/methods in the codebase will take an *optional* `active`
-parameter. It carries information about which lanes of the computational array are still active.
+parameter. It carries information about which *lanes* of the computational array are still active.
 
 In the example above, we should indicate to the ``ray_intersect`` routine which of the lanes are
-still active so we do not waste time computing intersections for inactive lanes.
+active so we do not waste time computing intersections for inactive lanes.
 The code would then become:
 
 .. code-block:: c++
@@ -120,17 +127,20 @@ The code would then become:
     return enoki::select(active & si.is_valid(), 1.0f, 0.f);
 
 
-For more information on how to work with masks, please refer to the
-`Enoki documentation <https://enoki.readthedocs.io/en/master/basics.html#working-with-masks>`_.
+For more information on how to work with masks, please refer to
+`Working with masks <https://enoki.readthedocs.io/en/master/basics.html#working-with-masks>`_.
 
 
 CUDA backend synchronization point
 ----------------------------------
 
-The codebase extensively use the Enoki alternative horizontal reductions of masks
-(e.g. ``any_or()``, ``all_or()``, ...) to skip evaluation when compiling for GPU target.
-
-For more information, please refer to `GPU Array <https://enoki.readthedocs.io/en/master/gpu.html#suggestions-regarding-horizontal-operations>`_.
+As described in
+`GPU Array <https://enoki.readthedocs.io/en/master/gpu.html#suggestions-regarding-horizontal-operations>`_,
+the ``gpu_*`` computational backend relies on a JIT compiler that will generate PTX kernels at
+run-time. Horizontal operations (e.g. ``any()``, ``hsum()``) on ``CUDAArray`` will always trigger
+the generation of a kernel. This has some performance implication as each kernel introduce some overheads.
+For this reason, the Mitsuba 2 codebase extensively use the Enoki alternative horizontal reductions
+of masks (e.g. ``any_or()``, ``all_or()``, ...) to skip evaluation when compiling for GPU target.
 
 
 Pointers
@@ -143,6 +153,7 @@ supported by Enoki), like in the code example below:
 
 .. code-block:: c++
 
+    // Adds: using BSDFPtr = replace_scalar_t<Float, const BSDF *>;
     MTS_IMPORT_TYPES()
 
     Scene scene = ...;
@@ -150,7 +161,7 @@ supported by Enoki), like in the code example below:
     Ray3f ray = ...;
     SurfaceInteraction3f si = scene->ray_intersect(ray, active);
 
-    // BSDFPtr will be an array of pointers for array-based variants
+    // Array of pointers if Float is an array
     BSDFPtr bsdf = si.bsdf();
 
     // Enoki support method calls on array of pointers types
@@ -163,10 +174,8 @@ Variant-specific code
 ---------------------
 
 The C++17 ``if constexpr`` statement if often used throughout the codebase to write code specific to
-a variant.
-
-For instance the following C++ snippet will handle differently the *spectral* result of some
-computations, depending on the color representation of the variant:
+a variant. For instance the following C++ snippet will handle differently the *spectral* result of
+some computations, depending on the color representation of the variant being compiled:
 
 .. code-block:: c++
 
@@ -181,6 +190,9 @@ computations, depending on the color representation of the variant:
         xyz = srgb_to_xyz(result, active);
     else
         xyz = spectrum_to_xyz(result, ray.wavelengths, active);
+
+The ``if constexpr`` statement being resolved at *compile-time*, this doesn't introduce any branch
+in the code generated, so no performance penalty.
 
 For this purpose, the framework implements various *type-traits* specific to the renderer, which can
 be found in ``include/mitsuba/core/traits.h``.
