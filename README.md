@@ -1,7 +1,7 @@
 <img src="https://github.com/mitsuba-renderer/mitsuba2/raw/master/docs/images/logo_plain.png" width="120" height="120" alt="Mitsuba logo">
 
 # Mitsuba Renderer 2
-
+<!--
 | Documentation   | Linux             | Windows             |
 |      :---:      |       :---:       |        :---:        |
 | [![docs][1]][2] | [![rgl-ci][3]][4] | [![appveyor][5]][6] |
@@ -13,6 +13,14 @@
 [4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba2_Build&guest=1
 [5]: https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true
 [6]: https://ci.appveyor.com/project/wjakob/mitsuba2/branch/master
+-->
+| Documentation   |
+|      :---:      |
+| [![docs][1]][2] |
+
+
+[1]: https://readthedocs.org/projects/mitsuba2/badge/?version=master
+[2]: http://mitsuba2.readthedocs.org/en/master
 
 Mitsuba 2 is a research-oriented rendering system written in portable C++17. It
 consists of a small set of core libraries and a wide variety of plugins that
