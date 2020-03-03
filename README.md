@@ -80,7 +80,7 @@ several other noteworthy changes:
 
 ## Compiling and using Mitsuba 2
 
-Please see the [documentation](http://mitsuba2.readthedocs.org/en/master) for
+Please see the [documentation](http://mitsuba2.readthedocs.org/en/latest) for
 details on how to compile, use, and extend Mitsuba 2.
 
 ## About
