@@ -112,3 +112,8 @@ The main optimization loop looks as follows:
         # Compare iterate against ground-truth value
         err_ref = objective(params_torch['red.reflectance.value'], param_ref)
         print('Iteration %03i: error=%g' % (it, err_ref * 3))
+
+.. note::
+
+    The full Python script of this tutorial can be found in the file:
+    :file:`docs/examples/10_diff_render/invert_cbox_torch.py`.

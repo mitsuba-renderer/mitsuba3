@@ -162,7 +162,7 @@ samples per pixel (``spp``).
 .. code-block:: python
 
     # Render a reference image (no derivatives used yet)
-    from mitsuba.python.autodiff import render, render, write_bitmap
+    from mitsuba.python.autodiff import render, write_bitmap
     image_ref = render(scene, spp=8)
     crop_size = scene.sensors()[0].film().crop_size()
     write_bitmap('out_ref.png', image_ref, crop_size)
@@ -261,6 +261,7 @@ gradient steps.
 
 .. code-block:: python
 
+    # for loop body (continued)
         # Objective: MSE between 'image' and 'image_ref'
         ob_val = ek.hsum(ek.sqr(image - image_ref)) / len(image)
 
