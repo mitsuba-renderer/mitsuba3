@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) {
+MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(props.id()) {
     m_world_transform = props.animated_transform("to_world", ScalarTransform4f()).get();
 }
 
@@ -47,6 +47,8 @@ MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f 
                                                      Mask /*active*/) const {
     NotImplementedError("eval");
 }
+
+MTS_VARIANT std::string Endpoint<Float, Spectrum>::id() const { return m_id; }
 
 MTS_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)
 MTS_INSTANTIATE_CLASS(Endpoint)

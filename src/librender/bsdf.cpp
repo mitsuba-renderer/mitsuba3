@@ -13,6 +13,8 @@ MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
     return 0.f;
 }
 
+MTS_VARIANT std::string BSDF<Float, Spectrum>::id() const { return m_id; }
+
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
     std::ostringstream oss;

@@ -216,6 +216,9 @@ public:
      */
     virtual void set_scene(const Scene *scene);
 
+    /// Return a string identifier
+    std::string id() const override;
+
     //! @}
     // =============================================================
 
@@ -233,6 +236,7 @@ protected:
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
     bool m_needs_sample_3 = true;
+    std::string m_id;
 };
 
 MTS_EXTERN_CLASS_RENDER(Endpoint)

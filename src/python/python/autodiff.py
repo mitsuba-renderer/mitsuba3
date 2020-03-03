@@ -91,7 +91,7 @@ def _render_helper(scene, spp=None, sensor_index=0):
     return values / (weight + 1e-8)
 
 
-def write_bitmap(filename, data, resolution):
+def write_bitmap(filename, data, resolution, write_async=True):
     """
     Write the linearized RGB image in `data` to a PNG/EXR/.. file with
     resolution `resolution`.
@@ -110,7 +110,12 @@ def write_bitmap(filename, data, resolution):
        filename.endswith('.jpeg'):
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)
-    bitmap.write_async(filename, quality=0 if filename.endswith('png') else -1)
+    quality = 0 if filename.endswith('png') else -1
+
+    if write_async:
+        bitmap.write_async(filename, quality=quality)
+    else:
+        bitmap.write(filename, quality=quality)
 
 
 def render(scene,

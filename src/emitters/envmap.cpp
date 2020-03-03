@@ -109,7 +109,7 @@ public:
                 }
 
                 *lum_ptr++ = lum * sin_theta;
-                store_unaligned(ptr, coeff);
+                store(ptr, coeff);
                 ptr += 4;
             }
         }
@@ -124,7 +124,37 @@ public:
     }
 
     void parameters_changed() override {
-        // TODO update warp for better importance sampling when data has changed
+        m_data.managed();
+
+        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[hprod(m_resolution)]);
+
+        ScalarFloat *ptr     = (ScalarFloat *) m_data.data(),
+                    *lum_ptr = (ScalarFloat *) luminance.get();
+
+
+        for (size_t y = 0; y < m_resolution.y(); ++y) {
+            ScalarFloat sin_theta =
+                std::sin(y / ScalarFloat(m_resolution.y() - 1) * math::Pi<ScalarFloat>);
+
+            for (size_t x = 0; x < m_resolution.x(); ++x) {
+                ScalarVector4f coeff = load<ScalarVector4f>(ptr);
+                ScalarFloat lum;
+
+                if constexpr (is_monochromatic_v<Spectrum>) {
+                    lum = coeff.x();
+                } else if constexpr (is_rgb_v<Spectrum>) {
+                    lum = mitsuba::luminance(ScalarColor3f(head<3>(coeff)));
+                } else {
+                    static_assert(is_spectral_v<Spectrum>);
+                    lum = srgb_model_mean(head<3>(coeff)) * coeff.w();
+                }
+
+                *lum_ptr++ = lum * sin_theta;
+                ptr += 4;
+            }
+        }
+
+        m_warp = Warp(luminance.get(), m_resolution);
     }
 
     void set_scene(const Scene *scene) override {

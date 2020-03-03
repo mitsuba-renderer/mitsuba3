@@ -432,7 +432,7 @@ public:
     }
 
     /// Return a string identifier
-    std::string id() const override { return m_id; }
+    std::string id() const override;
 
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
