@@ -19,7 +19,7 @@ of an environment map emitter.
    :label: fig-bunny-autodiff
 
 The example scene can be downloaded `here
-<http://mitsuba-renderer.org/scenes/cbox.zip>`_ and contains a metallic
+<http://mitsuba-renderer.org/scenes/bunny.zip>`_ and contains a metallic
 Stanford bunny surrounded by a museum-like environment. As before, we load
 the scene and enumerate its differentiable parameters:
 
