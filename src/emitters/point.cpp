@@ -19,7 +19,6 @@ Point light source (:monosp:`point`)
  * - intensity
    - |spectrum|
    - Specifies the radiant intensity in units of power per unit steradian.
-     (Default: :ref:`d65 <emitter-d65>`)
  * - position
    - |point|
    - Alternative parameter for specifying the light source position.

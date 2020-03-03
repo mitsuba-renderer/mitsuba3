@@ -23,7 +23,19 @@ const float data[95] = {
     59.4519f,  55.7054f,  51.959f,   54.6998f,  57.4406f,  58.8765f,  60.3125f
 };
 
-/// CIE D65 spectrum discretized at 5nm intervals
+/**!
+
+.. _spectrum-d65:
+
+D65 spectrum (:monosp:`d65`)
+----------------------------
+
+The CIE Standard Illuminant D65 corresponds roughly to the average midday light in Europe,
+also called a daylight illuminant. It is the default emission spectrum used for light sources
+in all spectral rendering modes.
+
+ */
+
 template <typename Float, typename Spectrum>
 class D65Spectrum final : public Texture<Float, Spectrum> {
 public:

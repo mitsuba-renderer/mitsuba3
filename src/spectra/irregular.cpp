@@ -5,7 +5,18 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Linear interpolant of an irregularly sampled spectrum
+/**!
+
+.. _spectrum-irregular:
+
+Irregular spectrum (:monosp:`irregular`)
+----------------------------------------
+
+This spectrum returns linearly interpolated reflectance or emission values from *irregularly*
+placed samples.
+
+ */
+
 template <typename Float, typename Spectrum>
 class IrregularSpectrum final : public Texture<Float, Spectrum> {
 public:

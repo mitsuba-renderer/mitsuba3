@@ -28,9 +28,6 @@ BSDF_ORDERING = ['diffuse',
                  'mask',
                  'twosided']
 
-TEXTURE_ORDERING = ['bitmap',
-                    'checkerboard']
-
 EMITTER_ORDERING = ['area',
                     'point',
                     'constant',
@@ -38,6 +35,17 @@ EMITTER_ORDERING = ['area',
 
 SENSOR_ORDERING = ['perspective',
                    'thinlens']
+
+TEXTURE_ORDERING = ['bitmap',
+                    'checkerboard']
+
+SPECTRUM_ORDERING = ['uniform',
+                     'regular',
+                     'irregular',
+                     'srgb',
+                     'd65',
+                     'srgb_d65',
+                     'blackbody']
 
 SAMPLER_ORDERING = ['independent']
 
@@ -125,13 +133,14 @@ def generate(build_dir):
     with open(os.path.join(build_dir, 'plugins.rst'), 'w') as f:
         process_src(f, 'shapes', 'section_shape', SHAPE_ORDERING)
         process_src(f, 'bsdfs', 'section_bsdf', BSDF_ORDERING)
-        process_src(f, 'textures', 'section_texture', TEXTURE_ORDERING)
         # process_src(f, 'subsurface')
         # process_src(f, 'medium', 'section_media')
         process_src(f, 'phase', ordering=PHASE_ORDERING)
         # process_src(f, 'volume', 'section_volumes')
         process_src(f, 'emitters', 'section_emitter', EMITTER_ORDERING)
         process_src(f, 'sensors', 'section_sensor', SENSOR_ORDERING)
+        process_src(f, 'textures', 'section_texture', TEXTURE_ORDERING)
+        process_src(f, 'spectra', 'section_spectrum', SPECTRUM_ORDERING)
         process_src(f, 'integrators', 'section_integrator', INTEGRATOR_ORDERING)
         process_src(f, 'samplers', 'section_sampler', SAMPLER_ORDERING)
         process_src(f, 'films', 'section_film', FILM_ORDERING)

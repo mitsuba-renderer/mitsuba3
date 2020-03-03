@@ -282,6 +282,9 @@ are allowed. Here is an example:
     435.09 0.834000
     ...
 
+For more details regarding spectral information in Mitsuba 2, please have a look
+at the :ref:`corresponding section <sec-spectra>` in the plugin documentation.
+
 Transformations
 ***************
 

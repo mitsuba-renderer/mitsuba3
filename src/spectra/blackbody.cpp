@@ -4,15 +4,39 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Spectral power distribution based on Planck's black body law
- *
- * Computes the spectral power distribution of a black body of the specified
- * temperature in Kelvins.
- *
- * The scale factors of 1e-9f are needed to perform a conversion between
- * densities per unit nanometer and per unit meter.
+/**!
+
+.. _spectrum-blackbody:
+
+sRGB D65 spectrum (:monosp:`blackbody`)
+---------------------------------------
+
+This is a black body radiation spectrum for a specified temperature
+And therefore takes a single :monosp:`float`-valued parameter :paramtype:`temperature` (in Kelvins).
+
+This is the only spectrum type that needs to be explicitly instantiated in its full XML description:
+
+.. code-block:: xml
+
+    <shape type=".. shape type ..">
+        <emitter type="area">
+            <spectrum type="blackbody" name="radiance">
+                <float name="temperature" value="5000"/>
+            </spectrum>
+        </emitter>
+    </shape>
+
+This spectrum type only makes sense for specifying emission and is unavailable
+in non-spectral rendering modes.
+
+Note that attaching a black body spectrum to the intensity property of a emitter introduces
+physical units into the rendering process of Mitsuba 2, which is ordinarily a unitless system.
+Specifically, the black body spectrum has units of power (:math:`W`) per unit area (:math:`m^{-2}`)
+per steradian (:math:`sr^{-1}`) per unit wavelength (:math:`nm^{-1}`). As a consequence,
+your scene should be modeled in meters for this plugin to work properly.
+
  */
+
 template <typename Float, typename Spectrum>
 class BlackBodySpectrum final : public Texture<Float, Spectrum> {
 public:
@@ -40,6 +64,8 @@ public:
             active &= wavelengths >= MTS_WAVELENGTH_MIN
                    && wavelengths <= MTS_WAVELENGTH_MAX;
 
+            /* The scale factors of 1e-9f are needed to perform a conversion between
+               densities per unit nanometer and per unit meter. */
             Wavelength lambda  = wavelengths * 1e-9f,
                        lambda2 = sqr(lambda),
                        lambda5 = sqr(lambda2) * lambda;

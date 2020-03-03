@@ -5,7 +5,18 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Linear interpolant of a regularly sampled spectrum
+/**!
+
+.. _spectrum-regular:
+
+Regular spectrum (:monosp:`regular`)
+------------------------------------
+
+This spectrum returns linearly interpolated reflectance or emission values from *regularly*
+placed samples.
+
+ */
+
 template <typename Float, typename Spectrum>
 class RegularSpectrum final : public Texture<Float, Spectrum> {
 public:

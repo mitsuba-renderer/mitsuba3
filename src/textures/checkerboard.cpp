@@ -29,7 +29,6 @@ This plugin provides a simple procedural checkerboard texture with customizable 
 .. subfigend::
     :label: fig-texture-checkerboard
 
-
  */
 
 template <typename Float, typename Spectrum>

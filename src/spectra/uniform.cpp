@@ -4,10 +4,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**
- * \brief Spectrum that takes on a constant value between
- * \c MTS_WAVELENGTH_MIN * and \c MTS_WAVELENGTH_MAX
+/**!
+
+.. _spectrum-uniform:
+
+Uniform spectrum (:monosp:`uniform`)
+------------------------------------
+
+This spectrum returns a constant reflectance or emission value between 360 and 830nm.
+
  */
+
 template <typename Float, typename Spectrum>
 class UniformSpectrum final : public Texture<Float, Spectrum> {
 public:

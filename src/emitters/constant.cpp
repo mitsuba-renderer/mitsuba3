@@ -21,7 +21,6 @@ Constant environment emitter (:monosp:`constant`)
  * - radiance
    - |spectrum|
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
-     (Default: :ref:`d65 <emitter-d65>`)
 
 This plugin implements a constant environment emitter, which surrounds
 the scene and radiates diffuse illumination towards it. This is often

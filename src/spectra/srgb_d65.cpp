@@ -5,6 +5,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _spectrum-srgb_d65:
+
+sRGB D65 spectrum (:monosp:`srgb_d65`)
+--------------------------------------
+
+This is a convenience wrapper around both the :ref:`srgb <spectrum-srgb>` and
+:ref:`d65 <spectrum-d65>` plugins and returns their product.
+This is the current default behavior in spectral rendering modes for light sources
+specified from an RGB color value.
+
+ */
+
 template <typename Float, typename Spectrum>
 class SRGBEmitterSpectrum final : public Texture<Float, Spectrum> {
 public:
