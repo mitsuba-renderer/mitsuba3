@@ -19,7 +19,7 @@ Shapes are usually declared along with a surface scattering model named *BSDF* (
         <shape type=".. shape type ..">
             .. shape parameters ..
 
-            <bsdf type-".. BSDF type ..">
+            <bsdf type=".. BSDF type ..">
                 .. bsdf parameters ..
             </bsdf>
 
