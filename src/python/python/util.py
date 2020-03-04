@@ -1,6 +1,16 @@
 import mitsuba
 
 
+"""
+Returns whether a parameter's type is a differentiable enoki type.
+"""
+def is_differentiable(p):
+    p_type = type(p)
+    return p_type.__module__ == 'enoki.cuda_autodiff' \
+           and not p_type.__name__.endswith('u')      \
+           and not p_type.__name__.endswith('i')
+
+
 class ParameterMap:
     """
     Dictionary-like object that references various parameters used in a Mitsuba
@@ -46,7 +56,11 @@ class ParameterMap:
         return len(self.properties)
 
     def __repr__(self) -> str:
-        return 'ParameterMap[\n    ' + ',\n    '.join(self.keys()) + '\n]'
+        param_list = ''
+        for k in self.keys():
+            param_list += '  %s %s,\n' % (
+                ('*' if is_differentiable(self[k]) else ' '), k)
+        return 'ParameterMap[\n%s]' % param_list
 
     def keys(self):
         return self.properties.keys()
@@ -65,6 +79,12 @@ class ParameterMap:
                 return (key, self.pmap[key])
 
         return ParameterMapItemIterator(self)
+
+    def all_differentiable(self):
+        for k in self.keys():
+            if not is_differentiable(self[k]):
+                return False
+        return True
 
     def torch(self) -> dict:
         """

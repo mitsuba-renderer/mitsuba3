@@ -17,13 +17,17 @@ MTS_PY_EXPORT(Object) {
 
     m.def("get_property", [](const void *ptr, void *type_, py::handle parent) -> py::object {
         const std::type_info &type = *(const std::type_info *) type_;
+        GET_ATTR(Float);
         GET_ATTR(DynamicBuffer<Float>);
         GET_ATTR(DynamicBuffer<Int32>);
         GET_ATTR(DynamicBuffer<UInt32>);
-        GET_ATTR(Vector2i);
-        GET_ATTR(Vector2u);
         GET_ATTR(Color1f);
         GET_ATTR(Color3f);
+        GET_ATTR(Vector2i);
+        GET_ATTR(Vector2u);
+        GET_ATTR(Point2u);
+        GET_ATTR(Point3u);
+        GET_ATTR(Point2f);
         GET_ATTR(Point3f);
         GET_ATTR(Vector3f);
         GET_ATTR(Normal3f);
@@ -39,10 +43,13 @@ MTS_PY_EXPORT(Object) {
             GET_ATTR(ScalarFloat);
             GET_ATTR(ScalarInt32);
             GET_ATTR(ScalarUInt32);
-            GET_ATTR(ScalarVector2i);
-            GET_ATTR(ScalarVector2u);
             GET_ATTR(ScalarColor1f);
             GET_ATTR(ScalarColor3f);
+            GET_ATTR(ScalarVector2i);
+            GET_ATTR(ScalarVector2u);
+            GET_ATTR(ScalarPoint2u);
+            GET_ATTR(ScalarPoint3u);
+            GET_ATTR(ScalarPoint2f);
             GET_ATTR(ScalarPoint3f);
             GET_ATTR(ScalarVector3f);
             GET_ATTR(ScalarNormal3f);
@@ -65,9 +72,13 @@ MTS_PY_EXPORT(Object) {
         SET_ATTR(DynamicBuffer<Float>);
         SET_ATTR(DynamicBuffer<Int32>);
         SET_ATTR(DynamicBuffer<UInt32>);
+        SET_ATTR(Color1f);
+        SET_ATTR(Color3f);
         SET_ATTR(Vector2i);
         SET_ATTR(Vector2u);
-        SET_ATTR(Color3f);
+        SET_ATTR(Point2u);
+        SET_ATTR(Point3u);
+        SET_ATTR(Point2f);
         SET_ATTR(Point3f);
         SET_ATTR(Vector3f);
         SET_ATTR(Normal3f);
@@ -82,9 +93,13 @@ MTS_PY_EXPORT(Object) {
             SET_ATTR(ScalarFloat);
             SET_ATTR(ScalarInt32);
             SET_ATTR(ScalarUInt32);
+            SET_ATTR(ScalarColor1f);
+            SET_ATTR(ScalarColor3f);
             SET_ATTR(ScalarVector2i);
             SET_ATTR(ScalarVector2u);
-            SET_ATTR(ScalarColor3f);
+            SET_ATTR(ScalarPoint2u);
+            SET_ATTR(ScalarPoint3u);
+            SET_ATTR(ScalarPoint2f);
             SET_ATTR(ScalarPoint3f);
             SET_ATTR(ScalarVector3f);
             SET_ATTR(ScalarNormal3f);

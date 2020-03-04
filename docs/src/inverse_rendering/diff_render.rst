@@ -67,25 +67,26 @@ it to ``print()`` yields the following summary (abbreviated):
 
     ParameterMap[
         ...
-        box.reflectance.value,
-        white.reflectance.value,
-        red.reflectance.value,
-        green.reflectance.value,
-        light.reflectance.value,
+      * box.reflectance.value,
+      * white.reflectance.value,
+      * red.reflectance.value,
+      * green.reflectance.value,
+      * light.reflectance.value,
         ...
-        OBJMesh.emitter.radiance.value,
+      * OBJMesh.emitter.radiance.value,
         OBJMesh.vertex_count,
         OBJMesh.face_count,
         OBJMesh.faces,
-        OBJMesh.vertex_positions,
-        OBJMesh.vertex_normals,
-        OBJMesh.vertex_texcoords,
+      * OBJMesh.vertex_positions,
+      * OBJMesh.vertex_normals,
+      * OBJMesh.vertex_texcoords,
         OBJMesh_1.vertex_count,
         OBJMesh_1.face_count,
+
         OBJMesh_1.faces,
-        OBJMesh_1.vertex_positions,
-        OBJMesh_1.vertex_normals,
-        OBJMesh_1.vertex_texcoords,
+      * OBJMesh_1.vertex_positions,
+      * OBJMesh_1.vertex_normals,
+      * OBJMesh_1.vertex_texcoords,
         ...
     ]
 
@@ -94,7 +95,8 @@ meshes and BRDFs. Each component contributes certain entries to the above
 list---for instance, meshes specify their face and vertex counts in addition to
 per-face (``.faces``) and per-vertex data (``.vertex_positions``, ``.vertex_normals``,
 ``.vertex_texcoords``). Each BRDF adds a ``.reflectance.value`` entry. Not all
-of these parameters are differentiable---some, e.g., store integer values.
+of these parameters are differentiable---some, e.g., store integer values. The ``*`` on the left
+indicates which of these could potentially be differentiated.
 
 The names are generated using a simple naming scheme based on the position in
 the scene graph and class name of the underlying implementation. Whenever an
@@ -133,7 +135,7 @@ method to discard all entries except for the specified list of keys.
 
     # Prints:
     # ParameterMap[
-    #     red.reflectance.value
+    #   * red.reflectance.value
     # ]
 
 Let's also make a backup copy of this color value for later use.

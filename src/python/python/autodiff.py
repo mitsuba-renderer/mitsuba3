@@ -209,6 +209,9 @@ class Optimizer:
         """
         self.set_learning_rate(lr)
         self.params = params
+        if not params.all_differentiable():
+            raise Exception('Optimizer.__init__(): all parameters should '
+                            'be differentiable!')
         self.state = {}
         for k, p in self.params.items():
             ek.set_requires_gradient(p)
