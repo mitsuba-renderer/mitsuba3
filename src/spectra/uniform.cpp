@@ -71,7 +71,7 @@ public:
         }
     }
 
-    ScalarFloat mean() const override { return m_value; }
+    ScalarFloat mean() const override { return scalar_cast(hmean(m_value)); }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("value", m_value);
@@ -83,7 +83,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarFloat m_value;
+    Float m_value;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(UniformSpectrum, Texture)

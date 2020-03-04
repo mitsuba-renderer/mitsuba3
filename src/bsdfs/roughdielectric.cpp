@@ -42,7 +42,7 @@ Rough dielectric material (:monosp:`roughdielectric`)
        tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
        distribution.
  * - alpha, alpha_u, alpha_v
-   - |float|
+   - |texture| or |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      *root mean square* (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
@@ -68,6 +68,8 @@ materials.
    :caption: Anti-glare glass (Beckmann, :math:`\alpha=0.02`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_rough.jpg
     :caption: Rough glass (Beckmann, :math:`\alpha=0.1`)
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughdielectric_textured.jpg
+    :caption: Rough glass with textured alpha
 .. subfigend::
     :label: fig-bsdf-roughdielectric
 
@@ -154,13 +156,34 @@ public:
         m_eta = int_ior / ext_ior;
         m_inv_eta = ext_ior / int_ior;
 
-        mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
-        m_type = distr.type();
-        m_sample_visible = distr.sample_visible();
-        m_alpha_u = distr.alpha_u();
-        m_alpha_v = distr.alpha_v();
+        if (props.has_property("distribution")) {
+            std::string distr = string::to_lower(props.string("distribution"));
+            if (distr == "beckmann")
+                m_type = MicrofacetType::Beckmann;
+            else if (distr == "ggx")
+                m_type = MicrofacetType::GGX;
+            else
+                Throw("Specified an invalid distribution \"%s\", must be "
+                      "\"beckmann\" or \"ggx\"!", distr.c_str());
+        } else {
+            m_type = MicrofacetType::Beckmann;
+        }
 
-        BSDFFlags extra = (m_alpha_u == m_alpha_v) ? BSDFFlags::Anisotropic : BSDFFlags(0);
+        m_sample_visible = props.bool_("sample_visible", true);
+
+        if (props.has_property("alpha_u") || props.has_property("alpha_v")) {
+            if (!props.has_property("alpha_u") || !props.has_property("alpha_v"))
+                Throw("Microfacet model: both 'alpha_u' and 'alpha_v' must be specified.");
+            if (props.has_property("alpha"))
+                Throw("Microfacet model: please specify"
+                      "either 'alpha' or 'alpha_u'/'alpha_v'.");
+            m_alpha_u = props.texture<Texture>("alpha_u");
+            m_alpha_v = props.texture<Texture>("alpha_v");
+        } else {
+            m_alpha_u = m_alpha_v = props.texture<Texture>("alpha", 0.1f);
+        }
+
+        BSDFFlags extra = all(eq(m_alpha_u, m_alpha_v)) ? BSDFFlags::Anisotropic : BSDFFlags(0);
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | extra);
         m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
@@ -193,7 +216,10 @@ public:
         active &= neq(cos_theta_i, 0.f);
 
         /* Construct the microfacet distribution matching the roughness values at the current surface position. */
-        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
+                                     m_sample_visible);
 
         /* Trick by Walter et al.: slightly scale the roughness values to
            reduce importance sampling weights. Not needed for the
@@ -305,7 +331,10 @@ public:
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
+                                     m_sample_visible);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(m);
@@ -389,8 +418,8 @@ public:
            roughness values at the current surface position. */
         MicrofacetDistribution sample_distr(
             m_type,
-            m_alpha_u,
-            m_alpha_v,
+            m_alpha_u->eval_1(si, active),
+            m_alpha_v->eval_1(si, active),
             m_sample_visible
         );
 
@@ -412,8 +441,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("alpha_u", m_alpha_u);
-        callback->put_parameter("alpha_v", m_alpha_v);
+        callback->put_object("alpha_u", m_alpha_u.get());
+        callback->put_object("alpha_v", m_alpha_v.get());
         callback->put_parameter("eta", m_eta);
         callback->put_object("specular_reflectance", m_specular_reflectance.get());
         callback->put_object("specular_transmittance", m_specular_transmittance.get());
@@ -424,10 +453,10 @@ public:
         oss << "RoughDielectric[" << std::endl
             << "  distribution = "           << m_type           << "," << std::endl
             << "  sample_visible = "         << m_sample_visible << "," << std::endl
-            << "  alpha_u = "                << m_alpha_u        << "," << std::endl
-            << "  alpha_v = "                << m_alpha_v        << "," << std::endl
+            << "  alpha_u = "                << string::indent(m_alpha_u) << "," << std::endl
+            << "  alpha_v = "                << string::indent(m_alpha_v) << "," << std::endl
             << "  eta = "                    << m_eta            << "," << std::endl
-            << "  specular_reflectance = "   << string::indent(m_specular_reflectance)   << "," << std::endl
+            << "  specular_reflectance = "   << string::indent(m_specular_reflectance) << "," << std::endl
             << "  specular_transmittance = " << string::indent(m_specular_transmittance) << std::endl
             << "]";
         return oss.str();
@@ -438,7 +467,7 @@ private:
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
     MicrofacetType m_type;
-    ScalarFloat m_alpha_u, m_alpha_v;
+    ref<Texture> m_alpha_u, m_alpha_v;
     ScalarFloat m_eta, m_inv_eta;
     bool m_sample_visible;
 };

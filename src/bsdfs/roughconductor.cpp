@@ -38,7 +38,7 @@ Rough conductor material (:monosp:`roughconductor`)
        tails observed in measurements of ground surfaces, which are not modeled by the Beckmann
        distribution.
  * - alpha, alpha_u, alpha_v
-   - |float|
+   - |texture| or |float|
    - Specifies the roughness of the unresolved surface micro-geometry along the tangent and
      bitangent directions. When the Beckmann distribution is used, this parameter is equal to the
      **root mean square** (RMS) slope of the microfacets. :monosp:`alpha` is a convenience
@@ -57,6 +57,8 @@ rough conducting materials, such as metals.
    :caption: Rough copper (Beckmann, :math:`\alpha=0.1`)
 .. subfigure:: ../../resources/data/docs/images/render/bsdf_roughconductor_anisotropic_aluminium.jpg
    :caption: Vertically brushed aluminium (Anisotropic Beckmann, :math:`\alpha_u=0.05,\ \alpha_v=0.3`)
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_roughconductor_textured_carbon.jpg
+   :caption: Carbon fiber using two inverted checkerboard textures for ``alpha_u`` and ``alpha_v``
 .. subfigend::
     :label: fig-bsdf-roughconductor
 
@@ -153,12 +155,32 @@ public:
             std::tie(m_eta, m_k) = complex_ior_from_file<Spectrum, Texture>(props.string("material", "Cu"));
         }
 
-        mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
-        m_type = distr.type();
-        m_sample_visible = distr.sample_visible();
+        if (props.has_property("distribution")) {
+            std::string distr = string::to_lower(props.string("distribution"));
+            if (distr == "beckmann")
+                m_type = MicrofacetType::Beckmann;
+            else if (distr == "ggx")
+                m_type = MicrofacetType::GGX;
+            else
+                Throw("Specified an invalid distribution \"%s\", must be "
+                      "\"beckmann\" or \"ggx\"!", distr.c_str());
+        } else {
+            m_type = MicrofacetType::Beckmann;
+        }
 
-        m_alpha_u = distr.alpha_u();
-        m_alpha_v = distr.alpha_v();
+        m_sample_visible = props.bool_("sample_visible", true);
+
+        if (props.has_property("alpha_u") || props.has_property("alpha_v")) {
+            if (!props.has_property("alpha_u") || !props.has_property("alpha_v"))
+                Throw("Microfacet model: both 'alpha_u' and 'alpha_v' must be specified.");
+            if (props.has_property("alpha"))
+                Throw("Microfacet model: please specify"
+                      "either 'alpha' or 'alpha_u'/'alpha_v'.");
+            m_alpha_u = props.texture<Texture>("alpha_u");
+            m_alpha_v = props.texture<Texture>("alpha_v");
+        } else {
+            m_alpha_u = m_alpha_v = props.texture<Texture>("alpha", 0.1f);
+        }
 
         parameters_changed();
     }
@@ -166,7 +188,7 @@ public:
     void parameters_changed() override {
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
 
-        if (m_alpha_u != m_alpha_v)
+        if (any(neq(m_alpha_u, m_alpha_v)))
             m_flags = m_flags | BSDFFlags::Anisotropic;
 
         m_components.clear();
@@ -189,8 +211,10 @@ public:
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v,
-                                            m_sample_visible);
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
+                                     m_sample_visible);
 
         // Sample M, the microfacet normal
         Normal3f m;
@@ -271,7 +295,9 @@ public:
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v,
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
                                      m_sample_visible);
 
         // Evaluate the microfacet normal distribution
@@ -346,7 +372,10 @@ public:
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
-        MicrofacetDistribution distr(m_type, m_alpha_u, m_alpha_v, m_sample_visible);
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
+                                     m_sample_visible);
 
         Float result;
         if (likely(m_sample_visible))
@@ -359,8 +388,8 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("alpha_u", m_alpha_u);
-        callback->put_parameter("alpha_v", m_alpha_v);
+        callback->put_object("alpha_u", m_alpha_u.get());
+        callback->put_object("alpha_v", m_alpha_v.get());
         callback->put_object("eta", m_eta.get());
         callback->put_object("k", m_k.get());
     }
@@ -370,8 +399,8 @@ public:
         oss << "RoughConductor[" << std::endl
             << "  distribution = " << m_type << "," << std::endl
             << "  sample_visible = " << m_sample_visible << "," << std::endl
-            << "  alpha_u = " << m_alpha_u << "," << std::endl
-            << "  alpha_v = " << m_alpha_v << "," << std::endl
+            << "  alpha_u = " << string::indent(m_alpha_u) << "," << std::endl
+            << "  alpha_v = " << string::indent(m_alpha_v) << "," << std::endl
             << "  eta = " << string::indent(m_eta) << "," << std::endl
             << "  k = " << string::indent(m_k) << std::endl
             << "]";
@@ -383,7 +412,7 @@ private:
     /// Specifies the type of microfacet distribution
     MicrofacetType m_type;
     /// Anisotropic roughness values
-    ScalarFloat m_alpha_u, m_alpha_v;
+    ref<Texture> m_alpha_u, m_alpha_v;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
     /// Relative refractive index (real component)
