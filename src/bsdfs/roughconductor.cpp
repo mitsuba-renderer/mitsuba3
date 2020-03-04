@@ -187,8 +187,7 @@ public:
 
     void parameters_changed() override {
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
-
-        if (any(neq(m_alpha_u, m_alpha_v)))
+        if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
 
         m_components.clear();
@@ -388,8 +387,12 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("alpha_u", m_alpha_u.get());
-        callback->put_object("alpha_v", m_alpha_v.get());
+        if (m_alpha_u == m_alpha_v)
+            callback->put_object("alpha", m_alpha_u.get());
+        else {
+            callback->put_object("alpha_u", m_alpha_u.get());
+            callback->put_object("alpha_v", m_alpha_v.get());
+        }
         callback->put_object("eta", m_eta.get());
         callback->put_object("k", m_k.get());
     }

@@ -183,7 +183,7 @@ public:
             m_alpha_u = m_alpha_v = props.texture<Texture>("alpha", 0.1f);
         }
 
-        BSDFFlags extra = all(eq(m_alpha_u, m_alpha_v)) ? BSDFFlags::Anisotropic : BSDFFlags(0);
+        BSDFFlags extra = (m_alpha_u != m_alpha_v) ? BSDFFlags::Anisotropic : BSDFFlags(0);
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | extra);
         m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
@@ -441,8 +441,12 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_object("alpha_u", m_alpha_u.get());
-        callback->put_object("alpha_v", m_alpha_v.get());
+        if (m_alpha_u == m_alpha_v)
+            callback->put_object("alpha", m_alpha_u.get());
+        else {
+            callback->put_object("alpha_u", m_alpha_u.get());
+            callback->put_object("alpha_v", m_alpha_v.get());
+        }
         callback->put_parameter("eta", m_eta);
         callback->put_object("specular_reflectance", m_specular_reflectance.get());
         callback->put_object("specular_transmittance", m_specular_transmittance.get());
