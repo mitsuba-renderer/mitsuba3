@@ -576,6 +576,10 @@ if (Sphinx_FOUND)
       USES_TERMINAL)
 endif()
 
+if (MSVC)
+  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT mitsuba)
+endif()
+
 if(NOT WIN32)
   string(ASCII 27 Esc)
   set(ColorReset "${Esc}[m")

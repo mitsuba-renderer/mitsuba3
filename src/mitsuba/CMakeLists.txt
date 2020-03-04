@@ -16,3 +16,7 @@ add_dist(mitsuba)
 if (APPLE)
   set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "@executable_path")
 endif()
+
+if (MSVC)
+  set_property(TARGET mitsuba PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$(SolutionDir)dist")
+endif()
