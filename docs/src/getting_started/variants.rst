@@ -299,7 +299,8 @@ to the declaration of the enabled variants (around line 70):
 .. code-block:: text
 
     "enabled": [
-        "scalar_rgb", # This variant *must* be included at the moment.
+        # The "scalar_rgb" variant *must* be included at the moment.
+        "scalar_rgb",
         "scalar_spectral"
     ],
 
