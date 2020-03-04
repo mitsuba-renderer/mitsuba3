@@ -19,7 +19,7 @@ Please make the following three changes to the ``cbox.xml`` file:
    .. code-block:: xml
 
        <integrator type="path">
-           <integer name="maxDepth" value="3"/>
+           <integer name="max_depth" value="3"/>
        </integrator>
 
 3. The film should specify a box reconstruction filter instead of ``gaussian``.
