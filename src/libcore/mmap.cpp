@@ -39,8 +39,10 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
                 Throw("Could not write to \"%s\"!", filename.string());
 
             data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (data == nullptr)
+            if (data == MAP_FAILED) {
+                data = nullptr;
                 Throw("Could not map \"%s\" to memory!", filename.string());
+            }
             if (close(fd) != 0)
                 Throw("close(): unable to close file!");
         #elif defined(__WINDOWS__)
@@ -88,8 +90,10 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
                 Throw("Could not write to \"%s\"!", filename.string());
 
             data = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (data == nullptr)
+            if (data == MAP_FAILED) {
+                data = nullptr;
                 Throw("Could not map \"%s\" to memory!", filename.string());
+            }
 
             if (close(fd) != 0)
                 Throw("close(): unable to close file!");
@@ -139,8 +143,10 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
                 Throw("Could not open \"%s\"!", filename.string());
 
             data = mmap(nullptr, size, PROT_READ | (can_write ? PROT_WRITE : 0), MAP_SHARED, fd, 0);
-            if (data == nullptr)
+            if (data == MAP_FAILED) {
+                data = nullptr;
                 Throw("Could not map \"%s\" to memory!", filename.string());
+            }
 
             if (close(fd) != 0)
                 Throw("close(): unable to close file!");
