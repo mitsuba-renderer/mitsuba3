@@ -285,12 +285,12 @@ Configuring :monosp:`mitsuba.conf`
 ----------------------------------
 
 Mitsuba 2 variants are specified in the file :monosp:`mitsuba.conf`. To get
-started, first copy the default template to the directory where you intend
-to compile Mitsuba, e.g.:
+started, first copy the default template to the root directory of the Mitsuba 2
+repository.
 
 .. code-block:: bash
 
-    cd <..mitsuba directory..>
+    cd <..mitsuba repository..>
     cp resources/mitsuba.conf.template mitsuba.conf
 
 Next, open :monosp:`mitsuba.conf` in your favorite text editor and scroll down
@@ -299,13 +299,16 @@ to the declaration of the enabled variants (around line 70):
 .. code-block:: text
 
     "enabled": [
-        "scalar_rgb",
+        "scalar_rgb", # This variant *must* be included at the moment.
         "scalar_spectral"
     ],
 
-The default file specifies two scalar variants that you may wish to extend or
-replace according to your requirements and the explanations given above.
-You may also wish to change the default variant:
+The default file specifies two scalar variants that you may wish to extend
+according to your requirements and the explanations given above. Note that
+``scalar_spectral`` can be removed, but ``scalar_rgb`` *must* currently be part
+of the list as some core components of Mitsuba depend on it. You may also wish
+to change the *default* variant that is executed if no variant is explicitly
+specified (this must be one of the entries of the ``enabled`` list):
 
 .. code-block:: text
 

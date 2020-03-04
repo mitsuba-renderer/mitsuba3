@@ -69,7 +69,7 @@
     # 'spectrum' C++ types.
 
     "enabled": [
-        "scalar_rgb",
+        "scalar_rgb", # This variant *must* be included at the moment.
         "scalar_spectral"
     ],
 
