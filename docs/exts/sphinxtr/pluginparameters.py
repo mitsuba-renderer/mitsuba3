@@ -104,7 +104,7 @@ class PluginParameters(Table):
         header_row_node = nodes.row()
         for text in header_text:
             entry = nodes.entry()
-            entry += [nodes.paragraph(text="Parameter")]
+            entry += [nodes.paragraph(text=text)]
             header_row_node += entry
         rows.append(header_row_node)
 
