@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
 static RTCDevice __embree_device = nullptr;
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
-    static_assert(is_float_v<Float>, "Embree is not supported in double precision mode.");
+    static_assert(is_float_v<scalar_t<Float>>, "Embree is not supported in double precision mode.");
     if (!__embree_device)
         __embree_device = rtcNewDevice("");
 
