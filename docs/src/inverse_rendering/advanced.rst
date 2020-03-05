@@ -110,14 +110,7 @@ ignored due to a limit on the maximum number of light bounces.
     </center>
 
 The following image shows the reconstructed environment map at each step.
-Unobserved regions are unaffected by gradient steps and remain white. Note that
-this image is still fairly noisy and even contains some negative (!) regions.
-It is important to note that the optimization problem defined above is highly
-ambiguous due to the loss of information that occurs in the forward rendering
-model above. The solution we found optimizes the objective well (i.e. the
-rendered image matches the target), but the reconstructed texture may not match
-our expectation. In such a case, it may be advisable to introduce further
-regularization (non-negativity, smoothness, etc.).
+Unobserved regions are unaffected by gradient steps and remain white.
 
 .. raw:: html
 
@@ -126,3 +119,10 @@ regularization (non-negativity, smoothness, etc.).
         src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2020/03/03/bunny_envmap.mp4"></video>
     </center>
 
+This image is still fairly noisy and even contains some negative (!) regions.
+This is because the optimization problem defined above is highly ambiguous due
+to the loss of information that occurs in the forward rendering model above.
+The solution we found optimizes the objective well (i.e. the rendered image
+matches the target), but the reconstructed texture may not match our
+expectation. In such a case, it may be advisable to introduce further
+regularization (non-negativity, smoothness, etc.).

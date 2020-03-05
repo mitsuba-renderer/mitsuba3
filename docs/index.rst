@@ -79,7 +79,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 
 .. toctree::
     :maxdepth: 1
-    :caption: Extras
+    :caption: Miscellaneous
 
     release_notes.rst
     zz_bibliography

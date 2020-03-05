@@ -101,5 +101,5 @@ specifying positions, translations, etc., was shortened:
 
 All of these changes can be automated, and Mitsuba performs them internally
 when it detects a scene with a version number lower than :monosp:`2.0.0`.
-Invoke the ``mitsuba`` binary with the ``-w`` parameter if you would like it to
+Invoke the ``mitsuba`` binary with the ``-u`` parameter if you would like it to
 write the updated scene description back to disk.

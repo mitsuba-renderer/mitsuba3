@@ -1,16 +1,15 @@
 Release notes
 =============
 
-Please note that Mitsuba 2 being a research framework, it will not strictly follow the
-`Semantic Versionning <https://semver.org/>`_ convention. There will be frequent API changes and
-those should be well documented in the release notes below.
+Being an experimental research framework, Mitsuba 2 does not follow the
+`Semantic Versioning <https://semver.org/>`_ convention. That said, we will
+strive to document breaking API changes in the release notes below.
 
 
 Incoming release
 ----------------
 
-- ...
-
+- TBA
 
 Mitsuba 2.0.0
 -------------

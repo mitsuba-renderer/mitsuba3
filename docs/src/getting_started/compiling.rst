@@ -163,8 +163,8 @@ Running Mitsuba
 ---------------
 
 Once Mitsuba is compiled, run the ``setpath.sh/bat`` script to configure
-environment variables (``PATH/LD_LIBRARY_PATH/PYTHONPATH``) that are
-required to run Mitsuba.
+environment variables (``PATH/LD_LIBRARY_PATH/PYTHONPATH``) that are required
+to run Mitsuba.
 
 .. code-block:: bash
 
@@ -180,16 +180,15 @@ Mitsuba can then be used to render scenes by typing
 
     mitsuba scene.xml
 
-where ``scene.xml`` is a Mitsuba scene file.
-Alternatively,
+where ``scene.xml`` is a Mitsuba scene file. Alternatively,
 
 .. code-block:: bash
 
-    mitsuba -m scalar-spectral-polarized scene.xml
+    mitsuba -m scalar_spectral_polarized scene.xml
 
-selects a specific variant that you selected in :monosp:`mitsuba.conf`. Call
-``mitsuba --help`` to print additional information about various command line
-arguments.
+renders with a specific variant that was previously enabled in
+:monosp:`mitsuba.conf`. Call ``mitsuba --help`` to print additional information
+about the various possible command line options.
 
 
 GPU variants
