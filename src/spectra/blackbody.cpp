@@ -195,6 +195,7 @@ public:
 
             return { t, eval_impl(t, active_) / pdf };
         } else {
+            ENOKI_MARK_USED(sample_);
             Throw("Not implemented for non-spectral modes");
         }
     }

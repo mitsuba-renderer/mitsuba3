@@ -104,8 +104,10 @@ public:
 
         Color3f xyz;
         if constexpr (is_monochromatic_v<Spectrum>) {
+            ENOKI_MARK_USED(wavelengths);
             xyz = value_u.x();
         } else if constexpr (is_rgb_v<Spectrum>) {
+            ENOKI_MARK_USED(wavelengths);
             xyz = srgb_to_xyz(value_u, active);
         } else {
             static_assert(is_spectral_v<Spectrum>);

@@ -77,6 +77,8 @@ public:
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
             masked(m, eq(idx, 1u)) = spec[1];
             masked(m, eq(idx, 2u)) = spec[2];
+        } else {
+            ENOKI_MARK_USED(idx);
         }
         return m;
     }
@@ -400,10 +402,10 @@ public:
                              (total_dist >= dist - math::RayEpsilon<Float>) &&
                              (total_dist <= dist + math::RayEpsilon<Float>));
             if (any_or<true>(emitter_hit)) {
-                DirectionSample3f ds(si, ref_interaction);
-                ds.object                        = emitter;
+                DirectionSample3f emitter_ds(si, ref_interaction);
+                emitter_ds.object                        = emitter;
                 masked(emitter_val, emitter_hit) = emitter->eval(si, emitter_hit);
-                Float emitter_pdf = scene->pdf_emitter_direction(ref_interaction, ds, emitter_hit);
+                Float emitter_pdf = scene->pdf_emitter_direction(ref_interaction, emitter_ds, emitter_hit);
                 update_weights(p_over_f_nee, emitter_pdf, 1.0f, channel, emitter_hit);
                 active &= !emitter_hit; // disable lanes which found an emitter
             }
@@ -505,7 +507,7 @@ public:
 MTS_IMPLEMENT_CLASS_VARIANT(VolumetricNullPathIntegrator, MonteCarloIntegrator);
 MTS_EXPORT_PLUGIN(VolumetricNullPathIntegrator, "Volumetric Path Tracer integrator");
 
-NAMESPACE_BEGIN()
+NAMESPACE_BEGIN(detail)
 template <bool SpectralMis>
 constexpr const char * volpath_class_name() {
     if constexpr (SpectralMis) {
@@ -514,11 +516,11 @@ constexpr const char * volpath_class_name() {
         return "Volpath_no_spectral_mis";
     }
 }
-NAMESPACE_END()
+NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum, bool SpectralMis>
 Class *VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
-    = new Class(volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
+    = new Class(detail::volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
                 ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
 template <typename Float, typename Spectrum, bool SpectralMis>

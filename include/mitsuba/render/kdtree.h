@@ -901,16 +901,20 @@ protected:
                     }
 
                     /* Merge into global results */
-                    Index *target_left, *target_right;
+                    Index *target_left = nullptr, *target_right = nullptr;
 
                     /* critical section */ {
                         tbb::spin_mutex::scoped_lock lock(mutex);
-                        target_left = &left_indices[left_count];
-                        target_right = &right_indices[right_count];
-                        left_count += (Index) left_indices_local.size();
-                        right_count += (Index) right_indices_local.size();
-                        left_bounds.expand(left_bounds_local);
-                        right_bounds.expand(right_bounds_local);
+                        if (!left_indices_local.empty()) {
+                            target_left = &left_indices[left_count];
+                            left_count += (Index)left_indices_local.size();
+                            left_bounds.expand(left_bounds_local);
+                        }
+                        if (!right_indices_local.empty()) {
+                            target_right = &right_indices[right_count];
+                            right_count += (Index)right_indices_local.size();
+                            right_bounds.expand(right_bounds_local);
+                        }
                     }
 
                     memcpy(target_left, left_indices_local.data(),

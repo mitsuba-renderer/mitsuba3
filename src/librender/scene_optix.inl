@@ -109,7 +109,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
     rt_check(rtGeometryGroupCreate(s.context, &s.group));
     rt_check(rtGeometryGroupSetAcceleration(s.group, s.accel));
-    rt_check(rtGeometryGroupSetChildCount(s.group, m_shapes.size()));
+    rt_check(rtGeometryGroupSetChildCount(s.group, (uint32_t) m_shapes.size()));
 
     RTvariable top_object;
     rt_check(rtContextDeclareVariable(s.context, "top_object", &top_object));

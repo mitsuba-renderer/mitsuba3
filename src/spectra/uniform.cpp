@@ -29,11 +29,11 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
-                          (si.wavelengths <= MTS_WAVELENGTH_MAX);
+            auto active_w = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
+                            (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
-            return select(active, UnpolarizedSpectrum(m_value),
-                                  UnpolarizedSpectrum(0.f));
+            return select(active_w, UnpolarizedSpectrum(m_value),
+                                    UnpolarizedSpectrum(0.f));
         } else {
             return m_value;
         }
@@ -48,10 +48,10 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            auto active = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
-                          (si.wavelengths <= MTS_WAVELENGTH_MAX);
+            auto active_w = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
+                            (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
-            return select(active,
+            return select(active_w,
                 Wavelength(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Wavelength(0.f));
         } else {
             NotImplementedError("pdf");
@@ -67,6 +67,7 @@ public:
             return { MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample,
                      m_value * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) };
         } else {
+            ENOKI_MARK_USED(sample);
             NotImplementedError("sample");
         }
     }

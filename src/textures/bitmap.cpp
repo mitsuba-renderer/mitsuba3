@@ -203,6 +203,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && Raw) {
+            ENOKI_MARK_USED(si);
             Throw("The bitmap texture %s was queried for a spectrum, but texture conversion "
                   "into spectra was explicitly disabled! (raw=true)",
                   to_string());
@@ -220,6 +221,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
+            ENOKI_MARK_USED(si);
             Throw("eval_1(): The bitmap texture %s was queried for a scalar value, but texture "
                   "conversion into spectra was requested! (raw=false)",
                   to_string());
@@ -237,9 +239,11 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (Channels != 3) {
+            ENOKI_MARK_USED(si);
             Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but it is "
                   "monochromatic!", to_string());
         } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
+            ENOKI_MARK_USED(si);
             Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but texture "
                   "conversion into spectra was requested! (raw=false)",
                   to_string());
@@ -351,7 +355,7 @@ protected:
 MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
 MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
 
-NAMESPACE_BEGIN()
+NAMESPACE_BEGIN(detail)
 template <uint32_t Channels, bool Raw>
 constexpr const char * bitmap_class_name() {
     if constexpr (!Raw) {
@@ -366,11 +370,11 @@ constexpr const char * bitmap_class_name() {
             return "BitmapTextureImpl_3_1";
     }
 }
-NAMESPACE_END()
+NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 Class *BitmapTextureImpl<Float, Spectrum, Channels, Raw>::m_class
-    = new Class(bitmap_class_name<Channels, Raw>(), "Texture",
+    = new Class(detail::bitmap_class_name<Channels, Raw>(), "Texture",
                 ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>

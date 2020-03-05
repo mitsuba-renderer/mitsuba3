@@ -189,9 +189,9 @@ int main(int argc, char *argv[]) {
             fr->append(base_path);
 
         if (!*arg_extra || *arg_help) {
-            help(__global_thread_count);
+            help((int) __global_thread_count);
         } else {
-            Log(Info, "%s", util::info_build(__global_thread_count));
+            Log(Info, "%s", util::info_build((int) __global_thread_count));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
             Log(Info, "Using mode \"%s\"", mode);

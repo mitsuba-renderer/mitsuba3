@@ -52,7 +52,6 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->crop_size();
 
-    size_t n_threads        = __global_thread_count;
     size_t total_spp        = sensor->sampler()->sample_count();
     size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
                                ? total_spp : std::min((size_t) m_samples_per_pass, total_spp);
@@ -72,6 +71,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
     if constexpr (!is_cuda_array_v<Float>) {
         /// Render on the CPU using a spiral pattern
+        size_t n_threads = __global_thread_count;
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
             film_size.x(), film_size.y(),
             total_spp, total_spp == 1 ? "" : "s",
@@ -200,6 +200,8 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         ENOKI_MARK_USED(sensor);
         ENOKI_MARK_USED(aovs);
         ENOKI_MARK_USED(diff_scale_factor);
+        ENOKI_MARK_USED(pixel_count);
+        ENOKI_MARK_USED(sample_count);
         Throw("Not implemented for CUDA arrays.");
     }
 }

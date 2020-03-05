@@ -65,7 +65,7 @@ public:
         m_valid = (uint32_t) -1;
 
         double sum = 0.0;
-        for (size_t i = 0; i < size; ++i) {
+        for (uint32_t i = 0; i < size; ++i) {
             double value = (double) *pmf_ptr++;
             sum += value;
             *cdf_ptr++ = (ScalarFloat) sum;
@@ -330,8 +330,8 @@ public:
             } else if (value > 0.) {
                 // Determine the first and last wavelength bin with nonzero density
                 if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = i;
-                m_valid.y() = i;
+                    m_valid.x() = (uint32_t) i;
+                m_valid.y() = (uint32_t) i;
             }
         }
 
@@ -609,8 +609,8 @@ public:
             } else if (value > 0.) {
                 // Determine the first and last wavelength bin with nonzero density
                 if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = i;
-                m_valid.y() = i;
+                    m_valid.x() = (uint32_t) i;
+                m_valid.y() = (uint32_t) i;
             }
         }
 

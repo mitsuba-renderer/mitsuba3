@@ -35,7 +35,7 @@ template <typename Warp> auto bind_warp(py::module &m,
                     throw std::domain_error(
                         "'param_values' array has incorrect dimension");
                 param_values[i] = param_values_in[i].data();
-                param_res[i]    = param_values_in[i].size();
+                param_res[i]    = (uint32_t) param_values_in[i].size();
             }
 
             return Warp(data.data(),

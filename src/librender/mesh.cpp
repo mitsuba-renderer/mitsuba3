@@ -599,7 +599,7 @@ Result cuda_upload(size_t size, Func func) {
     ScalarValue *tmp = (ScalarValue *) cuda_host_malloc(size * Dim * sizeof(ScalarValue));
 
     for (size_t i = 0; i < size; ++i) {
-        auto value = func(i);
+        auto value = func((uint32_t) i);
         for (size_t j = 0; j < Dim; ++j)
             tmp[i + j * size] = value[j];
     }

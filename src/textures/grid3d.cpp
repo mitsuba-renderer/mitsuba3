@@ -250,10 +250,10 @@ public:
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         // TODO: in the autodiff case, make sure these do not trigger a recompilation
-        const size_t nx = m_metadata.shape.x();
-        const size_t ny = m_metadata.shape.y();
-        const size_t nz = m_metadata.shape.z();
-        const size_t z_offset = nx * ny;
+        const uint32_t nx = m_metadata.shape.x();
+        const uint32_t ny = m_metadata.shape.y();
+        const uint32_t nz = m_metadata.shape.z();
+        const uint32_t z_offset = nx * ny;
 
         Point3f max_coordinates(nx - 1.f, ny - 1.f, nz - 1.f);
         p *= max_coordinates;
@@ -264,7 +264,7 @@ public:
 
         // Fractional part
         Point3f f = p - Point3f(pi), rf = 1.f - f;
-        active &= all(pi >= 0 && (pi + 1) < Index3(nx, ny, nz));
+        active &= all(pi >= 0u && (pi + 1u) < Index3(nx, ny, nz));
 
         // (z * ny + y) * nx + x
         Index index = fmadd(fmadd(pi.z(), ny, pi.y()), nx, pi.x());
@@ -303,6 +303,7 @@ public:
             v000 = d000; v001 = d001; v010 = d010; v011 = d011;
             v100 = d100; v101 = d101; v110 = d110; v111 = d111;
             ENOKI_MARK_USED(scale);
+            ENOKI_MARK_USED(wavelengths);
         }
 
         // Trilinear interpolation
@@ -393,7 +394,7 @@ protected:
 MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
 MTS_EXPORT_PLUGIN(GridVolume, "GridVolume texture")
 
-NAMESPACE_BEGIN()
+NAMESPACE_BEGIN(detail)
 template <uint32_t Channels, bool Raw>
 constexpr const char * gridvolume_class_name() {
     if constexpr (!Raw) {
@@ -408,11 +409,11 @@ constexpr const char * gridvolume_class_name() {
             return "GridVolumeImpl_3_1";
     }
 }
-NAMESPACE_END()
+NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 Class *GridVolumeImpl<Float, Spectrum, Channels, Raw>::m_class
-    = new Class(gridvolume_class_name<Channels, Raw>(), "Volume",
+    = new Class(detail::gridvolume_class_name<Channels, Raw>(), "Volume",
                 ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>

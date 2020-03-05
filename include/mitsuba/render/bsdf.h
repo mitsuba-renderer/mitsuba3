@@ -491,6 +491,8 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
     if constexpr (!is_diff_array_v<Float>) {
         if (!has_uv_partials() && any(bsdf->needs_differentials()))
             compute_partials(ray);
+    } else {
+        ENOKI_MARK_USED(ray);
     }
 
     return bsdf;

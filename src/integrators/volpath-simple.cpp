@@ -29,6 +29,8 @@ public:
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
             masked(m, eq(idx, 1u)) = spec[1];
             masked(m, eq(idx, 2u)) = spec[2];
+        } else {
+            ENOKI_MARK_USED(idx);
         }
         return m;
     }
@@ -158,13 +160,13 @@ public:
 
                 Mask active_e = act_medium_scatter && sample_emitters;
                 if (any_or<true>(active_e)) {
-                    auto [ds, _] = scene->sample_emitter_direction(mi, sampler->next_2d(active_e), false, active_e);
+                    auto ds = scene->sample_emitter_direction(mi, sampler->next_2d(active_e), false, active_e).first;
                     active_e &= neq(ds.pdf, 0.f);
                     if (any_or<true>(active_e)) {
                         Ray3f nee_ray = mi.spawn_ray(ds.d);
                         nee_ray.mint = 0.f;
-                        auto [emitted, _] = evaluate_direct_light(mi, scene, sampler, medium, nee_ray, true, si,
-                                                                  ds.dist, channel, active_e);
+                        auto emitted = evaluate_direct_light(mi, scene, sampler, medium, nee_ray, true, si,
+                                                             ds.dist, channel, active_e).first;
                         Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
                         masked(result, active_e) += throughput * phase_val * emitted / ds.pdf;
                     }
@@ -202,14 +204,14 @@ public:
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
                 if (likely(any_or<true>(active_e))) {
-                    auto [ds, _] = scene->sample_emitter_direction(si, sampler->next_2d(active_e), false, active_e);
+                    auto ds = scene->sample_emitter_direction(si, sampler->next_2d(active_e), false, active_e).first;
                     active_e &= neq(ds.pdf, 0.f);
                     if (any_or<true>(active_e)) {
                         Ray3f nee_ray = si.spawn_ray(ds.d);
 
                         // TODO: This has to be zero if its not reaching the same point
-                        auto [emitted, _] = evaluate_direct_light(si, scene, sampler, medium, nee_ray, true, si,
-                                                                  ds.dist, channel, active_e);
+                        auto emitted = evaluate_direct_light(si, scene, sampler, medium, nee_ray, true, si,
+                                                             ds.dist, channel, active_e).first;
 
                         // Query the BSDF for that emitter-sampled direction
                         Vector3f wo       = si.to_local(ds.d);
@@ -247,11 +249,11 @@ public:
                 act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
 
                 // Intersect the indirect ray against the scene
-                Mask intersect = active_surface && needs_intersection && add_emitter;
+                Mask intersect2 = active_surface && needs_intersection && add_emitter;
                 SurfaceInteraction3f si_new = si;
-                if (any_or<true>(intersect))
-                    masked(si_new, intersect) = scene->ray_intersect(ray, intersect);
-                needs_intersection &= !intersect;
+                if (any_or<true>(intersect2))
+                    masked(si_new, intersect2) = scene->ray_intersect(ray, intersect2);
+                needs_intersection &= !intersect2;
 
                 auto [emitted, emitter_pdf] = evaluate_direct_light(si, scene, sampler,
                                                                     medium, ray, false, si_new,
@@ -262,7 +264,7 @@ public:
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 masked(medium, has_medium_trans) = si.target_medium(ray.d);
 
-                masked(si, intersect) = si_new;
+                masked(si, intersect2) = si_new;
             }
             active &= (active_surface | active_medium);
         }

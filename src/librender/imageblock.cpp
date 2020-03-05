@@ -15,9 +15,9 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2i &size, size_t chann
 
     if (filter) {
         // Temporary buffers used in put()
-        int size = (int) std::ceil(2 * filter->radius()) + 1;
-        m_weights_x = new Float[2 * size];
-        m_weights_y = m_weights_x + size;
+        int filter_size = (int) std::ceil(2 * filter->radius()) + 1;
+        m_weights_x = new Float[2 * filter_size];
+        m_weights_y = m_weights_x + filter_size;
     }
 
     set_size(size);

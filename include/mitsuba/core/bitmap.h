@@ -640,7 +640,7 @@ void accumulate_2d(ConstT source,
                    Point<int, 2> source_offset,
                    Point<int, 2> target_offset,
                    Vector<int, 2> size,
-                   int channel_count) {
+                   size_t channel_count) {
     using Value = std::decay_t<T>;
 
     /// Clip against bounds of source and target image
@@ -653,7 +653,7 @@ void accumulate_2d(ConstT source,
     if (any(size <= 0))
         return;
 
-    int n = size.x() * channel_count;
+    int n = (int) (size.x() * channel_count);
 
     if constexpr (std::is_pointer_v<T>) {
         constexpr Value maxval = std::numeric_limits<Value>::max();

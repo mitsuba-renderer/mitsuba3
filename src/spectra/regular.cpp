@@ -90,8 +90,10 @@ public:
 
         if constexpr (is_spectral_v<Spectrum>)
             return { m_distr.sample(sample, active), m_distr.integral() };
-        else
+        else {
+            ENOKI_MARK_USED(sample);
             NotImplementedError("sample");
+        }
     }
 
     ScalarFloat mean() const override {

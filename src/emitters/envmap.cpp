@@ -302,6 +302,7 @@ protected:
 
             return s * wp * f * m_scale;
         } else {
+            ENOKI_MARK_USED(wavelengths);
             Vector4f v0 = fmadd(w0.x(), v00, w1.x() * v10),
                      v1 = fmadd(w0.x(), v01, w1.x() * v11),
                      v  = fmadd(w0.y(), v0, w1.y() * v1);
