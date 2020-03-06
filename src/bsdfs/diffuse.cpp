@@ -96,9 +96,9 @@ public:
         bs.sampled_type = +BSDFFlags::DiffuseReflection;
         bs.sampled_component = 0;
 
-        Spectrum value = unpolarized<Spectrum>(m_reflectance->eval(si, active));
+        UnpolarizedSpectrum value = m_reflectance->eval(si, active);
 
-        return { bs, select(active && bs.pdf > 0.f, value, 0.f) };
+        return { bs, select(active && bs.pdf > 0.f, unpolarized<Spectrum>(value), 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -113,8 +113,8 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        Spectrum value = m_reflectance->eval(si, active) *
-                         math::InvPi<Float> * cos_theta_o;
+        UnpolarizedSpectrum value =
+            m_reflectance->eval(si, active) * math::InvPi<Float> * cos_theta_o;
 
         return select(active, unpolarized<Spectrum>(value), 0.f);
     }

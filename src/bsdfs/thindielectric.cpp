@@ -87,8 +87,11 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
+        if (m_specular_reflectance)
+            m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+
+        if (m_specular_transmittance)
+            m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);
@@ -115,7 +118,7 @@ public:
 
         // Select the lobe to be sampled
         BSDFSample3f bs = zero<BSDFSample3f>();
-        Spectrum weight;
+        UnpolarizedSpectrum weight;
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r && active;
@@ -137,23 +140,23 @@ public:
         bs.sampled_type =
             select(selected_r, UInt32(+BSDFFlags::DeltaReflection), UInt32(+BSDFFlags::Null));
 
-        if (any_or<true>(selected_r))
+        if (m_specular_reflectance && any_or<true>(selected_r))
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
         Mask selected_t = !selected_r && active;
-        if (any_or<true>(selected_t))
+        if (m_specular_transmittance && any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
         return { bs, select(active, unpolarized<Spectrum>(weight), 0.f) };
     }
 
-    Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
-                  const Vector3f & /*wo*/, Mask /*active*/) const override {
+    Spectrum eval(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,
+                  const Vector3f & /* wo */, Mask /* active */) const override {
         return 0.f;
     }
 
-    Float pdf(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
-              const Vector3f & /*wo*/, Mask /*active*/) const override {
+    Float pdf(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,
+              const Vector3f & /* wo */, Mask /* active */) const override {
         return 0.f;
     }
 
@@ -161,23 +164,34 @@ public:
                                 Mask active) const override {
 
         Float r = std::get<0>(fresnel(abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
+
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
-        return m_specular_transmittance->eval(si, active) * (1 - r);
+
+        UnpolarizedSpectrum value = 1 - r;
+
+        if (m_specular_transmittance)
+            value *= m_specular_transmittance->eval(si, active);
+
+        return unpolarized<Spectrum>(value);
     }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("eta", m_eta);
-        callback->put_object("specular_transmittance", m_specular_transmittance.get());
-        callback->put_object("specular_reflectance", m_specular_reflectance.get());
+        if (m_specular_reflectance)
+            callback->put_object("specular_transmittance", m_specular_transmittance.get());
+        if (m_specular_transmittance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "ThinDielectric[" << std::endl
-            << "  eta = "                    << string::indent(m_eta)                    << "," << std::endl
-            << "  specular_reflectance = "   << string::indent(m_specular_reflectance)   << "," << std::endl
-            << "  specular_transmittance = " << string::indent(m_specular_transmittance) << std::endl
+        oss << "ThinDielectric[" << std::endl;
+        if (m_specular_reflectance)
+            oss << "  specular_reflectance = "   << string::indent(m_specular_reflectance)   << "," << std::endl;
+        if (m_specular_transmittance)
+            oss << "  specular_transmittance = " << string::indent(m_specular_transmittance) << "," << std::endl;
+        oss << "  eta = "                    << string::indent(m_eta)                    << std::endl
             << "]";
         return oss.str();
     }

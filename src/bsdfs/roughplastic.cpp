@@ -158,8 +158,10 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
         m_diffuse_reflectance  = props.texture<Texture>("diffuse_reflectance",  .5f);
+
+        if (props.has_property("specular_reflectance"))
+            m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
 
         m_nonlinear = props.bool_("nonlinear", false);
 
@@ -187,7 +189,10 @@ public:
         /* Compute weights that further steer samples towards
            the specular or diffuse components */
         ScalarFloat d_mean = m_diffuse_reflectance->mean(),
-                    s_mean = m_specular_reflectance->mean();
+                    s_mean = 1.f;
+
+        if (m_specular_reflectance)
+            s_mean = m_specular_reflectance->mean();
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
@@ -225,7 +230,7 @@ public:
         active &= cos_theta_i > 0.f;
 
         BSDFSample3f bs = zero<BSDFSample3f>();
-        Spectrum result(0.f);
+        UnpolarizedSpectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
 
@@ -283,7 +288,7 @@ public:
 
         MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
 
-        Spectrum result(0.f);
+        UnpolarizedSpectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return result;
 
@@ -301,9 +306,12 @@ public:
             Float G = distr.G(si.wi, wo, H);
 
             // Calculate the specular reflection component
-            Float value = F * D * G / (4.f * cos_theta_i);
+            UnpolarizedSpectrum value = F * D * G / (4.f * cos_theta_i);
 
-            result += m_specular_reflectance->eval(si, active) * value;
+            if (m_specular_reflectance)
+                value *= m_specular_reflectance->eval(si, active);
+
+            result += value;
         }
 
         if (has_diffuse) {
@@ -312,7 +320,7 @@ public:
                   t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active);
 
-            UnpolarizedSpectrum diff = depolarize(m_diffuse_reflectance->eval(si, active));
+            UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
@@ -329,12 +337,10 @@ public:
 
         UInt index = min(UInt(x), scalar_t<UInt>(size - 2));
 
-        Float w1 = x - Float(index),
-              w0 = 1.f - w1,
-              v0 = gather<Float>(data, index, active),
+        Float v0 = gather<Float>(data, index, active),
               v1 = gather<Float>(data + 1, index, active);
 
-        return w0 * v0 + w1 * v1;
+        return lerp(v0, v1, x - Float(index));
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -385,7 +391,8 @@ public:
         callback->put_parameter("alpha", m_alpha);
         callback->put_parameter("eta", m_eta);
         callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
-        callback->put_object("specular_reflectance", m_specular_reflectance.get());
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
     std::string to_string() const override {
@@ -394,9 +401,12 @@ public:
             << "  distribution = " << m_type << "," << std::endl
             << "  sample_visible = "           << m_sample_visible                    << "," << std::endl
             << "  alpha = "                    << m_alpha                             << "," << std::endl
-            << "  specular_reflectance = "     << m_specular_reflectance              << "," << std::endl
-            << "  diffuse_reflectance = "      << m_diffuse_reflectance               << "," << std::endl
-            << "  specular_sampling_weight = " << m_specular_sampling_weight          << "," << std::endl
+            << "  diffuse_reflectance = "      << m_diffuse_reflectance               << "," << std::endl;
+
+        if (m_specular_reflectance)
+            oss << "  specular_reflectance = "     << m_specular_reflectance              << "," << std::endl;
+
+        oss << "  specular_sampling_weight = " << m_specular_sampling_weight          << "," << std::endl
             << "  eta = "                      << m_eta                               << "," << std::endl
             << "  nonlinear = "                << m_nonlinear                         << std::endl
             << "]";
@@ -408,7 +418,8 @@ private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
     MicrofacetType m_type;
-    ScalarFloat m_eta, m_inv_eta_2;
+    ScalarFloat m_eta;
+    ScalarFloat m_inv_eta_2;
     ScalarFloat m_alpha;
     ScalarFloat m_specular_sampling_weight;
     bool m_nonlinear;

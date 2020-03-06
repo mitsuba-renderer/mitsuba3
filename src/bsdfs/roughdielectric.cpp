@@ -140,8 +140,11 @@ public:
     MTS_IMPORT_TYPES(Texture, MicrofacetDistribution)
 
     RoughDielectric(const Properties &props) : Base(props) {
-        m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
-        m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
+        if (props.has_property("specular_reflectance"))
+            m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
+
+        if (props.has_property("specular_transmittance"))
+            m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
 
         // Specifies the internal index of refraction at the interface
         ScalarFloat int_ior = lookup_ior(props, "int_ior", "bk7");
@@ -238,7 +241,7 @@ public:
             fresnel(dot(si.wi, m), Float(m_eta));
 
         // Select the lobe to be sampled
-        Spectrum weight;
+        UnpolarizedSpectrum weight;
         Mask selected_r, selected_t;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= F && active;
@@ -268,7 +271,8 @@ public:
             // Perfect specular reflection based on the microfacet normal
             bs.wo[selected_r] = reflect(si.wi, m);
 
-            weight[selected_r] *= m_specular_reflectance->eval(si, selected_r && active);
+            if (m_specular_reflectance)
+                weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
             // Jacobian of the half-direction mapping
             dwh_dwo = rcp(4.f * dot(bs.wo, m));
@@ -281,10 +285,12 @@ public:
 
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
-            Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
+            UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? sqr(eta_ti) : Float(1.f);
 
-            weight[selected_t] *= m_specular_transmittance->eval(si, selected_t && active)
-                * sqr(factor);
+            if (m_specular_transmittance)
+                factor *= m_specular_transmittance->eval(si, selected_t);
+
+            weight[selected_t] *= factor;
 
             // Jacobian of the half-direction mapping
             masked(dwh_dwo, selected_t) =
@@ -345,31 +351,35 @@ public:
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
 
-        Spectrum result(0.f);
+        UnpolarizedSpectrum result(0.f);
 
         Mask eval_r = Mask(has_reflection) && reflect && active,
              eval_t = Mask(has_transmission) && !reflect && active;
 
         if (any_or<true>(eval_r)) {
-            Float value = F * D * G / (4.f * abs(cos_theta_i));
+            UnpolarizedSpectrum value = F * D * G / (4.f * abs(cos_theta_i));
 
-            result[eval_r] = m_specular_reflectance->eval(si, eval_r) * value;
+            if (m_specular_reflectance)
+                value *= m_specular_reflectance->eval(si, eval_r);
+
+            result[eval_r] = value;
         }
 
         if (any_or<true>(eval_t)) {
-            // Compute the total amount of transmission
-            Float value =
-                ((1.f - F) * D * G * eta * eta * dot(si.wi, m) * dot(wo, m)) /
-                (cos_theta_i * sqr(dot(si.wi, m) + eta * dot(wo, m)));
-
             /* Missing term in the original paper: account for the solid angle
                compression when tracing radiance -- this is necessary for
                bidirectional methods. */
-            Float factor = (ctx.mode == TransportMode::Radiance) ? inv_eta : Float(1.f);
+            Float scale = (ctx.mode == TransportMode::Radiance) ? sqr(inv_eta) : Float(1.f);
 
-            result[eval_t] =
-                m_specular_transmittance->eval(si, eval_t) *
-                abs(value * sqr(factor));
+            // Compute the total amount of transmission
+            UnpolarizedSpectrum value = abs(
+                (scale * (1.f - F) * D * G * eta * eta * dot(si.wi, m) * dot(wo, m)) /
+                (cos_theta_i * sqr(dot(si.wi, m) + eta * dot(wo, m))));
+
+            if (m_specular_transmittance)
+                value *= m_specular_transmittance->eval(si, eval_t);
+
+            result[eval_t] = value;
         }
 
         return unpolarized<Spectrum>(result);
@@ -448,20 +458,32 @@ public:
             callback->put_object("alpha_v", m_alpha_v.get());
         }
         callback->put_parameter("eta", m_eta);
-        callback->put_object("specular_reflectance", m_specular_reflectance.get());
-        callback->put_object("specular_transmittance", m_specular_transmittance.get());
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get());
+        if (m_specular_transmittance)
+            callback->put_object("specular_transmittance", m_specular_transmittance.get());
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl
             << "  distribution = "           << m_type           << "," << std::endl
-            << "  sample_visible = "         << m_sample_visible << "," << std::endl
-            << "  alpha_u = "                << string::indent(m_alpha_u) << "," << std::endl
-            << "  alpha_v = "                << string::indent(m_alpha_v) << "," << std::endl
-            << "  eta = "                    << m_eta            << "," << std::endl
-            << "  specular_reflectance = "   << string::indent(m_specular_reflectance) << "," << std::endl
-            << "  specular_transmittance = " << string::indent(m_specular_transmittance) << std::endl
+            << "  sample_visible = "         << (int) m_sample_visible << "," << std::endl;
+
+        if (m_alpha_u == m_alpha_v) {
+            oss << "  alpha_v = "                << string::indent(m_alpha_v) << "," << std::endl;
+        } else {
+            oss << "  alpha_u = "                << string::indent(m_alpha_u) << "," << std::endl
+                << "  alpha_v = "                << string::indent(m_alpha_v) << "," << std::endl;
+        }
+
+        if (m_specular_reflectance)
+            oss << "  specular_reflectance = "   << string::indent(m_specular_reflectance) << "," << std::endl;
+
+        if (m_specular_transmittance)
+            oss << "  specular_transmittance = " << string::indent(m_specular_transmittance) << ", " << std::endl;
+
+        oss << "  eta = "                    << m_eta << std::endl
             << "]";
         return oss.str();
     }
