@@ -74,15 +74,18 @@ class ChiSquareTest:
                  sample_count=1000000, res=101, ires=4):
         from mitsuba.core import ScalarVector2u
 
-        if ires < 2:
-            raise Exception("The 'ires' parameter must be >= 2!")
+        assert res > 0
+        assert ires >= 2, "The 'ires' parameter must be >= 2!"
 
         self.domain = domain
         self.sample_func = sample_func
         self.pdf_func = pdf_func
         self.sample_dim = sample_dim
         self.sample_count = sample_count
-        self.res = ek.max(ScalarVector2u(res, int(res * domain.aspect())), 1)
+        if domain.aspect() == None:
+            self.res = ScalarVector2u(res, 1)
+        else:
+            self.res = ek.max(ScalarVector2u(int(res / domain.aspect()), res), 1)
         self.ires = ires
         self.bounds = domain.bounds()
         self.pdf = None
@@ -367,7 +370,7 @@ class LineDomain:
         return self._bounds
 
     def aspect(self):
-        return 0
+        return None
 
     def map_forward(self, p):
         return p.x

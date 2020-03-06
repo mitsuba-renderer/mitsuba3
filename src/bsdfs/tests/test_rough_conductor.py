@@ -13,6 +13,7 @@ def test01_chi2_smooth(variant_packet_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
+        res=201,
         ires=8
     )
 
@@ -32,6 +33,7 @@ def test02_chi2_aniso_beckmann_all(variant_packet_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
+        res=201,
         ires=8
     )
 

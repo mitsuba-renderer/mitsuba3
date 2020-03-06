@@ -12,6 +12,7 @@ def test01_chi2_smooth(variant_packet_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
+        res=201,
         ires=32
     )
 
@@ -45,7 +46,8 @@ def test03_chi2_rough_beckmann_all(variant_packet_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        res=201
     )
 
     assert chi2.run()
@@ -81,7 +83,8 @@ def test05_chi2_rough_ggx_all(variant_packet_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        res=201
     )
 
     assert chi2.run()
@@ -114,7 +117,8 @@ def test07_chi2_rough_from_inside(variant_packet_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        res=201
     )
 
     assert chi2.run()
@@ -168,7 +172,8 @@ def test10_chi2_lobe_refl(variant_packet_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        res=201
     )
 
     assert chi2.run()
@@ -190,7 +195,8 @@ def test11_chi2_aniso_lobe_trans(variant_packet_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        res=201
     )
 
     assert chi2.run()

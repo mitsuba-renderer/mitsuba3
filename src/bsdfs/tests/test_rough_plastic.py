@@ -11,7 +11,8 @@ def test01_chi2_smooth(variant_packet_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        res=201
     )
 
     assert chi2.run()

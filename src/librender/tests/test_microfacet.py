@@ -329,6 +329,7 @@ def test06_chi2(variant_packet_rgb, md_type_name, alpha, sample_visible, angle):
         sample_func=lambda *args: sample_func(*(list(args) + [angle])),
         pdf_func=lambda *args: pdf_func(*(list(args) + [angle])),
         sample_dim=2,
+        res=203,
         ires=10
     )
 
