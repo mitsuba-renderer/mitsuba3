@@ -9,7 +9,7 @@ import numpy as np
 from enoki.dynamic import Float32 as Float
 
 
-@pytest.fixture(params = mitsuba.variants())
+@pytest.fixture(params=mitsuba.variants())
 def variants_all(request):
     try:
         mitsuba.set_variant(request.param)
@@ -48,7 +48,7 @@ def test_render(variants_all, scene_fname):
     ref_fname = get_ref_fname(scene_fname)
     assert os.path.exists(ref_fname)
 
-    scene = mitsuba.core.xml.load_file(scene_fname, parameters=[('spp', str(32))])
+    scene = mitsuba.core.xml.load_file(scene_fname, spp=32)
     scene.integrator().render(scene, scene.sensors()[0])
 
     film = scene.sensors()[0].film()
@@ -105,7 +105,7 @@ def main():
                 continue
 
             Thread.thread().file_resolver().append(scene_dir)
-            scene = mitsuba.core.xml.load_file(scene_fname, parameters=[('spp', str(ref_spp))])
+            scene = mitsuba.core.xml.load_file(scene_fname, spp=ref_spp)
             scene.integrator().render(scene, scene.sensors()[0])
 
             film = scene.sensors()[0].film()

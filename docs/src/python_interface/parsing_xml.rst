@@ -52,12 +52,12 @@ prefixed with a ``$`` sign:
         <integer name="sample_count" value="$spp"/>
     </sampler>
 
-These parameters can be specified from Python when loading the scene, using
-the ``parameters=`` argument.
+These parameters can be defined explicitly using keyword arguments when loading
+the scene.
 
 .. code-block:: python
 
-    scene = load_file(filename, parameters=[('spp' ,'1024')])
+    scene = load_file(filename, spp=1024)
 
 
 Loading a Mitsuba object
