@@ -230,7 +230,7 @@ public:
         active &= cos_theta_i > 0.f;
 
         BSDFSample3f bs = zero<BSDFSample3f>();
-        UnpolarizedSpectrum result(0.f);
+        Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
 
