@@ -182,6 +182,9 @@ public:
             m_alpha_u = m_alpha_v = props.texture<Texture>("alpha", 0.1f);
         }
 
+        if (props.has_property("specular_reflectance"))
+            m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
+
         parameters_changed();
     }
 
@@ -228,7 +231,7 @@ public:
         // Ensure that this is a valid sample
         active &= neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
 
-        Float weight;
+        UnpolarizedSpectrum weight;
         if (likely(m_sample_visible))
             weight = distr.smith_g1(bs.wo, m);
         else
@@ -274,6 +277,10 @@ public:
             F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, m)), eta_c);
         }
 
+        /* If requested, include the specular reflectance component */
+        if (m_specular_reflectance)
+            weight *= m_specular_reflectance->eval(si, active);
+
         return { bs, (F * weight) & active };
     }
 
@@ -308,7 +315,7 @@ public:
         Float G = distr.G(si.wi, wo, H);
 
         // Evaluate the full microfacet model (except Fresnel)
-        Float result = D * G / (4.f * Frame3f::cos_theta(si.wi));
+        UnpolarizedSpectrum result = D * G / (4.f * Frame3f::cos_theta(si.wi));
 
         // Evaluate the Fresnel factor
         Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
@@ -345,6 +352,10 @@ public:
         } else {
             F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
         }
+
+        /* If requested, include the specular reflectance component */
+        if (m_specular_reflectance)
+            result *= m_specular_reflectance->eval(si, active);
 
         return (F * result) & active;
     }
@@ -395,6 +406,8 @@ public:
         }
         callback->put_object("eta", m_eta.get());
         callback->put_object("k", m_k.get());
+        if (m_specular_reflectance)
+            callback->put_object("specular_reflectance", m_specular_reflectance.get());
     }
 
     std::string to_string() const override {
@@ -403,8 +416,10 @@ public:
             << "  distribution = " << m_type << "," << std::endl
             << "  sample_visible = " << m_sample_visible << "," << std::endl
             << "  alpha_u = " << string::indent(m_alpha_u) << "," << std::endl
-            << "  alpha_v = " << string::indent(m_alpha_v) << "," << std::endl
-            << "  eta = " << string::indent(m_eta) << "," << std::endl
+            << "  alpha_v = " << string::indent(m_alpha_v) << "," << std::endl;
+        if (m_specular_reflectance)
+           oss << "  specular_reflectance = " << string::indent(m_specular_reflectance) << "," << std::endl;
+        oss << "  eta = " << string::indent(m_eta) << "," << std::endl
             << "  k = " << string::indent(m_k) << std::endl
             << "]";
         return oss.str();
@@ -422,6 +437,8 @@ private:
     ref<Texture> m_eta;
     /// Relative refractive index (imaginary component).
     ref<Texture> m_k;
+    /// Specular reflectance component
+    ref<Texture> m_specular_reflectance;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(RoughConductor, BSDF)
