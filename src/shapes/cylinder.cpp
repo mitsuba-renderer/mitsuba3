@@ -343,7 +343,7 @@ public:
         si.dp_dv = m_object_to_world * dp_dv;
         si.n = Normal3f(cross(normalize(si.dp_du), normalize(si.dp_dv)));
 
-        /* Migitate roundoff error issues by a normal shift of the computed
+        /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */
         si.p += si.n * (m_radius - norm(head<2>(local)));
 

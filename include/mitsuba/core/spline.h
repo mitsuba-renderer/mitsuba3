@@ -611,7 +611,7 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
 
     GET_SPLINE_UNIFORM(idx);
 
-    // Re-scale the sample after having choosen the interval
+    // Re-scale the sample after having chosen the interval
     sample = (sample - gather<Value>(cdf, idx)) * inv_width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
@@ -706,7 +706,7 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
 
     GET_SPLINE_NONUNIFORM(idx);
 
-    // Re-scale the sample after having choosen the interval
+    // Re-scale the sample after having chosen the interval
     sample = (sample - gather<Value>(cdf, idx)) / width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/

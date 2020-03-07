@@ -52,7 +52,7 @@ public:
 
 
     /* --------------------------------------------------------- */
-    /*  Various low-level aliases for instrutions that adapt     */
+    /*  Various low-level aliases for instructions that adapt     */
     /*  to the working precision and available instruction sets  */
     /* --------------------------------------------------------- */
 
@@ -1168,7 +1168,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 #if MTS_STRUCTCONVERTER_USE_JIT == 1
     using namespace asmjit;
 
-    // Use the Jit instance to cache struture converters
+    // Use the Jit instance to cache structure converters
     auto jit = Jit::get_instance();
     std::lock_guard<std::mutex> guard(jit->mutex);
 

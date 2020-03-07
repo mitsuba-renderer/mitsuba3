@@ -57,7 +57,7 @@ MTS_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 
     Value x = fmsub(2.f, sample.x(), 1.f),
           y = fmsub(2.f, sample.y(), 1.f);
 
-    /* Modified concencric map code with less branching (by Dave Cline), see
+    /* Modified concentric map code with less branching (by Dave Cline), see
        http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
 
       Original non-vectorized version:

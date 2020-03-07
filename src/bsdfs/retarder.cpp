@@ -95,7 +95,7 @@ public:
             // Forward direction is always away from light source.
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
-            // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
+            // Rotate in/out basis of M s.t. it aligns with BSDF coordinate frame
             M = mueller::rotate_mueller_basis_collinear(M, forward,
                                                         Vector3f(1.f, 0.f, 0.f),
                                                         mueller::stokes_basis(forward));
@@ -137,7 +137,7 @@ public:
             // Forward direction is always away from light source.
             Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
 
-            // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
+            // Rotate in/out basis of M s.t. it aligns with BSDF coordinate frame
             M = mueller::rotate_mueller_basis_collinear(M, forward,
                                                         Vector3f(1.f, 0.f, 0.f),
                                                         mueller::stokes_basis(forward));

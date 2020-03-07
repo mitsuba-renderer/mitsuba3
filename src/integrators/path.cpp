@@ -73,7 +73,7 @@ both direct and indirect illumination.
    to suppress the inherently faceted appearance of the underlying geometry. These
    "fake" normals are not without problems, however. They can lead to paradoxical
    situations where a light ray impinges on an object from a direction that is
-   lassified as "outside" according to the shading normal, and "inside" according
+   classified as "outside" according to the shading normal, and "inside" according
    to the true geometric normal.
 
 .. The :paramtype:`strict_normals` parameter specifies the intended behavior when such cases arise. The

@@ -167,7 +167,7 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
        "Stellar Polarimetry" by David Clarke) */
     cos_theta_t = mulsign(Array<Float, 2>(cos_theta_t), cos_theta_t_sqr);
 
-    /* Amplitudes of reflected waves. The sign convension of 'a_p' used here
+    /* Amplitudes of reflected waves. The sign convention of 'a_p' used here
        matches Fresnel's original paper from 1823 and is different from some
        contemporary references. See appendix A.1 of "Stellar Polarimetry" by
        David Clarke for a historical perspective. */
@@ -245,7 +245,7 @@ fresnel_polarized(Float cos_theta_i, Complex<Float> eta) {
        "Stellar Polarimetry" by David Clarke) */
     cos_theta_t = mulsign(Array<Float, 2>(cos_theta_t), real(cos_theta_t_sqr));
 
-    /* Amplitudes of reflected waves. The sign convension of 'a_p' used here
+    /* Amplitudes of reflected waves. The sign convention of 'a_p' used here
        matches Fresnel's original paper from 1823 and is different from some
        contemporary references. See appendix A.1 of "Stellar Polarimetry" by
        David Clarke for a historical perspective. */
@@ -323,7 +323,7 @@ Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, 
 template <typename Float>
 Float fresnel_diffuse_reflectance(Float eta) {
     /* Fast mode: the following code approximates the diffuse Frensel reflectance
-       for the eta<1 and eta>1 cases. An evalution of the accuracy led to the
+       for the eta<1 and eta>1 cases. An evaluation of the accuracy led to the
        following scheme, which cherry-picks fits from two papers where they are
        best. */
     Float result(0.f);

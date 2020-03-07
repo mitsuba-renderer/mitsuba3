@@ -63,7 +63,7 @@ auto operator-(const Point<T1, S1> &p1, const Point<T2, S2> &p2) {
     return Vector<T1, S1>(p1) - Vector<T2, S2>(p2);
 }
 
-/// Ssubtracting a vector from a point should always yield a point
+/// Subtracting a vector from a point should always yield a point
 template <typename T1, size_t S1, typename T2, size_t S2>
 auto operator-(const Point<T1, S1> &p1, const Vector<T2, S2> &v2) {
     return p1 - Point<T2, S2>(v2);

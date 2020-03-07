@@ -825,7 +825,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         if (within_emitter || ctx.color_mode != ColorMode::Spectral)
                             unit_conversion = MTS_CIE_Y_NORMALIZATION;
 
-                        /* Detect whether wavelengths are regularly sampled and potentailly
+                        /* Detect whether wavelengths are regularly sampled and potentially
                            apply the conversion factor. */
                         bool is_regular = true;
                         Float interval = 0.f;

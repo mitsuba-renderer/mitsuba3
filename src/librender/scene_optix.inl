@@ -274,7 +274,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
             nullptr, nullptr, nullptr,
             // Out: Texture space derivative (U)
             nullptr, nullptr, nullptr,
-            // Ovt: Textvre space derivative (V)
+            // Out: Texture space derivative (V)
             nullptr, nullptr, nullptr,
             // Out: Shape pointer (on host)
             nullptr,
