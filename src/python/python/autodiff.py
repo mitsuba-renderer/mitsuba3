@@ -396,6 +396,7 @@ def render_torch(scene, params=None, **kwargs):
                     spp = None
                     sensor_index = 0
                     unbiased = True
+                    malloc_trim = False
 
                     ctx.inputs = [None, None]
                     for k, v in args.items():
@@ -405,6 +406,8 @@ def render_torch(scene, params=None, **kwargs):
                             sensor_index = v
                         elif k == 'unbiased':
                             unbiased = v
+                        elif k == 'malloc_trim':
+                            malloc_trim = v
                         elif params is not None:
                             params[k] = type(params[k])(v)
                             ctx.inputs.append(None)
@@ -418,6 +421,11 @@ def render_torch(scene, params=None, **kwargs):
                         spp = (spp, spp)
 
                     result = None
+                    ctx.malloc_trim = malloc_trim
+
+                    if ctx.malloc_trim:
+                        torch.cuda.empty_cache()
+
                     if params is not None:
                         params.update()
 
@@ -435,7 +443,8 @@ def render_torch(scene, params=None, **kwargs):
                     if result is None:
                         result = ctx.output.torch()
 
-                    ek.cuda_malloc_trim()
+                    if ctx.malloc_trim:
+                        ek.cuda_malloc_trim()
                     return result
                 except Exception as e:
                     print("render_torch(): critical exception during "
@@ -452,7 +461,8 @@ def render_torch(scene, params=None, **kwargs):
                                    for i in ctx.inputs)
                     del ctx.output
                     del ctx.inputs
-                    ek.cuda_malloc_trim()
+                    if ctx.malloc_trim:
+                        ek.cuda_malloc_trim()
                     return result
                 except Exception as e:
                     print("render_torch(): critical exception during "

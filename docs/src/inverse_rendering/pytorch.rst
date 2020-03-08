@@ -11,10 +11,10 @@ Mitsuba 2 between neural layers and differentiating the combination end-to-end.
 
 Note that communication and synchronization between Enoki and PyTorch along
 with the complexity of traversing two separate computation graph data
-structures causes an overhead of roughly :math:`1.7\times` compared to
-optimization implemented using only Enoki. We generally recommend sticking with
-Enoki unless the problem requires neural network building blocks like fully
-connected layers or convolutions, where PyTorch provides a clear advantage.
+structures causes an overhead of 10-20% compared to optimization implemented
+using only Enoki. We generally recommend sticking with Enoki unless the problem
+requires neural network building blocks like fully connected layers or
+convolutions, where PyTorch provides a clear advantage.
 
 As before, we specify the relevant variant, load the scene, and retain
 relevant differentiable parameters.
@@ -112,6 +112,27 @@ The main optimization loop looks as follows:
         # Compare iterate against ground-truth value
         err_ref = objective(params_torch['red.reflectance.value'], param_ref)
         print('Iteration %03i: error=%g' % (it, err_ref * 3))
+
+.. warn::
+
+    **Memory caching**: When a GPU array in Enoki or PyTorch is destroyed, its
+    memory is not immediately released back to the GPU. The reason for this is
+    that allocating and releasing GPU memory are both extremely expensive
+    operations, and any unused memory is therefore instead placed into a cache
+    for later re-use.
+
+    The fact that this happens is normally irrelevant when *only* using Enoki
+    or *only* using PyTorch, but it can be a problem when using *both* at the
+    same time, as the cache of one system may grow sufficiently large that
+    allocations by the other system fail, despite plenty of free memory
+    technically being available.
+
+    If you notice that your programs crash with out-of-memory errors, try
+    passing ``malloc_trim=True`` to the ``render_torch`` function. This
+    flushes PyTorch's memory cache before executing any Enoki code, and vice
+    versa. This is something of a last resort---generally, it's better to
+    reduce memory requirements by lowering the number of samples per pixel,
+    as flushing the cache causes severe performance penalty.
 
 .. note::
 
