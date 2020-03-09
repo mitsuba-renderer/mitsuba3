@@ -66,7 +66,7 @@ def _render_helper(scene, spp=None, sensor_index=0):
         size=film.crop_size(),
         channel_count=len(aovs),
         filter=film.reconstruction_filter(),
-        warn_negative=DEBUG,
+        warn_negative=False,
         warn_invalid=DEBUG,
         border=False
     )
