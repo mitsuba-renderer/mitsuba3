@@ -60,6 +60,11 @@ public:
         callback->put_parameter("value", m_value);
     }
 
+    void parameters_changed() override {
+        if constexpr (!is_spectral_v<Spectrum>)
+            m_value = clamp(m_value, 0.f, 1.f);
+    }
+
     MTS_DECLARE_CLASS()
 protected:
     /**

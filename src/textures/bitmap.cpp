@@ -317,13 +317,19 @@ public:
             } else {
                 for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    value = clamp(value, 0.f, 1.f);
+                    store_unaligned(ptr, value);
                     mean += (double) luminance(value);
                     ptr += 3;
                 }
             }
         } else {
-            for (size_t i = 0; i < pixel_count; ++i)
-                mean += (double) ptr[i];
+            for (size_t i = 0; i < pixel_count; ++i) {
+                ScalarFloat value = ptr[i];
+                value = clamp(value, 0.f, 1.f);
+                ptr[i] = value;
+                mean += (double) value;
+            }
         }
 
         m_mean = ScalarFloat(mean / pixel_count);
