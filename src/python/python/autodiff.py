@@ -103,7 +103,7 @@ def write_bitmap(filename, data, resolution, write_async=True):
         data = data.detach().cpu()
 
     data = np.array(data.numpy())
-    data = data.reshape(*resolution, -1)
+    data = data.reshape(resolution[1], resolution[0], -1)
     bitmap = Bitmap(data)
     if filename.endswith('.png') or \
        filename.endswith('.jpg') or \
