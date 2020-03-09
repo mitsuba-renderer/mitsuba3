@@ -67,6 +67,7 @@ void bind_integrator_sample(Class &integrator) {
         "sample",
         [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
            const RayDifferential3f &ray, Mask active) {
+            py::gil_scoped_release release;
             std::vector<Float> aovs(integrator->aov_names().size(), 0.f);
             auto [spec, mask] = integrator->sample(scene, sampler, ray, aovs.data(), active);
             return std::make_tuple(spec, mask, aovs);
