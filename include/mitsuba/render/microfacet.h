@@ -106,8 +106,8 @@ public:
      */
     MicrofacetDistribution(const Properties &props,
                            MicrofacetType type = MicrofacetType::Beckmann,
-                           Float alpha_u       = Float(0.1),
-                           Float alpha_v       = Float(0.1),
+                           Float alpha_u       = Float(0.1f),
+                           Float alpha_v       = Float(0.1f),
                            bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v) {
 

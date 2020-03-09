@@ -136,7 +136,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
         UInt32 idx = arange<UInt32>(total_sample_count);
         if (samples_per_pass != 1)
-            idx /= samples_per_pass;
+            idx /= (uint32_t) samples_per_pass;
 
         ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
                                                film->reconstruction_filter(),

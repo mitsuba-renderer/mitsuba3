@@ -424,6 +424,12 @@ elseif(MSVC)
       set("CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}" "${FLAGS}" CACHE STRING "" FORCE)
     endforeach()
   endforeach()
+
+  foreach(LinkType EXE SHARED)
+    string(REGEX REPLACE "\/INCREMENTAL(\:NO)?" "" CMAKE_${LinkType}_LINKER_FLAGS_DEBUG "${CMAKE_${LinkType}_LINKER_FLAGS_DEBUG}")
+    set("CMAKE_${LinkType}_LINKER_FLAGS_DEBUG" "${CMAKE_${LinkType}_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
+  endforeach()
+
   message(STATUS "Mitsuba: LTO support enabled.")
 endif()
 
