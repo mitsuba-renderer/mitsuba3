@@ -9,7 +9,7 @@ def _render_helper(scene, spp=None, sensor_index=0):
     floating point array containing RGB values and AOVs, if applicable
     """
     from mitsuba.core import (Float, UInt32, UInt64, Vector2f,
-                              is_monochromatic, is_rgb, is_polarized)
+                              is_monochromatic, is_rgb, is_polarized, DEBUG)
     from mitsuba.render import ImageBlock
 
     sensor = scene.sensors()[sensor_index]
@@ -66,8 +66,8 @@ def _render_helper(scene, spp=None, sensor_index=0):
         size=film.crop_size(),
         channel_count=len(aovs),
         filter=film.reconstruction_filter(),
-        warn_negative=False,
-        warn_invalid=False,
+        warn_negative=DEBUG,
+        warn_invalid=DEBUG,
         border=False
     )
 
