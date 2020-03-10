@@ -236,6 +236,9 @@ endif()
 
 # Compile with compiler warnings turned on
 if (MSVC)
+  if (${MSVC_VERSION} LESS 1924)
+    message(FATAL_ERROR "MSVC 1924 or higher is required. You are running version ${MSVC_VERSION}.")
+  endif()
   if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
     string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   else()
