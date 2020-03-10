@@ -10,6 +10,10 @@ void __rt_check(RTcontext context, RTresult errval, const char *file, const int 
     if (errval != RT_SUCCESS) {
         const char *message;
         rtContextGetErrorString(context, errval, &message);
+        if (errval == 1546)
+            message = "Failed to load OptiX library! Very likely, your NVIDIA graphics "
+                "driver is too old and not compatible with the version of OptiX that is "
+                "being used. In particular, OptiX 6.5 requires driver revision R435.80 or newer.";
         fprintf(stderr,
                 "rt_check(): OptiX API error = %04d (%s) in "
                 "%s:%i.\n", (int) errval, message, file, line);
