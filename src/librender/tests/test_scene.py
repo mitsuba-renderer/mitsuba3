@@ -31,10 +31,6 @@ def test01_emitter_checks(variant_scalar_rgb):
     # Normal area emitter specified in a shape
     check_scene(shape_xml.format('<emitter type="area"/>'), 1)
 
-    # Area emitter specified at top level, then never referenced
-    check_scene('<emitter type="area" id="my_emitter"/>' + shape_xml.format(''), 1,
-                error="not attached to any shape")
-
     # Area emitter specified at top level, then referenced once
     check_scene('<emitter type="area" id="my_emitter"/>'
                 + shape_xml.format('<ref id="my_emitter"/>'), 1)
