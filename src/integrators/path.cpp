@@ -187,18 +187,17 @@ public:
             // Intersect the BSDF ray against the scene geometry
             ray = si.spawn_ray(si.to_world(bs.wo));
             SurfaceInteraction3f si_bsdf = scene->ray_intersect(ray, active);
-            Mask active_b = active && si_bsdf.is_valid();
 
             /* Determine probability of having sampled that same
                direction using emitter sampling. */
-            emitter = si_bsdf.emitter(scene, active_b);
+            emitter = si_bsdf.emitter(scene, active);
             DirectionSample3f ds(si_bsdf, si);
             ds.object = emitter;
 
             if (any_or<true>(neq(emitter, nullptr))) {
                 Float emitter_pdf =
                     select(neq(emitter, nullptr) && !has_flag(bs.sampled_type, BSDFFlags::Delta),
-                           scene->pdf_emitter_direction(si, ds, active_b),
+                           scene->pdf_emitter_direction(si, ds),
                            0.f);
 
                 emission_weight = mis_weight(bs.pdf, emitter_pdf);
