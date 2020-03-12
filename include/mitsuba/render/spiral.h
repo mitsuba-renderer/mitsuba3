@@ -52,11 +52,11 @@ public:
     }
 
     /**
-     * \brief Return the offset and size of the next block.
+     * \brief Return the offset, size and unique identifer of the next block.
      *
      * A size of zero indicates that the spiral traversal is done.
      */
-    std::pair<Vector2i, Vector2i> next_block();
+    std::tuple<Vector2i, Vector2i, size_t> next_block();
 
     MTS_DECLARE_CLASS()
 protected:

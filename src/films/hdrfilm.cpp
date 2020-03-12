@@ -262,7 +262,7 @@ public:
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
             m_component_format, m_storage->size(),
-            has_aovs ? (m_storage->channel_count() - 1): 0);
+            has_aovs ? (m_storage->channel_count() - 1) : 0);
 
         if (has_aovs) {
             for (size_t i = 0, j = 0; i < m_channels.size(); ++i, ++j) {

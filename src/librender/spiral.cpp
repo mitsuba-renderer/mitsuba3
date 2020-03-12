@@ -24,7 +24,7 @@ void Spiral::reset() {
     m_steps = 1;
 }
 
-std::pair<Spiral::Vector2i, Spiral::Vector2i> Spiral::next_block() {
+std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
     // Reimplementation of the spiraling block generator by Adam Arbree.
     std::lock_guard<tbb::spin_mutex> lock(m_mutex);
 
@@ -34,8 +34,11 @@ std::pair<Spiral::Vector2i, Spiral::Vector2i> Spiral::next_block() {
             reset();
         }
         else
-            return { Vector2i(0), Vector2i(0) };
+            return { Vector2i(0), Vector2i(0), (size_t) -1 };
     }
+
+    // Calculate a unique identifer per block
+    size_t block_id = m_block_counter + (m_remaining_passes - 1) * m_block_count;
 
     Vector2i offset(m_position * (int) m_block_size);
     Vector2i size = min((int) m_block_size, m_size - offset);
@@ -65,7 +68,7 @@ std::pair<Spiral::Vector2i, Spiral::Vector2i> Spiral::next_block() {
         } while (any(m_position < 0 || m_position >= m_blocks));
     }
 
-    return { offset, size };
+    return { offset, size, block_id };
 }
 
 MTS_IMPLEMENT_CLASS(Spiral, Object)

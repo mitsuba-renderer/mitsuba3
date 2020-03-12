@@ -5,8 +5,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props) {
     m_sample_count = props.size_("sample_count", 4);
-    if (props.has_property("seed"))
-        seed(props.size_("seed"));
+    m_base_seed = props.size_("seed", 0);
 }
 
 MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }

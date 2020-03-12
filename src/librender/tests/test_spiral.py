@@ -52,9 +52,10 @@ def test02_small_film(variant_scalar_rgb):
     f = make_film(15, 12)
     s = Spiral(f.size(), f.crop_offset())
 
-    (bo, bs) = s.next_block()
+    (bo, bs, bi) = s.next_block()
     assert ek.all(bo == [0, 0])
     assert ek.all(bs == [15, 12])
+    assert ek.all(bi == 0)
     # The whole image is covered by a single block
     assert ek.all(s.next_block()[1] == 0)
 

@@ -105,13 +105,13 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
                 // For each block
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
-                    auto [offset, size] = spiral.next_block();
+                    auto [offset, size, block_id] = spiral.next_block();
                     Assert(hprod(size) != 0);
                     block->set_size(size);
                     block->set_offset(offset);
 
                     // Ensure that the sample generation is fully deterministic
-                    sampler->seed(i);
+                    sampler->seed(block_id);
 
                     render_block(scene, sensor, sampler, block,
                                  aovs.get(), samples_per_pass);

@@ -53,6 +53,7 @@ protected:
 
 protected:
     size_t m_sample_count;
+    ScalarUInt64 m_base_seed;
 };
 
 MTS_EXTERN_CLASS_RENDER(Sampler)
