@@ -27,11 +27,15 @@ sampler = sensor.sampler()
 film_size = film.crop_size()
 spp = 32
 
+# Seed the sampler
+total_sample_count = ek.hprod(film_size) * spp
+
+if sampler.wavefront_size() != total_sample_count:
+    sampler.seed(ek.arange(UInt64, total_sample_count))
+
 # Enumerate discrete sample & pixel indices, and uniformly sample
 # positions within each pixel.
-pos = ek.arange(UInt64, ek.hprod(film_size) * spp)
-if not sampler.ready():
-    sampler.seed(pos)
+pos = ek.arange(UInt32, total_sample_count)
 
 pos //= spp
 scale = Vector2f(1.0 / film_size[0], 1.0 / film_size[1])
