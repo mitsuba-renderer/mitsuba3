@@ -8,7 +8,7 @@
 
 
 [1]: https://readthedocs.org/projects/mitsuba2/badge/?version=master
-[2]: http://mitsuba2.readthedocs.org/en/master
+[2]: https://mitsuba2.readthedocs.io/en/latest/src/getting_started/intro/
 [3]: https://rgl-ci.epfl.ch/app/rest/builds/buildType(id:Mitsuba2_Build)/statusIcon.svg
 [4]: https://rgl-ci.epfl.ch/viewType.html?buildTypeId=Mitsuba2_Build&guest=1
 [5]: https://ci.appveyor.com/api/projects/status/eb84mmtvnt8ko8bh/branch/master?svg=true
@@ -20,7 +20,7 @@
 
 
 [1]: https://readthedocs.org/projects/mitsuba2/badge/?version=latest
-[2]: http://mitsuba2.readthedocs.org/en/latest
+[2]: https://mitsuba2.readthedocs.io/en/latest/src/getting_started/intro/
 
 Mitsuba 2 is a research-oriented rendering system written in portable C++17. It
 consists of a small set of core libraries and a wide variety of plugins that
