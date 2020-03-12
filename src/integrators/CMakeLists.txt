@@ -5,7 +5,8 @@ add_plugin(direct  direct.cpp)
 add_plugin(path    path.cpp)
 add_plugin(aov     aov.cpp)
 add_plugin(stokes  stokes.cpp)
-add_plugin(volpath  volpath.cpp)
+add_plugin(moment  moment.cpp)
+add_plugin(volpath volpath.cpp)
 add_plugin(volpathsimple  volpath-simple.cpp)
 
 # Register the test directory
