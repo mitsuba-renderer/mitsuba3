@@ -310,9 +310,10 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     }
 }
 
+template <typename Scalar>
 inline void spectrum_from_file(const std::string &filename,
-                               std::vector<float> &wavelengths,
-                               std::vector<float> &values) {
+                               std::vector<Scalar> &wavelengths,
+                               std::vector<Scalar> &values) {
     auto fs = Thread::thread()->file_resolver();
     fs::path file_path = fs->resolve(filename);
     if (!fs::exists(file_path))
@@ -342,15 +343,16 @@ inline void spectrum_from_file(const std::string &filename,
     }
 }
 
-inline Color<float, 3> spectrum_to_rgb(std::vector<float> &wavelengths,
-                                       std::vector<float> &values,
-                                       bool bounded=true) {
-    Color<float, 3> color = 0.f;
+template <typename Scalar>
+inline Color<Scalar, 3> spectrum_to_rgb(std::vector<Scalar> &wavelengths,
+                                        std::vector<Scalar> &values,
+                                        bool bounded=true) {
+    Color<Scalar, 3> color = 0.f;
 
     const int steps = 1000;
     for (int i = 0; i < steps; ++i) {
-        float x = MTS_WAVELENGTH_MIN +
-                  (i / (float) (steps - 1)) *
+        Scalar x = MTS_WAVELENGTH_MIN +
+                  (i / (Scalar) (steps - 1)) *
                       (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
 
         if (x < wavelengths.front() || x > wavelengths.back())
@@ -363,20 +365,20 @@ inline Color<float, 3> spectrum_to_rgb(std::vector<float> &wavelengths,
                 return wavelengths[idx] <= x;
             });
 
-        float x0 = wavelengths[index],
+        Scalar x0 = wavelengths[index],
               x1 = wavelengths[index + 1],
               y0 = values[index],
               y1 = values[index + 1];
 
         // Linear interpolant at 'x'
-        float y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
+        Scalar y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
 
-        Color<float, 3> xyz = cie1931_xyz(x);
+        Color<Scalar, 3> xyz = cie1931_xyz(x);
         color += xyz * y;
     }
 
     // Last specified value repeats implicitly
-    color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (float) steps;
+    color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Scalar) steps;
     color = xyz_to_srgb(color);
 
     if (bounded && any(color < 0.f || color > 1.f)) {

@@ -98,7 +98,8 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
 
 template <typename Spectrum, typename Texture>
 ref<Texture> ior_from_file(const std::string &filename) {
-    std::vector<float> wavelengths, values;
+    using ScalarFloat = scalar_t<value_t<Spectrum>>;
+    std::vector<ScalarFloat> wavelengths, values;
     spectrum_from_file(filename, wavelengths, values);
 
     float unit_conversion = is_spectral_v<Spectrum> ? 1.f : MTS_CIE_Y_NORMALIZATION;
