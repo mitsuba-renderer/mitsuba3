@@ -1,5 +1,5 @@
 import os
-from os.path import join, realpath, dirname, basename, splitext
+from os.path import join, realpath, dirname, basename, splitext, exists
 import argparse
 import glob
 import mitsuba
@@ -24,8 +24,8 @@ TEST_SCENE_DIR = realpath(join(os.path.dirname(
     __file__), '../../../resources/data/tests/scenes'))
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
-# Exclude certain tests for now
-EXCLUDE_FOLDERS = ['participating_media']
+# Exclude certain tests
+EXCLUDE_FOLDERS = []
 
 
 def get_ref_fname(scene_fname):
@@ -85,10 +85,11 @@ def test_render(variants_all, scene_fname):
     if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
         pytest.skip(f"Skip rendering scene {scene_fname}")
 
-    Thread.thread().file_resolver().append(scene_dir)
+    Thread.thread().file_resolver().prepend(scene_dir)
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
-    assert os.path.exists(ref_fname)
+    if not (exists(ref_fname) and exists(ref_var_fname)) :
+        pytest.skip("Non-existent reference data.")
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
     ref_img = np.array(ref_bmp, copy=False)
@@ -131,7 +132,7 @@ def test_render(variants_all, scene_fname):
 
         output_dir = join(scene_dir, 'error_output')
 
-        if not os.path.exists(output_dir):
+        if not exists(output_dir):
             os.makedirs(output_dir)
 
         output_prefix = join(output_dir, splitext(basename(scene_fname))[0] + '_' + mitsuba.variant())
@@ -189,25 +190,24 @@ def main():
             from mitsuba.core import Bitmap, Struct, Thread, set_thread_count
 
             ref_fname, var_fname = get_ref_fname(scene_fname)
-            if os.path.exists(ref_fname) and os.path.exists(var_fname) and not overwrite:
+            if exists(ref_fname) and exists(var_fname) and not overwrite:
                 continue
 
             Thread.thread().file_resolver().append(scene_dir)
 
-            if True:
-                scene = mitsuba.core.xml.load_file(scene_fname, spp=ref_spp)
-                scene.integrator().render(scene, scene.sensors()[0])
+            scene = mitsuba.core.xml.load_file(scene_fname, spp=ref_spp)
+            scene.integrator().render(scene, scene.sensors()[0])
 
-                bmp = scene.sensors()[0].film().bitmap(raw=False)
-                img, var_img = bitmap_extract(bmp)
+            bmp = scene.sensors()[0].film().bitmap(raw=False)
+            img, var_img = bitmap_extract(bmp)
 
-                # Write rendered image to a file
-                xyz_to_rgb_bmp(img).write(ref_fname)
-                print('Saved rendered image to: ' + ref_fname)
+            # Write rendered image to a file
+            xyz_to_rgb_bmp(img).write(ref_fname)
+            print('Saved rendered image to: ' + ref_fname)
 
-                # Write variance image to a file
-                xyz_to_rgb_bmp(var_img).write(var_fname)
-                print('Saved variance image to: ' + var_fname)
+            # Write variance image to a file
+            xyz_to_rgb_bmp(var_img).write(var_fname)
+            print('Saved variance image to: ' + var_fname)
 
 
 if __name__ == '__main__':
