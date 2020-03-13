@@ -1115,6 +1115,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         Throw("\"%s\": file does not exist!", filename);
 
     Log(Info, "Loading XML file \"%s\" ..", filename);
+    Log(Info, "Using variant \"%s\"", variant);
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(filename.native().c_str(),
