@@ -113,7 +113,7 @@ The main optimization loop looks as follows:
         err_ref = objective(params_torch['red.reflectance.value'], param_ref)
         print('Iteration %03i: error=%g' % (it, err_ref * 3))
 
-.. warn::
+.. warning::
 
     **Memory caching**: When a GPU array in Enoki or PyTorch is destroyed, its
     memory is not immediately released back to the GPU. The reason for this is

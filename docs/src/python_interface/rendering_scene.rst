@@ -79,7 +79,7 @@ Similar to before, we import a number of modules and load the scene from disk:
 
 .. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
    :language: python
-   :lines: 1-20
+   :lines: 1-21
 
 In this example we use the packet variant of Mitsuba. This means all calls to
 Mitsuba functions will be vectorized and we avoid expensive for-loops in
@@ -90,13 +90,13 @@ manually trace rays through each pixel of the image:
 
 .. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
    :language: python
-   :lines: 22-52
+   :lines: 23-57
 
 After computing the surface intersections for all the rays, we then extract the depth values
 
 .. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
    :language: python
-   :lines: 54-59
+   :lines: 59-64
 
 We then splat these depth values to an :code:`ImageBlock`, which is an image data structure that
 handles averaging over samples and accounts for the pixel filter. The :code:`ImageBlock` is then
@@ -104,6 +104,6 @@ converted to a :code:`Bitmap` object and the resulting image saved to disk.
 
 .. literalinclude:: ../../examples/02_depth_integrator/depth_integrator.py
    :language: python
-   :lines: 61-79
+   :lines: 66-84
 
 .. note:: The code for this example can be found in :code:`docs/examples/02_depth_integrator/depth_integrator.py`

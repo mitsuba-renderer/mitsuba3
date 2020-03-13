@@ -1,11 +1,12 @@
 import os
 import enoki as ek
+import numpy as np
 import mitsuba
 
 # Set the desired mitsuba variant
 mitsuba.set_variant('packet_rgb')
 
-from mitsuba.core import Float, UInt64, Vector2f, Vector3f
+from mitsuba.core import Float, UInt32, UInt64, Vector2f, Vector3f
 from mitsuba.core import Bitmap, Struct, Thread
 from mitsuba.core.xml import load_file
 from mitsuba.render import ImageBlock
@@ -70,12 +71,12 @@ block = ImageBlock(
 )
 block.clear()
 # ImageBlock expects RGB values (Array of size (n, 3))
-block.put(position_sample, rays.wavelengths, Vector3f(result, result, result), 1)
+block.put(pos, rays.wavelengths, Vector3f(result, result, result), 1)
 
 # Write out the result from the ImageBlock
 # Internally, ImageBlock stores values in XYZAW format
 # (color XYZ, alpha value A and weight W)
-xyzaw_np = block.data().reshape([film_size[1], film_size[0], 5])
+xyzaw_np = np.array(block.data()).reshape([film_size[1], film_size[0], 5])
 
 # We then create a Bitmap from these values and save it out as EXR file
 bmp = Bitmap(xyzaw_np, Bitmap.PixelFormat.XYZAW)
