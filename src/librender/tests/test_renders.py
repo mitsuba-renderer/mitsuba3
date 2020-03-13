@@ -24,7 +24,7 @@ TEST_SCENE_DIR = realpath(join(os.path.dirname(
     __file__), '../../../resources/data/tests/scenes'))
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
-# Exclude certain tests
+# List of test scene folders to exclude
 EXCLUDE_FOLDERS = []
 
 
@@ -76,6 +76,7 @@ def z_test(mean, sample_count, reference, reference_var):
     return p_value
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(*['scene_fname', scenes])
 def test_render(variants_all, scene_fname):
     from mitsuba.core import Bitmap, Struct, Thread, set_thread_count
@@ -88,7 +89,7 @@ def test_render(variants_all, scene_fname):
     Thread.thread().file_resolver().prepend(scene_dir)
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
-    if not (exists(ref_fname) and exists(ref_var_fname)) :
+    if not (exists(ref_fname) and exists(ref_var_fname)):
         pytest.skip("Non-existent reference data.")
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
@@ -123,7 +124,6 @@ def test_render(variants_all, scene_fname):
     success = (p_value > alpha)
 
     if (np.count_nonzero(success) / 3) >= (0.9975 * pixel_count):
-    # if np.all(success):
         print('Accepted the null hypothesis (min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
     else:
@@ -135,7 +135,8 @@ def test_render(variants_all, scene_fname):
         if not exists(output_dir):
             os.makedirs(output_dir)
 
-        output_prefix = join(output_dir, splitext(basename(scene_fname))[0] + '_' + mitsuba.variant())
+        output_prefix = join(output_dir, splitext(
+            basename(scene_fname))[0] + '_' + mitsuba.variant())
 
         img_rgb_bmp = xyz_to_rgb_bmp(img)
 
@@ -160,12 +161,11 @@ def test_render(variants_all, scene_fname):
         assert False
 
 
-def main():
+if __name__ == '__main__':
     """
     Generate reference images for all the scenes contained within the TEST_SCENE_DIR directory,
     and for all the color mode having their `scalar_*` mode enabled.
     """
-
     parser = argparse.ArgumentParser(prog='RenderReferenceImages')
     parser.add_argument('--overwrite', action='store_true',
                         help='Force rerendering of all reference images. Otherwise, only missing references will be rendered.')
@@ -208,7 +208,3 @@ def main():
             # Write variance image to a file
             xyz_to_rgb_bmp(var_img).write(var_fname)
             print('Saved variance image to: ' + var_fname)
-
-
-if __name__ == '__main__':
-    main()

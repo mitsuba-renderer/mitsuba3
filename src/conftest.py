@@ -78,3 +78,13 @@ def variants_all_rgb(request):
     except Exception:
         pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
     return request.param
+
+
+def pytest_configure(config):
+    markexpr = config.getoption("markexpr", 'False')
+    if not 'not slow' in markexpr:
+        print("""\033[93mRunning the full test suite. To skip slow tests, please run 'pytest -m 'not slow' \033[0m""")
+
+    config.addinivalue_line(
+        "markers", "slow: marks tests as slow (deselect with -m 'not slow')"
+    )
