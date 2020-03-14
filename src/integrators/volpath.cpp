@@ -116,7 +116,7 @@ public:
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
             uint32_t n_channels = (uint32_t) array_size_v<Spectrum>;
-            channel = min(sampler->next_1d(active) * n_channels, n_channels - 1);
+            channel = (UInt32) min(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
         SurfaceInteraction3f si;

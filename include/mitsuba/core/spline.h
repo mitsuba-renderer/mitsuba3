@@ -1015,7 +1015,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
             index += 1;
         }
 
-        index += size1 - 4;
+        index += (int32_t) size1 - 4;
     }
 
     return result;
