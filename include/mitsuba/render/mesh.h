@@ -186,8 +186,8 @@ public:
     /// @}
     // =========================================================================
 
-    /// Export mesh using the file format implemented by the subclass
-    virtual void write(Stream *stream) const;
+    /// Export mesh as a binary PLY file
+    void write_ply(Stream *stream) const;
 
     /// Compute smooth vertex normals and replace the current normal values
     void recompute_vertex_normals();

@@ -59,9 +59,9 @@ MTS_PY_EXPORT(Shape) {
         .def_method(Mesh, has_vertex_normals)
         .def_method(Mesh, has_vertex_texcoords)
         .def_method(Mesh, has_vertex_colors)
-        .def_method(Mesh, write)
         .def_method(Mesh, recompute_vertex_normals)
         .def_method(Mesh, recompute_bbox)
+        .def("write_ply", &Mesh::write_ply, "stream"_a, "Export mesh as a binary PLY file")
         .def("vertices", [](py::object &o) {
             Mesh &m = py::cast<Mesh&>(o);
             py::dtype dtype = o.attr("vertex_struct")().attr("dtype")();
