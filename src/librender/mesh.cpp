@@ -6,6 +6,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/records.h>
+#include "blender_types.h"
 #include <mutex>
 
 #if defined(MTS_ENABLE_EMBREE)
@@ -85,6 +86,233 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
     m_faces    = VertexHolder(new uint8_t[(face_count + 1) * m_face_size]);
 
     m_mesh = true;
+}
+
+/**
+ * This constructor created a Mesh object from the part of a blender mesh assigned to a certain material.
+ * This allows exporting meshes with multiple materials.
+ * This method is inspired by LuxCoreRender (https://github.com/LuxCoreRender/LuxCore/blob/master/src/luxcore/pyluxcoreforblender.cpp)
+ * \param name The mesh's unique name.
+ * \param loop_tri_count The number of LoopTris in the mesh.
+ * \param loop_tri_ptr A pointer to the list of LoopTris, a structure describing a face corner.
+ * \param vertex_count The number of vertices in the mesh.
+ * \param vertex_ptr A pointer to the list of vertices in blender's format.
+ * \param poly_ptr A pointer to the list of faces in blender's format.
+ * \param uv_ptr A pointer to the list of texture coordinates.
+ * \param col_ptr A pointer to the list of vertex colors.
+ * \param mat_nr The index of a material applied to the mesh. Identifies the faces we export for this mesh.
+ * \param to_world The mesh transform matrix.
+ */
+MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
+    const std::string &name, uintptr_t loop_tri_count, uintptr_t loop_tri_ptr,
+    uintptr_t loop_ptr, uintptr_t vertex_count, uintptr_t vertex_ptr,
+    uintptr_t poly_ptr, uintptr_t uv_ptr, uintptr_t col_ptr, short mat_nr,
+    const Matrix4f &to_world) {
+
+    auto fail = [&](const char *descr, auto... args) {
+        Throw(("Error while loading Blender mesh \"%s\": " + std::string(descr))
+                  .c_str(),
+              m_name, args...);
+    };
+
+    m_name     = name;
+    m_to_world = to_world;
+
+    const blender::MLoop *loops =
+        reinterpret_cast<const blender::MLoop *>(loop_ptr);
+    const blender::MLoopTri *tri_loops =
+        reinterpret_cast<const blender::MLoopTri *>(loop_tri_ptr);
+    const blender::MPoly *polygons =
+        reinterpret_cast<const blender::MPoly *>(poly_ptr);
+    const blender::MVert *verts =
+        reinterpret_cast<const blender::MVert *>(vertex_ptr);
+    const blender::MLoopUV *uvs =
+        reinterpret_cast<const blender::MLoopUV *>(uv_ptr);
+    const blender::MLoopCol *cols =
+        reinterpret_cast<const blender::MLoopCol *>(col_ptr);
+
+    bool has_uvs = (uvs != nullptr);
+    if (!has_uvs)
+        Log(Warn, "Mesh %s has no texture coordinates!", m_name);
+    bool has_cols = (cols != nullptr);
+    if (!has_cols)
+        Log(Warn, "Mesh %s has no vertex colors", m_name);
+
+    using ScalarIndex3 = std::array<ScalarIndex, 3>;
+    // Temporary buffers for vertices, normals, etc.
+    std::vector<InputPoint3f> tmp_vertices;
+    std::vector<InputNormal3f> tmp_normals;
+    std::vector<InputVector2f> tmp_uvs;
+    std::vector<InputVector3f> tmp_cols;
+    std::vector<ScalarIndex3> tmp_triangles;
+
+    ScalarIndex vertex_ctr = 0;
+
+    struct Key { // hash map key to define a unique vertex
+        InputNormal3f normal;
+        bool smooth{ false };
+        size_t poly{ 0 }; // store the polygon face for flat shading, since
+                          // comparing normals is ambiguous due to numerical
+                          // precision
+        InputVector2f uv{ 0.0f, 0.0f };
+        InputVector3f col{ 0.0f, 0.0f, 0.0f };
+        bool operator==(const Key &other) const {
+            return (smooth ? normal == other.normal : poly == other.poly) &&
+                   uv == other.uv && col == other.col;
+        }
+        bool operator!=(const Key &other) const {
+            return (smooth ? normal != other.normal : poly != other.poly) ||
+                   uv != other.uv || col != other.col;
+        }
+    };
+    struct VertexBinding { // Hash map entry
+        Key key;
+        ScalarIndex value{ 0 }; // index of the vertex in the vertex array
+        VertexBinding *next{ nullptr };
+        bool is_init{ false };
+    };
+    std::vector<VertexBinding> vertex_map; // Hash Map to avoid adding duplicate
+                                           // vertices
+    vertex_map.resize(vertex_count);
+
+    size_t duplicates_ctr = 0;
+    for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
+        const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
+        const blender::MPoly &face        = polygons[tri_loop.poly];
+
+        // We only export the part of the mesh corresponding to the given
+        // material id
+        if (face.mat_nr != mat_nr)
+            continue;
+
+        ScalarIndex3 triangle;
+
+        const blender::MVert &v0 = verts[loops[tri_loop.tri[0]].v];
+        const blender::MVert &v1 = verts[loops[tri_loop.tri[1]].v];
+        const blender::MVert &v2 = verts[loops[tri_loop.tri[2]].v];
+
+        Array<InputPoint3f, 3> face_points;
+        face_points[0] = InputPoint3f(v0.co[0], v0.co[1], v0.co[2]);
+        face_points[1] = InputPoint3f(v1.co[0], v1.co[1], v1.co[2]);
+        face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);
+
+        InputNormal3f normal;
+        if (!(blender::ME_SMOOTH & face.flag)) {
+            // flat shading, use per face normals
+            const Vector3f e1 = face_points[1] - face_points[0];
+            const Vector3f e2 = face_points[2] - face_points[0];
+            normal = normalize(m_to_world.transform_affine(cross(e1, e2)));
+        }
+        for (u_int i = 0; i < 3; i++) {
+            const size_t loop_index = tri_loop.tri[i];
+            const size_t vert_index = loops[loop_index].v;
+            if (unlikely((vert_index >= vertex_count)))
+                fail("reference to invalid vertex %i!", vert_index);
+
+            const blender::MVert &vert = verts[vert_index];
+            Key vert_key;
+            if (blender::ME_SMOOTH & face.flag) {
+                // smooth shading, store per vertex normals
+                normal = Normal3f(vert.no[0], vert.no[1], vert.no[2]);
+                normal = normalize(m_to_world.transform_affine(normal));
+                vert_key.smooth = true;
+            } else {
+                // vert_key.smooth = false (default), flat shading
+                vert_key.poly =
+                    tri_loop.poly; // store the referenced polygon (face)
+            }
+            vert_key.normal = normal;
+            if (has_uvs) {
+                const blender::MLoopUV &loop_uv = uvs[loop_index];
+                const InputVector2f uv(loop_uv.uv[0], loop_uv.uv[1]);
+                vert_key.uv = uv;
+            }
+            if (has_cols) {
+                const blender::MLoopCol &loop_col = cols[loop_index];
+                const InputVector3f color(loop_col.r / 255.0f,
+                                          loop_col.g / 255.0f,
+                                          loop_col.b / 255.0f);
+                vert_key.col = color;
+            }
+            // the vertex index in the blender mesh is the map index
+            VertexBinding *map_entry = &vertex_map[vert_index];
+            while (vert_key != map_entry->key && map_entry->next != nullptr)
+                map_entry = map_entry->next;
+
+            if (map_entry->is_init && map_entry->key == vert_key) {
+                triangle[i] = map_entry->value;
+                duplicates_ctr++;
+            } else {
+                if (map_entry->is_init) {
+                    // add a new entry
+                    map_entry->next = new VertexBinding();
+                    map_entry       = map_entry->next;
+                }
+                ScalarSize vert_id = vertex_ctr++;
+                map_entry->key     = vert_key;
+                map_entry->value   = vert_id;
+                map_entry->is_init = true;
+                // add stuff to the temporary buffers
+                tmp_vertices.push_back(
+                    m_to_world.transform_affine(face_points[i]));
+                tmp_normals.push_back(normal);
+                if (has_uvs)
+                    tmp_uvs.push_back(vert_key.uv);
+                if (has_cols)
+                    tmp_cols.push_back(vert_key.col);
+                triangle[i] = vert_id;
+            }
+        }
+        tmp_triangles.push_back(triangle);
+    }
+    Log(Warn, "Removed %i duplicates", duplicates_ctr);
+    if (vertex_ctr == 0)
+        return;
+    m_vertex_count = vertex_ctr;
+    m_face_count   = (ScalarSize) tmp_triangles.size();
+    // create the vertex buffer and initialize its fields
+    m_vertex_struct = new Struct();
+    for (auto name : { "x", "y", "z" })
+        m_vertex_struct->append(name, struct_type_v<InputFloat>);
+    m_disable_vertex_normals = false;
+    for (auto name : { "nx", "ny", "nz" })
+        m_vertex_struct->append(name, struct_type_v<InputFloat>);
+    m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
+    if (has_uvs) {
+        for (auto name : { "u", "v" })
+            m_vertex_struct->append(name, struct_type_v<InputFloat>);
+        m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
+    }
+    if (has_cols) {
+        for (auto name : { "r", "g", "b" })
+            m_vertex_struct->append(name, struct_type_v<InputFloat>);
+        m_color_offset = (ScalarIndex) m_vertex_struct->offset("r");
+    }
+
+    // create the face buffer and initialize its fields
+    m_face_struct = new Struct();
+    for (size_t i = 0; i < 3; ++i)
+        m_face_struct->append(tfm::format("i%i", i),
+                              struct_type_v<ScalarIndex>);
+
+    m_vertex_size = (ScalarSize) m_vertex_struct->size();
+    m_face_size   = (ScalarSize) m_face_struct->size();
+    m_vertices =
+        VertexHolder(new uint8_t[(m_vertex_count + 1) * m_vertex_size]);
+    m_faces = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
+    memcpy(m_faces.get(), tmp_triangles.data(), m_face_count * m_face_size);
+
+    for (ScalarIndex id = 0; id < vertex_ctr; id++) {
+        uint8_t *vertex_ptr = vertex(id);
+
+        store_unaligned(vertex_ptr, tmp_vertices[id]);
+        m_bbox.expand(tmp_vertices[id]);
+        store_unaligned(vertex_ptr + m_normal_offset, tmp_normals[id]);
+        if (has_uvs)
+            store_unaligned(vertex_ptr + m_texcoord_offset, tmp_uvs[id]);
+        if (has_cols)
+            store_unaligned(vertex_ptr + m_color_offset, tmp_cols[id]);
+    }
 }
 
 MTS_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
