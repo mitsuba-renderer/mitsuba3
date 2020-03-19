@@ -235,6 +235,11 @@ during the CMake process with the `MTS_OPTIX_PATH` cache entry:
     cmake .. -DMTS_OPTIX_PATH=/opt/optix
 
 
+.. warning::
+
+    On Windows, it is necessary to add `C:/path/to/optix/bin64` to the `PATH` environment
+    variable.
+
 Embree
 ------
 
