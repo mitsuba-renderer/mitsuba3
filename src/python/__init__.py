@@ -83,6 +83,16 @@ class MitsubaModule(types.ModuleType):
             pass
 
         if not hasattr(_tls, 'variant'):
+
+            try:
+                # No variant was set, try the default variant if possible
+                from .config import MTS_DEFAULT_VARIANT
+                if MTS_DEFAULT_VARIANT != "":
+                    set_variant(MTS_DEFAULT_VARIANT)
+                    return self.__getattribute__(key)
+            except Exception:
+                pass
+
             raise ImportError('Before importing any packages, you '
                               'must specify the desired variant of Mitsuba '
                               'using \"mitsuba.set_variant(..)\".\nThe '

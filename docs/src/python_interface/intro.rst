@@ -65,6 +65,12 @@ available variants:
     # Returns the name of the current variant
     mitsuba.variant() # e.g. 'gpu_autodiff_spectral'
 
+It is also possible to set a *default* variant that is automatically activated
+when importing the ``mitsuba`` Python module. This can be done by setting the
+``python-default`` field in the ``mitsuba.conf`` file. Following this, it is no
+longer necessary to call ``mitsuba.set_variant(..)`` anymore unless another
+variant is desired.
+
 
 API documentation
 -----------------

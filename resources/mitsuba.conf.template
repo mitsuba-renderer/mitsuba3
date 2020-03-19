@@ -79,6 +79,12 @@
 
     "default": "scalar_spectral",
 
+    # The variant below will automatically be set when importing the Python
+    # mitsuba module. If the value is "", the desired variant will need to be
+    # specified using "mitsuba.set_variant(..)" before importing any packages.
+
+    "python-default": "",
+
     # -------------------------------------------------------------
     # The remainder of this file defines the variants and does not
     # need to be edited (unless you wish to create new variants).

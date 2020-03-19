@@ -143,20 +143,29 @@ if __name__ == '__main__':
     float_types = set()
     for name in configurations['enabled']:
         if name not in configurations:
-            raise ValueError('mitsuba.conf: "enabled" refers to an unknown configuration "%s"' % name)
+            raise ValueError('mitsuba.conf: "enabled" refers to an '
+                             'unknown configuration "%s"' % name)
         item = configurations[name]
         spectrum = item['spectrum'].replace('Float', item['float'])
         float_types.add(item['float'])
         enabled.append((name, item['float'], spectrum))
 
     if not enabled:
-        raise ValueError('mitsuba.conf: there must be at least one enabled build configuration!')
+        raise ValueError('mitsuba.conf: there must be at least one '
+                         'enabled build configuration!')
 
     # Use first configuration if default mode is not specified
     default_variant = configurations.get('default', enabled[0][0])
+    default_variant_python = configurations.get('python-default', '')
 
     if default_variant not in configurations['enabled']:
-        raise ValueError('mitsuba.conf: the "default" mode is not part of "enabled" list!')
+        raise ValueError('mitsuba.conf: the "default" mode is not part of '
+                         'the "enabled" list!')
+
+    if default_variant_python != '' and \
+            default_variant_python not in configurations['enabled']:
+        raise ValueError('mitsuba.conf: the "python-default" mode is not '
+                         'part of the "enabled" list!')
 
     fname = realpath(join(root, 'include/mitsuba/core/config.h'))
     output = StringIO()
@@ -165,8 +174,9 @@ if __name__ == '__main__':
 
     fname = realpath(join(root, 'src/python/config.py'))
     output = StringIO()
-    write_core_config_python(output, enabled, default_variant)
+    write_core_config_python(output, enabled, default_variant_python)
     write_to_file_if_changed(fname, output.getvalue())
 
     for index, (name, float_, spectrum) in enumerate(enabled):
-        print('%s|%s|%s' % (name, float_, spectrum), end=';' if index < len(enabled)-1 else '')
+        print('%s|%s|%s' % (name, float_, spectrum),
+              end=';' if index < len(enabled) - 1 else '')
