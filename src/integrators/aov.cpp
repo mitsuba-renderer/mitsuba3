@@ -56,6 +56,8 @@ Currently, the following AOVs types are available:
     - :monosp:`uv`: UV coordinates.
     - :monosp:`geo_normal`: Geometric normal.
     - :monosp:`sh_normal`: Shading normal.
+    - :monosp:`dp_du`, :monosp:`dp_dv`: Position partials wrt. the UV parameterization.
+    - :monosp:`duv_dx`, :monosp:`duv_dy`: UV partials wrt. changes in screen-space.
 
  */
 
@@ -71,6 +73,10 @@ public:
         UV,
         GeometricNormal,
         ShadingNormal,
+        dPdU,
+        dPdV,
+        dUVdx,
+        dUVdy,
         IntegratorRGBA
     };
 
@@ -105,6 +111,24 @@ public:
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
+            } else if (item[1] == "dp_du") {
+                m_aov_types.push_back(Type::dPdU);
+                m_aov_names.push_back(item[0] + ".X");
+                m_aov_names.push_back(item[0] + ".Y");
+                m_aov_names.push_back(item[0] + ".Z");
+            } else if (item[1] == "dp_dv") {
+                m_aov_types.push_back(Type::dPdV);
+                m_aov_names.push_back(item[0] + ".X");
+                m_aov_names.push_back(item[0] + ".Y");
+                m_aov_names.push_back(item[0] + ".Z");
+            } else if (item[1] == "duv_dx") {
+                m_aov_types.push_back(Type::dUVdx);
+                m_aov_names.push_back(item[0] + ".U");
+                m_aov_names.push_back(item[0] + ".V");
+            } else if (item[1] == "duv_dy") {
+                m_aov_types.push_back(Type::dUVdy);
+                m_aov_names.push_back(item[0] + ".U");
+                m_aov_names.push_back(item[0] + ".V");
             } else {
                 Throw("Invalid AOV type \"%s\"!", item[1]);
             }
@@ -170,6 +194,28 @@ public:
                     *aovs++ = si.sh_frame.n.x();
                     *aovs++ = si.sh_frame.n.y();
                     *aovs++ = si.sh_frame.n.z();
+                    break;
+
+                case Type::dPdU:
+                    *aovs++ = si.dp_du.x();
+                    *aovs++ = si.dp_du.y();
+                    *aovs++ = si.dp_du.z();
+                    break;
+
+                case Type::dPdV:
+                    *aovs++ = si.dp_dv.x();
+                    *aovs++ = si.dp_dv.y();
+                    *aovs++ = si.dp_dv.z();
+                    break;
+
+                case Type::dUVdx:
+                    *aovs++ = si.duv_dx.x();
+                    *aovs++ = si.duv_dx.y();
+                    break;
+
+                case Type::dUVdy:
+                    *aovs++ = si.duv_dy.x();
+                    *aovs++ = si.duv_dy.y();
                     break;
 
                 case Type::IntegratorRGBA: {
