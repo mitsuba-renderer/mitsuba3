@@ -30,7 +30,7 @@
  * Temporary scratch space that is used to cache intersection information
  * (# of floats)
  */
-#define MTS_KD_INTERSECTION_CACHE_SIZE 7
+#define MTS_KD_INTERSECTION_CACHE_SIZE 6
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -2427,7 +2427,7 @@ protected:
         else if (ShadowRay)
             hit = shape->ray_test(ray, active);
         else
-            std::tie(hit, t) = shape->ray_intersect(ray, cache + 3, active);
+            std::tie(hit, t) = shape->ray_intersect(ray, cache + 2, active);
 
         if (!ShadowRay && any(hit)) {
             Float shape_index_v = reinterpret_array<Float>(UInt(shape_index));
@@ -2441,16 +2441,13 @@ protected:
                 masked(cache[1], hit) = prim_index_v;
             }
 
-            // Indicates that all lanes have a valid cache
-            cache[2] = 1.f;
-
             if (is_mesh) {
                 if constexpr (!is_array_v<Float>) {
-                    cache[3] = u;
-                    cache[4] = v;
+                    cache[2] = u;
+                    cache[3] = v;
                 } else {
-                    masked(cache[3], hit) = u;
-                    masked(cache[4], hit) = v;
+                    masked(cache[2], hit) = u;
+                    masked(cache[3], hit) = v;
                 }
             }
         }

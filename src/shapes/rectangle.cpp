@@ -212,17 +212,16 @@ public:
                                   SurfaceInteraction3f &si_out, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        // Load and/or recompute cache if necessary
-        Mask invalid_cache = neq(*cache++, 1.f);
+#if !defined(MTS_ENABLE_EMBREE)
         Float local_x = cache[0];
         Float local_y = cache[1];
-        if (any(invalid_cache)) {
-            Ray3f ray     = m_world_to_object.transform_affine(ray_);
-            Float t       = -ray.o.z() * ray.d_rcp.z();
-            Point3f local = ray(t);
-            masked(local_x, invalid_cache) = local.x();
-            masked(local_y, invalid_cache) = local.y();
-        }
+#else
+        Ray3f ray     = m_world_to_object.transform_affine(ray_);
+        Float t       = -ray.o.z() * ray.d_rcp.z();
+        Point3f local = ray(t);
+        Float local_x = local.x();
+        Float local_y = local.y();
+#endif
 
         SurfaceInteraction3f si(si_out);
 

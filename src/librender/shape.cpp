@@ -276,9 +276,7 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
 
     SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
     Float cache[MTS_KD_INTERSECTION_CACHE_SIZE];
-    cache[0] = Float(1.f); // Indicates that all lanes have a valid cache
-
-    auto [success, t] = ray_intersect(ray, cache + 1, active);
+    auto [success, t] = ray_intersect(ray, cache, active);
     active &= success;
     si.t = select(active, t,  math::Infinity<Float>);
 

@@ -265,10 +265,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /
                                                                  Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    // Only fill surface interaction for lanes with valid cache
-    Mask invalid_cache = neq(*cache++, 1.f);
-    active &= !invalid_cache;
-
     // Barycentric coordinates within triangle
     Float b1 = cache[0],
           b2 = cache[1];

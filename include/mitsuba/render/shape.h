@@ -162,9 +162,7 @@ public:
      * uninitialized.
      *
      * \param cache
-     *     Cached information about the previously computed intersection. The
-     *     first entry of the cache indicates which lanes in the entries are
-     *     valid. For invalid lanes, the information needs to be recomputed.
+     *     Cached information about the previously computed intersection.
      */
     virtual void fill_surface_interaction(const Ray3f &ray, const Float *cache,
                                           SurfaceInteraction3f &si, Mask active = true) const;
@@ -348,7 +346,6 @@ NAMESPACE_END(mitsuba)
 ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
     ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
     ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
-    ENOKI_CALL_SUPPORT_METHOD(is_mesh)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const typename Class::Emitter *)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const typename Class::Sensor *)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const typename Class::BSDF *)

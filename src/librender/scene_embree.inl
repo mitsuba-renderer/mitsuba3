@@ -75,7 +75,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
                 si.prim_index = prim_index;
 
                 // Create the cache for the Mesh shape
-                Float cache[3] = { (si.shape->is_mesh() ? 1.f : 0.f), rh.hit.u, rh.hit.v };
+                Float cache[2] = { rh.hit.u, rh.hit.v };
 
                 // Ask shape to fill in the rest
                 si.shape->fill_surface_interaction(ray, cache, si);
@@ -130,10 +130,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
                 si.prim_index = prim_index;
 
                 // Create the cache for the Mesh shapes
-                Float cache[3] = {
-                    select(si.shape->is_mesh(), Float(1.f), Float(0.f)),
-                    load<Float>(rh.hit.u), load<Float>(rh.hit.v)
-                };
+                Float cache[2] = { load<Float>(rh.hit.u), load<Float>(rh.hit.v) };
 
                 // Ask shape(s) to fill in the rest
                 si.shape->fill_surface_interaction(ray, cache, si, active);
