@@ -11,6 +11,10 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/shape.h>
 
+#if defined(MTS_ENABLE_EMBREE)
+    #include <embree3/rtcore.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -418,6 +422,18 @@ public:
         m_world_to_object = m_object_to_world.inverse();
         m_inv_surface_area = 1.f / surface_area();
     }
+
+#if defined(MTS_ENABLE_EMBREE)
+    RTCGeometry embree_geometry(RTCDevice device) const override {
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
+        float *buffer = (float*) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
+                                                         RTC_FORMAT_FLOAT4, 4 * sizeof(float), 1);
+        buffer[0] = m_center.x(); buffer[1] = m_center.y(); buffer[2] = m_center.z();
+        buffer[3] = m_radius;
+        rtcCommitGeometry(geom);
+        return geom;
+    }
+#endif
 
     std::string to_string() const override {
         std::ostringstream oss;

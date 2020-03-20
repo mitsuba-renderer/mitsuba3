@@ -208,9 +208,21 @@ public:
                       && abs(local.y()) <= 1.f;
     }
 
-    void fill_surface_interaction(const Ray3f &ray, const Float *cache,
+    void fill_surface_interaction(const Ray3f &ray_, const Float *cache,
                                   SurfaceInteraction3f &si_out, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
+
+        // Load and/or recompute cache if necessary
+        Mask invalid_cache = neq(*cache++, 1.f);
+        Float local_x = cache[0];
+        Float local_y = cache[1];
+        if (any(invalid_cache)) {
+            Ray3f ray     = m_world_to_object.transform_affine(ray_);
+            Float t       = -ray.o.z() * ray.d_rcp.z();
+            Point3f local = ray(t);
+            masked(local_x, invalid_cache) = local.x();
+            masked(local_y, invalid_cache) = local.y();
+        }
 
         SurfaceInteraction3f si(si_out);
 
@@ -218,10 +230,10 @@ public:
         si.sh_frame.n = m_frame.n;
         si.dp_du      = m_du * m_frame.s;
         si.dp_dv      = m_dv * m_frame.t;
-        si.p          = ray(si.t);
-        si.time       = ray.time;
-        si.uv         = Point2f(fmadd(cache[0], .5f, .5f),
-                                fmadd(cache[1], .5f, .5f));
+        si.p          = ray_(si.t);
+        si.time       = ray_.time;
+        si.uv         = Point2f(fmadd(local_x, .5f, .5f),
+                                fmadd(local_y, .5f, .5f));
 
         si_out[active] = si;
     }
