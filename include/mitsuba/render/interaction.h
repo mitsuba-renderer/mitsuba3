@@ -571,11 +571,15 @@ struct PreliminaryIntersection {
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      HitComputeFlags flags,
                                                      Mask active) {
-        SurfaceInteraction3f si = shape->compute_surface_interaction(ray, *this, flags, active);
+        ShapePtr target = select(eq(instance, nullptr), shape, instance);
+        SurfaceInteraction3f si = target->compute_surface_interaction(ray, *this, flags, active);
         active &= si.is_valid();
         si.t = select(active, si.t, math::Infinity<Float>);
         si.prim_index  = prim_index;
-        si.shape       = shape;
+
+        // Set shape pointer if not already set by compute_surface_interaction()
+        si.shape = select(eq(si.shape, nullptr), shape, si.shape);
+
         si.instance    = instance;
         si.time        = ray.time;
         si.wavelengths = ray.wavelengths;

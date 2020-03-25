@@ -213,6 +213,7 @@ protected:
 
     host_vector<ref<Emitter>, Float> m_emitters;
     std::vector<ref<Shape>> m_shapes;
+    std::vector<ref<Shape>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;
     ref<Integrator> m_integrator;

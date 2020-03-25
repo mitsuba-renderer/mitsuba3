@@ -13,5 +13,8 @@ if (MTS_ENABLE_EMBREE)
     target_link_libraries(sphere PRIVATE $<TARGET_FILE:embree>)
 endif()
 
+add_plugin(shapegroup  shapegroup.cpp)
+add_plugin(instance    instance.cpp)
+
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

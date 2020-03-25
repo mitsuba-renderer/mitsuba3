@@ -2385,8 +2385,6 @@ protected:
                 pi = shape->ray_intersect_preliminary(ray, active);
             }
 
-            pi.shape_index = shape_index;
-
             return pi;
         }
     }

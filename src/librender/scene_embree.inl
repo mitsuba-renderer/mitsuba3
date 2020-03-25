@@ -28,14 +28,22 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
 
     Timer timer;
     RTCScene embree_scene = rtcNewScene(__embree_device);
+    rtcSetSceneFlags(embree_scene,RTC_SCENE_FLAG_DYNAMIC);
     m_accel = embree_scene;
+
+    for (Shape *shapegroup : m_shapegroups)
+        shapegroup->init_embree_scene(__embree_device);
+
     for (Shape *shape : m_shapes)
-        rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));
+         rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));
+
     rtcCommitScene(embree_scene);
     Log(Info, "Embree ready. (took %s)", util::time_string(timer.value()));
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
+    for (Shape *shapegroup : m_shapegroups)
+        shapegroup->release_embree_scene();
     rtcReleaseScene((RTCScene) m_accel);
 }
 
@@ -45,7 +53,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
-        PreliminaryIntersection3f pi;
+        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
 
         if constexpr (!is_array_v<Float>) {
             RTCRayHit rh;
@@ -68,8 +76,20 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index  = rh.hit.primID;
 
+                // We get level 0 because we only support one level of instancing
+                uint32_t inst_index = rh.hit.instID[0];
+
+                // If the hit is not on an instance
+                if (inst_index == RTC_INVALID_GEOMETRY_ID) {
+                    // If the hit is not on an instance
+                    pi.shape = m_shapes[shape_index];
+                } else {
+                    // If the hit is on an instance
+                    pi.instance = m_shapes[inst_index];
+                    pi.shape_index = shape_index;
+                }
+
                 pi.t = rh.ray.tfar;
-                pi.shape = m_shapes[shape_index];
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
             }
@@ -104,8 +124,21 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
                 UInt32 shape_index = load<UInt32>(rh.hit.geomID);
                 UInt32 prim_index  = load<UInt32>(rh.hit.primID);
 
+                // We get level 0 because we only support one level of instancing
+                UInt32 inst_index = load<UInt32>(rh.hit.instID[0]);
+
+                Mask hit_not_inst = hit &&  eq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_inst     = hit && neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+
+                PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
                 pi.t = select(hit, t, math::Infinity<Float>);
-                pi.shape = gather<ShapePtr>(m_shapes.data(), shape_index, hit);;
+
+                // Set si.instance and si.shape
+                UInt32 index   = select(hit_inst, inst_index, shape_index);
+                ShapePtr shape = gather<ShapePtr>(m_shapes.data(), index, hit);
+                masked(pi.instance, hit_inst)  = shape;
+                masked(pi.shape, hit_not_inst) = shape;
+
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(load<Float>(rh.hit.u), load<Float>(rh.hit.v));
             }
@@ -144,9 +177,22 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index  = rh.hit.primID;
 
-                PreliminaryIntersection3f pi;
+                // We get level 0 because we only support one level of instancing
+                uint32_t inst_index = rh.hit.instID[0];
+
+                PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+
+                // If the hit is not on an instance
+                if (inst_index == RTC_INVALID_GEOMETRY_ID) {
+                    // If the hit is not on an instance
+                    pi.shape = m_shapes[shape_index];
+                } else {
+                    // If the hit is on an instance
+                    pi.instance = m_shapes[inst_index];
+                    pi.shape_index = shape_index;
+                }
+
                 pi.t = rh.ray.tfar;
-                pi.shape = m_shapes[shape_index];
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
 
@@ -188,10 +234,23 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 UInt32 shape_index = load<UInt32>(rh.hit.geomID);
                 UInt32 prim_index  = load<UInt32>(rh.hit.primID);
 
+                // We get level 0 because we only support one level of instancing
+                UInt32 inst_index = load<UInt32>(rh.hit.instID[0]);
+
+                Mask hit_not_inst = hit &&  eq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_inst     = hit && neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+
                 PreliminaryIntersection3f pi;
                 pi.t = select(hit, t, math::Infinity<Float>);
-                pi.shape = gather<ShapePtr>(m_shapes.data(), shape_index, hit);;
+
+                // Set si.instance and si.shape
+                UInt32 index   = select(hit_inst, inst_index, shape_index);
+                ShapePtr shape = gather<ShapePtr>(m_shapes.data(), index, hit);
+                masked(pi.instance, hit_inst)  = shape;
+                masked(pi.shape, hit_not_inst) = shape;
+
                 pi.prim_index = prim_index;
+                pi.shape_index = shape_index;
                 pi.prim_uv = Point2f(load<Float>(rh.hit.u), load<Float>(rh.hit.v));
 
                 si = pi.compute_surface_interaction(ray, flags, active);

@@ -33,9 +33,12 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
                 m_emitters.push_back(shape->emitter());
             if (shape->is_sensor())
                 m_sensors.push_back(shape->sensor());
-
-            m_bbox.expand(shape->bbox());
-            m_shapes.push_back(shape);
+            if (shape->is_shapegroup()) {
+                m_shapegroups.push_back(shape);
+            } else {
+                m_bbox.expand(shape->bbox());
+                m_shapes.push_back(shape);
+            }
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
             if (!has_flag(emitter->flags(), EmitterFlags::Surface))
