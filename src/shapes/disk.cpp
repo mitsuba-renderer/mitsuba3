@@ -186,6 +186,7 @@ public:
         Float local_x = cache[0];
         Float local_y = cache[1];
 #else
+        ENOKI_MARK_USED(cache);
         Ray3f ray_    = m_world_to_object.transform_affine(ray);
         Float t       = -ray_.o.z() / ray_.d.z();
         Point3f local = ray_(t);
