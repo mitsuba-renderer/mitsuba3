@@ -1,62 +1,15 @@
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
 
-MTS_PY_EXPORT(Transform) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
 
-    MTS_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
-        auto trans3 = py::class_<Transform3f>(m, "Transform3f", D(Transform))
-            .def(py::init<>(), "Initialize with the identity matrix")
-            .def(py::init<const Transform3f &>(), "Copy constructor")
-            .def(py::init([](py::array a) {
-                if (a.size() == 9)
-                    return new Transform3f(py::cast<ScalarMatrix3f>(a));
-                else
-                    return new Transform3f(py::cast<Matrix3f>(a));
-            }))
-            .def(py::init([](const py::list &list) {
-                size_t size = list.size();
-                if (size != 3)
-                    throw py::reference_cast_error();
-                ScalarMatrix3f m;
-                for (size_t i = 0; i < size; ++i)
-                    m[i] = py::cast<ScalarVector3f>(list[i]);
-                return new Transform3f(transpose(m));
-            }))
-            .def(py::init<Matrix3f>(), D(Transform, Transform))
-            .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
-            .def("transform_point",
-                [](const Transform3f &t, const Point2f &v) {
-                    return t*v;
-                })
-            .def("transform_vector",
-                [](const Transform3f &t, const Vector2f &v) {
-                    return t*v;
-                })
-            .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
-            .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
-            .def_static("rotate", &Transform3f::template rotate<3>,
-                        "angle"_a, D(Transform, rotate, 2))
-            .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
-            /// Operators
-            .def(py::self == py::self)
-            .def(py::self != py::self)
-            .def(py::self * py::self)
-            /// Fields
-            .def("inverse",   &Transform3f::inverse, D(Transform, inverse))
-            .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
-            .def_readwrite("matrix", &Transform3f::matrix)
-            .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
-            .def_repr(Transform3f);
-
-        bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3);
-    }
-
-    MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
-        auto trans4 = py::class_<Transform4f>(m, "Transform4f", D(Transform))
+template <typename Float>
+void bind_transform4f(py::module &m, const char *name) {
+    MTS_IMPORT_CORE_TYPES()
+    auto trans4 = py::class_<Transform4f>(m, name, D(Transform))
             .def(py::init<>(), "Initialize with the identity matrix")
             .def(py::init<const Transform4f &>(), "Copy constructor")
             .def(py::init([](py::array a) {
@@ -115,7 +68,70 @@ MTS_PY_EXPORT(Transform) {
             .def_readwrite("inverse_transpose", &Transform4f::inverse_transpose)
             .def_repr(Transform4f);
 
+        if constexpr (is_dynamic_v<Float>)
+            trans4.def(py::init<const ScalarTransform4f &>(), "Broadcast constructor");
+
         bind_slicing_operators<Transform4f, ScalarTransform4f>(trans4);
+}
+
+MTS_PY_EXPORT(Transform) {
+    MTS_PY_IMPORT_TYPES_DYNAMIC()
+
+    MTS_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
+        auto trans3 = py::class_<Transform3f>(m, "Transform3f", D(Transform))
+            .def(py::init<>(), "Initialize with the identity matrix")
+            .def(py::init<const Transform3f &>(), "Copy constructor")
+            .def(py::init([](py::array a) {
+                if (a.size() == 9)
+                    return new Transform3f(py::cast<ScalarMatrix3f>(a));
+                else
+                    return new Transform3f(py::cast<Matrix3f>(a));
+            }))
+            .def(py::init([](const py::list &list) {
+                size_t size = list.size();
+                if (size != 3)
+                    throw py::reference_cast_error();
+                ScalarMatrix3f m;
+                for (size_t i = 0; i < size; ++i)
+                    m[i] = py::cast<ScalarVector3f>(list[i]);
+                return new Transform3f(transpose(m));
+            }))
+            .def(py::init<Matrix3f>(), D(Transform, Transform))
+            .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
+            .def("transform_point",
+                [](const Transform3f &t, const Point2f &v) {
+                    return t*v;
+                })
+            .def("transform_vector",
+                [](const Transform3f &t, const Vector2f &v) {
+                    return t*v;
+                })
+            .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
+            .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
+            .def_static("rotate", &Transform3f::template rotate<3>,
+                        "angle"_a, D(Transform, rotate, 2))
+            .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
+            /// Operators
+            .def(py::self == py::self)
+            .def(py::self != py::self)
+            .def(py::self * py::self)
+            /// Fields
+            .def("inverse",   &Transform3f::inverse, D(Transform, inverse))
+            .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
+            .def_readwrite("matrix", &Transform3f::matrix)
+            .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
+            .def_repr(Transform3f);
+
+        bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3);
+    }
+
+    MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
+        bind_transform4f<Float>(m, "Transform4f");
+
+        if constexpr (is_dynamic_v<Float>) {
+            bind_transform4f<ScalarFloat>(m, "ScalarTransform4f");
+            py::implicitly_convertible<ScalarTransform4f, Transform4f>();
+        }
     }
 
     py::implicitly_convertible<py::array, Transform4f>();
