@@ -12,7 +12,6 @@ MTS_PY_DECLARE(quad);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(Cast);
 MTS_PY_DECLARE(Struct);
-MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(Appender);
 MTS_PY_DECLARE(ArgParser);
 MTS_PY_DECLARE(Bitmap);
@@ -105,7 +104,6 @@ PYBIND11_MODULE(core_ext, m) {
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Cast);
     MTS_PY_IMPORT(Struct);
-    MTS_PY_IMPORT(Properties);
     MTS_PY_IMPORT(Appender);
     MTS_PY_IMPORT(ArgParser);
     MTS_PY_IMPORT(rfilter);

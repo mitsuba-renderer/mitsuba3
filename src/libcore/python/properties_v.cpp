@@ -2,6 +2,9 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
 
+using Caster = py::object(*)(const mitsuba::Object *);
+extern Caster cast_object;
+
 #if defined(__clang__)
 #  pragma clang diagnostic ignored "-Wduplicate-decl-specifier" // warning: duplicate 'const' declaration specifier
 #endif
@@ -59,9 +62,9 @@ MTS_PY_EXPORT(Properties) {
                     return py::cast(p.transform(key));
                 else if (type == Properties::Type::AnimatedTransform)
                     return py::cast(p.animated_transform(key));
-                else if (type == Properties::Type::Object)
-                    return py::cast(p.object(key));
-                else if (type == Properties::Type::Pointer)
+                else if (type == Properties::Type::Object) {
+                    return cast_object((ref<Object>)p.object(key));
+                } else if (type == Properties::Type::Pointer)
                     return py::cast(p.pointer(key));
                 else {
                     throw std::runtime_error("Unsupported property type");

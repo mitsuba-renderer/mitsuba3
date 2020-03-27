@@ -13,6 +13,7 @@ MTS_PY_DECLARE(Hierarchical2D);
 MTS_PY_DECLARE(Marginal2D);
 MTS_PY_DECLARE(math);
 MTS_PY_DECLARE(qmc);
+MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(sample_tea);
 MTS_PY_DECLARE(spline);
@@ -256,6 +257,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(IrregularContinuousDistribution);
     MTS_PY_IMPORT_SUBMODULE(math);
     MTS_PY_IMPORT(qmc);
+    MTS_PY_IMPORT(Properties);
     MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(sample_tea);
     MTS_PY_IMPORT_SUBMODULE(spline);

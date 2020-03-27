@@ -28,6 +28,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     math_v.cpp
     object_v.cpp
     qmc_v.cpp
+    properties_v.cpp
     random_v.cpp
     ray_v.cpp
     rfilter_v.cpp
@@ -67,7 +68,7 @@ add_mitsuba_python_library(core_ext
   mmap.cpp
   object.cpp
   progress.cpp
-  properties.cpp
+#   properties.cpp
   quad.cpp
   rfilter.cpp
   stream.cpp
