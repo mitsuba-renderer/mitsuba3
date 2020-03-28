@@ -2,7 +2,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
 
-using Caster = py::object(*)(const mitsuba::Object *);
+using Caster = py::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
 #if defined(__clang__)
