@@ -635,6 +635,18 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                     try {
                         if (std::string(doc.begin()->name()) == "scene") {
+                            auto version_attr_incl = doc.begin()->attribute("version");
+                            if (version_attr_incl) {
+                                Version version;
+                                try {
+                                    version = version_attr_incl.value();
+                                } catch (const std::exception &) {
+                                    nested_src.throw_error(*doc.begin(), "could not parse version number \"%s\"", version_attr_incl.value());
+                                }
+                                upgrade_tree(nested_src, *doc.begin(), version);
+                                doc.begin()->remove_attribute(version_attr_incl);
+                            }
+
                             for (pugi::xml_node &ch: doc.begin()->children()) {
                                 auto [arg_name, nested_id] = parse_xml(nested_src, ctx, ch, parent_tag,
                                           props, param, arg_counter, 1);
