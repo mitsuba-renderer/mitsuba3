@@ -95,6 +95,6 @@ def test03_sample_direction(variant_packet_spectral):
     assert ek.allclose(emitter.pdf_direction(it, ds), InvFourPi)
     assert ek.allclose(ds.time, it.time)
 
-    # Evalutate the spectrum (divide by the pdf)
+    # Evaluate the spectrum (divide by the pdf)
     spec = spectrum.eval(it) / warp.square_to_uniform_sphere_pdf(ds.d)
     assert ek.allclose(res, spec)

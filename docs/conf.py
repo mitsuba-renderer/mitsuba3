@@ -59,6 +59,7 @@ rst_prolog = r"""
 .. |string| replace:: :paramtype:`string`
 .. |bsdf| replace:: :paramtype:`bsdf`
 .. |point| replace:: :paramtype:`point`
+.. |vector| replace:: :paramtype:`vector`
 .. |transform| replace:: :paramtype:`transform`
 
 .. |enoki| replace:: :monosp:`enoki`
