@@ -133,7 +133,9 @@ MTS_PY_EXPORT(Transform) {
 
     MTS_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
         bind_transform3f<Float>(m, "Transform3f");
+    }
 
+    MTS_PY_CHECK_ALIAS(ScalarTransform3f, "ScalarTransform3f") {
         if constexpr (is_dynamic_v<Float>) {
             bind_transform3f<ScalarFloat>(m, "ScalarTransform3f");
             py::implicitly_convertible<ScalarTransform3f, Transform3f>();
@@ -142,7 +144,9 @@ MTS_PY_EXPORT(Transform) {
 
     MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
         bind_transform4f<Float>(m, "Transform4f");
+    }
 
+    MTS_PY_CHECK_ALIAS(ScalarTransform4f, "ScalarTransform4f") {
         if constexpr (is_dynamic_v<Float>) {
             bind_transform4f<ScalarFloat>(m, "ScalarTransform4f");
             py::implicitly_convertible<ScalarTransform4f, Transform4f>();
