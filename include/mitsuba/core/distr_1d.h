@@ -261,8 +261,8 @@ template <typename Float> struct ContinuousDistribution {
     using Mask = mask_t<Float>;
 
     using ScalarFloat = scalar_t<Float>;
-    using ScalarVector2f = Array<ScalarFloat, 2>;
-    using ScalarVector2u = Array<uint32_t, 2>;
+    using ScalarVector2f = Vector<ScalarFloat, 2>;
+    using ScalarVector2u = Vector<uint32_t, 2>;
 
 public:
     /// Create an unitialized ContinuousDistribution instance

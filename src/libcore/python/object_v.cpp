@@ -29,6 +29,7 @@ MTS_PY_EXPORT(Object) {
         GET_ATTR(Point3u);
         GET_ATTR(Point2f);
         GET_ATTR(Point3f);
+        GET_ATTR(Vector2f);
         GET_ATTR(Vector3f);
         GET_ATTR(Normal3f);
         GET_ATTR(Frame3f);
@@ -51,6 +52,7 @@ MTS_PY_EXPORT(Object) {
             GET_ATTR(ScalarPoint3u);
             GET_ATTR(ScalarPoint2f);
             GET_ATTR(ScalarPoint3f);
+            GET_ATTR(ScalarVector2f);
             GET_ATTR(ScalarVector3f);
             GET_ATTR(ScalarNormal3f);
             GET_ATTR(ScalarFrame3f);
@@ -80,6 +82,7 @@ MTS_PY_EXPORT(Object) {
         SET_ATTR(Point3u);
         SET_ATTR(Point2f);
         SET_ATTR(Point3f);
+        SET_ATTR(Vector2f);
         SET_ATTR(Vector3f);
         SET_ATTR(Normal3f);
         SET_ATTR(Frame3f);
@@ -101,6 +104,7 @@ MTS_PY_EXPORT(Object) {
             SET_ATTR(ScalarPoint3u);
             SET_ATTR(ScalarPoint2f);
             SET_ATTR(ScalarPoint3f);
+            SET_ATTR(ScalarVector2f);
             SET_ATTR(ScalarVector3f);
             SET_ATTR(ScalarNormal3f);
             SET_ATTR(ScalarFrame3f);
