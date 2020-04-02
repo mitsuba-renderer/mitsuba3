@@ -413,6 +413,7 @@ def render_torch(scene, params=None, **kwargs):
                             ctx.inputs.append(None)
                             ctx.inputs.append(params[k] if v.requires_grad
                                               else None)
+                            continue
 
                         ctx.inputs.append(None)
                         ctx.inputs.append(None)
