@@ -87,10 +87,9 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        if (m_specular_reflectance)
+        if (props.has_property("specular_reflectance"))
             m_specular_reflectance   = props.texture<Texture>("specular_reflectance", 1.f);
-
-        if (m_specular_transmittance)
+        if (props.has_property("specular_transmittance"))
             m_specular_transmittance = props.texture<Texture>("specular_transmittance", 1.f);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
