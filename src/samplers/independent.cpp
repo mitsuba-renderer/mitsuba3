@@ -53,6 +53,7 @@ public:
     ref<Base> clone() override {
         IndependentSampler *sampler = new IndependentSampler();
         sampler->m_sample_count = m_sample_count;
+        sampler->m_base_seed = m_base_seed;
         return sampler;
     }
 
