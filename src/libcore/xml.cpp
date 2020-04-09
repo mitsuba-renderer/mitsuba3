@@ -977,18 +977,34 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             case Tag::Matrix: {
                     check_attributes(src, node, { "value" });
                     std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
-                    if (tokens.size() != 16)
-                        Throw("matrix: expected 16 values");
+                    if (tokens.size() != 16 && tokens.size() != 9)
+                        Throw("matrix: expected 16 or 9 values");
                     Matrix4f matrix;
-                    for (int i = 0; i < 4; ++i) {
-                        for (int j = 0; j < 4; ++j) {
-                            try {
-                                matrix(i, j) = detail::stof(tokens[i * 4 + j]);
-                            } catch (...) {
-                                src.throw_error(node, "could not parse floating point value \"%s\"",
-                                                tokens[i * 4 + j]);
+                    if (tokens.size() == 16) {
+                        for (int i = 0; i < 4; ++i) {
+                            for (int j = 0; j < 4; ++j) {
+                                try {
+                                    matrix(i, j) = detail::stof(tokens[i * 4 + j]);
+                                } catch (...) {
+                                    src.throw_error(node, "could not parse floating point value \"%s\"",
+                                                    tokens[i * 4 + j]);
+                                }
                             }
                         }
+                    } else {
+                        Log(Warn, "3x3 matrix will be stored as a 4x4 matrix, with the same last row and column as the identity matrix.");
+                        Matrix3f mat3;
+                        for (int i = 0; i < 3; ++i) {
+                            for (int j = 0; j < 3; ++j) {
+                                try {
+                                    mat3(i, j) = detail::stof(tokens[i * 3 + j]);
+                                } catch (...) {
+                                    src.throw_error(node, "could not parse floating point value \"%s\"",
+                                                    tokens[i * 3 + j]);
+                                }
+                            }
+                        }
+                        matrix = Matrix4f(mat3);
                     }
                     ctx.transform = Transform4f(matrix) * ctx.transform;
                 }

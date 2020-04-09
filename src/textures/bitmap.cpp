@@ -27,7 +27,8 @@ Bitmap texture (:monosp:`bitmap`)
      (e.g. sRGB to linear, spectral upsampling) be disabled? (Default: false)
  * - to_uv
    - |transform|
-   - Specifies an optional uv transformation.  (Default: none, i.e. emitter space = world space)
+   - Specifies an optional 3x3 UV transformation matrix. A 4x4 matrix can also be provided.
+     In that case, the last row and columns will be ignored.  (Default: none)
 
 This plugin provides a bitmap texture source that performs bilinearly interpolated
 lookups on JPEG, PNG, OpenEXR, RGBE, TGA, and BMP files.

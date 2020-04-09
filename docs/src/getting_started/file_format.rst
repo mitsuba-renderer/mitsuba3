@@ -329,6 +329,13 @@ left-multiplied onto the current one. The following choices are available:
 
       <matrix value="0 -0.53 0 -1.79 0.92 0 0 8.03 0 0 0.53 0 0 0 0 1"/>
 
+* Explicit 3x3 matrices in row-major order. Internally, this will be converted to a 4x4 matrix with the same last row and column as the identity matrix.
+
+  .. code-block:: xml
+
+      <matrix value="0.57 0.2 0 0.1 -1 0 0 0 1"/>
+
+
 * `lookat` transformations -- this is primarily useful for setting up cameras. The `origin` coordinates specify the camera origin, `target` is the point that the camera will look at, and the (optional) `up` parameter determines the *upward* direction in the final rendered image.
 
   .. code-block:: xml
