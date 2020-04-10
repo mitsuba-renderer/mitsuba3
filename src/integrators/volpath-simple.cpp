@@ -75,11 +75,11 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
 
-            // active &= any(neq(depolarize(throughput), 0.f));
-            // Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
-            // Mask perform_rr = (depth > (uint32_t) m_rr_depth);
-            // active &= !(sampler->next_1d(active) >= q && perform_rr);
-            // masked(throughput, perform_rr) *= rcp(detach(q));
+            active &= any(neq(depolarize(throughput), 0.f));
+            Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
+            Mask perform_rr = (depth > (uint32_t) m_rr_depth);
+            active &= sampler->next_1d(active) < q || !perform_rr;
+            masked(throughput, perform_rr) *= rcp(detach(q));
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
             if (none(active) || all(exceeded_max_depth))
