@@ -85,6 +85,7 @@ public:
         ds.time  = it.time;
         ds.pdf   = 1.f;
         ds.delta = true;
+        ds.object = this;
         ds.d     = ds.p - it.p;
         ds.dist  = norm(ds.d);
         Float inv_dist = rcp(ds.dist);
