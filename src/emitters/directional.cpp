@@ -137,7 +137,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         /* This emitter does not occupy any particular region
-        of space, return an invalid bounding box */
+           of space, return an invalid bounding box */
         return ScalarBoundingBox3f();
     }
 
