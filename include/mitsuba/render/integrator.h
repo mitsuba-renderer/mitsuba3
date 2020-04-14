@@ -187,6 +187,9 @@ protected:
 
     /// Timer used to enforce the timeout.
     Timer m_render_timer;
+
+    /// Flag for disabling direct visibility of emitters
+    bool m_hide_emitters;
 };
 
 /*
@@ -210,7 +213,6 @@ protected:
 protected:
     int m_max_depth;
     int m_rr_depth;
-    bool m_hide_emitters;
 };
 
 MTS_EXTERN_CLASS_RENDER(Integrator)
