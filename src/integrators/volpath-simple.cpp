@@ -467,7 +467,7 @@ public:
     // =============================================================
 
     std::string to_string() const override {
-        return tfm::format("VolumetricNullSimplePathIntegrator[\n"
+        return tfm::format("VolumetricSimplePathIntegrator[\n"
                            "  max_depth = %i,\n"
                            "  rr_depth = %i\n"
                            "]",
@@ -475,16 +475,12 @@ public:
     }
 
     Float mis_weight(Float pdf_a, Float pdf_b) const {
+        pdf_a *= pdf_a;
+        pdf_b *= pdf_b;
         return select(pdf_a > 0.0f, pdf_a / (pdf_a + pdf_b), Float(0.0f));
-        // TODO: Reenable power heuristic
-        // pdf_a *= pdf_a;
-        // pdf_b *= pdf_b;
-        // return select(pdf_a > 0.0f, pdf_a / (pdf_a + pdf_b), Float(0.0f));
     };
 
     MTS_DECLARE_CLASS()
-protected:
-    bool m_medium_mis;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumetricNullSimplePathIntegrator, MonteCarloIntegrator);
