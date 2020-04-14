@@ -160,16 +160,9 @@ public:
 
                 Mask active_e = act_medium_scatter && sample_emitters;
                 if (any_or<true>(active_e)) {
-                    auto ds = scene->sample_emitter_direction(mi, sampler->next_2d(active_e), false, active_e).first;
-                    active_e &= neq(ds.pdf, 0.f);
-                    if (any_or<true>(active_e)) {
-                        Ray3f nee_ray = mi.spawn_ray(ds.d);
-                        nee_ray.mint = 0.f;
-                        auto emitted = evaluate_direct_light(mi, scene, sampler, medium, nee_ray, true, si,
-                                                             ds.dist, channel, active_e).first;
-                        Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
-                        masked(result, active_e) += throughput * phase_val * emitted / ds.pdf;
-                    }
+                    auto [emitted, ds] = sample_emitter(mi, true, scene, sampler, medium, channel, active_e);
+                    Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
+                    masked(result, active_e) += throughput * phase_val * emitted;
                 }
 
                 // ------------------ Phase function sampling -----------------
@@ -204,25 +197,17 @@ public:
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
                 if (likely(any_or<true>(active_e))) {
-                    auto ds = scene->sample_emitter_direction(si, sampler->next_2d(active_e), false, active_e).first;
-                    active_e &= neq(ds.pdf, 0.f);
-                    if (any_or<true>(active_e)) {
-                        Ray3f nee_ray = si.spawn_ray(ds.d);
+                    auto [emitted, ds] = sample_emitter(si, false, scene, sampler, medium, channel, active_e);
 
-                        // TODO: This has to be zero if its not reaching the same point
-                        auto emitted = evaluate_direct_light(si, scene, sampler, medium, nee_ray, true, si,
-                                                             ds.dist, channel, active_e).first;
+                    // Query the BSDF for that emitter-sampled direction
+                    Vector3f wo       = si.to_local(ds.d);
+                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+                    bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
-                        // Query the BSDF for that emitter-sampled direction
-                        Vector3f wo       = si.to_local(ds.d);
-                        Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
-                        bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
-
-                        // Determine probability of having sampled that same
-                        // direction using BSDF sampling.
-                        Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
-                        result[active_e] += throughput * bsdf_val * mis_weight(ds.pdf, bsdf_pdf) * emitted / ds.pdf;
-                    }
+                    // Determine probability of having sampled that same
+                    // direction using BSDF sampling.
+                    Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
+                    result[active_e] += throughput * bsdf_val * mis_weight(ds.pdf, select(ds.delta, 0.f, bsdf_pdf)) * emitted;
                 }
 
                 // ----------------------- BSDF sampling ----------------------
@@ -256,8 +241,7 @@ public:
                 needs_intersection &= !intersect2;
 
                 auto [emitted, emitter_pdf] = evaluate_direct_light(si, scene, sampler,
-                                                                    medium, ray, false, si_new,
-                                                                    -1.f, channel, add_emitter);
+                                                                    medium, ray, si_new, channel, add_emitter);
                 result += select(add_emitter && neq(emitter_pdf, 0),
                                 mis_weight(bs.pdf, emitter_pdf) * throughput * emitted, 0.0f);
 
@@ -271,22 +255,130 @@ public:
         return { result, valid_ray };
     }
 
-    // TODO: Make sure we match emitter IDs in case there are multiple emitters in the scene
-    // (otherwise we could get the wrong MIS weights)
+
+    /// Samples an emitter in the scene and evaluates it's attenuated contribution
+    std::tuple<Spectrum, DirectionSample3f>
+    sample_emitter(const Interaction3f &ref_interaction, Mask is_medium_interaction, const Scene *scene,
+                          Sampler *sampler, MediumPtr medium, UInt32 channel, Mask active) const {
+        using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+        Spectrum transmittance(1.0f);
+
+        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        masked(emitter_val, eq(ds.pdf, 0.f)) = 0.f;
+        active &= neq(ds.pdf, 0.f);
+
+        if (none_or<false>(active)) {
+            return { emitter_val, ds };
+        }
+
+        Ray3f ray = ref_interaction.spawn_ray(ds.d);
+        masked(ray.mint, is_medium_interaction) = 0.f;
+
+        Float total_dist = 0.f;
+        SurfaceInteraction3f si;
+        Mask needs_intersection = true;
+        while (any(active)) {
+            Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
+            ray.maxt = remaining_dist;
+            active &= remaining_dist > 0.f;
+            if (none(active))
+                break;
+
+            Mask escaped_medium = false;
+            Mask active_medium  = active && neq(medium, nullptr);
+            Mask active_surface = active && !active_medium;
+
+            if (any_or<true>(active_medium)) {
+                auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
+                masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = min(mi.t, remaining_dist);
+                Mask intersect = needs_intersection && active_medium;
+                if (any_or<true>(intersect))
+                    masked(si, intersect) = scene->ray_intersect(ray, intersect);
+
+                masked(mi.t, active_medium && (si.t < mi.t)) = math::Infinity<Float>;
+                needs_intersection &= !active_medium;
+
+                Mask is_spectral = medium->has_spectral_extinction() && active_medium;
+                Mask not_spectral = !is_spectral && active_medium;
+                if (any_or<true>(is_spectral)) {
+                    Float t      = min(remaining_dist, min(mi.t, si.t)) - mi.mint;
+                    UnpolarizedSpectrum tr  = exp(-t * mi.combined_extinction);
+                    UnpolarizedSpectrum free_flight_pdf = select(si.t < mi.t || mi.t > remaining_dist, tr, tr * mi.combined_extinction);
+                    Float tr_pdf = index_spectrum(free_flight_pdf, channel);
+                    masked(transmittance, is_spectral) *= select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
+                }
+
+                // Handle exceeding the maximum distance by medium sampling
+                masked(total_dist, active_medium && (mi.t > remaining_dist) && mi.is_valid()) = ds.dist;
+                masked(mi.t, active_medium && (mi.t > remaining_dist)) = math::Infinity<Float>;
+
+                escaped_medium = active_medium && !mi.is_valid();
+                active_medium &= mi.is_valid();
+                is_spectral &= active_medium;
+                not_spectral &= active_medium;
+
+                masked(total_dist, active_medium) += mi.t;
+
+                if (any_or<true>(active_medium)) {
+                    masked(ray.o, active_medium)    = mi.p;
+                    masked(ray.mint, active_medium) = 0.f;
+                    masked(si.t, active_medium) = si.t - mi.t;
+
+                    if (any_or<true>(is_spectral))
+                        masked(transmittance, is_spectral) *= mi.sigma_n;
+                    if (any_or<true>(not_spectral))
+                        masked(transmittance, not_spectral) *= mi.sigma_n / mi.combined_extinction;
+                }
+            }
+
+            // Handle interactions with surfaces
+            Mask intersect = active_surface && needs_intersection;
+            if (any_or<true>(intersect))
+                masked(si, intersect)    = scene->ray_intersect(ray, intersect);
+            needs_intersection &= !intersect;
+            active_surface |= escaped_medium;
+            masked(total_dist, active_surface) += si.t;
+
+            active_surface &= si.is_valid() && active && !active_medium;
+            if (any_or<true>(active_surface)) {
+                auto bsdf         = si.bsdf(ray);
+                Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
+                bsdf_val = si.to_world_mueller(bsdf_val, si.wi, si.wi);
+                masked(transmittance, active_surface) *= bsdf_val;
+            }
+
+            // Update the ray with new origin & t parameter
+            masked(ray, active_surface) = si.spawn_ray(ray.d);
+            ray.maxt = remaining_dist;
+            needs_intersection |= active_surface;
+
+            // Continue tracing through scene if non-zero weights exist
+            active &= (active_medium || active_surface) && any(neq(depolarize(transmittance), 0.f));
+
+            // If a medium transition is taking place: Update the medium pointer
+            Mask has_medium_trans = active_surface && si.is_medium_transition();
+            if (any_or<true>(has_medium_trans)) {
+                masked(medium, has_medium_trans) = si.target_medium(ray.d);
+            }
+        }
+        return { emitter_val * transmittance, ds };
+    }
+
 
     std::pair<Spectrum, Float>
     evaluate_direct_light(const Interaction3f &ref_interaction, const Scene *scene,
                           Sampler *sampler, MediumPtr medium, Ray3f ray,
-                          Mask needs_intersection, const SurfaceInteraction3f &si_ray,
-                          Float dist, UInt32 channel, Mask active) const {
-
+                          const SurfaceInteraction3f &si_ray,
+                          UInt32 channel, Mask active) const {
         using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+
         Spectrum emitter_val(0.0f);
+
+        // Assumes the ray was alread intersected to compute si_ray before calling this method
+        Mask needs_intersection = false;
 
         Spectrum transmittance(1.0f);
         Float emitter_pdf(0.0f);
-
-        Float total_dist = 0.f;
         SurfaceInteraction3f si = si_ray;
         while (any(active)) {
             Mask escaped_medium = false;
@@ -313,7 +405,6 @@ public:
                 needs_intersection &= !active_medium;
                 escaped_medium = active_medium && !mi.is_valid();
                 active_medium &= mi.is_valid();
-                masked(total_dist, active_medium) += mi.t;
 
                 if (any_or<true>(active_medium)) {
                     masked(ray.o, active_medium)    = mi.p;
@@ -332,13 +423,10 @@ public:
             masked(si, intersect)    = scene->ray_intersect(ray, intersect);
             needs_intersection &= !intersect;
             active_surface |= escaped_medium;
-            masked(total_dist, active_surface) += si.t;
 
             // Check if we hit an emitter and add illumination if needed
             EmitterPtr emitter = si.emitter(scene, active_surface);
             Mask emitter_hit   = neq(emitter, nullptr) && active_surface;
-            emitter_hit &= !si.is_valid() || (dist < 0.f) || (si.is_valid() &&
-                            (total_dist >= dist - math::RayEpsilon<Float>) &&  (total_dist <= dist + math::RayEpsilon<Float>));
             if (any_or<true>(emitter_hit)) {
                 DirectionSample3f ds(si, ref_interaction);
                 ds.object                        = emitter;
