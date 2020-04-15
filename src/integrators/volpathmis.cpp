@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 // Forward declaration of specialized integrator
 template <typename Float, typename Spectrum, bool SpectralMis>
-class VolumetricNullPathIntegratorImpl;
+class VolpathMisIntegratorImpl;
 
 
 /**!
@@ -27,20 +27,20 @@ Volumetric path tracer with null scattering (:monosp:`volpath`)
 .. todo:: Not documented yet.
 */
 template <typename Float, typename Spectrum>
-class VolumetricNullPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
+class VolumetricMisPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
     MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
-    VolumetricNullPathIntegrator(const Properties &props) : Base(props) {
+    VolumetricMisPathIntegrator(const Properties &props) : Base(props) {
         m_use_spectral_mis = props.bool_("use_spectral_mis", true);
         m_props = props;
     }
 
     template <bool SpectralMis>
-    using Impl = VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>;
+    using Impl = VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>;
 
     std::vector<ref<Object>> expand() const override {
         ref<Object> result;
@@ -58,7 +58,7 @@ protected:
 };
 
 template <typename Float, typename Spectrum, bool SpectralMis>
-class VolumetricNullPathIntegratorImpl final : public MonteCarloIntegrator<Float, Spectrum> {
+class VolpathMisIntegratorImpl final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
     MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
@@ -69,7 +69,7 @@ public:
         std::conditional_t<SpectralMis, Matrix<Float, array_size_v<UnpolarizedSpectrum>>,
                            UnpolarizedSpectrum>;
 
-    VolumetricNullPathIntegratorImpl(const Properties &props) : Base(props) {}
+    VolpathMisIntegratorImpl(const Properties &props) : Base(props) {}
 
     MTS_INLINE
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
@@ -493,7 +493,7 @@ public:
     // =============================================================
 
     std::string to_string() const override {
-        return tfm::format("VolumetricNullPathIntegrator[\n"
+        return tfm::format("VolumetricMisPathIntegrator[\n"
                            "  max_depth = %i,\n"
                            "  rr_depth = %i\n"
                            "]",
@@ -503,8 +503,8 @@ public:
     MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(VolumetricNullPathIntegrator, MonteCarloIntegrator);
-MTS_EXPORT_PLUGIN(VolumetricNullPathIntegrator, "Volumetric Path Tracer integrator");
+MTS_IMPLEMENT_CLASS_VARIANT(VolumetricMisPathIntegrator, MonteCarloIntegrator);
+MTS_EXPORT_PLUGIN(VolumetricMisPathIntegrator, "Volumetric Path Tracer integrator");
 
 NAMESPACE_BEGIN(detail)
 template <bool SpectralMis>
@@ -518,12 +518,12 @@ constexpr const char * volpath_class_name() {
 NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum, bool SpectralMis>
-Class *VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
+Class *VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::m_class
     = new Class(detail::volpath_class_name<SpectralMis>(), "MonteCarloIntegrator",
                 ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
 
 template <typename Float, typename Spectrum, bool SpectralMis>
-const Class* VolumetricNullPathIntegratorImpl<Float, Spectrum, SpectralMis>::class_() const {
+const Class* VolpathMisIntegratorImpl<Float, Spectrum, SpectralMis>::class_() const {
     return m_class;
 }
 
