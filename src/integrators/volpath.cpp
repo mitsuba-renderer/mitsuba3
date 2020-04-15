@@ -13,14 +13,14 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class VolumetricNullSimplePathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
+class VolumetricPathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
     MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
     MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
-    VolumetricNullSimplePathIntegrator(const Properties &props) : Base(props) {
+    VolumetricPathIntegrator(const Properties &props) : Base(props) {
     }
 
     MTS_INLINE
@@ -483,6 +483,6 @@ public:
     MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(VolumetricNullSimplePathIntegrator, MonteCarloIntegrator);
-MTS_EXPORT_PLUGIN(VolumetricNullSimplePathIntegrator, "Volumetric Path Tracer integrator");
+MTS_IMPLEMENT_CLASS_VARIANT(VolumetricPathIntegrator, MonteCarloIntegrator);
+MTS_EXPORT_PLUGIN(VolumetricPathIntegrator, "Volumetric Path Tracer integrator");
 NAMESPACE_END(mitsuba)
