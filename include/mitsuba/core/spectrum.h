@@ -344,8 +344,8 @@ inline void spectrum_from_file(const std::string &filename,
 }
 
 template <typename Scalar>
-inline Color<Scalar, 3> spectrum_to_rgb(std::vector<Scalar> &wavelengths,
-                                        std::vector<Scalar> &values,
+inline Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
+                                        const std::vector<Scalar> &values,
                                         bool bounded=true) {
     Color<Scalar, 3> color = 0.f;
 
