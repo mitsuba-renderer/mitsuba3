@@ -1041,7 +1041,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
                 } else {
                     int ctr = 0;
                     for (auto c : children)
-                        props.set_object(kv.first + "_" + std::to_string(ctr++), children[0], false);
+                        props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
                 }
             } catch (const std::exception &e) {
                 if (strstr(e.what(), "Error while loading") == nullptr)
