@@ -64,7 +64,7 @@ public:
 
     /// Is this an environment map light emitter?
     bool is_environment() const {
-        return has_flag(m_flags, EmitterFlags::Infinite);
+        return has_flag(m_flags, EmitterFlags::Infinite) && !has_flag(m_flags, EmitterFlags::Delta);
     }
 
     /// Flags for all components combined.
