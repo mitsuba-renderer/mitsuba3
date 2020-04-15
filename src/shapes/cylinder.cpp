@@ -75,7 +75,7 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -116,6 +116,8 @@ public:
         }
         if (is_emitter())
             emitter()->set_shape(this);
+        if (is_sensor())
+            sensor()->set_shape(this);
     }
 
     ScalarBoundingBox3f bbox() const override {

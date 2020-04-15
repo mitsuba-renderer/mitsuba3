@@ -33,6 +33,7 @@ NAMESPACE_BEGIN(mitsuba)
 MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     for (auto &kv : props.objects()) {
         Emitter *emitter = dynamic_cast<Emitter *>(kv.second.get());
+        Sensor *sensor = dynamic_cast<Sensor *>(kv.second.get());
         BSDF *bsdf = dynamic_cast<BSDF *>(kv.second.get());
         Medium *medium = dynamic_cast<Medium *>(kv.second.get());
 
@@ -54,6 +55,10 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
             }
+        } else if (sensor) {
+            if (m_sensor)
+                Throw("Only a single Sensor child object can be specified per shape.");
+            m_sensor = sensor;
         } else {
             Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
         }

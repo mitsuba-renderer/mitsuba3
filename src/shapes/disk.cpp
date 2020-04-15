@@ -9,6 +9,7 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
+#include <mitsuba/render/sensor.h>
 #include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -67,7 +68,7 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter)
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -97,6 +98,8 @@ public:
 
         if (is_emitter())
             emitter()->set_shape(this);
+        if (is_sensor())
+            sensor()->set_shape(this);
     }
 
     ScalarBoundingBox3f bbox() const override {
