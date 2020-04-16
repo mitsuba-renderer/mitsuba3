@@ -349,8 +349,11 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
     if (version < Version(2, 0, 0)) {
         // Upgrade all attribute names from camelCase to underscore_case
-        for (pugi::xpath_node result: node.select_nodes("//@name")) {
-            pugi::xml_attribute name_attrib = result.attribute();
+        for (pugi::xpath_node result: node.select_nodes("//*[@name]")) {
+            pugi::xml_node n = result.node();
+            if (std::strcmp(n.name(), "default") == 0)
+                continue;
+            pugi::xml_attribute name_attrib = n.attribute("name");
             std::string name = name_attrib.value();
             for (size_t i = 0; i < name.length() - 1; ++i) {
                 if (std::islower(name[i]) && std::isupper(name[i + 1])) {
@@ -366,6 +369,20 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
         }
         for (pugi::xpath_node result: node.select_nodes("//lookAt"))
             result.node().set_name("lookat");
+        // automatically rename reserved identifiers
+        for (pugi::xpath_node result: node.select_nodes("//@id")) {
+            pugi::xml_attribute id_attrib = result.attribute();
+            char const* val = id_attrib.value();
+            if (val && val[0] == '_') {
+                std::string new_id = std::string("ID") + val + "__UPGR";
+                Log(Warn, "Changing identifier: \"%s\" -> \"%s\"", val, new_id.c_str());
+                id_attrib = new_id.c_str();
+            }
+        }
+
+        // changed parameters
+        for (pugi::xpath_node result: node.select_nodes("//bsdf[@type='diffuse']/*/@name[.='diffuse_reflectance']"))
+            result.attribute() = "reflectance";
 
         // Update 'uoffset', 'voffset', 'uscale', 'vscale' to transform block
         for (pugi::xpath_node result : node.select_nodes(
