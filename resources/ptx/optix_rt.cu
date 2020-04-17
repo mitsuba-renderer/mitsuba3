@@ -96,7 +96,7 @@ __device__ void ray_attr(
                  n1 = vertex_normals[face.y()],
                  n2 = vertex_normals[face.z()];
 
-        ns = n0 * uv0 + n1 * uv1 + n2 * uv2;
+        ns = normalize(n0 * uv0 + n1 * uv1 + n2 * uv2);
     } else {
         ns = ng;
     }

@@ -1,6 +1,4 @@
 #include <mitsuba/render/mesh.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/render/sensor.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/mmap.h>
@@ -74,22 +72,20 @@ void advance(const char **start_, const char *end, const char (&delim)[N]) {
 template <typename Float, typename Spectrum>
 class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
-                    m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
-                    m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
-                    recompute_vertex_normals, is_emitter, emitter, sensor, is_sensor,
-                    has_vertex_normals, vertex, set_children)
+    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
+                    m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
+                    m_faces_buf, m_disable_vertex_normals, recompute_vertex_normals,
+                    has_vertex_normals, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
-    using typename Base::VertexHolder;
-    using typename Base::FaceHolder;
     using typename Base::InputFloat;
     using typename Base::InputPoint3f ;
     using typename Base::InputVector2f;
     using typename Base::InputVector3f;
     using typename Base::InputNormal3f;
+    using typename Base::FloatStorage;
 
     InputFloat strtof(const char *nptr, char **endptr) {
             return std::strtof(nptr, endptr);
@@ -279,69 +275,68 @@ public:
 
         m_vertex_count = vertex_ctr;
         m_face_count = (ScalarSize) triangles.size();
-        m_vertex_struct = new Struct();
-        for (auto name : { "x", "y", "z" })
-            m_vertex_struct->append(name, struct_type_v<InputFloat>);
 
-        if (!m_disable_vertex_normals) {
-            for (auto name : { "nx", "ny", "nz" })
-                m_vertex_struct->append(name, struct_type_v<InputFloat>);
-            m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
-        }
+        m_faces_buf = DynamicBuffer<UInt32>::copy(triangles.data(), m_face_count * 3);
+        m_vertex_positions_buf = empty<FloatStorage>(m_vertex_count * 3);
+        if (!m_disable_vertex_normals)
+            m_vertex_normals_buf = empty<FloatStorage>(m_vertex_count * 3);
+        if (!texcoords.empty())
+            m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
 
-        if (!texcoords.empty()) {
-            for (auto name : { "u", "v" })
-                m_vertex_struct->append(name, struct_type_v<InputFloat>);
-            m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
-        }
-
-        m_face_struct = new Struct();
-        for (size_t i = 0; i < 3; ++i)
-            m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
-
-        m_vertex_size = (ScalarSize) m_vertex_struct->size();
-        m_face_size   = (ScalarSize) m_face_struct->size();
-        m_vertices    = VertexHolder(new uint8_t[(m_vertex_count + 1) * m_vertex_size]);
-        m_faces       = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
-        memcpy(m_faces.get(), triangles.data(), m_face_count * m_face_size);
+        // TODO this is needed for the bbox(..) methods, but is it slower?
+        m_faces_buf.managed();
+        m_vertex_positions_buf.managed();
+        m_vertex_normals_buf.managed();
+        m_vertex_texcoords_buf.managed();
 
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;
 
             while (v && v->key != ScalarIndex3{{0, 0, 0}}) {
-                uint8_t *vertex_ptr = vertex(v->value);
+                InputFloat* position_ptr   = m_vertex_positions_buf.data() + v->value * 3;
+                InputFloat* normal_ptr   = m_vertex_normals_buf.data() + v->value * 3;
+                InputFloat* texcoord_ptr = m_vertex_texcoords_buf.data() + v->value * 2;
                 auto key = v->key;
 
-                store_unaligned(vertex_ptr, vertices[key[0] - 1]);
+                store_unaligned(position_ptr, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index >= texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    store_unaligned(vertex_ptr + m_texcoord_offset,
-                                    texcoords[map_index]);
+                    store_unaligned(texcoord_ptr, texcoords[map_index]);
                 }
 
-                if (has_vertex_normals() && key[2]) {
+                if (!m_disable_vertex_normals && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index >= normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    store_unaligned(vertex_ptr + m_normal_offset, normals[key[2] - 1]);
+                    store_unaligned(normal_ptr, normals[key[2] - 1]);
                 }
 
                 v = v->next;
             }
         }
 
+        size_t vertex_data_bytes = 3 * sizeof(InputFloat);
+        if (has_vertex_normals())
+            vertex_data_bytes += 3 * sizeof(InputFloat);
+        if (!texcoords.empty())
+            vertex_data_bytes += 2 * sizeof(InputFloat);
+
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name, m_face_count, m_vertex_count,
-            util::mem_string(m_face_count * m_face_struct->size() +
-                             m_vertex_count * m_vertex_struct->size()),
+            util::mem_string(m_face_count * 3 * sizeof(ScalarIndex) +
+                             m_vertex_count * vertex_data_bytes),
             util::time_string(timer.value())
         );
 
-        if (!m_disable_vertex_normals && normals.empty())
+        if (!m_disable_vertex_normals && normals.empty()) {
+            Timer timer;
             recompute_vertex_normals();
+            Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
+                util::time_string(timer.value()));
+        }
 
         set_children();
     }

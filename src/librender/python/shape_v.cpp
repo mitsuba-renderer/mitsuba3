@@ -1,4 +1,5 @@
 #include <mitsuba/core/struct.h>
+#include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/sensor.h>
@@ -39,7 +40,6 @@ MTS_PY_EXPORT(Shape) {
         .def_method(Shape, surface_area)
         .def_method(Shape, id)
         .def_method(Shape, is_mesh)
-        .def_method(Shape, bsdf)
         .def_method(Shape, is_medium_transition)
         .def_method(Shape, interior_medium)
         .def_method(Shape, exterior_medium)
@@ -48,34 +48,51 @@ MTS_PY_EXPORT(Shape) {
         .def("emitter", vectorize(py::overload_cast<Mask>(&Shape::emitter, py::const_)),
                 "active"_a = true)
         .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
+        .def("bsdf", py::overload_cast<>(&Shape::bsdf, py::const_))
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count);
 
     using ScalarSize = typename Mesh::ScalarSize;
     MTS_PY_CLASS(Mesh, Shape)
-        .def(py::init<const std::string &, Struct *, ScalarSize, Struct *, ScalarSize>(),
-            D(Mesh, Mesh))
-        .def(py::init<const std::string &, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t, short, const ScalarMatrix4f &>(), "Constructor to call from Blender")
-        .def_method(Mesh, vertex_struct)
-        .def_method(Mesh, face_struct)
+        .def(py::init<const std::string &, ScalarSize, ScalarSize,
+                      const Properties &, bool, bool>(),
+             "name"_a, "vertex_count"_a, "face_count"_a,
+             "props"_a = Properties(), "has_vertex_normals"_a = false,
+             "has_vertex_texcoords"_a = false, D(Mesh, Mesh))
+        .def(py::init<const std::string &, uintptr_t, uintptr_t, uintptr_t,
+                      uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
+                      short, const ScalarMatrix4f &, const Properties &>(),
+             "name"_a, "loop_tri_count"_a, "loop_tri_ptr"_a, "loop_ptr"_a,
+             "vertex_count"_a, "vertex_ptr"_a, "poly_ptr"_a, "uv_ptr"_a,
+             "col_ptr"_a, "mat_nr"_a, "to_world"_a, "props"_a = Properties(),
+             "Constructor to call from Blender")
         .def_method(Mesh, vertex_count)
         .def_method(Mesh, face_count)
         .def_method(Mesh, has_vertex_normals)
         .def_method(Mesh, has_vertex_texcoords)
-        .def_method(Mesh, has_vertex_colors)
         .def_method(Mesh, recompute_vertex_normals)
         .def_method(Mesh, recompute_bbox)
-        .def("write_ply", &Mesh::write_ply, "stream"_a, "Export mesh as a binary PLY file")
-        .def("vertices", [](py::object &o) {
-            Mesh &m = py::cast<Mesh&>(o);
-            py::dtype dtype = o.attr("vertex_struct")().attr("dtype")();
-            return py::array(dtype, m.vertex_count(), m.vertices(), o);
-        }, D(Mesh, vertices))
-        .def("faces", [](py::object &o) {
-            Mesh &m = py::cast<Mesh&>(o);
-            py::dtype dtype = o.attr("face_struct")().attr("dtype")();
-            return py::array(dtype, m.face_count(), m.faces(), o);
-        }, D(Mesh, faces))
+        .def("write_ply", &Mesh::write_ply, "filename"_a,
+             "Export mesh as a binary PLY file")
+        .def("vertex_positions_buffer",
+             py::overload_cast<>(&Mesh::vertex_positions_buffer),
+             D(Mesh, vertex_positions_buffer),
+             py::return_value_policy::reference_internal)
+        .def("vertex_normals_buffer",
+             py::overload_cast<>(&Mesh::vertex_normals_buffer),
+             D(Mesh, vertex_normals_buffer),
+             py::return_value_policy::reference_internal)
+        .def("vertex_texcoords_buffer",
+             py::overload_cast<>(&Mesh::vertex_texcoords_buffer),
+             D(Mesh, vertex_texcoords_buffer),
+             py::return_value_policy::reference_internal)
+        .def("faces_buffer", py::overload_cast<>(&Mesh::faces_buffer),
+             D(Mesh, faces_buffer), py::return_value_policy::reference_internal)
+        .def("attribute_buffer", &Mesh::attribute_buffer, "name"_a,
+             D(Mesh, attribute_buffer), py::return_value_policy::reference_internal)
+        .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a,
+             D(Mesh, add_attribute), py::return_value_policy::reference_internal)
         .def("ray_intersect_triangle", vectorize(&Mesh::ray_intersect_triangle),
-            "index"_a, "ray"_a, "active"_a = true, D(Mesh, ray_intersect_triangle));
+             "index"_a, "ray"_a, "active"_a = true,
+             D(Mesh, ray_intersect_triangle));
 }

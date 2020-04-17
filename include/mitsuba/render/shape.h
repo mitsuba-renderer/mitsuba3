@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/render/records.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/bbox.h>
 
 #if defined(MTS_ENABLE_OPTIX)
@@ -19,7 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Shape : public Object {
 public:
-    MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor);
+    MTS_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute);
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
@@ -244,7 +245,73 @@ public:
      */
     virtual std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
                                                             bool shading_frame = true,
-                                                            Mask active        = true) const;
+                                                            Mask active = true) const;
+
+    /**
+     * \brief Evaluate a specific shape attribute at the given surface interaction.
+     *
+     * Shape attributes are user-provided fields that provide extra
+     * information at an intersection. An example of this would be a per-vertex
+     * or per-face color on a triangle mesh.
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An unpolarized spectral power distribution or reflectance value
+     *
+     * The default implementation throws an exception.
+     */
+    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
+                                               const SurfaceInteraction3f &si,
+                                               Mask active = true) const;
+
+    /**
+     * \brief Monochromatic evaluation of a shape attribute at the given surface interaction
+     *
+     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * scalar intensity/reflectance values without any color processing (e.g.
+     * spectral upsampling).
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An scalar intensity or reflectance value
+     *
+     * The default implementation throws an exception.
+     */
+    virtual Float eval_attribute_1(const std::string &name,
+                                   const SurfaceInteraction3f &si,
+                                   Mask active = true) const;
+
+    /**
+     * \brief Trichromatic evaluation of a shape attribute at the given surface interaction
+     *
+     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * RGB intensity/reflectance values without any additional color processing
+     * (e.g. RGB-to-spectral upsampling).
+     *
+     * \param name
+     *     Name of the attribute to evaluate
+     *
+     * \param si
+     *     Surface interaction associated with the query
+     *
+     * \return
+     *     An trichromatic intensity or reflectance value
+     *
+     * The default implementation throws an exception.
+     */
+    virtual Color3f eval_attribute_3(const std::string &name,
+                                     const SurfaceInteraction3f &si,
+                                     Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -271,6 +338,9 @@ public:
 
     /// Return the shape's BSDF
     const BSDF *bsdf() const { return m_bsdf.get(); }
+
+    /// Return the shape's BSDF
+    BSDF *bsdf() { return m_bsdf.get(); }
 
     /// Is this shape also an area emitter?
     bool is_emitter() const { return (bool) m_emitter; }
@@ -354,6 +424,9 @@ NAMESPACE_END(mitsuba)
 ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
     ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
     ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
+    ENOKI_CALL_SUPPORT_METHOD(eval_attribute)
+    ENOKI_CALL_SUPPORT_METHOD(eval_attribute_1)
+    ENOKI_CALL_SUPPORT_METHOD(eval_attribute_3)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const typename Class::Emitter *)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const typename Class::Sensor *)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const typename Class::BSDF *)

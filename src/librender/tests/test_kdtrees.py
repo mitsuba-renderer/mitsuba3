@@ -2,7 +2,7 @@ import mitsuba
 import pytest
 import enoki as ek
 
-from .mesh_generation import create_stairs, create_stairs_packet
+from .mesh_generation import create_stairs
 
 from mitsuba.python.test.util import fresolver_append_path
 
@@ -106,7 +106,7 @@ def test03_depth_packet_stairs(variant_packet_rgb):
         pytest.skip("EMBREE enabled")
 
     props = Properties("scene")
-    props["_unnamed_0"] = create_stairs_packet(11)
+    props["_unnamed_0"] = create_stairs(11)
     scene = Scene(props)
 
     mitsuba.set_variant("scalar_rgb")

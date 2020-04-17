@@ -193,7 +193,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         std::vector<HitGroupSbtRecord>  hg_sbts(shapes_count);
 
         for (Shape* shape: m_shapes) {
-            shape->optix_geometry();
+            shape->optix_geometry(); // TODO this call isn't needed anymore
             // Setup the hitgroup record and copy it to the hitgroup records array
             rt_check(optixSbtRecordPackHeader(s.program_groups[2], &hg_sbts[shape_index]));
             // compute optix geometry for this shape
@@ -230,6 +230,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     OptixState &s = *(OptixState *) m_accel;
+
+    if (m_shapes.empty())
+        return;
 
     uint32_t shapes_count = m_shapes.size();
     uint32_t shape_index = 0;
@@ -313,6 +316,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const {
     if constexpr (is_cuda_array_v<Float>) {
+        Assert(!m_shapes.empty());
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
         size_t ray_count = std::max(slices(ray.o), slices(ray.d));

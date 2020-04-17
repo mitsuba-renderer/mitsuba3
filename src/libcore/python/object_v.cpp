@@ -18,6 +18,8 @@ MTS_PY_EXPORT(Object) {
     m.def("get_property", [](const void *ptr, void *type_, py::handle parent) -> py::object {
         const std::type_info &type = *(const std::type_info *) type_;
         GET_ATTR(Float);
+        GET_ATTR(Int32);
+        GET_ATTR(UInt32);
         GET_ATTR(DynamicBuffer<Float>);
         GET_ATTR(DynamicBuffer<Int32>);
         GET_ATTR(DynamicBuffer<UInt32>);

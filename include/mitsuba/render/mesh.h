@@ -2,9 +2,11 @@
 
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/srgb.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/distr_1d.h>
+#include <mitsuba/core/properties.h>
 #include <tbb/spin_mutex.h>
 #include <unordered_map>
 
@@ -14,31 +16,32 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_mesh, set_children, m_emitter)
+    MTS_IMPORT_BASE(Shape, m_mesh, set_children)
 
+    // Mesh is always stored in single precision
     using InputFloat = float;
     using InputPoint3f  = Point<InputFloat, 3>;
     using InputVector2f = Vector<InputFloat, 2>;
     using InputVector3f = Vector<InputFloat, 3>;
     using InputNormal3f = Normal<InputFloat, 3>;
 
+    using FloatStorage = DynamicBuffer<replace_scalar_t<Float, InputFloat>>;
+
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
 
-    using FaceHolder   = std::unique_ptr<uint8_t[]>;
-    using VertexHolder = std::unique_ptr<uint8_t[]>;
-
     /// Create a new mesh with the given vertex and face data structures
-    Mesh(const std::string &name,
-         Struct *vertex_struct, ScalarSize vertex_count,
-         Struct *face_struct,   ScalarSize face_count);
+    Mesh(const std::string &name, ScalarSize vertex_count,
+         ScalarSize face_count, const Properties &props = Properties(),
+         bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
     /// Create a new mesh from a blender mesh
     Mesh(const std::string &name,
         uintptr_t loop_tri_count, uintptr_t loop_tri_ptr,
         uintptr_t loop_ptr, uintptr_t vertex_count, uintptr_t vertex_ptr,
         uintptr_t poly_ptr, uintptr_t uv_ptr, uintptr_t col_ptr,
-        short mat_nr, const ScalarMatrix4f &to_world);
+        short mat_nr, const ScalarMatrix4f &to_world,
+        const Properties &props = Properties());
     // =========================================================================
     //! @{ \name Accessors (vertices, faces, normals, etc)
     // =========================================================================
@@ -48,125 +51,63 @@ public:
     /// Return the total number of faces
     ScalarSize face_count() const { return m_face_count; }
 
-    /// Return a \c Struct instance describing the contents of the vertex buffer
-    const Struct *vertex_struct() const { return m_vertex_struct.get(); }
-    /// Return a \c Struct instance describing the contents of the face buffer
-    const Struct *face_struct() const { return m_face_struct.get(); }
+    /// Return vertex positions buffer
+    FloatStorage& vertex_positions_buffer() { return m_vertex_positions_buf; }
+    /// Const variant of \ref vertex_positions_buffer.
+    const FloatStorage& vertex_positions_buffer() const { return m_vertex_positions_buf; }
 
-    /// Return a pointer to the raw vertex buffer
-    uint8_t *vertices() { return m_vertices.get(); }
-    /// Const variant of \ref vertices.
-    const uint8_t *vertices() const { return m_vertices.get(); }
-    /// Const variant of \ref faces.
-    uint8_t *faces() { return (uint8_t *) m_faces.get(); }
-    /// Return a pointer to the raw face buffer
-    const uint8_t *faces() const { return m_faces.get(); }
+    /// Return vertex normals buffer
+    FloatStorage& vertex_normals_buffer() { return m_vertex_normals_buf; }
+    /// Const variant of \ref vertex_normals_buffer.
+    const FloatStorage& vertex_normals_buffer() const { return m_vertex_normals_buf; }
 
-    /// Return a pointer (or packet of pointers) to a specific vertex
-    template <typename Index, typename VertexPtr = replace_scalar_t<Index, uint8_t *>>
-    MTS_INLINE VertexPtr vertex(const Index &index) {
-        return VertexPtr(m_vertices.get()) + m_vertex_size * index;
+    /// Return vertex texcoords buffer
+    FloatStorage& vertex_texcoords_buffer() { return m_vertex_texcoords_buf; }
+    /// Const variant of \ref vertex_texcoords_buffer.
+    const FloatStorage& vertex_texcoords_buffer() const { return m_vertex_texcoords_buf; }
+
+    /// Return face indices buffer
+    DynamicBuffer<UInt32>& faces_buffer() { return m_faces_buf; }
+    /// Const variant of \ref faces_buffer.
+    const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces_buf; }
+
+    /// Return the mesh attribute associated with \c name
+    DynamicBuffer<Float>& attribute_buffer(const std::string& name) {
+        auto attribute = m_mesh_attributes.find(name);
+        if (attribute == m_mesh_attributes.end())
+            Throw("attribute_buffer(): attribute %s doesn't exist.", name.c_str());
+        return attribute->second.buf;
     }
 
-    /// Return a pointer (or packet of pointers) to a specific vertex (const version)
-    template <typename Index, typename VertexPtr = replace_scalar_t<Index, const uint8_t *>>
-    MTS_INLINE VertexPtr vertex(const Index &index) const {
-        return VertexPtr(m_vertices.get()) + m_vertex_size * index;
-    }
-
-    /// Return a pointer (or packet of pointers) to a specific face
-    template <typename Index, typename FacePtr = replace_scalar_t<Index, uint8_t *>>
-    MTS_INLINE FacePtr face(const Index &index) {
-        return FacePtr(m_faces.get()) + m_face_size * index;
-    }
-
-    /// Return a pointer (or packet of pointers) to a specific face (const version)
-    template <typename Index, typename FacePtr = replace_scalar_t<Index, const uint8_t *>>
-    MTS_INLINE FacePtr face(const Index &index) const {
-        return FacePtr(m_faces.get()) + m_face_size * index;
-    }
+    /// Add and return an attribute buffer with the given \c name and \c size
+    DynamicBuffer<Float>& add_attribute(const std::string& name, size_t size);
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
     MTS_INLINE auto face_indices(Index index, mask_t<Index> active = true) const {
-        using Index3 = Array<Index, 3>;
-        using Result = uint32_array_t<Index3>;
-        ENOKI_MARK_USED(active);
-
-        if constexpr (!is_array_v<Index>) {
-            return load<Result>(face(index));
-        } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_face_size / ScalarSize(sizeof(ScalarIndex));
-            return gather<Result, sizeof(ScalarIndex)>(
-                m_faces.get(), Index3(index, index + 1u, index + 2u), active);
-        }
-#if defined(MTS_ENABLE_OPTIX)
-        else {
-            return gather<Result, sizeof(ScalarIndex)>(m_optix->faces, index, active);
-        }
-#endif
+        using Result = Array<replace_scalar_t<Index, uint32_t>, 3>;
+        return gather<Result>(m_faces_buf, index, active);
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index, mask_t<Index> active = true) const {
-        using Index3 = Array<Index, 3>;
         using Result = Point<replace_scalar_t<Index, InputFloat>, 3>;
-        ENOKI_MARK_USED(active);
-
-        if constexpr (!is_array_v<Index>) {
-            return load<Result>(vertex(index));
-        } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_vertex_size / ScalarSize(sizeof(InputFloat));
-            return gather<Result, sizeof(InputFloat)>(
-                m_vertices.get(), Index3(index, index + 1u, index + 2u), active);
-        }
-#if defined(MTS_ENABLE_OPTIX)
-        else {
-            return gather<Result, sizeof(InputFloat)>(m_optix->vertex_positions, index, active);
-        }
-#endif
+        return gather<Result>(m_vertex_positions_buf, index, active);
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index, mask_t<Index> active = true) const {
-        using Index3 = Array<Index, 3>;
         using Result = Normal<replace_scalar_t<Index, InputFloat>, 3>;
-        ENOKI_MARK_USED(active);
-
-        if constexpr (!is_array_v<Index>) {
-            return load_unaligned<Result>(vertex(index) + m_normal_offset);
-        } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_vertex_size / ScalarSize(sizeof(InputFloat));
-            return gather<Result, sizeof(InputFloat)>(
-                m_vertices.get() + m_normal_offset, Index3(index, index + 1u, index + 2u), active);
-        }
-#if defined(MTS_ENABLE_OPTIX)
-        else {
-            return gather<Result, sizeof(InputFloat)>(m_optix->vertex_normals, index, active);
-        }
-#endif
+        return gather<Result>(m_vertex_normals_buf, index, active);
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index, mask_t<Index> active = true) const {
         using Result = Point<replace_scalar_t<Index, InputFloat>, 2>;
-        ENOKI_MARK_USED(active);
-
-        if constexpr (!is_array_v<Index>) {
-            return load_unaligned<Result>(vertex(index) + m_texcoord_offset);
-        } else if constexpr (!is_cuda_array_v<Index>) {
-            index *= m_vertex_size / ScalarSize(sizeof(InputFloat));
-            return gather<Result, sizeof(InputFloat)>(
-                m_vertices.get() + m_texcoord_offset, Array<Index, 2>(index, index + 1u), active);
-        }
-#if defined(MTS_ENABLE_OPTIX)
-        else {
-            return gather<Result, sizeof(InputFloat)>(m_optix->vertex_texcoords, index, active);
-        }
-#endif
+        return gather<Result>(m_vertex_texcoords_buf, index, active);
     }
 
     /// Returns the surface area of the face with index \c index
@@ -178,23 +119,20 @@ public:
              p1 = vertex_position(fi[1], active),
              p2 = vertex_position(fi[2], active);
 
-        return .5f * norm(cross(p1 - p0, p2 - p0));
+        return 0.5f * norm(cross(p1 - p0, p2 - p0));
     }
 
     /// Does this mesh have per-vertex normals?
-    bool has_vertex_normals() const { return m_normal_offset != 0; }
+    bool has_vertex_normals() const { return slices(m_vertex_normals_buf) != 0; }
 
     /// Does this mesh have per-vertex texture coordinates?
-    bool has_vertex_texcoords() const { return m_texcoord_offset != 0; }
-
-    /// Does this mesh have per-vertex texture colors?
-    bool has_vertex_colors() const { return m_color_offset != 0; }
+    bool has_vertex_texcoords() const { return slices(m_vertex_texcoords_buf) != 0; }
 
     /// @}
     // =========================================================================
 
     /// Export mesh as a binary PLY file
-    void write_ply(Stream *stream) const;
+    void write_ply(const std::string &filename) const;
 
     /// Compute smooth vertex normals and replace the current normal values
     void recompute_vertex_normals();
@@ -222,6 +160,10 @@ public:
 
     virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const override;
 
+    virtual Point3f
+    barycentric_coordinates(const SurfaceInteraction3f &si,
+                            Mask active = true) const;
+
     virtual void fill_surface_interaction(const Ray3f &ray,
                                           const Float *cache,
                                           SurfaceInteraction3f &si,
@@ -230,6 +172,16 @@ public:
     virtual std::pair<Vector3f, Vector3f>
     normal_derivative(const SurfaceInteraction3f &si,
                       bool shading_frame = true, Mask active = true) const override;
+
+    virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
+                                               const SurfaceInteraction3f &si,
+                                               Mask active = true) const override;
+    virtual Float eval_attribute_1(const std::string& name,
+                                   const SurfaceInteraction3f &si,
+                                   Mask active = true) const override;
+    virtual Color3f eval_attribute_3(const std::string& name,
+                                     const SurfaceInteraction3f &si,
+                                     Mask active = true) const override;
 
     /** \brief Ray-triangle intersection test
      *
@@ -291,9 +243,11 @@ public:
     /// @}
     // =========================================================================
 
-
     /// Return a human-readable string representation of the shape contents.
     virtual std::string to_string() const override;
+
+    size_t vertex_data_bytes() const;
+    size_t face_data_bytes() const;
 
 protected:
     Mesh(const Properties &);
@@ -315,19 +269,55 @@ protected:
     }
 
     MTS_DECLARE_CLASS()
+
 protected:
-    VertexHolder m_vertices;
-    FaceHolder m_faces;
-    ScalarSize m_vertex_size = 0;
-    ScalarSize m_face_size = 0;
+    enum MeshAttributeType {
+        Vertex, Face
+    };
+    struct MeshAttribute {
+        size_t size;
+        MeshAttributeType type;
+        DynamicBuffer<Float> buf;
+    };
 
-    /// Byte offset of the normal data within the vertex buffer
-    ScalarIndex m_normal_offset = 0;
-    /// Byte offset of the texture coordinate data within the vertex buffer
-    ScalarIndex m_texcoord_offset = 0;
-    /// Byte offset of the color data within the vertex buffer
-    ScalarIndex m_color_offset = 0;
+    template <uint32_t Size, bool Raw>
+    auto interpolate_attribute(MeshAttributeType type,
+                               const DynamicBuffer<Float> &buf,
+                               const SurfaceInteraction3f &si,
+                               Mask active) const {
+        using StorageType = std::conditional_t<Size == 1, Float, Color3f>;
 
+        if (type == MeshAttributeType::Vertex) {
+            auto fi = face_indices(si.prim_index, active);
+            Point3f b = barycentric_coordinates(si, active);
+
+            StorageType v0 = gather<StorageType>(buf, fi[0], active),
+                        v1 = gather<StorageType>(buf, fi[1], active),
+                        v2 = gather<StorageType>(buf, fi[2], active);
+
+            // Barycentric interpolation
+            if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw) {
+                // Evaluate spectral upsampling model from stored coefficients
+                UnpolarizedSpectrum c0, c1, c2;
+
+                c0 = srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v0), si.wavelengths);
+                c1 = srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v1), si.wavelengths);
+                c2 = srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v2), si.wavelengths);
+
+                return fmadd(c0, b[0], fmadd(c1, b[1], c2 * b[2]));
+            } else {
+                return fmadd(v0, b[0], fmadd(v1, b[1], v2 * b[2]));
+            }
+        } else {
+            StorageType v = gather<StorageType>(buf, si.prim_index, active);
+            if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw)
+                return srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v), si.wavelengths);
+            else
+                return v;
+        }
+    }
+
+protected:
     std::string m_name;
     ScalarBoundingBox3f m_bbox;
     ScalarTransform4f m_to_world;
@@ -335,25 +325,19 @@ protected:
     ScalarSize m_vertex_count = 0;
     ScalarSize m_face_count = 0;
 
-    ref<Struct> m_vertex_struct;
-    ref<Struct> m_face_struct;
+    FloatStorage m_vertex_positions_buf;
+    FloatStorage m_vertex_normals_buf;
+    FloatStorage m_vertex_texcoords_buf;
+
+    DynamicBuffer<UInt32> m_faces_buf;
+
+    std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
+
+    // END NEW DESIGN
 
 #if defined(MTS_ENABLE_OPTIX)
+    void* m_vertex_buffer_ptr;
     static const uint32_t triangle_input_flags[1];
-    struct OptixData {
-        /* GPU versions of the above */
-        Point3u  faces;
-        Point3f  vertex_positions;
-        Normal3f vertex_normals;
-        Point2f  vertex_texcoords;
-
-        void* faces_buf = nullptr;
-        void* vertex_positions_buf = nullptr;
-        void* vertex_normals_buf = nullptr;
-        void* vertex_texcoords_buf = nullptr;
-    };
-
-    std::unique_ptr<OptixData> m_optix;
 #endif
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
@@ -372,12 +356,10 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-// Enable usage of array pointers for our types
-ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Mesh)
-    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(faces, m_faces, uint8_t*)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(vertices, m_vertices, uint8_t*)
-ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Mesh)
+// // Enable usage of array pointers for our types
+// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Mesh)
+//     ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
+// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Mesh)
 
 //! @}
 // -----------------------------------------------------------------------

@@ -1,7 +1,6 @@
 #pragma once
 
-struct HitGroupData
-{
+struct HitGroupData {
     unsigned long long shape_ptr;
     void* faces;
     void* vertex_positions;
@@ -9,8 +8,7 @@ struct HitGroupData
     void* vertex_texcoords;
 };
 
-struct Params
-{
+struct Params {
     bool    *in_mask;
     float   *in_ox, *in_oy, *in_oz,
             *in_dx, *in_dy, *in_dz,
@@ -21,7 +19,7 @@ struct Params
             *out_p_x, *out_p_y, *out_p_z,
             *out_dp_du_x, *out_dp_du_y, *out_dp_du_z,
             *out_dp_dv_x, *out_dp_dv_y, *out_dp_dv_z;
-    
+
     unsigned long long *out_shape_ptr;
     uint32_t *out_primitive_id;
 

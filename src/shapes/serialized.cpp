@@ -1,6 +1,4 @@
 #include <mitsuba/render/mesh.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/render/sensor.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/zstream.h>
 #include <mitsuba/core/fresolver.h>
@@ -143,18 +141,16 @@ at the end of the file, which specifies the starting position of each sub-mesh:
 template <typename Float, typename Spectrum>
 class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
-                    m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
-                    m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
-                    recompute_vertex_normals, is_emitter, emitter, is_sensor, sensor,
-                    vertex, has_vertex_normals, has_vertex_texcoords, vertex_texcoord,
-                    vertex_normal, vertex_position, set_children)
+    MTS_IMPORT_BASE(Mesh,m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
+                    m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
+                    m_faces_buf, m_disable_vertex_normals, has_vertex_normals, has_vertex_texcoords,
+                    recompute_vertex_normals, vertex_position, vertex_normal, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
-    using typename Base::VertexHolder;
-    using typename Base::FaceHolder;
+    using typename Base::InputFloat;
+    using typename Base::FloatStorage;
 
     enum class TriMeshFlags {
         HasNormals      = 0x0001,
@@ -185,9 +181,6 @@ public:
         Log(Debug, "Loading mesh from \"%s\" ..", m_name);
         if (!fs::exists(file_path))
             fail("file not found");
-
-        // Object-space to world-space transformation
-        ScalarTransform4f to_world = props.transform("to_world", ScalarTransform4f());
 
         /// When the file contains multiple meshes, this index specifies which one to load
         int shape_index = props.int_("shape_index", 0);
@@ -265,127 +258,91 @@ public:
         stream->read(vertex_count);
         stream->read(face_count);
 
-        m_vertex_struct = new Struct();
-        for (auto name : { "x", "y", "z" })
-            m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-
-        if (!m_disable_vertex_normals) {
-            for (auto name : { "nx", "ny", "nz" })
-                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_normal_offset = (ScalarIndex) m_vertex_struct->offset("nx");
-        }
-
-        if (has_flag(flags, TriMeshFlags::HasTexcoords)) {
-            for (auto name : { "u", "v" })
-                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_texcoord_offset = (ScalarIndex) m_vertex_struct->offset("u");
-        }
-
-        if (has_flag(flags, TriMeshFlags::HasColors)) {
-            for (auto name : { "r", "g", "b" })
-                m_vertex_struct->append(name, struct_type_v<ScalarFloat>);
-            m_color_offset = (ScalarIndex) m_vertex_struct->offset("r");
-        }
-
-        m_face_struct = new Struct();
-        for (size_t i = 0; i < 3; ++i)
-            m_face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
-
-        m_vertex_size = (ScalarSize) m_vertex_struct->size();
         m_vertex_count = (ScalarSize) vertex_count;
-        m_vertices = VertexHolder(new uint8_t[(m_vertex_count + 1) * m_vertex_size]);
-
-        m_face_size = (ScalarSize) m_face_struct->size();
         m_face_count = (ScalarSize) face_count;
-        m_faces = FaceHolder(new uint8_t[(m_face_count + 1) * m_face_size]);
+
+        m_vertex_positions_buf = empty<FloatStorage>(m_vertex_count * 3);
+        if (!m_disable_vertex_normals)
+            m_vertex_normals_buf = empty<FloatStorage>(m_vertex_count * 3);
+        if (has_flag(flags, TriMeshFlags::HasTexcoords))
+            m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
+
+        m_faces_buf = empty<DynamicBuffer<UInt32>>(m_face_count * 3);
+
+        m_vertex_positions_buf.managed();
+        m_vertex_normals_buf.managed();
+        m_vertex_texcoords_buf.managed();
+        m_faces_buf.managed();
 
         bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
-        read_helper(stream, double_precision, m_vertex_struct->offset("x"), 3);
+
+        read_helper(stream, double_precision, m_vertex_positions_buf.data(), 3);
 
         if (has_flag(flags, TriMeshFlags::HasNormals)) {
             if (m_disable_vertex_normals)
                 // Skip over vertex normals provided in the file.
                 advance_helper(stream, double_precision, 3);
             else
-                read_helper(stream, double_precision,
-                            m_vertex_struct->offset("nx"), 3);
+                read_helper(stream, double_precision, m_vertex_normals_buf.data(), 3);
         }
 
         if (has_flag(flags, TriMeshFlags::HasTexcoords))
-            read_helper(stream, double_precision, m_vertex_struct->offset("u"), 2);
+            read_helper(stream, double_precision, m_vertex_texcoords_buf.data(), 2);
 
         if (has_flag(flags, TriMeshFlags::HasColors))
-            read_helper(stream, double_precision, m_vertex_struct->offset("r"), 3);
+            advance_helper(stream, double_precision, 3); // TODO
 
-        stream->read(m_faces.get(), m_face_count * sizeof(ScalarIndex) * 3);
+        stream->read(m_faces_buf.data(), m_face_count * sizeof(ScalarIndex) * 3);
+
+        size_t vertex_data_bytes = 3 * sizeof(InputFloat);
+        if (has_vertex_normals())
+            vertex_data_bytes += 3 * sizeof(InputFloat);
+        if (has_vertex_texcoords())
+            vertex_data_bytes += 2 * sizeof(InputFloat);
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name, m_face_count, m_vertex_count,
-            util::mem_string(m_face_count * m_face_struct->size() +
-                             m_vertex_count * m_vertex_struct->size()),
+            util::mem_string(m_face_count * 3 * sizeof(ScalarIndex) +
+                             m_vertex_count * vertex_data_bytes),
             util::time_string(timer.value())
         );
 
         // Post-processing
+        InputFloat* position_ptr = m_vertex_positions_buf.data();
+        InputFloat* normal_ptr   = m_vertex_normals_buf.data();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            ScalarPoint3f p = to_world * vertex_position(i);
-            store_unaligned(vertex(i), p);
+            ScalarPoint3f p = m_to_world.transform_affine(vertex_position(i));
+            store_unaligned(position_ptr, p);
+            position_ptr += 3;
             m_bbox.expand(p);
 
             if (has_vertex_normals()) {
-                ScalarNormal3f n = normalize(to_world * vertex_normal(i));
-                store_unaligned(vertex(i) + m_normal_offset, n);
-            }
-
-            if (has_vertex_texcoords()) {
-                ScalarPoint2f uv = vertex_texcoord(i);
-                store_unaligned(vertex(i) + m_texcoord_offset, uv);
+                ScalarNormal3f n = normalize(m_to_world.transform_affine(vertex_normal(i)));
+                store_unaligned(normal_ptr, n);
+                normal_ptr += 3;
             }
         }
 
-        if (!m_disable_vertex_normals && !has_flag(flags, TriMeshFlags::HasNormals))
+        if (!m_disable_vertex_normals && !has_flag(flags, TriMeshFlags::HasNormals)) {
+            Timer timer;
             recompute_vertex_normals();
+            Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
+                util::time_string(timer.value()));
+        }
 
         set_children();
     }
 
-    void read_helper(Stream *stream, bool dp, size_t offset, size_t dim) {
+    void read_helper(Stream *stream, bool dp, InputFloat* dst, size_t dim) {
         if (dp) {
             std::unique_ptr<double[]> values(new double[m_vertex_count * dim]);
             stream->read_array(values.get(), m_vertex_count * dim);
-
-            if constexpr (std::is_same_v<ScalarFloat, double>) {
-                for (size_t i = 0; i < m_vertex_count; ++i) {
-                    const double *src = values.get() + dim * i;
-                    double *dst = (double *) (vertex(i) + offset);
-                    memcpy(dst, src, sizeof(double) * dim);
-                }
-            } else {
-                for (size_t i = 0; i < m_vertex_count; ++i) {
-                    const double *src = values.get() + dim * i;
-                    float *dst = (float *) (vertex(i) + offset);
-                    for (size_t d = 0; d < dim; ++d)
-                        dst[d] = (float) src[d];
-                }
-            }
+            for (size_t i = 0; i < m_vertex_count * dim; ++i)
+                dst[i] = (float) values[i];
         } else {
             std::unique_ptr<float[]> values(new float[m_vertex_count * dim]);
             stream->read_array(values.get(), m_vertex_count * dim);
-
-            if constexpr (std::is_same_v<ScalarFloat, float>) {
-                for (size_t i = 0; i < m_vertex_count; ++i) {
-                    const float *src = values.get() + dim * i;
-                    void *dst = vertex(i) + offset;
-                    memcpy(dst, src, sizeof(float) * dim);
-                }
-            } else {
-                for (size_t i = 0; i < m_vertex_count; ++i) {
-                    const float *src = values.get() + dim * i;
-                    double *dst = (double *) (vertex(i) + offset);
-                    for (size_t d = 0; d < dim; ++d)
-                        dst[d] = (double) src[d];
-                }
-            }
+            memcpy(dst, values.get(), m_vertex_count * sizeof(InputFloat) * dim);
         }
     }
 
