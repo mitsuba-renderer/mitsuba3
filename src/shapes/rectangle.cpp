@@ -130,6 +130,7 @@ public:
         ps.pdf  = m_inv_surface_area;
         ps.uv   = sample;
         ps.time = time;
+        ps.delta = false;
 
         return ps;
     }
