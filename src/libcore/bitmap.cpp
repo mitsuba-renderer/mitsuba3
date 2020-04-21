@@ -1128,7 +1128,7 @@ void Bitmap::read_openexr(Stream *stream) {
                       BY = (Float) data[2];
 
                 if (std::is_integral<T>::value) {
-                    Float scale = Float(1) / std::numeric_limits<T>::max();
+                    Float scale = Float(1) / Float(std::numeric_limits<T>::max());
                     Y *= scale; RY *= scale; BY *= scale;
                 }
 
@@ -1137,7 +1137,7 @@ void Bitmap::read_openexr(Stream *stream) {
                       G = ((Y - R * yw.x - B * yw.z) / yw.y);
 
                 if (std::is_integral<T>::value) {
-                    Float scale = std::numeric_limits<T>::max();
+                    Float scale = Float(std::numeric_limits<T>::max());
                     R *= R * scale + .5f;
                     G *= G * scale + .5f;
                     B *= B * scale + .5f;
@@ -1200,7 +1200,7 @@ void Bitmap::read_openexr(Stream *stream) {
                       B = (Float) data[2];
 
                 if (std::is_integral<T>::value) {
-                    Float scale = Float(1) / std::numeric_limits<T>::max();
+                    Float scale = Float(1) / Float(std::numeric_limits<T>::max());
                     R *= scale; G *= scale; B *= scale;
                 }
 
@@ -1208,7 +1208,7 @@ void Bitmap::read_openexr(Stream *stream) {
                 R = Float(rgb[0]); G = Float(rgb[1]); B = Float(rgb[2]);
 
                 if (std::is_integral<T>::value) {
-                    Float scale = std::numeric_limits<T>::max();
+                    Float scale = Float(std::numeric_limits<T>::max());
                     R *= R * scale + 0.5f;
                     G *= G * scale + 0.5f;
                     B *= B * scale + 0.5f;
