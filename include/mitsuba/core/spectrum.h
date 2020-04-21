@@ -3,11 +3,8 @@
 #include <utility>
 
 #include <enoki/matrix.h>
-#include <mitsuba/core/fresolver.h>
-#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
@@ -149,13 +146,15 @@ extern MTS_EXPORT_CORE void cie_alloc();
  */
 template <typename Float, typename Result = Color<Float, 3>>
 Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
-    using Int32 = int32_array_t<Float>;
+    using Int32       = int32_array_t<Float>;
+    using ScalarFloat = scalar_t<Float>;
 
-    Float t = (wavelength - MTS_CIE_MIN) *
-             ((MTS_CIE_SAMPLES - 1) / (MTS_CIE_MAX - MTS_CIE_MIN));
+    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
+              ((MTS_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
 
-    active &= wavelength >= MTS_CIE_MIN &&
-              wavelength <= MTS_CIE_MAX;
+    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
+              wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
     Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
@@ -168,7 +167,7 @@ Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
           v1_z = gather<Float>(cie1931_z_data, i1, active);
 
     Float w1 = t - Float(i0),
-          w0 = 1.f - w1;
+          w0 = (ScalarFloat) 1.f - w1;
 
     return Result(fmadd(w0, v0_x, w1 * v1_x),
                   fmadd(w0, v0_y, w1 * v1_y),
@@ -183,12 +182,14 @@ Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
 template <typename Float>
 Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
     using Int32 = int32_array_t<Float>;
+    using ScalarFloat = scalar_t<Float>;
 
-    Float t = (wavelength - MTS_CIE_MIN) *
-             ((MTS_CIE_SAMPLES - 1) / (MTS_CIE_MAX - MTS_CIE_MIN));
+    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
+              ((MTS_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
 
-    active &= wavelength >= MTS_CIE_MIN &&
-              wavelength <= MTS_CIE_MAX;
+    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
+              wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
     Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
@@ -197,7 +198,7 @@ Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
           v1 = gather<Float>(cie1931_y_data, i1, active);
 
     Float w1 = t - Float(i0),
-          w0 = 1.f - w1;
+          w0 = (ScalarFloat) 1.f - w1;
 
     return select(active, fmadd(w0, v0, w1 * v1), 0.f);
 }
@@ -311,85 +312,13 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
 }
 
 template <typename Scalar>
-inline void spectrum_from_file(const std::string &filename,
-                               std::vector<Scalar> &wavelengths,
-                               std::vector<Scalar> &values) {
-    auto fs = Thread::thread()->file_resolver();
-    fs::path file_path = fs->resolve(filename);
-    if (!fs::exists(file_path))
-        Log(Error, "\"%s\": file does not exist!", file_path);
-
-    Log(Info, "Loading spectral data file \"%s\" ..", file_path);
-    ref<FileStream> file = new FileStream(file_path);
-
-    std::string line, rest;
-    float wav, value;
-    while (true) {
-        try {
-            line = file->read_line();
-            if (line.size() == 0 || line[0] == '#')
-                continue;
-
-            std::istringstream iss(line);
-            iss >> wav;
-            iss >> value;
-            if (iss >> rest)
-                Log(Error, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
-            wavelengths.push_back(wav);
-            values.push_back(value);
-        } catch (std::exception &) {
-            break;
-        }
-    }
-}
+MTS_EXPORT_CORE void spectrum_from_file(const std::string &filename,
+                                        std::vector<Scalar> &wavelengths,
+                                        std::vector<Scalar> &values);
 
 template <typename Scalar>
-inline Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
-                                        const std::vector<Scalar> &values,
-                                        bool bounded=true) {
-    Color<Scalar, 3> color = 0.f;
-
-    const int steps = 1000;
-    for (int i = 0; i < steps; ++i) {
-        Scalar x = MTS_WAVELENGTH_MIN +
-                  (i / (Scalar) (steps - 1)) *
-                      (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
-
-        if (x < wavelengths.front() || x > wavelengths.back())
-            continue;
-
-        // Find interval containing 'x'
-        uint32_t index = math::find_interval(
-            (uint32_t) wavelengths.size(),
-            [&](uint32_t idx) {
-                return wavelengths[idx] <= x;
-            });
-
-        Scalar x0 = wavelengths[index],
-              x1 = wavelengths[index + 1],
-              y0 = values[index],
-              y1 = values[index + 1];
-
-        // Linear interpolant at 'x'
-        Scalar y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
-
-        Color<Scalar, 3> xyz = cie1931_xyz(x);
-        color += xyz * y;
-    }
-
-    // Last specified value repeats implicitly
-    color *= (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) / (Scalar) steps;
-    color = xyz_to_srgb(color);
-
-    if (bounded && any(color < 0.f || color > 1.f)) {
-        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
-        color = clamp(color, 0.f, 1.f);
-    } else if (!bounded && any(color < 0.f)) {
-        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
-        color = max(color, 0.f);
-    }
-
-    return color;
-}
+MTS_EXPORT_CORE Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
+                                                 const std::vector<Scalar> &values,
+                                                 bool bounded = true);
 
 NAMESPACE_END(mitsuba)

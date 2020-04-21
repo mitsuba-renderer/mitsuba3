@@ -1,6 +1,106 @@
+#include <mitsuba/core/fresolver.h>
+#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+
+template <typename Scalar>
+void spectrum_from_file(const std::string &filename, std::vector<Scalar> &wavelengths,
+                        std::vector<Scalar> &values) {
+    auto fs = Thread::thread()->file_resolver();
+    fs::path file_path = fs->resolve(filename);
+    if (!fs::exists(file_path))
+        Log(Error, "\"%s\": file does not exist!", file_path);
+
+    Log(Info, "Loading spectral data file \"%s\" ..", file_path);
+    ref<FileStream> file = new FileStream(file_path);
+
+    std::string line, rest;
+    Scalar wav, value;
+    while (true) {
+        try {
+            line = file->read_line();
+            if (line.size() == 0 || line[0] == '#')
+                continue;
+
+            std::istringstream iss(line);
+            iss >> wav;
+            iss >> value;
+            if (iss >> rest)
+                Log(Error, "\"%s\": excess tokens after wavlengths-value pair in file:\n%s!", file_path, line);
+            wavelengths.push_back(wav);
+            values.push_back(value);
+        } catch (std::exception &) {
+            break;
+        }
+    }
+}
+
+template <typename Scalar>
+Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
+                                 const std::vector<Scalar> &values, bool bounded) {
+    Color<Scalar, 3> color = (Scalar) 0.f;
+
+    const int steps = 1000;
+    for (int i = 0; i < steps; ++i) {
+        Scalar x = (Scalar) MTS_WAVELENGTH_MIN +
+                   (i / (Scalar)(steps - 1)) * ((Scalar) MTS_WAVELENGTH_MAX -
+                                                (Scalar) MTS_WAVELENGTH_MIN);
+
+        if (x < wavelengths.front() || x > wavelengths.back())
+            continue;
+
+        // Find interval containing 'x'
+        uint32_t index = math::find_interval(
+            (uint32_t) wavelengths.size(),
+            [&](uint32_t idx) {
+                return wavelengths[idx] <= x;
+            });
+
+        Scalar x0 = wavelengths[index],
+              x1 = wavelengths[index + 1],
+              y0 = values[index],
+              y1 = values[index + 1];
+
+        // Linear interpolant at 'x'
+        Scalar y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
+
+        Color<Scalar, 3> xyz = cie1931_xyz(x);
+        color += xyz * y;
+    }
+
+    // Last specified value repeats implicitly
+    color *= ((Scalar) MTS_WAVELENGTH_MAX - (Scalar) MTS_WAVELENGTH_MIN) / (Scalar) steps;
+    color = xyz_to_srgb(color);
+
+    if (bounded && any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
+        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
+        color = clamp(color, (Scalar) 0.f, (Scalar) 1.f);
+    } else if (!bounded && any(color < (Scalar) 0.f)) {
+        Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
+        color = max(color, (Scalar) 0.f);
+    }
+
+    return color;
+}
+
+
+
+/// Explicit instantiations
+template MTS_EXPORT void spectrum_from_file(const std::string &filename,
+                                            std::vector<float> &wavelengths,
+                                            std::vector<float> &values);
+template MTS_EXPORT void spectrum_from_file(const std::string &filename,
+                                            std::vector<double> &wavelengths,
+                                            std::vector<double> &values);
+
+template MTS_EXPORT Color<float, 3>
+spectrum_to_rgb(const std::vector<float> &wavelengths,
+                const std::vector<float> &values, bool bounded);
+template MTS_EXPORT Color<double, 3>
+spectrum_to_rgb(const std::vector<double> &wavelengths,
+                const std::vector<double> &values, bool bounded);
 
 // =======================================================================
 //! @{ \name CIE 1931 2 degree observer implementation
