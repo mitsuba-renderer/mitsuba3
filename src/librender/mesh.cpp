@@ -1,3 +1,4 @@
+#include <mitsuba/core/fstream.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/transform.h>
@@ -107,7 +108,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
     const std::string &name, uintptr_t loop_tri_count, uintptr_t loop_tri_ptr,
     uintptr_t loop_ptr, uintptr_t vertex_count, uintptr_t vertex_ptr,
     uintptr_t poly_ptr, uintptr_t uv_ptr, uintptr_t col_ptr, short mat_nr,
-    const Matrix4f &to_world) {
+    const ScalarMatrix4f &to_world) {
 
     auto fail = [&](const char *descr, auto... args) {
         Throw(("Error while loading Blender mesh \"%s\": " + std::string(descr))
@@ -199,8 +200,8 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
         InputNormal3f normal;
         if (!(blender::ME_SMOOTH & face.flag)) {
             // flat shading, use per face normals
-            const Vector3f e1 = face_points[1] - face_points[0];
-            const Vector3f e2 = face_points[2] - face_points[0];
+            const InputVector3f e1 = face_points[1] - face_points[0];
+            const InputVector3f e2 = face_points[2] - face_points[0];
             normal = normalize(m_to_world.transform_affine(cross(e1, e2)));
         }
         for (u_int i = 0; i < 3; i++) {
@@ -213,7 +214,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
             Key vert_key;
             if (blender::ME_SMOOTH & face.flag) {
                 // smooth shading, store per vertex normals
-                normal = Normal3f(vert.no[0], vert.no[1], vert.no[2]);
+                normal = InputNormal3f(vert.no[0], vert.no[1], vert.no[2]);
                 normal = normalize(m_to_world.transform_affine(normal));
                 vert_key.smooth = true;
             } else {
