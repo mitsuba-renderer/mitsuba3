@@ -23,6 +23,12 @@ extern const float dither_matrix256[65536];
 
 NAMESPACE_BEGIN(detail)
 
+#if defined(DOUBLE_PRECISION)
+#  define Float double
+#else
+#  define Float float
+#endif
+
 #if MTS_STRUCTCONVERTER_USE_JIT == 1
 
 using namespace asmjit;
@@ -84,8 +90,7 @@ public:
     }
 
     /// Floating point move operation
-    template <typename X, typename Y>
-    void movs(const X &x, const Y &y) {
+    template <typename X, typename Y> void movs(const X &x, const Y &y) {
         #if defined(ENOKI_X86_AVX)
             #if !defined(DOUBLE_PRECISION)
                 cc.vmovss(x, y);
@@ -615,7 +620,7 @@ public:
     }
 
     std::pair<Key, Value> load_default(const Struct::Field &field) {
-        Key key { field.name, struct_type_v<float>, +Struct::Flags::None };
+        Key key { field.name, struct_type_v<Float>, +Struct::Flags::None };
         Value value;
         value.xmm = cc.newXmm();
         movs(value.xmm, const_(field.default_));
@@ -632,13 +637,13 @@ public:
         bool inv_gamma = false;
 
         if (Struct::is_integer(kr.type)) {
-            kr.type = struct_type_v<float>;
+            kr.type = struct_type_v<Float>;
             kr.flags &= ~Struct::Flags::Normalized;
             int_to_float = true;
         }
 
-        if (Struct::is_float(kr.type) && kr.type != struct_type_v<float>) {
-            kr.type = struct_type_v<float>;
+        if (Struct::is_float(kr.type) && kr.type != struct_type_v<Float>) {
+            kr.type = struct_type_v<Float>;
             float_to_float = true;
         }
 
@@ -694,7 +699,7 @@ public:
                 kr.type = Struct::Type::Float32;
             }
 
-            if (kr.type == Struct::Type::Float32 && kr.type != struct_type_v<float>) {
+            if (kr.type == Struct::Type::Float32 && kr.type != struct_type_v<Float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX)
@@ -705,7 +710,7 @@ public:
                 kr.type = Struct::Type::Float64;
             }
 
-            if (kr.type == Struct::Type::Float64 && kr.type != struct_type_v<float>) {
+            if (kr.type == Struct::Type::Float64 && kr.type != struct_type_v<Float>) {
                 X86Xmm source = vr.xmm;
                 vr.xmm = cc.newXmm();
                 #if defined(ENOKI_X86_AVX)
@@ -741,8 +746,8 @@ public:
 
         if (field.is_integer() && !Struct::is_integer(key.type)) {
             auto range_dbl = field.range();
-            std::pair<float, float> range = range_dbl;
-            if (key.type != struct_type_v<float>)
+            std::pair<Float, Float> range = range_dbl;
+            if (key.type != struct_type_v<Float>)
                 Throw("Internal error!");
 
             auto temp = cc.newXmm();
@@ -765,7 +770,18 @@ public:
                         X86Gp base = cc.newUInt64();
                         cc.mov(base.r64(), Imm((uintptr_t) dither_matrix256));
                         dither_value = cc.newXmm();
-                        movs(dither_value, X86Mem(base, index, 2, 0, (uint32_t) sizeof(float)));
+                        #if defined(ENOKI_X86_AVX)
+                            cc.movss(dither_value, X86Mem(base, index, 2, 0, (uint32_t) sizeof(float)));
+                        #else
+                            cc.vmovss(dither_value, X86Mem(base, index, 2, 0, (uint32_t) sizeof(float)));
+                        #endif
+                        #if defined(DOUBLE_PRECISION)
+                            #if defined(ENOKI_X86_AVX)
+                                cc.vcvtss2sd(dither_value, dither_value, dither_value);
+                            #else
+                                cc.cvtss2sd(dither_value, dither_value);
+                            #endif
+                        #endif
                         dither_ready = true;
                     }
                     adds(value.xmm, dither_value);
@@ -1297,7 +1313,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
 
         if (source_weight != nullptr && target_weight == nullptr) {
             X86Xmm result = cc.newXmm();
-            if (kv.first.type != struct_type_v<float>)
+            if (kv.first.type != struct_type_v<Float>)
                 kv = sc.linearize(kv);
             sc.muls(result, kv.second.xmm, scale_factor);
             kv.second.xmm = result;
@@ -1466,7 +1482,7 @@ void StructConverter::linearize(Value &value) const {
 
         if (has_flag(value.flags, Struct::Flags::Normalized))
             value.f *= Float(1 / Struct::range(value.type).second);
-    } else if (Struct::is_float(value.type) && value.type != struct_type_v<float>) {
+    } else if (Struct::is_float(value.type) && value.type != struct_type_v<Float>) {
         if (value.type == Struct::Type::Float32)
             value.f = (Float) value.s;
         else
@@ -1477,7 +1493,7 @@ void StructConverter::linearize(Value &value) const {
         value.flags = value.flags & ~Struct::Flags::Gamma;
     }
 
-    value.type = struct_type_v<float>;
+    value.type = struct_type_v<Float>;
 }
 
 void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, size_t x, size_t y) const {
@@ -1491,7 +1507,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
     if (has_flag(f.flags, Struct::Flags::Gamma) && !has_flag(value.flags, Struct::Flags::Gamma))
         value.f = enoki::linear_to_srgb(value.f);
 
-    if (f.is_integer() && value.type == struct_type_v<float>) {
+    if (f.is_integer() && value.type == struct_type_v<Float>) {
         auto range = f.range();
 
         if (has_flag(f.flags, Struct::Flags::Normalized))
@@ -1512,9 +1528,9 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             value.u = (uint64_t) d;
     }
 
-    if ((f.type == Struct::Type::Float16 || f.type == Struct::Type::Float32) && value.type == struct_type_v<float>)
+    if ((f.type == Struct::Type::Float16 || f.type == Struct::Type::Float32) && value.type == struct_type_v<Float>)
         value.s = (float) value.f;
-    else if (f.type == Struct::Type::Float64 && value.type == struct_type_v<float>)
+    else if (f.type == Struct::Type::Float64 && value.type == struct_type_v<Float>)
         value.d = (double) value.f;
 
     switch (f.type) {
@@ -1658,7 +1674,7 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                             return false;
                     }
                 } else {
-                    value.type = struct_type_v<float>;
+                    value.type = struct_type_v<Float>;
                     value.f = 0;
                     value.flags = +Struct::Flags::None;
                     for (auto kv : f.blend) {
