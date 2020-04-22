@@ -69,7 +69,7 @@ template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator, m_hide_emitters)
-    MTS_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MTS_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     // =============================================================
     //! @{ \name Constructors
@@ -105,6 +105,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
+                                     const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);

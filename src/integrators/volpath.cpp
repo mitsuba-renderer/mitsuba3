@@ -38,6 +38,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray_,
+                                     const Medium *initial_medium,
                                      Float * /* aovs */,
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
@@ -53,8 +54,7 @@ public:
         Float eta(1.f);
 
         Spectrum throughput(1.f), result(0.f);
-
-        MediumPtr medium = nullptr;
+        MediumPtr medium = initial_medium;
         MediumInteraction3f mi;
 
         Mask specular_chain = active && !m_hide_emitters;
@@ -277,6 +277,7 @@ public:
         Float total_dist = 0.f;
         SurfaceInteraction3f si;
         Mask needs_intersection = true;
+        Log(Info, "ds.dist: %s", ds.dist);
         while (any(active)) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
