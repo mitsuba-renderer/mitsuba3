@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdint>
 
-#define DEVICE __forceinline__ __device__ 
+#define DEVICE __forceinline__ __device__
 
 template <typename Value_, size_t Size_> struct Array {
     using Value = Value_;
@@ -204,12 +204,33 @@ DEVICE Array<Value, Size> min(const Array<Value, Size> &a1, const Array<Value, S
 }
 
 // Import some common Enoki types
-using Vector2f     = Array<float, 2>;
-using Vector3f     = Array<float, 3>;
-using Vector4f     = Array<float, 4>;
-using Vector2i     = Array<int32_t, 2>;
-using Vector3i     = Array<int32_t, 3>;
-using Vector4i     = Array<int32_t, 4>;
-using Vector2ui    = Array<uint32_t, 2>;
-using Vector3ui    = Array<uint32_t, 3>;
-using Vector4ui    = Array<uint32_t, 4>;
+using Vector2f = Array<float, 2>;
+using Vector3f = Array<float, 3>;
+using Vector4f = Array<float, 4>;
+using Vector2i = Array<int32_t, 2>;
+using Vector3i = Array<int32_t, 3>;
+using Vector4i = Array<int32_t, 4>;
+using Vector2u = Array<uint32_t, 2>;
+using Vector3u = Array<uint32_t, 3>;
+using Vector4u = Array<uint32_t, 4>;
+
+__forceinline__ __device__ float3 make_float3(const Vector3f& v) {
+    return make_float3(v.x(), v.y(), v.z());
+}
+__forceinline__ __device__ Vector3f make_vector3f(const float3& v) {
+    return Vector3f(v.x, v.y, v.z);
+}
+
+__device__ void coordinate_system(Vector3f n, Vector3f &x, Vector3f &y) {
+    /* Based on "Building an Orthonormal Basis, Revisited" by
+       Tom Duff, James Burgess, Per Christensen,
+       Christophe Hery, Andrew Kensler, Max Liani,
+       and Ryusuke Villemin (JCGT Vol 6, No 1, 2017) */
+
+    float s = copysignf(1.f, n.z()),
+          a = -1.f / (s + n.z()),
+          b = n.x() * n.y() * a;
+
+    x = Vector3f(n.x() * n.x() * a * s + 1.f, b * s, -n.x() * s);
+    y = Vector3f(b, s + n.y() * n.y() * a, -n.y());
+}

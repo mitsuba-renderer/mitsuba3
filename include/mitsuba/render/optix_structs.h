@@ -26,5 +26,4 @@ struct Params {
     bool *out_hit;
 
     OptixTraversableHandle handle;
-    bool rg_any;
 };

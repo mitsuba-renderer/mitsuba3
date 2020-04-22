@@ -1,5 +1,4 @@
-#include <optix.h>
-#include <optix_stubs.h>
+#include "optix_api.h"
 #include "librender_ptx.h"
 #include <iomanip>
 
@@ -7,39 +6,9 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-constexpr int kDeviceID = 0;
-
-static size_t optix_log_buffer_size;
-static char optix_log_buffer[2024];
-
-#define rt_check(err)       __rt_check(err, __FILE__, __LINE__)
-#define rt_check_log(err)   __rt_check_log(err, __FILE__, __LINE__)
-
-void __rt_check(OptixResult errval, const char *file, const int line) {
-    if (errval != OPTIX_SUCCESS) {
-        const char *message = optixGetErrorString(errval);
-        if (errval == 1546)
-            message = "Failed to load OptiX library! Very likely, your NVIDIA graphics "
-                "driver is too old and not compatible with the version of OptiX that is "
-                "being used. In particular, OptiX 6.5 requires driver revision R435.80 or newer.";
-        fprintf(stderr,
-                "rt_check(): OptiX API error = %04d (%s) in "
-                "%s:%i.\n", (int) errval, message, file, line);
-        exit(EXIT_FAILURE);
-    }
-}
-
-void __rt_check_log(OptixResult errval, const char *file, const int line) {
-    if (errval != OPTIX_SUCCESS) {
-        const char *message = optixGetErrorString(errval);
-        fprintf(stderr,
-                "rt_check(): OptiX API error = %04d (%s) in "
-                "%s:%i.\n", (int) errval, message, file, line);
-        fprintf(stderr,
-                "\tLog: %s%s", optix_log_buffer, optix_log_buffer_size > sizeof(optix_log_buffer) ? "<TRUNCATED>" : "");
-        exit(EXIT_FAILURE);
-    }
-}
+#if !defined(NDEBUG)
+# define MTS_OPTIX_DEBUG 1
+#endif
 
 static void context_log_cb(unsigned int level, const char* tag, const char* message, void* /*cbdata */) {
     std::cerr << "[" << std::setw(2) << level << "][" << std::setw(12) << tag
@@ -72,14 +41,19 @@ typedef EmptySbtRecord MissSbtRecord;
 typedef SbtRecord<HitGroupData>   HitGroupSbtRecord;
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
+    optix_init();
+
+    Log(Info, "Building scene in OptiX ..");
     m_accel = new OptixState();
     OptixState &s = *(OptixState *) m_accel;
-
     CUcontext cuCtx = 0;  // zero means take the current context
-    rt_check(optixInit());
     OptixDeviceContextOptions options = {};
     options.logCallbackFunction       = &context_log_cb;
-    options.logCallbackLevel          = 4;
+#if !defined(MTS_OPTIX_DEBUG)
+    options.logCallbackLevel          = 1;
+#else
+    options.logCallbackLevel          = 3;
+#endif
     rt_check(optixDeviceContextCreate(cuCtx, &options, &s.context));
 
     // Pipeline generation
@@ -88,14 +62,29 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         OptixModuleCompileOptions module_compile_options = {};
 
         module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
+#if !defined(MTS_OPTIX_DEBUG)
         module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
+        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#else
+        module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+#endif
 
         pipeline_compile_options.usesMotionBlur        = false;
         pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
         pipeline_compile_options.numPayloadValues      = 3;
         pipeline_compile_options.numAttributeValues    = 3;
         pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
+
+#if !defined(MTS_OPTIX_DEBUG)
+        pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+#else
+        pipeline_compile_options.exceptionFlags =
+              OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW
+            | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH
+            | OPTIX_EXCEPTION_FLAG_USER
+            | OPTIX_EXCEPTION_FLAG_DEBUG;
+#endif
 
         rt_check_log(optixModuleCreateFromPTX(
             s.context,
@@ -126,16 +115,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         prog_group_descs[2].hitgroup.entryFunctionNameCH = "__closesthit__ch";
 
 #if !defined(MTS_OPTIX_DEBUG)
-        // TODO: find how to enable optix print
-        pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
         const unsigned int num_program_groups = 3;
 #else
-        pipeline_compile_options.exceptionFlags =
-              OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW
-            | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH
-            | OPTIX_EXCEPTION_FLAG_USER
-            | OPTIX_EXCEPTION_FLAG_DEBUG;
-
         prog_group_descs[3].kind                         = OPTIX_PROGRAM_GROUP_KIND_EXCEPTION;
         prog_group_descs[3].hitgroup.moduleCH            = s.module;
         prog_group_descs[3].hitgroup.entryFunctionNameCH = "__exception__err";
@@ -153,8 +134,12 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         ));
 
         OptixPipelineLinkOptions pipeline_link_options = {};
-        pipeline_link_options.maxTraceDepth          = 1; // TODO: ??
+        pipeline_link_options.maxTraceDepth          = 1;
+#if defined(MTS_OPTIX_DEBUG)
         pipeline_link_options.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+#else
+        pipeline_link_options.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+#endif
         pipeline_link_options.overrideUsesMotionBlur = false;
         rt_check_log(optixPipelineCreate(
             s.context,
@@ -166,10 +151,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
             &optix_log_buffer_size,
             &s.pipeline
         ));
-
-        // TODO: could destroy s.module here? Not needed according to the doc
-
-    } // end pipeline generation
+    } // End pipeline generation
 
     // Shader Binding Table generation and acceleration data structure building
     {
@@ -177,7 +159,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         void* records = cuda_malloc(sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord) + sizeof(HitGroupSbtRecord) * shapes_count);
 
         RayGenSbtRecord raygen_sbt;
-        rt_check(optixSbtRecordPackHeader( s.program_groups[0], &raygen_sbt));
+        rt_check(optixSbtRecordPackHeader(s.program_groups[0], &raygen_sbt));
         void* raygen_record = records;
         cuda_memcpy_to_device(raygen_record, &raygen_sbt, sizeof(RayGenSbtRecord));
 
@@ -193,10 +175,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         std::vector<HitGroupSbtRecord>  hg_sbts(shapes_count);
 
         for (Shape* shape: m_shapes) {
-            shape->optix_geometry(); // TODO this call isn't needed anymore
+            shape->optix_geometry();
             // Setup the hitgroup record and copy it to the hitgroup records array
             rt_check(optixSbtRecordPackHeader(s.program_groups[2], &hg_sbts[shape_index]));
-            // compute optix geometry for this shape
+            // Compute optix geometry for this shape
             shape->optix_hit_group_data(hg_sbts[shape_index].data);
 
             ++shape_index;
@@ -213,17 +195,13 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         s.sbt.hitgroupRecordCount         = shapes_count;
 
         accel_parameters_changed_gpu();
-    } // end shader binding table generation and acceleration data structure building
+    } // End shader binding table generation and acceleration data structure building
 
     // Allocate params pointer
     s.params = cuda_malloc(sizeof(Params));
 
     // This will trigger the scatter calls to upload geometry to the device
     cuda_eval();
-
-    Log(Info, "Validating and building scene in OptiX.");
-    // TODO: check that there is really no equivalent
-    // rt_check(rtContextValidate(s.context));
 
     // TODO: check if we still want to do run a dummy launch
 }
@@ -265,7 +243,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         0,              // CUDA stream
         &accel_options,
         build_inputs.data(),
-        shapes_count,              // num build inputs
+        shapes_count,   // num build inputs
         (CUdeviceptr)d_temp_buffer_gas,
         gas_buffer_sizes.tempSizeInBytes,
         (CUdeviceptr)d_buffer_temp_output_gas_and_compacted_size,
@@ -278,7 +256,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     cuda_free((void*)d_temp_buffer_gas);
 
     if (s.accel_buffer)
-        cuda_free(s.accel_buffer);
+        cuda_free((void*)s.accel_buffer);
 
     // TODO: check if this is really usefull considering enoki's way of handling GPU memory
     size_t compacted_gas_size;
@@ -286,7 +264,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if (compacted_gas_size < gas_buffer_sizes.outputSizeInBytes) {
         s.accel_buffer = cuda_malloc(compacted_gas_size);
 
-        // use handle as input and output
+        // Use handle as input and output
         rt_check(optixAccelCompact(s.context, 0, s.accel, (CUdeviceptr)s.accel_buffer, compacted_gas_size, &s.accel));
 
         cuda_free((void*)d_buffer_temp_output_gas_and_compacted_size);
@@ -297,9 +275,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     OptixState &s = *(OptixState *) m_accel;
-    // TODO: make sure if we realeased everything
-    cuda_free(s.accel_buffer);
-    cuda_free(s.params);
+    cuda_free((void*)s.sbt.raygenRecord);
+    cuda_free((void*)s.accel_buffer);
+    cuda_free((void*)s.params);
     rt_check(optixPipelineDestroy(s.pipeline));
     rt_check(optixProgramGroupDestroy(s.program_groups[0]));
     rt_check(optixProgramGroupDestroy(s.program_groups[1]));
@@ -309,6 +287,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 #endif
     rt_check(optixModuleDestroy(s.module));
     rt_check(optixDeviceContextDestroy(s.context));
+    optix_shutdown();
     delete (OptixState *) m_accel;
     m_accel = nullptr;
 }
@@ -330,25 +309,10 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
         // `si.is_valid()==true`, this makes it easier to catch bugs in the
         // masking logic implemented in the integrator.
 #if !defined(NDEBUG)
-            si.t    = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.time = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.p.x() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.p.y() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.p.z() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.uv.x() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.uv.y() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.n.x() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.n.y() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.n.z() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.sh_frame.n.x() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.sh_frame.n.y() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.sh_frame.n.z() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.dp_du.x() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.dp_du.y() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.dp_du.z() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.dp_dv.x() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.dp_dv.y() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
-            si.dp_dv.z() = full<Float>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
+            #define SET_NAN(name) name = full<decltype(name)>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
+            SET_NAN(si.t); SET_NAN(si.time); SET_NAN(si.p); SET_NAN(si.uv); SET_NAN(si.n);
+            SET_NAN(si.sh_frame.n); SET_NAN(si.dp_du); SET_NAN(si.dp_dv);
+            #undef SET_NAN
 #endif  // !defined(NDEBUG)
 
         cuda_eval();
@@ -383,9 +347,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, Mask active) const 
             // Out: Hit flag
             nullptr,
             // top_object
-            s.accel,
-            // rg_any
-            false
+            s.accel
         };
 
         cuda_memcpy_to_device(s.params, &params, sizeof(Params));
@@ -485,12 +447,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
             // Out: Hit flag
             hit.data(),
             // top_object
-            s.accel,
-            // rg_any
-            true
+            s.accel
         };
 
-        cuda_memcpy_to_device(s.params, &params, sizeof( params ));
+        cuda_memcpy_to_device(s.params, &params, sizeof(params));
 
         size_t width = 1, height = ray_count;
         while (!(height & 1) && width < height) {
@@ -502,20 +462,19 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
             s.pipeline,
             0, // default cuda stream
             (CUdeviceptr)s.params,
-            sizeof( Params ),
+            sizeof(Params),
             &s.sbt,
             width,
             height,
             1 // depth
         );
-        // TODO: check that this is the error code we're looking for
         if (rt == OPTIX_ERROR_HOST_OUT_OF_MEMORY) {
             cuda_malloc_trim();
             rt = optixLaunch(
                 s.pipeline,
                 0, // default cuda stream
                 (CUdeviceptr)s.params,
-                sizeof( Params ),
+                sizeof(Params),
                 &s.sbt,
                 width,
                 height,

@@ -27,7 +27,6 @@ if (MTS_ENABLE_OPTIX)
 
   set(LIBRENDER_EXTRA_SRC librender_ptx.cpp librender_ptx.h)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
-  link_directories(${MTS_OPTIX_PATH}/lib64)
 endif()
 
 include_directories(
@@ -63,6 +62,7 @@ add_library(mitsuba-render-obj OBJECT
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
                    ${INC_DIR}/optix_structs.h
+  optix_api.cpp    optix_api.h
   ${LIBRENDER_EXTRA_SRC}
 )
 
@@ -93,21 +93,12 @@ if (MTS_ENABLE_EMBREE)
 endif()
 
 if (MTS_ENABLE_OPTIX)
-  target_include_directories(mitsuba-render-obj PRIVATE ${MTS_OPTIX_PATH}/include /usr/local/cuda-10.2/include)
-
-  find_library(OPTIX_LIB NAMES optix optix.6.5.0 PATHS "${MTS_OPTIX_PATH}/lib64")
-  if(NOT OPTIX_LIB)
-    message(FATAL_ERROR "OPTIX library not found. Looking for optix.so or optix.6.5.0.so.")
+  if (MTS_USE_OPTIX_HEADERS)
+    find_package(CUDA 10.0 REQUIRED)
+    target_include_directories(mitsuba-render-obj PRIVATE ${MTS_OPTIX_PATH}/include ${CUDA_INCLUDE_DIRS})
   endif()
 
-  target_link_libraries(mitsuba-render PRIVATE cuda "${OPTIX_LIB}")
-  link_directories(/usr/local/cuda-10.2/)
-  # target_link_libraries(mitsuba-render PRIVATE optix)
-
-  set_target_properties(mitsuba-render PROPERTIES
-    INSTALL_RPATH "${MTS_OPTIX_PATH}/lib64;${CMAKE_INSTALL_RPATH}"
-    BUILD_RPATH "${MTS_OPTIX_PATH}/lib64;${CMAKE_BUILD_RPATH}"
-  )
+  target_link_libraries(mitsuba-render PRIVATE cuda)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")

@@ -21,9 +21,7 @@ struct Params {
     bool *out_hit;
 
     OptixTraversableHandle handle;
-    bool rg_any;
 };
-
 
 extern "C" {
 __constant__ Params params;
@@ -31,53 +29,29 @@ __constant__ Params params;
 
 struct HitGroupData {
     unsigned long long shape_ptr;
-    Vector3ui* faces;
+    Vector3u* faces;
     Vector3f* vertex_positions;
     Vector3f* vertex_normals;
     Vector2f* vertex_texcoords;
 };
 
-__forceinline__ __device__ float3 make_float3(const Vector3f& v) {
-    return make_float3(v.x(), v.y(), v.z());
-}
-__forceinline__ __device__ Vector3f make_Vector3f(const float3& v) {
-    return Vector3f(v.x, v.y, v.z);
-}
-
-__device__ void coordinate_system(Vector3f n, Vector3f &x, Vector3f &y) {
-    /* Based on "Building an Orthonormal Basis, Revisited" by
-       Tom Duff, James Burgess, Per Christensen,
-       Christophe Hery, Andrew Kensler, Max Liani,
-       and Ryusuke Villemin (JCGT Vol 6, No 1, 2017) */
-
-    float s = copysignf(1.f, n.z()),
-          a = -1.f / (s + n.z()),
-          b = n.x() * n.y() * a;
-
-    x = Vector3f(n.x() * n.x() * a * s + 1.f, b * s, -n.x() * s);
-    y = Vector3f(b, s + n.y() * n.y() * a, -n.y());
-}
-
-__device__ void ray_attr(
-    const HitGroupData* sbt_data,
-    Vector3f &p,
-    Vector2f &uv,
-    Vector3f &ns,
-    Vector3f &ng,
-    Vector3f &dp_du,
-    Vector3f &dp_dv) {
+/* Compute and store information describing the intersection. This function
+   is very similar to Mesh::fill_surface_interaction() */
+__device__ void ray_attr(const HitGroupData *sbt_data, Vector3f &p,
+                         Vector2f &uv, Vector3f &ns, Vector3f &ng,
+                         Vector3f &dp_du, Vector3f &dp_dv) {
     float2 float2_uv = optixGetTriangleBarycentrics();
     uv = Vector2f(float2_uv.x, float2_uv.y);
     float uv0 = 1.f - uv.x() - uv.y(),
           uv1 = uv.x(),
           uv2 = uv.y();
 
-    const Vector3ui* faces            = sbt_data->faces;
-    const Vector3f* vertex_positions  = sbt_data->vertex_positions;
-    const Vector3f* vertex_normals    = sbt_data->vertex_normals;
-    const Vector2f* vertex_texcoords  = sbt_data->vertex_texcoords;
+    const Vector3u* faces           = sbt_data->faces;
+    const Vector3f* vertex_positions = sbt_data->vertex_positions;
+    const Vector3f* vertex_normals   = sbt_data->vertex_normals;
+    const Vector2f* vertex_texcoords = sbt_data->vertex_texcoords;
 
-    Vector3ui face = faces[optixGetPrimitiveIndex()];
+    Vector3u face = faces[optixGetPrimitiveIndex()];
 
     Vector3f p0 = vertex_positions[face.x()],
              p1 = vertex_positions[face.y()],
@@ -119,10 +93,15 @@ __device__ void ray_attr(
     }
 }
 
-extern "C" __global__ void __raygen__rg() {
+/// Returns a unique launch index per ray
+__device__ unsigned int calculate_launch_index() {
     uint3 launch_dims = optixGetLaunchDimensions();
     uint3 launch_index3 = optixGetLaunchIndex();
-    unsigned int launch_index = launch_index3.x + (launch_index3.y + launch_index3.z * launch_dims.y) * launch_dims.x;
+    return launch_index3.x + (launch_index3.y + launch_index3.z * launch_dims.y) * launch_dims.x;
+}
+
+extern "C" __global__ void __raygen__rg() {
+    unsigned int launch_index = calculate_launch_index();
 
     Vector3f ro = Vector3f(params.in_ox[launch_index],
                            params.in_oy[launch_index],
@@ -130,12 +109,12 @@ extern "C" __global__ void __raygen__rg() {
              rd = Vector3f(params.in_dx[launch_index],
                            params.in_dy[launch_index],
                            params.in_dz[launch_index]);
-    float  mint = params.in_mint[launch_index],
-           maxt = params.in_maxt[launch_index];
+    float mint = params.in_mint[launch_index],
+          maxt = params.in_maxt[launch_index];
 
-    if (params.rg_any) {
+    if (params.out_hit != nullptr) {
         if (!params.in_mask[launch_index]) {
-            params.out_hit[launch_index] = false; // TODO: check if out_hit valid??
+            params.out_hit[launch_index] = false;
         } else {
             optixTrace(
                 params.handle,
@@ -163,14 +142,8 @@ extern "C" __global__ void __raygen__rg() {
     }
 }
 
-__device__ inline float squared_norm(Vector3f v) {
-    return dot(v, v);
-}
-
 extern "C" __global__ void __closesthit__ch() {
-    uint3 launch_dims = optixGetLaunchDimensions();
-    uint3 launch_index3 = optixGetLaunchIndex();
-    unsigned int launch_index = launch_index3.x + (launch_index3.y + launch_index3.z * launch_dims.y) * launch_dims.x;
+    unsigned int launch_index = calculate_launch_index();
 
     if (params.out_hit != nullptr) {
         params.out_hit[launch_index] = true;
@@ -212,17 +185,15 @@ extern "C" __global__ void __closesthit__ch() {
         params.out_dp_dv_y[launch_index] = dp_dv.y();
         params.out_dp_dv_z[launch_index] = dp_dv.z();
 
-        Vector3f ray_o = make_Vector3f(optixGetWorldRayOrigin());
-        Vector3f ray_d = make_Vector3f(optixGetWorldRayDirection());
+        Vector3f ray_o = make_vector3f(optixGetWorldRayOrigin());
+        Vector3f ray_d = make_vector3f(optixGetWorldRayDirection());
 
         params.out_t[launch_index] = sqrt(squared_norm(p - ray_o) / squared_norm(ray_d));
     }
 }
 
 extern "C" __global__ void __miss__ms() {
-    uint3 launch_dims = optixGetLaunchDimensions();
-    uint3 launch_index3 = optixGetLaunchIndex();
-    unsigned int launch_index = launch_index3.x + (launch_index3.y + launch_index3.z * launch_dims.y) * launch_dims.x;
+    unsigned int launch_index = calculate_launch_index();
 
     if (params.out_hit != nullptr) {
         params.out_hit[launch_index] = false;
@@ -232,8 +203,7 @@ extern "C" __global__ void __miss__ms() {
     }
 }
 
-struct OptixException
-{
+struct OptixException {
     int code;
     const char* string;
 };
