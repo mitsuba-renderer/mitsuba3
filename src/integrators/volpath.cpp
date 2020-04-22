@@ -277,7 +277,6 @@ public:
         Float total_dist = 0.f;
         SurfaceInteraction3f si;
         Mask needs_intersection = true;
-        Log(Info, "ds.dist: %s", ds.dist);
         while (any(active)) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
