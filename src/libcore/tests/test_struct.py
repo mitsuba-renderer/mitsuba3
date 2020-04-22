@@ -378,3 +378,72 @@ def test15_test_dither():
     b = b.convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, False)
     err = la.norm(np.mean(np.array(b, copy=False), axis=(0, 2)) - value)
     assert(err < 5e-4)
+
+def test16_alpha_1():
+    """Tests alpha (un)premultiplication for linear floating point structs"""
+    src_struct = Struct() \
+                .append('value1', Struct.Type.Float32, Struct.Flags.PremultipliedAlpha) \
+                .append('value2', Struct.Type.Float32) \
+                .append('alpha', Struct.Type.Float32, Struct.Flags.Alpha)
+    dst_struct = Struct() \
+                .append('value1', Struct.Type.Float32) \
+                .append('value2', Struct.Type.Float32, Struct.Flags.PremultipliedAlpha) \
+                .append('alpha', Struct.Type.Float32, Struct.Flags.Alpha)
+    s = StructConverter(src_struct, dst_struct)
+    check_conversion(s, '@fff', '@fff',
+                     (0.5, 0.8, 0.5), (1.0, 0.4, 0.5))
+
+def test17_alpha_2():
+    """Tests that alpha (un)premultiplication does not allow multiple alpha channels"""
+    src_struct = Struct() \
+        .append('value1', Struct.Type.Float32, Struct.Flags.PremultipliedAlpha) \
+        .append('alpha', Struct.Type.Float32, Struct.Flags.Alpha) \
+        .append('alpha2', Struct.Type.Float32, Struct.Flags.Alpha)
+    dst_struct = Struct() \
+        .append('value1', Struct.Type.Float32) \
+        .append('alpha', Struct.Type.Float32, Struct.Flags.Alpha) \
+        .append('alpha2', Struct.Type.Float32, Struct.Flags.Alpha)
+    with pytest.raises(RuntimeError):
+        s = StructConverter(src_struct, dst_struct)
+        check_conversion(s, '@fff', '@fff', (0.5, 0.8, 0.6))
+
+def test18_alpha_3():
+    """Tests that multiple alpha channels are allowed if no conversion is requested"""
+    src_struct = Struct() \
+        .append('value1', Struct.Type.Float32, Struct.Flags.PremultipliedAlpha) \
+        .append('value2', Struct.Type.Float32) \
+        .append('alpha', Struct.Type.Float32, Struct.Flags.Alpha) \
+        .append('alpha2', Struct.Type.Float32, Struct.Flags.Alpha)
+    dst_struct = Struct() \
+        .append('value1', Struct.Type.Float32, Struct.Flags.PremultipliedAlpha) \
+        .append('value2', Struct.Type.Float32) \
+        .append('alpha', Struct.Type.Float32, Struct.Flags.Alpha) \
+        .append('alpha2', Struct.Type.Float32, Struct.Flags.Alpha)
+    s = StructConverter(src_struct, dst_struct)
+    check_conversion(s, '@ffff', '@ffff',
+                     (0.5, 0.8, 0.5, 0.7))
+
+def test19_alpha_4():
+    src_struct = Struct() \
+        .append('value1', Struct.Type.UInt8, Struct.Flags.PremultipliedAlpha | Struct.Flags.Normalized | Struct.Flags.Gamma) \
+        .append('value2', Struct.Type.UInt8, Struct.Flags.Normalized | Struct.Flags.Gamma) \
+        .append('alpha', Struct.Type.UInt8, Struct.Flags.Normalized | Struct.Flags.Alpha)
+    dst_struct = Struct() \
+        .append('value1', Struct.Type.UInt8, Struct.Flags.Normalized | Struct.Flags.Gamma) \
+        .append('value2', Struct.Type.UInt8, Struct.Flags.PremultipliedAlpha | Struct.Flags.Normalized | Struct.Flags.Gamma) \
+        .append('alpha', Struct.Type.UInt8, Struct.Flags.Normalized | Struct.Flags.Alpha)
+    s = StructConverter(src_struct, dst_struct)
+    src_data = (24, 54, 127)
+
+    src_data_float = np.array(src_data) / 255
+    src_data_float[0] = from_srgb(src_data_float[0])
+    src_data_float[0] /= src_data_float[2]
+    src_data_float[0] = np.uint8(np.round(to_srgb(src_data_float[0]) * 255))
+
+    src_data_float[1] = from_srgb(src_data_float[1])
+    src_data_float[1] *= src_data_float[2]
+    src_data_float[1] = np.uint8(np.round(to_srgb(src_data_float[1]) * 255))
+
+    dst_data = (src_data_float[0], src_data_float[1], src_data[2])
+    check_conversion(s, '@BBB', '@BBB',
+                     src_data, dst_data)
