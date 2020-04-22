@@ -80,7 +80,17 @@ public:
          * expressed relative to its value. Converting to an un-weighted
          * structure entails a division by the weight.
          */
-        Weight     = 0x10
+        Weight     = 0x10,
+
+        /**
+         * Specifies whether the field encodes an alpha premultiplied value
+         */
+        PremultipliedAlpha      = 0x20,
+
+        /**
+         * Specifies whether the field encodes an alpha value
+        */
+        Alpha      = 0x40
     };
 
     /// Field specifier with size and offset

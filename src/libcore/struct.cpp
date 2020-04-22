@@ -122,6 +122,42 @@ public:
         #endif
     }
 
+    /// Floating point blend operation
+    template <typename X, typename Y, typename Z>
+    void blend(const X &x, const Y &y, const Z &mask) {
+        #if defined(ENOKI_X86_AVX)
+            #if !defined(DOUBLE_PRECISION)
+                cc.vblendvps(x, x, y, mask);
+            #else
+                cc.vblendvpd(x, x, y, mask);
+            #endif
+        #else
+            #if !defined(DOUBLE_PRECISION)
+                cc.blendvps(x, y, mask);
+            #else
+                cc.blendvpd(x, y, mask);
+            #endif
+        #endif
+    }
+
+    /// Floating point comparison
+    template <typename X, typename Y>
+    void cmps(const X &x, const Y &y, int mode) {
+        #if defined(ENOKI_X86_AVX)
+            #if !defined(DOUBLE_PRECISION)
+                cc.vcmpss(x, x, y, Imm(mode));
+            #else
+                cc.vcmpsd(x, x, y, Imm(mode));
+            #endif
+        #else
+            #if !defined(DOUBLE_PRECISION)
+                cc.cmpss(x, y, Imm(mode));
+            #else
+                cc.cmpsd(x, y, Imm(mode));
+            #endif
+        #endif
+    }
+
     /// Floating point addition operation (2op)
     template <typename X, typename Y>
     void adds(const X &x, const Y &y) {
@@ -1080,6 +1116,10 @@ std::string Struct::to_string() const {
             os << ", gamma";
         if (has_flag(f.flags, Flags::Weight))
             os << ", weight";
+        if (has_flag(f.flags, Flags::Alpha))
+            os << ", alpha";
+        if (has_flag(f.flags, Flags::PremultipliedAlpha))
+            os << ", premultiplied alpha";
         if (has_flag(f.flags, Flags::Default))
             os << ", default=" << f.default_;
         if (has_flag(f.flags, Flags::Assert))
@@ -1280,6 +1320,50 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
         sc.divs(scale_factor, value);
     }
 
+    const Struct::Field *source_alpha = nullptr;
+    const Struct::Field *target_alpha = nullptr;
+    bool has_multiple_alpha_channels = false;
+    for (const Struct::Field &f : *source) {
+        if (!has_flag(f.flags, Struct::Flags::Alpha))
+            continue;
+        if (source_alpha != nullptr) {
+            has_multiple_alpha_channels = true;
+            break;
+        }
+        source_alpha = &f;
+    }
+
+    for (const Struct::Field &f : *target) {
+        if (!has_flag(f.flags, Struct::Flags::Alpha))
+            continue;
+        target_alpha = &f;
+        break;
+    }
+
+    if (source_alpha != nullptr && target_alpha != nullptr) {
+        if (source_alpha->name != target_alpha->name)
+            Throw("Internal error: source and target alpha have mismatched names!");
+    }
+
+    X86Xmm alpha, inv_alpha;
+    if (source_alpha != nullptr && target_alpha != nullptr) {
+        alpha = cc.newXmm();
+        inv_alpha = cc.newXmm();
+        X86Xmm value = sc.linearize(sc.load(source, input, source_alpha->name)).second.xmm;
+        sc.movs(alpha, value);
+        sc.movs(inv_alpha, sc.const_(1.0));
+        sc.divs(inv_alpha, value);
+
+        // Check if alpha is zero and set inv_alpha to zero if that is the case
+        X86Xmm zero = cc.newXmm();
+        sc.movs(zero, sc.const_(0.0));
+
+        X86Xmm mask = cc.newXmm();
+        sc.movs(mask, value);
+        sc.cmps(mask, zero, 2);
+        sc.blend(inv_alpha, zero, mask);
+    }
+
 
     for (const Struct::Field &f : *target) {
         std::pair<detail::StructCompiler::Key, detail::StructCompiler::Value> kv;
@@ -1319,6 +1403,25 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
             kv.second.xmm = result;
         }
 
+        uint32_t special_channels_mask = Struct::Flags::Weight | Struct::Flags::Alpha;
+        bool source_premult = has_flag(kv.first.flags, Struct::Flags::PremultipliedAlpha);
+        bool target_premult = has_flag(f.flags, Struct::Flags::PremultipliedAlpha);
+
+        if (source_alpha != nullptr && target_alpha != nullptr && ((f.flags & special_channels_mask) == 0) &&
+            source_premult != target_premult) {
+            if (has_multiple_alpha_channels)
+                Throw("Found multiple alpha channels: Alpha (un)premultiplication expects a single alpha channel");
+            X86Xmm result = cc.newXmm();
+            if (kv.first.type != struct_type_v<Float>)
+                kv = sc.linearize(kv);
+            if (target_premult && !source_premult) {
+                sc.muls(result, kv.second.xmm, alpha);
+                kv.second.xmm = result;
+            } else if (!target_premult && source_premult) {
+                sc.muls(result, kv.second.xmm, inv_alpha);
+                kv.second.xmm = result;
+            }
+        }
         sc.save(target, output, f, kv);
     }
 
@@ -1621,9 +1724,9 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
 
     size_t source_size = m_source->size();
     size_t target_size = m_target->size();
-    Struct::Field weight_field;
+    Struct::Field weight_field, alpha_field;
 
-    bool has_weight = false;
+    bool has_weight = false, has_alpha = false, has_multiple_alpha_channels = false;
     std::vector<Struct::Field> assert_fields;
     for (Struct::Field f : *m_source) {
         if (has_flag(f.flags, Struct::Flags::Assert) && !m_target->has_field(f.name))
@@ -1631,6 +1734,11 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
         if (has_flag(f.flags, Struct::Flags::Weight)) {
             weight_field = f;
             has_weight = true;
+        }
+        if (has_flag(f.flags, Struct::Flags::Alpha)) {
+            has_multiple_alpha_channels |= has_alpha;
+            alpha_field = f;
+            has_alpha = true;
         }
     }
     for (const Struct::Field &f : *m_target) {
@@ -1656,6 +1764,15 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                     return false;
                 linearize(value);
                 inv_weight = 1.f / value.f;
+            }
+            Float alpha = 1.f, inv_alpha = 1.f;
+            if (has_alpha) {
+                Value value;
+                if (!load(src, alpha_field, value))
+                    return false;
+                linearize(value);
+                alpha = value.f;
+                inv_alpha = alpha > 0 ? 1.f / alpha : 0.f;
             }
 
             for (const Struct::Field &f : *m_target) {
@@ -1693,6 +1810,22 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
                 if (has_weight)
                     value.f *= inv_weight;
 
+
+                uint32_t special_channels_mask = Struct::Flags::Weight | Struct::Flags::Alpha;
+                bool source_premult = has_flag(value.flags, Struct::Flags::PremultipliedAlpha);
+                bool target_premult = has_flag(f.flags, Struct::Flags::PremultipliedAlpha);
+                if (has_alpha && ((f.flags & special_channels_mask) == 0) &&
+                    source_premult != target_premult && f.blend.empty()) {
+                    linearize(value);
+                    if (has_multiple_alpha_channels)
+                        Throw("Found multiple alpha channels: Alpha (un)premultiplication expects a single alpha channel");
+
+                    if (target_premult && !source_premult) {
+                        value.f *= alpha;
+                    } else if (!target_premult && source_premult) {
+                        value.f *= inv_alpha;
+                    }
+                }
                 save(dest, f, value, x, y);
             }
 

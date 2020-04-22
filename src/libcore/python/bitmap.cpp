@@ -33,6 +33,14 @@ MTS_PY_EXPORT(Bitmap) {
         .value("Unknown", Bitmap::FileFormat::Unknown, D(Bitmap, FileFormat, Unknown))
         .value("Auto",    Bitmap::FileFormat::Auto,    D(Bitmap, FileFormat, Auto));
 
+    py::enum_<Bitmap::AlphaTransform>(bitmap, "AlphaTransform")
+        .value("None",          Bitmap::AlphaTransform::None,
+                D(Bitmap, AlphaTransform, None))
+        .value("Premultiply",   Bitmap::AlphaTransform::Premultiply,
+                D(Bitmap, AlphaTransform, Premultiply))
+        .value("Unpremultiply", Bitmap::AlphaTransform::Unpremultiply,
+                D(Bitmap, AlphaTransform, Unpremultiply));
+
     bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2u &, size_t>(),
             "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,
             D(Bitmap, Bitmap))
@@ -77,6 +85,8 @@ MTS_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, buffer_size)
         .def_method(Bitmap, srgb_gamma)
         .def_method(Bitmap, set_srgb_gamma)
+        .def_method(Bitmap, premultiplied_alpha)
+        .def_method(Bitmap, set_premultiplied_alpha)
         .def_method(Bitmap, clear)
         .def("metadata", py::overload_cast<>(&Bitmap::metadata), D(Bitmap, metadata),
             py::return_value_policy::reference_internal)
@@ -99,9 +109,9 @@ MTS_PY_EXPORT(Bitmap) {
             "clamp"_a = std::make_pair(-math::Infinity<Float>, math::Infinity<Float>),
             D(Bitmap, resample, 2)
         )
-        .def("convert", py::overload_cast<Bitmap::PixelFormat, Struct::Type, bool>(
+        .def("convert", py::overload_cast<Bitmap::PixelFormat, Struct::Type, bool, Bitmap::AlphaTransform>(
             &Bitmap::convert, py::const_), D(Bitmap, convert),
-            "pixel_format"_a, "component_format"_a, "srgb_gamma"_a,
+            "pixel_format"_a, "component_format"_a, "srgb_gamma"_a, "alpha_transform"_a = Bitmap::AlphaTransform::None,
             py::call_guard<py::gil_scoped_release>())
         .def("convert", py::overload_cast<Bitmap *>(&Bitmap::convert, py::const_),
             D(Bitmap, convert, 2), "target"_a,

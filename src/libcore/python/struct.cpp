@@ -87,8 +87,12 @@ MTS_PY_EXPORT(Struct) {
         .value("Gamma",      Struct::Flags::Gamma,   D(Struct, Flags, Gamma))
         .value("Weight",     Struct::Flags::Weight,  D(Struct, Flags, Weight))
         .value("Assert",     Struct::Flags::Assert,  D(Struct, Flags, Assert))
+        .value("Alpha",     Struct::Flags::Alpha,  D(Struct, Flags, Alpha))
+        .value("PremultipliedAlpha",     Struct::Flags::PremultipliedAlpha,  D(Struct, Flags, PremultipliedAlpha))
         .value("Default",    Struct::Flags::Default, D(Struct, Flags, Default))
-        .def(py::self | py::self);
+        .def(py::self | py::self)
+        .def(int() | py::self)
+        .def(int() & py::self);
 
     py::enum_<Struct::ByteOrder>(c, "ByteOrder")
         .value("LittleEndian", Struct::ByteOrder::LittleEndian,

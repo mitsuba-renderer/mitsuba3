@@ -66,6 +66,9 @@ Bitmap::Bitmap(PixelFormat pixel_format, Struct::Type component_format,
     else
         m_srgb_gamma = false; // Linear by default
 
+    // By default assume alpha to be premultiplied (since that's how we render)
+    m_premultiplied_alpha = true;
+
     rebuild_struct(channel_count);
 
     if (!m_data) {
@@ -128,6 +131,23 @@ void Bitmap::set_srgb_gamma(bool value) {
     }
 }
 
+
+void Bitmap::set_premultiplied_alpha(bool value) {
+    m_premultiplied_alpha = value;
+    for (auto &field : *m_struct) {
+        std::string suffix = field.name;
+        auto it = suffix.rfind(".");
+        if (it != std::string::npos)
+            suffix = suffix.substr(it + 1);
+        if (suffix != "A" && suffix != "W") {
+            if (value)
+                field.flags |= +Struct::Flags::PremultipliedAlpha;
+            else
+                field.flags &= ~Struct::Flags::PremultipliedAlpha;
+        }
+    }
+}
+
 void Bitmap::clear() {
     memset(m_data.get(), 0, buffer_size());
 }
@@ -160,6 +180,10 @@ void Bitmap::rebuild_struct(size_t channel_count) {
         uint32_t flags = +Struct::Flags::None;
         if (ch != "A" && ch != "W" && m_srgb_gamma)
             flags |= +Struct::Flags::Gamma;
+        if (ch != "A" && ch != "W" && m_premultiplied_alpha)
+            flags |= +Struct::Flags::PremultipliedAlpha;
+        if (ch == "A")
+            flags |= +Struct::Flags::Alpha;
         if (ch == "W")
             flags |= +Struct::Flags::Weight;
         if (Struct::is_integer(m_component_format))
@@ -335,10 +359,22 @@ ref<Bitmap> Bitmap::resample(const Vector2u &res, const ReconstructionFilter *rf
 
 ref<Bitmap> Bitmap::convert(PixelFormat pixel_format,
                             Struct::Type component_format,
-                            bool srgb_gamma) const {
+                            bool srgb_gamma, Bitmap::AlphaTransform alpha_transform) const {
     ref<Bitmap> result = new Bitmap(
         pixel_format, component_format, m_size,
         m_pixel_format == PixelFormat::MultiChannel ? m_struct->field_count() : 0);
+
+    switch (alpha_transform) {
+        case Bitmap::AlphaTransform::None:
+            result->set_premultiplied_alpha(m_premultiplied_alpha);
+            break;
+        case Bitmap::AlphaTransform::Premultiply:
+            result->set_premultiplied_alpha(true);
+            break;
+        case Bitmap::AlphaTransform::Unpremultiply:
+            result->set_premultiplied_alpha(false);
+            break;
+    }
 
     result->m_metadata = m_metadata;
     result->set_srgb_gamma(srgb_gamma);
@@ -589,6 +625,7 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
                 m_size
             );
             target->set_srgb_gamma(m_srgb_gamma);
+            target->set_premultiplied_alpha(m_premultiplied_alpha);
 
             ref<Struct> target_struct = new Struct(*target->struct_());
             auto link_field = [&](const char *l, FieldMap::iterator it) {
@@ -796,6 +833,7 @@ bool Bitmap::operator==(const Bitmap &bitmap) const {
         m_component_format != bitmap.m_component_format ||
         m_size != bitmap.m_size ||
         m_srgb_gamma != bitmap.m_srgb_gamma ||
+        m_premultiplied_alpha != bitmap.m_premultiplied_alpha ||
         *m_struct != *bitmap.m_struct ||
         m_metadata != bitmap.m_metadata)
         return false;
@@ -925,6 +963,7 @@ void Bitmap::read_openexr(Stream *stream) {
 
     bool process_colors = false;
     m_srgb_gamma = false;
+    m_premultiplied_alpha = true;
     m_pixel_format = PixelFormat::MultiChannel;
     m_struct = new Struct();
     Imf::PixelType pixel_type = channels.begin().channel().type;
@@ -987,8 +1026,19 @@ void Bitmap::read_openexr(Stream *stream) {
     );
 
     // Order channel names based on RGB/XYZ[A] suffix
-    for (auto const &name: channels_sorted)
-        m_struct->append(name, m_component_format);
+    for (auto const &name: channels_sorted) {
+        uint32_t flags = +Struct::Flags::None;
+        // Tag alpha channels to be able to perform operations depending on alpha
+        auto c_class = channel_class(name);
+        if (c_class == A)
+            flags |= +Struct::Flags::Alpha;
+
+        // Currently we don't support alpha transformations for multi-layer images
+        // So it is okay to just set this for all non-alpha channels
+        if (c_class != A)
+            flags |= +Struct::Flags::PremultipliedAlpha;
+        m_struct->append(name, m_component_format, flags);
+    }
 
     // Attempt to detect a standard combination of color channels
     m_pixel_format = PixelFormat::MultiChannel;
@@ -1456,6 +1506,7 @@ void Bitmap::read_jpeg(Stream *stream) {
     m_size = Vector2u(cinfo.output_width, cinfo.output_height);
     m_component_format = Struct::Type::UInt8;
     m_srgb_gamma = true;
+    m_premultiplied_alpha = false;
 
     switch (cinfo.output_components) {
         case 1: m_pixel_format = PixelFormat::Y; break;
@@ -1645,6 +1696,7 @@ void Bitmap::read_png(Stream *stream) {
     }
 
     m_srgb_gamma = true;
+    m_premultiplied_alpha = false;
 
     rebuild_struct();
 
@@ -1811,6 +1863,7 @@ void Bitmap::read_ppm(Stream *stream) {
     m_size = Vector2u(int_values[0], int_values[1]);
     m_pixel_format = PixelFormat::RGB;
     m_srgb_gamma = true;
+    m_premultiplied_alpha = false;
     m_component_format = int_values[2] <= 0xFF ? Struct::Type::UInt8 : Struct::Type::UInt16;
     rebuild_struct();
 
@@ -1957,6 +2010,8 @@ void Bitmap::read_rgbe(Stream *stream) {
 
     m_component_format = Struct::Type::Float32;
     m_srgb_gamma = false;
+    m_premultiplied_alpha = false;
+
     rebuild_struct();
     m_data = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size()]);
     m_owns_data = true;
@@ -2109,6 +2164,7 @@ void Bitmap::read_pfm(Stream *stream) {
     m_pixel_format = color ? PixelFormat::RGB : PixelFormat::Y;
     m_component_format = Struct::Type::Float32;
     m_srgb_gamma = false;
+    m_premultiplied_alpha = false;
 
     Float scale_and_order;
 
@@ -2241,6 +2297,7 @@ void Bitmap::read_bmp(Stream *stream) {
         m_size = Vector2u(width, std::abs(height));
         m_component_format = Struct::Type::UInt8;
         m_srgb_gamma = true;
+        m_premultiplied_alpha = true;
 
         switch (bpp) {
             case 8:  m_pixel_format = PixelFormat::Y; break;
@@ -2311,6 +2368,7 @@ void Bitmap::read_tga(Stream *stream) {
 
         m_size = Vector2u((uint32_t) width, (uint32_t) height);
         m_srgb_gamma = true;
+        m_premultiplied_alpha = false;
         m_component_format = Struct::Type::UInt8;
 
         bool do_vflip = !(descriptor & (1 << 5));
@@ -2413,6 +2471,16 @@ std::ostream &operator<<(std::ostream &os, Bitmap::FileFormat value) {
         case Bitmap::FileFormat::RGBE:    os << "RGBE"; break;
         case Bitmap::FileFormat::Auto:    os << "Auto"; break;
         default: Throw("Unknown file format!");
+    }
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value) {
+    switch (value) {
+        case Bitmap::AlphaTransform::None:    os << "none";    break;
+        case Bitmap::AlphaTransform::Premultiply:   os << "premultiply";   break;
+        case Bitmap::AlphaTransform::Unpremultiply: os << "unpremultiply"; break;
+        default: Throw("Unknown alpha transform!");
     }
     return os;
 }
