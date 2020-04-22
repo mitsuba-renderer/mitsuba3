@@ -552,6 +552,14 @@ PNG and OpenEXR files are optionally annotated with string-valued
 metadata, and the gamma setting can be stored as well. Please see the
 class methods and enumerations for further detail.)doc";
 
+static const char *__doc_mitsuba_Bitmap_AlphaTransform = R"doc(Type of alpha transformation)doc";
+
+static const char *__doc_mitsuba_Bitmap_AlphaTransform_None = R"doc(No transformation (default))doc";
+
+static const char *__doc_mitsuba_Bitmap_AlphaTransform_Premultiply = R"doc(No transformation (default))doc";
+
+static const char *__doc_mitsuba_Bitmap_AlphaTransform_Unpremultiply = R"doc(No transformation (default))doc";
+
 static const char *__doc_mitsuba_Bitmap_Bitmap =
 R"doc(Create a bitmap of the specified type and allocate the necessary
 amount of memory
@@ -820,6 +828,8 @@ static const char *__doc_mitsuba_Bitmap_m_owns_data = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_pixel_format = R"doc()doc";
 
+static const char *__doc_mitsuba_Bitmap_m_premultiplied_alpha = R"doc()doc";
+
 static const char *__doc_mitsuba_Bitmap_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_Bitmap_m_srgb_gamma = R"doc()doc";
@@ -839,6 +849,8 @@ static const char *__doc_mitsuba_Bitmap_operator_ne = R"doc(Inequality compariso
 static const char *__doc_mitsuba_Bitmap_pixel_count = R"doc(Return the total number of pixels)doc";
 
 static const char *__doc_mitsuba_Bitmap_pixel_format = R"doc(Return the pixel format of this bitmap)doc";
+
+static const char *__doc_mitsuba_Bitmap_premultiplied_alpha = R"doc(Return whether the bitmap uses premultiplied alpha)doc";
 
 static const char *__doc_mitsuba_Bitmap_read = R"doc(Read a file from a stream)doc";
 
@@ -922,6 +934,8 @@ Parameter ``clamp``:
     Default: -infinity..infinity (i.e. no clamping is used))doc";
 
 static const char *__doc_mitsuba_Bitmap_set_metadata = R"doc(Set the a Properties object containing the image metadata)doc";
+
+static const char *__doc_mitsuba_Bitmap_set_premultiplied_alpha = R"doc(Specify whether the bitmap uses premultiplied alpha)doc";
 
 static const char *__doc_mitsuba_Bitmap_set_srgb_gamma = R"doc(Specify whether the bitmap uses an sRGB gamma encoding)doc";
 
@@ -3238,9 +3252,11 @@ static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh = R"doc(Create a new mesh with the given vertex and face data structures)doc";
 
-static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc(Create a new mesh from a blender mesh)doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_Mesh_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_area_distr_build =
 R"doc(Build internal tables for sampling uniformly wrt. area.
@@ -3383,7 +3399,7 @@ static const char *__doc_mitsuba_Mesh_vertices = R"doc(Return a pointer to the r
 
 static const char *__doc_mitsuba_Mesh_vertices_2 = R"doc(Const variant of vertices.)doc";
 
-static const char *__doc_mitsuba_Mesh_write = R"doc(Export mesh using the file format implemented by the subclass)doc";
+static const char *__doc_mitsuba_Mesh_write_ply = R"doc(Export mesh as a binary PLY file)doc";
 
 static const char *__doc_mitsuba_MicrofacetDistribution =
 R"doc(Implementation of the Beckman and GGX / Trowbridge-Reitz microfacet
@@ -3555,8 +3571,6 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_3 = R"doc()doc";
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_class = R"doc()doc";
-
-static const char *__doc_mitsuba_MonteCarloIntegrator_m_hide_emitters = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_m_max_depth = R"doc()doc";
 
@@ -4254,13 +4268,13 @@ static const char *__doc_mitsuba_Properties_string = R"doc(Retrieve a string val
 
 static const char *__doc_mitsuba_Properties_string_2 = R"doc(Retrieve a string value (use default value if no entry exists))doc";
 
-static const char *__doc_mitsuba_Properties_texture = R"doc(Retrieve a texture)doc";
+static const char *__doc_mitsuba_Properties_texture =
+R"doc(Retrieve a texture (if the property is a float, create a uniform
+texture instead))doc";
 
-static const char *__doc_mitsuba_Properties_texture_2 = R"doc(Retrieve a texture (use the provided spectrum if no entry exists))doc";
+static const char *__doc_mitsuba_Properties_texture_2 = R"doc(Retrieve a texture (use the provided texture if no entry exists))doc";
 
-static const char *__doc_mitsuba_Properties_texture_3 =
-R"doc(Retrieve a continuous spectrum (or create flat spectrum with default
-value))doc";
+static const char *__doc_mitsuba_Properties_texture_3 = R"doc(Retrieve a texture (or create uniform texture with default value))doc";
 
 static const char *__doc_mitsuba_Properties_transform = R"doc(Retrieve a 4x4 homogeneous coordinate transformation)doc";
 
@@ -4627,6 +4641,8 @@ May throw an exception if not supported. Cloning may also change the
 state of the original sampler (e.g. by using the next 1D sample as a
 seed for the clone).)doc";
 
+static const char *__doc_mitsuba_Sampler_m_base_seed = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_m_sample_count = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_next_1d = R"doc(Retrieve the next component value from the current sample)doc";
@@ -4669,6 +4685,8 @@ static const char *__doc_mitsuba_SamplingIntegrator_class = R"doc()doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_m_block_size = R"doc(Size of (square) image blocks to render per core.)doc";
 
+static const char *__doc_mitsuba_SamplingIntegrator_m_hide_emitters = R"doc(Flag for disabling direct visibility of emitters)doc";
+
 static const char *__doc_mitsuba_SamplingIntegrator_m_render_timer = R"doc(Timer used to enforce the timeout.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_m_samples_per_pass =
@@ -4703,6 +4721,10 @@ Parameter ``sampler``:
 Parameter ``ray``:
     A ray, optionally with differentials
 
+Parameter ``medium``:
+    If the ray is inside a medium, this parameter holds a pointer to
+    that medium
+
 Parameter ``active``:
     A mask that indicates which SIMD lanes are active
 
@@ -4724,7 +4746,8 @@ Returns:
 Remark:
     In the Python bindings, this function returns the ``aov`` output
     argument as an additional return value. In other words: `` (spec,
-    mask, aov) = integrator.sample(scene, sampler, ray, active) ``)doc";
+    mask, aov) = integrator.sample(scene, sampler, ray, medium,
+    active) ``)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_should_stop =
 R"doc(Indicates whether cancel() or a timeout have occured. Should be
@@ -5120,7 +5143,10 @@ The implementation should fill in the fields ``p``, ``uv``, ``n``,
 ``has_uv_partials`` will already have been initialized by the caller.
 The field ``wi`` is initialized by the caller following the call to
 fill_surface_interaction(), and ``duv_dx``, and ``duv_dy`` are left
-uninitialized.)doc";
+uninitialized.
+
+Parameter ``cache``:
+    Cached information about the previously computed intersection.)doc";
 
 static const char *__doc_mitsuba_Shape_id = R"doc(Return a string identifier)doc";
 
@@ -5381,7 +5407,7 @@ static const char *__doc_mitsuba_Spiral_m_steps_left = R"doc(Step counters.)doc"
 static const char *__doc_mitsuba_Spiral_max_block_size = R"doc(Return the maximum block size)doc";
 
 static const char *__doc_mitsuba_Spiral_next_block =
-R"doc(Return the offset and size of the next block.
+R"doc(Return the offset, size and unique identifer of the next block.
 
 A size of zero indicates that the spiral traversal is done.)doc";
 
@@ -5697,6 +5723,8 @@ static const char *__doc_mitsuba_Struct_Field_type = R"doc(Type identifier)doc";
 
 static const char *__doc_mitsuba_Struct_Flags = R"doc(Field-specific flags)doc";
 
+static const char *__doc_mitsuba_Struct_Flags_Alpha = R"doc(Specifies whether the field encodes an alpha value)doc";
+
 static const char *__doc_mitsuba_Struct_Flags_Assert =
 R"doc(In FieldConverter::convert, check that the field value matches the
 specified default value. Otherwise, return a failure)doc";
@@ -5715,6 +5743,8 @@ static const char *__doc_mitsuba_Struct_Flags_Normalized =
 R"doc(Specifies whether an integer field encodes a normalized value in the
 range [0, 1]. The flag is ignored if specified for floating point
 valued fields.)doc";
+
+static const char *__doc_mitsuba_Struct_Flags_PremultipliedAlpha = R"doc(Specifies whether the field encodes an alpha premultiplied value)doc";
 
 static const char *__doc_mitsuba_Struct_Flags_Weight =
 R"doc(In FieldConverter::convert, when an input structure contains a weight
@@ -8204,37 +8234,37 @@ static const char *__doc_mitsuba_operator_lshift_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_4 = R"doc(Print a string representation of the bounding sphere)doc";
+static const char *__doc_mitsuba_operator_lshift_4 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_5 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Print a string representation of the bounding sphere)doc";
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of a frame)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Prints the canonical string representation of an object instance)doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Return a string representation of a frame)doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_11 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_12 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_12 = R"doc(Return a string representation of the ray)doc";
 
 static const char *__doc_mitsuba_operator_lshift_13 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_14 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_15 = R"doc(//! @{ \name Printing)doc";
+static const char *__doc_mitsuba_operator_lshift_15 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_16 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_16 = R"doc(//! @{ \name Printing)doc";
 
 static const char *__doc_mitsuba_operator_lshift_17 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_18 = R"doc(//! @{ \name Misc implementations)doc";
+static const char *__doc_mitsuba_operator_lshift_18 = R"doc()doc";
 
-static const char *__doc_mitsuba_operator_lshift_19 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_19 = R"doc(//! @{ \name Misc implementations)doc";
 
 static const char *__doc_mitsuba_operator_lshift_20 = R"doc()doc";
 
@@ -8254,9 +8284,11 @@ static const char *__doc_mitsuba_operator_lshift_27 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_28 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_lshift_29 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 
-static const char *__doc_mitsuba_operator_sub_2 = R"doc(Ssubtracting a vector from a point should always yield a point)doc";
+static const char *__doc_mitsuba_operator_sub_2 = R"doc(Subtracting a vector from a point should always yield a point)doc";
 
 static const char *__doc_mitsuba_parse_fov = R"doc(Helper function to parse fov)doc";
 
