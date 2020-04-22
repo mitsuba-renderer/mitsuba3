@@ -80,8 +80,9 @@ An example of how one might describe a slightly absorbing piece of glass is show
         </bsdf>
 
         <medium type="homogeneous" name="interior">
-            <rgb name="sigma_s" value="0, 0, 0"/>
-            <rgb name="sigma_a" value="4, 4, 2"/>
+            <float name="density" value="4"/>
+	    <rgb name="sigma_t" value="1, 1, 0.5"/>
+	    <rgb name="albedo" value="0.0, 0.0, 0.0"/>
         </medium>
     <shape>
 
