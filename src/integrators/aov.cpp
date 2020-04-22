@@ -65,7 +65,7 @@ template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(SamplingIntegrator)
-    MTS_IMPORT_TYPES(Scene, Sampler, Medium)
+    MTS_IMPORT_TYPES(Scene, Sampler)
 
     enum class Type {
         Depth,
@@ -156,7 +156,6 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler * sampler,
                                      const RayDifferential3f &ray,
-                                     const Medium *medium,
                                      Float *aovs,
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
@@ -221,7 +220,7 @@ public:
 
                 case Type::IntegratorRGBA: {
                         std::pair<Spectrum, Mask> result_sub =
-                            m_integrators[ctr].first->sample(scene, sampler, ray, medium, aovs, active);
+                            m_integrators[ctr].first->sample(scene, sampler, ray, aovs, active);
                         aovs += m_integrators[ctr].second;
 
                         UnpolarizedSpectrum spec_u = depolarize(result_sub.first);

@@ -233,8 +233,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_sample(
 
     ray.scale_differential(diff_scale_factor);
 
-    const Medium *medium = sensor->medium();
-    std::pair<Spectrum, Mask> result = sample(scene, sampler, ray, medium, aovs + 5, active);
+    std::pair<Spectrum, Mask> result = sample(scene, sampler, ray, aovs + 5, active);
     result.first = ray_weight * result.first;
 
     UnpolarizedSpectrum spec_u = depolarize(result.first);
@@ -262,7 +261,6 @@ MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Ma
 SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
                                             Sampler * /* sampler */,
                                             const RayDifferential3f & /* ray */,
-                                            const Medium * /* medium */,
                                             Float * /* aovs */,
                                             Mask /* active */) const {
     NotImplementedError("sample");

@@ -13,7 +13,6 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shape.h>
-#include <mitsuba/render/medium.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -70,7 +69,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Integrator)
-    MTS_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
+    MTS_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Sampler)
 
     /**
      * \brief Sample the incident radiance along a ray.
@@ -83,10 +82,6 @@ public:
      *
      * \param ray
      *    A ray, optionally with differentials
-     *
-     * \param medium
-     *    If the ray is inside a medium, this parameter holds a pointer to that
-     *    medium
      *
      * \param active
      *    A mask that indicates which SIMD lanes are active
@@ -108,13 +103,12 @@ public:
      *    In the Python bindings, this function returns the \c aov output
      *    argument as an additional return value. In other words:
      *    <tt>
-     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
+     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, active)
      *    </tt>
      */
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
                                              const RayDifferential3f &ray,
-                                             const Medium *medium,
                                              Float *aovs = nullptr,
                                              Mask active = true) const;
 
