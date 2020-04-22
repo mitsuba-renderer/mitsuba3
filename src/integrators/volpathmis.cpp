@@ -86,6 +86,7 @@ public:
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray_,
+                                     const Medium *initial_medium,
                                      Float * /* aovs */,
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
@@ -105,7 +106,7 @@ public:
 
         Spectrum result(0.f);
 
-        MediumPtr medium = nullptr;
+        MediumPtr medium = initial_medium;
         MediumInteraction3f mi;
 
         Mask specular_chain = active && !m_hide_emitters;

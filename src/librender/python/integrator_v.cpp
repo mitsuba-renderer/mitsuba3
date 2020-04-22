@@ -23,13 +23,14 @@ static void (*sigint_handler_prev)(int) = nullptr;
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) { }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
+                                     const Medium *medium,
                                      Float *aovs,
                                      Mask active) const override {
         py::gil_scoped_acquire gil;
@@ -38,7 +39,7 @@ public:
         if (overload) {
             using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;
             auto [spec, mask, aovs_]
-                = overload(scene, sampler, ray, active).template cast<PyReturn>();
+                = overload(scene, sampler, ray, medium, active).template cast<PyReturn>();
 
             std::copy(aovs_.begin(), aovs_.end(), aovs);
             return { spec, mask };
@@ -66,13 +67,13 @@ void bind_integrator_sample(Class &integrator) {
     integrator.def(
         "sample",
         [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
-           const RayDifferential3f &ray, Mask active) {
+           const RayDifferential3f &ray, const Medium *medium, Mask active) {
             py::gil_scoped_release release;
             std::vector<Float> aovs(integrator->aov_names().size(), 0.f);
-            auto [spec, mask] = integrator->sample(scene, sampler, ray, aovs.data(), active);
+            auto [spec, mask] = integrator->sample(scene, sampler, ray, medium, aovs.data(), active);
             return std::make_tuple(spec, mask, aovs);
         },
-        "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample));
+        "scene"_a, "sampler"_a, "ray"_a, "medium"_a, "active"_a = true, D(SamplingIntegrator, sample));
 }
 
 template <typename FloatP, typename SpectrumP, typename Class,
@@ -88,7 +89,7 @@ void bind_integrator_sample(Class &integrator) {
     integrator.def(
         "sample",
         [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
-           const RayDifferential3f &ray, Mask active) {
+           const RayDifferential3f &ray, const Medium *medium, Mask active) {
             std::vector<Float> result_aovs(integrator->aov_names().size());
             std::vector<FloatP> aovs_packet(result_aovs.size());
             Spectrum result_spec;
@@ -101,7 +102,7 @@ void bind_integrator_sample(Class &integrator) {
                 set_slices(result_aovs[j], slices(ray));
 
             for (size_t i = 0; i < packets(ray); ++i) {
-                auto [spec, mask] = integrator->sample(scene, sampler, packet(ray, i),
+                auto [spec, mask] = integrator->sample(scene, sampler, packet(ray, i), medium,
                                                        aovs_packet.data(),
                                                        packet(active, i));
                 packet(result_spec, i) = spec;
@@ -112,7 +113,7 @@ void bind_integrator_sample(Class &integrator) {
 
             return std::make_tuple(result_spec, result_mask, result_aovs);
         },
-        "scene"_a, "sampler"_a, "ray"_a, "active"_a = true, D(SamplingIntegrator, sample));
+        "scene"_a, "sampler"_a, "ray"_a, "medium"_a, "active"_a = true, D(SamplingIntegrator, sample));
 }
 
 MTS_PY_EXPORT(Integrator) {
