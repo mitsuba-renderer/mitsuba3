@@ -339,17 +339,14 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("exterior_medium", m_exterior_medium.get());
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed() {
-    m_bsdf->parameters_changed();
+MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed() { }
+
+MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
     if (m_emitter)
-        m_emitter->parameters_changed();
+        m_emitter->set_shape(this);
     if (m_sensor)
-        m_sensor->parameters_changed();
-    if (m_interior_medium)
-        m_interior_medium->parameters_changed();
-    if (m_exterior_medium)
-        m_exterior_medium->parameters_changed();
-}
+        m_sensor->set_shape(this);
+};
 
 MTS_IMPLEMENT_CLASS_VARIANT(Shape, Object, "shape")
 MTS_INSTANTIATE_CLASS(Shape)

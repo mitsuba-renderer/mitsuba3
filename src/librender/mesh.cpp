@@ -87,6 +87,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const std::string &name, Struct *vertex_
     m_faces    = VertexHolder(new uint8_t[(face_count + 1) * m_face_size]);
 
     m_mesh = true;
+    set_children();
 }
 
 /**
@@ -314,6 +315,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
         if (has_cols)
             store_unaligned(vertex_ptr + m_color_offset, tmp_cols[id]);
     }
+    set_children();
 }
 
 MTS_VARIANT Mesh<Float, Spectrum>::~Mesh() { }
@@ -898,6 +900,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
 
         if (m_area_distr.empty())
             area_distr_build();
+
+        set_children();
     }
 }
 
@@ -1002,8 +1006,6 @@ MTS_VARIANT RTgeometrytriangles Mesh<Float, Spectrum>::optix_geometry(RTcontext 
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    Base::traverse(callback);
-
     if constexpr (is_cuda_array_v<Float>) {
         callback->put_parameter("vertex_count",     m_vertex_count);
         callback->put_parameter("face_count",       m_face_count);
@@ -1012,12 +1014,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_parameter("vertex_normals",   m_optix->vertex_normals);
         callback->put_parameter("vertex_texcoords", m_optix->vertex_texcoords);
     }
-}
-
-#else // MTS_ENABLE_OPTIX off
-MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
-}
-MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback * /*callback*/) {
+    Base::traverse(callback);
 }
 #endif
 

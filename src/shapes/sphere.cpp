@@ -94,7 +94,7 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor)
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -126,10 +126,7 @@ public:
             m_flip_normals = !m_flip_normals;
         }
 
-        if (is_emitter())
-            emitter()->set_shape(this);
-        if (is_sensor())
-            sensor()->set_shape(this);
+        set_children();
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -413,16 +410,15 @@ public:
     ScalarSize effective_primitive_count() const override { return 1; }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("center", m_center);
-        callback->put_parameter("radius", m_radius);
+        // TODO
         Base::traverse(callback);
     }
 
     void parameters_changed() override {
-        Base::parameters_changed();
         m_object_to_world = ScalarTransform4f::translate(m_center);
         m_world_to_object = m_object_to_world.inverse();
         m_inv_surface_area = 1.f / surface_area();
+        set_children();
     }
 
 #if defined(MTS_ENABLE_EMBREE)

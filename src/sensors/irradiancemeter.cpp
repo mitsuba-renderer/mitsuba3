@@ -26,8 +26,8 @@ If the irradiance meter is attached to a mesh-type shape, it will measure the
 irradiance over all triangles in the mesh.
 
 This sensor is not instantiated on its own but must be defined as a child
-object to a shape in a scene. To create an irradiance meter, 
-simply instantiate the desired sensor shape and specify an 
+object to a shape in a scene. To create an irradiance meter,
+simply instantiate the desired sensor shape and specify an
 :monosp:`irradiancemeter` instance as its child:
 
 .. code-block:: xml
@@ -50,7 +50,7 @@ public:
             Throw("Found a 'to_world' transformation -- this is not allowed. "
                   "The irradiance meter inherits this transformation from its parent "
                   "shape.");
-        
+
         if (m_film->size() != ScalarPoint2i(1, 1))
             Throw("This sensor only supports films of size 1x1 Pixels!");
 
@@ -58,13 +58,6 @@ public:
             0.5f + math::RayEpsilon<Float>)
             Log(Warn, "This sensor should only be used with a reconstruction filter"
                "of radius 0.5 or lower(e.g. default box)");
-    }
-
-    void set_shape(Shape *shape) override {
-        if (m_shape)
-            Throw("An irradiance meter can be only be attached to a single shape.");
-
-        Base::set_shape(shape);
     }
 
     std::pair<RayDifferential3f, Spectrum>

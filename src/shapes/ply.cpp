@@ -55,7 +55,7 @@ public:
     MTS_IMPORT_BASE(Mesh, m_vertices, m_faces, m_normal_offset, m_vertex_size, m_face_size,
                     m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
-                    recompute_vertex_normals, is_emitter, emitter, is_sensor, sensor)
+                    recompute_vertex_normals, is_emitter, emitter, is_sensor, sensor, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -282,10 +282,7 @@ public:
         if (!m_disable_vertex_normals && !has_vertex_normals)
             recompute_vertex_normals();
 
-        if (is_emitter())
-            emitter()->set_shape(this);
-        if (is_sensor())
-            sensor()->set_shape(this);
+        set_children();
     }
 
 private:

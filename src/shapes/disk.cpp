@@ -68,7 +68,7 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor)
+    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -96,10 +96,7 @@ public:
             Throw("The `to_world` transformation contains shear, which is not"
                   " supported by the Disk shape.");
 
-        if (is_emitter())
-            emitter()->set_shape(this);
-        if (is_sensor())
-            sensor()->set_shape(this);
+        set_children();
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -231,18 +228,16 @@ public:
     ScalarSize effective_primitive_count() const override { return 1; }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("frame", m_frame);
-        callback->put_parameter("du", m_du);
-        callback->put_parameter("dv", m_dv);
+        // TODO
         Base::traverse(callback);
     }
 
     void parameters_changed() override {
-        Base::parameters_changed();
         m_object_to_world = ScalarTransform4f::to_frame(m_frame)
                             * ScalarTransform4f::scale(ScalarVector3f(m_du, m_dv, 1.f));
         m_world_to_object = m_object_to_world.inverse();
         m_inv_surface_area = 1.f / surface_area();
+        set_children();
     }
 
     std::string to_string() const override {

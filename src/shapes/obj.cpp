@@ -78,7 +78,7 @@ public:
                     m_texcoord_offset, m_color_offset, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_struct, m_face_struct, m_disable_vertex_normals,
                     recompute_vertex_normals, is_emitter, emitter, sensor, is_sensor,
-                    has_vertex_normals, vertex)
+                    has_vertex_normals, vertex, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -343,10 +343,7 @@ public:
         if (!m_disable_vertex_normals && normals.empty())
             recompute_vertex_normals();
 
-        if (is_emitter())
-            emitter()->set_shape(this);
-        if (is_sensor())
-            sensor()->set_shape(this);
+        set_children();
     }
 
     MTS_DECLARE_CLASS()
