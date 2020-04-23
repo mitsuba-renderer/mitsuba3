@@ -204,7 +204,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
             const InputVector3f e2 = face_points[2] - face_points[0];
             normal = normalize(m_to_world.transform_affine(cross(e1, e2)));
         }
-        for (u_int i = 0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             const size_t loop_index = tri_loop.tri[i];
             const size_t vert_index = loops[loop_index].v;
             if (unlikely((vert_index >= vertex_count)))
