@@ -196,7 +196,6 @@ public:
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
-
         /* Precompute rough reflectance (vectorized) */ {
             using FloatP    = Packet<ScalarFloat>;
             using Vector3fX = Vector<DynamicArray<FloatP>, 3>;

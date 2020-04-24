@@ -451,7 +451,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        if (m_alpha_u == m_alpha_v)
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
             callback->put_object("alpha", m_alpha_u.get());
         else {
             callback->put_object("alpha_u", m_alpha_u.get());
@@ -470,8 +470,8 @@ public:
             << "  distribution = "           << m_type           << "," << std::endl
             << "  sample_visible = "         << (int) m_sample_visible << "," << std::endl;
 
-        if (m_alpha_u == m_alpha_v) {
-            oss << "  alpha_v = "                << string::indent(m_alpha_v) << "," << std::endl;
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic)) {
+            oss << "  alpha = "                  << string::indent(m_alpha_v) << "," << std::endl;
         } else {
             oss << "  alpha_u = "                << string::indent(m_alpha_u) << "," << std::endl
                 << "  alpha_v = "                << string::indent(m_alpha_v) << "," << std::endl;

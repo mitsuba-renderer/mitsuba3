@@ -80,10 +80,6 @@ public:
         if (!m_nested_bsdf)
            Throw("Child BSDF not specified");
 
-        parameters_changed();
-    }
-
-    void parameters_changed() override {
         m_components.clear();
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
             m_components.push_back(m_nested_bsdf->flags(i));

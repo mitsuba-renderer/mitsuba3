@@ -185,10 +185,6 @@ public:
         if (props.has_property("specular_reflectance"))
             m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
 
-        parameters_changed();
-    }
-
-    void parameters_changed() override {
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
@@ -398,7 +394,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        if (m_alpha_u == m_alpha_v)
+        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
             callback->put_object("alpha", m_alpha_u.get());
         else {
             callback->put_object("alpha_u", m_alpha_u.get());

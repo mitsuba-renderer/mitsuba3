@@ -233,11 +233,9 @@ public:
     }
 
     void parameters_changed() override {
-        m_object_to_world = ScalarTransform4f::to_frame(m_frame)
-                            * ScalarTransform4f::scale(ScalarVector3f(m_du, m_dv, 1.f));
-        m_world_to_object = m_object_to_world.inverse();
-        m_inv_surface_area = 1.f / surface_area();
-        set_children();
+        // TODO currently no parameters are exposed so nothing can change
+        // m_inv_surface_area = 1.f / surface_area();
+        // set_children();
     }
 
     std::string to_string() const override {

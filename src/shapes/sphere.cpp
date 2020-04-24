@@ -415,10 +415,9 @@ public:
     }
 
     void parameters_changed() override {
-        m_object_to_world = ScalarTransform4f::translate(m_center);
-        m_world_to_object = m_object_to_world.inverse();
-        m_inv_surface_area = 1.f / surface_area();
-        set_children();
+        // TODO currently no parameters are exposed so nothing can change
+        // m_inv_surface_area = 1.f / surface_area();
+        // set_children();
     }
 
 #if defined(MTS_ENABLE_EMBREE)

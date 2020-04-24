@@ -380,8 +380,9 @@ public:
     }
 
     void parameters_changed() override {
-        m_inv_surface_area = 1.f / surface_area();
-        set_children();
+        // TODO currently no parameters are exposed so nothing can change
+        // m_inv_surface_area = 1.f / surface_area();
+        // set_children();
     }
 
     std::string to_string() const override {

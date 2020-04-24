@@ -71,10 +71,6 @@ public:
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
-        parameters_changed();
-    }
-
-    void parameters_changed() override {
         m_components.clear();
         for (size_t i = 0; i < 2; ++i)
             for (size_t j = 0; j < m_nested_bsdf[i]->component_count(); ++j)
