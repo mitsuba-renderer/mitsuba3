@@ -107,7 +107,8 @@ public:
         Spectrum result(0.f);
 
         MediumPtr medium = initial_medium;
-        MediumInteraction3f mi;
+        MediumInteraction3f mi = zero<MediumInteraction3f>();
+        mi.t = math::Infinity<Float>;
 
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
@@ -120,9 +121,12 @@ public:
             channel = (UInt32) min(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
-        SurfaceInteraction3f si;
-        Mask needs_intersection = true;
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = math::Infinity<Float>;
 
+        Mask needs_intersection = true;
+        Interaction3f last_scatter_event = zero<Interaction3f>();
+        last_scatter_event.t = math::Infinity<Float>;
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
 
@@ -148,7 +152,6 @@ public:
             Mask active_surface = active && !active_medium;
             Mask act_null_scatter = false, act_medium_scatter = false,
                  escaped_medium = false;
-            Interaction3f last_scatter_event;
 
             // If the medium does not have a spectrally varying extinction,
             // we can perform a few optimizations to speed up rendering
@@ -343,7 +346,9 @@ public:
         masked(ray.mint, is_medium_interaction) = 0.f;
 
         Float total_dist = 0.f;
-        SurfaceInteraction3f si;
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = math::Infinity<Float>;
+
         Mask needs_intersection = true;
         while (any(active)) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
