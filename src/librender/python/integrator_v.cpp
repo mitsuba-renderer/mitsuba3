@@ -73,7 +73,8 @@ void bind_integrator_sample(Class &integrator) {
             auto [spec, mask] = integrator->sample(scene, sampler, ray, medium, aovs.data(), active);
             return std::make_tuple(spec, mask, aovs);
         },
-        "scene"_a, "sampler"_a, "ray"_a, "medium"_a, "active"_a = true, D(SamplingIntegrator, sample));
+        "scene"_a, "sampler"_a, "ray"_a, "medium"_a = nullptr, "active"_a = true,
+        D(SamplingIntegrator, sample));
 }
 
 template <typename FloatP, typename SpectrumP, typename Class,

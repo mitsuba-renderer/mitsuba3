@@ -114,7 +114,7 @@ public:
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
                                              const RayDifferential3f &ray,
-                                             const Medium *medium,
+                                             const Medium *medium = nullptr,
                                              Float *aovs = nullptr,
                                              Mask active = true) const;
 
