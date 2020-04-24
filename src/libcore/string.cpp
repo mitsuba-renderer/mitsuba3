@@ -52,5 +52,12 @@ std::string trim(const std::string &s, const std::string &whitespace) {
     return s.substr(it1, it2 - it1 + 1);
 }
 
+bool contains(const std::vector<std::string> &keys, const std::string &key) {
+    for (auto& k: keys)
+        if (k == key)
+            return true;
+    return false;
+}
+
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)

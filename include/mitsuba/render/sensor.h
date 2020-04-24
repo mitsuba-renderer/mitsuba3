@@ -119,9 +119,9 @@ public:
         callback->put_object("sampler", m_sampler.get());
     }
 
-    void parameters_changed() override {
-        m_aspect = m_film->size().x() / (ScalarFloat) m_film->size().y();
-        m_resolution = ScalarVector2f(m_film->crop_size());
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+            m_aspect = m_film->size().x() / (ScalarFloat) m_film->size().y();
+            m_resolution = ScalarVector2f(m_film->crop_size());
     }
 
     MTS_DECLARE_CLASS()

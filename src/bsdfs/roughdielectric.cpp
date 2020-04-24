@@ -196,7 +196,7 @@ public:
         parameters_changed();
     }
 
-    void parameters_changed() override {
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_inv_eta = 1.f / m_eta;
     }
 

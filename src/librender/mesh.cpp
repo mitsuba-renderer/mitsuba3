@@ -4,6 +4,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/warp.h>
+#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/records.h>
@@ -830,81 +831,6 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 extern void __rt_check(RTcontext context, RTresult errval, const char *file,
                        const int line);
 
-MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed() {
-    if constexpr (is_cuda_array_v<Float>) {
-        UInt32 vertex_range   = arange<UInt32>(m_vertex_count),
-               vertex_range_2 = vertex_range * 2,
-               vertex_range_3 = vertex_range * 3,
-               face_range_3   = arange<UInt32>(m_face_count) * 3;
-
-        uint32_t *faces_ptr = nullptr;
-        float *vertex_positions_ptr = nullptr;
-
-        rt_check(rtBufferGetDevicePointer(m_optix->faces_buf, 0, (void **) &faces_ptr));
-        for (size_t i = 0; i < 3; ++i)
-            scatter(faces_ptr + i, m_optix->faces[i], face_range_3);
-
-        rt_check(rtBufferGetDevicePointer(m_optix->vertex_positions_buf, 0,
-                                          (void **) &vertex_positions_ptr));
-
-        for (size_t i = 0; i < 3; ++i)
-            scatter(vertex_positions_ptr + i, m_optix->vertex_positions[i], vertex_range_3);
-
-        if (has_vertex_texcoords()) {
-            float *vertex_texcoords_ptr = nullptr;
-            rt_check(rtBufferGetDevicePointer(m_optix->vertex_texcoords_buf, 0,
-                                            (void **) &vertex_texcoords_ptr));
-            for (size_t i = 0; i < 2; ++i)
-                scatter(vertex_texcoords_ptr + i, m_optix->vertex_texcoords[i], vertex_range_2);
-        }
-
-        if (has_vertex_normals()) {
-            if (requires_gradient(m_optix->vertex_positions)) {
-                m_optix->vertex_normals = zero<Vector3f>(m_vertex_count);
-                Vector3f v[3] = {
-                    gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.x()),
-                    gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.y()),
-                    gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.z())
-                };
-                Normal3f n = normalize(cross(v[1] - v[0], v[2] - v[0]));
-
-                /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
-                   by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
-                for (int i = 0; i < 3; ++i) {
-                    Vector3f d0 = normalize(v[(i + 1) % 3] - v[i]);
-                    Vector3f d1 = normalize(v[(i + 2) % 3] - v[i]);
-                    Float face_angle = safe_acos(dot(d0, d1));
-                    scatter_add(m_optix->vertex_normals, n * face_angle, m_optix->faces[i]);
-                }
-
-                m_optix->vertex_normals = normalize(m_optix->vertex_normals);
-            }
-
-            float *vertex_normals_ptr = nullptr;
-            rt_check(rtBufferGetDevicePointer(m_optix->vertex_normals_buf, 0,
-                                            (void **) &vertex_normals_ptr));
-            for (size_t i = 0; i < 3; ++i)
-                scatter(vertex_normals_ptr + i, m_optix->vertex_normals[i], vertex_range_3);
-        }
-
-        if (m_optix->ready) {
-            // Mark acceleration data structure dirty
-            RTcontext context;
-            RTvariable accel_var;
-            RTacceleration accel;
-            rt_check(rtGeometryTrianglesGetContext(m_optix->geometry, &context));
-            rt_check(rtContextQueryVariable(context, "accel", &accel_var));
-            rt_check(rtVariableGetUserData(accel_var, sizeof(void *), (void *) &accel));
-            rt_check(rtAccelerationMarkDirty(accel));
-        }
-
-        if (m_area_distr.empty())
-            area_distr_build();
-
-        set_children();
-    }
-}
-
 template <typename Value, size_t Dim, typename Func,
           typename Result = Array<Value, Dim>>
 Result cuda_upload(size_t size, Func func) {
@@ -1015,6 +941,88 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_parameter("vertex_texcoords", m_optix->vertex_texcoords);
     }
     Base::traverse(callback);
+}
+
+MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+    if constexpr (is_cuda_array_v<Float>) {
+        // TODO only update BVH when vertex positions changed
+        if (keys.empty() ||
+            string::contains(keys, "vertex_positions") ||
+            string::contains(keys, "vertex_normals") ||
+            string::contains(keys, "vertex_texcoords")) {
+            UInt32 vertex_range   = arange<UInt32>(m_vertex_count),
+                   vertex_range_2 = vertex_range * 2,
+                   vertex_range_3 = vertex_range * 3,
+                   face_range_3   = arange<UInt32>(m_face_count) * 3;
+
+            uint32_t *faces_ptr = nullptr;
+            float *vertex_positions_ptr = nullptr;
+
+            rt_check(rtBufferGetDevicePointer(m_optix->faces_buf, 0, (void **) &faces_ptr));
+            for (size_t i = 0; i < 3; ++i)
+                scatter(faces_ptr + i, m_optix->faces[i], face_range_3);
+
+            rt_check(rtBufferGetDevicePointer(m_optix->vertex_positions_buf, 0,
+                                            (void **) &vertex_positions_ptr));
+
+            for (size_t i = 0; i < 3; ++i)
+                scatter(vertex_positions_ptr + i, m_optix->vertex_positions[i], vertex_range_3);
+
+            if (has_vertex_texcoords()) {
+                float *vertex_texcoords_ptr = nullptr;
+                rt_check(rtBufferGetDevicePointer(m_optix->vertex_texcoords_buf, 0,
+                                                (void **) &vertex_texcoords_ptr));
+                for (size_t i = 0; i < 2; ++i)
+                    scatter(vertex_texcoords_ptr + i, m_optix->vertex_texcoords[i], vertex_range_2);
+            }
+
+            if (has_vertex_normals()) {
+                if (requires_gradient(m_optix->vertex_positions)) {
+                    m_optix->vertex_normals = zero<Vector3f>(m_vertex_count);
+                    Vector3f v[3] = {
+                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.x()),
+                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.y()),
+                        gather<Vector3f>(m_optix->vertex_positions, m_optix->faces.z())
+                    };
+                    Normal3f n = normalize(cross(v[1] - v[0], v[2] - v[0]));
+
+                    /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
+                    by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
+                    for (int i = 0; i < 3; ++i) {
+                        Vector3f d0 = normalize(v[(i + 1) % 3] - v[i]);
+                        Vector3f d1 = normalize(v[(i + 2) % 3] - v[i]);
+                        Float face_angle = safe_acos(dot(d0, d1));
+                        scatter_add(m_optix->vertex_normals, n * face_angle, m_optix->faces[i]);
+                    }
+
+                    m_optix->vertex_normals = normalize(m_optix->vertex_normals);
+                }
+
+                float *vertex_normals_ptr = nullptr;
+                rt_check(rtBufferGetDevicePointer(m_optix->vertex_normals_buf, 0,
+                                                (void **) &vertex_normals_ptr));
+                for (size_t i = 0; i < 3; ++i)
+                    scatter(vertex_normals_ptr + i, m_optix->vertex_normals[i], vertex_range_3);
+            }
+
+            if (m_optix->ready) {
+                // Mark acceleration data structure dirty
+                RTcontext context;
+                RTvariable accel_var;
+                RTacceleration accel;
+                rt_check(rtGeometryTrianglesGetContext(m_optix->geometry, &context));
+                rt_check(rtContextQueryVariable(context, "accel", &accel_var));
+                rt_check(rtVariableGetUserData(accel_var, sizeof(void *), (void *) &accel));
+                rt_check(rtAccelerationMarkDirty(accel));
+            }
+
+            if (m_area_distr.empty())
+                area_distr_build();
+
+            if (m_emitter)
+                m_emitter->parameters_changed({"parent"});
+        }
+    }
 }
 #endif
 

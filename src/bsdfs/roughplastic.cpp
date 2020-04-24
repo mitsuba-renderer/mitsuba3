@@ -182,39 +182,6 @@ public:
         parameters_changed();
     }
 
-    void parameters_changed() override {
-        // Compute inverse of eta squared
-        m_inv_eta_2 = 1.f / (m_eta * m_eta);
-
-        /* Compute weights that further steer samples towards
-           the specular or diffuse components */
-        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
-                    s_mean = 1.f;
-
-        if (m_specular_reflectance)
-            s_mean = m_specular_reflectance->mean();
-
-        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
-
-        /* Precompute rough reflectance (vectorized) */ {
-            using FloatP    = Packet<ScalarFloat>;
-            using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
-
-            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);
-            Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
-            for (size_t i = 0; i < slices(wi); ++i) {
-                ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
-                slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
-            }
-
-            auto external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
-            m_external_transmittance = DynamicBuffer<Float>::copy(external_transmittance.data(),
-                                                                  slices(external_transmittance));
-            m_internal_reflectance =
-                hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
-        }
-    }
-
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
                                              const SurfaceInteraction3f &si,
                                              Float sample1,
@@ -392,6 +359,40 @@ public:
         callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());
         if (m_specular_reflectance)
             callback->put_object("specular_reflectance", m_specular_reflectance.get());
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        // Compute inverse of eta squared
+        m_inv_eta_2 = 1.f / (m_eta * m_eta);
+
+        /* Compute weights that further steer samples towards
+           the specular or diffuse components */
+        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
+                    s_mean = 1.f;
+
+        if (m_specular_reflectance)
+            s_mean = m_specular_reflectance->mean();
+
+        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
+
+        // Precompute rough reflectance (vectorized)
+        if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
+            using FloatP    = Packet<ScalarFloat>;
+            using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
+
+            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);
+            Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
+            for (size_t i = 0; i < slices(wi); ++i) {
+                ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
+                slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
+            }
+
+            auto external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
+            m_external_transmittance = DynamicBuffer<Float>::copy(external_transmittance.data(),
+                                                                  slices(external_transmittance));
+            m_internal_reflectance =
+                hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
+        }
     }
 
     std::string to_string() const override {

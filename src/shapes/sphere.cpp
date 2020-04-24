@@ -414,10 +414,11 @@ public:
         Base::traverse(callback);
     }
 
-    void parameters_changed() override {
+    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         // TODO currently no parameters are exposed so nothing can change
         // m_inv_surface_area = 1.f / surface_area();
-        // set_children();
+        // if (m_emitter)
+        //     m_emitter->parameters_changed({"parent"});
     }
 
 #if defined(MTS_ENABLE_EMBREE)

@@ -56,7 +56,7 @@ public:
         parameters_changed();
     }
 
-    void parameters_changed() override {
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_integral_min = cdf_and_pdf(ScalarFloat(MTS_WAVELENGTH_MIN)).first;
         m_integral = cdf_and_pdf(ScalarFloat(MTS_WAVELENGTH_MAX)).first - m_integral_min;
     }

@@ -95,5 +95,8 @@ inline void replace_inplace(std::string &str, const std::string &source,
 extern MTS_EXPORT_CORE std::string trim(const std::string &s,
                                         const std::string &whitespace = " \t");
 
+/// Check if a list of keys contains a specific key
+extern MTS_EXPORT_CORE bool contains(const std::vector<std::string> &keys, const std::string &key);
+
 NAMESPACE_END(string)
 NAMESPACE_END(mitsuba)

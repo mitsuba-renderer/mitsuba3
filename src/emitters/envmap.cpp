@@ -1,8 +1,8 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/bsphere.h>
+#include <mitsuba/core/distr_2d.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/plugin.h>
-#include <mitsuba/core/distr_2d.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
@@ -123,40 +123,6 @@ public:
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
     }
 
-    void parameters_changed() override {
-        m_data.managed();
-
-        std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[hprod(m_resolution)]);
-
-        ScalarFloat *ptr     = (ScalarFloat *) m_data.data(),
-                    *lum_ptr = (ScalarFloat *) luminance.get();
-
-
-        for (size_t y = 0; y < m_resolution.y(); ++y) {
-            ScalarFloat sin_theta =
-                std::sin(y / ScalarFloat(m_resolution.y() - 1) * math::Pi<ScalarFloat>);
-
-            for (size_t x = 0; x < m_resolution.x(); ++x) {
-                ScalarVector4f coeff = load<ScalarVector4f>(ptr);
-                ScalarFloat lum;
-
-                if constexpr (is_monochromatic_v<Spectrum>) {
-                    lum = coeff.x();
-                } else if constexpr (is_rgb_v<Spectrum>) {
-                    lum = mitsuba::luminance(ScalarColor3f(head<3>(coeff)));
-                } else {
-                    static_assert(is_spectral_v<Spectrum>);
-                    lum = srgb_model_mean(head<3>(coeff)) * coeff.w();
-                }
-
-                *lum_ptr++ = lum * sin_theta;
-                ptr += 4;
-            }
-        }
-
-        m_warp = Warp(luminance.get(), m_resolution);
-    }
-
     void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
         m_bsphere.radius = max(math::RayEpsilon<Float>,
@@ -249,6 +215,42 @@ public:
         callback->put_parameter("scale", m_scale);
         callback->put_parameter("data", m_data);
         callback->put_parameter("resolution", m_resolution);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (keys.empty() || string::contains(keys, "data")) {
+            m_data.managed();
+
+            std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[hprod(m_resolution)]);
+
+            ScalarFloat *ptr     = (ScalarFloat *) m_data.data(),
+                        *lum_ptr = (ScalarFloat *) luminance.get();
+
+
+            for (size_t y = 0; y < m_resolution.y(); ++y) {
+                ScalarFloat sin_theta =
+                    std::sin(y / ScalarFloat(m_resolution.y() - 1) * math::Pi<ScalarFloat>);
+
+                for (size_t x = 0; x < m_resolution.x(); ++x) {
+                    ScalarVector4f coeff = load<ScalarVector4f>(ptr);
+                    ScalarFloat lum;
+
+                    if constexpr (is_monochromatic_v<Spectrum>) {
+                        lum = coeff.x();
+                    } else if constexpr (is_rgb_v<Spectrum>) {
+                        lum = mitsuba::luminance(ScalarColor3f(head<3>(coeff)));
+                    } else {
+                        static_assert(is_spectral_v<Spectrum>);
+                        lum = srgb_model_mean(head<3>(coeff)) * coeff.w();
+                    }
+
+                    *lum_ptr++ = lum * sin_theta;
+                    ptr += 4;
+                }
+            }
+
+            m_warp = Warp(luminance.get(), m_resolution);
+        }
     }
 
     std::string to_string() const override {

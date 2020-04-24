@@ -160,7 +160,7 @@ public:
         parameters_changed();
     }
 
-    void parameters_changed() override {
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_inv_eta_2 = 1.f / (m_eta * m_eta);
 
         // Numerically approximate the diffuse Fresnel reflectance

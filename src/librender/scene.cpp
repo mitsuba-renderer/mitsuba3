@@ -214,9 +214,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed() {
+MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (m_environment)
-        m_environment->set_scene(this);
+        m_environment->set_scene(this); // TODO use parameters_changed({"scene"})
 }
 
 MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {

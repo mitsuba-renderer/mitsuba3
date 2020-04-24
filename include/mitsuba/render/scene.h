@@ -156,7 +156,7 @@ public:
     void traverse(TraversalCallback *callback) override;
 
     /// Update internal state following a parameter update
-    void parameters_changed() override;
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;

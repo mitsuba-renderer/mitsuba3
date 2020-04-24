@@ -61,6 +61,9 @@ public:
     }
 
     void set_shape(Shape *shape) override {
+        if (m_shape)
+            Throw("An area emitter can be only be attached to a single shape.");
+
         Base::set_shape(shape);
         m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
     }
@@ -127,8 +130,9 @@ public:
         callback->put_object("radiance", m_radiance.get());
     }
 
-    void parameters_changed() override {
-        m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (string::contains(keys, "parent"))
+            m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
     }
 
     std::string to_string() const override {

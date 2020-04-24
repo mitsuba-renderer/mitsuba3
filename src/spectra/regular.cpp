@@ -61,7 +61,7 @@ public:
         callback->put_parameter("values", m_distr.pdf());
     }
 
-    void parameters_changed() override {
+    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         m_distr.update();
     }
 

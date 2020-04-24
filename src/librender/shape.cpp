@@ -339,7 +339,7 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("exterior_medium", m_exterior_medium.get());
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed() { }
+MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) { }
 
 MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
     if (m_emitter)

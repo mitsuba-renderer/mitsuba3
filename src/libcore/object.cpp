@@ -22,7 +22,7 @@ std::vector<ref<Object>> Object::expand() const {
 
 void Object::traverse(TraversalCallback * /*callback*/) { }
 
-void Object::parameters_changed() { }
+void Object::parameters_changed(const std::vector<std::string> &/*keys*/) { }
 
 std::string Object::id() const { return std::string(); }
 

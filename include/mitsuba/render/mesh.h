@@ -14,7 +14,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_mesh, set_children)
+    MTS_IMPORT_BASE(Shape, m_mesh, set_children, m_emitter)
 
     using InputFloat = float;
     using InputPoint3f  = Point<InputFloat, 3>;
@@ -284,7 +284,7 @@ public:
     /// Return the OptiX version of this shape
     virtual RTgeometrytriangles optix_geometry(RTcontext context) override;
     void traverse(TraversalCallback *callback) override;
-    void parameters_changed() override;
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 #endif
 
     /// @}

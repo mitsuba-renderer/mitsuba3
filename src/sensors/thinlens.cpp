@@ -266,8 +266,8 @@ public:
         // TODO aperture_radius, x_fov
     }
 
-    void parameters_changed() override {
-        Base::parameters_changed();
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        Base::parameters_changed(keys);
         // TODO
     }
 

@@ -312,7 +312,7 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
-    void parameters_changed() override;
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
     //! @}
     // =============================================================

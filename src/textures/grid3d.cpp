@@ -350,7 +350,7 @@ public:
         Base::traverse(callback);
     }
 
-    void parameters_changed() override {
+    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         size_t new_size = data_size();
         if (m_size != new_size) {
             // Only support a special case: resolution doubling along all axes
