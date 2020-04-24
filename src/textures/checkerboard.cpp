@@ -95,6 +95,8 @@ public:
         callback->put_object("color1", m_color1.get());
     }
 
+    bool is_spatially_varying() const override { return true; }
+
     MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_color0;

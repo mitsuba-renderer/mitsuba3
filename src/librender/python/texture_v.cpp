@@ -7,6 +7,8 @@ MTS_PY_EXPORT(Texture) {
     MTS_PY_CLASS(Texture, Object)
         .def_static("D65", &Texture::D65, "scale"_a = 1.f)
         .def("mean", &Texture::mean, D(Texture, mean))
+        .def("is_spatially_varying", &Texture::is_spatially_varying,
+             D(Texture, is_spatially_varying))
         .def("eval",
             vectorize(py::overload_cast<const SurfaceInteraction3f&, Mask>(
                 &Texture::eval, py::const_)),

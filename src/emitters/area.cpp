@@ -54,8 +54,10 @@ public:
                   "shape.");
 
         m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
-        // TODO: detect if underlying spectrum really is spatially varying
-        m_flags = EmitterFlags::Surface | EmitterFlags::SpatiallyVarying;
+
+        m_flags = +EmitterFlags::Surface;
+        if (m_radiance->is_spatially_varying())
+            m_flags |= +EmitterFlags::SpatiallyVarying;
     }
 
     void set_shape(Shape *shape) override {

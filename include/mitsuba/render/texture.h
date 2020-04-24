@@ -139,6 +139,9 @@ public:
     //! @}
     // ======================================================================
 
+    /// Does this texture evaluation depend on the UV coordinates
+    virtual bool is_spatially_varying() const { return false; }
+
     /// Convenience method returning the standard D65 illuminant.
     static ref<Texture> D65(ScalarFloat scale = 1.f);
 
