@@ -756,39 +756,32 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         src.throw_error(node, "'rgb' tag requires one or three values (got \"%s\")",
                                         node.attribute("value").value());
 
-                    Color3f col;
+                    Color3f color;
                     try {
-                        col = Color3f(detail::stof(tokens[0]),
-                                      detail::stof(tokens[1]),
-                                      detail::stof(tokens[2]));
+                        color = Color3f(detail::stof(tokens[0]),
+                                        detail::stof(tokens[1]),
+                                        detail::stof(tokens[2]));
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
 
                     if (!within_spectrum) {
                         std::string name = node.attribute("name").value();
-
-                        /// Spectral IOR values are unbounded and require special handling
-                        bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
-                                      name == "ext_ior";
-
-                        Properties props2(within_emitter ? "srgb_d65" : "srgb");
-                        props2.set_color("color", col);
-
-                        if (!within_emitter && is_ior)
-                            props2.set_bool("unbounded", true);
-
-                        ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("Texture", ctx.variant));
-                        props.set_object(node.attribute("name").value(), obj);
+                        ref<Object> obj = detail::create_texture_from_rgb(
+                            name, color, ctx.variant, within_emitter);
+                        props.set_object(name, obj);
                     } else {
-                        props.set_color("color", col);
+                        props.set_color("color", color);
                     }
                 }
                 break;
 
             case Tag::Spectrum: {
                     check_attributes(src, node, { "name", "value", "filename" }, false);
+                    std::string name = node.attribute("name").value();
+
+                    ScalarFloat const_value(1.f);
+                    std::vector<Float> wavelengths, values;
 
                     bool has_value = !node.attribute("value").empty(),
                          has_filename = !node.attribute("filename").empty(),
@@ -799,32 +792,14 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         /* A constant spectrum is specified. */
                         std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
-                        Properties props2("uniform");
-                        ScalarFloat value;
                         try {
-                            value = detail::stof(tokens[0]);
+                            const_value = detail::stof(tokens[0]);
                         } catch (...) {
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
                         }
-
-                        if (ctx.color_mode == ColorMode::Spectral && within_emitter) {
-                            props2.set_plugin_name("d65");
-                            props2.set_float("scale", value);
-                        } else {
-                            props2.set_float("value", value);
-                        }
-
-                        ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("Texture", ctx.variant));
-                        auto expanded = obj->expand();
-                        Assert(expanded.size() <= 1);
-                        if (!expanded.empty())
-                            obj = expanded[0];
-                        props.set_object(node.attribute("name").value(), obj);
                     } else {
                         /* Parse wavelength:value pairs, either inlined or from an external file.
                            Wavelengths are expected to be specified in increasing order. */
-                        std::vector<Float> wavelengths, values;
                         if (has_value) {
                             std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
@@ -847,79 +822,15 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         } else if (has_filename) {
                             spectrum_from_file(node.attribute("filename").value(), wavelengths, values);
                         }
-
-                        /* Values are scaled so that integrating the spectrum against the CIE curves
-                           and converting to sRGB yields (1, 1, 1) for D65. */
-                        Float unit_conversion = 1.f;
-                        if (within_emitter || ctx.color_mode != ColorMode::Spectral)
-                            unit_conversion = MTS_CIE_Y_NORMALIZATION;
-
-                        /* Detect whether wavelengths are regularly sampled and potentially
-                           apply the conversion factor. */
-                        bool is_regular = true;
-                        Float interval = 0.f;
-
-                        for (size_t n = 0; n < wavelengths.size(); ++n) {
-                            values[n] *= unit_conversion;
-
-                            if (n <= 0)
-                                continue;
-
-                            Float distance = (wavelengths[n] - wavelengths[n - 1]);
-                            if (distance < 0.f)
-                                src.throw_error(node, "wavelengths must be specified in increasing order");
-                            if (n == 1)
-                                interval = distance;
-                            else if (std::abs(distance - interval) > math::Epsilon<Float>)
-                                is_regular = false;
-                        }
-
-                        Properties props2;
-
-                        if (is_regular) {
-                            props2.set_plugin_name("regular");
-                            props2.set_long("size", wavelengths.size());
-                            props2.set_float("lambda_min", wavelengths.front());
-                            props2.set_float("lambda_max", wavelengths.back());
-                            props2.set_pointer("values", values.data());
-                        } else {
-                            props2.set_plugin_name("irregular");
-                            props2.set_long("size", wavelengths.size());
-                            props2.set_pointer("wavelengths", wavelengths.data());
-                            props2.set_pointer("values", values.data());
-                        }
-
-                        ref<Object> obj = PluginManager::instance()->create_object(
-                            props2, Class::for_name("Texture", ctx.variant));
-
-                        // In non-spectral mode, pre-integrate against the CIE matching curves
-                        if (ctx.color_mode != ColorMode::Spectral) {
-
-                            /// Spectral IOR values are unbounded and require special handling
-                            std::string name = node.attribute("name").value();
-                            bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
-                                          name == "ext_ior";
-
-                            Color3f color = spectrum_to_rgb(wavelengths, values, !(within_emitter || is_ior));
-
-                            Properties props3;
-                            if (ctx.color_mode == ColorMode::Monochromatic) {
-                                props3 = Properties("uniform");
-                                props3.set_float("value", luminance(color));
-                            } else {
-                                props3 = Properties(within_emitter ? "srgb_d65" : "srgb");
-                                props3.set_color("color", color);
-
-                                if (!within_emitter && is_ior)
-                                    props3.set_bool("unbounded", true);
-                            }
-
-                            obj = PluginManager::instance()->create_object(
-                                props3, Class::for_name("Texture", ctx.variant));
-                        }
-
-                        props.set_object(node.attribute("name").value(), obj);
                     }
+
+                    ref<Object> obj = detail::create_texture_from_spectrum(
+                        name, const_value, wavelengths, values, ctx.variant,
+                        within_emitter,
+                        ctx.color_mode == ColorMode::Spectral,
+                        ctx.color_mode == ColorMode::Monochromatic);
+
+                    props.set_object(name, obj);
                 }
                 break;
 
@@ -1123,6 +1034,121 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
               string::to_lower(inst.class_->name()), props.plugin_name());
     }
     return inst.object;
+}
+
+ref<Object> create_texture_from_rgb(const std::string &name,
+                                    Color<float, 3> color,
+                                    const std::string &variant,
+                                    bool within_emitter) {
+    // Spectral IOR values are unbounded and require special handling
+    bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
+                  name == "ext_ior";
+    Properties props(within_emitter ? "srgb_d65" : "srgb");
+    props.set_color("color", color);
+
+    if (!within_emitter && is_ior)
+        props.set_bool("unbounded", true);
+
+    return PluginManager::instance()->create_object(
+        props, Class::for_name("Texture", variant));
+}
+
+ref<Object> create_texture_from_spectrum(const std::string &name,
+                                         float const_value,
+                                         std::vector<float> &wavelengths,
+                                         std::vector<float> &values,
+                                         const std::string &variant,
+                                         bool within_emitter,
+                                         bool is_spectral_mode,
+                                         bool is_monochromatic_mode) {
+    const Class *class_ = Class::for_name("Texture", variant);
+
+    if (wavelengths.empty()) {
+        Properties props("uniform");
+        if (within_emitter && is_spectral_mode) {
+            props.set_plugin_name("d65");
+            props.set_float("scale", const_value);
+        } else {
+            props.set_float("value", const_value);
+        }
+
+        ref<Object> obj = PluginManager::instance()->create_object(props, class_);
+        auto expanded = obj->expand();
+        Assert(expanded.size() <= 1);
+        if (!expanded.empty())
+            obj = expanded[0];
+        return obj;
+    } else {
+        /* Values are scaled so that integrating the spectrum against the CIE curves
+            and converting to sRGB yields (1, 1, 1) for D65. */
+        float unit_conversion = 1.f;
+        if (within_emitter || !is_spectral_mode)
+            unit_conversion = MTS_CIE_Y_NORMALIZATION;
+
+        /* Detect whether wavelengths are regularly sampled and potentially
+            apply the conversion factor. */
+        bool is_regular = true;
+        float interval = 0.f;
+
+        for (size_t n = 0; n < wavelengths.size(); ++n) {
+            values[n] *= unit_conversion;
+
+            if (n <= 0)
+                continue;
+
+            float distance = (wavelengths[n] - wavelengths[n - 1]);
+            if (distance < 0.f)
+                Throw("Wavelengths must be specified in increasing order!");
+            if (n == 1)
+                interval = distance;
+            else if (std::abs(distance - interval) > math::Epsilon<float>)
+                is_regular = false;
+        }
+
+        if (is_spectral_mode) {
+            Properties props;
+            if (is_regular) {
+                props.set_plugin_name("regular");
+                props.set_long("size", wavelengths.size());
+                props.set_float("lambda_min", wavelengths.front());
+                props.set_float("lambda_max", wavelengths.back());
+                props.set_pointer("values", values.data());
+            } else {
+                props.set_plugin_name("irregular");
+                props.set_long("size", wavelengths.size());
+                props.set_pointer("wavelengths", wavelengths.data());
+                props.set_pointer("values", values.data());
+            }
+            return PluginManager::instance()->create_object(props, class_);
+        } else {
+            // In non-spectral mode, pre-integrate against the CIE matching curves
+
+            /// Spectral IOR values are unbounded and require special handling
+            bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
+                          name == "ext_ior";
+
+            Color3f color = spectrum_to_rgb(
+                wavelengths, values, !(within_emitter || is_ior));
+
+            Properties props;
+            if (is_monochromatic_mode) {
+                props = Properties("uniform");
+                props.set_float("value", luminance(color));
+            } else {
+                props = Properties(within_emitter ? "srgb_d65" : "srgb");
+                props.set_color("color", color);
+
+                if (!within_emitter && is_ior)
+                    props.set_bool("unbounded", true);
+            }
+
+            return PluginManager::instance()->create_object(props, class_);
+        }
+    }
+}
+
+const Class *tag_to_class(const std::string &tag, const std::string &variant) {
+    return tag_class->find(class_key(tag, variant))->second;
 }
 
 NAMESPACE_END(detail)

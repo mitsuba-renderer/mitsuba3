@@ -297,3 +297,291 @@ def test20_upgrade_tree(variant_scalar_rgb):
                                <float name="intIOR" value="1.33"/>
                            </bsdf>
                        </scene>""")
+
+
+def test21_dict_plugins(variants_all_rgb):
+    from mitsuba.core import xml
+
+    plugins = [('emitter', 'point'), ('film', 'hdrfilm'),
+               ('sensor', 'perspective'), ('integrator', 'path'),
+               ('bsdf', 'diffuse'), ('texture', 'checkerboard'),
+               ('rfilter', 'box'), ('spectrum', 'd65')]
+
+    for p_name, p_type in plugins:
+        o1 = xml.load_dict({p_name: { "type": p_type }})
+        o2 = xml.load_string("""<%s type="%s" version="2.0.0"/>""" % (p_name, p_type))
+        assert str(o1) == str(o2)
+
+
+def test22_dict_missing_type(variants_all_rgb):
+    from mitsuba.core import xml
+    with pytest.raises(Exception) as e:
+        xml.load_dict({"emitter": { }})
+    e.match("""Missing key 'type'""")
+
+
+def test23_dict_simple_field(variants_all_rgb):
+    from mitsuba.core import xml, Point3f
+    import numpy as np
+
+    s1 = xml.load_dict({
+        "shape" : {
+            "type" : "sphere",
+            "center" : Point3f(0, 0, -10),
+            "radius" : 10.0,
+            "flip_normals" : False,
+        }
+    })
+
+    s2 = xml.load_dict({
+        "shape" : {
+            "type" : "sphere",
+            "center" : [0, 0, -10], # list -> Point3f
+            "radius" : 10.0,
+            "flip_normals" : False,
+        }
+    })
+
+    s3 = xml.load_dict({
+        "shape" : {
+            "type" : "sphere",
+            "center" : np.array([0, 0, -10]), # numpy array -> Point3f
+            "radius" : 10.0,
+            "flip_normals" : False,
+        }
+    })
+
+    s4 = xml.load_string("""
+        <shape type="sphere" version="2.0.0">
+            <point name="center" value="0.0 0.0 -10.0"/>
+            <float name="radius" value="10.0"/>
+            <boolean name="flip_normals" value="false"/>
+        </shape>
+    """)
+
+    assert str(s1) == str(s2)
+    assert str(s1) == str(s3)
+    assert str(s1) == str(s4)
+
+
+def test24_dict_nested(variants_all_rgb):
+    from mitsuba.core import xml
+
+    s1 = xml.load_dict({
+        "shape" : {
+            "type" : "sphere",
+            "emitter" : {
+                "type" : "area",
+            }
+        }
+    })
+
+    s2 = xml.load_string("""
+        <shape type="sphere" version="2.0.0">
+            <emitter type="area"/>
+        </shape>
+    """)
+
+    assert str(s1) == str(s2)
+
+
+def test25_dict_nested_object(variants_all_rgb):
+    from mitsuba.core import xml
+
+    bsdf = xml.load_dict({"bsdf" : {"type" : "diffuse"}})
+
+    s1 = xml.load_dict({
+        "shape" : {
+            "type" : "sphere",
+            "" : bsdf
+        }
+    })
+
+    s2 = xml.load_string("""
+        <shape type="sphere" version="2.0.0">
+            <bsdf type="diffuse"/>
+        </shape>
+    """)
+
+    assert str(s1.bsdf()) == str(s2.bsdf())
+
+
+def test26_dict_rgb(variants_all_rgb):
+    from mitsuba.core import xml, Color3f
+
+    e1 = xml.load_dict({
+        "emitter" : {
+            "type" : "point",
+            "rgb" : {
+                "name": "intensity",
+                "value" : Color3f(0.5, 0.2, 0.5)
+            }
+        }
+    })
+
+    e2 = xml.load_dict({
+        "emitter" : {
+            "type" : "point",
+            "rgb" : {
+                "name": "intensity",
+                "value" : [0.5, 0.2, 0.5] # list -> Color3f
+            }
+        }
+    })
+
+    e3 = xml.load_string("""
+        <emitter type="point" version="2.0.0">
+            <rgb name="intensity" value="0.5, 0.2, 0.5"/>
+        </emitter>
+    """)
+
+    assert str(e1) == str(e2)
+    assert str(e1) == str(e3)
+
+    e1 = xml.load_dict({
+        "emitter" : {
+            "type" : "point",
+            "rgb" : {
+                "name": "intensity",
+                "value" : 0.5 # float -> Color3f
+            }
+        }
+    })
+
+    e2 = xml.load_string("""
+        <emitter type="point" version="2.0.0">
+            <rgb name="intensity" value="0.5"/>
+        </emitter>
+    """)
+
+    assert str(e1) == str(e2)
+
+
+def test27_dict_spectrum(variant_scalar_spectral):
+    from mitsuba.core import xml
+
+    e1 = xml.load_dict({
+        "emitter" : {
+            "type" : "point",
+            "spectrum" : {
+                "name" : "intensity",
+                "value" : [(400, 0.1), (500, 0.2), (600, 0.4), (700, 0.1)]
+            }
+        }
+    })
+
+    e2 = xml.load_string("""
+        <emitter type="point" version="2.0.0">
+            <spectrum name="intensity" value="400:0.1 500:0.2 600:0.4 700:0.1"/>
+        </emitter>
+    """)
+
+    assert str(e1) == str(e2)
+
+    e1 = xml.load_dict({
+        "emitter" : {
+            "type" : "point",
+            "spectrum" : {
+                "name" : "intensity",
+                "value" : 0.44
+            }
+        }
+    })
+
+    e2 = xml.load_string("""
+        <emitter type="point" version="2.0.0">
+            <spectrum name="intensity" value="0.44"/>
+        </emitter>
+    """)
+
+    assert str(e1) == str(e2)
+
+    with pytest.raises(Exception) as e:
+        xml.load_dict({
+            "emitter" : {
+                "type" : "point",
+                "spectrum" : {
+                    "name" : "intensity",
+                    "value" : [(400, 0.1), (500, 0.2), (300, 0.4)]
+                }
+            }
+        })
+    e.match("Wavelengths must be specified in increasing order")
+
+
+def test27_dict_scene(variants_all_rgb):
+    from mitsuba.core import xml, Transform4f
+
+    s1 = xml.load_dict({
+        "scene" : {
+            "integrator" : {
+                "type" : "path",
+            },
+            "sensor" : {
+                "type" : "perspective",
+                "near_clip": 1.0,
+                "far_clip": 1000.0,
+                "to_world" : Transform4f.look_at(origin=[1, 1, 1],
+                                                 target=[0, 0, 0],
+                                                 up=[0, 0, 1]),
+                "film" : {
+                    "type" : "hdrfilm",
+                    "rfilter" : { "type" : "box"},
+                    "width" : 1024,
+                    "height" : 768,
+                },
+                "sampler" : {
+                    "type" : "independent",
+                    "sample_count" : 4,
+                },
+            },
+            "emitter" : {"type" : "constant"},
+            "shape" : {"type" : "sphere"}
+        }
+    })
+
+    s2 = xml.load_string("""
+        <scene version='2.0.0'>
+            <emitter type="constant"/>
+
+            <integrator type='path'/>
+
+            <sensor type="perspective">
+                <float name="near_clip" value="1"/>
+                <float name="far_clip" value="1000"/>
+
+                <film type="hdrfilm">
+                    <rfilter type="box"/>
+                    <integer name="width" value="1024"/>
+                    <integer name="height" value="768"/>
+                </film>
+
+                <sampler type="independent">
+                    <integer name="sample_count" value="4"/>
+                </sampler>
+
+                <transform name="to_world">
+                    <lookat origin="1, 1, 1"
+                            target="0, 0, 0"
+                            up    ="0, 0, 1"/>
+                </transform>
+
+            </sensor>
+
+            <shape type="sphere"/>
+    </scene>
+    """)
+
+    assert str(s1) == str(s2)
+
+
+def test28_dict_unreferenced_attribute_error(variants_all_rgb):
+    from mitsuba.core import xml
+    with pytest.raises(Exception) as e:
+        xml.load_dict({
+            "emitter": {
+                "type" : "point",
+                "foo": 0.44
+            }
+        })
+    e.match("Unreferenced attribute")

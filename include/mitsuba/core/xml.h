@@ -40,5 +40,32 @@ extern MTS_EXPORT_CORE ref<Object> load_string(const std::string &string,
                                                const std::string &variant,
                                                ParameterList parameters = ParameterList());
 
+
+
+NAMESPACE_BEGIN(detail)
+/// Create a Texture object from RGB values
+extern MTS_EXPORT_CORE ref<Object> create_texture_from_rgb(
+                                        const std::string &name,
+                                        Color<float, 3> color,
+                                        const std::string &variant,
+                                        bool within_emitter);
+
+/// Create a Texture object from a constant value or spectral values if available
+extern MTS_EXPORT_CORE ref<Object> create_texture_from_spectrum(
+                                        const std::string &name,
+                                        float const_value,
+                                        std::vector<float> &wavelengths,
+                                        std::vector<float> &values,
+                                        const std::string &variant,
+                                        bool within_emitter,
+                                        bool is_spectral_mode,
+                                        bool is_monochromatic_mode);
+
+/// Return a pointer to the Class corresponding to a tag for a specified variant
+extern MTS_EXPORT_CORE const Class *tag_to_class(const std::string &tag,
+                                                 const std::string &variant);
+
+NAMESPACE_END(detail)
+
 NAMESPACE_END(xml)
 NAMESPACE_END(mitsuba)

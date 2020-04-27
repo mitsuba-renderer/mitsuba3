@@ -97,6 +97,16 @@ public:
 
     bool is_spatially_varying() const override { return true; }
 
+    std::string to_string() const override {
+        std::ostringstream oss;
+        oss << "Checkerboard[" << std::endl
+            << "  color0 = " << string::indent(m_color0) << std::endl
+            << "  color1 = " << string::indent(m_color1) << std::endl
+            << "  transform = " << string::indent(m_transform) << std::endl
+            << "]";
+        return oss.str();
+    }
+
     MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_color0;

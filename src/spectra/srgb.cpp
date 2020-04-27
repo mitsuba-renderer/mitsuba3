@@ -65,6 +65,14 @@ public:
             m_value = clamp(m_value, 0.f, 1.f);
     }
 
+    std::string to_string() const override {
+        std::ostringstream oss;
+        oss << "SRGBReflectanceSpectrum[" << std::endl
+            << "  value = " << string::indent(m_value) << std::endl
+            << "]";
+        return oss.str();
+    }
+
     MTS_DECLARE_CLASS()
 protected:
     /**

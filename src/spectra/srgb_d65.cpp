@@ -64,6 +64,14 @@ public:
         callback->put_parameter("value", m_value);
     }
 
+    std::string to_string() const override {
+        std::ostringstream oss;
+        oss << "SRGBEmitterSpectrum[" << std::endl
+            << "  value = " << string::indent(m_value) << std::endl
+            << "]";
+        return oss.str();
+    }
+
     MTS_DECLARE_CLASS()
 private:
     /**

@@ -38,7 +38,6 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     vector_v.cpp
     warp_v.cpp
     xml_v.cpp
-    plugin_v.cpp
   )
 
   target_compile_definitions(${TARGET_NAME}-obj PRIVATE
