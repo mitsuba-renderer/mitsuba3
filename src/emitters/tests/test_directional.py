@@ -16,7 +16,7 @@ xml_spectrum = {
         """,
 }
 
-xml_spectrum_keys = list(set(xml_spectrum.keys()) - {"null"})
+xml_spectrum_keys = sorted(list(set(xml_spectrum.keys()) - {"null"}))
 
 
 def make_spectrum(spectrum_key="d65"):
