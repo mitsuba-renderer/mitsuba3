@@ -4119,6 +4119,8 @@ static const char *__doc_mitsuba_Properties_Type = R"doc(Supported types of prop
 
 static const char *__doc_mitsuba_Properties_Type_AnimatedTransform = R"doc(< An animated 4x4 transformation)doc";
 
+static const char *__doc_mitsuba_Properties_Type_Array3f = R"doc(< 3D array)doc";
+
 static const char *__doc_mitsuba_Properties_Type_Bool = R"doc(< Boolean value (true/false))doc";
 
 static const char *__doc_mitsuba_Properties_Type_Color = R"doc(< Tristimulus color value)doc";
@@ -4131,15 +4133,11 @@ static const char *__doc_mitsuba_Properties_Type_NamedReference = R"doc(< Named 
 
 static const char *__doc_mitsuba_Properties_Type_Object = R"doc(< Arbitrary object)doc";
 
-static const char *__doc_mitsuba_Properties_Type_Point3f = R"doc(< 3D point)doc";
-
 static const char *__doc_mitsuba_Properties_Type_Pointer = R"doc(< const void* pointer (for internal communication between plugins))doc";
 
 static const char *__doc_mitsuba_Properties_Type_String = R"doc(< String)doc";
 
 static const char *__doc_mitsuba_Properties_Type_Transform = R"doc(< 4x4 transform for homogeneous coordinates)doc";
-
-static const char *__doc_mitsuba_Properties_Type_Vector3f = R"doc(< 3D vector)doc";
 
 static const char *__doc_mitsuba_Properties_animated_transform = R"doc(Retrieve an animated transformation)doc";
 
@@ -4150,6 +4148,10 @@ exists))doc";
 static const char *__doc_mitsuba_Properties_animated_transform_3 =
 R"doc(Retrieve an animated transformation (default value is a constant
 transform))doc";
+
+static const char *__doc_mitsuba_Properties_array3f = R"doc(Retrieve a 3D array)doc";
+
+static const char *__doc_mitsuba_Properties_array3f_2 = R"doc(Retrieve a 3D array (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_as_string = R"doc(Return one of the parameters (converting it to a string if necessary))doc";
 
@@ -4227,10 +4229,6 @@ static const char *__doc_mitsuba_Properties_operator_ne = R"doc(Inequality compa
 
 static const char *__doc_mitsuba_Properties_plugin_name = R"doc(Get the associated plugin name)doc";
 
-static const char *__doc_mitsuba_Properties_point3f = R"doc(Retrieve a 3D point)doc";
-
-static const char *__doc_mitsuba_Properties_point3f_2 = R"doc(Retrieve a 3D point (use default value if no entry exists))doc";
-
 static const char *__doc_mitsuba_Properties_pointer = R"doc(Retrieve an arbitrary pointer)doc";
 
 static const char *__doc_mitsuba_Properties_pointer_2 = R"doc(Retrieve an arbitrary pointer (use default value if no entry exists))doc";
@@ -4246,6 +4244,8 @@ Returns:
 static const char *__doc_mitsuba_Properties_set_animated_transform = R"doc(Store an animated transformation in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_animated_transform_2 = R"doc(Store a (constant) animated transformation in the Properties instance)doc";
+
+static const char *__doc_mitsuba_Properties_set_array3f = R"doc(Store a 3D array in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_bool = R"doc(Store a boolean value in the Properties instance)doc";
 
@@ -4265,8 +4265,6 @@ static const char *__doc_mitsuba_Properties_set_object = R"doc(Store an arbitrar
 
 static const char *__doc_mitsuba_Properties_set_plugin_name = R"doc(Set the associated plugin name)doc";
 
-static const char *__doc_mitsuba_Properties_set_point3f = R"doc(Store a 3D point in the Properties instance)doc";
-
 static const char *__doc_mitsuba_Properties_set_pointer = R"doc(Store an arbitrary pointer in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_set_string = R"doc(Store a string in the Properties instance)doc";
@@ -4274,8 +4272,6 @@ static const char *__doc_mitsuba_Properties_set_string = R"doc(Store a string in
 static const char *__doc_mitsuba_Properties_set_transform =
 R"doc(Store a 4x4 homogeneous coordinate transformation in the Properties
 instance)doc";
-
-static const char *__doc_mitsuba_Properties_set_vector3f = R"doc(Store a 3D vector in the Properties instance)doc";
 
 static const char *__doc_mitsuba_Properties_size =
 R"doc(Retrieve a size_t value. Since the underlying storage has type
@@ -4309,10 +4305,6 @@ R"doc(Returns the type of an existing property. If no property exists under
 that name, an error is logged and type ``void`` is returned.)doc";
 
 static const char *__doc_mitsuba_Properties_unqueried = R"doc(Return the list of un-queried attributed)doc";
-
-static const char *__doc_mitsuba_Properties_vector3f = R"doc(Retrieve a 3D vector)doc";
-
-static const char *__doc_mitsuba_Properties_vector3f_2 = R"doc(Retrieve a 3D vector (use default value if no entry exists))doc";
 
 static const char *__doc_mitsuba_Properties_volume = R"doc(Retrieve a 3D texture)doc";
 
@@ -9364,6 +9356,16 @@ static const char *__doc_mitsuba_warp_uniform_sphere_to_square = R"doc(Inverse o
 static const char *__doc_mitsuba_warp_uniform_triangle_to_square = R"doc(Inverse of the mapping square_to_uniform_triangle)doc";
 
 static const char *__doc_mitsuba_warp_von_mises_fisher_to_square = R"doc(Inverse of the mapping von_mises_fisher_to_square)doc";
+
+static const char *__doc_mitsuba_xml_detail_create_texture_from_rgb = R"doc(Create a Texture object from RGB values)doc";
+
+static const char *__doc_mitsuba_xml_detail_create_texture_from_spectrum =
+R"doc(Create a Texture object from a constant value or spectral values if
+available)doc";
+
+static const char *__doc_mitsuba_xml_detail_tag_to_class =
+R"doc(Return a pointer to the Class corresponding to a tag for a specified
+variant)doc";
 
 static const char *__doc_mitsuba_xml_load_file =
 R"doc(Load a Mitsuba scene from an XML file

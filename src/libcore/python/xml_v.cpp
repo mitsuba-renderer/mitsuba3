@@ -154,9 +154,7 @@ MTS_VARIANT ref<Object> load_dict(const std::string &name, const py::dict &dict)
         SET_PROPS(py::int_, int64_t, set_long);
         SET_PROPS(py::float_, Properties::Float, set_float);
         SET_PROPS(py::str, std::string, set_string);
-        SET_PROPS(Properties::Point3f, Properties::Point3f, set_point3f);
-        // TODO vector3f always get cast to point3f ATM
-        // SET_PROPS(Properties::Vector3f, Properties::Vector3f, set_vector3f);
+        SET_PROPS(Properties::Array3f, Properties::Array3f, set_array3f);
         SET_PROPS(Properties::Transform4f, Properties::Transform4f, set_transform);
 
         // Cast py::list and numpy.ndarray to Array3f

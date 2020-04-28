@@ -950,7 +950,7 @@ void Bitmap::read_openexr(Stream *stream) {
         } else if (type_name == "v3f") {
             auto v = static_cast<const Imf::V3fAttribute *>(attr);
             Imath::V3f vec = v->value();
-            m_metadata.set_vector3f(name, Vector3f(vec.x, vec.y, vec.z));
+            m_metadata.set_array3f(name, Vector3f(vec.x, vec.y, vec.z));
         } else if (type_name == "m44f") {
             auto v = static_cast<const Imf::M44fAttribute *>(attr);
             Matrix4f M;
@@ -1324,14 +1324,8 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
                 else
                     header.insert(it->c_str(), Imf::FloatAttribute(metadata.float_(*it)));
                 break;
-            case Type::Vector3f: {
-                    Vector3f val = metadata.vector3f(*it);
-                    header.insert(it->c_str(), Imf::V3fAttribute(
-                        Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
-                }
-                break;
-            case Type::Point3f: {
-                    Point3f val = metadata.point3f(*it);
+            case Type::Array3f: {
+                    Vector3f val = metadata.array3f(*it);
                     header.insert(it->c_str(), Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }

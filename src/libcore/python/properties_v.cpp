@@ -40,7 +40,7 @@ MTS_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(bool, bool)
             .SET_ITEM_BINDING(long, int64_t)
             .SET_ITEM_BINDING(string, std::string)
-            .SET_ITEM_BINDING(vector3f, typename Properties::Vector3f)
+            .SET_ITEM_BINDING(array3f, typename Properties::Array3f)
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
             .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
             .SET_ITEM_BINDING(object, ref<Object>)
@@ -55,10 +55,8 @@ MTS_PY_EXPORT(Properties) {
                         return py::cast(p.float_(key));
                     else if (type == Properties::Type::String)
                         return py::cast(p.string(key));
-                    else if (type == Properties::Type::Vector3f)
-                        return py::cast(p.vector3f(key));
-                    else if (type == Properties::Type::Point3f)
-                        return py::cast(p.point3f(key));
+                     else if (type == Properties::Type::Array3f)
+                        return py::cast(p.array3f(key));
                     else if (type == Properties::Type::Transform)
                         return py::cast(p.transform(key));
                     else if (type == Properties::Type::AnimatedTransform)

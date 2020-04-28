@@ -731,7 +731,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             case Tag::Vector: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
-                    props.set_vector3f(node.attribute("name").value(),
+                    props.set_array3f(node.attribute("name").value(),
                                        detail::parse_vector(src, node));
                 }
                 break;
@@ -739,7 +739,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             case Tag::Point: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "name", "x", "y", "z" });
-                    props.set_point3f(node.attribute("name").value(),
+                    props.set_array3f(node.attribute("name").value(),
                                       detail::parse_vector(src, node));
                 }
                 break;
