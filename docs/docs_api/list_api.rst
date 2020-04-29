@@ -202,6 +202,10 @@
 
 .. autoclass:: mitsuba.core.ScalarPoint3u
 
+.. autoclass:: mitsuba.core.ScalarTransform3f
+
+.. autoclass:: mitsuba.core.ScalarTransform4f
+
 .. autoclass:: mitsuba.core.ScalarUInt32
 
 .. autoclass:: mitsuba.core.ScalarUInt64
@@ -546,6 +550,8 @@
 
 .. autofunction:: mitsuba.core.warp.von_mises_fisher_to_square
 
+.. autofunction:: mitsuba.core.xml.load_dict
+
 .. autofunction:: mitsuba.core.xml.load_file
 
 .. autofunction:: mitsuba.core.xml.load_string
@@ -698,6 +704,10 @@
 
 .. autoclass:: mitsuba.python.chi2.SphericalDomain
 
+.. autoclass:: mitsuba.python.util.ParameterMap
+
+.. autofunction:: mitsuba.python.util.is_differentiable
+
 .. autofunction:: mitsuba.python.util.traverse
 
 .. autofunction:: mitsuba.python.math.rlgamma
@@ -708,9 +718,9 @@
 
 .. autoclass:: mitsuba.python.autodiff.SGD
 
-.. autofunction:: mitsuba.python.autodiff.render
+.. autofunction:: mitsuba.python.autodiff._render_helper
 
-.. autofunction:: mitsuba.python.autodiff.render_diff
+.. autofunction:: mitsuba.python.autodiff.render
 
 .. autofunction:: mitsuba.python.autodiff.render_torch
 

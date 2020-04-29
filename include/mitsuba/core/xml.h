@@ -60,11 +60,6 @@ extern MTS_EXPORT_CORE ref<Object> create_texture_from_spectrum(
                                         bool within_emitter,
                                         bool is_spectral_mode,
                                         bool is_monochromatic_mode);
-
-/// Return a pointer to the Class corresponding to a tag for a specified variant
-extern MTS_EXPORT_CORE const Class *tag_to_class(const std::string &tag,
-                                                 const std::string &variant);
-
 NAMESPACE_END(detail)
 
 NAMESPACE_END(xml)

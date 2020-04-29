@@ -85,12 +85,12 @@ struct PluginManager::PluginManagerPrivate {
     Plugin *plugin(const std::string &name) {
         std::lock_guard<std::mutex> guard(m_mutex);
 
-        /* Plugin already loaded? */
+        // Plugin already loaded?
         auto it = m_plugins.find(name);
         if (it != m_plugins.end())
             return it->second;
 
-        /* Build the full plugin file name */
+        // Build the full plugin file name
         fs::path filename = fs::path("plugins") / name;
 
         #if defined(__WINDOWS__)
@@ -129,6 +129,32 @@ PluginManager::~PluginManager() {
         delete pair.second;
 }
 
+void PluginManager::ensure_plugin_loaded(const std::string &name) {
+    (void) d->plugin(name);
+}
+
+const Class *PluginManager::get_plugin_class(const std::string &name, const std::string &variant) {
+    const Class *plugin_class;
+
+    auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(), name);
+    if (it != d->m_python_plugins.end()) {
+        plugin_class = Class::for_name(name, variant);
+    } else {
+        const Plugin *plugin = d->plugin(name);
+        plugin_class = Class::for_name(plugin->plugin_name, variant);
+    }
+
+    return plugin_class;
+}
+
+std::vector<std::string> PluginManager::loaded_plugins() const {
+    std::vector<std::string> list;
+    std::lock_guard<std::mutex> guard(d->m_mutex);
+    for (auto const &pair: d->m_plugins)
+        list.push_back(pair.first);
+    return list;
+}
+
 void PluginManager::register_python_plugin(const std::string &plugin_name) {
     d->m_python_plugins.push_back(plugin_name);
     Class::static_initialization();
@@ -139,15 +165,7 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
     if (class_->name() == "Scene")
        return class_->construct(props);
 
-    const Class *plugin_class;
-
-    auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(), props.plugin_name());
-    if (it != d->m_python_plugins.end()) {
-        plugin_class = Class::for_name(props.plugin_name(), class_->variant());
-    } else {
-        const Plugin *plugin = d->plugin(props.plugin_name());
-        plugin_class = Class::for_name(plugin->plugin_name, class_->variant());
-    }
+    const Class *plugin_class = get_plugin_class(props.plugin_name(), class_->variant());
 
     Assert(plugin_class != nullptr);
     ref<Object> object = plugin_class->construct(props);
@@ -164,18 +182,6 @@ ref<Object> PluginManager::create_object(const Properties &props, const Class *c
     }
 
    return object;
-}
-
-std::vector<std::string> PluginManager::loaded_plugins() const {
-    std::vector<std::string> list;
-    std::lock_guard<std::mutex> guard(d->m_mutex);
-    for (auto const &pair: d->m_plugins)
-        list.push_back(pair.first);
-    return list;
-}
-
-void PluginManager::ensure_plugin_loaded(const std::string &name) {
-    (void) d->plugin(name);
 }
 
 MTS_IMPLEMENT_CLASS(PluginManager, Object)

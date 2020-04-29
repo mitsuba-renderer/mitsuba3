@@ -70,6 +70,16 @@ def variants_cpu_rgb(request):
     return request.param
 
 
+@pytest.fixture(params=['scalar_rgb', 'scalar_spectral', 'scalar_mono', 'scalar_spectral_polarized'])
+def variants_scalar_all(request):
+    try:
+        import mitsuba
+        mitsuba.set_variant(request.param)
+    except Exception:
+        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
+    return request.param
+
+
 @pytest.fixture(params=['scalar_rgb', 'packet_rgb', 'gpu_rgb'])
 def variants_all_rgb(request):
     try:

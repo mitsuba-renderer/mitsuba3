@@ -3853,6 +3853,16 @@ static const char *__doc_mitsuba_PluginManager_PluginManagerPrivate = R"doc()doc
 static const char *__doc_mitsuba_PluginManager_class = R"doc()doc";
 
 static const char *__doc_mitsuba_PluginManager_create_object =
+R"doc(Instantiate a plugin and return the newly created object instance.
+
+Parameter ``props``:
+    A Properties instance containing all information required to find
+    and construct the plugin.
+
+Parameter ``variant``:
+    Expected variant of the instance.)doc";
+
+static const char *__doc_mitsuba_PluginManager_create_object_2 =
 R"doc(Instantiate a plugin, verify its type, and return the newly created
 object instance.
 
@@ -3864,7 +3874,7 @@ Parameter ``class_type``:
     Expected type of the instance. An exception will be thrown if it
     turns out not to derive from this class.)doc";
 
-static const char *__doc_mitsuba_PluginManager_create_object_2 = R"doc(Convenience template wrapper around create_object())doc";
+static const char *__doc_mitsuba_PluginManager_create_object_3 = R"doc(Convenience template wrapper around create_object())doc";
 
 static const char *__doc_mitsuba_PluginManager_d = R"doc()doc";
 
@@ -9362,10 +9372,6 @@ static const char *__doc_mitsuba_xml_detail_create_texture_from_rgb = R"doc(Crea
 static const char *__doc_mitsuba_xml_detail_create_texture_from_spectrum =
 R"doc(Create a Texture object from a constant value or spectral values if
 available)doc";
-
-static const char *__doc_mitsuba_xml_detail_tag_to_class =
-R"doc(Return a pointer to the Class corresponding to a tag for a specified
-variant)doc";
 
 static const char *__doc_mitsuba_xml_load_file =
 R"doc(Load a Mitsuba scene from an XML file

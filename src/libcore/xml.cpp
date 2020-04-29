@@ -78,6 +78,12 @@ struct Version {
     }
 };
 
+// Check if the name corresponds to an unbounded spectrum property which require
+// special handling
+bool is_unbounded_spectrum(const std::string &name) {
+    return name == "eta" || name == "k" || name == "int_ior" || name == "ext_ior";
+}
+
 NAMESPACE_BEGIN(detail)
 
 using Float = float;
@@ -1040,13 +1046,10 @@ ref<Object> create_texture_from_rgb(const std::string &name,
                                     Color<float, 3> color,
                                     const std::string &variant,
                                     bool within_emitter) {
-    // Spectral IOR values are unbounded and require special handling
-    bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
-                  name == "ext_ior";
     Properties props(within_emitter ? "srgb_d65" : "srgb");
     props.set_color("color", color);
 
-    if (!within_emitter && is_ior)
+    if (!within_emitter && is_unbounded_spectrum(name))
         props.set_bool("unbounded", true);
 
     return PluginManager::instance()->create_object(
@@ -1122,13 +1125,8 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             return PluginManager::instance()->create_object(props, class_);
         } else {
             // In non-spectral mode, pre-integrate against the CIE matching curves
-
-            /// Spectral IOR values are unbounded and require special handling
-            bool is_ior = name == "eta" || name == "k" || name == "int_ior" ||
-                          name == "ext_ior";
-
             Color3f color = spectrum_to_rgb(
-                wavelengths, values, !(within_emitter || is_ior));
+                wavelengths, values, !(within_emitter || is_unbounded_spectrum(name)));
 
             Properties props;
             if (is_monochromatic_mode) {
@@ -1138,17 +1136,13 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 props = Properties(within_emitter ? "srgb_d65" : "srgb");
                 props.set_color("color", color);
 
-                if (!within_emitter && is_ior)
+                if (!within_emitter && is_unbounded_spectrum(name))
                     props.set_bool("unbounded", true);
             }
 
             return PluginManager::instance()->create_object(props, class_);
         }
     }
-}
-
-const Class *tag_to_class(const std::string &tag, const std::string &variant) {
-    return tag_class->find(class_key(tag, variant))->second;
 }
 
 NAMESPACE_END(detail)
