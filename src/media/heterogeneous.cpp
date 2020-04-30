@@ -79,6 +79,7 @@ public:
         callback->put_object("density", m_density.get());
         callback->put_object("albedo", m_albedo.get());
         callback->put_object("sigma_t", m_sigmat.get());
+        Base::traverse(callback);
     }
 
     std::string to_string() const override {
