@@ -3853,16 +3853,6 @@ static const char *__doc_mitsuba_PluginManager_PluginManagerPrivate = R"doc()doc
 static const char *__doc_mitsuba_PluginManager_class = R"doc()doc";
 
 static const char *__doc_mitsuba_PluginManager_create_object =
-R"doc(Instantiate a plugin and return the newly created object instance.
-
-Parameter ``props``:
-    A Properties instance containing all information required to find
-    and construct the plugin.
-
-Parameter ``variant``:
-    Expected variant of the instance.)doc";
-
-static const char *__doc_mitsuba_PluginManager_create_object_2 =
 R"doc(Instantiate a plugin, verify its type, and return the newly created
 object instance.
 
@@ -3874,17 +3864,19 @@ Parameter ``class_type``:
     Expected type of the instance. An exception will be thrown if it
     turns out not to derive from this class.)doc";
 
-static const char *__doc_mitsuba_PluginManager_create_object_3 = R"doc(Convenience template wrapper around create_object())doc";
+static const char *__doc_mitsuba_PluginManager_create_object_2 = R"doc(Convenience template wrapper around create_object())doc";
 
 static const char *__doc_mitsuba_PluginManager_d = R"doc()doc";
 
 static const char *__doc_mitsuba_PluginManager_ensure_plugin_loaded = R"doc(Ensure that a plugin is loaded and ready)doc";
 
+static const char *__doc_mitsuba_PluginManager_get_plugin_class = R"doc(Return the class corresponding to a plugin for a specific variant)doc";
+
 static const char *__doc_mitsuba_PluginManager_instance = R"doc(Return the global plugin manager)doc";
 
 static const char *__doc_mitsuba_PluginManager_loaded_plugins = R"doc(Return the list of loaded plugins)doc";
 
-static const char *__doc_mitsuba_PluginManager_register_python_plugin = R"doc()doc";
+static const char *__doc_mitsuba_PluginManager_register_python_plugin = R"doc(Register a Python plugin)doc";
 
 static const char *__doc_mitsuba_Point = R"doc()doc";
 

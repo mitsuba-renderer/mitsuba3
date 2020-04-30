@@ -1,5 +1,6 @@
 #include <mitsuba/python/python.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/core/plugin.h>
 
 extern py::object cast_object(Object *o);
 
@@ -30,7 +31,16 @@ public:
 };
 
 MTS_PY_EXPORT(Object) {
-    py::class_<Class>(m, "Class", D(Class));
+    py::class_<Class>(m, "Class", D(Class))
+        .def_method(Class, name)
+        .def_method(Class, variant)
+        .def_method(Class, alias)
+        .def_method(Class, parent, py::return_value_policy::reference);
+
+    py::class_<PluginManager, std::unique_ptr<PluginManager, py::nodelete>>(m, "PluginManager", D(PluginManager))
+        .def_static_method(PluginManager, instance, py::return_value_policy::reference)
+        .def_method(PluginManager, get_plugin_class, "name"_a, "variant"_a,
+                    py::return_value_policy::reference);
 
     py::class_<TraversalCallback, PyTraversalCallback>(m, "TraversalCallback")
         .def(py::init<>());
