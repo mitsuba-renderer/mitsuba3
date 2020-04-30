@@ -102,6 +102,8 @@ public:
         ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
         ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
+        ray.update();
+
         return std::make_pair(ray, wav_weight);
     }
 
