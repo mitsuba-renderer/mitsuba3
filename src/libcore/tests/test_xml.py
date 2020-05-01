@@ -627,3 +627,99 @@ def test28_dict_unreferenced_attribute_error(variants_all_rgb):
             "foo": 0.44
         })
     e.match("Unreferenced attribute")
+
+
+
+def test29_dict_scene_reference(variants_all_rgb):
+    from mitsuba.core import xml
+
+    scene = xml.load_dict({
+        "type" : "scene",
+        # reference using its key
+        "bsdf1_key" : { "type" : "conductor" },
+        # reference using its key or its id
+        "bsdf2_key" : {
+            "type" : "roughdielectric",
+            "id" : "bsdf2_id"
+        },
+        "texture1_id" : { "type" : "checkerboard"},
+
+        "shape0" : {
+            "type" : "sphere",
+            "foo" : {
+                "type" : "ref",
+                "id" : "bsdf1_key"
+            }
+        },
+
+        "shape1" : {
+            "type" : "sphere",
+            "foo" : {
+                "type" : "ref",
+                "id" : "bsdf2_id"
+            }
+        },
+
+        "shape2" : {
+            "type" : "sphere",
+            "foo" : {
+                "type" : "ref",
+                "id" : "bsdf2_key"
+            }
+        },
+
+        "shape3" : {
+            "type" : "sphere",
+            "bsdf" : {
+                "type" : "diffuse",
+                "reflectance" : {
+                    "type" : "ref",
+                    "id" : "texture1_id"
+                }
+            }
+        },
+    })
+
+    bsdf1 = xml.load_dict({ "type" : "conductor" })
+    bsdf2 = xml.load_dict({
+        "type" : "roughdielectric",
+        "id" : "bsdf2_id"
+    })
+    texture = xml.load_dict({ "type" : "checkerboard"})
+    bsdf3 = xml.load_dict({
+        "type" : "diffuse",
+        "reflectance" : texture
+    })
+
+    assert str(scene.shapes()[0].bsdf()) == str(bsdf1)
+    assert str(scene.shapes()[1].bsdf()) == str(bsdf2)
+    assert str(scene.shapes()[2].bsdf()) == str(bsdf2)
+    assert str(scene.shapes()[3].bsdf()) == str(bsdf3)
+
+    with pytest.raises(Exception) as e:
+        scene = xml.load_dict({
+            "type" : "scene",
+            "shape0" : {
+                "type" : "sphere",
+                "id" : "shape_id",
+            },
+            "shape1" : {
+                "type" : "sphere",
+                "id" : "shape_id",
+            },
+        })
+    e.match("has duplicate id")
+
+    with pytest.raises(Exception) as e:
+        scene = xml.load_dict({
+            "type" : "scene",
+            "bsdf1_id" : { "type" : "conductor" },
+            "shape1" : {
+                "type" : "sphere",
+                "foo" : {
+                    "type" : "ref",
+                    "id" : "bsdf2_id"
+                }
+            },
+        })
+    e.match("""Referenced id "bsdf2_id" not found""")

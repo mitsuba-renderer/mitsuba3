@@ -226,3 +226,49 @@ The following example constructs a Mitsuba scene using :py:func:`mitsuba.core.xm
             }
         }
     })
+
+As in the XML scene description, it is possible to reference other objects in the `dict`, as
+long as those a declared before the reference takes place in the dictionary. For this purpose,
+you can specify a nested dictionary with ``"type":"ref"`` and an ``"id"`` entry. Objects can be
+referenced using their ``key`` in the dictionary. It is also possible to reference an
+object using it's ``id`` if one was defined.
+
+.. code-block:: python
+
+    {
+        "type" : "scene",
+        # this BSDF can be referenced using its key "bsdf_id_0"
+        "bsdf_key_0" : {
+            "type" : "roughconductor"
+        },
+
+        "shape_0" : {
+            "type" : "sphere",
+            "mybsdf" : {
+                "type" : "ref",
+                "id" : "bsdf_key_0"
+            }
+        }
+
+        # this BSDF can be referenced using its key "bsdf_key_1" or its id "bsdf_id_1"
+        "bsdf_key_1" : {
+            "type" : "roughconductor",
+            "id" : "bsdf_id_1"
+        },
+
+        "shape_2" : {
+            "type" : "sphere",
+            "mybsdf" : {
+                "type" : "ref",
+                "id" : "bsdf_id_1"
+            }
+        },
+
+        "shape_3" : {
+            "type" : "sphere",
+            "mybsdf" : {
+                "type" : "ref",
+                "id" : "bsdf_key_1"
+            }
+        }
+    }

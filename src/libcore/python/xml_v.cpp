@@ -6,12 +6,14 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <map>
 
 using Caster = py::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
 // Forward declaration
-MTS_VARIANT ref<Object> load_dict(const py::dict& dict);
+MTS_VARIANT ref<Object> load_dict(const py::dict& dict,
+                                  std::map<std::string, ref<Object>> &instances);
 
 /// Shorthand notation for accessing the MTS_VARIANT string
 #define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
@@ -54,7 +56,8 @@ MTS_PY_EXPORT(xml) {
     m.def(
         "load_dict",
         [](const py::dict dict) {
-            return cast_object(load_dict<Float, Spectrum>(dict));
+            std::map<std::string, ref<Object>> instances;
+            return cast_object(load_dict<Float, Spectrum>(dict, instances));
         },
         "dict"_a,
 R"doc(Load a Mitsuba scene or object from an Python dictionary
@@ -80,18 +83,19 @@ std::string get_type(const py::dict &dict) {
         continue;                               \
     }
 
-MTS_VARIANT ref<Object> load_dict(const py::dict &dict) {
+MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
+                                  std::map<std::string, ref<Object>> &instances) {
 
     std::string type = get_type(dict);
+    bool is_scene = (type == "scene");
 
     const Class *class_;
-    if (type == "scene")
+    if (is_scene)
         class_ = Class::for_name("Scene", GET_VARIANT());
     else
         class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT());
 
-    bool within_emitter = (class_->parent()->name() == "Emitter");
-
+    bool within_emitter = (class_->parent()->alias() == "emitter");
     Properties props(type);
 
     for (auto& [k, value] : dict) {
@@ -99,6 +103,11 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict) {
 
         if (key == "type")
             continue;
+
+        if (key == "id") {
+            props.set_id(value.cast<std::string>());
+            continue;
+        }
 
         SET_PROPS(py::bool_, bool, set_bool);
         SET_PROPS(py::int_, int64_t, set_long);
@@ -130,7 +139,7 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict) {
                     if (key2 == "value")
                         color = value2.cast<Properties::Color3f>();
                     else if (key2 != "type")
-                        Throw("Unexpected item in rgb dictionary: %s", key2);
+                        Throw("Unexpected key in rgb dictionary: %s", key2);
                 }
                 // Update the properties struct
                 ref<Object> obj = mitsuba::xml::detail::create_texture_from_rgb(
@@ -163,7 +172,7 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict) {
                             Throw("Unexpected value type in spectrum dictionary: %s", value2);
                         }
                     } else if (key2 != "type") {
-                        Throw("Unexpected item in spectrum dictionary: %s", key2);
+                        Throw("Unexpected key in spectrum dictionary: %s", key2);
                     }
                 }
                 // Update the properties struct
@@ -176,7 +185,45 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict) {
                 continue;
             }
 
-            auto obj = load_dict<Float, Spectrum>(dict2);
+            // Nested dict with type == "ref" specify a reference to another
+            // object previously instanciated
+            if (type2 == "ref") {
+                if (is_scene)
+                    Throw("Reference found at the scene level: %s", key);
+
+                for (auto& [k2, value2] : value.cast<py::dict>()) {
+                    std::string key2 = k2.cast<std::string>();
+                    if (key2 == "id") {
+                        std::string id = value2.cast<std::string>();
+                        if (instances.count(id) == 1)
+                            props.set_object(key, instances[id]);
+                        else
+                            Throw("Referenced id \"%s\" not found: %s", id, key);
+                    }  else if (key2 != "type") {
+                        Throw("Unexpected key in ref dictionary: %s", key2);
+                    }
+                }
+                continue;
+            }
+
+            // Load the dictionary recursively
+            auto obj = load_dict<Float, Spectrum>(dict2, instances);
+
+            // Add instanced object to the instance map for later references
+            if (is_scene) {
+                // An object can be referenced using its key
+                if (instances.count(key) != 0)
+                    Throw("%s has duplicate id: %s", key, key);
+                instances[key] = obj;
+
+                // An object can also be referenced using its "id" if it has one
+                std::string id = obj->id();
+                if (!id.empty() && id != key) {
+                    if (instances.count(id) != 0)
+                        Throw("%s has duplicate id: %s", key, id);
+                    instances[id] = obj;
+                }
+            }
             props.set_object(key, obj);
             continue;
         }
