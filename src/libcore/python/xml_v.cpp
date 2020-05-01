@@ -132,9 +132,13 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
 
             // Treat nested dictionary differently when their type is "rgb" or "spectrum"
             if (type2 == "rgb") {
+                if (dict2.size() != 2) {
+                    Throw("'rgb' dictionary should always contain 2 entries "
+                          "('type' and 'value'), got %u.", dict2.size());
+                }
                 // Read info from the dictionary
                 Properties::Color3f color;
-                for (auto& [k2, value2] : value.cast<py::dict>()) {
+                for (auto& [k2, value2] : dict2) {
                     std::string key2 = k2.cast<std::string>();
                     if (key2 == "value")
                         color = value2.cast<Properties::Color3f>();
@@ -148,16 +152,21 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
                 continue;
             }
             if (type2 == "spectrum") {
+                if (dict2.size() != 2) {
+                    Throw("'spectrum' dictionary should always contain 2 "
+                          "entries ('type' and 'value'), got %u.", dict2.size());
+                }
                 // Read info from the dictionary
                 Properties::Float const_value(1.f);
                 std::vector<Properties::Float> wavelengths;
                 std::vector<Properties::Float> values;
-                for (auto& [k2, value2] : value.cast<py::dict>()) {
+                for (auto& [k2, value2] : dict2) {
                     std::string key2 = k2.cast<std::string>();
                     if (key2 == "filename") {
                         spectrum_from_file(value2.cast<std::string>(), wavelengths, values);
                     } else if (key2 == "value") {
-                        if (py::isinstance<py::float_>(value2)) {
+                        if (py::isinstance<py::float_>(value2) ||
+                            py::isinstance<py::int_>(value2)) {
                             const_value = value2.cast<Properties::Float>();
                         } else if (py::isinstance<py::list>(value2)) {
                             py::list list = value2.cast<py::list>();
@@ -169,7 +178,7 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
                                 values[i]      = pair[1].cast<Properties::Float>();
                             }
                         } else {
-                            Throw("Unexpected value type in spectrum dictionary: %s", value2);
+                            Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
                         }
                     } else if (key2 != "type") {
                         Throw("Unexpected key in spectrum dictionary: %s", key2);
