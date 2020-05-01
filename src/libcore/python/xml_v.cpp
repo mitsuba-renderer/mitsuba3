@@ -12,8 +12,8 @@ using Caster = py::object(*)(mitsuba::Object *);
 extern Caster cast_object;
 
 // Forward declaration
-MTS_VARIANT ref<Object> load_dict(const py::dict& dict,
-                                  std::map<std::string, ref<Object>> &instances);
+template <typename Float, typename Spectrum>
+ref<Object> load_dict(const py::dict& dict, std::map<std::string, ref<Object>> &instances);
 
 /// Shorthand notation for accessing the MTS_VARIANT string
 #define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
@@ -83,8 +83,22 @@ std::string get_type(const py::dict &dict) {
         continue;                               \
     }
 
-MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
-                                  std::map<std::string, ref<Object>> &instances) {
+/// Helper function to give the object a chance to recursively expand into sub-objects
+void expand_and_set_object(Properties &props, const std::string &name, const ref<Object> &obj) {
+    std::vector<ref<Object>> children = obj->expand();
+    if (children.empty()) {
+        props.set_object(name, obj);
+    } else if (children.size() == 1) {
+        props.set_object(name, children[0]);
+    } else {
+        int ctr = 0;
+        for (auto c : children)
+            props.set_object(name + "_" + std::to_string(ctr++), c);
+    }
+}
+
+template <typename Float, typename Spectrum>
+ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &instances) {
 
     std::string type = get_type(dict);
     bool is_scene = (type == "scene");
@@ -205,7 +219,7 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
                     if (key2 == "id") {
                         std::string id = value2.cast<std::string>();
                         if (instances.count(id) == 1)
-                            props.set_object(key, instances[id]);
+                            expand_and_set_object(props, key, instances[id]);
                         else
                             Throw("Referenced id \"%s\" not found: %s", id, key);
                     }  else if (key2 != "type") {
@@ -216,7 +230,8 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
             }
 
             // Load the dictionary recursively
-            auto obj = load_dict<Float, Spectrum>(dict2, instances);
+            ref<Object> obj = load_dict<Float, Spectrum>(dict2, instances);
+            expand_and_set_object(props, key, obj);
 
             // Add instanced object to the instance map for later references
             if (is_scene) {
@@ -233,14 +248,14 @@ MTS_VARIANT ref<Object> load_dict(const py::dict &dict,
                     instances[id] = obj;
                 }
             }
-            props.set_object(key, obj);
+
             continue;
         }
 
         // Try to cast entry to an object if it didn't match any of the other types above
         try {
             auto obj = value.cast<ref<Object>>();
-            props.set_object(key, obj);
+            expand_and_set_object(props, key, obj);
             continue;
         } catch (const pybind11::cast_error &e) {
             Throw("Unkown value type: %s", value.get_type());
