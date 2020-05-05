@@ -74,7 +74,7 @@ MTS_VARIANT std::string ShapeKDTree<Float, Spectrum>::to_string() const {
     oss << "ShapeKDTreeKDTree[" << std::endl
         << "  shapes = [" << std::endl;
     for (auto shape : m_shapes)
-        oss << "    " << string::indent(shape->to_string(), 4)
+        oss << "    " << string::indent(shape, 4)
             << "," << std::endl;
     oss << "  ]" << std::endl << "]";
     return oss.str();

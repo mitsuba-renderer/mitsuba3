@@ -167,7 +167,7 @@ public:
         std::ostringstream oss;
         oss << "Mask[" << std::endl
             << "  opacity = " << m_opacity << "," << std::endl
-            << "  nested_bsdf = " << string::indent(m_nested_bsdf->to_string()) << std::endl
+            << "  nested_bsdf = " << string::indent(m_nested_bsdf) << std::endl
             << "]";
         return oss.str();
     }

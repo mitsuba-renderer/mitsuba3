@@ -174,12 +174,12 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SpotLight[" << std::endl
-            << "  world_transform = " << string::indent(m_world_transform->to_string()) << "," << std::endl
+            << "  world_transform = " << string::indent(m_world_transform) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  cutoff_angle = " << m_cutoff_angle << "," << std::endl
             << "  beam_width = " << m_beam_width << "," << std::endl
-            << "  texture = " << (m_texture ? string::indent(m_texture->to_string()) : "")
-            << "  medium = " << (m_medium ? string::indent(m_medium->to_string()) : "")
+            << "  texture = " << (m_texture ? string::indent(m_texture) : "")
+            << "  medium = " << (m_medium ? string::indent(m_medium) : "")
             << "]";
         return oss.str();
     }

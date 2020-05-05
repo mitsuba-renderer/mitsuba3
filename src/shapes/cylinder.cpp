@@ -75,7 +75,7 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor, set_children)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, bsdf, emitter, is_emitter, sensor, is_sensor, set_children, get_children_string)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -90,7 +90,7 @@ public:
         ScalarVector3f d = p1 - p0;
         m_length = norm(d);
 
-        m_object_to_world = ScalarTransform4f::translate(p0) *
+        m_to_world = ScalarTransform4f::translate(p0) *
                             ScalarTransform4f::to_frame(ScalarFrame3f(d / m_length)) *
                             ScalarTransform4f::scale(ScalarVector3f(m_radius, m_radius, m_length));
 
@@ -98,16 +98,16 @@ public:
         m_flip_normals = props.bool_("flip_normals", false);
 
         if (props.has_property("to_world")) {
-            m_object_to_world = props.transform("to_world") * m_object_to_world;
-            m_radius = norm(m_object_to_world * ScalarVector3f(1.f, 0.f, 0.f));
-            m_length = norm(m_object_to_world * ScalarVector3f(0.f, 0.f, 1.f));
+            m_to_world = props.transform("to_world") * m_to_world;
+            m_radius = norm(m_to_world * ScalarVector3f(1.f, 0.f, 0.f));
+            m_length = norm(m_to_world * ScalarVector3f(0.f, 0.f, 1.f));
         }
 
         // Remove the scale from the object-to-world transform
-        m_object_to_world = m_object_to_world * ScalarTransform4f::scale(
+        m_to_world = m_to_world * ScalarTransform4f::scale(
             rcp(ScalarVector3f(m_radius, m_radius, m_length)));
 
-        m_world_to_object = m_object_to_world.inverse();
+        m_to_object = m_to_world.inverse();
         m_inv_surface_area = 1.f / surface_area();
 
         if (m_radius <= 0.f) {
@@ -119,12 +119,12 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarVector3f x1 = m_object_to_world * ScalarVector3f(m_radius, 0.f, 0.f),
-                       x2 = m_object_to_world * ScalarVector3f(0.f, m_radius, 0.f),
+        ScalarVector3f x1 = m_to_world * ScalarVector3f(m_radius, 0.f, 0.f),
+                       x2 = m_to_world * ScalarVector3f(0.f, m_radius, 0.f),
                        x  = sqrt(sqr(x1) + sqr(x2));
 
-        ScalarPoint3f p0 = m_object_to_world * ScalarPoint3f(0.f, 0.f, 0.f),
-                      p1 = m_object_to_world * ScalarPoint3f(0.f, 0.f, m_length);
+        ScalarPoint3f p0 = m_to_world * ScalarPoint3f(0.f, 0.f, 0.f),
+                      p1 = m_to_world * ScalarPoint3f(0.f, 0.f, m_length);
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
@@ -138,9 +138,9 @@ public:
         using Vector3fP8      = Vector<FloatP8, 3>;
         using BoundingBox3fP8 = BoundingBox<Point3fP8>;
 
-        ScalarPoint3f cyl_p = m_object_to_world.transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
+        ScalarPoint3f cyl_p = m_to_world.transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
         ScalarVector3f cyl_d =
-            m_object_to_world.transform_affine(ScalarVector3f(0.f, 0.f, m_length));
+            m_to_world.transform_affine(ScalarVector3f(0.f, 0.f, m_length));
 
         // Compute a base bounding box
         ScalarBoundingBox3f bbox(this->bbox());
@@ -216,7 +216,7 @@ public:
             n *= -1;
 
         PositionSample3f ps;
-        ps.p     = m_object_to_world.transform_affine(p);
+        ps.p     = m_to_world.transform_affine(p);
         ps.n     = normalize(n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
@@ -242,7 +242,7 @@ public:
 
         using Float64 = float64_array_t<Float>;
 
-        Ray3f ray = m_world_to_object * ray_;
+        Ray3f ray = m_to_object * ray_;
         Float64 mint = Float64(ray.mint),
                 maxt = Float64(ray.maxt);
 
@@ -286,7 +286,7 @@ public:
 
         using Float64  = float64_array_t<Float>;
 
-        Ray3f ray = m_world_to_object * ray_;
+        Ray3f ray = m_to_object * ray_;
         Float64 mint = Float64(ray.mint);
         Float64 maxt = Float64(ray.maxt);
 
@@ -330,7 +330,7 @@ public:
         SurfaceInteraction3f si(si_out);
 
         si.p = ray(si.t);
-        Vector3f local = m_world_to_object * si.p;
+        Vector3f local = m_to_object * si.p;
 
         Float phi = atan2(local.y(), local.x());
         masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
@@ -339,8 +339,8 @@ public:
 
         Vector3f dp_du = 2.f * math::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
-        si.dp_du = m_object_to_world * dp_du;
-        si.dp_dv = m_object_to_world * dp_dv;
+        si.dp_du = m_to_world * dp_du;
+        si.dp_dv = m_to_world * dp_dv;
         si.n = Normal3f(cross(normalize(si.dp_du), normalize(si.dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
@@ -389,19 +389,17 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Cylinder[" << std::endl
-            << "  p0 = "  << m_object_to_world * Point3f(0.f, 0.f, 0.f) << "," << std::endl
-            << "  p1 = "  << m_object_to_world * Point3f(0.f, 0.f, m_length) << "," << std::endl
+            << "  p0 = "  << m_to_world * Point3f(0.f, 0.f, 0.f) << "," << std::endl
+            << "  p1 = "  << m_to_world * Point3f(0.f, 0.f, m_length) << "," << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  length = "  << m_length << "," << std::endl
-            << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
+            << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarTransform4f m_object_to_world;
-    ScalarTransform4f m_world_to_object;
     ScalarFloat m_radius, m_length;
     ScalarFloat m_inv_surface_area;
     bool m_flip_normals;

@@ -171,9 +171,9 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "BlendBSDF[" << std::endl
-            << "  weight = " << string::indent(m_weight->to_string()) << "," << std::endl
-            << "  nested_bsdf[0] = " << string::indent(m_nested_bsdf[0]->to_string()) << "," << std::endl
-            << "  nested_bsdf[1] = " << string::indent(m_nested_bsdf[1]->to_string()) << std::endl
+            << "  weight = " << string::indent(m_weight) << "," << std::endl
+            << "  nested_bsdf[0] = " << string::indent(m_nested_bsdf[0]) << "," << std::endl
+            << "  nested_bsdf[1] = " << string::indent(m_nested_bsdf[1]) << std::endl
             << "]";
         return oss.str();
     }

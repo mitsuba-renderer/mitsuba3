@@ -112,7 +112,7 @@ public:
             << "  aovs = " << m_aov_names << "," << std::endl
             << "  integrators = [" << std::endl;
         for (size_t i = 0; i < m_integrators.size(); ++i) {
-            oss << "    " << string::indent(m_integrators[i].first->to_string(), 4);
+            oss << "    " << string::indent(m_integrators[i].first, 4);
             if (i + 1 < m_integrators.size())
                 oss << ",";
             oss << std::endl;

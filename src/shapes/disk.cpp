@@ -68,26 +68,25 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor, set_children)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, bsdf, emitter, is_emitter, sensor, is_sensor, set_children, get_children_string)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
-        m_object_to_world = props.transform("to_world", ScalarTransform4f());
         if (props.bool_("flip_normals", false))
-            m_object_to_world =
-                m_object_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+            m_to_world =
+                m_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
-        m_world_to_object = m_object_to_world.inverse();
+        m_to_object = m_to_world.inverse();
 
-        ScalarVector3f dp_du = m_object_to_world * ScalarVector3f(1.f, 0.f, 0.f);
-        ScalarVector3f dp_dv = m_object_to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        ScalarVector3f dp_du = m_to_world * ScalarVector3f(1.f, 0.f, 0.f);
+        ScalarVector3f dp_dv = m_to_world * ScalarVector3f(0.f, 1.f, 0.f);
 
         m_du = norm(dp_du);
         m_dv = norm(dp_dv);
 
-        ScalarNormal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        ScalarNormal3f normal = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
 
         m_inv_surface_area = 1.f / surface_area();
@@ -101,10 +100,10 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 1.f,  0.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f(-1.f,  0.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 0.f,  1.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 0.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 1.f,  0.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f(-1.f,  0.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 0.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 0.f, -1.f, 0.f)));
         return bbox;
     }
 
@@ -123,7 +122,7 @@ public:
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps;
-        ps.p    = m_object_to_world.transform_affine(Point3f(p.x(), p.y(), 0.f));
+        ps.p    = m_to_world.transform_affine(Point3f(p.x(), p.y(), 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.time = time;
@@ -148,7 +147,7 @@ public:
                                          Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3f ray     = m_world_to_object.transform_affine(ray_);
+        Ray3f ray     = m_to_object.transform_affine(ray_);
         Float t       = -ray.o.z() / ray.d.z();
         Point3f local = ray(t);
 
@@ -168,7 +167,7 @@ public:
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3f ray     = m_world_to_object * ray_;
+        Ray3f ray     = m_to_object * ray_;
         Float t      = -ray.o.z() / ray.d.z();
         Point3f local = ray(t);
 
@@ -187,7 +186,7 @@ public:
         Float local_y = cache[1];
 #else
         ENOKI_MARK_USED(cache);
-        Ray3f ray_    = m_world_to_object.transform_affine(ray);
+        Ray3f ray_    = m_to_object.transform_affine(ray);
         Float t       = -ray_.o.z() / ray_.d.z();
         Point3f local = ray_(t);
         Float local_x = local.x();
@@ -205,8 +204,8 @@ public:
         Float cos_phi = select(neq(r, 0.f), local_x * inv_r, 1.f),
               sin_phi = select(neq(r, 0.f), local_y * inv_r, 0.f);
 
-        si.dp_du      = m_object_to_world * Vector3f( cos_phi, sin_phi, 0.f);
-        si.dp_dv      = m_object_to_world * Vector3f(-sin_phi, cos_phi, 0.f);
+        si.dp_du      = m_to_world * Vector3f( cos_phi, sin_phi, 0.f);
+        si.dp_dv      = m_to_world * Vector3f(-sin_phi, cos_phi, 0.f);
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
@@ -242,19 +241,17 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Disk[" << std::endl
-            << "  center = "  << m_object_to_world * ScalarPoint3f(0.f, 0.f, 0.f) << "," << std::endl
+            << "  center = "  << m_to_world * ScalarPoint3f(0.f, 0.f, 0.f) << "," << std::endl
             << "  n = "  << m_frame.n << "," << std::endl
             << "  du = "  << m_du << "," << std::endl
             << "  dv = "  << m_dv << "," << std::endl
-            << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
+            << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarTransform4f m_object_to_world;
-    ScalarTransform4f m_world_to_object;
     ScalarFrame3f m_frame;
     ScalarFloat m_du, m_dv;
     ScalarFloat m_inv_surface_area;

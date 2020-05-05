@@ -258,7 +258,7 @@ public:
         oss << "EnvironmentMapEmitter[" << std::endl
             << "  filename = \"" << m_filename << "\"," << std::endl
             << "  resolution = \"" << m_resolution << "\"," << std::endl
-            << "  bsphere = " << m_bsphere << std::endl
+            << "  bsphere = " << string::indent(m_bsphere) << std::endl
             << "]";
         return oss.str();
     }

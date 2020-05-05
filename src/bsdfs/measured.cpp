@@ -88,7 +88,7 @@ public:
               jacobian.shape.size() == 1 &&
               jacobian.shape[0] == 1 &&
               jacobian.dtype == Struct::Type::UInt8))
-              Throw("Invalid file structure: %s", tf->to_string());
+              Throw("Invalid file structure: %s", tf);
 
         m_isotropic = phi_i.shape[0] <= 2;
         m_jacobian  = ((uint8_t *) jacobian.data)[0];

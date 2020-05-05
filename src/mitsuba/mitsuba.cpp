@@ -82,7 +82,7 @@ bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
 
     auto integrator = scene->integrator();
     if (!integrator)
-        Throw("No integrator specified for scene: %s", scene->to_string());
+        Throw("No integrator specified for scene: %s", scene);
 
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);

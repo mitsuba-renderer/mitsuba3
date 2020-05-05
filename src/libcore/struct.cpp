@@ -1240,7 +1240,7 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
     CodeHolder code;
     code.init(jit->runtime.getCodeInfo());
     #if MTS_JIT_LOG_ASSEMBLY == 1
-        Log(Info, "Converting from %s to %s", source->to_string(), target->to_string());
+        Log(Info, "Converting from %s to %s", source, target);
         StringLogger logger;
         logger.addOptions(asmjit::Logger::kOptionBinaryForm);
         code.setLogger(&logger);
@@ -1840,8 +1840,8 @@ bool StructConverter::convert_2d(size_t width, size_t height, const void *src_, 
 std::string StructConverter::to_string() const {
     std::ostringstream oss;
     oss << "StructConverter[" << std::endl
-        << "  source = " << string::indent(m_source->to_string()) << "," << std::endl
-        << "  target = " << string::indent(m_target->to_string()) << std::endl
+        << "  source = " << string::indent(m_source) << "," << std::endl
+        << "  target = " << string::indent(m_target) << std::endl
         << "]";
     return oss.str();
 }

@@ -493,7 +493,7 @@ void Bitmap::convert(Bitmap *target) const {
         }
 
         Throw("Unable to convert %s to %s: don't know how to obtain channel \"%s\".",
-              m_struct->to_string(), target_struct->to_string(), field.name);
+              m_struct, target_struct, field.name);
     }
 
     StructConverter conv(m_struct, target_struct, true);
@@ -847,7 +847,7 @@ std::string Bitmap::to_string() const {
         << "  component_format = " << m_component_format << "," << std::endl
         << "  size = " << m_size << "," << std::endl
         << "  srgb_gamma = " << m_srgb_gamma << "," << std::endl
-        << "  struct = " << string::indent(m_struct->to_string()) << "," << std::endl;
+        << "  struct = " << string::indent(m_struct) << "," << std::endl;
 
     std::vector<std::string> keys = m_metadata.property_names();
     if (!keys.empty()) {

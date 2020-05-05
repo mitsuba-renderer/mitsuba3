@@ -188,8 +188,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "TwoSided[" << std::endl
-            << "  brdf[0] = " << string::indent(m_brdf[0]->to_string()) << "," << std::endl
-            << "  brdf[1] = " << string::indent(m_brdf[1]->to_string()) << std::endl
+            << "  brdf[0] = " << string::indent(m_brdf[0]) << "," << std::endl
+            << "  brdf[1] = " << string::indent(m_brdf[1]) << std::endl
             << "]";
         return oss.str();
     }

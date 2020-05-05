@@ -69,26 +69,24 @@ The following XML snippet showcases a simple example of a textured rectangle:
 template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor, set_children)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, bsdf, emitter, is_emitter, sensor, is_sensor, set_children, get_children_string)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
     Rectangle(const Properties &props) : Base(props) {
-        m_object_to_world = props.transform("to_world", ScalarTransform4f());
         if (props.bool_("flip_normals", false))
-            m_object_to_world =
-                m_object_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+            m_to_world = m_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
-        m_world_to_object = m_object_to_world.inverse();
+        m_to_object = m_to_world.inverse();
 
-        ScalarVector3f dp_du = m_object_to_world * ScalarVector3f(2.f, 0.f, 0.f);
-        ScalarVector3f dp_dv = m_object_to_world * ScalarVector3f(0.f, 2.f, 0.f);
+        ScalarVector3f dp_du = m_to_world * ScalarVector3f(2.f, 0.f, 0.f);
+        ScalarVector3f dp_dv = m_to_world * ScalarVector3f(0.f, 2.f, 0.f);
 
         m_du = norm(dp_du);
         m_dv = norm(dp_dv);
 
-        ScalarNormal3f normal = normalize(m_object_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        ScalarNormal3f normal = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
 
         m_inv_surface_area = rcp(surface_area());
@@ -101,10 +99,10 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
-        bbox.expand(m_object_to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
         return bbox;
     }
 
@@ -121,7 +119,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         PositionSample3f ps;
-        ps.p = m_object_to_world.transform_affine(
+        ps.p = m_to_world.transform_affine(
             Point3f(sample.x() * 2.f - 1.f, sample.y() * 2.f - 1.f, 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
@@ -175,7 +173,7 @@ public:
                                          Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3f ray     = m_world_to_object.transform_affine(ray_);
+        Ray3f ray     = m_to_object.transform_affine(ray_);
         Float t       = -ray.o.z() * ray.d_rcp.z();
         Point3f local = ray(t);
 
@@ -198,7 +196,7 @@ public:
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3f ray     = m_world_to_object.transform_affine(ray_);
+        Ray3f ray     = m_to_object.transform_affine(ray_);
         Float t       = -ray.o.z() * ray.d_rcp.z();
         Point3f local = ray(t);
 
@@ -218,7 +216,7 @@ public:
         Float local_y = cache[1];
 #else
         ENOKI_MARK_USED(cache);
-        Ray3f ray     = m_world_to_object.transform_affine(ray_);
+        Ray3f ray     = m_to_object.transform_affine(ray_);
         Float t       = -ray.o.z() * ray.d_rcp.z();
         Point3f local = ray(t);
         Float local_x = local.x();
@@ -264,18 +262,16 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Rectangle[" << std::endl
-            << "  object_to_world = " << string::indent(m_object_to_world) << "," << std::endl
+            << "  object_to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  frame = " << string::indent(m_frame) << "," << std::endl
             << "  inv_surface_area = " << m_inv_surface_area << "," << std::endl
-            << "  bsdf = " << string::indent(bsdf()->to_string()) << std::endl
+            << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarTransform4f m_object_to_world;
-    ScalarTransform4f m_world_to_object;
     ScalarFrame3f m_frame;
     ScalarFloat m_du, m_dv;
     ScalarFloat m_inv_surface_area;

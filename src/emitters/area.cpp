@@ -143,7 +143,7 @@ public:
         if (m_shape) oss << m_shape->surface_area();
         else         oss << "  <no shape attached!>";
         oss << "," << std::endl;
-        if (m_medium) oss << string::indent(m_medium->to_string());
+        if (m_medium) oss << string::indent(m_medium);
         else         oss << "  <no medium attached!>";
         oss << std::endl << "]";
         return oss.str();

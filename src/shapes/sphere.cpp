@@ -94,13 +94,13 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, bsdf, emitter, is_emitter, sensor, is_sensor, set_children)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, bsdf, emitter, is_emitter, sensor, is_sensor, set_children, get_children_string)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
     Sphere(const Properties &props) : Base(props) {
-        m_object_to_world =
+        m_to_world =
             ScalarTransform4f::translate(ScalarVector3f(props.point3f("center", ScalarPoint3f(0.f))));
         m_radius = props.float_("radius", 1.f);
 
@@ -108,17 +108,17 @@ public:
             ScalarTransform4f object_to_world = props.transform("to_world");
             ScalarFloat radius = norm(object_to_world * ScalarVector3f(1, 0, 0));
             // Remove the scale from the object-to-world transform
-            m_object_to_world =
+            m_to_world =
                 object_to_world
                 * ScalarTransform4f::scale(ScalarVector3f(1.f / radius))
-                * m_object_to_world;
+                * m_to_world;
             m_radius *= radius;
         }
 
         /// Are the sphere normals pointing inwards? default: no
         m_flip_normals = props.bool_("flip_normals", false);
-        m_center = m_object_to_world * ScalarPoint3f(0, 0, 0);
-        m_world_to_object = m_object_to_world.inverse();
+        m_center = m_to_world * ScalarPoint3f(0, 0, 0);
+        m_to_object = m_to_world.inverse();
         m_inv_surface_area = 1.f / surface_area();
 
         if (m_radius <= 0.f) {
@@ -356,8 +356,8 @@ public:
         // Re-project onto the sphere to improve accuracy
         si.p = fmadd(si.sh_frame.n, m_radius, m_center);
 
-        Vector3f local = m_world_to_object * (si.p - m_center),
-                 d     = local / m_radius;
+        Vector3f local   = m_to_object * (si.p - m_center),
+                d       = local / m_radius;
 
         Float    rd_2  = sqr(d.x()) + sqr(d.y()),
                  theta = unit_angle_z(d),
@@ -381,8 +381,8 @@ public:
         if (unlikely(any(singularity_mask)))
             si.dp_dv[singularity_mask] = Vector3f(m_radius, 0.f, 0.f);
 
-        si.dp_du = m_object_to_world * si.dp_du * (2.f * math::Pi<Float>);
-        si.dp_dv = m_object_to_world * si.dp_dv * math::Pi<Float>;
+        si.dp_du = m_to_world * si.dp_du * (2.f * math::Pi<Float>);
+        si.dp_dv = m_to_world * si.dp_dv * math::Pi<Float>;
 
         if (m_flip_normals)
             si.sh_frame.n = -si.sh_frame.n;
@@ -438,14 +438,13 @@ public:
         oss << "Sphere[" << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  center = "  << m_center << std::endl
+            << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarTransform4f m_object_to_world;
-    ScalarTransform4f m_world_to_object;
     ScalarPoint3f m_center;
     ScalarFloat m_radius;
     ScalarFloat m_inv_surface_area;

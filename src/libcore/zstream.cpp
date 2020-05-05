@@ -163,7 +163,7 @@ std::string ZStream::to_string() const {
     if (is_closed()) {
         oss << "  closed" << std::endl;
     } else {
-        oss << "  child_stream = \"" << string::indent(m_child_stream->to_string()) << "\"" << "," << std::endl
+        oss << "  child_stream = \"" << string::indent(m_child_stream) << "\"" << "," << std::endl
             << "  host_byte_order = " << host_byte_order() << "," << std::endl
             << "  byte_order = " << byte_order() << "," << std::endl
             << "  can_read = " << can_read() << "," << std::endl

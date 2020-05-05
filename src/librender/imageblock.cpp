@@ -180,7 +180,7 @@ MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
         << "  warn_invalid = " << m_warn_invalid << "," << std::endl
         << "  border_size = " << m_border_size;
     if (m_filter)
-        oss << "," << std::endl << "  filter = " << string::indent(m_filter->to_string());
+        oss << "," << std::endl << "  filter = " << string::indent(m_filter);
     oss << std::endl
         << "]";
     return oss.str();

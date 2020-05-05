@@ -2,6 +2,7 @@
 
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 
 #if defined(MTS_ENABLE_OPTIX)
@@ -402,8 +403,9 @@ protected:
     inline Shape() { }
     virtual ~Shape();
 
-    /// Set this shape to its associated children
+    /// Explicitly register this shape as the parent of the provided sub-objects (emitters, etc.)
     void set_children();
+    std::string get_children_string() const;
 protected:
     bool m_mesh = false;
     ref<BSDF> m_bsdf;
@@ -412,6 +414,9 @@ protected:
     ref<Medium> m_interior_medium;
     ref<Medium> m_exterior_medium;
     std::string m_id;
+
+    ScalarTransform4f m_to_world;
+    ScalarTransform4f m_to_object;
 };
 
 MTS_EXTERN_CLASS_RENDER(Shape)

@@ -29,7 +29,6 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
        appearance. Default: ``false`` */
     if (props.bool_("face_normals", false))
         m_disable_vertex_normals = true;
-    m_to_world = props.transform("to_world", ScalarTransform4f());
     m_mesh = true;
 }
 

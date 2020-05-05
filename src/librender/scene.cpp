@@ -224,10 +224,10 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
     oss << "Scene[" << std::endl
         << "  children = [" << std::endl;
     for (size_t i = 0; i < m_children.size(); ++i) {
-        oss << "    " << string::indent(m_children[i]->to_string(), 4);
+        oss << "    " << string::indent(m_children[i], 4);
         if (i + 1 < m_children.size())
             oss << ",";
-        oss << std::endl;
+        oss <<  std::endl;
     }
     oss << "  ]"<< std::endl
         << "]";
