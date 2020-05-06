@@ -5,7 +5,6 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/python/python.h>
-#include <pybind11/numpy.h>
 #include <map>
 
 using Caster = py::object(*)(mitsuba::Object *);
@@ -130,15 +129,6 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
         SET_PROPS(Properties::Array3f, Properties::Array3f, set_array3f);
         SET_PROPS(Properties::Transform4f, Properties::Transform4f, set_transform);
 
-        // Cast py::list and numpy.ndarray to Array3f
-        if (py::isinstance<py::list>(value) ||
-            strcmp(value.ptr()->ob_type->tp_name, "numpy.ndarray") == 0) {
-            if (PyObject_Length(value.ptr()) != 3)
-                Throw("Expect array of size 3, found: %u", PyObject_Length(value.ptr()));
-            props.set_array3f(key, value.cast<Properties::Array3f>());
-            continue;
-        }
-
         // Load nested dictionary
         if (py::isinstance<py::dict>(value)) {
             py::dict dict2 = value.cast<py::dict>();
@@ -252,14 +242,21 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
             continue;
         }
 
-        // Try to cast entry to an object if it didn't match any of the other types above
+        // Try to cast to Array3f (list, tuple, numpy.array, ...)
+        try {
+            props.set_array3f(key, value.cast<Properties::Array3f>());
+            continue;
+        } catch (const pybind11::cast_error &e) { }
+
+        // Try to cast entry to an object
         try {
             auto obj = value.cast<ref<Object>>();
             expand_and_set_object(props, key, obj);
             continue;
-        } catch (const pybind11::cast_error &e) {
-            Throw("Unkown value type: %s", value.get_type());
-        }
+        } catch (const pybind11::cast_error &e) { }
+
+        // Didn't match any of the other types above
+        Throw("Unkown value type: %s", value.get_type());
     }
 
     // Construct the object with the parsed Properties

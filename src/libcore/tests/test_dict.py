@@ -54,7 +54,14 @@ def test3_dict_simple_field(variants_all_rgb):
         "flip_normals" : False,
     })
 
-    s4 = xml.load_string("""
+    s4 = xml.load_dict({
+        "type" : "sphere",
+        "center" : (0, 0, -10), # tuple -> Point3f
+        "radius" : 10.0,
+        "flip_normals" : False,
+    })
+
+    s5 = xml.load_string("""
         <shape type="sphere" version="2.0.0">
             <point name="center" value="0.0 0.0 -10.0"/>
             <float name="radius" value="10.0"/>
@@ -65,6 +72,7 @@ def test3_dict_simple_field(variants_all_rgb):
     assert str(s1) == str(s2)
     assert str(s1) == str(s3)
     assert str(s1) == str(s4)
+    assert str(s1) == str(s5)
 
 
 def test4_dict_nested(variants_all_rgb):
