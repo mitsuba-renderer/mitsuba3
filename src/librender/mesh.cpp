@@ -1002,6 +1002,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
         recompute_bbox();
 
         area_distr_build();
+        Base::parameters_changed();
     }
 }
 

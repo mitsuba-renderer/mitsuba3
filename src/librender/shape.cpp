@@ -357,8 +357,9 @@ Shape<Float, Spectrum>::effective_primitive_count() const {
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    if (m_bsdf)
-        callback->put_object("bsdf", m_bsdf.get());
+    callback->put_parameter("to_world", m_to_world);
+
+    callback->put_object("bsdf", m_bsdf.get());
     if (m_emitter)
         callback->put_object("emitter", m_emitter.get());
     if (m_sensor)
@@ -369,7 +370,13 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
         callback->put_object("exterior_medium", m_exterior_medium.get());
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) { }
+MTS_VARIANT
+void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+    if (m_emitter)
+        m_emitter->parameters_changed({"parent"});
+    if (m_sensor)
+        m_sensor->parameters_changed({"parent"});
+}
 
 MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
     if (m_emitter)
@@ -380,7 +387,7 @@ MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
 
 MTS_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
     std::vector<std::pair<std::string, const Object*>> children;
-    if (m_bsdf) children.push_back({ "bsdf", m_bsdf });
+    children.push_back({ "bsdf", m_bsdf });
     if (m_emitter) children.push_back({ "emitter", m_emitter });
     if (m_sensor) children.push_back({ "sensor", m_sensor });
     if (m_interior_medium) children.push_back({ "interior_medium", m_interior_medium });

@@ -4,11 +4,8 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/warp.h>
-#include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/sensor.h>
 #include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -68,54 +65,61 @@ A simple example for instantiating a cylinder, whose interior is visible:
         </bsdf>
     </shape>
 
-.. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
+.. warning:: This plugin is currently not supported by the OptiX raytracing backend.
 
  */
 
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, bsdf, emitter, is_emitter, sensor, is_sensor, set_children, get_children_string)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children, get_children_string)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
 
     Cylinder(const Properties &props) : Base(props) {
-        m_radius = props.float_("radius", 1.f);
 
+        // Update the to_world transform if face points and radius are also provided
+        float radius = props.float_("radius", 1.f);
         ScalarPoint3f p0 = props.point3f("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
                       p1 = props.point3f("p1", ScalarPoint3f(0.f, 0.f, 1.f));
 
         ScalarVector3f d = p1 - p0;
-        m_length = norm(d);
+        float length = norm(d);
 
-        m_to_world = ScalarTransform4f::translate(p0) *
-                            ScalarTransform4f::to_frame(ScalarFrame3f(d / m_length)) *
-                            ScalarTransform4f::scale(ScalarVector3f(m_radius, m_radius, m_length));
+        m_to_world = m_to_world * ScalarTransform4f::translate(p0) *
+                                  ScalarTransform4f::to_frame(ScalarFrame3f(d)) *
+                                  ScalarTransform4f::scale(ScalarVector3f(radius, radius, length));
 
-        // Are the cylinder normals pointing inwards? default: no
-        m_flip_normals = props.bool_("flip_normals", false);
+        update();
+        set_children();
+    }
 
-        if (props.has_property("to_world")) {
-            m_to_world = props.transform("to_world") * m_to_world;
-            m_radius = norm(m_to_world * ScalarVector3f(1.f, 0.f, 0.f));
-            m_length = norm(m_to_world * ScalarVector3f(0.f, 0.f, 1.f));
-        }
+    void update() {
+         // Extract center and radius from to_world matrix
+        auto [S, Q, T] = transform_decompose(m_to_world.matrix);
 
-        // Remove the scale from the object-to-world transform
-        m_to_world = m_to_world * ScalarTransform4f::scale(
-            rcp(ScalarVector3f(m_radius, m_radius, m_length)));
+        if (abs(S[0][1]) > 1e-6f || abs(S[0][2]) > 1e-6f || abs(S[1][0]) > 1e-6f ||
+            abs(S[1][2]) > 1e-6f || abs(S[2][0]) > 1e-6f || abs(S[2][1]) > 1e-6f)
+            Log(Warn, "'to_world' transform shouldn't contain any shearing!");
 
-        m_to_object = m_to_world.inverse();
-        m_inv_surface_area = 1.f / surface_area();
+        if (!(abs(S[0][0] - S[1][1]) < 1e-6f))
+            Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
+
+        m_radius = S[0][0];
+        m_length = S[2][2];
 
         if (m_radius <= 0.f) {
             m_radius = std::abs(m_radius);
             m_flip_normals = !m_flip_normals;
         }
 
-        set_children();
+        // Reconstruct the to_world transform with uniform scaling and no shear
+        m_to_world = transform_compose(ScalarMatrix3f(1.f), Q, T);
+        m_to_object = m_to_world.inverse();
+
+        m_inv_surface_area = rcp(surface_area());
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -207,8 +211,8 @@ public:
         auto [sin_theta, cos_theta] = sincos(2.f * math::Pi<Float> * sample.y());
 
         Point3f p(cos_theta * m_radius,
-                 sin_theta * m_radius,
-                 sample.x() * m_length);
+                  sin_theta * m_radius,
+                  sample.x() * m_length);
 
         Normal3f n(cos_theta, sin_theta, 0.f);
 
@@ -240,9 +244,7 @@ public:
                                          Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        using Float64 = float64_array_t<Float>;
-
-        Ray3f ray = m_to_object * ray_;
+        Ray3f ray = m_to_object.transform_affine(ray_);
         Float64 mint = Float64(ray.mint),
                 maxt = Float64(ray.maxt);
 
@@ -284,9 +286,7 @@ public:
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        using Float64  = float64_array_t<Float>;
-
-        Ray3f ray = m_to_object * ray_;
+        Ray3f ray = m_to_object.transform_affine(ray_);
         Float64 mint = Float64(ray.mint);
         Float64 maxt = Float64(ray.maxt);
 
@@ -300,17 +300,17 @@ public:
         double  radius = double(m_radius),
                 length = double(m_length);
 
-        Float64 A = dx*dx + dy*dy,
-                B = 2.0*(dx*ox + dy*oy),
-                C = ox*ox + oy*oy - radius*radius;
+        Float64 A = sqr(dx) + sqr(dy),
+                B = 2.0 * (dx * ox + dy * oy),
+                C = sqr(ox) + sqr(oy) - sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Cylinder doesn't intersect with the segment on the ray
         Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
-        Float64 z_pos_near = oz + dz*near_t,
-                z_pos_far  = oz + dz*far_t;
+        Float64 z_pos_near = oz + dz * near_t,
+                z_pos_far  = oz + dz * far_t;
 
         // Cylinder fully contains the segment of the ray
         Mask in_bounds = near_t < mint && far_t > maxt;
@@ -339,9 +339,9 @@ public:
 
         Vector3f dp_du = 2.f * math::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
-        si.dp_du = m_to_world * dp_du;
-        si.dp_dv = m_to_world * dp_dv;
-        si.n = Normal3f(cross(normalize(si.dp_du), normalize(si.dp_dv)));
+        si.dp_du = m_to_world.transform_affine(dp_du);
+        si.dp_dv = m_to_world.transform_affine(dp_dv);
+        si.n = Normal3f(normalize(cross(si.dp_du, si.dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */
@@ -362,7 +362,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         Vector3f dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f)),
-                dn_dv = Vector3f(0.f);
+                 dn_dv = Vector3f(0.f);
 
         return { dn_du, dn_dv };
     }
@@ -375,24 +375,21 @@ public:
     ScalarSize effective_primitive_count() const override { return 1; }
 
     void traverse(TraversalCallback *callback) override {
-        // TODO
         Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        // TODO currently no parameters are exposed so nothing can change
-        // m_inv_surface_area = 1.f / surface_area();
-        // if (m_emitter)
-        //     m_emitter->parameters_changed({"parent"});
+        update();
+        Base::parameters_changed();
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Cylinder[" << std::endl
-            << "  p0 = "  << m_to_world * Point3f(0.f, 0.f, 0.f) << "," << std::endl
-            << "  p1 = "  << m_to_world * Point3f(0.f, 0.f, m_length) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  length = "  << m_length << "," << std::endl
+            << "  surface_area = " << surface_area() << "," << std::endl
             << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();

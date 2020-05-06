@@ -5,11 +5,8 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/warp.h>
-#include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/emitter.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
-#include <mitsuba/render/sensor.h>
 #include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -61,23 +58,27 @@ The following XML snippet instantiates an example of a textured disk shape:
         </bsdf>
     </shape>
 
-.. warning:: This plugin is currently not supported by the Embree and OptiX raytracing backend.
+.. warning:: This plugin is currently not supported by the OptiX raytracing backend.
 
  */
 
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, bsdf, emitter, is_emitter, sensor, is_sensor, set_children, get_children_string)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children, get_children_string)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
         if (props.bool_("flip_normals", false))
-            m_to_world =
-                m_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+            m_to_world = m_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
+        update();
+        set_children();
+    }
+
+    void update() {
         m_to_object = m_to_world.inverse();
 
         ScalarVector3f dp_du = m_to_world * ScalarVector3f(1.f, 0.f, 0.f);
@@ -86,17 +87,12 @@ public:
         m_du = norm(dp_du);
         m_dv = norm(dp_dv);
 
-        ScalarNormal3f normal = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
-        m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
+        ScalarNormal3f n = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, n);
 
         m_inv_surface_area = 1.f / surface_area();
-        if (abs_dot(m_frame.s, m_frame.t) > math::RayEpsilon<ScalarFloat> ||
-            abs_dot(m_frame.s, m_frame.n) > math::RayEpsilon<ScalarFloat>)
-            Throw("The `to_world` transformation contains shear, which is not"
-                  " supported by the Disk shape.");
-
-        set_children();
     }
+
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
@@ -108,7 +104,9 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return math::Pi<ScalarFloat> * m_du * m_dv;
+        // First compute height of the ellipse
+        ScalarFloat h = sqrt(sqr(m_dv) - sqr(dot(m_dv * m_frame.t, m_frame.s)));
+        return math::Pi<ScalarFloat> * m_du * h;
     }
 
     // =============================================================
@@ -148,13 +146,15 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         Ray3f ray     = m_to_object.transform_affine(ray_);
-        Float t       = -ray.o.z() / ray.d.z();
+        Float t       = -ray.o.z() * ray.d_rcp.z();
         Point3f local = ray(t);
 
         // Is intersection within ray segment and disk?
         active = active && t >= ray.mint
                         && t <= ray.maxt
                         && local.x()*local.x() + local.y()*local.y() <= 1;
+
+        t = select(active, t, Float(math::Infinity<Float>));
 
         if (cache) {
             masked(cache[0], active) = local.x();
@@ -167,8 +167,8 @@ public:
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3f ray     = m_to_object * ray_;
-        Float t      = -ray.o.z() / ray.d.z();
+        Ray3f ray     = m_to_object.transform_affine(ray_);
+        Float t      = -ray.o.z() * ray.d_rcp.z();
         Point3f local = ray(t);
 
         // Is intersection within ray segment and rectangle?
@@ -177,7 +177,7 @@ public:
                       && local.x()*local.x() + local.y()*local.y() <= 1;
     }
 
-    void fill_surface_interaction(const Ray3f &ray, const Float *cache,
+    void fill_surface_interaction(const Ray3f &ray_, const Float *cache,
                                   SurfaceInteraction3f &si_out, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
@@ -186,9 +186,9 @@ public:
         Float local_y = cache[1];
 #else
         ENOKI_MARK_USED(cache);
-        Ray3f ray_    = m_to_object.transform_affine(ray);
-        Float t       = -ray_.o.z() / ray_.d.z();
-        Point3f local = ray_(t);
+        Ray3f ray    = m_to_object.transform_affine(ray_);
+        Float t       = -ray.o.z() * ray.d_rcp.z();
+        Point3f local = ray(t);
         Float local_x = local.x();
         Float local_y = local.y();
 #endif
@@ -210,8 +210,8 @@ public:
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
         si.uv         = Point2f(r, v);
-        si.p          = ray(si.t);
-        si.time       = ray.time;
+        si.p          = ray_(si.t);
+        si.time       = ray_.time;
 
         si_out[active] = si;
     }
@@ -232,19 +232,16 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        // TODO currently no parameters are exposed so nothing can change
-        // m_inv_surface_area = 1.f / surface_area();
-        // if (m_emitter)
-        //     m_emitter->parameters_changed({"parent"});
+        update();
+        Base::parameters_changed();
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Disk[" << std::endl
-            << "  center = "  << m_to_world * ScalarPoint3f(0.f, 0.f, 0.f) << "," << std::endl
-            << "  n = "  << m_frame.n << "," << std::endl
-            << "  du = "  << m_du << "," << std::endl
-            << "  dv = "  << m_dv << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  frame = " << string::indent(m_frame) << "," << std::endl
+            << "  surface_area = " << surface_area() << "," << std::endl
             << "  " << string::indent(get_children_string()) << std::endl
             << "]";
         return oss.str();

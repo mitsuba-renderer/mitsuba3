@@ -4,48 +4,24 @@ import enoki as ek
 from enoki.dynamic import Float32 as Float
 
 
-def example_disk(scale = (1, 1, 1), translate = (0, 0, 0)):
-    from mitsuba.core.xml import load_string
-    return load_string("""<shape version="2.0.0" type="cylinder">
-        <transform name="to_world">
-            <scale x="{}" y="{}" z="{}"/>
-            <translate x="{}" y="{}" z="{}"/>
-        </transform>
-    </shape>""".format(scale[0], scale[1], scale[2],
-                       translate[0], translate[1], translate[2]))
-
-def example_scene(scale = (1, 1, 1), translate = (0, 0, 0)):
-    from mitsuba.core.xml import load_string
-    return load_string("""<scene version='2.0.0'>
-        <shape type="cylinder">
-            <transform name="to_world">
-                <scale x="{}" y="{}" z="{}"/>
-                <translate x="{}" y="{}" z="{}"/>
-            </transform>
-        </shape>
-    </scene>""".format(scale[0], scale[1], scale[2],
-                       translate[0], translate[1], translate[2]))
-
-
 def test01_create(variant_scalar_rgb):
-    if mitsuba.core.MTS_ENABLE_EMBREE:
-        pytest.skip("EMBREE enabled")
+    from mitsuba.core import xml
 
-    s = example_disk()
+    s = xml.load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
     assert ek.allclose(s.surface_area(), 2*ek.pi)
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import Vector3f
-
-    if mitsuba.core.MTS_ENABLE_EMBREE:
-        pytest.skip("EMBREE enabled")
+    from mitsuba.core import xml, Vector3f, Transform4f
 
     for l in [1, 5]:
         for r in [1, 2, 4]:
-            s = example_disk((r, r, l))
+            s = xml.load_dict({
+                "type" : "cylinder",
+                "to_world" : Transform4f.scale((r, r, l))
+            })
             b = s.bbox()
 
             assert ek.allclose(s.surface_area(), 2*ek.pi*r*l)
@@ -55,25 +31,24 @@ def test02_bbox(variant_scalar_rgb):
 
 
 def test03_ray_intersect(variant_scalar_rgb):
-    from mitsuba.core import Ray3f
-
-    if mitsuba.core.MTS_ENABLE_EMBREE:
-        pytest.skip("EMBREE enabled")
+    from mitsuba.core import xml, Ray3f, Transform4f
 
     for r in [1, 2, 4]:
         for l in [1, 5]:
-            s = example_scene((r, r, l))
+            s = xml.load_dict({
+                "type" : "scene",
+                "foo" : {
+                    "type" : "cylinder",
+                    "to_world" : Transform4f.scale((r, r, l))
+                }
+            })
 
             # grid size
             n = 10
-
-            xx = ek.linspace(Float, -1, 1, n)
-            zz = ek.linspace(Float, -1, 1, n)
-
-            for x in xx:
-                for z in zz:
-                    x = 1.1*r*x
-                    z = 1.1*l*z
+            for x in ek.linspace(Float, -1, 1, n):
+                for z in ek.linspace(Float, -1, 1, n):
+                    x = 1.1 * r * x
+                    z = 1.1 * l * z
 
                     ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
                                 time=0.0, wavelengths=[])
