@@ -108,6 +108,32 @@ public:
                 PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
             m_bitmap = m_bitmap->resample(max(m_bitmap->size(), 2), rfilter);
         }
+
+        ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
+
+        double mean = 0.0;
+        if (m_bitmap->channel_count() == 3) {
+            if (is_spectral_v<Spectrum> && !m_raw) {
+                for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
+                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    value = srgb_model_fetch(value);
+                    mean += (double) srgb_model_mean(value);
+                    store_unaligned(ptr, value);
+                    ptr += 3;
+                }
+            } else {
+                for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
+                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    mean += (double) luminance(value);
+                    ptr += 3;
+                }
+            }
+        } else {
+            for (size_t i = 0; i < m_bitmap->pixel_count(); ++i)
+                mean += (double) ptr[i];
+        }
+
+        m_mean = ScalarFloat(mean / m_bitmap->pixel_count());
     }
 
     template <uint32_t Channels, bool Raw>
@@ -125,14 +151,14 @@ public:
         switch (m_bitmap->channel_count()) {
             case 1:
                 result = m_raw
-                  ? (Object *) new Impl<1, true >(props, m_bitmap, m_name, m_transform)
-                  : (Object *) new Impl<1, false>(props, m_bitmap, m_name, m_transform);
+                  ? (Object *) new Impl<1, true >(props, m_bitmap, m_name, m_transform, m_mean)
+                  : (Object *) new Impl<1, false>(props, m_bitmap, m_name, m_transform, m_mean);
                 break;
 
             case 3:
                 result = m_raw
-                  ? (Object *) new Impl<3, true >(props, m_bitmap, m_name, m_transform)
-                  : (Object *) new Impl<3, false>(props, m_bitmap, m_name, m_transform);
+                  ? (Object *) new Impl<3, true >(props, m_bitmap, m_name, m_transform, m_mean)
+                  : (Object *) new Impl<3, false>(props, m_bitmap, m_name, m_transform, m_mean);
                 break;
 
             default:
@@ -149,6 +175,7 @@ protected:
     std::string m_name;
     ScalarTransform3f m_transform;
     bool m_raw;
+    ScalarFloat m_mean;
 };
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
@@ -159,13 +186,12 @@ public:
     BitmapTextureImpl(const Properties &props,
                       const Bitmap *bitmap,
                       const std::string &name,
-                      const ScalarTransform3f &transform)
+                      const ScalarTransform3f &transform,
+                      ScalarFloat mean)
         : Texture(props), m_resolution(bitmap->size()),
-          m_name(name), m_transform(transform) {
+          m_name(name), m_transform(transform), m_mean(mean) {
         m_data = DynamicBuffer<Float>::copy(bitmap->data(),
-                                            hprod(m_resolution) * Channels);
-        // Compute the mean value
-        parameters_changed();
+            hprod(m_resolution) * Channels);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -292,23 +318,15 @@ public:
                     }
                 } else {
                     for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                        ScalarFloat value = ptr[i];
                         value = clamp(value, 0.f, 1.f);
-                        store_unaligned(ptr, value);
-                        mean += (double) luminance(value);
-                        ptr += 3;
+                        ptr[i] = value;
+                        mean += (double) value;
                     }
                 }
-            } else {
-                for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarFloat value = ptr[i];
-                    value = clamp(value, 0.f, 1.f);
-                    ptr[i] = value;
-                    mean += (double) value;
-                }
-            }
 
-            m_mean = ScalarFloat(mean / pixel_count);
+                m_mean = ScalarFloat(mean / pixel_count);
+            }
         }
     }
 
