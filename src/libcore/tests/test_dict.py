@@ -30,33 +30,33 @@ def test2_dict_missing_type(variants_all_rgb):
 
 
 def test3_dict_simple_field(variants_all_rgb):
-    from mitsuba.core import xml, Point3f
+    from mitsuba.core import xml, ScalarPoint3f
     import numpy as np
 
     s1 = xml.load_dict({
         "type" : "sphere",
-        "center" : Point3f(0, 0, -10),
+        "center" : ScalarPoint3f(0, 0, -10),
         "radius" : 10.0,
         "flip_normals" : False,
     })
 
     s2 = xml.load_dict({
         "type" : "sphere",
-        "center" : [0, 0, -10], # list -> Point3f
+        "center" : [0, 0, -10], # list -> ScalarPoint3f
         "radius" : 10, # int -> float
         "flip_normals" : False,
     })
 
     s3 = xml.load_dict({
         "type" : "sphere",
-        "center" : np.array([0, 0, -10]), # numpy array -> Point3f
+        "center" : np.array([0, 0, -10]), # numpy array -> ScalarPoint3f
         "radius" : 10.0,
         "flip_normals" : False,
     })
 
     s4 = xml.load_dict({
         "type" : "sphere",
-        "center" : (0, 0, -10), # tuple -> Point3f
+        "center" : (0, 0, -10), # tuple -> ScalarPoint3f
         "radius" : 10.0,
         "flip_normals" : False,
     })
@@ -161,13 +161,13 @@ def test5_dict_nested_object(variants_all_rgb):
 
 
 def test6_dict_rgb(variants_scalar_all):
-    from mitsuba.core import xml, Color3f
+    from mitsuba.core import xml, ScalarColor3f
 
     e1 = xml.load_dict({
         "type" : "point",
         "intensity" : {
             "type": "rgb",
-            "value" : Color3f(0.5, 0.2, 0.5)
+            "value" : ScalarColor3f(0.5, 0.2, 0.5)
         }
     })
 
@@ -175,7 +175,7 @@ def test6_dict_rgb(variants_scalar_all):
         "type" : "point",
         "intensity" : {
             "type": "rgb",
-            "value" : [0.5, 0.2, 0.5] # list -> Color3f
+            "value" : [0.5, 0.2, 0.5] # list -> ScalarColor3f
         }
     })
 
@@ -192,7 +192,7 @@ def test6_dict_rgb(variants_scalar_all):
         "type" : "point",
         "intensity" : {
             "type": "rgb",
-            "value" : 0.5 # float -> Color3f
+            "value" : 0.5 # float -> ScalarColor3f
         }
     })
 
@@ -251,8 +251,8 @@ def test7_dict_spectrum(variants_scalar_all):
     e.match("Wavelengths must be specified in increasing order")
 
 
-def test7_dict_scene(variants_all_rgb):
-    from mitsuba.core import xml, Transform4f
+def test7_dict_scene(variant_scalar_rgb):
+    from mitsuba.core import xml, ScalarTransform4f
 
     s1 = xml.load_dict({
         "type" : "scene",
@@ -263,7 +263,7 @@ def test7_dict_scene(variants_all_rgb):
             "type" : "perspective",
             "near_clip": 1.0,
             "far_clip": 1000.0,
-            "to_world" : Transform4f.look_at(origin=[1, 1, 1],
+            "to_world" : ScalarTransform4f.look_at(origin=[1, 1, 1],
                                                 target=[0, 0, 0],
                                                 up=[0, 0, 1]),
             "myfilm" : {
@@ -344,7 +344,7 @@ def test8_dict_unreferenced_attribute_error(variants_all_rgb):
 
 
 
-def test9_dict_scene_reference(variants_all_rgb):
+def test9_dict_scene_reference(variant_scalar_rgb):
     from mitsuba.core import xml
 
     scene = xml.load_dict({
@@ -440,7 +440,7 @@ def test9_dict_scene_reference(variants_all_rgb):
 
 
 @fresolver_append_path
-def test10_dict_expand_nested_object(variants_all_rgb):
+def test10_dict_expand_nested_object(variant_scalar_rgb):
     from mitsuba.core import xml
     # Nested dictionary objects should be expanded
     b0 = xml.load_dict({
