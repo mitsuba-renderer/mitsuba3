@@ -41,20 +41,24 @@ struct alignas(16) Entry {
 };
 
 struct SortKey {
-    bool operator()(std::string a, std::string b) const {
+    bool operator()(const std::string &a, const std::string &b) const {
         size_t i = 0;
         while (i < a.size() && i < b.size() && a[i] == b[i])
             ++i;
-        a = a.substr(i);
-        b = b.substr(i);
-        char *end1 = nullptr,
-             *end2 = nullptr;
-        long l1 = std::strtol(a.c_str(), &end1, 10);
-        long l2 = std::strtol(b.c_str(), &end2, 10);
-        if (*end1 == '\0' && *end2 == '\0')
-            return l1 < l2;
-        else
-            return a < b;
+
+        const char *a_ptr = a.c_str() + i;
+        const char *b_ptr = b.c_str() + i;
+
+        if (std::isdigit(*a_ptr) && std::isdigit(*b_ptr)) {
+            char *a_end = nullptr,
+                 *b_end = nullptr;
+            long l1 = std::strtol(a_ptr, &a_end, 10);
+            long l2 = std::strtol(b_ptr, &b_end, 10);
+            if (*a_end == '\0' && *b_end == '\0')
+                return l1 < l2;
+        }
+
+        return std::strcmp(a_ptr, b_ptr) < 0;
     }
 };
 

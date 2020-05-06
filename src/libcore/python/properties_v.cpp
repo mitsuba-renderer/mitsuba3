@@ -72,7 +72,6 @@ MTS_PY_EXPORT(Properties) {
                     }
             }, "Retrieve an existing property given its name")
             .def("__contains__", [](const Properties& p, const std::string &key) {
-                    std::cout << "Checking " << key << std::endl;
                 return p.has_property(key);
             })
             .def("__delitem__", [](Properties& p, const std::string &key) {
