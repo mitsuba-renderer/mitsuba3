@@ -35,10 +35,9 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
 */
 
-template <typename Float, typename Spectrum>
-class DirectionalEmitter final : public Emitter<Float, Spectrum> {
+MTS_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform, m_needs_sample_3)
     MTS_IMPORT_TYPES(Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
@@ -61,6 +60,7 @@ public:
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
         m_irradiance = props.texture<Texture>("irradiance", Texture::D65(1.f));
+        m_needs_sample_3 = false;
     }
 
     void set_scene(const Scene *scene) override {
@@ -87,18 +87,19 @@ public:
 
         // 2. Sample spatial component
         const Transform4f &trafo = m_world_transform->eval(time, active);
-        Point2f p = warp::square_to_uniform_disk_concentric(spatial_sample);
-        Vector3f perp_offset = trafo.transform_affine(
-            Vector3f{ p.x(), p.y(), 0.f } * m_bsphere.radius);
+        Point2f offset =
+            warp::square_to_uniform_disk_concentric(spatial_sample);
+        Vector3f perp_offset =
+            trafo.transform_affine(Vector3f{ offset.x(), offset.y(), 0.f });
 
-        // 3. Sample directional component
+        // 3. Set ray direction
         Vector3f d = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
         return std::make_pair(
-            Ray3f(m_bsphere.center - d * m_bsphere.radius + perp_offset, d,
+            Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius, d,
                   time, wavelengths),
             unpolarized<Spectrum>(weight) *
-                (4.f * sqr(math::Pi<Float> * m_bsphere.radius)));
+                (math::Pi<Float> * sqr(m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>

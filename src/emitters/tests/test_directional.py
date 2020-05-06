@@ -130,25 +130,37 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     assert ek.allclose(res, spec)
 
 
-@pytest.mark.parametrize("spatial_sample", [[0.85, 0.13], [0.16, 0.50], [0.00, 1.00]])
 @pytest.mark.parametrize("direction", [[0, 0, -1], [1, 1, 1], [0, 0, 1]])
-def test_sample_ray(variant_scalar_rgb, spatial_sample, direction):
+def test_sample_ray(variant_scalar_rgb, direction):
     import enoki as ek
     from mitsuba.core import Vector2f, Vector3f
 
     emitter = make_emitter(direction=direction)
     direction = Vector3f(direction)
-    
+
     time = 1.0
     wavelength_sample = 0.3
     directional_sample = [0.3, 0.2]
 
-    ray, wavelength = emitter.sample_ray(
-        time, wavelength_sample, spatial_sample, directional_sample)
+    for spatial_sample in [
+        [0.85, 0.13],
+        [0.16, 0.50],
+        [0.00, 1.00],
+        [0.32, 0.87],
+        [0.16, 0.44],
+        [0.17, 0.44],
+        [0.22, 0.81],
+        [0.12, 0.82],
+        [0.99, 0.42],
+        [0.72, 0.40],
+        [0.01, 0.61],
+    ]:
+        ray, _ = emitter.sample_ray(
+            time, wavelength_sample, spatial_sample, directional_sample)
 
-    # Check that ray direction is what is expected
-    assert ek.allclose(ray.d, direction / ek.norm(direction))
+        # Check that ray direction is what is expected
+        assert ek.allclose(ray.d, direction / ek.norm(direction))
 
-    # Check that ray origin is outside of bounding sphere
-    # Bounding sphere is centered at world origin and has radius 1 without scene
-    assert ek.norm(ray.o) >= 1.
+        # Check that ray origin is outside of bounding sphere
+        # Bounding sphere is centered at world origin and has radius 1 without scene
+        assert ek.norm(ray.o) >= 1.
