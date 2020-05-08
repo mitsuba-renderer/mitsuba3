@@ -61,7 +61,7 @@ MTS_PY_EXPORT(Shape) {
              "has_vertex_texcoords"_a = false, D(Mesh, Mesh))
         .def(py::init<const std::string &, uintptr_t, uintptr_t, uintptr_t,
                       uintptr_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
-                      short, const ScalarMatrix4f &, const Properties &>(),
+                      short, const ScalarTransform4f &, const Properties &>(),
              "name"_a, "loop_tri_count"_a, "loop_tri_ptr"_a, "loop_ptr"_a,
              "vertex_count"_a, "vertex_ptr"_a, "poly_ptr"_a, "uv_ptr"_a,
              "col_ptr"_a, "mat_nr"_a, "to_world"_a, "props"_a = Properties(),

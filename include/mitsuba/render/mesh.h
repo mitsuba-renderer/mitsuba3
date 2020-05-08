@@ -40,7 +40,7 @@ public:
         uintptr_t loop_tri_count, uintptr_t loop_tri_ptr,
         uintptr_t loop_ptr, uintptr_t vertex_count, uintptr_t vertex_ptr,
         uintptr_t poly_ptr, uintptr_t uv_ptr, uintptr_t col_ptr,
-        short mat_nr, const ScalarMatrix4f &to_world,
+        short mat_nr, const ScalarTransform4f &to_world,
         const Properties &props = Properties());
     // =========================================================================
     //! @{ \name Accessors (vertices, faces, normals, etc)
