@@ -19,7 +19,7 @@ def mis_weight(pdf_a, pdf_b):
     return ek.select(pdf_a > 0.0, pdf_a / (pdf_a + pdf_b), Float(0.0))
 
 
-def integrator_sample(scene, sampler, rays, active=True):
+def integrator_sample(scene, sampler, rays, medium, active=True):
     si = scene.ray_intersect(rays)
     active = si.is_valid() & active
 
@@ -59,8 +59,8 @@ class MyDirectIntegrator(SamplingIntegrator):
     def __init__(self, props):
         SamplingIntegrator.__init__(self, props)
 
-    def sample(self, scene, sampler, ray, active):
-        result, is_valid, depth = integrator_sample(scene, sampler, ray, active)
+    def sample(self, scene, sampler, ray, medium, active):
+        result, is_valid, depth = integrator_sample(scene, sampler, ray, medium, active)
         return result, is_valid, [depth]
 
     def aov_names(self):
