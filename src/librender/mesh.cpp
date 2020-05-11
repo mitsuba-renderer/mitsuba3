@@ -169,7 +169,11 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
             // flat shading, use per face normals
             const InputVector3f e1 = face_points[1] - face_points[0];
             const InputVector3f e2 = face_points[2] - face_points[0];
-            normal = normalize(m_to_world.transform_affine(cross(e1, e2)));
+            normal = m_to_world.transform_affine(cross(e1, e2));
+            if(unlikely(all(eq(normal, 0.f))))
+                continue; // Degenerate triangle, ignore it
+            else
+                normal = normalize(normal);
         }
         for (int i = 0; i < 3; i++) {
             const size_t loop_index = tri_loop.tri[i];
@@ -181,8 +185,11 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
             Key vert_key;
             if (blender::ME_SMOOTH & face.flag) {
                 // smooth shading, store per vertex normals
-                normal = InputNormal3f(vert.no[0], vert.no[1], vert.no[2]);
-                normal = normalize(m_to_world.transform_affine(normal));
+                normal = m_to_world.transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
+                if(unlikely(all(eq(normal, 0.f))))
+                    fail("Mesh has invalid normals!");
+                else
+                    normal = normalize(normal);
                 vert_key.smooth = true;
             } else {
                 // vert_key.smooth = false (default), flat shading
@@ -233,7 +240,7 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(
         }
         tmp_triangles.push_back(triangle);
     }
-    Log(Warn, "Removed %i duplicates", duplicates_ctr);
+    Log(Info, "%s: Removed %i duplicates", m_name, duplicates_ctr);
     if (vertex_ctr == 0)
         return;
 
