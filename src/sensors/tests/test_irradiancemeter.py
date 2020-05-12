@@ -9,7 +9,7 @@ def example_shape(radius, center):
     from mitsuba.core.xml import load_string
 
     xml = f"""
-    <shape version='0.1.0' type="sphere">
+    <shape version='2.0.0' type="sphere">
         <float name="radius" value="{radius}"/>
         <transform name="to_world">
             <translate x="{center.x}" y="{center.y}" z="{center.z}"/>
@@ -81,7 +81,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     from mitsuba.core.xml import load_string
 
     sensor_xml = f"""
-    <shape version='0.1.0' type="sphere">
+    <shape version='2.0.0' type="sphere">
         <float name="radius" value="1"/>
         <transform name="to_world">
             <translate x="0" y="0" z="0"/>
@@ -104,7 +104,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     """
 
     scene_xml = f"""
-        <scene version="0.1.0">
+        <scene version="2.0.0">
             {sensor_xml}
             {emitter_xml}
         </scene>
@@ -144,7 +144,7 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     from mitsuba.core.xml import load_string
 
     sensor_xml = f"""
-    <shape version='0.1.0' type="sphere">
+    <shape version='2.0.0' type="sphere">
         <float name="radius" value="1"/>
         <transform name="to_world">
             <translate x="0" y="0" z="0"/>
@@ -179,7 +179,7 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
      </sampler>
     """
     scene_xml = f"""
-        <scene version="0.1.0">
+        <scene version="2.0.0">
             {integrator_xml}
             {sensor_xml}
             {emitter_xml}
