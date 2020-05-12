@@ -48,7 +48,8 @@ priority.
 
 MTS_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_film, m_world_transform)
+    MTS_IMPORT_BASE(Sensor, m_film, m_world_transform, m_needs_sample_2,
+                    m_needs_sample_3)
     MTS_IMPORT_TYPES()
 
     RadianceMeter(const Properties &props) : Base(props) {
@@ -82,6 +83,9 @@ public:
             0.5f + math::RayEpsilon<Float>)
             Log(Warn, "This sensor should be used with a reconstruction filter "
                       "with a radius of 0.5 or lower (e.g. default box)");
+
+        m_needs_sample_2 = false;
+        m_needs_sample_3 = false;
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -129,6 +133,8 @@ public:
         // 3. Set differentials; since the film size is always 1x1, we don't
         //    have differentials
         ray.has_differentials = false;
+
+        ray.update();
 
         return std::make_pair(ray, wav_weight);
     }
