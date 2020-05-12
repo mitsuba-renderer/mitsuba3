@@ -6,7 +6,7 @@
 #include <mitsuba/core/bbox.h>
 
 #if defined(MTS_ENABLE_OPTIX)
-#include <mitsuba/render/optix_structs.h>
+#include <mitsuba/render/optix/common.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -381,14 +381,15 @@ public:
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-    /// Return the OptiX version of this shape
-    virtual void optix_geometry();
+    /// Prepare OptiX data buffers
+    virtual void optix_prepare_geometry();
+    /// Fill the OptixBuildInput struct
     virtual void optix_build_input(OptixBuildInput&) const;
-    virtual void optix_hit_group_data(HitGroupData&) const;
+    /// Return a pointer (GPU memory) to the shape's OptiX hitgroup data buffer
+    virtual void* optix_hitgroup_data() { return m_optix_data_ptr; };
 #endif
 
     void traverse(TraversalCallback *callback) override;
-
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
     //! @}
@@ -417,6 +418,11 @@ protected:
 
     ScalarTransform4f m_to_world;
     ScalarTransform4f m_to_object;
+
+#if defined(MTS_ENABLE_OPTIX)
+    /// OptiX hitgroup data buffer
+    void* m_optix_data_ptr = nullptr;
+#endif
 };
 
 MTS_EXTERN_CLASS_RENDER(Shape)

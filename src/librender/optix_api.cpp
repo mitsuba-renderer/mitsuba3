@@ -1,3 +1,5 @@
+#if defined(MTS_ENABLE_OPTIX)
+
 #if defined(_WIN32)
 // Exclude unnecessary headers from the subsequent includes
 #ifndef WIN32_LEAN_AND_MEAN
@@ -11,9 +13,9 @@
 #  include <dlfcn.h>
 #endif
 
-#include "optix_api.h"
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/render/optix_api.h>
 
 #if !defined(MTS_USE_OPTIX_HEADERS)
 // Driver API
@@ -232,3 +234,5 @@ void __rt_check_log(OptixResult errval, const char *file, const int line) {
 }
 
 NAMESPACE_END(mitsuba)
+
+#endif // defined(MTS_ENABLE_OPTIX)

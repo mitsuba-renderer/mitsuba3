@@ -8,6 +8,11 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
+#if defined(MTS_ENABLE_OPTIX)
+    #include <mitsuba/render/optix_api.h>
+    #include "optix/rectangle.cuh"
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -83,12 +88,8 @@ public:
 
         ScalarVector3f dp_du = m_to_world * ScalarVector3f(2.f, 0.f, 0.f);
         ScalarVector3f dp_dv = m_to_world * ScalarVector3f(0.f, 2.f, 0.f);
-
-        m_du = norm(dp_du);
-        m_dv = norm(dp_dv);
-
         ScalarNormal3f normal = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
-        m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, normal);
+        m_frame = ScalarFrame3f(dp_du, dp_dv, normal);
 
         m_inv_surface_area = rcp(surface_area());
     }
@@ -103,7 +104,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return norm(cross(m_du * m_frame.s, m_dv * m_frame.t));
+        return norm(cross(m_frame.s, m_frame.t));
     }
 
     // =============================================================
@@ -196,8 +197,8 @@ public:
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
-        si.dp_du      = m_du * m_frame.s;
-        si.dp_dv      = m_dv * m_frame.t;
+        si.dp_du      = m_frame.s;
+        si.dp_dv      = m_frame.t;
         si.p          = ray_(si.t);
         si.time       = ray_.time;
         si.uv         = Point2f(fmadd(local_x, .5f, .5f),
@@ -223,7 +224,26 @@ public:
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         update();
         Base::parameters_changed();
+#if defined(MTS_ENABLE_OPTIX)
+        optix_prepare_geometry();
+#endif
     }
+
+#if defined(MTS_ENABLE_OPTIX)
+    using Base::m_optix_data_ptr;
+
+    void optix_prepare_geometry() override {
+        if constexpr (is_cuda_array_v<Float>) {
+            if (!m_optix_data_ptr)
+                m_optix_data_ptr = cuda_malloc(sizeof(OptixRectangleData));
+
+            OptixRectangleData data = { bbox(), m_to_object, m_frame.n,
+                                        m_frame.s, m_frame.t };
+
+            cuda_memcpy_to_device(m_optix_data_ptr, &data, sizeof(OptixRectangleData));
+        }
+    }
+#endif
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -239,7 +259,6 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ScalarFrame3f m_frame;
-    ScalarFloat m_du, m_dv;
     ScalarFloat m_inv_surface_area;
 };
 

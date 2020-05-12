@@ -8,8 +8,9 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
-#if defined(MTS_ENABLE_EMBREE)
-    #include <embree3/rtcore.h>
+#if defined(MTS_ENABLE_OPTIX)
+    #include <mitsuba/render/optix_api.h>
+    #include "optix/sphere.cuh"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -394,7 +395,26 @@ public:
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         update();
         Base::parameters_changed();
+#if defined(MTS_ENABLE_OPTIX)
+        optix_prepare_geometry();
+#endif
     }
+
+#if defined(MTS_ENABLE_OPTIX)
+    using Base::m_optix_data_ptr;
+
+    void optix_prepare_geometry() override {
+        if constexpr (is_cuda_array_v<Float>) {
+            if (!m_optix_data_ptr)
+                m_optix_data_ptr = cuda_malloc(sizeof(OptixSphereData));
+
+            OptixSphereData data = { bbox(), m_to_world, m_to_object,
+                                     m_center, m_radius, m_flip_normals };
+
+            cuda_memcpy_to_device(m_optix_data_ptr, &data, sizeof(OptixSphereData));
+        }
+    }
+#endif
 
     std::string to_string() const override {
         std::ostringstream oss;

@@ -197,10 +197,11 @@ GPU variants
 Variants of Mitsuba that run on the GPU (e.g. :monosp:`gpu_rgb`,
 :monosp:`gpu_autodiff_spectral`, etc.) additionally depend on the `NVIDIA CUDA
 Toolkit <https://developer.nvidia.com/cuda-downloads>`_ and `NVIDIA OptiX
-<https://developer.nvidia.com/designworks/optix/download>`_ that both need to
-be installed manually. Tested versions of CUDA include 10.0, 10.1, and 10.2.
-Only OptiX 6.5 is supported at this moment (in particular, compilation fails
-when OptiX 7 is installed).
+<https://developer.nvidia.com/designworks/optix/download>`_. CUDA needs to be installed
+manually while OptiX 7 ships natively with the latest GPU driver. Make sure to have an
+up-to-date GPU driver if the framework fails to compile the GPU variants of Mitsuba.
+
+Tested versions of CUDA include 10.0, 10.1, and 10.2. Only OptiX 7 is supported at this moment.
 
 .. warning::
 
@@ -225,15 +226,10 @@ compiler. E.g.
     # As part of the CMake process
     cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 
-
-Similarly, if OptiX is not automatically detected, its location can be specified
-during the CMake process with the `MTS_OPTIX_PATH` cache entry:
-
-
-.. code-block:: bash
-
-    cmake .. -DMTS_OPTIX_PATH=/opt/optix
-
+By default, Mitsuba is able to resolve the OptiX API itself, and therefore does not rely on
+the ``optix.h`` header file. The ``MTS_USE_OPTIX_HEADERS`` Cmake flag can be used to turn off
+this feature if a developer wants to experiment with parts of the OptiX API not yet exposed
+to the framework.
 
 .. warning::
 
@@ -248,5 +244,4 @@ library for ray tracing instead of the builtin kd-tree in Mitsuba 2. To do so,
 invoke CMake with the ``-DMTS_ENABLE_EMBREE=1`` parameter or use a visual CMake
 tool like ``cmake-gui`` or ``ccmake`` to flip the value of this parameter.
 Embree tends to be faster but lacks some features such as support for double
-precision ray intersection. Currently, only triangle meshes are supported by
-Mitsuba's Embree integration, though this is likely to be fixed in the future.
+precision ray intersection.

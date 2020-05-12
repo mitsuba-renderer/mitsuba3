@@ -16,7 +16,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_to_world, m_mesh, set_children, m_emitter)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_mesh, set_children)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -233,15 +233,16 @@ public:
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-    void traverse(TraversalCallback *callback) override;
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
-    virtual void optix_geometry() override;
+    using Base::m_optix_data_ptr;
+    virtual void optix_prepare_geometry() override;
     virtual void optix_build_input(OptixBuildInput&) const override;
-    virtual void optix_hit_group_data(HitGroupData&) const override;
 #endif
 
     /// @}
     // =========================================================================
+
+    void traverse(TraversalCallback *callback) override;
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
     /// Return a human-readable string representation of the shape contents.
     virtual std::string to_string() const override;

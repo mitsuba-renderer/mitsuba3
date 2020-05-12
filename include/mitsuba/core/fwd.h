@@ -120,6 +120,7 @@ template <typename Float_> struct CoreAliases {
 
     using Mask    = mask_t<Float>;
 
+    using Int8    = replace_scalar_t<Float, int8_t>;
     using Int32   =   int32_array_t<Float>;
     using UInt32  =  uint32_array_t<Float>;
     using Int64   =   int64_array_t<Float>;
@@ -193,8 +194,8 @@ template <typename Float_> struct CoreAliases {
     using Transform3f      = Transform<Point3f>;
     using Transform4f      = Transform<Point4f>;
 
-    using Color1f             = Color<Float, 1>;
-    using Color3f             = Color<Float, 3>;
+    using Color1f          = Color<Float, 1>;
+    using Color3f          = Color<Float, 3>;
 
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
@@ -213,6 +214,7 @@ template <typename Float_> struct CoreAliases {
 #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
+    using prefix ## Int8                 = typename prefix ## CoreAliases::Int8;                   \
     using prefix ## Int32                = typename prefix ## CoreAliases::Int32;                  \
     using prefix ## UInt32               = typename prefix ## CoreAliases::UInt32;                 \
     using prefix ## Int64                = typename prefix ## CoreAliases::Int64;                  \

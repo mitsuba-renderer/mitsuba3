@@ -15,10 +15,11 @@
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-    #include "optix_api.h"
+    #include <mitsuba/render/optix_api.h>
 # if defined(MTS_USE_OPTIX_HEADERS)
     #include <optix_function_table_definition.h>
 # endif
+    #include "../shapes/optix/mesh.cuh"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -362,10 +363,10 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
             texcoord_ptr += 2;
         }
 
-        for (size_t i = 0; i < vertex_attributes_ptr.size(); ++i) {
-            const auto&[name, attribute] = vertex_attributes[i];
-            stream->write(vertex_attributes_ptr[i], attribute.size * sizeof(InputFloat));
-            vertex_attributes_ptr[i] += attribute.size;
+        for (size_t j = 0; j < vertex_attributes_ptr.size(); ++j) {
+            const auto&[name, attribute] = vertex_attributes[j];
+            stream->write(vertex_attributes_ptr[j], attribute.size * sizeof(InputFloat));
+            vertex_attributes_ptr[j] += attribute.size;
         }
     }
 
@@ -385,10 +386,10 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         stream->write(face_ptr, 3 * sizeof(ScalarIndex));
         face_ptr += 3;
 
-        for (size_t i = 0; i < face_attributes_ptr.size(); ++i) {
-            const auto&[name, attribute] = face_attributes[i];
-            stream->write(face_attributes_ptr[i], attribute.size * sizeof(InputFloat));
-            face_attributes_ptr[i] += attribute.size;
+        for (size_t j = 0; j < face_attributes_ptr.size(); ++j) {
+            const auto&[name, attribute] = face_attributes[j];
+            stream->write(face_attributes_ptr[j], attribute.size * sizeof(InputFloat));
+            face_attributes_ptr[j] += attribute.size;
         }
     }
 
@@ -951,10 +952,21 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 #if defined(MTS_ENABLE_OPTIX)
 MTS_VARIANT const uint32_t Mesh<Float, Spectrum>::triangle_input_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
-MTS_VARIANT void Mesh<Float, Spectrum>::optix_geometry() {
+MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
     if constexpr (is_cuda_array_v<Float>) {
         m_vertex_buffer_ptr = (void*) m_vertex_positions_buf.data();
-        area_distr_ensure();
+
+        if (!m_optix_data_ptr)
+            m_optix_data_ptr = cuda_malloc(sizeof(OptixMeshData));
+
+        OptixMeshData data = {
+            (const optix::Vector3u *) m_faces_buf.data(),
+            (const optix::Vector3f *) m_vertex_positions_buf.data(),
+            (const optix::Vector3f *) m_vertex_normals_buf.data(),
+            (const optix::Vector2f *) m_vertex_texcoords_buf.data()
+        };
+
+        cuda_memcpy_to_device(m_optix_data_ptr, &data, sizeof(OptixMeshData));
     }
 }
 
@@ -966,19 +978,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build
     build_input.triangleArray.vertexBuffers    = (CUdeviceptr*) &m_vertex_buffer_ptr;
     build_input.triangleArray.numIndexTriplets = m_face_count;
     build_input.triangleArray.indexBuffer      = (CUdeviceptr)m_faces_buf.data();
-    build_input.triangleArray.flags            = Mesh::triangle_input_flags;
+    build_input.triangleArray.flags            = triangle_input_flags;
     build_input.triangleArray.numSbtRecords    = 1;
 }
-
-MTS_VARIANT void Mesh<Float, Spectrum>::optix_hit_group_data(HitGroupData& hitgroup) const {
-    hitgroup.shape_ptr        = (uintptr_t) this;
-    hitgroup.faces            = (void*) m_faces_buf.data();
-    hitgroup.vertex_positions = (void*) m_vertex_positions_buf.data();
-    hitgroup.vertex_normals   = (void*) m_vertex_normals_buf.data();
-    hitgroup.vertex_texcoords = (void*) m_vertex_texcoords_buf.data();
-}
-
-#else // MTS_ENABLE_OPTIX off
 #endif
 
 MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {

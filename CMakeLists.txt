@@ -235,6 +235,8 @@ if (MTS_ENABLE_OPTIX)
   endif()
 
   if (MTS_USE_OPTIX_HEADERS)
+    find_package(CUDA 10.0 REQUIRED)
+    include_directories(${MTS_OPTIX_PATH}/include ${CUDA_INCLUDE_DIRS})
     add_definitions(-DMTS_USE_OPTIX_HEADERS=1)
     message(STATUS "Mitsuba: OptiX header files will be used.")
   endif()

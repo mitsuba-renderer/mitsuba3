@@ -10,6 +10,10 @@
     #include <embree3/rtcore.h>
 #endif
 
+#if defined(MTS_ENABLE_OPTIX)
+    #include <mitsuba/render/optix_api.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 #if defined(MTS_ENABLE_EMBREE)
@@ -72,7 +76,10 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
         m_bsdf = PluginManager::instance()->create_object<BSDF>(Properties("diffuse"));
 }
 
-MTS_VARIANT Shape<Float, Spectrum>::~Shape() {}
+MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
+    if constexpr (is_cuda_array_v<Float>)
+        cuda_free(m_optix_data_ptr);
+}
 
 MTS_VARIANT std::string Shape<Float, Spectrum>::id() const {
     return m_id;
@@ -223,14 +230,20 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-MTS_VARIANT void Shape<Float, Spectrum>::optix_geometry() {
-    NotImplementedError("optix_geometry");
+static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+
+MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
+    NotImplementedError("optix_prepare_geometry");
 }
-MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput&) const {
-    NotImplementedError("optix_build_input");
-}
-MTS_VARIANT void Shape<Float, Spectrum>::optix_hit_group_data(HitGroupData&) const {
-    NotImplementedError("optix_hit_group_data");
+
+MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
+    build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
+    // Assumes the aabb is always the first member of the data struct
+    build_input.aabbArray.aabbBuffers   = (CUdeviceptr*) &m_optix_data_ptr;
+    build_input.aabbArray.numPrimitives = 1;
+    build_input.aabbArray.strideInBytes = sizeof(OptixAabb);
+    build_input.aabbArray.flags         = optix_geometry_flags;
+    build_input.aabbArray.numSbtRecords = 1;
 }
 #endif
 

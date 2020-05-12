@@ -61,8 +61,8 @@ add_library(mitsuba-render-obj OBJECT
   texture.cpp      ${INC_DIR}/texture.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
-                   ${INC_DIR}/optix_structs.h
-  optix_api.cpp    optix_api.h
+                   ${INC_DIR}/optix/common.h
+  optix_api.cpp    ${INC_DIR}/optix_api.h
   ${LIBRENDER_EXTRA_SRC}
 )
 
@@ -93,11 +93,6 @@ if (MTS_ENABLE_EMBREE)
 endif()
 
 if (MTS_ENABLE_OPTIX)
-  if (MTS_USE_OPTIX_HEADERS)
-    find_package(CUDA 10.0 REQUIRED)
-    target_include_directories(mitsuba-render-obj PRIVATE ${MTS_OPTIX_PATH}/include ${CUDA_INCLUDE_DIRS})
-  endif()
-
   target_link_libraries(mitsuba-render PRIVATE cuda)
 endif()
 

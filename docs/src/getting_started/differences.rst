@@ -23,8 +23,7 @@ In the following, we list the main missing features:
   reimplement stratified and Quasi-Monte Carlo samplers.
 
 - **Shapes**: the basic shapes (PLY/OBJ/Serialized triangle meshes, rectangles, spheres, cylinders) are all supported. However, instancing and assemblies of
-  hair fibers are still missing. The Embree and OptiX ray tracing backends
-  currently only handle triangle meshes.
+  hair fibers are still missing.
 
 - **Integrators**: Only surface and volumetric path tracers are provided. The
   following are missing:

@@ -343,10 +343,10 @@ public:
         );
 
         if (!m_disable_vertex_normals && !has_vertex_normals) {
-            Timer timer;
+            Timer timer2;
             recompute_vertex_normals();
             Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
-                util::time_string(timer.value()));
+                util::time_string(timer2.value()));
         }
 
         set_children();
