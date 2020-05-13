@@ -387,7 +387,7 @@ public:
                 slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
             }
 
-            auto external_transmittance = 1.f - eval_reflectance(distr_p, wi, m_eta);
+            auto external_transmittance = eval_transmittance(distr_p, wi, m_eta);
             m_external_transmittance = DynamicBuffer<Float>::copy(external_transmittance.data(),
                                                                   slices(external_transmittance));
             m_internal_reflectance =

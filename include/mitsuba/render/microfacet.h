@@ -500,4 +500,54 @@ DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spect
     return result;
 }
 
+template <typename FloatP, typename Spectrum>
+DynamicArray<FloatP> eval_transmittance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
+                                        const Vector<DynamicArray<FloatP>, 3> &wi_,
+                                        scalar_t<FloatP> eta) {
+    using Float     = scalar_t<FloatP>;
+    using FloatX    = DynamicArray<FloatP>;
+    using Vector2fP = Vector<FloatP, 2>;
+    using Vector3fP = Vector<FloatP, 3>;
+    using Normal3fP = Normal<FloatP, 3>;
+    using Vector2fX = Vector<FloatX, 2>;
+    using Vector3fX = Vector<FloatX, 3>;
+
+    if (!distr.sample_visible())
+        Throw("eval_transmittance(): requires visible normal sampling!");
+
+    int res = 128;
+    if (eta > 1)
+        res = 32;
+    while (res % FloatP::Size != 0)
+        ++res;
+
+    FloatX nodes, weights, result;
+    std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
+    set_slices(result, slices(wi_));
+
+    Vector2fX nodes_2    = meshgrid(nodes, nodes),
+              weights_2  = meshgrid(weights, weights);
+
+    for (size_t i = 0; i < slices(wi_); ++i) {
+        auto wi      = slice(wi_, i);
+        FloatP accum = zero<FloatP>();
+
+        for (size_t j = 0; j < packets(nodes_2); ++j) {
+            Vector2fP node(packet(nodes_2, j)),
+                      weight(packet(weights_2, j));
+            node = fmadd(node, .5f, .5f);
+
+            Normal3fP m = std::get<0>(distr.sample(wi, node));
+            auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(dot(wi, m), FloatP(eta));
+            Vector3fP wo = refract(Vector3fP(wi), m, cos_theta_t, eta_ti);
+            FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
+            smith[wo.z() * wi.z() >= 0.f] = 0.f;
+
+            accum += smith * hprod(weight);
+        }
+        slice(result, i) = hsum(accum) * .25f;
+    }
+    return result;
+}
+
 NAMESPACE_END(mitsuba)
