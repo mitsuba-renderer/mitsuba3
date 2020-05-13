@@ -40,7 +40,7 @@ public:
         auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
         m_metadata                = metadata;
         m_raw                     = props.bool_("raw", false);
-        size_t size               = hprod(m_metadata.shape);
+        ScalarUInt32 size         = hprod(m_metadata.shape);
         // Apply spectral conversion if necessary
         if (is_spectral_v<Spectrum> && m_metadata.channel_count == 3 && !m_raw) {
             ScalarFloat *ptr = raw_data.get();
@@ -48,7 +48,7 @@ public:
             ScalarFloat *scaled_data_ptr = scaled_data.get();
             double mean = 0.0;
             ScalarFloat max = 0.0;
-            for (size_t i = 0; i < size; ++i) {
+            for (ScalarUInt32 i = 0; i < size; ++i) {
                 ScalarColor3f rgb = load_unaligned<ScalarColor3f>(ptr);
                 // TODO: Make this scaling optional if the RGB values are between 0 and 1
                 ScalarFloat scale = hmax(rgb) * 2.f;
@@ -270,15 +270,14 @@ public:
         Index index = fmadd(fmadd(pi.z(), ny, pi.y()), nx, pi.x());
 
         // Load 8 grid positions to perform trilinear interpolation
-        auto raw_data = m_data.data();
-        auto d000 = gather<StorageType>(raw_data, index, active),
-             d001 = gather<StorageType>(raw_data, index + 1, active),
-             d010 = gather<StorageType>(raw_data, index + nx, active),
-             d011 = gather<StorageType>(raw_data, index + nx + 1, active),
-             d100 = gather<StorageType>(raw_data, index + z_offset, active),
-             d101 = gather<StorageType>(raw_data, index + z_offset + 1, active),
-             d110 = gather<StorageType>(raw_data, index + z_offset + nx, active),
-             d111 = gather<StorageType>(raw_data, index + z_offset + nx + 1, active);
+        auto d000 = gather<StorageType>(m_data, index, active),
+             d001 = gather<StorageType>(m_data, index + 1, active),
+             d010 = gather<StorageType>(m_data, index + nx, active),
+             d011 = gather<StorageType>(m_data, index + nx + 1, active),
+             d100 = gather<StorageType>(m_data, index + z_offset, active),
+             d101 = gather<StorageType>(m_data, index + z_offset + 1, active),
+             d110 = gather<StorageType>(m_data, index + z_offset + nx, active),
+             d111 = gather<StorageType>(m_data, index + z_offset + nx + 1, active);
 
         ResultType v000, v001, v010, v011, v100, v101, v110, v111;
         Float scale = 1.f;
@@ -342,7 +341,7 @@ public:
 
     ScalarFloat max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };
-    size_t data_size() const { return m_data.size(); }
+    auto data_size() const { return m_data.size(); }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
@@ -351,7 +350,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        size_t new_size = data_size();
+        auto new_size = data_size();
         if (m_size != new_size) {
             // Only support a special case: resolution doubling along all axes
             if (new_size != m_size * 8)
@@ -388,7 +387,7 @@ protected:
     DynamicBuffer<Float> m_data;
     bool m_fixed_max = false;
     VolumeMetadata m_metadata;
-    size_t m_size;
+    ScalarUInt32 m_size;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
