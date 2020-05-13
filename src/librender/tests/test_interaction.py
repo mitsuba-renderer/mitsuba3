@@ -27,6 +27,7 @@ def test01_intersection_construction(variant_scalar_rgb):
     si.wi = [31, 32, 33]
     si.prim_index = 34
     si.instance = None
+    assert si.sh_frame == Frame3f([9, 10, 11],[12, 13, 14],[15, 16, 17])
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
