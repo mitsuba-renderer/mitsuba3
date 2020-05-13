@@ -60,7 +60,17 @@ MTS_PY_EXPORT(Scene) {
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def_method(Scene, environment)
-        .def("shapes", py::overload_cast<>(&Scene::shapes), D(Scene, shapes))
+        .def("shapes", [](const Scene &scene) {
+            py::list result;
+            for (const Shape *s : scene.shapes()) {
+                const Mesh *m = dynamic_cast<const Mesh *>(s);
+                if (m)
+                    result.append(py::cast(m));
+                else
+                    result.append(py::cast(s));
+            }
+            return result;
+        })
         .def("integrator",
             [](Scene &scene) {
                 Integrator *o = scene.integrator();

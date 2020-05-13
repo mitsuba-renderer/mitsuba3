@@ -48,3 +48,22 @@ def test01_emitter_checks(variant_scalar_rgb):
                 + shape_xml.format('<emitter type="area" id="my_inner_emitter"/>')
                 + shape_xml.format('<ref id="my_emitter"/>'), 4)
 
+@fresolver_append_path
+def test02_shapes(variant_scalar_rgb):
+    from mitsuba.core.xml import load_string
+
+    """Tests that a Shape is downcasted to a Mesh in the Scene::shapes method if possible"""
+    scene = load_string("""
+        <scene version="2.0.0">
+        <shape type="obj" >
+            <string name="filename" value="resources/data/tests/obj/cbox_smallbox.obj"/>
+        </shape>
+        <shape type="sphere" >
+        </shape>
+        </scene>
+    """)
+
+    shapes = scene.shapes()
+    assert len(shapes) == 2
+    assert sum(type(s) == mitsuba.render.Mesh  for s in shapes) == 1
+    assert sum(type(s) == mitsuba.render.Shape for s in shapes) == 1
