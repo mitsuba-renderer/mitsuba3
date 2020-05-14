@@ -23,12 +23,13 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Properties &props)
     : Base(props) {
-    m_block_size = (uint32_t) props.size_("block_size", MTS_BLOCK_SIZE);
+
+    m_block_size = (uint32_t) props.size_("block_size", 0);
     uint32_t block_size = math::round_to_power_of_two(m_block_size);
-    if (block_size != m_block_size) {
+    if (m_block_size > 0 && block_size != m_block_size) {
+        Log(Warn, "Setting block size from %i to next higher power of two: %i", m_block_size,
+            block_size);
         m_block_size = block_size;
-        Log(Warn, "Setting block size from %i to next higher power of two: %i", block_size,
-            m_block_size);
     }
 
     m_samples_per_pass = (uint32_t) props.size_("samples_per_pass", (size_t) -1);
@@ -62,7 +63,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         Throw("sample_count (%d) must be a multiple of samples_per_pass (%d).",
               total_spp, samples_per_pass);
 
-    size_t n_passes = ceil(total_spp / (ScalarFloat) samples_per_pass);
+    size_t n_passes = (total_spp + samples_per_pass - 1) / samples_per_pass;
 
     std::vector<std::string> channels = aov_names();
     bool has_aovs = !channels.empty();
@@ -83,6 +84,17 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
         if (m_timeout > 0.f)
             Log(Info, "Timeout specified: %.2f seconds.", m_timeout);
+
+        // Find a good block size to use for splitting up the total workload.
+        if (m_block_size == 0) {
+            uint32_t block_size = MTS_BLOCK_SIZE;
+            while (true) {
+                if (block_size == 1 || hprod((film_size + block_size - 1) / block_size) >= n_threads)
+                    break;
+                block_size /= 2;
+            }
+            m_block_size = block_size;
+        }
 
         Spiral spiral(film, m_block_size, n_passes);
 
