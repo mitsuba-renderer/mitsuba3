@@ -109,7 +109,7 @@ public:
                 }
 
                 *lum_ptr++ = lum * sin_theta;
-                store(ptr, coeff);
+                store_unaligned(ptr, coeff);
                 ptr += 4;
             }
         }
