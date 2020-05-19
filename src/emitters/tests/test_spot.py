@@ -2,74 +2,56 @@ import mitsuba
 import pytest
 import enoki as ek
 
+mitsuba.set_variant("scalar_rgb")
+
 spectrum_strings = {
-    'd65':
-    """<spectrum version='2.0.0' name="intensity" type='d65'/>""",
-    'regular':
-    """<spectrum version='2.0.0' name="intensity" type='regular'>
-           <float name="lambda_min" value="500"/>
-           <float name="lambda_max" value="600"/>
-           <string name="values" value="1, 2"/>
-       </spectrum>"""
+    'd65': { 'type' : 'd65' },
+    'regular': {
+        'type' : 'regular',
+        'lambda_min' : 500.0,
+        'lambda_max' : 600.0,
+        'values' : "1, 2",
+    }
 }
 
 lookat_transforms = [
-    {
-        "pos": [0, 1, 0],
-        "target": [0, 0, 0],
-        "up": [1, 0, 0]
-    },
-    {
-        "pos": [0, 0, 0],
-        "target": [0, 0, 1],
-        "up": [0, 1, 0]
-    },
-    {
-        "pos": [0, 0, 1],
-        "target": [0, 0, 0],
-        "up": [0, -1, 0]
-    }
+    mitsuba.core.ScalarTransform4f.look_at([0, 1, 0], [0, 0, 0], [1, 0, 0]),
+    mitsuba.core.ScalarTransform4f.look_at([0, 0, 1], [0, 0, 0], [0, -1, 0])
 ]
 
-
 def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
-    from mitsuba.core.xml import load_string
-    emitter = load_string("""<emitter version='2.0.0' type='spot'>
-                                <float name='cutoff_angle' value='{ca}'/>
-                                <transform name='to_world'>
-                                    <lookat origin='{px}, {py}, {pz}' target='{tx}, {ty}, {tz}' up='{ux}, {uy}, {uz}'/>
-                                </transform>
-                                {s}
-                             </emitter>""".format(ca=cutoff_angle,
-                                                  px=lookat["pos"][0], py=lookat["pos"][1], pz=lookat["pos"][2],
-                                                  tx=lookat["target"][0], ty=lookat["target"][1], tz=lookat["target"][2],
-                                                  ux=lookat["up"][0], uy=lookat["up"][1], uz=lookat["up"][2],
-                                                  s=spectrum_strings[s_key]))
-    spectrum = load_string(spectrum_strings[s_key])
+    from mitsuba.core.xml import load_dict
+
+    spectrum = load_dict(spectrum_strings[s_key])
     expanded = spectrum.expand()
     if len(expanded) == 1:
         spectrum = expanded[0]
+
+    emitter = load_dict({
+        'type' : 'spot',
+        'cutoff_angle' : cutoff_angle,
+        'to_world' : lookat,
+        'intensity' : spectrum
+    })
 
     return emitter, spectrum
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-@pytest.mark.parametrize("it_pos", [[2.0, 0.5, 0.0], [1.0, 0.5, -5.0], [0.0, 0.5, 0.0]])
-@pytest.mark.parametrize("wavelength_sample", [0.1, 0.3, 0.5, 0.7])
-@pytest.mark.parametrize("cutoff_angle", [20, 40, 60, 80])
+@pytest.mark.parametrize("it_pos", [[2.0, 0.5, 0.0], [1.0, 0.5, -5.0]])
+@pytest.mark.parametrize("wavelength_sample", [0.1, 0.7])
+@pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
-    # Check the correctness of the sample_direction() method
+    """ Check the correctness of the sample_direction() method """
 
-    import math
     from mitsuba.core import sample_shifted, Transform4f
     from mitsuba.render import SurfaceInteraction3f
 
-    cutoff_angle_rad = math.radians(cutoff_angle)
+    cutoff_angle_rad = cutoff_angle / 180 * ek.pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
-    emitter, spectrum = create_emitter_and_spectrum(
-        lookat, cutoff_angle, spectrum_key)
+    emitter, spectrum = create_emitter_and_spectrum(lookat, cutoff_angle, spectrum_key)
     eval_t = 0.3
     trafo = Transform4f(emitter.world_transform().eval(eval_t))
 
@@ -83,7 +65,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     it.wavelengths = wav
 
     # Direction from the position to the point emitter
-    d = -it.p + lookat["pos"]
+    d = -it.p + lookat.transform_point(0)
     dist = ek.norm(d)
     d /= dist
 
@@ -111,19 +93,18 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-@pytest.mark.parametrize("wavelength_sample", [0.1, 0.3, 0.5, 0.7])
+@pytest.mark.parametrize("wavelength_sample", [0.1, 0.7])
 @pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
-@pytest.mark.parametrize("cutoff_angle", [20, 40, 60, 80])
+@pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_ray(variant_packet_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
     # Check the correctness of the sample_ray() method
 
-    import math
     from mitsuba.core import warp, sample_shifted, Transform4f
     from mitsuba.render import SurfaceInteraction3f
 
-    cutoff_angle_rad = math.radians(cutoff_angle)
-    cos_cutoff_angle_rad = math.cos(cutoff_angle_rad)
+    cutoff_angle_rad = cutoff_angle / 180 * ek.pi
+    cos_cutoff_angle_rad = ek.cos(cutoff_angle_rad)
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
     emitter, spectrum = create_emitter_and_spectrum(
@@ -159,11 +140,11 @@ def test_sample_ray(variant_packet_spectral, spectrum_key, wavelength_sample, po
     assert ek.all(local_dir.z >= cos_cutoff_angle_rad)
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(ray.d, trafo.transform_vector(local_dir))
-    assert ek.allclose(ray.o, lookat["pos"])
+    assert ek.allclose(ray.o, lookat.transform_point(0))
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-@pytest.mark.parametrize("cutoff_angle", [20, 40, 60])
+@pytest.mark.parametrize("cutoff_angle", [20, 60])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_eval(variant_packet_spectral, spectrum_key, lookat, cutoff_angle):
     # Check the correctness of the eval() method
