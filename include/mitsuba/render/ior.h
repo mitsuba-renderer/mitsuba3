@@ -103,9 +103,8 @@ ref<Texture> ior_from_file(const std::string &filename) {
     spectrum_from_file(filename, wavelengths, values);
 
     float unit_conversion = is_spectral_v<Spectrum> ? 1.f : MTS_CIE_Y_NORMALIZATION;
-    for (size_t k = 0; k < wavelengths.size(); ++k) {
+    for (size_t k = 0; k < wavelengths.size(); ++k)
         values[k] *= unit_conversion;
-    }
 
     Properties props;
     props.set_plugin_name("irregular");

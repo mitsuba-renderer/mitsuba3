@@ -59,9 +59,9 @@ Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
             });
 
         Scalar x0 = wavelengths[index],
-              x1 = wavelengths[index + 1],
-              y0 = values[index],
-              y1 = values[index + 1];
+               x1 = wavelengths[index + 1],
+               y0 = values[index],
+               y1 = values[index + 1];
 
         // Linear interpolant at 'x'
         Scalar y = (x*y0 - x1*y0 - x*y1 + x0*y1) / (x0 - x1);
