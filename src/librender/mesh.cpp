@@ -701,7 +701,7 @@ Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool sh
     return { dndu, dndv };
 }
 
-MTS_VARIANT DynamicBuffer<Float>&
+MTS_VARIANT typename Mesh<Float, Spectrum>::FloatStorage&
 Mesh<Float, Spectrum>::add_attribute(const std::string& name, size_t size) {
     auto attribute = m_mesh_attributes.find(name);
     if (attribute != m_mesh_attributes.end())

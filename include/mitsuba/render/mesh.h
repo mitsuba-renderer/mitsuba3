@@ -72,7 +72,7 @@ public:
     const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces_buf; }
 
     /// Return the mesh attribute associated with \c name
-    DynamicBuffer<Float>& attribute_buffer(const std::string& name) {
+    FloatStorage& attribute_buffer(const std::string& name) {
         auto attribute = m_mesh_attributes.find(name);
         if (attribute == m_mesh_attributes.end())
             Throw("attribute_buffer(): attribute %s doesn't exist.", name.c_str());
@@ -80,7 +80,7 @@ public:
     }
 
     /// Add and return an attribute buffer with the given \c name and \c size
-    DynamicBuffer<Float>& add_attribute(const std::string& name, size_t size);
+    FloatStorage& add_attribute(const std::string& name, size_t size);
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
@@ -278,15 +278,19 @@ protected:
     struct MeshAttribute {
         size_t size;
         MeshAttributeType type;
-        DynamicBuffer<Float> buf;
+        FloatStorage buf;
     };
 
     template <uint32_t Size, bool Raw>
     auto interpolate_attribute(MeshAttributeType type,
-                               const DynamicBuffer<Float> &buf,
+                               const FloatStorage &buf,
                                const SurfaceInteraction3f &si,
                                Mask active) const {
-        using StorageType = std::conditional_t<Size == 1, Float, Color3f>;
+        using StorageType =
+            std::conditional_t<Size == 1,
+                               replace_scalar_t<Float, InputFloat>,
+                               replace_scalar_t<Color3f, InputFloat>>;
+        using ReturnType = std::conditional_t<Size == 1, Float, Color3f>;
 
         if (type == MeshAttributeType::Vertex) {
             auto fi = face_indices(si.prim_index, active);
@@ -301,20 +305,23 @@ protected:
                 // Evaluate spectral upsampling model from stored coefficients
                 UnpolarizedSpectrum c0, c1, c2;
 
-                c0 = srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v0), si.wavelengths);
-                c1 = srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v1), si.wavelengths);
-                c2 = srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v2), si.wavelengths);
+                // NOTE this code assumes that mesh attribute data represents
+                // srgb2spec model coefficients and not RGB color values in spectral mode.
+                c0 = srgb_model_eval<UnpolarizedSpectrum>(v0, si.wavelengths);
+                c1 = srgb_model_eval<UnpolarizedSpectrum>(v1, si.wavelengths);
+                c2 = srgb_model_eval<UnpolarizedSpectrum>(v2, si.wavelengths);
 
                 return fmadd(c0, b[0], fmadd(c1, b[1], c2 * b[2]));
             } else {
-                return fmadd(v0, b[0], fmadd(v1, b[1], v2 * b[2]));
+                return (ReturnType) fmadd(v0, b[0], fmadd(v1, b[1], v2 * b[2]));
             }
         } else {
             StorageType v = gather<StorageType>(buf, si.prim_index, active);
-            if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw)
-                return srgb_model_eval<UnpolarizedSpectrum>(srgb_model_fetch(v), si.wavelengths);
-            else
-                return v;
+            if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw) {
+                return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
+            } else {
+                return (ReturnType) v;
+            }
         }
     }
 
