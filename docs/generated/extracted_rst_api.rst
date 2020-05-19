@@ -1592,6 +1592,35 @@
     See also:
         ref, Object
 
+    .. py:method:: mitsuba.core.Class.alias(self)
+
+        Return the scene description-specific alias, if applicable
+
+        Returns → str:
+            *no description available*
+
+    .. py:method:: mitsuba.core.Class.name(self)
+
+        Return the name of the class
+
+        Returns → str:
+            *no description available*
+
+    .. py:method:: mitsuba.core.Class.parent(self)
+
+        Return the Class object associated with the parent class of nullptr if
+        it does not have one.
+
+        Returns → :py:obj:`mitsuba.core.Class`:
+            *no description available*
+
+    .. py:method:: mitsuba.core.Class.variant(self)
+
+        Return the variant of the class
+
+        Returns → str:
+            *no description available*
+
 .. py:class:: mitsuba.core.ContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of a regularly
@@ -4900,7 +4929,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.core.Object.parameters_changed(self)
+    .. py:method:: mitsuba.core.Object.parameters_changed(self, keys=[])
 
         Update internal state after applying changes to parameters
 
@@ -4908,6 +4937,13 @@
         traverse) are modified in some way. The obect can then update its
         internal state so that derived quantities are consistent with the
         change.
+
+        Parameter ``keys`` (List[str]):
+            Optional list of names (obtained via traverse) corresponding to
+            the attributes that have been modified. Can also be used to notify
+            when this function is called from a parent object by adding a
+            "parent" key to the list. When empty, the object should assume
+            that any attribute might have changed.
 
         Remark:
             The default implementation does nothing.
@@ -5097,6 +5133,37 @@
             *no description available*
 
         Returns → None:
+            *no description available*
+
+.. py:class:: mitsuba.core.PluginManager
+
+    The object factory is responsible for loading plugin modules and
+    instantiating object instances.
+
+    Ordinarily, this class will be used by making repeated calls to the
+    create_object() methods. The generated instances are then assembled
+    into a final object graph, such as a scene. One such examples is the
+    SceneHandler class, which parses an XML scene file by essentially
+    translating the XML elements into calls to create_object().
+
+    .. py:method:: mitsuba.core.PluginManager.get_plugin_class(self, name, variant)
+
+        Return the class corresponding to a plugin for a specific variant
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Parameter ``variant`` (str):
+            *no description available*
+
+        Returns → :py:obj:`mitsuba.core.Class`:
+            *no description available*
+
+    .. py:method:: mitsuba.core.PluginManager.instance()
+
+        Return the global plugin manager
+
+        Returns → :py:obj:`mitsuba.core.PluginManager`:
             *no description available*
 
 .. py:class:: mitsuba.core.Properties
@@ -12037,13 +12104,49 @@
 
     Overloaded function.
 
-    1. __init__(self: :py:obj:`mitsuba.render.Mesh`, arg0: str, arg1: :py:obj:`mitsuba.core.Struct`, arg2: int, arg3: :py:obj:`mitsuba.core.Struct`, arg4: int) -> None
+    1. __init__(self: :py:obj:`mitsuba.render.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.core.Properties` = Properties[
+      plugin_name = "",
+      id = "",
+      elements = {
+      }
+    ]
+    , has_vertex_normals: bool = False, has_vertex_texcoords: bool = False) -> None
 
     Create a new mesh with the given vertex and face data structures
 
-    2. __init__(self: :py:obj:`mitsuba.render.Mesh`, arg0: str, arg1: int, arg2: int, arg3: int, arg4: int, arg5: int, arg6: int, arg7: int, arg8: int, arg9: int, arg10: enoki.scalar.Matrix4f) -> None
+    2. __init__(self: :py:obj:`mitsuba.render.Mesh`, name: str, loop_tri_count: int, loop_tri_ptr: int, loop_ptr: int, vertex_count: int, vertex_ptr: int, poly_ptr: int, uv_ptr: int, col_ptr: int, mat_nr: int, to_world: enoki.scalar.Matrix4f, props: :py:obj:`mitsuba.core.Properties` = Properties[
+      plugin_name = "",
+      id = "",
+      elements = {
+      }
+    ]
+    ) -> None
 
     Constructor to call from Blender
+
+    .. py:method:: mitsuba.render.Mesh.add_attribute(self, name, size)
+
+        Add and return an attribute buffer with the given ``name`` and
+        ``size``
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Parameter ``size`` (int):
+            *no description available*
+
+        Returns → enoki.dynamic.Float32:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Mesh.attribute_buffer(self, name)
+
+        Return the mesh attribute associated with ``name``
+
+        Parameter ``name`` (str):
+            *no description available*
+
+        Returns → enoki.dynamic.Float32:
+            *no description available*
 
     .. py:method:: mitsuba.render.Mesh.face_count(self)
 
@@ -12052,26 +12155,11 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.render.Mesh.face_struct(self)
+    .. py:method:: mitsuba.render.Mesh.faces_buffer(self)
 
-        Return a ``Struct`` instance describing the contents of the face
-        buffer
+        Return face indices buffer
 
-        Returns → :py:obj:`mitsuba.core.Struct`:
-            *no description available*
-
-    .. py:method:: mitsuba.render.Mesh.faces(self)
-
-        Const variant of faces.
-
-        Returns → array:
-            *no description available*
-
-    .. py:method:: mitsuba.render.Mesh.has_vertex_colors(self)
-
-        Does this mesh have per-vertex texture colors?
-
-        Returns → bool:
+        Returns → enoki.dynamic.UInt32:
             *no description available*
 
     .. py:method:: mitsuba.render.Mesh.has_vertex_normals(self)
@@ -12132,26 +12220,32 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.render.Mesh.vertex_struct(self)
+    .. py:method:: mitsuba.render.Mesh.vertex_normals_buffer(self)
 
-        Return a ``Struct`` instance describing the contents of the vertex
-        buffer
+        Return vertex normals buffer
 
-        Returns → :py:obj:`mitsuba.core.Struct`:
+        Returns → enoki.dynamic.Float32:
             *no description available*
 
-    .. py:method:: mitsuba.render.Mesh.vertices(self)
+    .. py:method:: mitsuba.render.Mesh.vertex_positions_buffer(self)
 
-        Return a pointer to the raw vertex buffer
+        Return vertex positions buffer
 
-        Returns → array:
+        Returns → enoki.dynamic.Float32:
             *no description available*
 
-    .. py:method:: mitsuba.render.Mesh.write_ply(self, stream)
+    .. py:method:: mitsuba.render.Mesh.vertex_texcoords_buffer(self)
+
+        Return vertex texcoords buffer
+
+        Returns → enoki.dynamic.Float32:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Mesh.write_ply(self, filename)
 
         Export mesh as a binary PLY file
 
-        Parameter ``stream`` (:py:obj:`mitsuba.core.Stream`):
+        Parameter ``filename`` (str):
             *no description available*
 
         Returns → None:
@@ -13045,8 +13139,6 @@
                 *no description available*
 
     .. py:method:: mitsuba.render.Shape.bsdf(self)
-
-        Return the shape's BSDF
 
         Returns → :py:obj:`mitsuba.render.BSDF`:
             *no description available*

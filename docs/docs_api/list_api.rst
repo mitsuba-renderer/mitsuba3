@@ -118,6 +118,8 @@
 
 .. autoclass:: mitsuba.core.PCG32
 
+.. autoclass:: mitsuba.core.PluginManager
+
 .. autoclass:: mitsuba.core.Point0f
 
 .. autoclass:: mitsuba.core.Point0i

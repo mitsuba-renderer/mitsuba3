@@ -227,14 +227,10 @@ compiler. E.g.
     cmake .. -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc
 
 By default, Mitsuba is able to resolve the OptiX API itself, and therefore does not rely on
-the ``optix.h`` header file. The ``MTS_USE_OPTIX_HEADERS`` Cmake flag can be used to turn off
+the ``optix.h`` header file. The ``MTS_USE_OPTIX_HEADERS`` CMake flag can be used to turn off
 this feature if a developer wants to experiment with parts of the OptiX API not yet exposed
 to the framework.
 
-.. warning::
-
-    On Windows, it is necessary to add `C:/path/to/optix/bin64` to the `PATH` environment
-    variable.
 
 Embree
 ------
