@@ -151,6 +151,8 @@ public:
     using typename Base::ScalarIndex;
     using typename Base::InputFloat;
     using typename Base::FloatStorage;
+    using typename Base::InputPoint3f;
+    using typename Base::InputNormal3f;
 
     enum class TriMeshFlags {
         HasNormals      = 0x0001,
@@ -311,13 +313,13 @@ public:
         InputFloat* position_ptr = m_vertex_positions_buf.data();
         InputFloat* normal_ptr   = m_vertex_normals_buf.data();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            ScalarPoint3f p = m_to_world.transform_affine(vertex_position(i));
+            InputPoint3f p = m_to_world.transform_affine(vertex_position(i));
             store_unaligned(position_ptr, p);
             position_ptr += 3;
             m_bbox.expand(p);
 
             if (has_vertex_normals()) {
-                ScalarNormal3f n = normalize(m_to_world.transform_affine(vertex_normal(i)));
+                InputNormal3f n = normalize(m_to_world.transform_affine(vertex_normal(i)));
                 store_unaligned(normal_ptr, n);
                 normal_ptr += 3;
             }
