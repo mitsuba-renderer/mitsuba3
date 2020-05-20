@@ -160,12 +160,12 @@ Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
     Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Float v0_x = gather<Float32>(cie1931_x_data, i0, active),
-          v1_x = gather<Float32>(cie1931_x_data, i1, active),
-          v0_y = gather<Float32>(cie1931_y_data, i0, active),
-          v1_y = gather<Float32>(cie1931_y_data, i1, active),
-          v0_z = gather<Float32>(cie1931_z_data, i0, active),
-          v1_z = gather<Float32>(cie1931_z_data, i1, active);
+    Float v0_x = (Float) gather<Float32>(cie1931_x_data, i0, active),
+          v1_x = (Float) gather<Float32>(cie1931_x_data, i1, active),
+          v0_y = (Float) gather<Float32>(cie1931_y_data, i0, active),
+          v1_y = (Float) gather<Float32>(cie1931_y_data, i1, active),
+          v0_z = (Float) gather<Float32>(cie1931_z_data, i0, active),
+          v1_z = (Float) gather<Float32>(cie1931_z_data, i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
@@ -196,8 +196,8 @@ Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
     Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Float v0 = gather<Float32>(cie1931_y_data, i0, active),
-          v1 = gather<Float32>(cie1931_y_data, i1, active);
+    Float v0 = (Float) gather<Float32>(cie1931_y_data, i0, active),
+          v1 = (Float) gather<Float32>(cie1931_y_data, i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
