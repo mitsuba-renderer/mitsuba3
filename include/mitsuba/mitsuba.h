@@ -9,7 +9,7 @@
 #pragma once
 
 #define MTS_VERSION_MAJOR 2
-#define MTS_VERSION_MINOR 0
+#define MTS_VERSION_MINOR 1
 #define MTS_VERSION_PATCH 0
 
 #define MTS_STRINGIFY(x) #x
@@ -22,7 +22,7 @@
     MTS_TOSTRING(MTS_VERSION_PATCH)
 
 /// Year of the current release
-#define MTS_YEAR "2019"
+#define MTS_YEAR "2020"
 
 /// Authors list
 #define MTS_AUTHORS "Realistic Graphics Lab, EPFL"
