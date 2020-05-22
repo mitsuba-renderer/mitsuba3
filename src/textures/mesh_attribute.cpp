@@ -9,8 +9,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _texture-meshattribute:
 
-Mesh attribute texture (:monosp:`meshattribute`)
-------------------------------------------------
+Mesh attribute texture (:monosp:`mesh_attribute`)
+-------------------------------------------------
 
 .. pluginparameters::
 
@@ -25,12 +25,6 @@ Mesh attribute texture (:monosp:`meshattribute`)
 This plugin provides a simple mechanism to expose Mesh attributes (e.g. vertex color)
 as a texture.
 
-.. warning::
-
-    For spectral variants of the renderer (e.g. ``scalar_spectral``), it is assumed that
-    tri-stimulus color mesh attribute data (e.g. vertex color) is already converted to ``rgb2spec``
-    model coefficients. (e.g. using :py:func:`mitsuba.render.srgb_model_fetch`)
-
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/texture_mesh_attribute_vertex.jpg
    :caption: Bunny with random vertex color (using barycentric interpolation).
@@ -38,6 +32,27 @@ as a texture.
    :caption: Bunny with random face color.
 .. subfigend::
     :label: fig-texture-mesh-attribute
+
+The following XML snippet describes a mesh with diffuse material,
+whose reflectance is specified using the ``vertex_color`` attribute of that mesh:
+
+.. code-block:: xml
+
+    <shape type="ply">
+        <string name="filename" value="my_mesh_with_vertex_color_attr.ply"/>
+
+        <bsdf type="diffuse">
+            <texture type="mesh_attribute" name="reflectance">
+                <string name="name" value="vertex_color"/>
+            </texture>
+        </bsdf>
+    </shape>
+
+.. warning::
+
+    For spectral variants of the renderer (e.g. ``scalar_spectral``), it is assumed that
+    tri-stimulus color mesh attribute data (e.g. vertex color) is already converted to ``rgb2spec``
+    model coefficients. (e.g. using :py:func:`mitsuba.render.srgb_model_fetch`)
 
  */
 
