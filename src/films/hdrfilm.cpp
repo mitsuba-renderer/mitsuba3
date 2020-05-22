@@ -7,6 +7,8 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
 
+#include <mutex>
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!

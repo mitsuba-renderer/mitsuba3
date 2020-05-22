@@ -25,7 +25,7 @@ public:
     /// Configure the film for rendering a specified set of channels
     virtual void prepare(const std::vector<std::string> &channels) = 0;
 
-    /// Merge an image block into the film
+    /// Merge an image block into the film. This methods should be thread-safe.
     virtual void put(const ImageBlock *block) = 0;
 
     /// Develop the film and write the result to the previously specified filename
