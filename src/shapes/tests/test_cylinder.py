@@ -5,12 +5,31 @@ from enoki.dynamic import Float32 as Float
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml
+    from mitsuba.core import xml, ScalarTransform4f
 
     s = xml.load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
     assert ek.allclose(s.surface_area(), 2*ek.pi)
+
+    # Test transforms order in constructor
+
+    rot = ScalarTransform4f.rotate([1.0, 0.0, 0.0], 35)
+
+    s1 = xml.load_dict({
+        "type" : "cylinder",
+        "radius" : 2.0,
+        "p0" : [1, 0, 0],
+        "p1" : [1, 0, 2],
+        "to_world" : rot
+    })
+
+    s2 = xml.load_dict({
+        "type" : "cylinder",
+        "to_world" : rot * ScalarTransform4f.translate([1, 0, 0]) * ScalarTransform4f.scale(2)
+    })
+
+    assert str(s1) == str(s2)
 
 
 def test02_bbox(variant_scalar_rgb):

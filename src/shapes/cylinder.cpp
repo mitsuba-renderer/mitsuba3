@@ -92,12 +92,9 @@ public:
         ScalarPoint3f p0 = props.point3f("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
                       p1 = props.point3f("p1", ScalarPoint3f(0.f, 0.f, 1.f));
 
-        ScalarVector3f d = p1 - p0;
-        float length = norm(d);
-
         m_to_world = m_to_world * ScalarTransform4f::translate(p0) *
-                                  ScalarTransform4f::to_frame(ScalarFrame3f(d)) *
-                                  ScalarTransform4f::scale(ScalarVector3f(radius, radius, length));
+                                  ScalarTransform4f::to_frame(ScalarFrame3f(p1 - p0)) *
+                                  ScalarTransform4f::scale(ScalarVector3f(radius, radius, 1.f));
 
         update();
         set_children();
