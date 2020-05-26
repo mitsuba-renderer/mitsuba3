@@ -40,7 +40,7 @@ class WriteXML:
                            {}] #CAMS
         self.com_count = 0 # Counter for comment ids
         self.exported_ids = set()
-        self.copy_count = {'tex': 0, 'mesh': 0, 'spectrum': 0} # Counters for giving unique names to copied files
+        self.copy_count = {} # Counters for giving unique names to copied files with duplicate names
         self.copied_paths = {}
         self.files = []
         self.file_names = [] # Relative paths to the fragment files
@@ -502,24 +502,28 @@ class WriteXML:
         '''
         #TODO: centralize subdir names somewhere
         subfolders = {'texture': 'textures', 'emitter': 'textures', 'shape': 'meshes', 'spectrum': 'spectra'}
-        prefixes = {'texture': 'tex', 'emitter':'tex', 'shape': 'mesh', 'spectrum': 'spectrum'}
 
         if tag not in subfolders:
             raise ValueError("Unsupported tag for a filename: %s" % tag)
         abs_path = os.path.join(self.directory, subfolders[tag])
-        filepath = os.path.abspath(filepath) # we may have a relative path here, convert to absolute first
+        filepath = os.path.abspath(filepath) # We may have a relative path here, convert to absolute first
         if not os.path.isfile(filepath):
             raise ValueError("File '%s' not found!" % filepath)
         if abs_path in filepath: # The file is at the proper place already
             return os.path.relpath(filepath, self.directory)
         else: # We need to copy the file in the scene directory
-            if filepath in self.copied_paths: # file was already copied, don't copy it again
+            if filepath in self.copied_paths: # File was already copied, don't copy it again
                 return self.copied_paths[filepath]
             if not os.path.isdir(abs_path):
                 os.mkdir(abs_path)
-            _, ext = os.path.splitext(filepath)
-            target_path = os.path.join(abs_path, "%s-%d%s" % (prefixes[tag], self.copy_count[prefixes[tag]], ext))
-            self.copy_count[prefixes[tag]] += 1
+            base_name = os.path.basename(filepath)
+            name, ext = os.path.splitext(base_name)
+            if base_name in self.copy_count: # Add a number at the end of the name, since it already exists
+                name = "%s(%d)" % (name, self.copy_count[base_name])
+                self.copy_count[base_name] += 1
+            else:
+                self.copy_count[base_name] = 1
+            target_path = os.path.join(abs_path, "%s%s" % (name, ext))
             copy2(filepath, target_path)
             rel_path = os.path.relpath(target_path, self.directory)
             self.copied_paths[filepath] = rel_path
@@ -539,7 +543,7 @@ class WriteXML:
         from mitsuba.core import Transform4f, Point3f
 
         if 'type' in data: # Scene tag
-            self.open_element(data.pop('type'), {'version': '2.0.0'})
+            self.open_element(data.pop('type'), {'version': '2.1.0'})
 
         for key, value in data.items():
             if isinstance(value, dict):

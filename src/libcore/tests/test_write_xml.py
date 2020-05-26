@@ -2,7 +2,7 @@ import enoki as ek
 import pytest
 import mitsuba
 import os
-from shutil import rmtree
+from shutil import rmtree, copy
 
 from mitsuba.python.test.util import fresolver_append_path
 
@@ -455,4 +455,62 @@ def test11_xml_spectrum(variants_scalar_all):
     with pytest.raises(ValueError) as e:
         dict_to_xml(d5, filepath)
     e.match("File '%s' not found!" % os.path.abspath(d5['light']['intensity']['filename']))
+    rmtree(os.path.split(filepath)[0])
+
+@fresolver_append_path
+def test12_xml_duplicate_files(variants_scalar_all):
+    from mitsuba.python.xml import dict_to_xml
+    from mitsuba.core import Thread
+    fr = Thread.thread().file_resolver()
+    mts_root = str(fr[len(fr)-1])
+    filepath = os.path.join(mts_root, 'resources/data/scenes/dict12/dict.xml')
+    fr.append(os.path.dirname(filepath))
+
+    spectrum_path = os.path.join(mts_root, 'resources/data/ior/Al.eta.spd')
+    #Export the same file twice, this should only copy it once
+    scene_dict = {
+        'type': 'scene',
+        'light': {
+            "type" : "point",
+            "intensity" : {
+                "type" : "spectrum",
+                "filename" : spectrum_path
+            }
+        },
+        'light2': {
+            "type" : "point",
+            "intensity" : {
+                "type" : "spectrum",
+                "filename" : spectrum_path
+            }
+        }
+    }
+    dict_to_xml(scene_dict, filepath)
+    spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
+    assert len(spectra_files) == 1 and spectra_files[0] == "Al.eta.spd"
+
+    spectrum_path2 = os.path.join(mts_root, 'resources/data/scenes/dict12/Al.eta.spd')
+    copy(spectrum_path, spectrum_path2)
+    #Export two files having the same name
+    scene_dict = {
+        'type': 'scene',
+        'light': {
+            "type" : "point",
+            "intensity" : {
+                "type" : "spectrum",
+                "filename" : spectrum_path
+            }
+        },
+        'light2': {
+            "type" : "point",
+            "intensity" : {
+                "type" : "spectrum",
+                "filename" : spectrum_path2
+            }
+        }
+    }
+    dict_to_xml(scene_dict, filepath)
+
+    spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
+    assert len(spectra_files) == 2 and spectra_files[0] == "Al.eta.spd" and spectra_files[1] == "Al.eta(1).spd"
     rmtree(os.path.split(filepath)[0])
