@@ -15,7 +15,6 @@ static std::string custom_optix_shapes[] = {
     "Disk", "Rectangle", "Sphere", "Cylinder",
 };
 static constexpr size_t custom_optix_shapes_count = std::size(custom_optix_shapes);
-static char *custom_optix_shapes_program_names[2 * custom_optix_shapes_count];
 
 /// Retrieve index of custom shape descriptor in the list above for a given shape
 template <typename Shape>

@@ -15,6 +15,11 @@
 #include <mitsuba/render/scene.h>
 #include <tbb/task_scheduler_init.h>
 
+#if defined(MTS_ENABLE_OPTIX)
+#include <mitsuba/render/optix_api.h>
+#endif
+
+
 #if !defined(__WINDOWS__)
 #  include <signal.h>
 #endif
@@ -118,6 +123,9 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
     Profiler::static_initialization();
+#if defined(MTS_ENABLE_OPTIX)
+    optix_initialize();
+#endif
 
     // Ensure that the mitsuba-render shared library is loaded
     librender_nop();
@@ -263,5 +271,8 @@ int main(int argc, char *argv[]) {
     Thread::static_shutdown();
     Class::static_shutdown();
     Jit::static_shutdown();
+#if defined(MTS_ENABLE_OPTIX)
+    optix_shutdown();
+#endif
     return error_msg.empty() ? 0 : -1;
 }

@@ -37,6 +37,7 @@ struct OptixState {
     void* accel_buffer_others;
     void* accel_buffer_ias;
     void* params;
+    char *custom_optix_shapes_program_names[2 * custom_optix_shapes_count];
 };
 
 template <typename T>
@@ -54,9 +55,6 @@ using MissSbtRecord     = EmptySbtRecord;
 using HitGroupSbtRecord = SbtRecord<OptixHitGroupData>;
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
-    // Initialize OptiX library
-    optix_init();
-
     Log(Info, "Building scene in OptiX ..");
     m_accel = new OptixState();
     OptixState &s = *(OptixState *) m_accel;
@@ -143,13 +141,13 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         prog_group_descs[3+i].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
         std::string name = string::to_lower(custom_optix_shapes[i]);
-        custom_optix_shapes_program_names[2*i] = strdup(("__closesthit__" + name).c_str());
-        custom_optix_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
+        s.custom_optix_shapes_program_names[2*i] = strdup(("__closesthit__" + name).c_str());
+        s.custom_optix_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
 
         prog_group_descs[3+i].hitgroup.moduleCH            = s.module;
-        prog_group_descs[3+i].hitgroup.entryFunctionNameCH = custom_optix_shapes_program_names[2*i];
+        prog_group_descs[3+i].hitgroup.entryFunctionNameCH = s.custom_optix_shapes_program_names[2*i];
         prog_group_descs[3+i].hitgroup.moduleIS            = s.module;
-        prog_group_descs[3+i].hitgroup.entryFunctionNameIS = custom_optix_shapes_program_names[2*i+1];
+        prog_group_descs[3+i].hitgroup.entryFunctionNameIS = s.custom_optix_shapes_program_names[2*i+1];
     }
 
 #if defined(MTS_OPTIX_DEBUG)
@@ -423,10 +421,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     for (size_t i = 0; i < ProgramGroupCount; i++)
         rt_check(optixProgramGroupDestroy(s.program_groups[i]));
     for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
-        free(custom_optix_shapes_program_names[i]);
+        free(s.custom_optix_shapes_program_names[i]);
     rt_check(optixModuleDestroy(s.module));
     rt_check(optixDeviceContextDestroy(s.context));
-    optix_shutdown();
+
     delete (OptixState *) m_accel;
     m_accel = nullptr;
 }

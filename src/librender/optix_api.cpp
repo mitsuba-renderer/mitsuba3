@@ -16,6 +16,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/render/optix_api.h>
+#include <mitsuba/render/optix/shapes.h>
 
 #if !defined(MTS_USE_OPTIX_HEADERS)
 // Driver API
@@ -46,7 +47,7 @@ static bool optix_init_success = false;
 
 NAMESPACE_BEGIN(mitsuba)
 
-bool optix_init() {
+bool optix_initialize() {
     if (optix_init_attempted)
         return optix_init_success;
     optix_init_attempted = true;
@@ -140,7 +141,7 @@ bool optix_init() {
 
     if (!optix_handle) {
         Log(LogLevel::Error,
-            "optix_init(): %s could not be loaded.", optix_fname);
+            "optix_initialize(): %s could not be loaded.", optix_fname);
         return false;
     }
 
@@ -150,7 +151,7 @@ bool optix_init() {
 
     if (!optixQueryFunctionTable) {
         Log(LogLevel::Error,
-            "optix_init(): could not find symbol optixQueryFunctionTable");
+            "optix_initialize(): could not find symbol optixQueryFunctionTable");
         return false;
     }
 

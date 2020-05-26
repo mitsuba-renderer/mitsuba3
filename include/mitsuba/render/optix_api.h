@@ -244,8 +244,8 @@ extern OptixResult (*optixQueryFunctionTable)(int, unsigned int, OptixQueryFunct
 
 NAMESPACE_BEGIN(mitsuba)
 /// Try to load the OptiX library
-extern bool optix_init();
-extern void optix_shutdown();
+MTS_EXPORT_RENDER extern bool optix_initialize();
+MTS_EXPORT_RENDER extern void optix_shutdown();
 
 static size_t optix_log_buffer_size;
 static char optix_log_buffer[2024];
