@@ -70,15 +70,15 @@ Parameter ``dict``:
 // Helper function to find a value of "type" in a Python dictionary
 std::string get_type(const py::dict &dict) {
     for (auto& [key, value] : dict)
-        if (key.cast<std::string>() == "type")
-            return value.cast<std::string>();
+        if (key.template cast<std::string>() == "type")
+            return value.template cast<std::string>();
 
     Throw("Missing key 'type' in dictionary: %s", dict);
 }
 
 #define SET_PROPS(PyType, Type, Setter)         \
     if (py::isinstance<PyType>(value)) {        \
-        props.Setter(key, value.cast<Type>());  \
+        props.Setter(key, value.template cast<Type>());  \
         continue;                               \
     }
 
@@ -112,13 +112,13 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
     Properties props(type);
 
     for (auto& [k, value] : dict) {
-        std::string key = k.cast<std::string>();
+        std::string key = k.template cast<std::string>();
 
         if (key == "type")
             continue;
 
         if (key == "id") {
-            props.set_id(value.cast<std::string>());
+            props.set_id(value.template cast<std::string>());
             continue;
         }
 
@@ -131,7 +131,7 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
 
         // Load nested dictionary
         if (py::isinstance<py::dict>(value)) {
-            py::dict dict2 = value.cast<py::dict>();
+            py::dict dict2 = value.template cast<py::dict>();
             std::string type2 = get_type(dict2);
 
             // Treat nested dictionary differently when their type is "rgb" or "spectrum"
@@ -143,9 +143,9 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
                 // Read info from the dictionary
                 Properties::Color3f color;
                 for (auto& [k2, value2] : dict2) {
-                    std::string key2 = k2.cast<std::string>();
+                    std::string key2 = k2.template cast<std::string>();
                     if (key2 == "value")
-                        color = value2.cast<Properties::Color3f>();
+                        color = value2.template cast<Properties::Color3f>();
                     else if (key2 != "type")
                         Throw("Unexpected key in rgb dictionary: %s", key2);
                 }
@@ -165,21 +165,21 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
                 std::vector<Properties::Float> wavelengths;
                 std::vector<Properties::Float> values;
                 for (auto& [k2, value2] : dict2) {
-                    std::string key2 = k2.cast<std::string>();
+                    std::string key2 = k2.template cast<std::string>();
                     if (key2 == "filename") {
-                        spectrum_from_file(value2.cast<std::string>(), wavelengths, values);
+                        spectrum_from_file(value2.template cast<std::string>(), wavelengths, values);
                     } else if (key2 == "value") {
                         if (py::isinstance<py::float_>(value2) ||
                             py::isinstance<py::int_>(value2)) {
-                            const_value = value2.cast<Properties::Float>();
+                            const_value = value2.template cast<Properties::Float>();
                         } else if (py::isinstance<py::list>(value2)) {
-                            py::list list = value2.cast<py::list>();
+                            py::list list = value2.template cast<py::list>();
                             wavelengths.resize(list.size());
                             values.resize(list.size());
                             for (size_t i = 0; i < list.size(); ++i) {
-                                auto pair = list[i].cast<py::tuple>();
-                                wavelengths[i] = pair[0].cast<Properties::Float>();
-                                values[i]      = pair[1].cast<Properties::Float>();
+                                auto pair = list[i].template cast<py::tuple>();
+                                wavelengths[i] = pair[0].template cast<Properties::Float>();
+                                values[i]      = pair[1].template cast<Properties::Float>();
                             }
                         } else {
                             Throw("Unexpected value type in 'spectrum' dictionary: %s", value2);
@@ -204,10 +204,10 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
                 if (is_scene)
                     Throw("Reference found at the scene level: %s", key);
 
-                for (auto& [k2, value2] : value.cast<py::dict>()) {
-                    std::string key2 = k2.cast<std::string>();
+                for (auto& [k2, value2] : value.template cast<py::dict>()) {
+                    std::string key2 = k2.template cast<std::string>();
                     if (key2 == "id") {
-                        std::string id = value2.cast<std::string>();
+                        std::string id = value2.template cast<std::string>();
                         if (instances.count(id) == 1)
                             expand_and_set_object(props, key, instances[id]);
                         else
@@ -244,13 +244,13 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
 
         // Try to cast to Array3f (list, tuple, numpy.array, ...)
         try {
-            props.set_array3f(key, value.cast<Properties::Array3f>());
+            props.set_array3f(key, value.template cast<Properties::Array3f>());
             continue;
         } catch (const pybind11::cast_error &e) { }
 
         // Try to cast entry to an object
         try {
-            auto obj = value.cast<ref<Object>>();
+            auto obj = value.template cast<ref<Object>>();
             expand_and_set_object(props, key, obj);
             continue;
         } catch (const pybind11::cast_error &e) { }

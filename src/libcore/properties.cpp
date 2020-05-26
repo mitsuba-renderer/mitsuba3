@@ -412,7 +412,7 @@ Array3f Properties::array3f(const std::string &name) const {
     if (!it->second.data.is<Array3f>())
         Throw("The property \"%s\" has the wrong type (expected <vector> or <point>).", name);
     it->second.queried = true;
-    return (Array3f) it->second.data;
+    return it->second.data.operator Array3f&();
 }
 
 /// Array3f getter (with default)
@@ -423,7 +423,7 @@ Array3f Properties::array3f(const std::string &name, const Array3f &def_val) con
     if (!it->second.data.is<Array3f>())
         Throw("The property \"%s\" has the wrong type (expected <vector> or <point>).", name);
     it->second.queried = true;
-    return (Array3f) it->second.data;
+    return it->second.data.operator Array3f&();
 }
 
 /// AnimatedTransform setter.
