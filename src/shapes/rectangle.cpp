@@ -213,10 +213,6 @@ public:
         return { Vector3f(0.f), Vector3f(0.f) };
     }
 
-    ScalarSize primitive_count() const override { return 1; }
-
-    ScalarSize effective_primitive_count() const override { return 1; }
-
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
     }

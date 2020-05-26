@@ -133,7 +133,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, Mask active) const {
                 Float cache[2] = { load<Float>(rh.hit.u), load<Float>(rh.hit.v) };
 
                 // Ask shape(s) to fill in the rest
-                si.shape->fill_surface_interaction(ray, cache, si, active);
+                si.shape->fill_surface_interaction(ray, cache, si, hit);
 
                 // Gram-schmidt orthogonalization to compute local shading frame
                 si.sh_frame.s = normalize(
