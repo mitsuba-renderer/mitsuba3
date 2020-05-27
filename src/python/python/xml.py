@@ -228,7 +228,6 @@ class WriteXML:
         file: The file to write to
         comment: Optional comment to add (e.g. "# Geometry file")
         '''
-        self.wf(file, '<?xml version="1.0" encoding="utf-8"?>\n')
         if comment:
             self.write_comment(comment, file)
 
