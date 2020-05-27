@@ -99,6 +99,9 @@ void expand_and_set_object(Properties &props, const std::string &name, const ref
 template <typename Float, typename Spectrum>
 ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &instances) {
 
+    MTS_IMPORT_CORE_TYPES()
+    using ScalarArray3f = Array<ScalarFloat, 3>;
+
     std::string type = get_type(dict);
     bool is_scene = (type == "scene");
 
@@ -126,8 +129,8 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
         SET_PROPS(py::int_, int64_t, set_long);
         SET_PROPS(py::float_, Properties::Float, set_float);
         SET_PROPS(py::str, std::string, set_string);
-        SET_PROPS(Properties::Array3f, Properties::Array3f, set_array3f);
-        SET_PROPS(Properties::Transform4f, Properties::Transform4f, set_transform);
+        SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
+        SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
 
         // Load nested dictionary
         if (py::isinstance<py::dict>(value)) {

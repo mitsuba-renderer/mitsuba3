@@ -213,7 +213,7 @@ public:
                     normal = normalize(normal);
             }
 
-            ScalarFloat color_factor = rcp(255.f);
+            InputFloat color_factor = rcp(255.f);
 
             for (int i = 0; i < 3; i++) {
                 const size_t loop_index = tri_loop.tri[i];
