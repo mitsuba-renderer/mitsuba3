@@ -36,7 +36,7 @@ using the :py:class:`mitsuba.core.Bitmap` class:
 .. code-block:: python
 
     # Write out a tone-mapped JPG of the same rendering
-    from mitsuba.core import Struct
+    from mitsuba.core import Bitmap, Struct
     img = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True)
     img.write('/path/to/output.jpg')
 
