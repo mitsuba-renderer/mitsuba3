@@ -1458,7 +1458,7 @@ extern "C" {
         p->stream->write(p->buffer, jpeg_buffer_size);
         p->mgr.next_output_byte = p->buffer;
         p->mgr.free_in_buffer = jpeg_buffer_size;
-        return 1;
+        return TRUE;
     }
 
     METHODDEF(void) jpeg_term_destination(j_compress_ptr cinfo) {
