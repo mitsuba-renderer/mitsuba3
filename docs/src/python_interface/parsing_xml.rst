@@ -178,7 +178,7 @@ Here as some examples of the possible use of the ``"value"`` entry in the nested
     # Providing a spectral file
     "color_property" : {
         "type": "spectrum",
-        "value": "filename.spd"
+        "filename": "filename.spd"
     }
 
     # Providing a list of (wavelength, value) pairs
