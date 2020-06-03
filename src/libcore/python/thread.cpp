@@ -93,6 +93,7 @@ MTS_PY_EXPORT(Thread) {
        .def_method(Thread, set_logger)
        .def_method(Thread, set_file_resolver)
        .def_static_method(Thread, thread)
+       .def_static_method(Thread, register_external_thread)
        .def_method(Thread, start)
        .def_method(Thread, is_running)
        .def_method(Thread, detach)
