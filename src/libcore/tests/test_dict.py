@@ -447,14 +447,14 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
         "type" : "diffuse",
         "reflectance" : {
             "type" : "bitmap",
-            "filename" : "resources/data/envmap/museum.exr"
+            "filename" : "resources/data/common/textures/museum.exr"
         }
     })
 
     b1 = xml.load_string("""
         <bsdf type="diffuse" version="2.0.0">
             <texture type="bitmap" name="reflectance">
-                <string name="filename" value="resources/data/envmap/museum.exr"/>
+                <string name="filename" value="resources/data/common/textures/museum.exr"/>
             </texture>
         </bsdf>
     """)
@@ -464,7 +464,7 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
     # Check that root object isn't expanded
     texture = xml.load_dict({
             "type" : "bitmap",
-            "filename" : "resources/data/envmap/museum.exr"
+            "filename" : "resources/data/common/textures/museum.exr"
     })
     assert len(texture.expand()) == 1
 
@@ -480,7 +480,7 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
         "type" : "scene",
         "mytexture" : {
             "type" : "bitmap",
-            "filename" : "resources/data/envmap/museum.exr"
+            "filename" : "resources/data/common/textures/museum.exr"
         },
         "shape1" : {
             "type" : "sphere",

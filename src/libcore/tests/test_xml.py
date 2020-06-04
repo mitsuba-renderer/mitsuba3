@@ -298,3 +298,28 @@ def test20_upgrade_tree(variant_scalar_rgb):
                                <float name="intIOR" value="1.33"/>
                            </bsdf>
                        </scene>""")
+
+
+def test21_path_at_root_only(variant_scalar_rgb):
+    from mitsuba.core import xml
+
+    err_str = 'can only be child of root'
+    with pytest.raises(Exception) as e:
+        xml.load_string("""<scene version="2.0.0">
+                            <bsdf type="dielectric">
+                                <path value="/tmp"/>
+                            </bsdf>
+                        </scene>""")
+    e.match(err_str)
+
+
+def test22_fileresolver_unchanged(variant_scalar_rgb):
+    from mitsuba.core import xml, Thread
+
+    fs_backup = Thread.thread().file_resolver()
+
+    xml.load_string("""<scene version="2.0.0">
+                            <path value="/tmp"/>
+                        </scene>""")
+
+    assert fs_backup == Thread.thread().file_resolver()

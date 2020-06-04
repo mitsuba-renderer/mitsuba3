@@ -16,7 +16,6 @@ integrators = [
     ]
 ]
 
-
 def make_integrator(kind, xml=""):
     from mitsuba.core.xml import load_string
     integrator = load_string("<integrator version='2.0.0' type='%s'>"

@@ -55,7 +55,7 @@ def create_medium_scene(phase_function='isotropic', spp=8):
             </sensor>
             <emitter type="constant" />
             <shape type="ply">
-                <string name="filename" value="resources/data/ply/teapot.ply"/>
+                <string name="filename" value="resources/data/common/meshes/teapot.ply"/>
                 <bsdf type="null" />
                 <medium name="interior" type="homogeneous">
                     <rgb name="sigma_t" value="1.0, 1.0, 1.0"/>

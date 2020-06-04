@@ -71,7 +71,7 @@ def test02_depth_scalar_bunny(variant_scalar_rgb):
     scene = load_string("""
         <scene version="0.5.0">
             <shape type="ply">
-                <string name="filename" value="resources/data/ply/bunny_lowres.ply"/>
+                <string name="filename" value="resources/data/common/meshes/bunny_lowres.ply"/>
             </shape>
         </scene>
     """)

@@ -56,7 +56,7 @@ def make_teapot_scene(spp = 32):
 
             <shape type="ply">
                 <string name="filename"
-                        value="resources/data/ply/teapot.ply"/>
+                        value="resources/data/common/meshes/teapot.ply"/>
 
                 <bsdf type="diffuse">
                     <rgb name="reflectance" value="0.1, 0.1, 0.8"/>
@@ -111,7 +111,7 @@ def make_box_scene(spp = 16):
             </bsdf>
 
             <shape type="ply">
-                <string name="filename" value="resources/data/ply/teapot.ply"/>
+                <string name="filename" value="resources/data/common/meshes/teapot.ply"/>
                 <transform name="to_world">
                     <translate x="0" y="0" z="0.15"/>
                 </transform>
@@ -119,7 +119,7 @@ def make_box_scene(spp = 16):
             </shape>
 
             <shape type="obj"> <!-- Bottom -->
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                 </transform>
@@ -127,7 +127,7 @@ def make_box_scene(spp = 16):
             </shape>
 
             <shape type="obj">  <!-- Left -->
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="0" y="1" z="0" angle="90"/>
@@ -139,7 +139,7 @@ def make_box_scene(spp = 16):
             </shape>
 
             <shape type="obj">  <!-- Back -->
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="1" y="0" z="0" angle="90"/>
@@ -149,7 +149,7 @@ def make_box_scene(spp = 16):
             </shape>
 
             <shape type="obj">  <!-- Right -->
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="0" y="1" z="0" angle="-90"/>
@@ -161,7 +161,7 @@ def make_box_scene(spp = 16):
             </shape>
 
             <shape type="obj">  <!-- Top -->
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="5" y="5" z="5"/>
                     <rotate x="0" y="1" z="0" angle="180"/>
@@ -171,7 +171,7 @@ def make_box_scene(spp = 16):
             </shape>
 
             <shape type="obj">  <!-- Small emitter -->
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="3" y="3" z="3"/>
                     <rotate x="0" y="1" z="0" angle="180"/>
@@ -224,7 +224,7 @@ def make_museum_plane_scene(spp = 16, roughness = 0.01):
             </bsdf>
 
             <shape type="obj">
-                <string name="filename" value="resources/data/obj/rectangle.obj"/>
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
                 <transform name="to_world">
                     <scale x="10" y="10" z="10"/>
                     <lookat origin="0,   0, 0"
@@ -235,7 +235,7 @@ def make_museum_plane_scene(spp = 16, roughness = 0.01):
             </shape>
 
             <emitter type="envmap">
-                <string name="filename" value="resources/data/envmap/museum.exr"/>
+                <string name="filename" value="resources/data/common/textures/museum.exr"/>
                 <transform name="to_world">
                     <rotate x="0" y="0" z="1" angle="90"/>
                     <rotate x="1" y="0" z="0" angle="90"/>
@@ -279,8 +279,8 @@ SCENES = {
     },
     'museum_plane': {
         'depth':    [18.534136, 18.534126, 18.534119, 0.6803705],
-        'direct':   [0.16745913, 0.10562614, 0.077834584, 0.68026865],
-        'full':     [0.16745913, 0.10562614, 0.077834584, 0.68026865],
+        'direct':   [0.30023497, 0.18874034, 0.13849358, 0.6803551],
+        'full':     [0.30023497, 0.18874034, 0.13849358, 0.6803551],
         'factory':  make_museum_plane_scene
     },
 }

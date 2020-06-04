@@ -164,7 +164,7 @@ def test05_xml_split(variant_scalar_rgb):
         },
         'envmap': {
             'type': 'envmap',
-            'filename': 'resources/data/envmap/museum.exr'
+            'filename': 'resources/data/common/textures/museum.exr'
         },
         'shape':{
             'type': 'sphere',

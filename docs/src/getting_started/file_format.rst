@@ -407,7 +407,6 @@ precedence when no command line arguments are given. The syntax for this is:
 
 and must precede the occurrences of the parameter in the XML file.
 
-
 Including external files
 ------------------------
 
@@ -444,3 +443,14 @@ can be accomplished using the ``alias as=".."`` tag:
 After this statement, the diffuse scattering model will be bound to *both*
 identifiers ``my_material_1`` and ``my_material_2``.
 
+External resource folders
+-------------------------
+
+Using the ``path`` tag, it is possible to add a path to the list of search paths. This can
+be useful for instance when some meshes and textures are stored in a different directory, (e.g. when
+shared with other scenes). The path can be absolute, relative to the directory containing the XML
+scene file, or relative to any path already existing in the list of search paths.
+
+.. code-block:: xml
+
+    <path value="../../my_resources"/>
