@@ -45,7 +45,22 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
 This plugin implements a fast loader for the Stanford PLY format (both the
 ASCII and binary format, which is preferred for performance reasons). The
 current plugin implementation supports triangle meshes with optional UV
-coordinates and vertex normals.
+coordinates, vertex normals and other custom vertex or face attributes.
+
+Consecutive attributes with names sharing a common prefix and using one of the following schemes:
+
+``{prefix}_{x|y|z|w}``, ``{prefix}_{r|g|b|a}``, ``{prefix}_{0|1|2|3}``, ``{prefix}_{1|2|3|4}``
+
+will be group together under a single multidimentional attribute named ``{vertex|face}_{prefix}``.
+
+RGB color attributes can also be defined without a prefix, following the naming scheme ``{r|g|b|a}``
+or ``{red|green|blue|alpha}``. Those attributes will be group together under a single
+multidimentional attribute named ``{vertex|face}_color``.
+
+.. note::
+
+    Values stored in a RBG color attribute will automatically be converted into spectal model
+    coefficients when using a spectral variant of the renderer.
  */
 
 template <typename Float, typename Spectrum>
@@ -53,7 +68,7 @@ class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
                     m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
-                    m_faces_buf, m_mesh_attributes, m_disable_vertex_normals, has_vertex_normals,
+                    m_faces_buf, add_attribute, m_disable_vertex_normals, has_vertex_normals,
                     has_vertex_texcoords, recompute_vertex_normals, set_children)
     MTS_IMPORT_TYPES()
 
@@ -81,8 +96,8 @@ public:
 
     struct PLYAttributeDescriptor {
         std::string name;
-        size_t size;
-        InputFloat* buf_ptr;
+        size_t dim;
+        FloatStorage buf;
     };
 
     PLYMesh(const Properties &props) : Base(props) {
@@ -159,9 +174,12 @@ public:
                 }
 
                 // Look for other fields
-                std::unordered_set<std::string> reserved_names = { "x", "y", "z", "nx", "ny", "nz", "u", "v" };
+                std::unordered_set<std::string> reserved_names = {
+                    "x", "y", "z", "nx", "ny", "nz", "u", "v"
+                };
                 std::vector<PLYAttributeDescriptor> vertex_attributes_descriptors;
-                find_other_fields("vertex_", vertex_attributes_descriptors, vertex_struct, el.struct_, reserved_names);
+                find_other_fields("vertex_", vertex_attributes_descriptors,
+                                  vertex_struct, el.struct_, reserved_names);
 
                 size_t i_struct_size = el.struct_->size();
                 size_t o_struct_size = vertex_struct->size();
@@ -181,11 +199,8 @@ public:
                     m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
 
                 for (auto& descr: vertex_attributes_descriptors) {
-                    auto[it, success] = m_mesh_attributes.insert({
-                        descr.name, { descr.size, Mesh<Float, Spectrum>::Vertex, empty<FloatStorage>(m_vertex_count * descr.size)}
-                    });
-                    it->second.buf.managed();
-                    descr.buf_ptr = it->second.buf.data();
+                    descr.buf = empty<FloatStorage>(m_vertex_count * descr.dim);
+                    descr.buf.managed();
                 }
 
                 m_vertex_positions_buf.managed();
@@ -239,17 +254,26 @@ public:
                             texcoord_ptr += 2;
                         }
 
-                        size_t target_offset = sizeof(InputFloat) * (!m_disable_vertex_normals ? (has_vertex_texcoords ? 8 : 6) : (has_vertex_texcoords ? 5 : 3));
+                        size_t target_offset =
+                            sizeof(InputFloat) *
+                            (!m_disable_vertex_normals
+                                 ? (has_vertex_texcoords ? 8 : 6)
+                                 : (has_vertex_texcoords ? 5 : 3));
+
                         for (size_t k = 0; k < vertex_attributes_descriptors.size(); ++k) {
                             auto& descr = vertex_attributes_descriptors[k];
-                            memcpy(descr.buf_ptr, target + target_offset, descr.size * sizeof(InputFloat));
-
-                            descr.buf_ptr += descr.size;
-                            target_offset += descr.size * sizeof(InputFloat);
+                            memcpy(descr.buf.data() + (i * elements_per_packet + j) * descr.dim,
+                                   target + target_offset,
+                                   descr.dim * sizeof(InputFloat));
+                            target_offset += descr.dim * sizeof(InputFloat);
                         }
 
                         target += o_struct_size;
                     }
+                }
+
+                for (auto& descr: vertex_attributes_descriptors) {
+                    add_attribute(descr.name, descr.dim, descr.buf);
                 }
             } else if (el.name == "face") {
                 std::string field_name;
@@ -264,9 +288,14 @@ public:
                     face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
                 // Look for other fields
-                std::unordered_set<std::string> reserved_names = { "vertex_index.count", "vertex_indices.count", "i0", "i1", "i2" };
+                std::unordered_set<std::string> reserved_names = {
+                    "vertex_index.count",
+                    "vertex_indices.count",
+                    "i0", "i1", "i2"
+                };
                 std::vector<PLYAttributeDescriptor> face_attributes_descriptors;
-                find_other_fields("face_", face_attributes_descriptors, face_struct, el.struct_, reserved_names);
+                find_other_fields("face_", face_attributes_descriptors,
+                                  face_struct, el.struct_, reserved_names);
 
                 size_t i_struct_size = el.struct_->size();
                 size_t o_struct_size = face_struct->size();
@@ -283,11 +312,8 @@ public:
                 m_faces_buf.managed();
 
                 for (auto& descr: face_attributes_descriptors) {
-                    auto[it, success] = m_mesh_attributes.insert({
-                        descr.name, { descr.size, Mesh<Float, Spectrum>::Face, empty<FloatStorage>(m_face_count * descr.size)}
-                    });
-                    it->second.buf.managed();
-                    descr.buf_ptr = it->second.buf.data();
+                    descr.buf = empty<FloatStorage>(m_face_count * descr.dim);
+                    descr.buf.managed();
                 }
 
                 ScalarIndex* face_ptr = m_faces_buf.data();
@@ -318,13 +344,18 @@ public:
                         size_t target_offset = sizeof(InputFloat) * 3;
                         for (size_t k = 0; k < face_attributes_descriptors.size(); ++k) {
                             auto& descr = face_attributes_descriptors[k];
-                            memcpy(descr.buf_ptr, target + target_offset, descr.size * sizeof(InputFloat));
-                            descr.buf_ptr += descr.size;
-                            target_offset += descr.size * sizeof(InputFloat);
+                            memcpy(descr.buf.data() + (i * elements_per_packet + j) * descr.dim,
+                                   target + target_offset,
+                                   descr.dim * sizeof(InputFloat));
+                            target_offset += descr.dim * sizeof(InputFloat);
                         }
 
                         target += o_struct_size;
                     }
+                }
+
+                for (auto& descr: face_attributes_descriptors) {
+                    add_attribute(descr.name, descr.dim, descr.buf);
                 }
             } else {
                 Log(Warn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
@@ -614,7 +645,7 @@ private:
                 target_struct->append("a", struct_type_v<InputFloat>);
                 ++field_count;
             }
-            vertex_attributes_descriptors.push_back({ type + "color", field_count, nullptr });
+            vertex_attributes_descriptors.push_back({ type + "color", field_count, FloatStorage() });
 
             if (!ref_struct->field("r").is_float())
                 Log(Warn, "Mesh attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
@@ -662,8 +693,14 @@ private:
                     (type + current_prefix).c_str());
 
             for(size_t i = 0; i < current_postfix_level_index; ++i)
-                target_struct->append(current_prefix + "_" + postfixes[i][current_postfix_index], struct_type_v<InputFloat>);
-            vertex_attributes_descriptors.push_back({ type + current_prefix, current_postfix_level_index, nullptr });
+                target_struct->append(current_prefix + "_" + postfixes[i][current_postfix_index],
+                                      struct_type_v<InputFloat>);
+
+            std::string color_postfix = (current_postfix_index == 1) ? "_color" : "";
+            vertex_attributes_descriptors.push_back(
+                { type + current_prefix + color_postfix,
+                  current_postfix_level_index, FloatStorage() });
+
             prefixes_encountered.insert(current_prefix);
             // Reset state
             ignore_attribute();

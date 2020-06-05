@@ -496,30 +496,33 @@ Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool sh
     return { dndu, dndv };
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::FloatStorage&
-Mesh<Float, Spectrum>::add_attribute(const std::string& name, size_t size) {
+MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
+                                                      size_t dim,
+                                                      const FloatStorage& buffer) {
     auto attribute = m_mesh_attributes.find(name);
     if (attribute != m_mesh_attributes.end())
         Throw("add_attribute(): attribute %s already exists.", name.c_str());
 
-    bool is_vertex_attribute = name.find("vertex_") == 0;
-    bool is_face_attribute = name.find("face_") == 0;
-    if (!is_vertex_attribute && !is_face_attribute)
+    bool is_vertex_attr = name.find("vertex_") == 0;
+    bool is_face_attr   = name.find("face_") == 0;
+    if (!is_vertex_attr && !is_face_attr)
         Throw("add_attribute(): attribute name must start with either \"vertex_\" of \"face_\".");
 
-    if (is_vertex_attribute) {
-        auto [it, success] = m_mesh_attributes.insert({
-            name,
-            { size, MeshAttributeType::Vertex, empty<FloatStorage>(m_vertex_count * size) }
-        });
-        return it->second.buf;
-    } else {
-        auto [it, success] = m_mesh_attributes.insert({
-            name,
-            { size, MeshAttributeType::Face, empty<FloatStorage>(m_face_count * size) }
-        });
-        return it->second.buf;
+    MeshAttributeType type = is_vertex_attr ? MeshAttributeType::Vertex : MeshAttributeType::Face;
+
+    // In spectral modes, convert RGB color to srgb model coefs if attribute name contains 'color'
+    if constexpr (is_spectral_v<Spectrum>) {
+        if (dim == 3 && name.find("color") != std::string::npos) {
+            size_t count = is_vertex_attr ? m_vertex_count : m_face_count;
+            InputFloat *ptr = (InputFloat *) buffer.data();
+            for (size_t i = 0; i < count; ++i) {
+                store_unaligned(ptr, srgb_model_fetch(load_unaligned<Color<InputFloat, 3>>(ptr)));
+                ptr += 3;
+            }
+        }
     }
+
+    m_mesh_attributes.insert({ name, { dim, type, buffer } });
 }
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::UnpolarizedSpectrum

@@ -63,7 +63,7 @@ class BlenderMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
                     m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
-                    m_faces_buf, m_mesh_attributes, set_children)
+                    m_faces_buf, add_attribute, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::MeshAttributeType;
@@ -302,12 +302,9 @@ public:
             m_vertex_texcoords_buf = FloatStorage::copy(tmp_uvs.data(), m_vertex_count * 2);
         if (has_cols) {
             for (size_t p = 0; p < cols.size(); p++) {
-                m_mesh_attributes[cols[p].first] = {
-                    3,
-                    MeshAttributeType::Vertex,
-                    FloatStorage::copy(tmp_cols[p].data(), m_vertex_count * 3)
-                };
-                m_mesh_attributes[cols[p].first].buf.managed();
+                add_attribute(
+                    cols[p].first, 3,
+                    FloatStorage::copy(tmp_cols[p].data(), m_vertex_count * 3));
             }
         }
 

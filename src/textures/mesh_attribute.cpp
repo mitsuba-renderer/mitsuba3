@@ -48,11 +48,11 @@ whose reflectance is specified using the ``vertex_color`` attribute of that mesh
         </bsdf>
     </shape>
 
-.. warning::
+.. note::
 
-    For spectral variants of the renderer (e.g. ``scalar_spectral``), it is assumed that
-    tri-stimulus color mesh attribute data (e.g. vertex color) is already converted to ``rgb2spec``
-    model coefficients. (e.g. using :py:func:`mitsuba.render.srgb_model_fetch`)
+    For spectral variants of the renderer (e.g. ``scalar_spectral``), when a mesh attribute name
+    contains the string ``"color"``, the tri-stimulus RGB values will be converted to ``rgb2spec``
+    model coefficients automatically.
 
  */
 

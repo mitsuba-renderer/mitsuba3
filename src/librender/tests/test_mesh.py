@@ -215,7 +215,7 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
     m.faces_buffer()[:] = [0, 1, 2, 1, 2, 0]
     m.parameters_changed()
 
-    m.add_attribute("vertex_color", 3)[:] = [0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0]
+    m.add_attribute("vertex_color", 3, [0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0])
 
     assert str(m) == """Mesh[
   name = "MyMesh",

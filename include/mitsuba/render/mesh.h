@@ -72,8 +72,8 @@ public:
         return attribute->second.buf;
     }
 
-    /// Add and return an attribute buffer with the given \c name and \c size
-    FloatStorage& add_attribute(const std::string& name, size_t size);
+    /// Add an attribute buffer with the given \c name and \c dim
+    void add_attribute(const std::string& name, size_t dim, const FloatStorage& buf);
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
