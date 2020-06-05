@@ -10,6 +10,10 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/python/python.h>
 
+#if defined(MTS_ENABLE_OPTIX)
+# include <mitsuba/render/optix_api.h>
+#endif
+
 #define MODULE_NAME MTS_MODULE_NAME(render, MTS_VARIANT_NAME)
 
 #define PY_TRY_CAST(Type)                                         \
@@ -78,6 +82,12 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.render";
 
+    using Float = MTS_VARIANT_FLOAT;
+#if defined(MTS_ENABLE_OPTIX)
+    if constexpr (is_cuda_array_v<Float>)
+        optix_initialize();
+#endif
+
     // Create sub-modules
     py::module mueller = create_submodule(m, "mueller");
     mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
@@ -112,6 +122,21 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     auto casters = (std::vector<void *> *) (py::capsule)(
         py::module::import("mitsuba.core_ext").attr("casters"));
     casters->push_back((void *) caster);
+
+#if defined(MTS_ENABLE_OPTIX)
+    if constexpr (is_cuda_array_v<Float>) {
+        /* Register a cleanup callback function that is invoked when
+           the 'mitsuba::BSDF' Python type is garbage collected */
+        py::cpp_function cleanup_callback(
+            [](py::handle weakref) {
+                optix_shutdown();
+                weakref.dec_ref();
+            }
+        );
+
+        (void) py::weakref(m.attr("BSDF"), cleanup_callback).release();
+    }
+#endif
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba." ENOKI_TOSTRING(MODULE_NAME);

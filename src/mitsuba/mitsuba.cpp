@@ -123,9 +123,6 @@ int main(int argc, char *argv[]) {
     Logger::static_initialization();
     Bitmap::static_initialization();
     Profiler::static_initialization();
-#if defined(MTS_ENABLE_OPTIX)
-    optix_initialize();
-#endif
 
     // Ensure that the mitsuba-render shared library is loaded
     librender_nop();
@@ -177,8 +174,13 @@ int main(int argc, char *argv[]) {
             arg_define = arg_define->next();
         }
         std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
-        if (string::starts_with(mode, "gpu"))
+
+#if defined(MTS_ENABLE_OPTIX)
+        if (string::starts_with(mode, "gpu")) {
             cie_alloc();
+            optix_initialize();
+        }
+#endif
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
