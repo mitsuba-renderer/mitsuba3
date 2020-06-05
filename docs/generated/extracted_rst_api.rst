@@ -3385,7 +3385,7 @@
 
 .. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
     :type: bool
-    :value: True
+    :value: False
 
 .. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
     :type: int
@@ -3393,7 +3393,7 @@
 
 .. py:data:: mitsuba.core.MTS_VERSION
     :type: str
-    :value: 2.0.0
+    :value: 2.1.0
 
 .. py:data:: mitsuba.core.MTS_VERSION_MAJOR
     :type: int
@@ -3401,7 +3401,7 @@
 
 .. py:data:: mitsuba.core.MTS_VERSION_MINOR
     :type: int
-    :value: 0
+    :value: 1
 
 .. py:data:: mitsuba.core.MTS_VERSION_PATCH
     :type: int
@@ -3409,7 +3409,7 @@
 
 .. py:data:: mitsuba.core.MTS_YEAR
     :type: str
-    :value: 2019
+    :value: 2020
 
 .. py:class:: mitsuba.core.MarginalContinuous2D0
 
@@ -6844,6 +6844,17 @@
         Return the thread priority
 
         Returns → :py:obj:`mitsuba.core.Thread.EPriority`:
+            *no description available*
+
+    .. py:method:: mitsuba.core.Thread.register_external_thread(arg0)
+
+        Register a new thread (e.g. TBB, Python) with Mituba thread system.
+        Returns true upon success.
+
+        Parameter ``arg0`` (str):
+            *no description available*
+
+        Returns → bool:
             *no description available*
 
     .. py:method:: mitsuba.core.Thread.set_core_affinity(self, arg0)
@@ -11617,7 +11628,8 @@
 
     .. py:method:: mitsuba.render.Film.put(self, block)
 
-        Merge an image block into the film
+        Merge an image block into the film. This methods should be thread-
+        safe.
 
         Parameter ``block`` (:py:obj:`mitsuba.render.ImageBlock`):
             *no description available*
@@ -12102,9 +12114,7 @@
 
     Base class: :py:obj:`mitsuba.render.Shape`
 
-    Overloaded function.
-
-    1. __init__(self: :py:obj:`mitsuba.render.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.core.Properties` = Properties[
+    __init__(self: :py:obj:`mitsuba.render.Mesh`, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.core.Properties` = Properties[
       plugin_name = "",
       id = "",
       elements = {
@@ -12114,20 +12124,9 @@
 
     Create a new mesh with the given vertex and face data structures
 
-    2. __init__(self: :py:obj:`mitsuba.render.Mesh`, name: str, loop_tri_count: int, loop_tri_ptr: int, loop_ptr: int, vertex_count: int, vertex_ptr: int, poly_ptr: int, uv_ptr: int, col_ptr: int, mat_nr: int, to_world: enoki.scalar.Matrix4f, props: :py:obj:`mitsuba.core.Properties` = Properties[
-      plugin_name = "",
-      id = "",
-      elements = {
-      }
-    ]
-    ) -> None
+    .. py:method:: mitsuba.render.Mesh.add_attribute(self, name, size, buffer)
 
-    Constructor to call from Blender
-
-    .. py:method:: mitsuba.render.Mesh.add_attribute(self, name, size)
-
-        Add and return an attribute buffer with the given ``name`` and
-        ``size``
+        Add an attribute buffer with the given ``name`` and ``dim``
 
         Parameter ``name`` (str):
             *no description available*
@@ -12135,7 +12134,10 @@
         Parameter ``size`` (int):
             *no description available*
 
-        Returns → enoki.dynamic.Float32:
+        Parameter ``buffer`` (enoki.dynamic.Float32):
+            *no description available*
+
+        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.render.Mesh.attribute_buffer(self, name)
@@ -13002,9 +13004,7 @@
 
     .. py:method:: mitsuba.render.Scene.shapes(self)
 
-        Return the list of shapes
-
-        Returns → List[:py:obj:`mitsuba.render.Shape`]:
+        Returns → list:
             *no description available*
 
 .. py:class:: mitsuba.render.Sensor
@@ -15134,6 +15134,246 @@
 
     Write the linearized RGB image in `data` to a PNG/EXR/.. file with
     resolution `resolution`.
+
+.. py:class:: mitsuba.python.xml.Files
+
+    Enum for different files or dicts containing specific info
+
+.. py:class:: mitsuba.python.xml.WriteXML(path, split_files=False)
+
+    File Writing API
+    Populates a dictionary with scene data, then writes it to XML.
+
+    .. py:method:: mitsuba.python.xml.WriteXML.data_add(key, value, file=0)
+
+        Add an entry to a given subdict.
+
+        Params
+        ------
+
+        key: dict key
+        value: entry
+        file: the subdict to which to add the data
+
+    .. py:method:: mitsuba.python.xml.WriteXML.add_comment(comment, file=0)
+
+        Add a comment to the scene dict
+
+        Params
+        ------
+
+        comment: text of the comment
+        file: the subdict to which to add the comment
+
+    .. py:method:: mitsuba.python.xml.WriteXML.add_include(file)
+
+        Add an include tag to the main file.
+        This is used when splitting the XML scene file in multiple fragments.
+
+        Params
+        ------
+
+        file: the file to include
+
+    .. py:method:: mitsuba.python.xml.WriteXML.wf(ind, st, tabs=0)
+
+        Write a string to file index ind.
+        Optionally indent the string by a number of tabs
+
+        Params
+        ------
+
+        ind: index of the file to write to
+        st: text to write
+        tabs: optional number of tabs to add
+
+    .. py:method:: mitsuba.python.xml.WriteXML.set_filename(name)
+
+        Open the files for output,
+        using filenames based on the given base name.
+        Create the necessary folders to create the file at the specified path.
+
+        Params
+        ------
+
+        name: path to the scene.xml file to write.
+
+    .. py:method:: mitsuba.python.xml.WriteXML.set_output_file(file)
+
+        Switch next output to the given file index
+
+        Params
+        ------
+
+        file: index of the file to start writing to
+
+    .. py:method:: mitsuba.python.xml.WriteXML.write_comment(comment, file=None)
+
+        Write an XML comment to file.
+
+        Params
+        ------
+
+        comment: The text of the comment to write
+        file: Index of the file to write to
+
+    .. py:method:: mitsuba.python.xml.WriteXML.write_header(file, comment=None)
+
+        Write an XML header to a specified file.
+        Optionally add a comment to describe the file.
+
+        Params
+        ------
+
+        file: The file to write to
+        comment: Optional comment to add (e.g. "# Geometry file")
+
+    .. py:method:: mitsuba.python.xml.WriteXML.open_element(name, attributes={}, file=None)
+
+        Open an XML tag (e.g. emitter, bsdf...)
+
+        Params
+        ------
+
+        name: Name of the tag (emitter, bsdf, shape...)
+        attributes: Additional fileds to add to the opening tag (e.g. name, type...)
+        file: File to write to
+
+    .. py:method:: mitsuba.python.xml.WriteXML.close_element(file=None)
+
+        Close the last tag we opened in a given file.
+
+        Params
+        ------
+
+        file: The file to write to
+
+    .. py:method:: mitsuba.python.xml.WriteXML.element(name, attributes={}, file=None)
+
+        Write a single-line XML element.
+
+        Params
+        ------
+
+        name: Name of the element (e.g. integer, string, rotate...)
+        attributes: Additional fields to add to the element (e.g. name, value...)
+        file: The file to write to
+
+    .. py:method:: mitsuba.python.xml.WriteXML.get_plugin_tag(plugin_type)
+
+        Get the corresponding tag of a given plugin (e.g. 'bsdf' for 'diffuse')
+        If the given type (e.g. 'transform') is not a plugin, returns None.
+
+        Params
+        ------
+
+        plugin_type: Name of the type (e.g. 'diffuse', 'ply'...)
+
+    .. py:method:: mitsuba.python.xml.WriteXML.current_tag()
+
+        Get the tag in which we are currently writing
+
+    .. py:method:: mitsuba.python.xml.WriteXML.configure_defaults(scene_dict)
+
+        Traverse the scene graph and look for properties in the defaults dict.
+        For such properties, store their value in a default tag and replace the value by $name in the prop.
+
+        Params
+        ------
+
+        scene_dict: The dictionary containing the scene info
+
+    .. py:method:: mitsuba.python.xml.WriteXML.preprocess_scene(scene_dict)
+
+        Preprocess the scene dictionary before writing it to file:
+            - Add default properties.
+            - Reorder the scene dict before writing it to file.
+            - Separate the dict into different category-specific subdicts.
+            - If not splitting files, merge them in the end.
+
+        Params
+        ------
+
+        scene_dict: The dictionary containing the scene data
+
+    .. py:method:: mitsuba.python.xml.WriteXML.format_spectrum(entry, entry_type)
+
+        Format rgb or spectrum tags to the proper XML output.
+        The entry should contain the name and value of the spectrum entry.
+        The type is passed separately, since it is popped from the dict in write_dict
+
+        Params
+        ------
+
+        entry: the dict containing the spectrum
+        entry_type: either 'spectrum' or 'rgb'
+
+    .. py:method:: mitsuba.python.xml.WriteXML.format_path(filepath, tag)
+
+        Given a filepath, either copy it in the scene folder (in the corresponding directory)
+        or convert it to a relative path.
+
+        Params
+        ------
+
+        filepath: the path to the given file
+        tag: the tag this path property belongs to in (shape, texture, spectrum)
+
+    .. py:method:: mitsuba.python.xml.WriteXML.write_dict(data)
+
+        Main XML writing routine.
+        Given a dictionary, iterate over its entries and write them to file.
+        Calls itself for nested dictionaries.
+
+        Params
+        ------
+
+        data: The dictionary to write to file.
+
+    .. py:method:: mitsuba.python.xml.WriteXML.process(scene_dict)
+
+        Preprocess then write the input dict to XML file format
+
+        Params
+        ------
+
+        scene_dict: The dictionary containing all the scene info.
+
+    .. py:method:: mitsuba.python.xml.WriteXML.transform_matrix(transform)
+
+        Converts a mitsuba Transform4f into a dict entry.
+        This dict entry won't have a 'type' because it's handled in a specific case.
+
+        Params
+        ------
+
+        transform: the given transform matrix
+
+    .. py:method:: mitsuba.python.xml.WriteXML.decompose_transform(transform, export_scale=False)
+
+        Export a transform as a combination of rotation, scale and translation.
+        This helps manually modifying the transform after export (for cameras for instance)
+
+        Params
+        ------
+
+        transform: The Transform4f transform matrix to decompose
+        export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
+
+.. py:function:: mitsuba.python.xml.copy2(src, dst, *, follow_symlinks=True)
+
+    Copy data and metadata. Return the file's destination.
+
+    Metadata is copied with copystat(). Please see the copystat function
+    for more information.
+
+    The destination may be a directory.
+
+    If follow_symlinks is false, symlinks won't be followed. This
+    resembles GNU's "cp -P src dst".
+
+
+.. py:function:: mitsuba.python.xml.dict_to_xml(scene_dict, filename, split_files=False)
 
 .. py:function:: mitsuba.python.test.util.fresolver_append_path(func)
 

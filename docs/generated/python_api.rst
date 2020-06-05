@@ -128,37 +128,61 @@ Other
 
 .. include:: extracted_rst_api.rst
   :start-line: 15137
-  :end-line: 15145
+  :end-line: 15140
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 15146
-  :end-line: 15155
+  :start-line: 15141
+  :end-line: 15361
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 15156
-  :end-line: 15157
+  :start-line: 15362
+  :end-line: 15374
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 15158
-  :end-line: 15161
+  :start-line: 15375
+  :end-line: 15376
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 15162
-  :end-line: 15165
+  :start-line: 15377
+  :end-line: 15385
 
 ------------
 
 .. include:: extracted_rst_api.rst
-  :start-line: 15166
-  :end-line: 15176
+  :start-line: 15386
+  :end-line: 15395
+
+------------
+
+.. include:: extracted_rst_api.rst
+  :start-line: 15396
+  :end-line: 15397
+
+------------
+
+.. include:: extracted_rst_api.rst
+  :start-line: 15398
+  :end-line: 15401
+
+------------
+
+.. include:: extracted_rst_api.rst
+  :start-line: 15402
+  :end-line: 15405
+
+------------
+
+.. include:: extracted_rst_api.rst
+  :start-line: 15406
+  :end-line: 15416
 
 ------------
 

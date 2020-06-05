@@ -728,6 +728,14 @@
 
 .. autofunction:: mitsuba.python.autodiff.write_bitmap
 
+.. autoclass:: mitsuba.python.xml.Files
+
+.. autoclass:: mitsuba.python.xml.WriteXML
+
+.. autofunction:: mitsuba.python.xml.copy2
+
+.. autofunction:: mitsuba.python.xml.dict_to_xml
+
 .. autofunction:: mitsuba.python.test.util.fresolver_append_path
 
 .. autofunction:: mitsuba.python.test.util.getframeinfo
