@@ -2,6 +2,8 @@
 
 #ifdef __CUDACC__
 # include <optix.h>
+#else
+# include <mitsuba/render/optix_api.h>
 #endif
 
 #include <mitsuba/render/optix/bbox.cuh>
@@ -15,7 +17,21 @@ struct OptixHitGroupData {
     void* data;
 };
 
-/// Launch-varying data structure specifying data pointers for the input and output variables
+template <typename T>
+struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) SbtRecord {
+    char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+    T data;
+};
+
+struct alignas(OPTIX_SBT_RECORD_ALIGNMENT) EmptySbtRecord {
+    char header[OPTIX_SBT_RECORD_HEADER_SIZE];
+};
+
+using RayGenSbtRecord   = EmptySbtRecord;
+using MissSbtRecord     = EmptySbtRecord;
+using HitGroupSbtRecord = SbtRecord<OptixHitGroupData>;
+
+/// Launch-varying data structure specifying data pointers for the input and output variables.
 struct OptixParams {
     /// Input `active` mask data pointer
     bool    *in_mask;
@@ -38,10 +54,9 @@ struct OptixParams {
             *out_dns_dv[3];
     unsigned long long *out_shape_ptr;
     unsigned int *out_prim_index;
-
+    unsigned int *out_inst_index;
     /// Output boolean data pointer for ray_test
     bool *out_hit;
-
     /// Handle for the acceleration data structure to trace against
     OptixTraversableHandle handle;
 
@@ -84,8 +99,16 @@ __device__ void write_output_pi_params(OptixParams &params,
                                        unsigned int prim_index,
                                        const Vector2f &prim_uv,
                                        float t) {
-    params.out_shape_ptr[launch_index] = shape_ptr;
+    params.out_shape_ptr[launch_index]  = shape_ptr;
     params.out_prim_index[launch_index] = prim_index;
+
+    // Instance index is initialized to 0 when there is no instancing in the scene
+    if (params.out_inst_index[launch_index] > 0) {
+        // Check whether the current instance ID is a valid instance index
+        unsigned int inst_index = optixGetInstanceId();
+        if (inst_index < params.out_inst_index[launch_index])
+            params.out_inst_index[launch_index] = inst_index;
+    }
 
     params.out_prim_uv[0][launch_index] = prim_uv.x();
     params.out_prim_uv[1][launch_index] = prim_uv.y();
@@ -98,17 +121,58 @@ __device__ void write_output_si_params(OptixParams &params,
                                        unsigned int launch_index,
                                        unsigned long long shape_ptr,
                                        unsigned int prim_index,
-                                       const Vector3f &p,
-                                       const Vector2f &uv,
-                                       const Vector3f &ns,
-                                       const Vector3f &ng,
-                                       const Vector3f &dp_du,
-                                       const Vector3f &dp_dv,
-                                       const Vector3f &dn_du,
-                                       const Vector3f &dn_dv,
+                                       Vector3f p,
+                                       Vector2f uv,
+                                       Vector3f ns,
+                                       Vector3f ng,
+                                       Vector3f dp_du,
+                                       Vector3f dp_dv,
+                                       Vector3f dn_du,
+                                       Vector3f dn_dv,
                                        float t) {
+    // Instance index is initialized to 0 when there is no instancing in the scene
+    if (params.out_inst_index[launch_index] > 0) {
+        // Check whether the current instance ID is a valid instance index
+        unsigned int inst_index = optixGetInstanceId();
+        // Transform inputs if the object is inside an instance
+        if (inst_index < params.out_inst_index[launch_index]) {
+            float m[12], inv[12];
+            optixGetObjectToWorldTransformMatrix(m);
+            optixGetWorldToObjectTransformMatrix(inv);
+            Transform4f to_world(m, inv);
 
-    params.out_shape_ptr[launch_index] = shape_ptr;
+            p = to_world.transform_point(p);
+            if (params.has_ng())
+                ng = normalize(to_world.transform_normal(ng));
+            if (params.has_ns())
+                ns = normalize(to_world.transform_normal(ns));
+
+            if (params.has_dp_duv()) {
+                dp_du = to_world.transform_vector(dp_du);
+                dp_dv = to_world.transform_vector(dp_dv);
+            }
+
+            if (params.has_dng_duv() || params.has_dns_duv()) {
+                Transform4f to_object(inv, m);
+
+                // Determine the length of the transformed normal before it was re-normalized
+                Vector3f tn = to_world.transform_normal(normalize(to_object.transform_normal(ns)));
+                float inv_len = 1.f / norm(tn);
+                tn *= inv_len;
+
+                // Apply transform to dn_du and dn_dv
+                dn_du = to_world.transform_normal(dn_du) * inv_len;
+                dn_dv = to_world.transform_normal(dn_dv) * inv_len;
+
+                dn_du -= tn * dot(tn, dn_du);
+                dn_dv -= tn * dot(tn, dn_dv);
+            }
+
+            params.out_inst_index[launch_index] = inst_index;
+        }
+    }
+
+    params.out_shape_ptr[launch_index]  = shape_ptr;
     params.out_prim_index[launch_index] = prim_index;
 
     params.out_p[0][launch_index] = p.x();

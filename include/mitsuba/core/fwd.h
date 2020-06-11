@@ -308,11 +308,4 @@ extern "C" {
     typedef struct RTCSceneTy* RTCScene;
     typedef struct RTCGeometryTy* RTCGeometry;
 #endif
-
-#if defined(MTS_ENABLE_OPTIX)
-    // Forward declarations for OptiX
-    typedef struct OptixDeviceContext_t* OptixDeviceContext;
-    typedef struct OptixBuildInput OptixBuildInput;
-    typedef unsigned long long OptixTraversableHandle;
-#endif
 };

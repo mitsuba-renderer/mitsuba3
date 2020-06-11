@@ -27,6 +27,7 @@ template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class PhaseFunction;
 template <typename Float, typename Spectrum> class ProjectiveCamera;
 template <typename Float, typename Spectrum> class Shape;
+template <typename Float, typename Spectrum> class ShapeGroup;
 template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture;
 template <typename Float, typename Spectrum> class Volume;
@@ -72,6 +73,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Sampler                = mitsuba::Sampler<FloatU, SpectrumU>;
     using MicrofacetDistribution = mitsuba::MicrofacetDistribution<FloatU, SpectrumU>;
     using Shape                  = mitsuba::Shape<FloatU, SpectrumU>;
+    using ShapeGroup             = mitsuba::ShapeGroup<FloatU, SpectrumU>;
     using ShapeKDTree            = mitsuba::ShapeKDTree<FloatU, SpectrumU>;
     using Mesh                   = mitsuba::Mesh<FloatU, SpectrumU>;
     using Integrator             = mitsuba::Integrator<FloatU, SpectrumU>;

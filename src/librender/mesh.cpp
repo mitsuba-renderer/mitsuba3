@@ -15,7 +15,6 @@
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-    #include <mitsuba/render/optix_api.h>
 # if defined(MTS_USE_OPTIX_HEADERS)
     #include <optix_function_table_definition.h>
 # endif
@@ -30,7 +29,6 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
        appearance. Default: ``false`` */
     if (props.bool_("face_normals", false))
         m_disable_vertex_normals = true;
-    m_mesh = true;
 }
 
 MTS_VARIANT
@@ -54,7 +52,6 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     if constexpr (is_cuda_array_v<Float>)
         cuda_sync();
 
-    m_mesh = true;
     set_children();
 }
 
@@ -788,7 +785,7 @@ MTS_VARIANT size_t Mesh<Float, Spectrum>::face_data_bytes() const {
 }
 
 #if defined(MTS_ENABLE_EMBREE)
-MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) const {
+MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device) {
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,

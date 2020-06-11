@@ -16,7 +16,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_to_world, m_mesh, set_children)
+    MTS_IMPORT_BASE(Shape, m_to_world, set_children)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -227,7 +227,7 @@ public:
 
 #if defined(MTS_ENABLE_EMBREE)
     /// Return the Embree version of this shape
-    virtual RTCGeometry embree_geometry(RTCDevice device) const override;
+    virtual RTCGeometry embree_geometry(RTCDevice device) override;
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
@@ -251,7 +251,7 @@ public:
 
 protected:
     Mesh(const Properties &);
-    inline Mesh() { m_mesh = true; }
+    inline Mesh() {}
     virtual ~Mesh();
 
     /**

@@ -9,7 +9,6 @@
 #include <mitsuba/render/shape.h>
 
 #if defined(MTS_ENABLE_OPTIX)
-    #include <mitsuba/render/optix_api.h>
     #include "optix/cylinder.cuh"
 #endif
 
@@ -423,7 +422,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Cylinder[" << std::endl
-            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  length = "  << m_length << "," << std::endl
             << "  surface_area = " << surface_area() << "," << std::endl

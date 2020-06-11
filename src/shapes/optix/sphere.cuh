@@ -14,17 +14,16 @@ struct OptixSphereData {
 };
 
 #ifdef __CUDACC__
+
 extern "C" __global__ void __intersection__sphere() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData*) optixGetSbtDataPointer();
     OptixSphereData *sphere = (OptixSphereData *)sbt_data->data;
 
-    float mint = optixGetRayTmin();
-    float maxt = optixGetRayTmax();
-    Vector3f ray_o = make_vector3f(optixGetWorldRayOrigin());
-    Vector3f ray_d = make_vector3f(optixGetWorldRayDirection());
+    // Ray in instance-space
+    Ray3f ray = get_ray();
 
-    Vector3f o = ray_o - sphere->center;
-    Vector3f d = ray_d;
+    Vector3f o = ray.o - sphere->center;
+    Vector3f d = ray.d;
 
     float A = squared_norm(d);
     float B = 2.f * dot(o, d);
@@ -34,12 +33,12 @@ extern "C" __global__ void __intersection__sphere() {
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
 
     // Sphere doesn't intersect with the segment on the ray
-    bool out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+    bool out_bounds = !(near_t <= ray.maxt && far_t >= ray.mint); // NaN-aware conditionals
 
     // Sphere fully contains the segment of the ray
-    bool in_bounds = near_t < mint && far_t > maxt;
+    bool in_bounds = near_t < ray.mint && far_t > ray.maxt;
 
-    float t = (near_t < mint ? far_t: near_t);
+    float t = (near_t < ray.mint ? far_t: near_t);
 
     if (solution_found && !out_bounds && !in_bounds)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
@@ -55,20 +54,19 @@ extern "C" __global__ void __closesthit__sphere() {
         const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
         OptixSphereData *sphere = (OptixSphereData *)sbt_data->data;
 
-        Vector3f ray_o = make_vector3f(optixGetWorldRayOrigin());
-        Vector3f ray_d = make_vector3f(optixGetWorldRayDirection());
-        float t = optixGetRayTmax();
+        // Ray in instance-space
+        Ray3f ray = get_ray();
 
         // Early return for ray_intersect_preliminary call
         if (params.is_ray_intersect_preliminary()) {
-            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, Vector2f(), t);
+            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, Vector2f(), ray.maxt);
             return;
         }
 
         /* Compute and store information describing the intersection. This is
            very similar to Sphere::compute_surface_interaction() */
 
-        Vector3f ns = normalize(fmaf(t, ray_d, ray_o) - sphere->center);
+        Vector3f ns = normalize(ray(ray.maxt) - sphere->center);
 
         if (sphere->flip_normals)
             ns = -ns;
@@ -118,7 +116,7 @@ extern "C" __global__ void __closesthit__sphere() {
         Vector3f dn_dv = dp_dv * inv_radius;
 
         write_output_si_params(params, launch_index, sbt_data->shape_ptr,
-                               0, p, uv, ns, ng, dp_du, dp_dv, dn_du, dn_dv, t);
+                               0, p, uv, ns, ng, dp_du, dp_dv, dn_du, dn_dv, ray.maxt);
     }
 }
 #endif

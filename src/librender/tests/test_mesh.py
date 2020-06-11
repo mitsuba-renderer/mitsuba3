@@ -254,7 +254,11 @@ def test09_eval_parameterization(variant_scalar_rgb, variant_packet_rgb):
 
 
 @fresolver_append_path
-def test10_ray_intersect_preliminary(variant_scalar_rgb, variant_gpu_autodiff_rgb):
+def test10_ray_intersect_preliminary(variants_all_rgb):
+
+    if 'packet' in mitsuba.variant():
+        pytest.skip("pi.compute_surface_interaction isn't bound for packet modes")
+
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
 
@@ -268,6 +272,7 @@ def test10_ray_intersect_preliminary(variant_scalar_rgb, variant_gpu_autodiff_rg
 
     ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
     pi = scene.ray_intersect_preliminary(ray)
+
     assert ek.allclose(pi.t, 10)
     assert pi.prim_index == 0
     assert ek.allclose(pi.prim_uv, [0.35, 0.3])

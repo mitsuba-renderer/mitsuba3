@@ -16,14 +16,13 @@ extern "C" __global__ void __intersection__rectangle() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData*) optixGetSbtDataPointer();
     OptixRectangleData *rect = (OptixRectangleData *)sbt_data->data;
 
-    Vector3f ray_o = make_vector3f(optixGetWorldRayOrigin());
-    Vector3f ray_d = make_vector3f(optixGetWorldRayDirection());
+    // Ray in instance-space
+    Ray3f ray = get_ray();
+    // Ray in object-space
+    ray = rect->to_object.transform_ray(ray);
 
-    ray_o = rect->to_object.transform_point(ray_o);
-    ray_d = rect->to_object.transform_vector(ray_d);
-
-    float t = -ray_o.z() / ray_d.z();
-    Vector3f local = fmaf(t, ray_d, ray_o);
+    float t = -ray.o.z() * ray.d_rcp.z();
+    Vector3f local = ray(t);
 
     if (abs(local.x()) <= 1.f && abs(local.y()) <= 1.f)
         optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
@@ -38,16 +37,14 @@ extern "C" __global__ void __closesthit__rectangle() {
         const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
         OptixRectangleData *rect = (OptixRectangleData *)sbt_data->data;
 
-        // Ray in world-space
-        Vector3f ray_o_ = make_vector3f(optixGetWorldRayOrigin());
-        Vector3f ray_d_ = make_vector3f(optixGetWorldRayDirection());
-        float t = optixGetRayTmax();
+        // Ray in instance-space
+        Ray3f ray_ = get_ray();
 
         // Ray in object-space
-        Vector3f ray_o = rect->to_object.transform_point(ray_o_);
-        Vector3f ray_d = rect->to_object.transform_vector(ray_d_);
+        Ray3f ray = rect->to_object.transform_ray(ray_);
 
-        Vector3f local = fmaf(t, ray_d, ray_o);
+        float t = -ray.o.z() * ray.d_rcp.z();
+        Vector3f local = ray(t);
         Vector2f prim_uv = Vector2f(local.x(), local.y());
 
         // Early return for ray_intersect_preliminary call
@@ -59,7 +56,7 @@ extern "C" __global__ void __closesthit__rectangle() {
         /* Compute and store information describing the intersection. This is
            very similar to Rectangle::compute_surface_interaction() */
 
-        Vector3f p     = ray_o_ + ray_d_ * t;
+        Vector3f p     = ray_(t);
         Vector2f uv    = 0.5f * prim_uv + 0.5f;
         Vector3f ns    = rect->ns;
         Vector3f ng    = ns;

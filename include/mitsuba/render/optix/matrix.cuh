@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/render/optix/vector.cuh>
+#include <mitsuba/render/optix/ray.cuh>
 
 #ifndef __CUDACC__
 # include <enoki/matrix.h>
@@ -124,6 +125,20 @@ struct Transform4f {
 #else
     DEVICE Transform4f() { }
 
+    DEVICE Transform4f(float m[12], float inv[12]) {
+        for (size_t i = 0; i < 3; ++i)
+            for (size_t j = 0; j < 4; ++j)
+                matrix[j][i] = m[i*4 + j];
+        matrix[0][3] = matrix[1][3] = matrix[2][3] = 0.f;
+        matrix[3][3] = 1.f;
+
+        for (size_t i = 0; i < 3; ++i)
+            for (size_t j = 0; j < 4; ++j)
+                inverse_transpose[i][j] = inv[i*4 + j];
+        inverse_transpose[3][0] = inverse_transpose[3][1] = inverse_transpose[3][2] = 0.f;
+        inverse_transpose[3][3] = 1.f;
+    }
+
     DEVICE Vector3f transform_point(const Vector3f &p) {
         Vector4f result = matrix[3];
         for (size_t i = 0; i < 3; ++i)
@@ -145,6 +160,11 @@ struct Transform4f {
         for (size_t i = 1; i < 3; ++i)
             result = fmaf(v[i], matrix[i], result);
         return Vector3f(result.x(), result.y(), result.z());
+    }
+
+    DEVICE Ray3f transform_ray(const Ray3f &ray) {
+        return Ray3f(transform_point(ray.o), transform_vector(ray.d),
+                     ray.mint, ray.maxt, ray.time);
     }
 
     /// Debug print

@@ -28,11 +28,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
 
     Timer timer;
     RTCScene embree_scene = rtcNewScene(__embree_device);
-    rtcSetSceneFlags(embree_scene,RTC_SCENE_FLAG_DYNAMIC);
+    rtcSetSceneFlags(embree_scene, RTC_SCENE_FLAG_DYNAMIC);
     m_accel = embree_scene;
-
-    for (Shape *shapegroup : m_shapegroups)
-        shapegroup->init_embree_scene(__embree_device);
 
     for (Shape *shape : m_shapes)
          rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));

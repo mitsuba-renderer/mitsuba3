@@ -228,7 +228,15 @@ template <typename Value, size_t Size>
 DEVICE Array<Value, Size> fmaf(const Value &a, const Array<Value, Size> &b, const Array<Value, Size> &c) {
     Array<Value, Size> result;
     for (size_t i = 0; i < Size; ++i)
-        result.v[i] = ::fmaf(a, b[i], c[i]);
+        result.v[i] = __fmaf_rn(a, b[i], c[i]);
+    return result;
+}
+
+template <typename Value, size_t Size>
+DEVICE Array<Value, Size> frcp(const Array<Value, Size> &a) {
+    Array<Value, Size> result;
+    for (size_t i = 0; i < Size; ++i)
+        result.v[i] = __frcp_rn(a[i]);
     return result;
 }
 #endif

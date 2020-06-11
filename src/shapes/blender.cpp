@@ -323,6 +323,6 @@ public:
     MTS_DECLARE_CLASS()
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Shape)
+MTS_IMPLEMENT_CLASS_VARIANT(BlenderMesh, Mesh)
 MTS_EXPORT_PLUGIN(BlenderMesh, "Blender Mesh")
 NAMESPACE_END(mitsuba)

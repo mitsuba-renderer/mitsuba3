@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/emitter.h>
+#include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
 
@@ -11,7 +12,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
     MTS_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
-                     Sensor, Integrator, Medium, MediumPtr)
+                     ShapeGroup, Sensor, Integrator, Medium, MediumPtr)
 
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
@@ -213,7 +214,7 @@ protected:
 
     host_vector<ref<Emitter>, Float> m_emitters;
     std::vector<ref<Shape>> m_shapes;
-    std::vector<ref<Shape>> m_shapegroups;
+    std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;
     ref<Integrator> m_integrator;

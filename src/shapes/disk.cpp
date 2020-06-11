@@ -10,7 +10,6 @@
 #include <mitsuba/render/shape.h>
 
 #if defined(MTS_ENABLE_OPTIX)
-    #include <mitsuba/render/optix_api.h>
     #include "optix/disk.cuh"
 #endif
 
@@ -255,7 +254,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Disk[" << std::endl
-            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
             << "  frame = " << string::indent(m_frame) << "," << std::endl
             << "  surface_area = " << surface_area() << "," << std::endl
             << "  " << string::indent(get_children_string()) << std::endl

@@ -13,7 +13,9 @@ SHAPE_ORDERING = ['obj',
                   'sphere',
                   'cylinder',
                   'disk',
-                  'rectangle']
+                  'rectangle',
+                  'shapegroup',
+                  'instance']
 
 BSDF_ORDERING = ['diffuse',
                  'dielectric',

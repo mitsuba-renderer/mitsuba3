@@ -63,6 +63,7 @@ add_library(mitsuba-render-obj OBJECT
   srgb.cpp         ${INC_DIR}/srgb.h
                    ${INC_DIR}/optix/common.h
   optix_api.cpp    ${INC_DIR}/optix_api.h
+  ../shapes/shapegroup.cpp  ${INC_DIR}/shapegroup.h
   ${LIBRENDER_EXTRA_SRC}
 )
 

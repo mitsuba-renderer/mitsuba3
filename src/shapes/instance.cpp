@@ -5,6 +5,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/bsdf.h>
+#include <mitsuba/render/shapegroup.h>
 
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
@@ -32,6 +33,13 @@ Instance (:monosp:`instance`)
 This plugin implements a geometry instance used to efficiently replicate geometry many times. For
 details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/shape_instance_fractal.jpg
+   :caption: The Stanford bunny loaded a single time and instanciated 1365 times
+             (equivalent to 100 million triangles)
+.. subfigend::
+   :label: fig-instancing
+
 .. warning::
 
     - Note that it is not possible to assign a different material to each instance — the material
@@ -44,10 +52,11 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, is_shapegroup, m_id, m_to_world, m_to_object)
+    MTS_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object)
     MTS_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
+    using ShapeGroup = ShapeGroup<Float, Spectrum>;
 
     Instance(const Properties &props) {
         m_id = props.id();
@@ -55,19 +64,19 @@ public:
         m_to_world = props.transform("to_world", ScalarTransform4f());
         m_to_object = m_to_world.inverse();
 
-      for (auto &kv : props.objects()) {
-          Base *shape = dynamic_cast<Base *>(kv.second.get());
-          if (shape && shape->is_shapegroup()) {
-              if (m_shapegroup)
-                Throw("Only a single shapegroup can be specified per instance.");
-              m_shapegroup = shape;
-          } else {
+        for (auto &kv : props.objects()) {
+            Base *shape = dynamic_cast<Base *>(kv.second.get());
+            if (shape && shape->is_shapegroup()) {
+                if (m_shapegroup)
+                    Throw("Only a single shapegroup can be specified per instance.");
+                m_shapegroup = (ShapeGroup*)shape;
+            } else {
                 Throw("Only a shapegroup can be specified in an instance.");
-          }
-      }
+            }
+        }
 
-      if (!m_shapegroup)
-          Throw("A reference to a 'shapegroup' must be specified!");
+        if (!m_shapegroup)
+            Throw("A reference to a 'shapegroup' must be specified!");
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -136,9 +145,11 @@ public:
         }
 
         if (has_flag(flags, HitComputeFlags::dNGdUV) || has_flag(flags, HitComputeFlags::dNSdUV)) {
+            Normal3f n = has_flag(flags, HitComputeFlags::dNGdUV) ? si.n : si.sh_frame.n;
+
             // Determine the length of the transformed normal before it was re-normalized
             Normal3f tn = m_to_world.transform_affine(
-                normalize(m_to_object.transform_affine(si.sh_frame.n)));
+                normalize(m_to_object.transform_affine(n)));
             Float inv_len = rcp(norm(tn));
             tn *= inv_len;
 
@@ -158,8 +169,17 @@ public:
     //! @}
     // =============================================================
 
+    std::string to_string() const override {
+        std::ostringstream oss;
+            oss << "Instance[" << std::endl
+                << "  shapegroup = " << string::indent(m_shapegroup) << std::endl
+                << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
+                << "]";
+        return oss.str();
+    }
+
 #if defined(MTS_ENABLE_EMBREE)
-    RTCGeometry embree_geometry(RTCDevice device) const override {
+    RTCGeometry embree_geometry(RTCDevice device) override {
         if constexpr (!is_cuda_array_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
@@ -172,9 +192,23 @@ public:
     }
 #endif
 
+#if defined(MTS_ENABLE_OPTIX)
+    virtual void optix_prepare_ias(const OptixDeviceContext& context,
+                                   std::vector<OptixInstance>& instances,
+                                   uint32_t instance_id,
+                                   const ScalarTransform4f& transf) override {
+        m_shapegroup->optix_prepare_ias(context, instances, instance_id, transf * m_to_world);
+    }
+
+    virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &,
+                                             const OptixProgramGroup *) override {
+        /* no op */
+    }
+#endif
+
     MTS_DECLARE_CLASS()
 private:
-   ref<Base> m_shapegroup;
+   ref<ShapeGroup> m_shapegroup;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Instance, Shape)

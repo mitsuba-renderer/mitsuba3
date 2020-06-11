@@ -137,3 +137,71 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                             assert ek.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
                             assert ek.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
 
+
+
+def test03_ray_intersect_instance(variants_all_rgb):
+    from mitsuba.core import xml, Ray3f, ScalarVector3f, ScalarTransform4f as T
+
+    """Check that we can the correct instance pointer when tracing a ray"""
+
+    scene = xml.load_dict({
+        'type' : 'scene',
+
+        'group_0' : {
+            'type' : 'shapegroup',
+            'shape' : {
+                'type' : 'rectangle'
+            }
+        },
+
+        'instance_00' : {
+            'type' : 'instance',
+            "group" : {
+                "type" : "ref",
+                "id" : "group_0"
+            },
+            'to_world' : T.translate([-0.5, -0.5, 0.0]) * T.scale(0.5)
+        },
+
+        'instance_01' : {
+            'type' : 'instance',
+            "group" : {
+                "type" : "ref",
+                "id" : "group_0"
+            },
+            'to_world' : T.translate([-0.5, 0.5, 0.0]) * T.scale(0.5)
+        },
+
+        'instance_10' : {
+            'type' : 'instance',
+            "group" : {
+                "type" : "ref",
+                "id" : "group_0"
+            },
+            'to_world' : T.translate([0.5, -0.5, 0.0]) * T.scale(0.5)
+        },
+
+        'shape' : {
+            'type' : 'rectangle',
+            'to_world' : T.translate([0.5, 0.5, 0.0]) * T.scale(0.5)
+        }
+    })
+
+    ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    pi = scene.ray_intersect_preliminary(ray)
+    assert '[0.5, 0, 0, -0.5]' in str(pi)
+    assert '[0, 0.5, 0, -0.5]' in str(pi)
+
+    ray = Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    pi = scene.ray_intersect_preliminary(ray)
+    assert '[0.5, 0, 0, -0.5]' in str(pi)
+    assert '[0, 0.5, 0, 0.5]' in str(pi)
+
+    ray = Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    pi = scene.ray_intersect_preliminary(ray)
+    assert '[0.5, 0, 0, 0.5]' in str(pi)
+    assert '[0, 0.5, 0, -0.5]' in str(pi)
+
+    ray = Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    pi = scene.ray_intersect_preliminary(ray)
+    assert 'instance = nullptr' in str(pi) or 'instance = [nullptr]' in str(pi)

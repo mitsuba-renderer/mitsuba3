@@ -1,15 +1,9 @@
-#include <mitsuba/core/fwd.h>
-#include <mitsuba/core/properties.h>
-#include <mitsuba/render/fwd.h>
-#include <mitsuba/render/shape.h>
-#include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/shapegroup.h>
 
-#if defined(MTS_ENABLE_EMBREE)
-    #include <embree3/rtcore.h>
-#endif
+#include <mitsuba/core/properties.h>
+#include <mitsuba/render/optix_api.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
 
 /**!
 
@@ -64,173 +58,163 @@ where only a few distinct types of trees have to be kept in memory. An example i
 
  */
 
-template <typename Float, typename Spectrum>
-class ShapeGroup final: public Shape<Float, Spectrum> {
-public:
-    MTS_IMPORT_BASE(Shape, is_emitter, is_sensor, m_id, m_shapegroup)
-    MTS_IMPORT_TYPES(ShapeKDTree)
-
-    using typename Base::ScalarSize;
-
-    ShapeGroup(const Properties &props) {
-        m_id = props.id();
+MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
+    m_id = props.id();
 
 #if !defined(MTS_ENABLE_EMBREE)
-        m_kdtree = new ShapeKDTree(props);
+    m_kdtree = new ShapeKDTree(props);
 #endif
 
-        // Add children to the underlying datastructure
-        for (auto &kv : props.objects()) {
-            const Class *c_class = kv.second->class_();
-            if (c_class->name() == "Instance") {
-                Throw("Nested instancing is not permitted");
-            } else if (c_class->derives_from(MTS_CLASS(Base))) {
-                Base *shape = static_cast<Base *>(kv.second.get());
-                if (shape->is_shapegroup())
-                    Throw("Nested ShapeGroup is not permitted");
-                if (shape->is_emitter())
-                    Throw("Instancing of emitters is not supported");
-                if (shape->is_sensor())
-                    Throw("Instancing of sensors is not supported");
-                else {
-#if defined(MTS_ENABLE_EMBREE)
-                    m_shapes.push_back(shape);
-                    m_bbox.expand(shape->bbox());
-#else
-                    m_kdtree->add_shape(shape);
+    // Add children to the underlying datastructure
+    for (auto &kv : props.objects()) {
+        const Class *c_class = kv.second->class_();
+        if (c_class->name() == "Instance") {
+            Throw("Nested instancing is not permitted");
+        } else if (c_class->derives_from(MTS_CLASS(Base))) {
+            Base *shape = static_cast<Base *>(kv.second.get());
+            ShapeGroup *shapegroup = dynamic_cast<ShapeGroup *>(kv.second.get());
+            if (shapegroup)
+                Throw("Nested ShapeGroup is not permitted");
+            if (shape->is_emitter())
+                Throw("Instancing of emitters is not supported");
+            if (shape->is_sensor())
+                Throw("Instancing of sensors is not supported");
+            else {
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_OPTIX)
+                m_shapes.push_back(shape);
+                m_bbox.expand(shape->bbox());
 #endif
-                }
-            } else {
-                Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
-            }
-        }
-
 #if !defined(MTS_ENABLE_EMBREE)
-        if (!m_kdtree->ready())
-            m_kdtree->build();
-
-        m_bbox = m_kdtree->bbox();
+                m_kdtree->add_shape(shape);
 #endif
-
-        m_shapegroup = true;
-    }
-
-#if defined(MTS_ENABLE_EMBREE)
-    void init_embree_scene(RTCDevice device) override {
-        if constexpr (!is_cuda_array_v<Float>) {
-            // Construct the BVH only once
-            if(m_scene == nullptr) {
-                m_scene = rtcNewScene(device);
-                for (auto shape : m_shapes)
-                    rtcAttachGeometry(m_scene, shape->embree_geometry(device));
-                rtcCommitScene(m_scene);
             }
-        }
-    }
-
-    void release_embree_scene() override {
-        if constexpr (!is_cuda_array_v<Float>) {
-            rtcReleaseScene(m_scene);
-        }
-    }
-
-    RTCGeometry embree_geometry(RTCDevice device) const override {
-        if constexpr (!is_cuda_array_v<Float>) {
-            RTCGeometry instance = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
-            if(m_scene == nullptr)
-                Throw("Embree scene not initialized, call init_embree_scene() first");
-            rtcSetGeometryInstancedScene(instance, m_scene);
-            return instance;
         } else {
-            Throw("embree_geometry() should only be called in CPU mode.");
+            Throw("Tried to add an unsupported object of type \"%s\"", kv.second);
         }
     }
-#else
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+#if !defined(MTS_ENABLE_EMBREE)
+    if (!m_kdtree->ready())
+        m_kdtree->build();
 
-        if constexpr (is_cuda_array_v<Float>)
-            Throw("ShapeGroup::ray_intersect_preliminary() should only be called in CPU mode.");
+    m_bbox = m_kdtree->bbox();
+#endif
+}
 
-        return m_kdtree->template ray_intersect_preliminary<false>(ray, active);
+MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
+#if defined(MTS_ENABLE_EMBREE)
+    if constexpr (!is_cuda_array_v<Float>)
+        rtcReleaseScene(m_embree_scene);
+#endif
+}
+
+#if defined(MTS_ENABLE_EMBREE)
+MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice device) override {
+    if constexpr (!is_cuda_array_v<Float>) {
+        // Construct the BVH only once
+        if (m_embree_scene == nullptr) {
+            m_embree_scene = rtcNewScene(device);
+            for (auto shape : m_shapes)
+                rtcAttachGeometry(m_embree_scene, shape->embree_geometry(device));
+            rtcCommitScene(m_embree_scene);
+        }
+
+        RTCGeometry instance = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
+        rtcSetGeometryInstancedScene(instance, m_embree_scene);
+        return instance;
+    } else {
+        Throw("embree_geometry() should only be called in CPU mode.");
     }
+}
+#else
+MTS_VARIANT typename ShapeGroup<Float, Spectrum>::PreliminaryIntersection3f
+ShapeGroup<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
+                                                       Mask active) const {
+    MTS_MASK_ARGUMENT(active);
 
-    Mask ray_test(const Ray3f &ray, Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+    if constexpr (is_cuda_array_v<Float>)
+        Throw("ShapeGroup::ray_intersect_preliminary() should only be called in CPU mode.");
 
-        if constexpr (is_cuda_array_v<Float>)
-            Throw("ShapeGroup::ray_test() should only be called in CPU mode.");
+    return m_kdtree->template ray_intersect_preliminary<false>(ray, active);
+}
 
-        return m_kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
+MTS_VARIANT typename ShapeGroup<Float, Spectrum>::Mask
+ShapeGroup<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
+    if constexpr (is_cuda_array_v<Float>)
+        Throw("ShapeGroup::ray_test() should only be called in CPU mode.");
+
+    return m_kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
+}
+#endif
+
+MTS_VARIANT typename ShapeGroup<Float, Spectrum>::SurfaceInteraction3f
+ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
+                                                         PreliminaryIntersection3f pi,
+                                                         HitComputeFlags flags,
+                                                         Mask active) const {
+    MTS_MASK_ARGUMENT(active);
+
+#if defined(MTS_ENABLE_EMBREE)
+    if constexpr (!is_cuda_array_v<Float>) {
+        if constexpr (!is_array_v<Float>) {
+            Assert(pi.shape_index < m_shapes.size());
+            pi.shape = m_shapes[pi.shape_index];
+        } else {
+            using ShapePtr = replace_scalar_t<Float, const Base *>;
+            Assert(all(pi.shape_index < m_shapes.size()));
+            pi.shape = gather<ShapePtr>(m_shapes.data(), pi.shape_index, active);
+        }
+
+        SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, flags, active);
+        si.shape = pi.shape;
+
+        return si;
     }
 #endif
 
-    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
-                                                     HitComputeFlags flags,
-                                                     Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+    return pi.shape->compute_surface_interaction(ray, pi, flags, active);
+}
 
-    #if defined(MTS_ENABLE_EMBREE)
-        if constexpr (!is_cuda_array_v<Float>) {
-            if constexpr (!is_array_v<Float>) {
-                Assert(pi.shape_index < m_shapes.size());
-                pi.shape = m_shapes[pi.shape_index];
-            } else {
-                using ShapePtr = replace_scalar_t<Float, const Base *>;
-                Assert(all(pi.shape_index < m_shapes.size()));
-                pi.shape = gather<ShapePtr>(m_shapes.data(), pi.shape_index, active);
-            }
-
-            SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, flags, active);
-            si.shape = pi.shape;
-
-            return si;
-        }
-    #endif
-
-        return pi.shape->compute_surface_interaction(ray, pi, flags, active);
-    }
-
-    ScalarSize primitive_count() const override {
-#if defined(MTS_ENABLE_EMBREE)
-        ScalarSize count = 0;
-        for (auto shape : m_shapes)
-            count += shape->primitive_count();
-
-        return count;
-#else
+MTS_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize
+ShapeGroup<Float, Spectrum>::primitive_count() const {
+#if !defined(MTS_ENABLE_EMBREE)
+    if constexpr (!is_cuda_array_v<Float>)
         return m_kdtree->primitive_count();
 #endif
-    }
 
-    ScalarBoundingBox3f bbox() const override{ return m_bbox; }
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_OPTIX)
+    ScalarSize count = 0;
+    for (auto shape : m_shapes)
+        count += shape->primitive_count();
 
-    ScalarFloat surface_area() const override { return 0.f; }
+    return count;
+#endif
+}
 
-    MTS_INLINE ScalarSize effective_primitive_count() const override { return 0; }
+#if defined(MTS_ENABLE_OPTIX)
+MTS_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
+    const OptixDeviceContext &context, std::vector<OptixInstance> &instances,
+    uint32_t instance_id, const ScalarTransform4f &transf) {
+    prepare_ias(context, m_shapes, m_sbt_offset, m_accel, instance_id, transf, instances);
+}
 
-    std::string to_string() const override {
-        std::ostringstream oss;
-            oss << "ShapeGroup[" << std::endl
-                << "  name = \"" << m_id << "\"," << std::endl
-                << "  prim_count = " << primitive_count() << std::endl
-                << "]";
-        return oss.str();
-    }
+MTS_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
+                                                                          const OptixProgramGroup *program_groups) {
+    m_sbt_offset = hitgroup_records.size();
+    fill_hitgroup_records(m_shapes, hitgroup_records, program_groups);
+}
+#endif
 
-    MTS_DECLARE_CLASS()
-private:
-    ScalarBoundingBox3f m_bbox;
-
-    #if defined(MTS_ENABLE_EMBREE)
-        RTCScene m_scene = nullptr;
-        std::vector<ref<Base>> m_shapes;
-    #else
-        ref<ShapeKDTree> m_kdtree;
-    #endif
-};
+MTS_VARIANT std::string
+ShapeGroup<Float, Spectrum>::to_string() const {
+    std::ostringstream oss;
+        oss << "ShapeGroup[" << std::endl
+            << "  name = \"" << m_id << "\"," << std::endl
+            << "  prim_count = " << primitive_count() << std::endl
+            << "]";
+    return oss.str();
+}
 
 MTS_IMPLEMENT_CLASS_VARIANT(ShapeGroup, Shape)
 MTS_EXPORT_PLUGIN(ShapeGroup, "Grouped geometry for instancing")

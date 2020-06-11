@@ -32,10 +32,10 @@ OptixResult (*optixPipelineCreate)(OptixDeviceContext, const OptixPipelineCompil
 OptixResult (*optixPipelineDestroy)(OptixPipeline) = nullptr;
 OptixResult (*optixAccelComputeMemoryUsage)(OptixDeviceContext, const OptixAccelBuildOptions*, const OptixBuildInput*, unsigned int, OptixAccelBufferSizes*) = nullptr;
 OptixResult (*optixAccelBuild)(OptixDeviceContext, CUstream, const OptixAccelBuildOptions*, const OptixBuildInput*,unsigned int, CUdeviceptr, size_t, CUdeviceptr, size_t, OptixTraversableHandle*, const OptixAccelEmitDesc*, unsigned int) = nullptr;
-OptixResult (*optixAccelCompact)(OptixDeviceContext, CUstream,  OptixTraversableHandle, CUdeviceptr, size_t, OptixTraversableHandle*) = nullptr;
+OptixResult (*optixAccelCompact)(OptixDeviceContext, CUstream, OptixTraversableHandle, CUdeviceptr, size_t, OptixTraversableHandle*) = nullptr;
 OptixResult (*optixSbtRecordPackHeader)(OptixProgramGroup, void*) = nullptr;
 OptixResult (*optixLaunch)(OptixPipeline, CUstream, CUdeviceptr, size_t, const OptixShaderBindingTable*, unsigned int, unsigned int, unsigned int) = nullptr;
-OptixResult (*optixQueryFunctionTable)(int, unsigned int, OptixQueryFunctionTableOptions*, const void**, void*, size_t);
+OptixResult (*optixQueryFunctionTable)(int, unsigned int, OptixQueryFunctionTableOptions*, const void**, void*, size_t) = nullptr;
 #endif
 
 #if !defined(MTS_USE_OPTIX_HEADERS)

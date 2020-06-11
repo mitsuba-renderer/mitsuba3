@@ -9,7 +9,6 @@
 #include <mitsuba/render/shape.h>
 
 #if defined(MTS_ENABLE_OPTIX)
-    #include <mitsuba/render/optix_api.h>
     #include "optix/sphere.cuh"
 #endif
 
@@ -438,7 +437,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Sphere[" << std::endl
-            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
             << "  center = "  << m_center << "," << std::endl
             << "  radius = "  << m_radius << "," << std::endl
             << "  surface_area = " << surface_area() << "," << std::endl

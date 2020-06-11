@@ -7,7 +7,7 @@
 #include <enoki/stl.h>
 
 #if defined(MTS_ENABLE_OPTIX)
-#include <mitsuba/render/optix/common.h>
+#  include <mitsuba/render/optix/common.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -214,7 +214,8 @@ public:
      * \brief Return an axis aligned box that bounds a single shape primitive
      * (including any transformations that may have been applied to it)
      *
-     * \remark The default implementation simply calls \ref bbox()
+     * \remark
+     *     The default implementation simply calls \ref bbox()
      */
     virtual ScalarBoundingBox3f bbox(ScalarIndex index) const;
 
@@ -328,10 +329,13 @@ public:
     std::string id() const override;
 
     /// Is this shape a triangle mesh?
-    bool is_mesh() const { return m_mesh; }
+    bool is_mesh() const { return class_()->derives_from(Mesh<Float, Spectrum>::m_class); }
 
     /// Is this shape a shapegroup?
-    bool is_shapegroup() const { return m_shapegroup; };
+    bool is_shapegroup() const { return class_()->name() == "ShapeGroup"; };
+
+    /// Is this shape an instance?
+    bool is_instance() const { return class_()->name() == "Instance"; };
 
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
@@ -368,7 +372,9 @@ public:
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape
-     * \remark The default implementation simply returns \c 1
+     *
+     * \remark
+     *     The default implementation simply returns \c 1
      */
     virtual ScalarSize primitive_count() const;
 
@@ -384,20 +390,91 @@ public:
 
 #if defined(MTS_ENABLE_EMBREE)
     /// Return the Embree version of this shape
-    virtual RTCGeometry embree_geometry(RTCDevice device) const;
-    /// Build the embree scene in the shapegroup
-    virtual void init_embree_scene(RTCDevice device);
-    /// Release the embree scene in the shapegroup
-    virtual void release_embree_scene();
+    virtual RTCGeometry embree_geometry(RTCDevice device);
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-    /// Prepare OptiX data buffers
+    /**
+     * \brief Populates the GPU data buffer, used in the Optix Hitgroup sbt records.
+     *
+     * \remark
+     *      Actual implementations of this method should allocate the field \ref
+     *      m_optix_data_ptr on the GPU and populate it with the Optix representation
+     *      of the class.
+     *
+     * The default implementation throws an exception.
+     */
     virtual void optix_prepare_geometry();
-    /// Fill the OptixBuildInput struct
-    virtual void optix_build_input(OptixBuildInput&) const;
-    /// Return a pointer (GPU memory) to the shape's OptiX hitgroup data buffer
-    virtual void* optix_hitgroup_data() { return m_optix_data_ptr; };
+
+    /**
+     * \brief Fills the OptixBuildInput associated with this shape.
+     *
+     * \param build_input
+     *     A reference to the build input to be filled. The field
+     *     build_input.type has to be set, along with the associated members. For
+     *     now, Mistuba only supports the types \ref OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES
+     *     and \ref OPTIX_BUILD_INPUT_TYPE_TRIANGLES.
+     *
+     * The default implementation assumes that an implicit Shape (custom primitive
+     * build type) is begin constructed, with its GPU data stored at \ref m_optix_data_ptr.
+     */
+    virtual void optix_build_input(OptixBuildInput& build_input) const;
+
+    /**
+     * \brief Prepares and fills the \ref OptixInstance(s) associated with this
+     * shape. This process includes generating the Optix instance acceleration
+     * structure (IAS) represented by this shape, and pushing OptixInstance
+     * structs to the provided instances vector.
+     *
+     * \remark
+     *     This method is currently only implemented for the \ref Instance
+     *     and \ref ShapeGroup plugin.
+     *
+     * \param context
+     *     The Optix context that was used to construct the rest of the scene's
+     *     Optix representation.
+     *
+     * \param instances
+     *     The array to which new OptixInstance should be appended.
+     *
+     * \param instance_id
+     *     The instance id, used internally inside Optix to detect when a Shape
+     *     is part of an Instance.
+     *
+     * \param transf
+     *     The current to_world transformation (should allow for recursive instancing).
+     *
+     * The default implementation throws an exception.
+     */
+    virtual void optix_prepare_ias(const OptixDeviceContext& /*context*/,
+                                   std::vector<OptixInstance>& /*instances*/,
+                                   uint32_t /*instance_id*/,
+                                   const ScalarTransform4f& /*transf*/);
+
+    /**
+     * \brief Creates and appends the HitGroupSbtRecord(s) associated with this
+     * shape to the provided array.
+     *
+     * \remark
+     *     This method can append multiple hitgroup records to the array
+     *     (see the \ref Shapegroup plugin for an example).
+     *
+     * \param hitgroup_records
+     *     The array of hitgroup records where the new HitGroupRecords should be
+     *     appended.
+     *
+     * \param program_groups
+     *     The array of available program groups (used to pack the Optix header
+     *     at the beginning of the record).
+     *
+     * The default implementation creates a new HitGroupSbtRecord and fills its
+     * \ref data field with \ref m_optix_data_ptr. It then calls \ref
+     * optixSbtRecordPackHeader with one of the OptixProgramGroup of the \ref
+     * program_groups array (the actual program group index is infered by the
+     * type of the Shape, see \ref get_shape_descr_idx()).
+     */
+    virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
+                                             const OptixProgramGroup *program_groups);
 #endif
 
     void traverse(TraversalCallback *callback) override;
@@ -422,8 +499,6 @@ protected:
     void set_children();
     std::string get_children_string() const;
 protected:
-    bool m_mesh = false;
-    bool m_shapegroup = false;
     ref<BSDF> m_bsdf;
     ref<Emitter> m_emitter;
     ref<Sensor> m_sensor;

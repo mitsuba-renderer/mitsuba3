@@ -9,9 +9,8 @@
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
-
 #if defined(MTS_ENABLE_OPTIX)
-    #include <mitsuba/render/optix_api.h>
+#  include <mitsuba/render/optix/shapes.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -236,7 +235,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
     }
 }
 
-MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) const {
+MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
     if constexpr (!is_cuda_array_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);
@@ -265,6 +264,26 @@ static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
 MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {
     NotImplementedError("optix_prepare_geometry");
+}
+
+MTS_VARIANT
+void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &hitgroup_records,
+                                                         const OptixProgramGroup *program_groups) {
+    optix_prepare_geometry();
+    // Set hitgroup record data
+    hitgroup_records.push_back(HitGroupSbtRecord());
+    hitgroup_records.back().data = { (uintptr_t) this, m_optix_data_ptr };
+
+    size_t program_group_idx = (is_mesh() ? 2 : 3 + get_shape_descr_idx(this));
+    // Setup the hitgroup record and copy it to the hitgroup records array
+    rt_check(optixSbtRecordPackHeader(program_groups[program_group_idx], &hitgroup_records.back()));
+}
+
+MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
+                                                           std::vector<OptixInstance>& /*instances*/,
+                                                           uint32_t /*instance_id*/,
+                                                           const ScalarTransform4f& /*transf*/) {
+    NotImplementedError("optix_prepare_ias");
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
