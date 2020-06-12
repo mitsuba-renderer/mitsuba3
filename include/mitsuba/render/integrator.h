@@ -158,7 +158,8 @@ protected:
                               Sampler *sampler,
                               ImageBlock *block,
                               Float *aovs,
-                              size_t sample_count = size_t(-1)) const;
+                              size_t sample_count,
+                              size_t block_id) const;
 
     void render_sample(const Scene *scene,
                        const Sensor *sensor,

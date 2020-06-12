@@ -28,9 +28,11 @@
 
 #pragma once
 
+#include <mitsuba/core/math.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/traits.h>
+#include <mitsuba/core/fwd.h>
 #include <enoki/random.h>
 
 NAMESPACE_BEGIN(enoki)
@@ -169,6 +171,106 @@ auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
         return sample_tea_float32(v0, v1, rounds);
     else
         return sample_tea_float64(v0, v1, rounds);
+}
+
+/**
+ * \brief Generate pseudorandom permutation vector using a shuffling network and the
+ * \ref sample_tea function. This algorithm has a O(log2(sample_count)) complexity but
+ * only supports permutation vectors whose lengths are a power of 2.
+ *
+ * \param index
+ *     Input index to be mapped
+ * \param sample_count
+ *     Length of the permutation vector
+ * \param seed
+ *     Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
+ *     generate different permutation vectors.
+ * \param rounds
+ *     How many rounds should be executed by the Tiny Encryption Algorithm? The default is 2.
+ * \return
+ *     The index corresponding to the input index in the pseudorandom permutation vector.
+ */
+
+template <typename UInt32>
+UInt32 permute(UInt32 index, uint32_t sample_count, UInt32 seed, int rounds = 2) {
+    uint32_t  n = log2i(sample_count);
+    Assert((1 << n) == sample_count, "sample_count should be a power of 2");
+
+    for (uint32_t  level = 0; level < n; ++level) {
+        UInt32 bit = UInt32(1 << level);
+        // Take a random integer indentical for indices that might be swapped at this level
+        UInt32 rand = sample_tea_32(index | bit, seed, rounds);
+        masked(index, eq(rand & bit, bit)) = index ^ bit;
+    }
+
+    return index;
+}
+
+/**
+ * \brief Generate pseudorandom permutation vector using the algorithm described in Pixar's
+ * technical memo "Correlated Multi-Jittered Sampling":
+ *
+ *     https://graphics.pixar.com/library/MultiJitteredSampling/
+ *
+ *  Unlike \ref permute, this function supports permutation vectors of any length.
+ *
+ * \param index
+ *     Input index to be mapped
+ * \param sample_count
+ *     Length of the permutation vector
+ * \param seed
+ *     Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
+ *     generate different permutation vectors.
+ * \return
+ *     The index corresponding to the input index in the pseudorandom permutation vector.
+ */
+
+template <typename UInt32>
+UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed, mask_t<UInt32> active = true) {
+    if (sample_count == 1)
+        return zero<UInt32>(slices(index));
+
+    UInt32 w = sample_count - 1;
+    w |= w >> 1;
+    w |= w >> 2;
+    w |= w >> 4;
+    w |= w >> 8;
+    w |= w >> 16;
+
+    // Worst case is when the index is sequentially mapped to every invalid numbers (out
+    // of range) before being mapped into the correct range. E.g. decreasing sequence
+    uint32_t max_iter = 0;
+    if constexpr (is_cuda_array_v<UInt32>)
+        max_iter = math::round_to_power_of_two(sample_count) - sample_count + 1;
+
+    uint32_t iter = 0;
+    mask_t<UInt32> invalid = true;
+    UInt32 tmp;
+    do {
+        tmp = index;
+        tmp ^= seed;
+        tmp *= 0xe170893d;
+        tmp ^= seed >> 16;
+        tmp ^= (tmp & w) >> 4;
+        tmp ^= seed >> 8;
+        tmp *= 0x0929eb3f;
+        tmp ^= seed >> 23;
+        tmp ^= (tmp & w) >> 1;
+        tmp *= 1 | seed >> 27;
+        tmp *= 0x6935fa69;
+        tmp ^= (tmp & w) >> 11;
+        tmp *= 0x74dcb303;
+        tmp ^= (tmp & w) >> 2;
+        tmp *= 0x9e501cc3;
+        tmp ^= (tmp & w) >> 2;
+        tmp *= 0xc860a3df;
+        tmp &= w;
+        tmp ^= tmp >> 5;
+        masked(index, invalid) = tmp;
+        invalid = (index >= sample_count);
+    } while (any_or<false>(active && invalid) || (max_iter > ++iter));
+
+    return (index + seed) % sample_count;
 }
 
 NAMESPACE_END(mitsuba)

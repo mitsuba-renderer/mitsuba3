@@ -4496,6 +4496,8 @@ static const char *__doc_mitsuba_ProfilerPhase_SampleEmitterDirection = R"doc()d
 
 static const char *__doc_mitsuba_ProfilerPhase_SampleEmitterRay = R"doc()doc";
 
+static const char *__doc_mitsuba_ProfilerPhase_SamplerSeed = R"doc()doc";
+
 static const char *__doc_mitsuba_ProfilerPhase_SamplingIntegratorSample = R"doc()doc";
 
 static const char *__doc_mitsuba_ProfilerPhase_TextureEvaluate = R"doc()doc";
@@ -4921,6 +4923,24 @@ static const char *__doc_mitsuba_RadicalInverse_scramble = R"doc(Return the orig
 
 static const char *__doc_mitsuba_RadicalInverse_to_string = R"doc(Return a human-readable string representation)doc";
 
+static const char *__doc_mitsuba_RandomSampler = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_RandomSampler = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_check_rng = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_class = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_m_rng = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_seed = R"doc()doc";
+
+static const char *__doc_mitsuba_RandomSampler_wavefront_size = R"doc()doc";
+
 static const char *__doc_mitsuba_Ray =
 R"doc(Simple n-dimensional ray segment data structure
 
@@ -5164,9 +5184,15 @@ static const char *__doc_mitsuba_Sampler_m_base_seed = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_m_sample_count = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_m_samples_per_wavefront = R"doc()doc";
+
+static const char *__doc_mitsuba_Sampler_m_wavefront_count = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_next_1d = R"doc(Retrieve the next component value from the current sample)doc";
 
 static const char *__doc_mitsuba_Sampler_next_2d = R"doc(Retrieve the next two component values from the current sample)doc";
+
+static const char *__doc_mitsuba_Sampler_prepare_wavefront = R"doc(Start the next wavefront)doc";
 
 static const char *__doc_mitsuba_Sampler_sample_count = R"doc(Return the number of samples per pixel)doc";
 
@@ -5176,6 +5202,10 @@ R"doc(Deterministically seed the underlying RNG, if applicable.
 In the context of wavefront ray tracing & dynamic arrays, this
 function must be called with a ``seed_value`` matching the size of the
 wavefront.)doc";
+
+static const char *__doc_mitsuba_Sampler_set_samples_per_wavefront =
+R"doc(Set the number of samples per pass in the wavefront modes (default is
+1))doc";
 
 static const char *__doc_mitsuba_Sampler_wavefront_size = R"doc(Return the size of the wavefront (or 0, if not seeded))doc";
 
@@ -8313,6 +8343,29 @@ static const char *__doc_mitsuba_hasher_operator_call = R"doc()doc";
 
 static const char *__doc_mitsuba_ior_from_file = R"doc()doc";
 
+static const char *__doc_mitsuba_kensler_permute =
+R"doc(Generate pseudorandom permutation vector using the algorithm described
+in Pixar's technical memo "Correlated Multi-Jittered Sampling":
+
+https://graphics.pixar.com/library/MultiJitteredSampling/
+
+Unlike permute, this function supports permutation vectors of any
+length.
+
+Parameter ``index``:
+    Input index to be mapped
+
+Parameter ``sample_count``:
+    Length of the permutation vector
+
+Parameter ``seed``:
+    Seed value used as second input to the Tiny Encryption Algorithm.
+    Can be used to generate different permutation vectors.
+
+Returns:
+    The index corresponding to the input index in the pseudorandom
+    permutation vector.)doc";
+
 static const char *__doc_mitsuba_librender_nop =
 R"doc(Dummy function which can be called to ensure that the librender shared
 library is loaded)doc";
@@ -8832,6 +8885,10 @@ Returns:
     The (implicitly defined) reference coordinate system basis for the
     Stokes vector travelling along w.)doc";
 
+static const char *__doc_mitsuba_next_float =
+R"doc(Forward next_float call to PCG32 random generator based given type
+size)doc";
+
 static const char *__doc_mitsuba_operator_add = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_2 = R"doc(Adding a vector to a point should always yield a point)doc";
@@ -8976,6 +9033,30 @@ static const char *__doc_mitsuba_pdf_uniform_spectrum_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_perspective_projection = R"doc()doc";
 
+static const char *__doc_mitsuba_permute =
+R"doc(Generate pseudorandom permutation vector using a shuffling network and
+the sample_tea function. This algorithm has a O(log2(sample_count))
+complexity but only supports permutation vectors whose lengths are a
+power of 2.
+
+Parameter ``index``:
+    Input index to be mapped
+
+Parameter ``sample_count``:
+    Length of the permutation vector
+
+Parameter ``seed``:
+    Seed value used as second input to the Tiny Encryption Algorithm.
+    Can be used to generate different permutation vectors.
+
+Parameter ``rounds``:
+    How many rounds should be executed by the Tiny Encryption
+    Algorithm? The default is 2.
+
+Returns:
+    The index corresponding to the input index in the pseudorandom
+    permutation vector.)doc";
+
 static const char *__doc_mitsuba_profiler_flags = R"doc()doc";
 
 static const char *__doc_mitsuba_quad_composite_simpson =
@@ -9054,6 +9135,8 @@ Parameter ``n``:
 Returns:
     A tuple (nodes, weights) storing the nodes and weights of the
     quadrature rule.)doc";
+
+static const char *__doc_mitsuba_radical_inverse_2 = R"doc(Van der Corput radical inverse in base 2)doc";
 
 static const char *__doc_mitsuba_ref =
 R"doc(Reference counting helper
@@ -9274,6 +9357,8 @@ Parameter ``si``:
     A surface intersection record (usually on an emitter).
 
 \note Defined in scene.h)doc";
+
+static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 
 static const char *__doc_mitsuba_spectrum_from_file = R"doc()doc";
 

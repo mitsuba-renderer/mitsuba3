@@ -183,4 +183,47 @@ private:
     int m_scramble;
 };
 
+
+/// Van der Corput radical inverse in base 2
+template <typename UInt, typename Float = float_array_t<UInt>>
+Float radical_inverse_2(UInt index, UInt scramble = 0) {
+    if constexpr (is_double_v<Float>) {
+        index = (index << 32) | (index >> 32);
+        index = ((index & 0x0000ffff0000ffffULL) << 16) | ((index & 0xffff0000ffff0000ULL) >> 16);
+        index = ((index & 0x00ff00ff00ff00ffULL) << 8)  | ((index & 0xff00ff00ff00ff00ULL) >> 8);
+        index = ((index & 0x0f0f0f0f0f0f0f0fULL) << 4)  | ((index & 0xf0f0f0f0f0f0f0f0ULL) >> 4);
+        index = ((index & 0x3333333333333333ULL) << 2)  | ((index & 0xccccccccccccccccULL) >> 2);
+        index = ((index & 0x5555555555555555ULL) << 1)  | ((index & 0xaaaaaaaaaaaaaaaaULL) >> 1);
+
+        /* Generate an uniformly distributed double precision number in [1,2)
+         * from the scrambled index and subtract 1. */
+        return reinterpret_array<Float>(sr<12>(index ^ scramble) | 0x3ff0000000000000ull) - 1.0;
+    } else {
+        index = (index << 16) | (index >> 16);
+        index = ((index & 0x00ff00ff) << 8) | ((index & 0xff00ff00) >> 8);
+        index = ((index & 0x0f0f0f0f) << 4) | ((index & 0xf0f0f0f0) >> 4);
+        index = ((index & 0x33333333) << 2) | ((index & 0xcccccccc) >> 2);
+        index = ((index & 0x55555555) << 1) | ((index & 0xaaaaaaaa) >> 1);
+
+        /* Generate an uniformly distributed single precision number in [1,2)
+         * from the scrambled index and subtract 1. */
+        return reinterpret_array<Float>(sr<9>(index ^ scramble) | 0x3f800000u) - 1.f;
+    }
+}
+
+
+/// Sobol' radical inverse in base 2
+template <typename UInt, typename Float = float_array_t<UInt>>
+Float sobol_2(UInt index, UInt scramble = 0) {
+    if constexpr (is_double_v<Float>) {
+        for (UInt v = 1ULL << 52; index != 0; index >>= 1, v ^= v >> 1)
+            masked(scramble, eq(index & 1U, 1U)) ^= v;
+        return reinterpret_array<Float>(sr<12>(scramble) | 0x3ff0000000000000ull) - 1.0;
+    } else {
+        for (UInt v = 1U << 31; index != 0; index >>= 1, v ^= v >> 1)
+            masked(scramble, eq(index & 1U, 1U)) ^= v;
+        return Float(scramble) / Float(1ULL << 32);
+    }
+}
+
 NAMESPACE_END(mitsuba)

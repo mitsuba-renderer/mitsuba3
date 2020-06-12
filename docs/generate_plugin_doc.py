@@ -51,7 +51,11 @@ SPECTRUM_ORDERING = ['uniform',
                      'srgb_d65',
                      'blackbody']
 
-SAMPLER_ORDERING = ['independent']
+SAMPLER_ORDERING = ['independent',
+                    'stratified',
+                    'multijitter',
+                    'orthogonal',
+                    'ldsampler']
 
 INTEGRATOR_ORDERING = ['direct',
                        'path',

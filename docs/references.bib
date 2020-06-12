@@ -23,6 +23,44 @@
   year = {2016},
 }
 
+@article{kensler1967correlated,
+  title={Correlated multi-jittered sampling},
+  author={Kensler, Andrew},
+  journal={Mathematical Physics and applied mathematics},
+  volume={7},
+  pages={86--112},
+  year={1967}
+}
+
+@article {Kollig2002Efficient,
+    author = {Kollig, Thomas and Keller, Alexander},
+    title = {{Efficient Multidimensional Sampling}},
+    journal = {Computer Graphics Forum},
+    year = {2002},
+    editor = {},
+    volume = {21},
+    number = {3},
+    publisher = {Blackwell Publishers, Inc and the Eurographics Association},
+    pages = {557-563},
+    DOI = {10.1111/1467-8659.00706}
+}
+
+@article{jarosz19orthogonal,
+    author = "Jarosz, Wojciech and Enayet, Afnan and Kensler, Andrew and Kilpatrick, Charlie and Christensen, Per",
+    title = "Orthogonal array sampling for {{Monte}} {{Carlo}} rendering",
+    journal = "Computer Graphics Forum (Proceedings of EGSR)",
+    year = "2019",
+    volume = "38",
+    number = "4",
+    month = jul,
+    pages = "135--147",
+    doi = "10/gf6rx5",
+    publisher = "The Eurographics Association",
+    abstract = "We generalize N-rooks, jittered, and (correlated) multi-jittered sampling to higher dimensions by importing and improving upon a class of techniques called orthogonal arrays from the statistics literature. Renderers typically combine or ``pad'' a collection of lower-dimensional (e.g. 2D and 1D) stratified patterns to form higher-dimensional samples for integration. This maintains stratification in the original dimension pairs, but looses it for all other dimension pairs. For truly multi-dimensional integrands like those in rendering, this increases variance and deteriorates its rate of convergence to that of pure random sampling. Care must therefore be taken to assign the primary dimension pairs to the dimensions with most integrand variation, but this complicates implementations. We tackle this problem by developing a collection of practical, in-place multi-dimensional sample generation routines that stratify points on all t-dimensional and 1-dimensional projections simultaneously. For instance, when t=2, any 2D projection of our samples is a (correlated) multi-jittered point set. This property not only reduces variance, but also simplifies implementations since sample dimensions can now be assigned to integrand dimensions arbitrarily while maintaining the same level of stratification. Our techniques reduce variance compared to traditional 2D padding approaches like PBRT's (0,2) and Stratified samplers, and provide quality nearly equal to state-of-the-art QMC samplers like Sobol and Halton while avoiding their structured artifacts as commonly seen when using a single sample set to cover an entire image. While in this work we focus on constructing finite sampling point sets, we also discuss potential avenues for extending our work to progressive sequences (more suitable for incremental rendering) in the future."
+}
+
+
+
 @article{Jakob2019Spectral,
 	author = {Wenzel Jakob and Johannes Hanika},
 	title = {A Low-Dimensional Function Space for Efficient Spectral Upsampling},

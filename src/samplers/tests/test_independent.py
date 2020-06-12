@@ -41,25 +41,3 @@ def test03_clone(variant_scalar_rgb, sampler):
     for i in range(5):
         assert ek.all(sampler.next_1d() != sampler2.next_1d())
         assert ek.all(sampler.next_2d() != sampler2.next_2d())
-
-
-def test04_seed_vectorized(variant_scalar_rgb, sampler):
-    """For a given seed, the first lane of a sampled packet should be equal
-    to the sample of a scalar independent sampler."""
-
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except:
-        pytest.skip("packet_rgb mode not enabled")
-
-    from mitsuba.core.xml import load_string
-
-    sampler_p = load_string("""<sampler version="2.0.0" type="independent">
-                <integer name="sample_count" value="%d"/>
-            </sampler>""" % 8)
-
-    for seed in range(10):
-        sampler.seed(seed)
-        sampler_p.seed(seed)
-        assert sampler.next_1d() == sampler_p.next_1d()[0]
-        assert ek.allclose(sampler_p.next_2d(), ek.dynamic.Vector2f(sampler.next_2d()))

@@ -32,7 +32,7 @@ spp = 32
 total_sample_count = ek.hprod(film_size) * spp
 
 if sampler.wavefront_size() != total_sample_count:
-    sampler.seed(ek.arange(UInt64, total_sample_count))
+    sampler.seed(0, total_sample_count)
 
 # Enumerate discrete sample & pixel indices, and uniformly sample
 # positions within each pixel.
