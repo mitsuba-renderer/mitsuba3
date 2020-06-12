@@ -111,7 +111,7 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
     else
         class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT());
 
-    bool within_emitter = (class_->parent()->alias() == "emitter");
+    bool within_emitter = (!is_scene && class_->parent()->alias() == "emitter");
     Properties props(type);
 
     for (auto& [k, value] : dict) {
