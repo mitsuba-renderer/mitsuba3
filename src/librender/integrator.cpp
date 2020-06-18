@@ -73,6 +73,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         channels.insert(channels.begin() + i, std::string(1, "XYZAW"[i]));
     film->prepare(channels);
 
+    m_render_timer.reset();
     if constexpr (!is_cuda_array_v<Float>) {
         /// Render on the CPU using a spiral pattern
         size_t n_threads = __global_thread_count;
@@ -106,7 +107,6 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         size_t total_blocks = spiral.block_count() * n_passes,
                blocks_done = 0;
 
-        m_render_timer.reset();
         tbb::parallel_for(
             tbb::blocked_range<size_t>(0, total_blocks, 1),
             [&](const tbb::blocked_range<size_t> &range) {
