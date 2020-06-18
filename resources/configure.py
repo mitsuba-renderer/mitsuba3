@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     with open(join(root, 'mitsuba.conf'), 'r') as conf:
         # Strip comments
-        s = re.sub(re.compile(r'(?m)^ *#.*\n?'), '', conf.read())
+        s = re.sub(r'(?m)#.*$', '', conf.read())
         # Load JSON
         configurations = json.loads(s)
 
