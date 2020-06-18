@@ -114,7 +114,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     // Convert to pixel coordinates within the image block
     Point2f pos = pos_ - (m_offset - m_border_size + .5f);
 
-    if (filter_radius > 1) {
+    if (filter_radius > 0.5f + math::RayEpsilon<Float>) {
         // Determine the affected range of pixels
         Point2u lo = Point2u(max(ceil2int <Point2i>(pos - filter_radius), 0)),
                 hi = Point2u(min(floor2int<Point2i>(pos + filter_radius), size - 1));
