@@ -110,8 +110,8 @@ public:
     }
 
     void update() {
-        // Extract center and radius from to_world matrix
-        auto [S, Q, T] = transform_decompose(m_to_world.matrix);
+        // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
+        auto [S, Q, T] = transform_decompose(m_to_world.matrix, 25);
 
         if (abs(S[0][1]) > 1e-6f || abs(S[0][2]) > 1e-6f || abs(S[1][0]) > 1e-6f ||
             abs(S[1][2]) > 1e-6f || abs(S[2][0]) > 1e-6f || abs(S[2][1]) > 1e-6f)
