@@ -12,6 +12,14 @@ if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf)
   set(MITSUBA_COPIED_CONFIG_FILE 1)
 endif()
 
+# ---------- Check for submodules ----------
+
+if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/OpenEXR")
+  message(FATAL_ERROR "The Mitsuba dependencies are missing! "
+    "You probably did not clone the project with --recursive. It is possible to recover "
+    "by invoking\n$ git submodule update --init --recursive")
+endif()
+
 # ---------- Detect Python ----------
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ext/pybind11/tools")
