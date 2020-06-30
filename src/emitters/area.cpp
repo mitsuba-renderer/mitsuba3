@@ -91,11 +91,20 @@ public:
 
         // 3. Sample spectrum
         SurfaceInteraction3f si(ps, zero<Wavelength>(0.f));
-        auto [wavelengths, spec_weight] = m_radiance->sample(
-            si, math::sample_shifted<Wavelength>(wavelength_sample), active);
+
+        Wavelength wavelength;
+        Spectrum spec_weight;
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            std::tie(wavelength, spec_weight) = m_radiance->sample(
+                si, math::sample_shifted<Wavelength>(wavelength_sample), active);
+        } else {
+            wavelength = zero<Wavelength>();
+            spec_weight = 1.f;
+        }
 
         return std::make_pair(
-            Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelengths),
+            Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelength),
             unpolarized<Spectrum>(spec_weight) * m_area_times_pi
         );
     }
