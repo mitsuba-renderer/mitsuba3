@@ -878,11 +878,18 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                 break;
 
             case Tag::LookAt: {
+                    if (!node.attribute("up"))
+                        node.append_attribute("up") = "0,0,0";
+
                     check_attributes(src, node, { "origin", "target", "up" });
 
                     Point3f origin = parse_named_vector(src, node, "origin");
                     Point3f target = parse_named_vector(src, node, "target");
                     Vector3f up = parse_named_vector(src, node, "up");
+
+                    if (squared_norm(up) == 0)
+                        std::tie(up, std::ignore) =
+                            coordinate_system(normalize(target - origin));
 
                     auto result = Transform4f::look_at(origin, target, up);
                     if (any_nested(enoki::isnan(result.matrix)))
