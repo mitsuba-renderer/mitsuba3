@@ -21,14 +21,37 @@ Bitmap texture (:monosp:`bitmap`)
  * - filename
    - |string|
    - Filename of the bitmap to be loaded
+ * - filter_type
+   - |string|
+   - Specifies how pixel values are interpolated and filtered when queried over larger
+     UV regions. The following options are currently available:
+
+     - ``bilinear`` (default): perform bilinear interpolation, but no filtering.
+
+     - ``nearest``: disable filtering and interpolation. In this mode, the plugin
+       performs nearest neighbor lookups of texture values.
+
+ * - wrap_mode
+   - |string|
+   - Controls the behavior of texture evaluations that fall outside of the
+     :math:`[0, 1]` range. The following options are currently available:
+
+     - ``repeat`` (default): tile the texture infinitely.
+
+     - ``mirror``: mirror the texture along its boundaries.
+
+     - ``clamp``: clamp coordinates to the edge of the texture.
+
  * - raw
    - |bool|
-   - Should the transformation to the stored color data
-     (e.g. sRGB to linear, spectral upsampling) be disabled? (Default: false)
+   - Should the transformation to the stored color data (e.g. sRGB to linear,
+     spectral upsampling) be disabled? You will want to enable this when working
+     with bitmaps storing normal maps that use a linear encoding. (Default: false)
  * - to_uv
    - |transform|
-   - Specifies an optional 3x3 UV transformation matrix. A 4x4 matrix can also be provided.
-     In that case, the last row and columns will be ignored.  (Default: none)
+   - Specifies an optional 3x3 transformation matrix that will be applied to UV
+     values. A 4x4 matrix can also be provided, in which case the extra row and
+     column are ignored.
 
 This plugin provides a bitmap texture source that performs bilinearly interpolated
 lookups on JPEG, PNG, OpenEXR, RGBE, TGA, and BMP files.
@@ -38,15 +61,18 @@ for the renderer:
 
 * In :monosp:`rgb` modes, sRGB textures are converted into linear color space.
 * In :monosp:`spectral` modes, sRGB textures are *spectrally upsampled* to plausible
-  smooth spectra :cite:`Jakob2019Spectral` and store an intermediate representation
-  used to query them during rendering.
+  smooth spectra :cite:`Jakob2019Spectral` and stored an intermediate representation
+  that enables efficient queries at render time.
 * In :monosp:`monochrome` modes, sRGB textures are converted to grayscale.
 
 These conversions can alternatively be disabled with the :paramtype:`raw` flag,
 e.g. when textured data is already in linear space or does not represent colors
 at all.
 
- */
+*/
+
+enum class FilterType { Nearest, Bilinear };
+enum class WrapMode { Repeat, Mirror, Clamp };
 
 // Forward declaration of specialized bitmap texture
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
@@ -65,6 +91,26 @@ public:
         fs::path file_path = fs->resolve(props.string("filename"));
         m_name = file_path.filename().string();
         Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
+
+        std::string filter_type = props.string("filter_type", "bilinear");
+        if (filter_type == "nearest")
+            m_filter_type = FilterType::Nearest;
+        else if (filter_type == "bilinear")
+            m_filter_type = FilterType::Bilinear;
+        else
+            Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
+                  "\"bilinear\"!");
+
+        std::string wrap_mode = props.string("wrap_mode", "repeat");
+        if (wrap_mode == "repeat")
+            m_wrap_mode = WrapMode::Repeat;
+        else if (wrap_mode == "mirror")
+            m_wrap_mode = WrapMode::Mirror;
+        else if (wrap_mode == "clamp")
+            m_wrap_mode = WrapMode::Clamp;
+        else
+            Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
+                  "\"mirror\", or \"clamp\"!", wrap_mode);
 
         m_bitmap = new Bitmap(file_path);
 
@@ -89,8 +135,8 @@ public:
                       "format (Y[A], RGB[A], XYZ[A])");
         }
 
-        /* Should Mitsuba disable transformations to the stored color data? (e.g.
-           sRGB to linear, spectral upsampling, etc.) */
+        /* Should Mitsuba disable transformations to the stored color data?
+           (e.g. sRGB to linear, spectral upsampling, etc.) */
         m_raw = props.bool_("raw", false);
         if (m_raw) {
             /* Don't undo gamma correction in the conversion below.
@@ -128,54 +174,52 @@ public:
                     ptr += 3;
                 }
             }
-        } else {
+        } else if (m_bitmap->channel_count() == 1) {
             for (size_t i = 0; i < m_bitmap->pixel_count(); ++i)
                 mean += (double) ptr[i];
+        } else {
+            Throw("Unsupported channel count: %d (expected 1 or 3)",
+                  m_bitmap->channel_count());
         }
 
         m_mean = ScalarFloat(mean / m_bitmap->pixel_count());
     }
-
-    template <uint32_t Channels, bool Raw>
-    using Impl = BitmapTextureImpl<Float, Spectrum, Channels, Raw>;
 
     /**
      * Recursively expand into an implementation specialized to the
      * actual loaded image.
      */
     std::vector<ref<Object>> expand() const override {
-        ref<Object> result;
         Properties props;
         props.set_id(this->id());
-
-        switch (m_bitmap->channel_count()) {
-            case 1:
-                result = m_raw
-                  ? (Object *) new Impl<1, true >(props, m_bitmap, m_name, m_transform, m_mean)
-                  : (Object *) new Impl<1, false>(props, m_bitmap, m_name, m_transform, m_mean);
-                break;
-
-            case 3:
-                result = m_raw
-                  ? (Object *) new Impl<3, true >(props, m_bitmap, m_name, m_transform, m_mean)
-                  : (Object *) new Impl<3, false>(props, m_bitmap, m_name, m_transform, m_mean);
-                break;
-
-            default:
-                Throw("Unsupported channel count: %d (expected 1 or 3)",
-                      m_bitmap->channel_count());
-        }
-
-        return { result };
+        return { ref<Object>(expand_1()) };
     }
 
     MTS_DECLARE_CLASS()
+
+protected:
+    Object* expand_1() const {
+        return m_bitmap->channel_count() == 1 ? expand_2<1>() : expand_2<3>();
+    }
+
+    template <uint32_t Channels> Object* expand_2() const {
+        return m_raw ? expand_3<Channels, true>() : expand_3<Channels, false>();
+    }
+
+    template <uint32_t Channels, bool Raw> Object* expand_3() const {
+        Properties props;
+        return new BitmapTextureImpl<Float, Spectrum, Channels, Raw>(
+            props, m_bitmap, m_name, m_transform, m_mean, m_filter_type, m_wrap_mode);
+    }
+
 protected:
     ref<Bitmap> m_bitmap;
     std::string m_name;
     ScalarTransform3f m_transform;
     bool m_raw;
     ScalarFloat m_mean;
+    FilterType m_filter_type;
+    WrapMode m_wrap_mode;
 };
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
@@ -187,9 +231,15 @@ public:
                       const Bitmap *bitmap,
                       const std::string &name,
                       const ScalarTransform3f &transform,
-                      ScalarFloat mean)
-        : Texture(props), m_resolution(bitmap->size()),
-          m_name(name), m_transform(transform), m_mean(mean) {
+                      ScalarFloat mean,
+                      FilterType filter_type,
+                      WrapMode wrap_mode)
+        : Texture(props),
+          m_resolution(ScalarVector2i(bitmap->size())),
+          m_inv_resolution_x((int) bitmap->width()),
+          m_inv_resolution_y((int) bitmap->height()),
+          m_name(name), m_transform(transform), m_mean(mean),
+          m_filter_type(filter_type), m_wrap_mode(wrap_mode){
         m_data = DynamicBuffer<Float>::copy(bitmap->data(),
             hprod(m_resolution) * Channels);
     }
@@ -247,48 +297,93 @@ public:
         }
     }
 
+    template <typename T> T wrap(const T &value) const {
+        if (m_wrap_mode == WrapMode::Clamp) {
+            return clamp(value, 0, m_resolution - 1);
+        } else {
+            T div = T(m_inv_resolution_x(value.x()),
+                      m_inv_resolution_y(value.y())),
+              mod = value - div * m_resolution;
+
+            mod += select(value < 0, T(m_resolution), zero<T>());
+
+            if (m_wrap_mode == WrapMode::Mirror)
+                mod = select(eq(div & 1, 0), mod, m_resolution - 1 - mod);
+
+            return mod;
+        }
+    }
+
     MTS_INLINE auto interpolate(const SurfaceInteraction3f &si, Mask active) const {
+        // Storage representation underlying this texture
+        using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
+
         if constexpr (!is_array_v<Mask>)
             active = true;
 
         Point2f uv = m_transform.transform_affine(si.uv);
-        uv -= floor(uv);
-        uv *= Vector2f(m_resolution - 1u);
 
-        Point2u pos = min(Point2u(uv), m_resolution - 2u);
+        if (m_filter_type == FilterType::Bilinear) {
+            using Int4  = Array<Int32, 4>;
+            using Int24 = Array<Int4, 2>;
 
-        Point2f w1 = uv - Point2f(pos),
-                w0 = 1.f - w1;
+            // Scale to bitmap resolution and apply shift
+            uv = fmadd(uv, m_resolution, -.5f);
 
-        UInt32 index = pos.x() + pos.y() * m_resolution.x();
-        uint32_t width = m_resolution.x();
+            // Integer pixel positions for bilinear interpolation
+            Vector2i uv_i = floor2int<Vector2i>(uv);
 
-        using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
+            // Interpolation weights
+            Point2f w1 = uv - Point2f(uv_i),
+                    w0 = 1.f - w1;
 
-        StorageType v00 = gather<StorageType>(m_data, index, active),
-                    v10 = gather<StorageType>(m_data, index + 1, active),
-                    v01 = gather<StorageType>(m_data, index + width, active),
-                    v11 = gather<StorageType>(m_data, index + width + 1, active);
+            // Apply wrap mode
+            Int24 uv_i_w = wrap(Int24(Int4(0, 1, 0, 1) + uv_i.x(),
+                                      Int4(0, 0, 1, 1) + uv_i.y()));
 
-        // Bilinear interpolation
-        if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
-            // Evaluate spectral upsampling model from stored coefficients
-            UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
+            Int4 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
 
-            c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
-            c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
-            c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
-            c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
+            /// TODO: merge into a single gather with the upcoming Enoki
+            StorageType v00 = gather<StorageType>(m_data, index.x(), active),
+                        v10 = gather<StorageType>(m_data, index.y(), active),
+                        v01 = gather<StorageType>(m_data, index.z(), active),
+                        v11 = gather<StorageType>(m_data, index.w(), active);
 
-            c0 = fmadd(w0.x(), c00, w1.x() * c10);
-            c1 = fmadd(w0.x(), c01, w1.x() * c11);
+            // Bilinear interpolation
+            if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
+                // Evaluate spectral upsampling model from stored coefficients
+                UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
 
-            return fmadd(w0.y(), c0, w1.y() * c1);
+                c00 = srgb_model_eval<UnpolarizedSpectrum>(v00, si.wavelengths);
+                c10 = srgb_model_eval<UnpolarizedSpectrum>(v10, si.wavelengths);
+                c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
+                c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
+
+                c0 = fmadd(w0.x(), c00, w1.x() * c10);
+                c1 = fmadd(w0.x(), c01, w1.x() * c11);
+
+                return fmadd(w0.y(), c0, w1.y() * c1);
+            } else {
+                StorageType v0 = fmadd(w0.x(), v00, w1.x() * v10),
+                            v1 = fmadd(w0.x(), v01, w1.x() * v11);
+
+                return fmadd(w0.y(), v0, w1.y() * v1);
+            }
         } else {
-            StorageType v0 = fmadd(w0.x(), v00, w1.x() * v10),
-                        v1 = fmadd(w0.x(), v01, w1.x() * v11);
+            // Scale to bitmap resolution, no shift
+            uv *= m_resolution;
 
-            return fmadd(w0.y(), v0, w1.y() * v1);
+            // Integer pixel positions for bilinear interpolation
+            Vector2i uv_i   = floor2int<Vector2i>(uv),
+                     uv_i_w = wrap(uv_i);
+
+            Int32 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
+
+            StorageType v = gather<StorageType>(m_data, index, active);
+            if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3)
+                return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
+            else
+                return v;
         }
     }
 
@@ -349,10 +444,14 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     DynamicBuffer<Float> m_data;
-    ScalarVector2u m_resolution;
+    ScalarVector2i m_resolution;
+    enoki::divisor<int32_t> m_inv_resolution_x;
+    enoki::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;
     ScalarTransform3f m_transform;
     ScalarFloat m_mean;
+    FilterType m_filter_type;
+    WrapMode m_wrap_mode;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
@@ -362,15 +461,11 @@ NAMESPACE_BEGIN(detail)
 template <uint32_t Channels, bool Raw>
 constexpr const char * bitmap_class_name() {
     if constexpr (!Raw) {
-        if constexpr (Channels == 1)
-            return "BitmapTextureImpl_1_0";
-        else
-            return "BitmapTextureImpl_3_0";
+        return (Channels == 1) ? "BitmapTextureImpl_1_0"
+                               : "BitmapTextureImpl_3_0";
     } else {
-        if constexpr (Channels == 1)
-            return "BitmapTextureImpl_1_1";
-        else
-            return "BitmapTextureImpl_3_1";
+        return (Channels == 1) ? "BitmapTextureImpl_1_1"
+                               : "BitmapTextureImpl_3_1";
     }
 }
 NAMESPACE_END(detail)
