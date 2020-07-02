@@ -408,6 +408,7 @@ public:
     virtual Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
                              Mask active = true) const;
 
+
     // -----------------------------------------------------------------------
     //! @{ \name BSDF property accessors (components, flags, etc)
     // -----------------------------------------------------------------------
