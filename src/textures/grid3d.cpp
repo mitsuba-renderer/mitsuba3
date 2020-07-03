@@ -12,6 +12,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+enum class FilterType { Nearest, Trilinear };
+enum class WrapMode { Repeat, Mirror, Clamp };
+
+
 // Forward declaration of specialized GridVolume
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class GridVolumeImpl;
@@ -36,6 +40,26 @@ public:
     MTS_IMPORT_TYPES()
 
     GridVolume(const Properties &props) : Base(props), m_props(props) {
+        std::string filter_type = props.string("filter_type", "trilinear");
+        if (filter_type == "nearest")
+            m_filter_type = FilterType::Nearest;
+        else if (filter_type == "trilinear")
+            m_filter_type = FilterType::Trilinear;
+        else
+            Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
+                  "\"trilinear\"!");
+
+        std::string wrap_mode = props.string("wrap_mode", "clamp");
+        if (wrap_mode == "repeat")
+            m_wrap_mode = WrapMode::Repeat;
+        else if (wrap_mode == "mirror")
+            m_wrap_mode = WrapMode::Mirror;
+        else if (wrap_mode == "clamp")
+            m_wrap_mode = WrapMode::Clamp;
+        else
+            Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
+                  "\"mirror\", or \"clamp\"!", wrap_mode);
+
 
         auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
         m_metadata                = metadata;
@@ -85,12 +109,12 @@ public:
         ref<Object> result;
         switch (m_metadata.channel_count) {
             case 1:
-                result = m_raw ? (Object *) new Impl<1, true>(m_props, m_metadata, m_data)
-                               : (Object *) new Impl<1, false>(m_props, m_metadata, m_data);
+                result = m_raw ? (Object *) new Impl<1, true>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode)
+                               : (Object *) new Impl<1, false>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode);
                 break;
             case 3:
-                result = m_raw ? (Object *) new Impl<3, true>(m_props, m_metadata, m_data)
-                               : (Object *) new Impl<3, false>(m_props, m_metadata, m_data);
+                result = m_raw ? (Object *) new Impl<3, true>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode)
+                               : (Object *) new Impl<3, false>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode);
                 break;
             default:
                 Throw("Unsupported channel count: %d (expected 1 or 3)", m_metadata.channel_count);
@@ -104,6 +128,8 @@ protected:
     DynamicBuffer<Float> m_data;
     VolumeMetadata m_metadata;
     Properties m_props;
+    FilterType m_filter_type;
+    WrapMode m_wrap_mode;
 };
 
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
@@ -113,11 +139,19 @@ public:
     MTS_IMPORT_TYPES()
 
     GridVolumeImpl(const Properties &props, const VolumeMetadata &meta,
-               const DynamicBuffer<Float> &data)
-        : Base(props) {
+               const DynamicBuffer<Float> &data,
+               FilterType filter_type, 
+               WrapMode wrap_mode)
+        : Base(props), 
+            m_data(data),
+            m_metadata(meta),
+            m_inv_resolution_x((int) m_metadata.shape.x()),
+            m_inv_resolution_y((int) m_metadata.shape.y()),
+            m_inv_resolution_z((int) m_metadata.shape.z()),
+            m_filter_type(filter_type), m_wrap_mode(wrap_mode){
 
-        m_data     = data;
-        m_metadata = meta;
+
+
         m_size     = hprod(m_metadata.shape);
         if (props.bool_("use_grid_bbox", false)) {
             m_world_to_local = m_metadata.transform * m_world_to_local;
@@ -143,7 +177,7 @@ public:
                   "which is not 1 or 3",
                   to_string());
         } else {
-            auto result = eval_impl<false>(it, active);
+            auto result = eval_impl(it, active);
 
             if constexpr (Channels == 3 && is_monochromatic_v<Spectrum>)
                 return mitsuba::luminance(Color3f(result));
@@ -163,7 +197,7 @@ public:
                   "conversion into spectra was requested! (raw=false)",
                   to_string());
         } else {
-            auto result = eval_impl<false>(it, active);
+            auto result = eval_impl(it, active);
             if constexpr (Channels == 3)
                 return mitsuba::luminance(Color3f(result));
             else
@@ -184,26 +218,12 @@ public:
                   "conversion into spectra was requested! (raw=false)",
                   to_string());
         } else {
-            return eval_impl<false>(it, active);
+            return eval_impl(it, active);
         }
     }
 
 
-    std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
-                                                           Mask active) const override {
-        ENOKI_MARK_USED(it);
-        ENOKI_MARK_USED(active);
 
-        if constexpr (Channels != 1)
-            Throw("eval_gradient() is currently only supported for single channel grids!", to_string());
-        else {
-            auto [result, gradient] = eval_impl<true>(it, active);
-            return { result.x(), gradient };
-        }
-    }
-
-
-    template <bool with_gradient>
     MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
@@ -214,23 +234,33 @@ public:
         auto p = m_world_to_local * it.p;
         active &= all((p >= 0) && (p <= 1));
 
-        if constexpr (with_gradient) {
-            if (none_or<false>(active))
-                return std::make_pair(zero<ResultType>(), zero<Vector3f>());
-            auto [result, gradient] = interpolate<true>(p, it.wavelengths, active);
-            return std::make_pair(select(active, result, zero<ResultType>()),
-                                  select(active, gradient, zero<Vector3f>()));
-        } else {
-            if (none_or<false>(active))
-                return zero<ResultType>();
-            ResultType result = interpolate<false>(p, it.wavelengths, active);
-            return select(active, result, zero<ResultType>());
-        }
+        if (none_or<false>(active))
+            return zero<ResultType>();
+        ResultType result = interpolate(p, it.wavelengths, active);
+        return select(active, result, zero<ResultType>());
     }
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
         auto p = m_world_to_local * it.p;
         return all((p >= 0) && (p <= 1));
+    }
+
+    template <typename T> T wrap(const T &value) const {
+        if (m_wrap_mode == WrapMode::Clamp) {
+            return clamp(value, 0, m_metadata.shape - 1);
+        } else {
+            T div = T(m_inv_resolution_x(value.x()),
+                      m_inv_resolution_y(value.y()), 
+                      m_inv_resolution_z(value.z())),
+              mod = value - div * m_metadata.shape;
+
+            mod += select(value < 0, T(m_metadata.shape), zero<T>());
+
+            if (m_wrap_mode == WrapMode::Mirror)
+                mod = select(eq(div & 1, 0), mod, m_metadata.shape - 1 - mod);
+
+            return mod;
+        }
     }
 
     /**
@@ -240,103 +270,108 @@ public:
      * The passed `active` mask must disable lanes that are not within the
      * domain.
      */
-    template <bool with_gradient>
     MTS_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
                                 Mask active) const {
-        using Index   = uint32_array_t<Float>;
-        using Index3  = uint32_array_t<Point3f>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using StorageType = std::conditional_t<uses_srgb_model, Array<Float, 4>, Array<Float, Channels>>;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
-        // TODO: in the autodiff case, make sure these do not trigger a recompilation
+        if constexpr (!is_array_v<Mask>)
+            active = true;
+
         const uint32_t nx = m_metadata.shape.x();
         const uint32_t ny = m_metadata.shape.y();
         const uint32_t nz = m_metadata.shape.z();
-        const uint32_t z_offset = nx * ny;
 
-        Point3f max_coordinates(nx - 1.f, ny - 1.f, nz - 1.f);
-        p *= max_coordinates;
+        if (m_filter_type == FilterType::Trilinear) {
+            using Int8  = Array<Int32, 8>;
+            using Int38 = Array<Int8, 3>;
 
-        // Integer part (clamped to include the upper bound)
-        Index3 pi  = enoki::floor2int<Index3>(p);
-        pi[active] = clamp(pi, 0, max_coordinates - 1);
 
-        // Fractional part
-        Point3f f = p - Point3f(pi), rf = 1.f - f;
-        active &= all(pi >= 0u && (pi + 1u) < Index3(nx, ny, nz));
+            // Scale to bitmap resolution and apply shift
+            p = fmadd(p, m_metadata.shape, -.5);
 
-        // (z * ny + y) * nx + x
-        Index index = fmadd(fmadd(pi.z(), ny, pi.y()), nx, pi.x());
+            // Integer pixel positions for trilinear interpolation
+            Vector3i p_i  = enoki::floor2int<Vector3i>(p);
 
-        // Load 8 grid positions to perform trilinear interpolation
-        auto d000 = gather<StorageType>(m_data, index, active),
-             d001 = gather<StorageType>(m_data, index + 1, active),
-             d010 = gather<StorageType>(m_data, index + nx, active),
-             d011 = gather<StorageType>(m_data, index + nx + 1, active),
-             d100 = gather<StorageType>(m_data, index + z_offset, active),
-             d101 = gather<StorageType>(m_data, index + z_offset + 1, active),
-             d110 = gather<StorageType>(m_data, index + z_offset + nx, active),
-             d111 = gather<StorageType>(m_data, index + z_offset + nx + 1, active);
+            // Interpolation weights
+            Point3f w1 = p - Point3f(p_i),
+                    w0 = 1.f - w1;
 
-        ResultType v000, v001, v010, v011, v100, v101, v110, v111;
-        Float scale = 1.f;
-        if constexpr (uses_srgb_model) {
-            v000 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d000), wavelengths);
-            v001 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d001), wavelengths);
-            v010 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d010), wavelengths);
-            v011 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d011), wavelengths);
-            v100 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d100), wavelengths);
-            v101 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d101), wavelengths);
-            v110 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d110), wavelengths);
-            v111 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d111), wavelengths);
+            Int38 pi_i_w = wrap(Int38(Int8(0, 1, 0, 1, 0, 1, 0, 1) + p_i.x(),
+                                      Int8(0, 0, 1, 1, 0, 0, 1, 1) + p_i.y(), 
+                                      Int8(0, 0, 0, 0, 1, 1, 1, 1) + p_i.z()));
 
-            Float f00 = fmadd(d000.w(), rf.x(), d001.w() * f.x()),
-                  f01 = fmadd(d010.w(), rf.x(), d011.w() * f.x()),
-                  f10 = fmadd(d100.w(), rf.x(), d101.w() * f.x()),
-                  f11 = fmadd(d110.w(), rf.x(), d111.w() * f.x());
-            Float f0  = fmadd(f00, rf.y(), f01 * f.y()),
-                  f1  = fmadd(f10, rf.y(), f11 * f.y());
-            scale = fmadd(f0, rf.z(), f1 * f.z());
-        } else {
-            v000 = d000; v001 = d001; v010 = d010; v011 = d011;
-            v100 = d100; v101 = d101; v110 = d110; v111 = d111;
-            ENOKI_MARK_USED(scale);
-            ENOKI_MARK_USED(wavelengths);
-        }
+            // (z * ny + y) * nx + x
+            Int8 index = fmadd(fmadd(pi_i_w.z(), ny, pi_i_w.y()), nx, pi_i_w.x());
 
-        // Trilinear interpolation
-        ResultType v00 = fmadd(v000, rf.x(), v001 * f.x()),
-                   v01 = fmadd(v010, rf.x(), v011 * f.x()),
-                   v10 = fmadd(v100, rf.x(), v101 * f.x()),
-                   v11 = fmadd(v110, rf.x(), v111 * f.x());
-        ResultType v0  = fmadd(v00, rf.y(), v01 * f.y()),
-                   v1  = fmadd(v10, rf.y(), v11 * f.y());
-        ResultType result = fmadd(v0, rf.z(), v1 * f.z());
+            // Load 8 grid positions to perform trilinear interpolation
+            auto d000 = gather<StorageType>(m_data, index[0], active),
+                 d100 = gather<StorageType>(m_data, index[1], active),
+                 d010 = gather<StorageType>(m_data, index[2], active),
+                 d110 = gather<StorageType>(m_data, index[3], active),
+                 d001 = gather<StorageType>(m_data, index[4], active),
+                 d101 = gather<StorageType>(m_data, index[5], active),
+                 d011 = gather<StorageType>(m_data, index[6], active),
+                 d111 = gather<StorageType>(m_data, index[7], active);
 
-        if constexpr (uses_srgb_model)
-            result *= scale;
+            ResultType v000, v001, v010, v011, v100, v101, v110, v111;
+            Float scale = 1.f;
+            if constexpr (uses_srgb_model) {
+                v000 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d000), wavelengths);
+                v100 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d100), wavelengths);
+                v010 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d010), wavelengths);
+                v110 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d110), wavelengths);
+                v001 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d001), wavelengths);
+                v101 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d101), wavelengths);
+                v011 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d011), wavelengths);
+                v111 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d111), wavelengths);
+                // Interpolate scaling factor
+                Float f00 = fmadd(w0.x(), d000.w(), w1.x() * d100.w()),
+                      f01 = fmadd(w0.x(), d001.w(), w1.x() * d101.w()),
+                      f10 = fmadd(w0.x(), d010.w(), w1.x() * d110.w()),
+                      f11 = fmadd(w0.x(), d011.w(), w1.x() * d111.w());
+                Float f0  = fmadd(w0.y(), f00, w1.y() * f10),
+                      f1  = fmadd(w0.y(), f01, w1.y() * f11);
+                    scale = fmadd(w0.z(), f0, w1.z() * f1);
+            } else {
+                v000 = d000; v001 = d001; v010 = d010; v011 = d011;
+                v100 = d100; v101 = d101; v110 = d110; v111 = d111;
+                ENOKI_MARK_USED(scale);
+                ENOKI_MARK_USED(wavelengths);
+            }
 
-        if constexpr (with_gradient) {
-            if constexpr (!is_monochromatic_v<Spectrum>)
-                NotImplementedError("eval_gradient with multichannel GridVolume texture");
+            // Trilinear interpolation
+            ResultType v00 = fmadd(w0.x(), v000, w1.x() * v100),
+                       v01 = fmadd(w0.x(), v001, w1.x() * v101),
+                       v10 = fmadd(w0.x(), v010, w1.x() * v110),
+                       v11 = fmadd(w0.x(), v011, w1.x() * v111);
+            ResultType v0  = fmadd(w0.y(), v00, w1.y() * v10),
+                       v1  = fmadd(w0.y(), v01, w1.y() * v11);
+            ResultType result = fmadd(w0.z(), v0, w1.z() * v1);
 
-            Float gx0 = fmadd(d001 - d000, rf.y(), (d011 - d010) * f.y()).x(),
-                  gx1 = fmadd(d101 - d100, rf.y(), (d111 - d110) * f.y()).x(),
-                  gy0 = fmadd(d010 - d000, rf.x(), (d011 - d001) * f.x()).x(),
-                  gy1 = fmadd(d110 - d100, rf.x(), (d111 - d101) * f.x()).x(),
-                  gz0 = fmadd(d100 - d000, rf.x(), (d101 - d001) * f.x()).x(),
-                  gz1 = fmadd(d110 - d010, rf.x(), (d111 - d011) * f.x()).x();
+            if constexpr (uses_srgb_model)
+                result *= scale;
 
-            // Smaller grid cells means variation is faster (-> larger gradient)
-            Vector3f gradient(fmadd(gx0, rf.z(), gx1 * f.z()) * (nx - 1),
-                              fmadd(gy0, rf.z(), gy1 * f.z()) * (ny - 1),
-                              fmadd(gz0, rf.y(), gz1 * f.y()) * (nz - 1));
-            return std::make_pair(result, gradient);
-        } else {
             return result;
-        }
+        } else {
+            // Scale to volume resolution, no shift
+            p *= m_metadata.shape;
 
+            // Integer voxel positions for lookup
+            Vector3i p_i   = floor2int<Vector3i>(p),
+                    p_i_w = wrap(p_i);
+
+            Int32 index = fmadd(fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
+
+            StorageType v = gather<StorageType>(m_data, index, active);
+            
+            if constexpr (uses_srgb_model)
+                return v.w() * srgb_model_eval<UnpolarizedSpectrum>(head<3>(v), wavelengths);
+            else
+                return v;
+
+        }
     }
 
     ScalarFloat max() const override { return m_metadata.max; }
@@ -387,7 +422,11 @@ protected:
     DynamicBuffer<Float> m_data;
     bool m_fixed_max = false;
     VolumeMetadata m_metadata;
+    enoki::divisor<int32_t> m_inv_resolution_x, m_inv_resolution_y, m_inv_resolution_z;
+
     ScalarUInt32 m_size;
+    FilterType m_filter_type;
+    WrapMode m_wrap_mode;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(GridVolume, Volume)
