@@ -125,23 +125,6 @@ public:
     virtual Color3f eval_3(const SurfaceInteraction3f &si,
                            Mask active = true) const;
 
-#if 0
-    /**
-     * \brief Return the textured gradient at \c si
-     *
-     * Note that this method only exists as part of the texture interface.
-     * As default, the function is implemented point wise without any kind of
-     * filtering.
-     *
-     * \return A pair (du, dv) consisting of
-     *
-     *     du: Spectral gradient along u parameter
-     *
-     *     dv: Spectral gradient along v parameter
-     */
-    virtual std::pair<Spectrumf, Spectrumf>
-    eval_gradient(const SurfaceInteraction3f &si) const;
-#endif
 
     /**
      * Return the mean value of the spectrum over the support
