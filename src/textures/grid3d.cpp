@@ -46,8 +46,8 @@ public:
         else if (filter_type == "trilinear")
             m_filter_type = FilterType::Trilinear;
         else
-            Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
-                  "\"trilinear\"!");
+            Throw("Invalid filter type \"%s\", must be one of: \"nearest\" or "
+                  "\"trilinear\"!", filter_type);
 
         std::string wrap_mode = props.string("wrap_mode", "clamp");
         if (wrap_mode == "repeat")
@@ -281,7 +281,6 @@ public:
 
         const uint32_t nx = m_metadata.shape.x();
         const uint32_t ny = m_metadata.shape.y();
-        const uint32_t nz = m_metadata.shape.z();
 
         if (m_filter_type == FilterType::Trilinear) {
             using Int8  = Array<Int32, 8>;

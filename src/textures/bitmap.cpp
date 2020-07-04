@@ -99,7 +99,7 @@ public:
             m_filter_type = FilterType::Bilinear;
         else
             Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
-                  "\"bilinear\"!");
+                  "\"bilinear\"!", filter_type);
 
         std::string wrap_mode = props.string("wrap_mode", "repeat");
         if (wrap_mode == "repeat")

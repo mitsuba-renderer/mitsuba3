@@ -312,47 +312,55 @@ public:  // Type-specific getters and setters ----------------------------------
     /// Retrieve a 3D texture
     template <typename Volume>
     ref<Volume> volume(const std::string &name) const {
-        ref<Object> object = find_object(name);
-        if (!object)
+
+        if (!has_property(name))
             Throw("Property \"%s\" has not been specified!", name);
-        if (!object->class_()->derives_from(MTS_CLASS(Volume)))
-            Throw("The property \"%s\" has the wrong type (expected <Volume>).",
-                name);
-        mark_queried(name);
-        return (Volume *) object.get();
+
+        auto p_type = type(name);
+        if (p_type == Properties::Type::Object) {
+            ref<Object> object = find_object(name);
+            if (!object->class_()->derives_from(MTS_CLASS(Volume::Texture)) && 
+                !object->class_()->derives_from(MTS_CLASS(Volume)))
+                Throw("The property \"%s\" has the wrong type (expected "
+                    " <spectrum>, <texture>. or <volume>).", name);
+
+            mark_queried(name);
+            if (object->class_()->derives_from(MTS_CLASS(Volume))) {
+                return (Volume *) object.get();
+            } else {
+                Properties props("constvolume");
+                props.set_object("color", object);
+                return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
+            }
+        } else if (p_type == Properties::Type::Float) {
+            Properties props("constvolume");
+            props.set_float("color", float_(name));
+            return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
+        } else {
+            Throw("The property \"%s\" has the wrong type (expected "
+                    " <spectrum>, <texture> or <volume>).", name);
+        }
     }
 
     /// Retrieve a 3D texture (use the provided texture if no entry exists)
     template <typename Volume>
     ref<Volume> volume(const std::string &name, ref<Volume> def_val) const {
-        ref<Object> object = find_object(name);
-        if (!object)
+        if (!has_property(name))
             return def_val;
-        if (!object->class_()->derives_from(MTS_CLASS(Volume)))
-            Throw("The property \"%s\" has the wrong type (expected <Volume>).",
-                name);
-        mark_queried(name);
-        return (Volume *) object.get();
+        return volume<Volume>(name);
     }
 
-    /// Retrieve a 3D texture (use default constant texture if no entry exists)
     template <typename Volume>
     ref<Volume> volume(const std::string &name, Float def_val) const {
-        ref<Object> object = find_object(name);
-        if (!object) {
+        if (!has_property(name)) {
             Properties props("constvolume");
-            ref<Object> obj
-                = this->texture<typename Volume::Texture>("__default_spectrum", def_val).get();
-            props.set_object("color", obj);
-            return (Volume *) PluginManager::instance()
-                ->create_object<Volume>(props).get();
+            props.set_float("color", def_val);
+            return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
         }
-        if (!object->class_()->derives_from(MTS_CLASS(Volume)))
-            Throw("The property \"%s\" has the wrong type (expected <Volume>).",
-                name);
-        mark_queried(name);
-        return (Volume *) object.get();
+        return volume<Volume>(name);
     }
+
+
 private:
     // Return a reference to an object for a specific name (return null ref if doesn't exist)
     ref<Object> find_object(const std::string &name) const;

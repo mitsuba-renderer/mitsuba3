@@ -20,37 +20,15 @@ public:
 
     HomogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = true;
-        for (auto &kv : props.objects()) {
-            Volume *volume = dynamic_cast<Volume *>(kv.second.get());
-            Texture *texture     = dynamic_cast<Texture *>(kv.second.get());
-            if (volume) {
-                if (kv.first == "albedo") {
-                    m_albedo = volume;
-                } else if (kv.first == "sigma_t") {
-                    m_sigmat = volume;
-                }
-            } else if (texture) {
-                // If we directly specified RGB values: automatically convert to
-                // a constant Texture
-                Properties props2("constvolume");
-                ref<Object> texture_ref =
-                    props.texture<Texture>(kv.first).get();
-                props2.set_object("color", texture_ref);
-                ref<Volume> volume_ref =
-                    PluginManager::instance()->create_object<Volume>(props2);
-                if (kv.first == "albedo") {
-                    m_albedo = volume_ref;
-                } else if (kv.first == "sigma_t") {
-                    m_sigmat = volume_ref;
-                }
-            }
-        }
-        m_density = props.float_("density", 1.0f);
+        m_albedo = props.volume<Volume>("albedo", 0.75f);
+        m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+
+        m_scale = props.float_("scale", 1.0f);
         m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
     }
 
     MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi) const {
-        return m_sigmat->eval(mi) * m_density;
+        return m_sigmat->eval(mi) * m_scale;
     }
 
     UnpolarizedSpectrum
@@ -76,7 +54,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("density", m_density);
+        callback->put_parameter("scale", m_scale);
         callback->put_object("albedo", m_albedo.get());
         callback->put_object("sigma_t", m_sigmat.get());
         Base::traverse(callback);
@@ -87,6 +65,7 @@ public:
         oss << "HomogeneousMedium[" << std::endl
             << "  albedo  = " << string::indent(m_albedo) << std::endl
             << "  sigma_t = " << string::indent(m_sigmat) << std::endl
+            << "  scale   = " << string::indent(m_scale)  << std::endl
             << "]";
         return oss.str();
     }
@@ -94,7 +73,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo;
-    ScalarFloat m_density;
+    ScalarFloat m_scale;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(HomogeneousMedium, Medium)

@@ -164,7 +164,7 @@ protected:
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Volume : public Object {
 public:
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(Texture)
 
     // ======================================================================
     //! @{ \name 3D Texture interface
