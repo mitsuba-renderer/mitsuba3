@@ -288,7 +288,7 @@ public:
 
 
             // Scale to bitmap resolution and apply shift
-            p = fmadd(p, m_metadata.shape, -.5);
+            p = fmadd(p, m_metadata.shape, -.5f);
 
             // Integer pixel positions for trilinear interpolation
             Vector3i p_i  = enoki::floor2int<Vector3i>(p);
