@@ -7,6 +7,7 @@ MTS_PY_DECLARE(BoundingSphere);
 MTS_PY_DECLARE(Frame);
 MTS_PY_DECLARE(Ray);
 MTS_PY_DECLARE(DiscreteDistribution);
+MTS_PY_DECLARE(DiscreteDistribution2D);
 MTS_PY_DECLARE(ContinuousDistribution);
 MTS_PY_DECLARE(IrregularContinuousDistribution);
 MTS_PY_DECLARE(Hierarchical2D);
@@ -253,6 +254,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(BoundingSphere);
     MTS_PY_IMPORT(Frame);
     MTS_PY_IMPORT(DiscreteDistribution);
+    MTS_PY_IMPORT(DiscreteDistribution2D);
     MTS_PY_IMPORT(ContinuousDistribution);
     MTS_PY_IMPORT(IrregularContinuousDistribution);
     MTS_PY_IMPORT_SUBMODULE(math);

@@ -8,36 +8,191 @@ NAMESPACE_BEGIN(mitsuba)
 /** =======================================================================
  * @{ \name Data-driven warping techniques for two dimensions
  *
- * This file provides two different classes (one of which has two 'variants')
- * for importance sampling arbitrary 2D linear interpolants discretized on a
- * regular grid. All produce exactly the same probability density, but the
- * mapping from random numbers to samples is very different. In particular:
+ * This file provides three different approaches for importance sampling 2D
+ * functions discretized on a regular grid. All functionality is written in a
+ * generic fashion and works in scalar mode, packet mode, and the just-in-time
+ * compiler (in particular, the complete sampling procedure is designed to be
+ * JIT-compiled to a single CUDA or LLVM kernel without any intermediate
+ * synchronization steps.)
+ *
+ * The first class \c DiscreteDistribution2D generates samples proportional to
+ * a <em>discrete</em> 2D function sampled on a regular grid by sampling the
+ * marginal distribution to choose a row, then a conditional distribution to
+ * choose a column. This is a very simple ingredient that can be used to build
+ * more advanced kinds of sampling schemes.
+ *
+ * The other two classes \c Hierarchical2D and \c Marginal2D are significantly
+ * more complex and target sampling of <em>linear interpolants</em>, which
+ * means that the sampling procedure is a function with floating point inputs
+ * and outputs. The mapping is bijective and can be evaluated in <em>both
+ * directions</em>. The implementations also supports <em>conditional
+ * distributions</em>, i.e., 2D distributions that depend on an arbitrary
+ * number of parameters (indicated via the \c Dimension template parameter). In
+ * this case, a higher-dimensional discretization must be provided that will
+ * also be linearly interpolated in these extra dimensions.
+ *
+ * Both approaches will produce exactly the same probability density, but the
+ * mapping from random numbers to samples tends to be very different, which can
+ * play an important role in certain applications. In particular:
  *
  * \c Hierarchical2D generates samples using hierarchical sample warping, which
  * is essentially a course-to-fine traversal of a MIP map. It generates a
  * mapping with very little shear/distortion, but it has numerous
  * discontinuities that can be problematic for some applications.
  *
- * \c Marginal2D samples a marginal distribution in on axis, then a conditional
- * distribution in the other axis. The mapping lacks the discontinuities of the
- * hierarchical scheme but tends to have significant shear/distortion when the
- * distribution contains isolated regions with a very high probability density.
+ * \c Marginal2D is similar to \c DiscreteDistribution2D, in that it samples the
+ * marginal, then the conditional. In contrast to \c DiscreteDistribution2D,
+ * the mapping provides fractional outputs. In contrast to \c Hierarchical2D,
+ * the mapping is guaranteed to not contain any discontinuities but tends to
+ * have significant shear/distortion when the distribution contains isolated
+ * regions with very high probability densities.
  *
- * There are two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
+ * There are actually two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
  * discrete marginal/conditional distributions are used to select a bilinear
  * bilinear patch, followed by a continuous sampling step that chooses a
  * specific position inside the patch. When <tt>Continuous=true</tt>,
  * continuous marginal/conditional distributions are used instead, and the
  * second step is no longer needed. The latter scheme requires more computation
- * and memory accesses but produces an overall smoother mapping.
+ * and memory accesses but produces an overall smoother mapping. The continuous
+ * version of \c Marginal2D may be beneficial when this method is not used as a
+ * sampling scheme, but rather to generate very high-quality parameterizations.
  *
- * The implementation also supports <em>conditional distributions</em>, i.e.,
- * 2D distributions that depend on an arbitrary number of parameters (indicated
- * via the \c Dimension template parameter). In this case, a higher-dimensional
- * discretization must be provided that will also be linearly interpolated in
- * these extra dimensions.
  * =======================================================================
  */
+
+template <typename Float_, size_t Dimension_ = 0>
+class DiscreteDistribution2D {
+public:
+    using Float                       = Float_;
+    using UInt32                      = uint32_array_t<Float>;
+    using Mask                        = mask_t<Float>;
+    using Point2f                     = Point<Float, 2>;
+    using Point2u                     = Point<UInt32, 2>;
+    using ScalarFloat                 = scalar_t<Float>;
+    using ScalarVector2u              = Vector<uint32_t, 2>;
+    using FloatStorage                = DynamicBuffer<Float>;
+
+    DiscreteDistribution2D() = default;
+
+    /**
+     * Construct a marginal sample warping scheme for floating point
+     * data of resolution \c size.
+     */
+    DiscreteDistribution2D(const ScalarFloat *data,
+                           const ScalarVector2u &size)
+        : m_size(size) {
+
+        m_cond_cdf = empty<FloatStorage>(hprod(m_size));
+        m_cond_cdf.managed();
+        m_marg_cdf = empty<FloatStorage>(m_size.y());
+        m_marg_cdf.managed();
+
+        ScalarFloat *cond_cdf = m_cond_cdf.data(),
+                    *marg_cdf = m_marg_cdf.data();
+
+        // Construct conditional and marginal CDFs
+        double accum_marg = 0.0;
+        for (uint32_t y = 0; y < m_size.y(); ++y) {
+            double accum_cond = 0.0;
+            uint32_t idx = m_size.x() * y;
+            for (uint32_t x = 0; x < m_size.x(); ++x, ++idx) {
+                accum_cond += (double) data[idx];
+                cond_cdf[idx] = (ScalarFloat) accum_cond;
+            }
+            accum_marg += accum_cond;
+            marg_cdf[y] = accum_marg;
+        }
+
+        m_inv_normalization = (ScalarFloat) accum_marg;
+        m_normalization = (ScalarFloat) (1.0 / accum_marg);
+    }
+
+    /// Evaluate the function value at the given integer position
+    Float eval(const Point2u &pos, Mask active = true) const {
+        UInt32 index = pos.x() + pos.y() * m_size.x();
+
+        return gather<Float>(m_cond_cdf, index, active) -
+               gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0);
+    }
+
+    /// Evaluate the normalized function value at the given integer position
+    Float pdf(const Point2u &pos, Mask active = true) const {
+        return eval(pos, active) * m_normalization;
+    }
+
+    /**
+     * \brief Given a uniformly distributed 2D sample, draw a sample from the
+     * distribution
+     *
+     * Returns the integer position, the underlying function value
+     * (un-normalized) and the and associated probability density.
+     */
+    std::tuple<Point2u, Float, Point2f> sample(const Point2f &sample_,
+                                               Mask active = true) const {
+        MTS_MASK_ARGUMENT(active);
+        Point2f sample(sample_);
+
+        // Avoid degeneracies on the domain boundary
+        sample = clamp(sample, std::numeric_limits<ScalarFloat>::min(),
+                       math::OneMinusEpsilon<Float>);
+
+        // Scale sample Y range
+        sample.y() *= m_inv_normalization;
+
+        // Sample the row from the marginal distribution
+        UInt32 row = enoki::binary_search(
+            0u, m_size.y() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+                return gather<Float>(m_marg_cdf, idx, active) < sample.y();
+            });
+
+        UInt32 offset = row * m_size.x();
+
+        // Scale sample X range
+        sample.x() *= gather<Float>(m_cond_cdf, offset + m_size.x() - 1, active);
+
+        // Sample the column from the conditional distribution
+        UInt32 col = enoki::binary_search(
+            0u, m_size.x() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
+                return gather<Float>(m_cond_cdf, idx + offset, active) < sample.x();
+            });
+
+        // Re-scale uniform variate
+        Float col_cdf_0 = gather<Float>(m_cond_cdf, offset + col - 1, active && col > 0),
+              col_cdf_1 = gather<Float>(m_cond_cdf, offset + col, active),
+              row_cdf_0 = gather<Float>(m_marg_cdf, row - 1, active && row > 0),
+              row_cdf_1 = gather<Float>(m_marg_cdf, row, active);
+
+        sample.x() -= col_cdf_0;
+        sample.y() -= row_cdf_0;
+        masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+
+        return { Point2u(col, row), col_cdf_1 - col_cdf_0, sample };
+    }
+
+    std::string to_string() const {
+        std::ostringstream oss;
+        oss << "DiscreteDistribution2D" << "[" << std::endl
+            << "  size = " << m_size << "," << std::endl
+            << "  normalization = " << m_normalization << std::endl
+            << "]";
+        return oss.str();
+    }
+
+protected:
+    /// Resolution of the discretized density function
+    ScalarVector2u m_size;
+
+    /// Density values
+    FloatStorage m_data;
+
+    /// Marginal and conditional PDFs
+    FloatStorage m_marg_cdf;
+    FloatStorage m_cond_cdf;
+
+    ScalarFloat m_inv_normalization;
+    ScalarFloat m_normalization;
+};
 
 /// Base class of Hierarchical2D and Marginal2D with common functionality
 template <typename Float_, size_t Dimension_ = 0> class Distribution2D {
@@ -645,6 +800,14 @@ protected:
  * and <tt>param_values</tt> should contain the parameter values where the
  * distribution is discretized. Linear interpolation is used when sampling or
  * evaluating the distribution for in-between parameter values.
+ *
+ * There are two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
+ * discrete marginal/conditional distributions are used to select a bilinear
+ * bilinear patch, followed by a continuous sampling step that chooses a
+ * specific position inside the patch. When <tt>Continuous=true</tt>,
+ * continuous marginal/conditional distributions are used instead, and the
+ * second step is no longer needed. The latter scheme requires more computation
+ * and memory accesses but produces an overall smoother mapping.
  *
  * \remark The Python API exposes explicitly instantiated versions of this
  * class named \c MarginalDiscrete2D0 to \c MarginalDiscrete2D3 and
@@ -1275,4 +1438,3 @@ protected:
 // =======================================================================
 
 NAMESPACE_END(mitsuba)
-

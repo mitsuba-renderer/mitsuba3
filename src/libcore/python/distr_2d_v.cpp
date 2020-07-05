@@ -12,10 +12,10 @@ template <typename Warp> auto bind_warp(py::module &m,
         const char *doc_eval) {
     using Float                = typename Warp::Float;
     using ScalarFloat          = scalar_t<Float>;
-    using NumPyArray           = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
     using Vector2f             = enoki::Array<Float, 2>;
     using ScalarVector2u       = enoki::Array<uint32_t, 2>;
     using Mask                 = mask_t<Float>;
+    using NumPyArray           = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
 
     py::object zero = py::cast(enoki::zero<Array<ScalarFloat, Warp::Dimension>>());
 
@@ -122,4 +122,23 @@ MTS_PY_EXPORT(Marginal2D) {
     bind_warp_marginal<Marginal2D<Float, 1, true>>(m, "MarginalContinuous2D1");
     bind_warp_marginal<Marginal2D<Float, 2, true>>(m, "MarginalContinuous2D2");
     bind_warp_marginal<Marginal2D<Float, 3, true>>(m, "MarginalContinuous2D3");
+}
+
+MTS_PY_EXPORT(DiscreteDistribution2D) {
+    MTS_PY_IMPORT_TYPES()
+    using Warp = DiscreteDistribution2D<Float>;
+
+    py::class_<Warp>(m, "DiscreteDistribution2D")
+        .def(py::init([](const py::array_t<ScalarFloat> &data) {
+                 if (data.ndim() != 2)
+                     throw std::domain_error("'data' array has incorrect dimension");
+                 return Warp(
+                     data.data(),
+                     ScalarVector2u((uint32_t) data.shape(data.ndim() - 1),
+                                    (uint32_t) data.shape(data.ndim() - 2)));
+             }), "data"_a)
+        .def("eval", &Warp::eval, "pos"_a, "active"_a = true)
+        .def("pdf", &Warp::pdf, "pos"_a, "active"_a = true)
+        .def("sample", &Warp::sample, "sample"_a, "active"_a = true)
+        .def("__repr__", &Warp::to_string);
 }

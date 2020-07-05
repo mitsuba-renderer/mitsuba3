@@ -168,3 +168,21 @@ def test04_chi2(variant_packet_rgb, warp, attempt):
         assert chi2.run(
             test_count=11 * len(all_warps)
         )
+
+
+def test05_discrete_distribution_2d(variant_scalar_rgb):
+    from mitsuba.core import DiscreteDistribution2D
+    import numpy as np
+
+    d = DiscreteDistribution2D(np.array([[1, 2, 3], [0, 1, 3]],
+                                        dtype=np.float32))
+
+    def ac(a, b):
+        return ek.allclose(a, b, atol=1e-6)
+
+    assert ac(d.sample([0, 0]), ([0, 0], 1, [0, 0]))
+    assert ac(d.sample([1.0 / 6.0 - 1e-7, 0]), ([0, 0], 1, [1, 0]))
+    assert ac(d.sample([1.0 / 6.0 + 1e-7, 0]), ([1, 0], 2, [0, 0]))
+    assert ac(d.sample([1, 0]), ([2, 0], 3, [1, 0]))
+    assert ac(d.sample([0, 6 / 10 - 1e-7]), ([0, 0], 1, [0, 1]))
+    assert ac(d.sample([0, 6 / 10 + 1e-7]), ([1, 1], 1, [0, 0]))
