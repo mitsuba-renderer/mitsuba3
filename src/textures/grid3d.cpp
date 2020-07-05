@@ -254,7 +254,7 @@ public:
                       m_inv_resolution_z(value.z())),
               mod = value - div * m_metadata.shape;
 
-            mod += select(value < 0, T(m_metadata.shape), zero<T>());
+            mod += select(mod < 0, T(m_metadata.shape), zero<T>());
 
             if (m_wrap_mode == WrapMode::Mirror)
                 mod = select(eq(div & 1, 0), mod, m_metadata.shape - 1 - mod);
