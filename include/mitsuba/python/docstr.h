@@ -3428,6 +3428,8 @@ static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_primitive_count = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_eval_parameterization = "";
+
 static const char *__doc_mitsuba_Mesh_ray_intersect_triangle =
 R"doc(Ray-triangle intersection test
 

@@ -214,7 +214,8 @@ public:
      * default implementation just takes the bounding box returned by
      * \ref bbox(ScalarIndex index) and clips it to \a clip.
      */
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex index,
+                                     const ScalarBoundingBox3f &clip) const;
 
     /**
      * \brief Return the shape's surface area.
@@ -313,6 +314,18 @@ public:
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,
                                      Mask active = true) const;
+
+    /**
+     * \brief Parameterize the mesh using UV values
+     *
+     * This function maps a 2D UV value to a surface interaction data
+     * structure. Its behavior is only well-defined in regions where this
+     * mapping is bijective. Only the mesh data structure currently implements
+     * this interface via ray tracing, others are to follow later.
+     * The default implementation throws.
+     */
+    virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                                       Mask active = true) const;
 
     //! @}
     // =============================================================

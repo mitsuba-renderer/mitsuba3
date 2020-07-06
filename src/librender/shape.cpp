@@ -398,7 +398,13 @@ MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
         m_emitter->set_shape(this);
     if (m_sensor)
         m_sensor->set_shape(this);
-};
+}
+
+MTS_VARIANT
+typename Shape<Float, Spectrum>::SurfaceInteraction3f
+Shape<Float, Spectrum>::eval_parameterization(const Point2f &, Mask) const {
+    NotImplementedError("eval_parameterization");
+}
 
 MTS_VARIANT std::string Shape<Float, Spectrum>::get_children_string() const {
     std::vector<std::pair<std::string, const Object*>> children;
