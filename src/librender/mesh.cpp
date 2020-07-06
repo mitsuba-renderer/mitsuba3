@@ -748,7 +748,7 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 #endif
 
 #if defined(MTS_ENABLE_OPTIX)
-MTS_VARIANT const uint32_t Mesh<Float, Spectrum>::triangle_input_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
+static const uint32_t triangle_input_flags =  OPTIX_GEOMETRY_FLAG_NONE;
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
     if constexpr (is_cuda_array_v<Float>) {
@@ -776,7 +776,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build
     build_input.triangleArray.vertexBuffers    = (CUdeviceptr*) &m_vertex_buffer_ptr;
     build_input.triangleArray.numIndexTriplets = m_face_count;
     build_input.triangleArray.indexBuffer      = (CUdeviceptr)m_faces_buf.data();
-    build_input.triangleArray.flags            = triangle_input_flags;
+    build_input.triangleArray.flags            = &triangle_input_flags;
     build_input.triangleArray.numSbtRecords    = 1;
 }
 #endif

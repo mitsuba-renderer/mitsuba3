@@ -333,11 +333,8 @@ protected:
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
 
-    // END NEW DESIGN
-
 #if defined(MTS_ENABLE_OPTIX)
     void* m_vertex_buffer_ptr;
-    static const uint32_t triangle_input_flags[1];
 #endif
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
