@@ -514,3 +514,38 @@ def test12_xml_duplicate_files(variants_scalar_all):
     spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
     assert len(spectra_files) == 2 and spectra_files[0] == "Al.eta.spd" and spectra_files[1] == "Al.eta(1).spd"
     rmtree(os.path.split(filepath)[0])
+
+@fresolver_append_path
+def test13_xml_multiple_defaults(variant_scalar_rgb):
+    from mitsuba.python.xml import dict_to_xml
+    from mitsuba.core.xml import load_file
+    from mitsuba.core import Thread
+    fr = Thread.thread().file_resolver()
+    mts_root = str(fr[len(fr)-1])
+    filepath = os.path.join(mts_root, 'resources/data/scenes/dict13/dict.xml')
+    fr.append(os.path.dirname(filepath))
+
+    scene_dict = {
+        'type' : 'scene',
+        'cam1' : {
+            'type' : 'perspective',
+            'sampler' : {
+                'type' : 'independent',
+                'sample_count': 150
+            }
+        },
+        'cam2' : {
+            'type' : 'perspective',
+            'sampler' : {
+                'type' : 'independent',
+                'sample_count': 250
+            }
+        }
+    }
+    dict_to_xml(scene_dict, filepath)
+    scene = load_file(filepath, spp=45)
+
+    assert scene.sensors()[0].sampler().sample_count() == scene.sensors()[1].sampler().sample_count()
+    assert scene.sensors()[1].sampler().sample_count() == 45
+
+    rmtree(os.path.split(filepath)[0])

@@ -335,15 +335,14 @@ class WriteXML:
             if isinstance(value, dict):
                 scene_dict[key] = self.configure_defaults(value)
             elif key in self.defaults:
-                if '$%s'%self.defaults[key] in self.scene_data[Files.MAIN]:
-                    print("****** Already exported default for : %s ******" % key)
-                    continue
-                params = {
-                    'type': 'default',
-                    'name': self.defaults[key],
-                    'value': value
-                }
-                self.data_add('$%s'%self.defaults[key], params)
+                if not '$%s'%self.defaults[key] in self.scene_data[Files.MAIN]:
+                    # Store the value of the first occurence of the parameter in the default
+                    params = {
+                        'type': 'default',
+                        'name': self.defaults[key],
+                        'value': value
+                    }
+                    self.data_add('$%s'%self.defaults[key], params)
                 if isinstance(value, int):
                     scene_dict[key] = {'type': 'integer'}
                 elif isinstance(value, float):
