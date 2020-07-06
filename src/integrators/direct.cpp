@@ -140,6 +140,8 @@ public:
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
                 active_e &= neq(ds.pdf, 0.f);
+                if (none_or<false>(active_e))
+                    continue;
 
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);

@@ -332,6 +332,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
         pos_out[i*3 + 1] = uv_i.y();
         pos_out[i*3 + 2] = 0.f;
     }
+    mesh->recompute_bbox();
 
     props.set_object("mesh", mesh.get());
     m_parameterization = new Scene<Float, Spectrum>(props);

@@ -157,7 +157,9 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
             ScalarFloat emitter_pdf = 1.f / m_emitters.size();
 
             // Randomly pick an emitter
-            UInt32 index = min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()), (uint32_t) m_emitters.size()-1);
+            UInt32 index =
+                min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()),
+                    (uint32_t) m_emitters.size() - 1);
 
             // Rescale sample.x() to lie in [0,1) again
             sample.x() = (sample.x() - index*emitter_pdf) * m_emitters.size();
