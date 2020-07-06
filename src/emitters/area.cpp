@@ -96,7 +96,7 @@ public:
         Spectrum spec_weight;
 
         if constexpr (is_spectral_v<Spectrum>) {
-            std::tie(wavelength, spec_weight) = m_radiance->sample(
+            std::tie(wavelength, spec_weight) = m_radiance->sample_spectrum(
                 si, math::sample_shifted<Wavelength>(wavelength_sample), active);
         } else {
             wavelength = zero<Wavelength>();
@@ -165,5 +165,5 @@ private:
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
-MTS_EXPORT_PLUGIN(AreaLight, "Point emitter")
+MTS_EXPORT_PLUGIN(AreaLight, "Area emitter")
 NAMESPACE_END(mitsuba)
