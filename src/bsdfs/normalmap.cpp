@@ -11,14 +11,56 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _bsdf-diffuse:
+.. _bsdf-normalmap:
 
 Normal map BSDF (:monosp:`normalmap`)
 -------------------------------------
 
-TODO: documentation
+.. pluginparameters::
+
+ * - normalmap
+   - |texture|
+   - The color values of this texture specify the perturbed normals relative in the local surface coordinate system
+ * - (Nested plugin)
+   - |bsdf|
+   - A BSDF model that should be affected by the normal map
+
+Normal mapping is a simple technique for cheaply adding surface detail to a rendering. This is done
+by perturbing the shading coordinate frame based on a normal map provided as a texture. This method
+can lend objects a highly realistic and detailed appearance (e.g. wrinkled or covered by scratches
+and other imperfections) without requiring any changes to the input geometry.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_normalmap_without.jpg
+   :caption: Roughplastic BSDF
+.. subfigure:: ../../resources/data/docs/images/render/bsdf_normalmap_with.jpg
+   :caption: Roughplastic BSDF with normal mapping
+.. subfigend::
+   :label: fig-normalmap
+
+A normal map is a RGB texture, whose color channels encode the XYZ coordinates of the desired
+surface normals. These are specified **relative** to the local shading frame, which means that a
+normal map with a value of :math:`(0,0,1)` everywhere causes no changes to the surface. To turn the
+3D normal directions into (nonnegative) color values suitable for this plugin, the mapping
+:math:`x \mapsto (x+1)/2` must be applied to each component.
+
+The following XML snippet describes a smooth mirror material affected by a normal map. Note the we set the
+``raw`` properties of the normal map ``bitmap`` object to ``true`` in order to disable the
+transformation from sRGB to linear encoding:
+
+.. code-block:: xml
+    :name: normalmap
+
+    <bsdf type="normalmap">
+        <texture name="normalmap" type="bitmap">
+            <boolean name="raw" value="true"/>
+            <string name="filename" value="textures/normalmap.jpg"/>
+        </texture>
+        <bsdf type="roughplastic"/>
+    </bsdf>
 
 */
+
 template <typename Float, typename Spectrum>
 class NormalMap final : public BSDF<Float, Spectrum> {
 public:
@@ -104,7 +146,7 @@ public:
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
-        Normal3f n = fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
+        Normal3f n = si.to_world(fmadd(m_normalmap->eval_3(si, active), 2, -1.f));
 
         Frame3f result;
         result.n = normalize(n);
