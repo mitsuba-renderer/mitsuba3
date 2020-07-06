@@ -124,8 +124,9 @@ public:
      * \brief Given a uniformly distributed 2D sample, draw a sample from the
      * distribution
      *
-     * Returns the integer position, the underlying function value
-     * (un-normalized) and the and associated probability density.
+     * Returns the integer position, the normalized probability value, and
+     * re-uniformized random variate that can be used for further sampling
+     * steps.
      */
     std::tuple<Point2u, Float, Point2f> sample(const Point2f &sample_,
                                                Mask active = true) const {
@@ -167,7 +168,7 @@ public:
         masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
         masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
-        return { Point2u(col, row), col_cdf_1 - col_cdf_0, sample };
+        return { Point2u(col, row), (col_cdf_1 - col_cdf_0) * m_normalization, sample };
     }
 
     std::string to_string() const {

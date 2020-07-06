@@ -10,24 +10,23 @@ MTS_PY_EXPORT(Texture) {
         .def("is_spatially_varying", &Texture::is_spatially_varying,
              D(Texture, is_spatially_varying))
         .def("eval",
-            vectorize(py::overload_cast<const SurfaceInteraction3f&, Mask>(
-                &Texture::eval, py::const_)),
+            vectorize(&Texture::eval),
             "si"_a, "active"_a = true, D(Texture, eval))
         .def("eval_1",
-            vectorize(py::overload_cast<const SurfaceInteraction3f&, Mask>(
-                &Texture::eval_1, py::const_)),
+            vectorize(&Texture::eval_1),
             "si"_a, "active"_a = true, D(Texture, eval_1))
         .def("eval_3",
-            vectorize(py::overload_cast<const SurfaceInteraction3f&, Mask>(
-                &Texture::eval_3, py::const_)),
+            vectorize(&Texture::eval_3),
             "si"_a, "active"_a = true, D(Texture, eval_3))
-        .def("sample",
-            vectorize(
-                py::overload_cast<const SurfaceInteraction3f&, const Wavelength &, Mask>(
-                    &Texture::sample, py::const_)),
+        .def("sample_spectrum",
+            vectorize(&Texture::sample_spectrum),
             "si"_a, "sample"_a, "active"_a = true, D(Texture, sample))
-        .def("pdf",
-            vectorize(py::overload_cast<const SurfaceInteraction3f&, Mask>(
-                &Texture::pdf, py::const_)),
-            "si"_a, "active"_a = true, D(Texture, pdf));
+        .def("pdf_spectrum", &Texture::pdf_spectrum,
+            "si"_a, "active"_a = true, D(Texture, pdf))
+        .def("sample_position",
+            vectorize(&Texture::sample_position),
+            "sample"_a, "active"_a = true, D(Texture, sample))
+        .def("pdf_position",
+            vectorize(&Texture::pdf_position),
+            "p"_a, "active"_a = true, D(Texture, sample));
 }

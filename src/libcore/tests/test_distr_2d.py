@@ -180,9 +180,9 @@ def test05_discrete_distribution_2d(variant_scalar_rgb):
     def ac(a, b):
         return ek.allclose(a, b, atol=1e-6)
 
-    assert ac(d.sample([0, 0]), ([0, 0], 1, [0, 0]))
-    assert ac(d.sample([1.0 / 6.0 - 1e-7, 0]), ([0, 0], 1, [1, 0]))
-    assert ac(d.sample([1.0 / 6.0 + 1e-7, 0]), ([1, 0], 2, [0, 0]))
-    assert ac(d.sample([1, 0]), ([2, 0], 3, [1, 0]))
-    assert ac(d.sample([0, 6 / 10 - 1e-7]), ([0, 0], 1, [0, 1]))
-    assert ac(d.sample([0, 6 / 10 + 1e-7]), ([1, 1], 1, [0, 0]))
+    assert ac(d.sample([0, 0]), ([0, 0], .1, [0, 0]))
+    assert ac(d.sample([1.0 / 6.0 - 1e-7, 0]), ([0, 0], .1, [1, 0]))
+    assert ac(d.sample([1.0 / 6.0 + 1e-7, 0]), ([1, 0], .2, [0, 0]))
+    assert ac(d.sample([1, 0]), ([2, 0], .3, [1, 0]))
+    assert ac(d.sample([0, 6 / 10 - 1e-7]), ([0, 0], .1, [0, 1]))
+    assert ac(d.sample([0, 6 / 10 + 1e-7]), ([1, 1], .1, [0, 0]))

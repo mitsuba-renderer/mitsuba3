@@ -90,7 +90,7 @@ public:
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
 
         // 3. Sample spectrum
-        SurfaceInteraction3f si(ps, zero<Wavelength>(0.f));
+        SurfaceInteraction3f si(ps, zero<Wavelength>());
 
         Wavelength wavelength;
         Spectrum spec_weight;

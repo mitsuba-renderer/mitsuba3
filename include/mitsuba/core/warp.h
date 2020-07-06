@@ -200,12 +200,7 @@ MTS_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
 template <typename Value>
 Value interval_to_tent(Value sample) {
     sample -= .5f;
-    Value abs_sample = abs(sample);
-
-    return copysign(
-        1.f - safe_sqrt(1.f - 2.f * abs_sample),
-        sample
-    );
+    return copysign(1.f - safe_sqrt(fmadd(abs(sample), -2.f, 1.f)), sample);
 }
 
 /// Warp a uniformly distributed sample on [0, 1] to a tent distribution
@@ -229,15 +224,13 @@ Value interval_to_nonuniform_tent(const Value &a, const Value &b, const Value &c
 /// Warp a uniformly distributed square sample to a 2D tent distribution
 template <typename Value>
 Point<Value, 2> square_to_tent(const Point<Value, 2> &sample) {
-    return { interval_to_tent(sample.x()),
-             interval_to_tent(sample.y()) };
+    return interval_to_tent(sample);
 }
 
 /// Warp a uniformly distributed square sample to a 2D tent distribution
 template <typename Value>
 Point<Value, 2> tent_to_square(const Point<Value, 2> &p) {
-    return Point<Value, 2>{ tent_to_interval(p.x()),
-                            tent_to_interval(p.y()) };
+    return tent_to_interval(p);
 }
 
 /// Density of \ref square_to_tent per unit area.

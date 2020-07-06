@@ -82,10 +82,11 @@ class ChiSquareTest:
         self.pdf_func = pdf_func
         self.sample_dim = sample_dim
         self.sample_count = sample_count
-        if domain.aspect() == None:
+        if domain.aspect() is None:
             self.res = ScalarVector2u(res, 1)
         else:
-            self.res = ek.max(ScalarVector2u(int(res / domain.aspect()), res), 1)
+            self.res = ek.max(ScalarVector2u(
+                int(res / domain.aspect()), res), 1)
         self.ires = ires
         self.bounds = domain.bounds()
         self.pdf = None
@@ -445,7 +446,7 @@ def SpectrumAdapter(value):
     """
 
     from mitsuba.core.xml import load_string
-    from mitsuba.core import sample_shifted, Vector1f, Spectrum
+    from mitsuba.core import sample_shifted, Vector1f
     from mitsuba.render import SurfaceInteraction3f
 
     def instantiate(args):

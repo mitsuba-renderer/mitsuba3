@@ -59,16 +59,19 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto [wavelengths, spec_weight] = m_intensity->sample(
+        auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
             zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
 
+        spec_weight *= 4.f * math::Pi<Float>;
+
         const auto &trafo = m_world_transform->eval(time);
+
         Ray3f ray(trafo * Point3f(0.f),
                  warp::square_to_uniform_sphere(dir_sample),
                  time, wavelengths);
 
-        return { ray, unpolarized<Spectrum>(spec_weight) * (4.f * math::Pi<Float>) };
+        return { ray, unpolarized<Spectrum>(spec_weight) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,

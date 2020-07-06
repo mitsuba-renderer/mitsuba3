@@ -22,13 +22,14 @@ Texture<Float, Spectrum>::eval(const SurfaceInteraction3f &, Mask) const {
 
 MTS_VARIANT std::pair<typename Texture<Float, Spectrum>::Wavelength,
                       typename Texture<Float, Spectrum>::UnpolarizedSpectrum>
-Texture<Float, Spectrum>::sample(const SurfaceInteraction3f &, const Wavelength&, Mask) const {
-    NotImplementedError("sample");
+Texture<Float, Spectrum>::sample_spectrum(const SurfaceInteraction3f &,
+                                          const Wavelength &, Mask) const {
+    NotImplementedError("sample_spectrum");
 }
 
 MTS_VARIANT typename Texture<Float, Spectrum>::Wavelength
-Texture<Float, Spectrum>::pdf(const SurfaceInteraction3f &, Mask) const {
-    NotImplementedError("pdf");
+Texture<Float, Spectrum>::pdf_spectrum(const SurfaceInteraction3f &, Mask) const {
+    NotImplementedError("pdf_spectrum");
 }
 
 MTS_VARIANT Float Texture<Float, Spectrum>::eval_1(const SurfaceInteraction3f &, Mask) const {
@@ -43,6 +44,18 @@ Texture<Float, Spectrum>::eval_3(const SurfaceInteraction3f &, Mask) const {
 MTS_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
 Texture<Float, Spectrum>::mean() const {
     NotImplementedError("mean");
+}
+
+MTS_VARIANT
+std::pair<typename Texture<Float, Spectrum>::Point2f, Float>
+Texture<Float, Spectrum>::sample_position(const Point2f &sample,
+                                          Mask) const {
+    return { sample, 1.f };
+}
+
+MTS_VARIANT
+Float Texture<Float, Spectrum>::pdf_position(const Point2f &, Mask) const {
+    return 1;
 }
 
 MTS_VARIANT ref<Texture<Float, Spectrum>>

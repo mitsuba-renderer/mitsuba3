@@ -140,9 +140,9 @@ public:
 
     GridVolumeImpl(const Properties &props, const VolumeMetadata &meta,
                const DynamicBuffer<Float> &data,
-               FilterType filter_type, 
+               FilterType filter_type,
                WrapMode wrap_mode)
-        : Base(props), 
+        : Base(props),
             m_data(data),
             m_metadata(meta),
             m_inv_resolution_x((int) m_metadata.shape.x()),
@@ -250,14 +250,14 @@ public:
             return clamp(value, 0, m_metadata.shape - 1);
         } else {
             T div = T(m_inv_resolution_x(value.x()),
-                      m_inv_resolution_y(value.y()), 
+                      m_inv_resolution_y(value.y()),
                       m_inv_resolution_z(value.z())),
               mod = value - div * m_metadata.shape;
 
-            mod += select(mod < 0, T(m_metadata.shape), zero<T>());
+            masked(mod, mod < 0) += T(m_metadata.shape);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = select(eq(div & 1, 0), mod, m_metadata.shape - 1 - mod);
+                mod = select(eq(div & 1, 0) ^ (value < 0), mod, m_metadata.shape - 1 - mod);
 
             return mod;
         }
@@ -298,7 +298,7 @@ public:
                     w0 = 1.f - w1;
 
             Int38 pi_i_w = wrap(Int38(Int8(0, 1, 0, 1, 0, 1, 0, 1) + p_i.x(),
-                                      Int8(0, 0, 1, 1, 0, 0, 1, 1) + p_i.y(), 
+                                      Int8(0, 0, 1, 1, 0, 0, 1, 1) + p_i.y(),
                                       Int8(0, 0, 0, 0, 1, 1, 1, 1) + p_i.z()));
 
             // (z * ny + y) * nx + x
@@ -364,7 +364,7 @@ public:
             Int32 index = fmadd(fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
 
             StorageType v = gather<StorageType>(m_data, index, active);
-            
+
             if constexpr (uses_srgb_model)
                 return v.w() * srgb_model_eval<UnpolarizedSpectrum>(head<3>(v), wavelengths);
             else

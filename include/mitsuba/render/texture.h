@@ -61,9 +61,9 @@ public:
      *        distribution value divided by the sampling density)
      */
     virtual std::pair<Wavelength, UnpolarizedSpectrum>
-    sample(const SurfaceInteraction3f &si,
-           const Wavelength &sample,
-           Mask active = true) const;
+    sample_spectrum(const SurfaceInteraction3f &si,
+                    const Wavelength &sample,
+                    Mask active = true) const;
 
     /**
      * \brief Evaluate the density function of the \ref sample() method as a
@@ -79,8 +79,33 @@ public:
      *     A density value for each wavelength in <tt>si.wavelengths</tt>
      *     (hence the \ref Wavelength type).
      */
-    virtual Wavelength pdf(const SurfaceInteraction3f &si,
-                           Mask active = true) const;
+    virtual Wavelength pdf_spectrum(const SurfaceInteraction3f &si,
+                                    Mask active = true) const;
+
+    /**
+     * \brief Importance sample a surface position proportional to the
+     * overall spectral reflectance or intensity of the texture
+     *
+     * This function assumes that the texture is implemented as a mapping from
+     * 2D UV positions to texture values, which is not necessarily true for all
+     * textures (e.g. 3D noise functions, mesh attributes, etc.). For this
+     * reason, not every will plugin provide a specialized implementation, and
+     * the default implementation simply return the input sample (i.e. uniform
+     * sampling is used).
+     *
+     * \param sample
+     *     A 2D vector of uniform variates
+     *
+     * \return
+     *     1. A texture-space position in the range :math:`[0, 1]^2`
+     *
+     *     2. The associated probability per unit area in UV space
+     */
+    virtual std::pair<Point2f, Float> sample_position(const Point2f &sample,
+                                                      Mask active = true) const;
+
+    /// Returns the probability per unit area of \ref sample_position()
+    virtual Float pdf_position(const Point2f &p, Mask active = true) const;
 
     //! @}
     // ======================================================================

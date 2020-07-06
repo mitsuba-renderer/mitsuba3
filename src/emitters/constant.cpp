@@ -62,7 +62,8 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spectrum
-        auto [wavelengths, weight] = m_radiance->sample(zero<SurfaceInteraction3f>(),
+        auto [wavelengths, weight] = m_radiance->sample_spectrum(
+            zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         // 2. Sample spatial component

@@ -122,7 +122,7 @@ public:
         Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float)m_cos_cutoff_angle);
 
         // 2. Sample spectrum
-        auto [wavelengths, spec_weight] = m_intensity->sample(
+        auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
             zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
         auto falloff_spec = falloff_curve(local_dir, wavelengths, active);

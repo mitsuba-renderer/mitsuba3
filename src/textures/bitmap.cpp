@@ -3,9 +3,11 @@
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/distr_2d.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
+#include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -21,6 +23,7 @@ Bitmap texture (:monosp:`bitmap`)
  * - filename
    - |string|
    - Filename of the bitmap to be loaded
+
  * - filter_type
    - |string|
    - Specifies how pixel values are interpolated and filtered when queried over larger
@@ -47,19 +50,20 @@ Bitmap texture (:monosp:`bitmap`)
    - Should the transformation to the stored color data (e.g. sRGB to linear,
      spectral upsampling) be disabled? You will want to enable this when working
      with bitmaps storing normal maps that use a linear encoding. (Default: false)
+
  * - to_uv
    - |transform|
    - Specifies an optional 3x3 transformation matrix that will be applied to UV
      values. A 4x4 matrix can also be provided, in which case the extra row and
      column are ignored.
 
-This plugin provides a bitmap texture source that performs bilinearly interpolated
-lookups on JPEG, PNG, OpenEXR, RGBE, TGA, and BMP files.
+This plugin provides a bitmap texture that performs interpolated lookups given
+a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
 
 When loading the plugin, the data is first converted into a usable color representation
 for the renderer:
 
-* In :monosp:`rgb` modes, sRGB textures are converted into linear color space.
+* In :monosp:`rgb` modes, sRGB textures are converted into a linear color space.
 * In :monosp:`spectral` modes, sRGB textures are *spectrally upsampled* to plausible
   smooth spectra :cite:`Jakob2019Spectral` and stored an intermediate representation
   that enables efficient queries at render time.
@@ -132,7 +136,7 @@ public:
 
             default:
                 Throw("The texture needs to have a known pixel "
-                      "format (Y[A], RGB[A], XYZ[A])");
+                      "format (Y[A], RGB[A], XYZ[A] are supported).");
         }
 
         /* Should Mitsuba disable transformations to the stored color data?
@@ -156,33 +160,48 @@ public:
         }
 
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
+        size_t pixel_count = m_bitmap->pixel_count();
+        bool bad = false;
 
         double mean = 0.0;
         if (m_bitmap->channel_count() == 3) {
             if (is_spectral_v<Spectrum> && !m_raw) {
-                for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
+                for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    if (!all(value >= 0 && value <= 1))
+                        bad = true;
                     value = srgb_model_fetch(value);
                     mean += (double) srgb_model_mean(value);
                     store_unaligned(ptr, value);
                     ptr += 3;
                 }
             } else {
-                for (size_t i = 0; i < m_bitmap->pixel_count(); ++i) {
+                for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    if (!all(value >= 0 && value <= 1))
+                        bad = true;
                     mean += (double) luminance(value);
                     ptr += 3;
                 }
             }
         } else if (m_bitmap->channel_count() == 1) {
-            for (size_t i = 0; i < m_bitmap->pixel_count(); ++i)
-                mean += (double) ptr[i];
+            for (size_t i = 0; i < pixel_count; ++i) {
+                ScalarFloat value = ptr[i];
+                if (!(value >= 0 && value <= 1))
+                    bad = true;
+                mean += (double) value;
+            }
         } else {
             Throw("Unsupported channel count: %d (expected 1 or 3)",
                   m_bitmap->channel_count());
         }
 
-        m_mean = ScalarFloat(mean / m_bitmap->pixel_count());
+        if (bad)
+            Log(Warn,
+                "BitmapTexture: texture named \"%s\" contains pixels that "
+                "exceed the [0, 1] range!", m_name);
+
+        m_mean = ScalarFloat(mean / pixel_count);
     }
 
     /**
@@ -267,8 +286,9 @@ public:
 
         if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
             ENOKI_MARK_USED(si);
-            Throw("eval_1(): The bitmap texture %s was queried for a scalar value, but texture "
-                  "conversion into spectra was requested! (raw=false)",
+            Throw("eval_1(): The bitmap texture %s was queried for a "
+                  "monochromatic value, but texture conversion to color "
+                  "spectra had previously been requested! (raw=false)",
                   to_string());
         } else {
             auto result = interpolate(si, active);
@@ -285,12 +305,13 @@ public:
 
         if constexpr (Channels != 3) {
             ENOKI_MARK_USED(si);
-            Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but it is "
-                  "monochromatic!", to_string());
+            Throw("eval_3(): The bitmap texture %s was queried for a RGB "
+                  "value, but it is monochromatic!", to_string());
         } else if constexpr (is_spectral_v<Spectrum> && !Raw) {
             ENOKI_MARK_USED(si);
-            Throw("eval_3(): The bitmap texture %s was queried for a RGB value, but texture "
-                  "conversion into spectra was requested! (raw=false)",
+            Throw("eval_3(): The bitmap texture %s was queried for a RGB "
+                  "value, but texture conversion to color spectra had "
+                  "previously been requested! (raw=false)",
                   to_string());
         } else {
             return interpolate(si, active);
@@ -305,10 +326,10 @@ public:
                       m_inv_resolution_y(value.y())),
               mod = value - div * m_resolution;
 
-            mod += select(mod < 0, T(m_resolution), zero<T>());
+            masked(mod, mod < 0) += T(m_resolution);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = select(eq(div & 1, 0), mod, m_resolution - 1 - mod);
+                mod = select(eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
 
             return mod;
         }
@@ -387,6 +408,91 @@ public:
         }
     }
 
+    std::pair<Point2f, Float> sample_position(const Point2f &sample,
+                                              Mask active = true) const override {
+        if (!m_distr2d) {
+            // Construct 2D distribution upon first access, avoid races
+            std::lock_guard<tbb::spin_mutex> guard(m_mutex);
+            if (!m_distr2d) {
+                auto self = const_cast<BitmapTextureImpl *>(this);
+                self->rebuild_internals(false, true);
+            }
+        }
+
+        auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
+        ScalarVector2f inv_resolution = rcp(ScalarVector2f(m_resolution));
+
+        if (m_filter_type == FilterType::Nearest) {
+            sample2 = (Point2f(pos) + sample2) * inv_resolution;
+        } else {
+            sample2 = (Point2f(pos) + 0.5f + warp::square_to_tent(sample2)) *
+                      inv_resolution;
+
+            switch (m_wrap_mode) {
+                case WrapMode::Repeat:
+                    sample2[sample2 < 0.f] += 1.f;
+                    sample2[sample2 > 1.f] -= 1.f;
+                    break;
+
+                /* Texel sampling is restricted to [0, 1] and only interpolation
+                   with one row/column of pixels beyond that is considered, so
+                   both clamp/mirror effectively use the same strategy. No such
+                   distinction is needed for the pdf() method. */
+                case WrapMode::Clamp:
+                case WrapMode::Mirror:
+                    sample2[sample2 < 0.f] = -sample2;
+                    sample2[sample2 > 1.f] = 2.f - sample2;
+                    break;
+            }
+        }
+
+        return { sample2, pdf * hprod(m_resolution) };
+    }
+
+    Float pdf_position(const Point2f &pos_, Mask active = true) const override {
+        if (!m_distr2d) {
+            // Construct 2D distribution upon first access, avoid races
+            std::lock_guard<tbb::spin_mutex> guard(m_mutex);
+            if (!m_distr2d) {
+                auto self = const_cast<BitmapTextureImpl *>(this);
+                self->rebuild_internals(false, true);
+            }
+        }
+
+        if (m_filter_type == FilterType::Bilinear) {
+            using Int4  = Array<Int32, 4>;
+            using Int24 = Array<Int4, 2>;
+
+            // Scale to bitmap resolution and apply shift
+            Point2f uv = fmadd(pos_, m_resolution, -.5f);
+
+            // Integer pixel positions for bilinear interpolation
+            Vector2i uv_i = floor2int<Vector2i>(uv);
+
+            // Interpolation weights
+            Point2f w1 = uv - Point2f(uv_i),
+                    w0 = 1.f - w1;
+
+            Float v00 = m_distr2d->pdf(wrap(uv_i + Point2i(0, 0)), active),
+                  v10 = m_distr2d->pdf(wrap(uv_i + Point2i(1, 0)), active),
+                  v01 = m_distr2d->pdf(wrap(uv_i + Point2i(0, 1)), active),
+                  v11 = m_distr2d->pdf(wrap(uv_i + Point2i(1, 1)), active);
+
+            Float v0 = fmadd(w0.x(), v00, w1.x() * v10),
+                  v1 = fmadd(w0.x(), v01, w1.x() * v11);
+
+            return fmadd(w0.y(), v0, w1.y() * v1) * hprod(m_resolution);
+        } else {
+            // Scale to bitmap resolution, no shift
+            Point2f uv = pos_ * m_resolution;
+
+            // Integer pixel positions for bilinear interpolation
+            Vector2i uv_i = wrap(floor2int<Vector2i>(uv));
+
+            return m_distr2d->pdf(uv_i, active) * hprod(m_resolution);
+        }
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
         callback->put_parameter("resolution", m_resolution);
@@ -398,30 +504,7 @@ public:
             /// Convert m_data into a managed array (available in CPU/GPU address space)
             if constexpr (is_cuda_array_v<Float>)
                 m_data = m_data.managed();
-
-            // Recompute the mean texture value following an update
-            ScalarFloat *ptr = m_data.data();
-
-            double mean = 0.0;
-            size_t pixel_count = hprod(m_resolution);
-            if (Channels == 3) {
-                if (is_spectral_v<Spectrum> && !Raw) {
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
-                        mean += (double) srgb_model_mean(value);
-                        ptr += 3;
-                    }
-                } else {
-                    for (size_t i = 0; i < pixel_count; ++i) {
-                        ScalarFloat value = ptr[i];
-                        value = clamp(value, 0.f, 1.f);
-                        ptr[i] = value;
-                        mean += (double) value;
-                    }
-                }
-
-                m_mean = ScalarFloat(mean / pixel_count);
-            }
+            rebuild_internals(true, m_distr2d != nullptr);
         }
     }
 
@@ -442,6 +525,65 @@ public:
     }
 
     MTS_DECLARE_CLASS()
+
+protected:
+    /**
+     * \brief Recompute mean and 2D sampling distribution (if requested)
+     * following an update
+     */
+    void rebuild_internals(bool init_mean, bool init_distr) {
+        // Recompute the mean texture value following an update
+        const ScalarFloat *ptr = m_data.data();
+
+        double mean = 0.0;
+        size_t pixel_count = (size_t) hprod(m_resolution);
+        bool bad = false;
+
+        if (Channels == 3) {
+            std::unique_ptr<ScalarFloat[]> importance_map(
+                init_distr ? new ScalarFloat[pixel_count] : nullptr);
+
+            for (size_t i = 0; i < pixel_count; ++i) {
+                ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                ScalarFloat tmp;
+                if constexpr (is_spectral_v<Spectrum> && !Raw) {
+                    tmp = srgb_model_mean(value);
+                } else {
+                    if (!all(value >= 0 && value <= 1))
+                        bad = true;
+                    tmp = luminance(value);
+                }
+                if (init_distr)
+                    importance_map[i] = tmp;
+                mean += (double) tmp;
+                ptr += 3;
+            }
+
+            if (init_distr)
+                m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
+                    importance_map.get(), m_resolution);
+        } else {
+            for (size_t i = 0; i < pixel_count; ++i) {
+                ScalarFloat value = ptr[i];
+                if (!(value >= 0 && value <= 1))
+                    bad = true;
+                mean += (double) value;
+            }
+
+            if (init_distr)
+                m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
+                    ptr, m_resolution);
+        }
+
+        if (init_mean)
+            m_mean = ScalarFloat(mean / pixel_count);
+
+        if (bad)
+            Log(Warn,
+                "BitmapTexture: texture named \"%s\" contains pixels that "
+                "exceed the [0, 1] range!", m_name);
+    }
+
 protected:
     DynamicBuffer<Float> m_data;
     ScalarVector2i m_resolution;
@@ -452,10 +594,18 @@ protected:
     ScalarFloat m_mean;
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
+
+    // Optional: distribution for importance sampling
+    mutable tbb::spin_mutex m_mutex;
+    std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(BitmapTexture, Texture)
 MTS_EXPORT_PLUGIN(BitmapTexture, "Bitmap texture")
+
+
+/* This class has a name that depends on extra template parameters, so
+   the standard MTS_IMPLEMENT_CLASS_VARIANT macro cannot be used */
 
 NAMESPACE_BEGIN(detail)
 template <uint32_t Channels, bool Raw>
