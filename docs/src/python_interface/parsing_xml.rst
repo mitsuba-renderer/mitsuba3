@@ -200,9 +200,9 @@ The following example constructs a Mitsuba scene using :py:func:`mitsuba.core.xm
             "type" : "perspective",
             "near_clip": 1.0,
             "far_clip": 1000.0,
-            "to_world" : Transform4f.look_at(origin=[1, 1, 1],
-                                             target=[0, 0, 0],
-                                             up=[0, 0, 1]),
+            "to_world" : ScalarTransform4f.look_at(origin=[1, 1, 1],
+                                                   target=[0, 0, 0],
+                                                   up=[0, 0, 1]),
             "myfilm" : {
                 "type" : "hdrfilm",
                 "rfilter" : { "type" : "box"},
