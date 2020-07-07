@@ -69,12 +69,13 @@ public:
         // Scalar-typed opacity texture
         m_opacity = props.texture<Texture>("opacity", 0.5f);
 
-        for (auto &kv : props.objects()) {
-            auto *bsdf = dynamic_cast<Base *>(kv.second.get());
+        for (auto &[name, obj] : props.objects(false)) {
+            auto *bsdf = dynamic_cast<Base *>(obj.get());
             if (bsdf) {
                 if (m_nested_bsdf)
                     Throw("Cannot specify more than one child BSDF");
                 m_nested_bsdf = bsdf;
+                props.mark_queried(name);
             }
         }
         if (!m_nested_bsdf)
@@ -153,7 +154,7 @@ public:
 
         return result;
     }
-        
+
     Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
                                     Mask active) const override {
         Float opacity = eval_opacity(si, active);

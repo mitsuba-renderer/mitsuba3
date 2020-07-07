@@ -118,8 +118,13 @@ public:
     /// Return an array containing all named references and their destinations
     std::vector<std::pair<std::string, NamedReference>> named_references() const;
 
-    /// Return an array containing names and references for all stored objects and
-    std::vector<std::pair<std::string, ref<Object>>> objects() const;
+    /**
+     * \brief Return an array containing names and references for all stored objects
+     *
+     * \param mark_queried
+     *    Whether all stored objects should be marked as queried
+     */
+    std::vector<std::pair<std::string, ref<Object>>> objects(bool mark_queried = true) const;
 
     /// Return the list of un-queried attributed
     std::vector<std::string> unqueried() const;
@@ -319,7 +324,7 @@ public:  // Type-specific getters and setters ----------------------------------
         auto p_type = type(name);
         if (p_type == Properties::Type::Object) {
             ref<Object> object = find_object(name);
-            if (!object->class_()->derives_from(MTS_CLASS(Volume::Texture)) && 
+            if (!object->class_()->derives_from(MTS_CLASS(Volume::Texture)) &&
                 !object->class_()->derives_from(MTS_CLASS(Volume)))
                 Throw("The property \"%s\" has the wrong type (expected "
                     " <spectrum>, <texture>. or <volume>).", name);

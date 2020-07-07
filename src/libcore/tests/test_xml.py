@@ -323,3 +323,17 @@ def test22_fileresolver_unchanged(variant_scalar_rgb):
                         </scene>""")
 
     assert fs_backup == Thread.thread().file_resolver()
+
+
+def test23_unreferenced_object(variant_scalar_rgb):
+    from mitsuba.core import xml
+
+    plugins = [('bsdf', 'diffuse'), ('emitter', 'point'),
+               ('shape', 'sphere'), ('sensor', 'perspective')]
+
+    for interface, name in plugins:
+        with pytest.raises(Exception) as e:
+            xml.load_string("""<{interface} version="2.0.0" type="{name}">
+                                    <rgb name="aaa" value="0.5"/>
+                                </{interface}>""".format(interface=interface, name=name))
+        e.match("unreferenced object")

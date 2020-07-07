@@ -8,12 +8,13 @@ NAMESPACE_BEGIN(mitsuba)
 MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(props.id()) {
     m_world_transform = props.animated_transform("to_world", ScalarTransform4f()).get();
 
-    for (auto &kv : props.objects()) {
-        Medium *medium = dynamic_cast<Medium *>(kv.second.get());
+    for (auto &[name, obj] : props.objects(false)) {
+        Medium *medium = dynamic_cast<Medium *>(obj.get());
         if (medium) {
             if (m_medium)
                 Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
             m_medium = medium;
+            props.mark_queried(name);
         }
     }
 }

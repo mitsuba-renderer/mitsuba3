@@ -68,13 +68,14 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     NormalMap(const Properties &props) : Base(props) {
-        for (auto &kv : props.objects()) {
-            auto bsdf = dynamic_cast<Base *>(kv.second.get());
+        for (auto &[name, obj] : props.objects(false)) {
+            auto bsdf = dynamic_cast<Base *>(obj.get());
 
             if (bsdf) {
                 if (m_nested_bsdf)
                     Throw("Only a single BSDF child object can be specified.");
                 m_nested_bsdf = bsdf;
+                props.mark_queried(name);
             }
         }
         if (!m_nested_bsdf)

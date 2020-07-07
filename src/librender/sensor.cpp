@@ -20,18 +20,20 @@ MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(prop
         Throw("Shutter opening time must be less than or equal to the shutter "
               "closing time!");
 
-    for (auto &kv : props.objects()) {
-        auto *film = dynamic_cast<Film *>(kv.second.get());
-        auto *sampler = dynamic_cast<Sampler *>(kv.second.get());
+    for (auto &[name, obj] : props.objects(false)) {
+        auto *film = dynamic_cast<Film *>(obj.get());
+        auto *sampler = dynamic_cast<Sampler *>(obj.get());
 
         if (film) {
             if (m_film)
                 Throw("Only one film can be specified per sensor.");
             m_film = film;
+            props.mark_queried(name);
         } else if (sampler) {
             if (m_sampler)
                 Throw("Only one sampler can be specified per sensor.");
             m_sampler = sampler;
+            props.mark_queried(name);
         }
     }
 

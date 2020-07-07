@@ -142,6 +142,8 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
             }
         );
     } else {
+        Log(Info, "Start rendering...");
+
         ref<Sampler> sampler = sensor->sampler();
 
         ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());

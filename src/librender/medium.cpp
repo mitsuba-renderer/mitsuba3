@@ -11,10 +11,13 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_s
 
 MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
 
-    for (auto &kv : props.objects()) {
-        auto *phase = dynamic_cast<PhaseFunction *>(kv.second.get());
+    for (auto &[name, obj] : props.objects(false)) {
+        auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
         if (phase) {
+            if (m_phase_function)
+                Throw("Only a single phase function can be specified per medium");
             m_phase_function = phase;
+            props.mark_queried(name);
         }
     }
     if (!m_phase_function) {

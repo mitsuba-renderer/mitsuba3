@@ -234,7 +234,7 @@ std::vector<std::pair<std::string, NamedReference>> Properties::named_references
     return result;
 }
 
-std::vector<std::pair<std::string, ref<Object>>> Properties::objects() const {
+std::vector<std::pair<std::string, ref<Object>>> Properties::objects(bool mark_queried) const {
     std::vector<std::pair<std::string, ref<Object>>> result;
     result.reserve(d->entries.size());
     for (auto &e : d->entries) {
@@ -242,7 +242,8 @@ std::vector<std::pair<std::string, ref<Object>>> Properties::objects() const {
         if (type != Type::Object)
             continue;
         result.push_back(std::make_pair(e.first, (const ref<Object> &) e.second));
-        e.second.queried = true;
+        if (mark_queried)
+            e.second.queried = true;
     }
     return result;
 }
