@@ -61,7 +61,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     it.time = eval_t
 
     # Sample a wavelength from spectrum
-    wav, spec = spectrum.sample(it, sample_shifted(wavelength_sample))
+    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
     it.wavelengths = wav
 
     # Direction from the position to the point emitter

@@ -128,7 +128,7 @@ MTS_PY_EXPORT(DiscreteDistribution2D) {
     MTS_PY_IMPORT_TYPES()
     using Warp = DiscreteDistribution2D<Float>;
 
-    py::class_<Warp>(m, "DiscreteDistribution2D")
+    py::class_<Warp>(m, "DiscreteDistribution2D", py::module_local())
         .def(py::init([](const py::array_t<ScalarFloat> &data) {
                  if (data.ndim() != 2)
                      throw std::domain_error("'data' array has incorrect dimension");

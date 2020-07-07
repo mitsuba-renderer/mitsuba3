@@ -1,6 +1,9 @@
 import mitsuba
 import pytest
 
+from mitsuba.python.test.util import fresolver_append_path
+
+@fresolver_append_path
 @pytest.mark.parametrize('filter_type', ['nearest', 'bilinear'])
 @pytest.mark.parametrize('wrap_mode', ['repeat', 'clamp', 'mirror'])
 def test_sample_position(variant_packet_rgb, filter_type, wrap_mode):
@@ -10,7 +13,7 @@ def test_sample_position(variant_packet_rgb, filter_type, wrap_mode):
 
     bitmap = load_string("""
     <texture type="bitmap" version="2.0.0">
-        <string name="filename" value="carrot.png"/>
+        <string name="filename" value="resources/data/common/textures/carrot.png"/>
         <string name="filter_type" value="%s"/>
         <string name="wrap_mode" value="%s"/>
     </texture>""" % (filter_type, wrap_mode)).expand()[0]
