@@ -103,7 +103,7 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= any(neq(weight, 0.f));
+        active &= any(neq(depolarize(weight), 0.f));
         if (none(active))
             return { bs, 0.f };
 

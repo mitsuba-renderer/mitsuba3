@@ -5,8 +5,8 @@
 MTS_PY_EXPORT(Spectrum) {
     MTS_PY_IMPORT_TYPES()
 
-    m.def("luminance", vectorize([](const Spectrum &value, const Spectrum& w, Mask active) {
-            return luminance<Float, Spectrum::Size>(value, w, active);
+    m.def("luminance", vectorize([](const UnpolarizedSpectrum &value, const UnpolarizedSpectrum& w, Mask active) {
+            return luminance<Float, UnpolarizedSpectrum::Size>(value, w, active);
         }), "value"_a, "wavelengths"_a, "active"_a = true, D(luminance))
     .def("luminance", vectorize([](Color<Float, 3> c) {
             return luminance(c);
