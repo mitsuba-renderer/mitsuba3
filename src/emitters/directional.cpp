@@ -21,9 +21,11 @@ Distant directional emitter (:monosp:`directional`)
       - Spectral irradiance, which corresponds to the amount of spectral power
         per unit area received by a hypothetical surface normal to the specified
         direction.
+
     * - to_world
       - |transform|
       - Emitter-to-world transformation matrix.
+
     * - direction
       - |vector|
       - Alternative (and exclusive) to `to_world`. Direction towards which the
@@ -126,8 +128,9 @@ public:
         si.wavelengths          = it.wavelengths;
 
         // No need to divide by the PDF here (always equal to 1.f)
-        return std::make_pair(
-            ds, unpolarized<Spectrum>(m_irradiance->eval(si, active)));
+        UnpolarizedSpectrum spec = m_irradiance->eval(si, active);
+
+        return { ds, unpolarized<Spectrum>(spec) };
     }
 
     Float pdf_direction(const Interaction3f & /*it*/,

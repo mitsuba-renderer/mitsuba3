@@ -509,6 +509,8 @@ public:
         }
     }
 
+    ScalarVector2i resolution() const override { return m_resolution; }
+
     ScalarFloat mean() const override { return m_mean; }
 
     bool is_spatially_varying() const override { return true; }

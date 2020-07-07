@@ -22,9 +22,11 @@ Environment emitter (:monosp:`envmap`)
  * - filename
    - |string|
    - Filename of the radiance-valued input image to be loaded; must be in latitude-longitude format.
+
  * - scale
    - |Float|
    - A scale factor that is applied to the radiance values stored in the input image. (Default: 1.0)
+
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)

@@ -19,14 +19,17 @@ Point light source (:monosp:`point`)
  * - intensity
    - |spectrum|
    - Specifies the radiant intensity in units of power per unit steradian.
+
  * - position
    - |point|
    - Alternative parameter for specifying the light source position.
-     Note that only one of the parameters :monosp:`toWorld` and :monosp:`position` can be used at
-     a time.
+     Note that only one of the parameters :monosp:`to_world` and
+     :monosp:`position` can be used at a time.
+
  * - to_world
    - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - Specifies an optional emitter-to-world transformation.  (Default: none,
+     i.e. emitter space = world space)
 
 This emitter plugin implements a simple point light source, which
 uniformly radiates illumination into all directions.
@@ -68,8 +71,8 @@ public:
         const auto &trafo = m_world_transform->eval(time);
 
         Ray3f ray(trafo * Point3f(0.f),
-                 warp::square_to_uniform_sphere(dir_sample),
-                 time, wavelengths);
+                  warp::square_to_uniform_sphere(dir_sample),
+                  time, wavelengths);
 
         return { ray, unpolarized<Spectrum>(spec_weight) };
     }
@@ -91,21 +94,27 @@ public:
         ds.object = this;
         ds.d     = ds.p - it.p;
         ds.dist  = norm(ds.d);
+
         Float inv_dist = rcp(ds.dist);
         ds.d *= inv_dist;
 
         SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
-        Spectrum spec = m_intensity->eval(si, active) * (inv_dist * inv_dist);
+        UnpolarizedSpectrum spec =
+            m_intensity->eval(si, active) * sqr(inv_dist);
+
         return { ds, unpolarized<Spectrum>(spec) };
     }
 
-    Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {
+    Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
+                        Mask) const override {
         return 0.f;
     }
 
-    Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
+    Spectrum eval(const SurfaceInteraction3f &, Mask) const override {
+        return 0.f;
+    }
 
     ScalarBoundingBox3f bbox() const override {
         return m_world_transform->translation_bounds();

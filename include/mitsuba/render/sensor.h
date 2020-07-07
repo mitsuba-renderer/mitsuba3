@@ -78,9 +78,6 @@ public:
     /// Does the sampling technique require a sample for the aperture position?
     bool needs_aperture_sample() const { return m_needs_sample_3; }
 
-    /// Updates the film's crop window, and adjusts any state accordingly.
-    virtual void set_crop_window(const ScalarVector2i &crop_size, const ScalarPoint2i &crop_offset);
-
     /// Return the \ref Film instance associated with this sensor
     Film *film() { return m_film; }
 
@@ -188,11 +185,14 @@ protected:
     ScalarFloat m_focus_distance;
 };
 
-/// Helper function to parse fov
+// ========================================================================
+//! @{ \name Functionality common to perspective cameras, projectors, etc.
+// ========================================================================
+
+/// Helper function to parse the field of view field of a camera
 extern MTS_EXPORT_RENDER float parse_fov(const Properties &props, float aspect);
 
-template <typename Float>
-Transform<Point<Float, 4>>
+template <typename Float> Transform<Point<Float, 4>>
 perspective_projection(const Vector<int, 2> &film_size,
                        const Vector<int, 2> &crop_size,
                        const Vector<int, 2> &crop_offset,
@@ -229,6 +229,9 @@ perspective_projection(const Vector<int, 2> &film_size,
            Transform4f::translate(Vector3f(-1.f, -1.f / aspect, 0.f)) *
            Transform4f::perspective(fov_x, near_clip, far_clip);
 }
+
+//! @}
+// ========================================================================
 
 MTS_EXTERN_CLASS_RENDER(Sensor)
 MTS_EXTERN_CLASS_RENDER(ProjectiveCamera)

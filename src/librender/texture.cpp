@@ -69,6 +69,12 @@ Texture<Float, Spectrum>::D65(ScalarFloat scale) {
     return texture;
 }
 
+MTS_VARIANT typename Texture<Float, Spectrum>::ScalarVector2i
+Texture<Float, Spectrum>::resolution() const {
+    return ScalarVector2i(1, 1);
+}
+
+
 //! @}
 // =======================================================================
 
@@ -103,6 +109,11 @@ Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*acti
 
 MTS_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
 Volume<Float, Spectrum>::max() const { NotImplementedError("max"); }
+
+MTS_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
+Volume<Float, Spectrum>::resolution() const {
+    return ScalarVector3i(1, 1, 1);
+}
 
 //! @}
 // =======================================================================

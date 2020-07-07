@@ -84,12 +84,6 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     return { result_ray, result_spec };
 }
 
-MTS_VARIANT void Sensor<Float, Spectrum>::set_crop_window(const ScalarVector2i &crop_size,
-                                                          const ScalarPoint2i &crop_offset) {
-    m_film->set_crop_window(crop_size, crop_offset);
-    m_resolution = ScalarVector2f(m_film->crop_size());
-}
-
 // =============================================================================
 // ProjectiveCamera interface
 // =============================================================================

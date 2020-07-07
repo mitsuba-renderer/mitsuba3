@@ -137,6 +137,7 @@ public:
             ds.n = si.n;
             ds.uv = si.uv;
             ds.time = it.time;
+            ds.delta = false;
             ds.d = ds.p - it.p;
 
             Float dist_squared = squared_norm(ds.d);

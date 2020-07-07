@@ -66,8 +66,8 @@ public:
                     Mask active = true) const;
 
     /**
-     * \brief Evaluate the density function of the \ref sample() method as a
-     * probability per unit wavelength (in units of 1/nm).
+     * \brief Evaluate the density function of the \ref sample_spectrum()
+     * method as a probability per unit wavelength (in units of 1/nm).
      *
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
@@ -162,6 +162,14 @@ public:
      */
     virtual ScalarFloat mean() const;
 
+    /**
+     * \brief Returns the resolution of the texture, assuming that it is based
+     * on a discrete representation.
+     *
+     * The default implementation returns <tt>(1, 1)</tt>
+     */
+    virtual ScalarVector2i resolution() const;
+
     //! @}
     // ======================================================================
 
@@ -217,8 +225,13 @@ public:
     /// Returns the bounding box of the 3d texture
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
-    /// Returns the resolution of the texture, defaults to "1"
-    virtual ScalarVector3i resolution() const { return ScalarVector3i(1, 1, 1); }
+    /**
+     * \brief Returns the resolution of the volume, assuming that it is based
+     * on a discrete representation.
+     *
+     * The default implementation returns <tt>(1, 1, 1)</tt>
+     */
+    virtual ScalarVector3i resolution() const;
 
     //! @}
     // ======================================================================

@@ -47,11 +47,6 @@ public:
         PYBIND11_OVERLOAD_PURE(ScalarBoundingBox3f, Sensor, bbox,);
     }
 
-    void set_crop_window(const ScalarVector2i &crop_size,
-                         const ScalarPoint2i &crop_offset) override {
-        PYBIND11_OVERLOAD_PURE(void, Sensor, set_crop_window, crop_size, crop_offset);
-    }
-
     std::string to_string() const override {
         PYBIND11_OVERLOAD_PURE(std::string, Sensor, to_string,);
     }
@@ -68,7 +63,6 @@ MTS_PY_EXPORT(Sensor) {
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)
-        .def_method(Sensor, set_crop_window, "crop_size"_a, "crop_offset"_a)
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
 

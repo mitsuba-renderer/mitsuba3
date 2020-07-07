@@ -28,7 +28,7 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
      (Default: :monosp:`0`)
  * - focal_length
    - |string|
-   - Denotes the camera's focal length specified using :monosp:`35mm` film equivalent units.
+   - Denotes the camera's focal length specified using *35mm* film equivalent units.
      See the main description for further details. (Default: :monosp:`50mm`)
  * - fov
    - |float|

@@ -19,15 +19,19 @@ Spot light source (:monosp:`spot`)
    - |spectrum|
    - Specifies the maximum radiant intensity at the center in units of power per unit steradian. (Default: 1).
      This cannot be spatially varying (e.g. have bitmap as type).
+
  * - cutoff_angle
    - |float|
    - Cutoff angle, beyond which the spot light is completely black (Default: 20 degrees)
+
  * - beam_width
    - |float|
    - Subtended angle of the central beam portion (Default: :math:`cutoff_angle \times 3/4`)
+
  * - texture
    - |texture|
    - An optional texture to be projected along the spot light. This must be spatially varying (e.g. have bitmap as type).
+
  * - to_world
    - |transform|
    - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
@@ -90,24 +94,24 @@ public:
         m_uv_factor = tan(m_cutoff_angle);
     }
 
-    Spectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
+    UnpolarizedSpectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
         SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
-        Spectrum result = m_intensity->eval(si, active);
+        UnpolarizedSpectrum result = m_intensity->eval(si, active);
 
         Vector3f local_dir = normalize(d);
-        const Float cos_theta = local_dir.z();
+        Float cos_theta = local_dir.z();
 
         if (m_texture->is_spatially_varying()) {
-            si.uv = Point2f(0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
-                            0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor));
+            si.uv = Point2f(.5f + .5f * local_dir.x() / (local_dir.z() * m_uv_factor),
+                            .5f + .5f * local_dir.y() / (local_dir.z() * m_uv_factor));
             result *= m_texture->eval(si, active);
         }
 
-        auto beam_res = select(cos_theta >= m_cos_beam_width, result,
+        UnpolarizedSpectrum beam_res = select(cos_theta >= m_cos_beam_width, result,
                                result * ((m_cutoff_angle - acos(cos_theta)) * m_inv_transition_width));
 
-        return select(cos_theta <= m_cos_cutoff_angle, Spectrum(0.0f), beam_res);
+        return select(cos_theta <= m_cos_cutoff_angle, UnpolarizedSpectrum(0.0f), beam_res);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -125,7 +129,8 @@ public:
         auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
             zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
-        auto falloff_spec = falloff_curve(local_dir, wavelengths, active);
+
+        UnpolarizedSpectrum falloff_spec = falloff_curve(local_dir, wavelengths, active);
 
         return { Ray3f(trafo.translation(), trafo * local_dir, time, wavelengths),
                 unpolarized<Spectrum>(falloff_spec / pdf_dir) };
@@ -136,7 +141,7 @@ public:
                                                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        auto trafo = m_world_transform->eval(it.time, active);
+        Transform4f trafo = m_world_transform->eval(it.time, active);
 
         DirectionSample3f ds;
         ds.p        = trafo.translation();
@@ -151,7 +156,7 @@ public:
         Float inv_dist = rcp(ds.dist);
         ds.d        *= inv_dist;
         Vector3f local_d = trafo.inverse() * -ds.d;
-        Spectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);
+        UnpolarizedSpectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);
 
         return { ds, unpolarized<Spectrum>(falloff_spec * (inv_dist * inv_dist)) };
     }
