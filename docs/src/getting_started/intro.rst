@@ -69,6 +69,7 @@ Significant features and/or improvements to the code were contributed by
 `Merlin Nimier-David <https://merlin.nimierdavid.fr/>`_,
 `Guillaume Loubet <https://maverick.inria.fr/Membres/Guillaume.Loubet/>`_,
 `Sébastien Speierer <https://github.com/Speierers>`_,
+`Benoît Ruiz <https://github.com/4str0m>`_,
 `Delio Vicini <https://dvicini.github.io/>`_,
 and `Tizian Zeltner <https://tizianzeltner.com/>`_.
 

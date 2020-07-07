@@ -89,6 +89,7 @@ This project was created by [Wenzel Jakob](http://rgl.epfl.ch/people/wjakob).
 Significant features and/or improvements to the code were contributed by
 [Merlin Nimier-David](https://merlin.nimierdavid.fr/),
 [Guillaume Loubet](https://maverick.inria.fr/Membres/Guillaume.Loubet/),
+[Benoît Ruiz](https://github.com/4str0m),
 [Sébastien Speierer](https://github.com/Speierers),
 [Delio Vicini](https://dvicini.github.io/),
 and [Tizian Zeltner](https://tizianzeltner.com/).
