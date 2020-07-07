@@ -7,6 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
+#include <mutex>
 #include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)
