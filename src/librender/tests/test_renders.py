@@ -25,7 +25,7 @@ TEST_SCENE_DIR = realpath(join(os.path.dirname(
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 # List of test scene folders to exclude
-EXCLUDE_FOLDERS = ['participating_media']
+EXCLUDE_FOLDERS = []
 
 
 def get_ref_fname(scene_fname):
