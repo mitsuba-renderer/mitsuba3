@@ -413,7 +413,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     Float cache[2] = { si.uv.x(), si.uv.y() };
     fill_surface_interaction(ray, cache, si, active && si.is_valid());
-    // si.uv = uv;
+    si.shape = this;
 
     return si;
 }

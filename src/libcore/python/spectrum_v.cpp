@@ -5,7 +5,13 @@
 MTS_PY_EXPORT(Spectrum) {
     MTS_PY_IMPORT_TYPES()
 
-    m.def("cie1931_xyz", vectorize([](Float wavelengths) {
+    m.def("luminance", vectorize([](const Spectrum &value, const Spectrum& w, Mask active) {
+            return luminance<Float, Spectrum::Size>(value, w, active);
+        }), "value"_a, "wavelengths"_a, "active"_a = true, D(luminance))
+    .def("luminance", vectorize([](Color<Float, 3> c) {
+            return luminance(c);
+        }), "c"_a, D(luminance))
+    .def("cie1931_xyz", vectorize([](Float wavelengths) {
             return cie1931_xyz(wavelengths);
         }), "wavelength"_a, D(cie1931_xyz))
     .def("cie1931_y", vectorize([](Float wavelengths) {

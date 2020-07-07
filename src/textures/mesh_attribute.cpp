@@ -74,20 +74,17 @@ public:
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        auto target = select(neq(si.instance, nullptr), si.instance, si.shape);
-        return target->eval_attribute(m_name, si, active) * m_scale;
+        return si.shape->eval_attribute(m_name, si, active) * m_scale;
     }
 
     Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        auto target = select(neq(si.instance, nullptr), si.instance, si.shape);
-        return target->eval_attribute_1(m_name, si, active) * m_scale;
+        return si.shape->eval_attribute_1(m_name, si, active) * m_scale;
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        auto target = select(neq(si.instance, nullptr), si.instance, si.shape);
-        return target->eval_attribute_3(m_name, si, active) * m_scale;
+        return si.shape->eval_attribute_3(m_name, si, active) * m_scale;
     }
 
     void traverse(TraversalCallback *callback) override {

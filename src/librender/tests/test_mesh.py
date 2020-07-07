@@ -8,7 +8,6 @@ from mitsuba.python.util import traverse
 
 
 def test01_create_mesh(variant_scalar_rgb):
-    from mitsuba.core import Struct, float_dtype
     from mitsuba.render import Mesh
 
     m = Mesh("MyMesh", 3, 2)
@@ -34,7 +33,7 @@ def test01_create_mesh(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_ply_triangle(variant_scalar_rgb):
-    from mitsuba.core import UInt32, Vector3f
+    from mitsuba.core import UInt32
     from mitsuba.core.xml import load_string
 
     m = load_string("""
@@ -60,7 +59,6 @@ def test02_ply_triangle(variant_scalar_rgb):
 
 @fresolver_append_path
 def test03_ply_computed_normals(variant_scalar_rgb):
-    from mitsuba.core import Vector3f
     from mitsuba.core.xml import load_string
 
     """Checks(automatic) vertex normal computation for a PLY file that
@@ -79,7 +77,7 @@ def test03_ply_computed_normals(variant_scalar_rgb):
 
 
 def test04_normal_weighting_scheme(variant_scalar_rgb):
-    from mitsuba.core import Struct, float_dtype, Vector3f
+    from mitsuba.core import Vector3f
     from mitsuba.render import Mesh
     import numpy as np
 
