@@ -8,6 +8,7 @@
 #include <mitsuba/core/fstream.h>
 #include <tbb/tbb.h>
 #include <unordered_map>
+#include <mutex>
 
 /* libpng */
 #include <png.h>
