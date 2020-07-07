@@ -51,7 +51,6 @@ MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(prop
         m_sampler = static_cast<Sampler *>(pmgr->create_object<Sampler>(props_sampler));
     }
 
-    m_aspect = m_film->size().x() / (ScalarFloat) m_film->size().y();
     m_resolution = ScalarVector2f(m_film->crop_size());
 }
 
@@ -70,14 +69,13 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     Vector2f dy(0.f, 1.f / m_resolution.y());
 
     // Sample a result_ray for X+1
-    Spectrum unused;
-    std::tie(temp_ray, unused) = sample_ray(time, sample1, sample2 + dx, sample3, active);
+    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dx, sample3, active);
 
     result_ray.o_x = temp_ray.o;
     result_ray.d_x = temp_ray.d;
 
     // Sample a result_ray for Y+1
-    std::tie(temp_ray, unused) = sample_ray(time, sample1, sample2 + dy, sample3, active);
+    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dy, sample3, active);
 
     result_ray.o_y = temp_ray.o;
     result_ray.d_y = temp_ray.d;

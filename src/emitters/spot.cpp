@@ -90,7 +90,7 @@ public:
         m_uv_factor = tan(m_cutoff_angle);
     }
 
-    inline Spectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
+    Spectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
         SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
         Spectrum result = m_intensity->eval(si, active);
