@@ -28,7 +28,7 @@ inline std::string key(const std::string &name, const std::string &variant) {
 Class::Class(const std::string &name, const std::string &parent, const std::string &variant,
              ConstructFunctor constr, UnserializeFunctor unser, const std::string &alias)
     : m_name(name), m_parent_name(parent), m_variant(variant), m_alias(alias),
-      m_construct(constr), m_unserialize(unser) {
+      m_parent(nullptr), m_construct(constr), m_unserialize(unser) {
 
     if (m_alias.empty())
         m_alias = name;
