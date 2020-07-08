@@ -87,6 +87,8 @@ public:
                                                     1e-4f, 1e4f);
 
         m_sample_to_camera = m_camera_to_sample.inverse();
+
+        m_flags = +EmitterFlags::DeltaPosition;
     }
 
     Spectrum eval(const SurfaceInteraction3f & /*si*/,
