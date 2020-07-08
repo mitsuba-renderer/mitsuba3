@@ -33,7 +33,9 @@ BSDF_ORDERING = ['diffuse',
 EMITTER_ORDERING = ['area',
                     'point',
                     'constant',
-                    'envmap']
+                    'envmap',
+                    'spot',
+                    'projector']
 
 SENSOR_ORDERING = ['perspective',
                    'thinlens']

@@ -9,9 +9,12 @@ NAMESPACE_BEGIN(mitsuba)
 /**!
 
 .. _emitter-projector:
+
 Projection light source (:monosp:`projector`)
-------------------------------------
+---------------------------------------------
+
 .. pluginparameters::
+
  * - irradiance
    - |texture|
    - 2D texture specifying irradiance on the emitter's virtual image plane,
@@ -61,15 +64,24 @@ Projection light source (:monosp:`projector`)
      The default is :monosp:`x`.
 
 
-    This emitter is the reciprocal counterpart of the perspective camera
-    implemented by the :ref:`perspective <sensor-perspective>` plugin. It
-    accepts exactly the same parameters and employs the same pixel-to-direction
-    mapping. In contrast to the perspective camera, it takes an extra texture
-    (typically of type :ref:`bitmap <textures-bitmap>`) as input that it then
-    projects into the scene, with an optional scaling factor.
+This emitter is the reciprocal counterpart of the perspective camera
+implemented by the :ref:`perspective <sensor-perspective>` plugin. It
+accepts exactly the same parameters and employs the same pixel-to-direction
+mapping. In contrast to the perspective camera, it takes an extra texture
+(typically of type :ref:`bitmap <texture-bitmap>`) as input that it then
+projects into the scene, with an optional scaling factor.
 
-    Pixels are importance sampled according to their density, hence this
-    operation remains efficient even if only a single pixel is turned on.
+Pixels are importance sampled according to their density, hence this
+operation remains efficient even if only a single pixel is turned on.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/emitter_projector_constant.jpg
+   :caption: A projector lights with constant irradiance (no texture specified).
+.. subfigure:: ../../resources/data/docs/images/render/emitter_projector_textured.jpg
+   :caption: A projector light with a texture specified.
+.. subfigend::
+   :label: fig-projector-light
+
 */
 
 MTS_VARIANT class Projector final : public Emitter<Float, Spectrum> {
@@ -78,7 +90,8 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
-        m_scale = props.float_("scale", 1);
+        m_intensity = Texture::D65(props.float_("scale", 1));
+
         m_irradiance = props.texture<Texture>("irradiance");
         ScalarVector2i size = m_irradiance->resolution();
         m_x_fov = parse_fov(props, size.x() / (float) size.y());
@@ -114,7 +127,7 @@ public:
         SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
         si.uv = uv;
         si.wavelengths = wavelengths;
-        weight *= m_irradiance->eval(si, active) * m_scale;
+        weight *= m_irradiance->eval(si, active) * m_intensity->eval(si, active);
 
         // 4. Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera * Point3f(uv.x(), uv.y(), 0.f);
@@ -158,17 +171,18 @@ public:
         ds.n = trafo * ScalarVector3f(0, 0, 1);
         ds.uv = uv;
         ds.time = it.time;
-        ds.d = ds.p - it.p;
-        ds.pdf = 1;
+        ds.pdf = 1.f;
         ds.delta = true;
+        ds.object   = this;
 
+        ds.d = ds.p - it.p;
         Float dist_squared = squared_norm(ds.d);
         ds.dist = sqrt(dist_squared);
         ds.d *= rcp(ds.dist);
 
         // Scale so that irradiance at z=1 is correct
-        spec *= math::Pi<Float> * m_scale * sqr(rcp(it_local.z())) /
-                -dot(ds.n, ds.d);
+        spec *= math::Pi<Float> * m_intensity->eval(it_query, active) *
+                sqr(rcp(it_local.z())) / -dot(ds.n, ds.d);
 
         return { ds, unpolarized<Spectrum>(spec & active) };
     }
@@ -197,10 +211,10 @@ public:
 
 protected:
     ref<Texture> m_irradiance;
+    ref<Texture> m_intensity;
     ScalarTransform4f m_camera_to_sample;
     ScalarTransform4f m_sample_to_camera;
     ScalarFloat m_x_fov;
-    ScalarFloat m_scale;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)

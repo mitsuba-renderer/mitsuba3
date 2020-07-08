@@ -209,7 +209,7 @@ def test_read_write_ppm(tmpdir):
 
 
 def test_read_bmp():
-    b = Bitmap(find_resource('resources/data/tests/bitmap/flower.bmp'))
+    b = Bitmap(find_resource('resources/data/common/textures/flower.bmp'))
     ref = [ 136.50910448, 134.07641791,  85.67253731 ]
     assert np.allclose(np.mean(b, axis=(0, 1)), ref)
 
