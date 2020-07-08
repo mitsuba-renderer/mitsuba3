@@ -503,15 +503,15 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
             /// Convert m_data into a managed array (available in CPU/GPU address space)
-            if constexpr (is_cuda_array_v<Float>)
-                m_data = m_data.managed();
             rebuild_internals(true, m_distr2d != nullptr);
         }
     }
 
     ScalarVector2i resolution() const override { return m_resolution; }
 
-    ScalarFloat mean() const override { return m_mean; }
+    ScalarFloat mean() const override {
+        return m_mean;
+    }
 
     bool is_spatially_varying() const override { return true; }
 
@@ -536,6 +536,7 @@ protected:
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
         // Recompute the mean texture value following an update
+        m_data = m_data.managed();
         const ScalarFloat *ptr = m_data.data();
 
         double mean = 0.0;
