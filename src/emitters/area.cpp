@@ -60,14 +60,6 @@ public:
             m_flags |= +EmitterFlags::SpatiallyVarying;
     }
 
-    void set_shape(Shape *shape) override {
-        if (m_shape)
-            Throw("An area emitter can be only be attached to a single shape.");
-
-        Base::set_shape(shape);
-        m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
-    }
-
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
@@ -83,14 +75,30 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        // 1. Sample spatial component
-        PositionSample3f ps = m_shape->sample_position(time, sample2, active);
+
+        SurfaceInteraction3f si;
+        Float pdf = 1.f;
+
+        // 1. Two strategies to sample spatial component based on 'm_radiance'
+        if (!m_radiance->is_spatially_varying()) {
+            PositionSample3f ps = m_shape->sample_position(time, sample2, active);
+
+            // Radiance not spatially varying, use area-based sampling of shape
+            si = SurfaceInteraction3f(ps, zero<Wavelength>());
+            pdf = ps.pdf;
+        } else {
+            // Ipmortance sample texture
+            std::tie(si.uv, pdf) = m_radiance->sample_position(sample2, active);
+            active &= neq(pdf, 0.f);
+
+            si = m_shape->eval_parameterization(Point2f(si.uv), active);
+            active &= si.is_valid();
+
+            pdf /= norm(cross(si.dp_du, si.dp_dv));
+        }
 
         // 2. Sample directional component
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
-
-        // 3. Sample spectrum
-        SurfaceInteraction3f si(ps, zero<Wavelength>());
 
         Wavelength wavelength;
         Spectrum spec_weight;
@@ -100,12 +108,12 @@ public:
                 si, math::sample_shifted<Wavelength>(wavelength_sample), active);
         } else {
             wavelength = zero<Wavelength>();
-            spec_weight = 1.f;
+            spec_weight = m_radiance->eval(si, active);
         }
 
         return std::make_pair(
-            Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelength),
-            unpolarized<Spectrum>(spec_weight) * m_area_times_pi
+            Ray3f(si.p, si.to_world(local), time, wavelength),
+            unpolarized<Spectrum>(spec_weight) * (math::Pi<Float> / pdf)
         );
     }
 
@@ -183,11 +191,6 @@ public:
         callback->put_object("radiance", m_radiance.get());
     }
 
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        if (string::contains(keys, "parent"))
-            m_area_times_pi = m_shape->surface_area() * math::Pi<ScalarFloat>;
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "AreaLight[" << std::endl
@@ -205,7 +208,6 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Texture> m_radiance;
-    ScalarFloat m_area_times_pi = 0.f;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
