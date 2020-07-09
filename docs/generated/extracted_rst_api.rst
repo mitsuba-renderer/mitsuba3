@@ -2105,6 +2105,41 @@
         Returns → None:
             *no description available*
 
+.. py:class:: mitsuba.core.DiscreteDistribution2D
+
+    .. py:method:: mitsuba.core.DiscreteDistribution2D.eval(self, pos, active=True)
+
+        Parameter ``pos`` (enoki.scalar.Vector2u):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → float:
+            *no description available*
+
+    .. py:method:: mitsuba.core.DiscreteDistribution2D.pdf(self, pos, active=True)
+
+        Parameter ``pos`` (enoki.scalar.Vector2u):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → float:
+            *no description available*
+
+    .. py:method:: mitsuba.core.DiscreteDistribution2D.sample(self, sample, active=True)
+
+        Parameter ``sample`` (enoki.scalar.Vector2f):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[enoki.scalar.Vector2u, float, enoki.scalar.Vector2f]:
+            *no description available*
+
 .. py:class:: mitsuba.core.DummyStream
 
     Base class: :py:obj:`mitsuba.core.Stream`
@@ -3385,7 +3420,7 @@
 
 .. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
     :type: bool
-    :value: False
+    :value: True
 
 .. py:data:: mitsuba.core.MTS_FILTER_RESOLUTION
     :type: int
@@ -3437,6 +3472,15 @@
     the distribution is discretized. Linear interpolation is used when
     sampling or evaluating the distribution for in-between parameter
     values.
+
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
 
     Remark:
         The Python API exposes explicitly instantiated versions of this
@@ -3554,6 +3598,15 @@
     sampling or evaluating the distribution for in-between parameter
     values.
 
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
+
     Remark:
         The Python API exposes explicitly instantiated versions of this
         class named ``MarginalDiscrete2D0`` to ``MarginalDiscrete2D3`` and
@@ -3669,6 +3722,15 @@
     the distribution is discretized. Linear interpolation is used when
     sampling or evaluating the distribution for in-between parameter
     values.
+
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
 
     Remark:
         The Python API exposes explicitly instantiated versions of this
@@ -3786,6 +3848,15 @@
     sampling or evaluating the distribution for in-between parameter
     values.
 
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
+
     Remark:
         The Python API exposes explicitly instantiated versions of this
         class named ``MarginalDiscrete2D0`` to ``MarginalDiscrete2D3`` and
@@ -3901,6 +3972,15 @@
     the distribution is discretized. Linear interpolation is used when
     sampling or evaluating the distribution for in-between parameter
     values.
+
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
 
     Remark:
         The Python API exposes explicitly instantiated versions of this
@@ -4018,6 +4098,15 @@
     sampling or evaluating the distribution for in-between parameter
     values.
 
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
+
     Remark:
         The Python API exposes explicitly instantiated versions of this
         class named ``MarginalDiscrete2D0`` to ``MarginalDiscrete2D3`` and
@@ -4134,6 +4223,15 @@
     sampling or evaluating the distribution for in-between parameter
     values.
 
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
+
     Remark:
         The Python API exposes explicitly instantiated versions of this
         class named ``MarginalDiscrete2D0`` to ``MarginalDiscrete2D3`` and
@@ -4249,6 +4347,15 @@
     the distribution is discretized. Linear interpolation is used when
     sampling or evaluating the distribution for in-between parameter
     values.
+
+    There are two variants of ``Marginal2D:`` when ``Continuous=false``,
+    discrete marginal/conditional distributions are used to select a
+    bilinear bilinear patch, followed by a continuous sampling step that
+    chooses a specific position inside the patch. When
+    ``Continuous=true``, continuous marginal/conditional distributions are
+    used instead, and the second step is no longer needed. The latter
+    scheme requires more computation and memory accesses but produces an
+    overall smoother mapping.
 
     Remark:
         The Python API exposes explicitly instantiated versions of this
@@ -8953,6 +9060,31 @@
     :type: bool
     :value: False
 
+.. py:function:: mitsuba.core.luminance(overloaded)
+
+
+    .. py:function:: luminance(value, wavelengths, active=True)
+
+        Parameter ``value`` (enoki.scalar.Vector3f):
+            *no description available*
+
+        Parameter ``wavelengths`` (enoki.scalar.Vector3f):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → float:
+            *no description available*
+
+    .. py:function:: luminance(c)
+
+        Parameter ``c`` (enoki.scalar.Vector3f):
+            *no description available*
+
+        Returns → float:
+            *no description available*
+
 .. py:data:: mitsuba.core.math.E
     :type: float
     :value: 2.7182817459106445
@@ -9314,6 +9446,70 @@
         Returns → enoki.scalar.Vector3f:
             *no description available*
 
+.. py:function:: mitsuba.core.permute(value, sample_count, seed, rounds=4)
+
+    Generate pseudorandom permutation vector using a shuffling network and
+    the sample_tea function. This algorithm has a O(log2(sample_count))
+    complexity but only supports permutation vectors whose lengths are a
+    power of 2.
+
+    Parameter ``index``:
+        Input index to be mapped
+
+    Parameter ``sample_count`` (int):
+        Length of the permutation vector
+
+    Parameter ``seed`` (int):
+        Seed value used as second input to the Tiny Encryption Algorithm.
+        Can be used to generate different permutation vectors.
+
+    Parameter ``rounds`` (int):
+        How many rounds should be executed by the Tiny Encryption
+        Algorithm? The default is 2.
+
+    Parameter ``value`` (int):
+        *no description available*
+
+    Returns → int:
+        The index corresponding to the input index in the pseudorandom
+        permutation vector.
+
+.. py:function:: mitsuba.core.permute_kensler(i, l, p, active=True)
+
+    Generate pseudorandom permutation vector using the algorithm described
+    in Pixar's technical memo "Correlated Multi-Jittered Sampling":
+
+    https://graphics.pixar.com/library/MultiJitteredSampling/
+
+    Unlike permute, this function supports permutation vectors of any
+    length.
+
+    Parameter ``index``:
+        Input index to be mapped
+
+    Parameter ``sample_count``:
+        Length of the permutation vector
+
+    Parameter ``seed``:
+        Seed value used as second input to the Tiny Encryption Algorithm.
+        Can be used to generate different permutation vectors.
+
+    Parameter ``i`` (int):
+        *no description available*
+
+    Parameter ``l`` (int):
+        *no description available*
+
+    Parameter ``p`` (int):
+        *no description available*
+
+    Parameter ``active`` (bool):
+        Mask to specify active lanes.
+
+    Returns → int:
+        The index corresponding to the input index in the pseudorandom
+        permutation vector.
+
 .. py:function:: mitsuba.core.quad.composite_simpson(n)
 
     Computes the nodes and weights of a composite Simpson quadrature rule
@@ -9395,6 +9591,19 @@
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
+.. py:function:: mitsuba.core.radical_inverse_2(index, scramble)
+
+    Van der Corput radical inverse in base 2
+
+    Parameter ``index`` (int):
+        *no description available*
+
+    Parameter ``scramble`` (int):
+        *no description available*
+
+    Returns → float:
+        *no description available*
+
 .. py:function:: mitsuba.core.sample_rgb_spectrum(overloaded)
 
 
@@ -9429,6 +9638,28 @@
 
         Returns → Tuple[enoki.scalar.Vector3f, enoki.scalar.Vector3f]:
             *no description available*
+
+.. py:function:: mitsuba.core.sample_tea_32(v0, v1, rounds=4)
+
+    Generate fast and reasonably good pseudorandom numbers using the Tiny
+    Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
+
+    For details, refer to "GPU Random Numbers via the Tiny Encryption
+    Algorithm" by Fahad Zafar, Marc Olano, and Aaron Curtis.
+
+    Parameter ``v0`` (int):
+        First input value to be encrypted (could be the sample index)
+
+    Parameter ``v1`` (int):
+        Second input value to be encrypted (e.g. the requested random
+        number dimension)
+
+    Parameter ``rounds`` (int):
+        How many rounds should be executed? The default for random number
+        generation is 4.
+
+    Returns → int:
+        A uniformly distributed 32-bit integer
 
 .. py:function:: mitsuba.core.sample_tea_float
 
@@ -9542,6 +9773,19 @@
         *no description available*
 
     Returns → None:
+        *no description available*
+
+.. py:function:: mitsuba.core.sobol_2(index, scramble)
+
+    Sobol' radical inverse in base 2
+
+    Parameter ``index`` (int):
+        *no description available*
+
+    Parameter ``scramble`` (int):
+        *no description available*
+
+    Returns → float:
         *no description available*
 
 .. py:function:: mitsuba.core.spline.eval_1d(overloaded)
@@ -11675,6 +11919,57 @@
         Returns → enoki.scalar.Vector2i:
             *no description available*
 
+.. py:class:: mitsuba.render.HitComputeFlags
+
+    Members:
+
+    .. py:data:: None
+
+        No flags set
+
+    .. py:data:: Minimal
+
+        Compute position and geometric normal
+
+    .. py:data:: UV
+
+        Compute UV coordinates
+
+    .. py:data:: dPdUV
+
+        Compute position partials wrt. UV coordinates
+
+    .. py:data:: dNGdUV
+
+        Compute the geometric normal partials wrt. the UV coordinates
+
+    .. py:data:: dNSdUV
+
+        Compute the shading normal partials wrt. the UV coordinates
+
+    .. py:data:: ShadingFrame
+
+        Compute shading normal and shading frame
+
+    .. py:data:: NonDifferentiable
+
+        Force computed fields to not be be differentiable
+
+    .. py:data:: All
+
+        Compute all fields of the surface interaction data structure (default)
+
+    .. py:data:: AllNonDifferentiable
+
+        Compute all fields of the surface interaction data structure in a non
+        differentiable way
+
+    .. py:method:: __init__(self, arg0)
+
+        Parameter ``arg0`` (int):
+            *no description available*
+
+
 .. py:class:: mitsuba.render.ImageBlock
 
     Base class: :py:obj:`mitsuba.core.Object`
@@ -12150,6 +12445,17 @@
         Returns → enoki.dynamic.Float32:
             *no description available*
 
+    .. py:method:: mitsuba.render.Mesh.eval_parameterization(self, uv, active=True)
+
+        Parameter ``uv`` (enoki.scalar.Vector2f):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.render.SurfaceInteraction3f`:
+            *no description available*
+
     .. py:method:: mitsuba.render.Mesh.face_count(self)
 
         Return the total number of faces
@@ -12194,7 +12500,7 @@
         Parameter ``active`` (bool):
             Mask to specify active lanes.
 
-        Returns → Tuple[bool, float, float, float]:
+        Returns → :py:obj:`mitsuba.render.PreliminaryIntersection3f`:
             Returns an ordered tuple ``(mask, u, v, t)``, where ``mask``
             indicates whether an intersection was found, ``t`` contains the
             distance from the ray origin to the intersection point, and ``u``
@@ -12598,7 +12904,7 @@
 
     .. py:data:: None
 
-        No flags set (default value)
+        
 
     .. py:data:: Isotropic
 
@@ -12711,6 +13017,76 @@
         Returns → :py:obj:`mitsuba.render.PositionSample3f`:
             *no description available*
 
+.. py:class:: mitsuba.render.PreliminaryIntersection3f
+
+    Stores preliminary information related to a ray intersection
+
+    This data structure is used as return type for the
+    Shape::ray_intersect_preliminary efficient ray intersection routine.
+    It stores whether the shape is intersected by a given ray, and cache
+    preliminary information about the intersection if that is the case.
+
+    If the intersection is deemed relevant, detailed intersection
+    information can later be obtained via the create_surface_interaction()
+    method.
+
+    .. py:method:: __init__(self)
+
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.compute_surface_interaction(self, ray, flags=HitComputeFlags.All, active=True)
+
+        Compute and return detailed information related to a surface
+        interaction
+
+        Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
+            Ray associated with the ray intersection
+
+        Parameter ``flags`` (:py:obj:`mitsuba.render.HitComputeFlags`):
+            Flags specifying which information should be computed
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.render.SurfaceInteraction3f`:
+            A data structure containing the detailed information
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.instance
+        :property:
+
+        Stores a pointer to the parent instance (if applicable)
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.is_valid(self)
+
+        Is the current interaction valid?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.prim_index
+        :property:
+
+        Primitive index, e.g. the triangle ID (if applicable)
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.prim_uv
+        :property:
+
+        2D coordinates on the primitive surface parameterization
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.shape
+        :property:
+
+        Pointer to the associated shape
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.shape_index
+        :property:
+
+        Shape index, e.g. the shape ID in shapegroup (if applicable)
+
+    .. py:method:: mitsuba.render.PreliminaryIntersection3f.t
+        :property:
+
+        Distance traveled along the ray
+
 .. py:class:: mitsuba.render.ProjectiveCamera
 
     Base class: :py:obj:`mitsuba.render.Sensor`
@@ -12752,6 +13128,53 @@
 .. py:class:: mitsuba.render.Sampler
 
     Base class: :py:obj:`mitsuba.core.Object`
+
+    Base class of all sample generators.
+
+    For each sample in a pixel, a sample generator produces a
+    (hypothetical) point in the infinite dimensional random number cube. A
+    rendering algorithm can then request subsequent 1D or 2D components of
+    this point using the ``next_1d`` and ``next_2d`` functions.
+
+    Scalar and wavefront rendering algorithms will need interact with the
+    sampler interface in a slightly different way:
+
+    Scalar rendering algorithm:
+
+    1. Before beginning to render a pixel block, the rendering algorithm
+    calls ``seed`` to initialize a new sequence with the specific seed
+    offset. 2. The first pixel sample can now be computed, after which
+    ``advance`` needs to be invoked. This repeats until all pixel samples
+    have been generated. Note that some implementations need to be
+    configured for a certain number of pixel samples, and exceeding these
+    will lead to an exception being thrown. 3. While computing a pixel
+    sample, the rendering algorithm usually requests batches of (pseudo-)
+    random numbers using the ``next_1d`` and ``next_2d`` functions before
+    moving on to the next sample.
+
+    Wavefront rendering algorithm:
+
+    1. Before beginning to render the wavefront, the rendering algorithm
+    needs to inform the sampler of the amount of samples rendered in
+    parallel for every pixel in the wavefront. This can be achieved by
+    calling ``set_samples_per_wavefront`` . 2. Then the rendering
+    algorithm should seed the sampler and set the appropriate wavefront
+    size by calling ``seed``. A different seed value, based on the
+    ``base_seed`` and the seed offset, will be used for every sample (of
+    every pixel) in the wavefront. 3. ``advance`` can be used to advance
+    to the next sample in the sequence. 4. As in the scalar approach, the
+    rendering algorithm can request batches of (pseudo-) random numbers
+    using the ``next_1d`` and ``next_2d`` functions.
+
+    .. py:method:: mitsuba.render.Sampler.advance(self)
+
+        Advance to the next sample.
+
+        A subsequent call to ``next_1d`` or ``next_2d`` will access the first
+        1D or 2D components of this sample.
+
+        Returns → None:
+            *no description available*
 
     .. py:method:: mitsuba.render.Sampler.clone(self)
 
@@ -12795,15 +13218,28 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.render.Sampler.seed(self, seed_value)
+    .. py:method:: mitsuba.render.Sampler.seed(self, seed_offset, wavefront_size=1)
 
         Deterministically seed the underlying RNG, if applicable.
 
         In the context of wavefront ray tracing & dynamic arrays, this
-        function must be called with a ``seed_value`` matching the size of the
-        wavefront.
+        function must be called with ``wavefront_size`` matching the size of
+        the wavefront.
 
-        Parameter ``seed_value`` (int):
+        Parameter ``seed_offset`` (int):
+            *no description available*
+
+        Parameter ``wavefront_size`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Sampler.set_samples_per_wavefront(self, samples_per_wavefront)
+
+        Set the number of samples per pass in wavefront modes (default is 1)
+
+        Parameter ``samples_per_wavefront`` (int):
             *no description available*
 
         Returns → None:
@@ -12939,22 +13375,45 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.render.Scene.ray_intersect(self, ray, active=True)
+    .. py:method:: mitsuba.render.Scene.ray_intersect(overloaded)
 
-        Intersect a ray against all primitives stored in the scene and return
-        information about the resulting surface interaction
 
-        Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
-            A 3-dimensional ray data structure with minimum/maximum extent
-            information, as well as a time value (which matters when the
-            shapes are in motion)
+        .. py:method:: ray_intersect(self, ray, active=True)
 
-        Parameter ``active`` (bool):
-            Mask to specify active lanes.
+            Intersect a ray against all primitives stored in the scene and return
+            information about the resulting surface interaction
 
-        Returns → :py:obj:`mitsuba.render.SurfaceInteraction`:
-            A detailed surface interaction record. Query its ``is_valid()``
-            method to determine whether an intersection was actually found.
+            Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
+                A 3-dimensional ray data structure with minimum/maximum extent
+                information, as well as a time value (which matters when the
+                shapes are in motion)
+
+            Returns → :py:obj:`mitsuba.render.SurfaceInteraction`:
+                A detailed surface interaction record. Query its ``is_valid()``
+                method to determine whether an intersection was actually found.
+
+            Parameter ``active`` (bool):
+                Mask to specify active lanes.
+
+        .. py:method:: ray_intersect(self, ray, flags, active=True)
+
+            Intersect a ray against all primitives stored in the scene and return
+            information about the resulting surface interaction
+
+            Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
+                A 3-dimensional ray data structure with minimum/maximum extent
+                information, as well as a time value (which matters when the
+                shapes are in motion)
+
+            Returns → :py:obj:`mitsuba.render.SurfaceInteraction`:
+                A detailed surface interaction record. Query its ``is_valid()``
+                method to determine whether an intersection was actually found.
+
+            Parameter ``flags`` (:py:obj:`mitsuba.render.HitComputeFlags`):
+                *no description available*
+
+            Parameter ``active`` (bool):
+                Mask to specify active lanes.
 
     .. py:method:: mitsuba.render.Scene.ray_intersect_naive(self, ray, active=True)
 
@@ -12965,6 +13424,17 @@
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.render.SurfaceInteraction`:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Scene.ray_intersect_preliminary(self, ray, active=True)
+
+        Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.render.PreliminaryIntersection`:
             *no description available*
 
     .. py:method:: mitsuba.render.Scene.ray_test(self, ray, active=True)
@@ -13005,6 +13475,13 @@
     .. py:method:: mitsuba.render.Scene.shapes(self)
 
         Returns → list:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Scene.shapes_grad_enabled(self)
+
+        Return whether any of the shape's parameters require gradient
+
+        Returns → bool:
             *no description available*
 
 .. py:class:: mitsuba.render.Sensor
@@ -13056,19 +13533,6 @@
         be used for anything except creating clones.
 
         Returns → :py:obj:`mitsuba.render.Sampler`:
-            *no description available*
-
-    .. py:method:: mitsuba.render.Sensor.set_crop_window(self, crop_size, crop_offset)
-
-        Updates the film's crop window, and adjusts any state accordingly.
-
-        Parameter ``crop_size`` (enoki.scalar.Vector2i):
-            *no description available*
-
-        Parameter ``crop_offset`` (enoki.scalar.Vector2i):
-            *no description available*
-
-        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.render.Sensor.shutter_open(self)
@@ -13143,6 +13607,23 @@
         Returns → :py:obj:`mitsuba.render.BSDF`:
             *no description available*
 
+    .. py:method:: mitsuba.render.Shape.compute_surface_interaction(self, ray, pi, flags=HitComputeFlags.All, active=True)
+
+        Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
+            *no description available*
+
+        Parameter ``pi`` (:py:obj:`mitsuba.render.PreliminaryIntersection3f`):
+            *no description available*
+
+        Parameter ``flags`` (:py:obj:`mitsuba.render.HitComputeFlags`):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.render.SurfaceInteraction3f`:
+            *no description available*
+
     .. py:method:: mitsuba.render.Shape.effective_primitive_count(self)
 
         Return the number of primitives (triangles, hairs, ..) contributed to
@@ -13167,23 +13648,6 @@
         Return the medium that lies on the exterior of this shape
 
         Returns → :py:obj:`mitsuba.render.Medium`:
-            *no description available*
-
-    .. py:method:: mitsuba.render.Shape.fill_surface_interaction(self, ray, cache, si, active=True)
-
-        Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
-            *no description available*
-
-        Parameter ``cache`` (float):
-            *no description available*
-
-        Parameter ``si`` (:py:obj:`mitsuba.render.SurfaceInteraction3f`):
-            *no description available*
-
-        Parameter ``active`` (bool):
-            Mask to specify active lanes.
-
-        Returns → None:
             *no description available*
 
     .. py:method:: mitsuba.render.Shape.id(self)
@@ -13228,27 +13692,13 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.render.Shape.normal_derivative(self, si, shading_frame=True, active=True)
+    .. py:method:: mitsuba.render.Shape.parameters_grad_enabled(self)
 
-        Return the derivative of the normal vector with respect to the UV
-        parameterization
+        Return whether shape's parameters require gradients (default
+        implementation return false)
 
-        This can be used to compute Gaussian and principal curvatures, amongst
-        other things.
-
-        Parameter ``si`` (:py:obj:`mitsuba.render.SurfaceInteraction3f`):
-            Surface interaction associated with the query
-
-        Parameter ``shading_frame`` (bool):
-            Specifies whether to compute the derivative of the geometric
-            normal *or* the shading normal of the surface
-
-        Parameter ``active`` (bool):
-            Mask to specify active lanes.
-
-        Returns → Tuple[enoki.scalar.Vector3f, enoki.scalar.Vector3f]:
-            The partial derivatives of the normal vector with respect to ``u``
-            and ``v``.
+        Returns → bool:
+            *no description available*
 
     .. py:method:: mitsuba.render.Shape.pdf_direction(self, it, ps, active=True)
 
@@ -13290,7 +13740,26 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.render.Shape.ray_intersect(self, ray, active=True)
+    .. py:method:: mitsuba.render.Shape.ray_intersect(self, ray, flags=HitComputeFlags.All, active=True)
+
+        Test for an intersection and return detailed information
+
+        This operation combines the prior ray_intersect_preliminary() and
+        compute_surface_interaction() operations.
+
+        Parameter ``ray`` (:py:obj:`mitsuba.core.Ray3f`):
+            The ray to be tested for an intersection
+
+        Parameter ``flags`` (:py:obj:`mitsuba.render.HitComputeFlags`):
+            Describe how the detailed information should be computed
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → :py:obj:`mitsuba.render.SurfaceInteraction3f`:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Shape.ray_intersect_preliminary(self, ray, active=True)
 
         Fast ray intersection test
 
@@ -13313,7 +13782,7 @@
         Parameter ``active`` (bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.render.SurfaceInteraction3f`:
+        Returns → :py:obj:`mitsuba.render.PreliminaryIntersection3f`:
             *no description available*
 
     .. py:method:: mitsuba.render.Shape.ray_test(self, ray, active=True)
@@ -13574,7 +14043,7 @@
             Returns → :py:obj:`mitsuba.render.BSDF`:
                 *no description available*
 
-    .. py:method:: mitsuba.render.SurfaceInteraction3f.compute_partials(self, ray)
+    .. py:method:: mitsuba.render.SurfaceInteraction3f.compute_uv_partials(self, ray)
 
         Computes texture coordinate partials
 
@@ -13583,6 +14052,16 @@
 
         Returns → None:
             *no description available*
+
+    .. py:method:: mitsuba.render.SurfaceInteraction3f.dn_du
+        :property:
+
+        Normal partials wrt. the UV parameterization
+
+    .. py:method:: mitsuba.render.SurfaceInteraction3f.dn_dv
+        :property:
+
+        Normal partials wrt. the UV parameterization
 
     .. py:method:: mitsuba.render.SurfaceInteraction3f.dp_du
         :property:
@@ -13616,6 +14095,11 @@
             Mask to specify active lanes.
 
         Returns → :py:obj:`mitsuba.render.Emitter`:
+            *no description available*
+
+    .. py:method:: mitsuba.render.SurfaceInteraction3f.has_n_partials(self)
+
+        Returns → bool:
             *no description available*
 
     .. py:method:: mitsuba.render.SurfaceInteraction3f.has_uv_partials(self)
@@ -13888,10 +14372,23 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.render.Texture.pdf(self, si, active=True)
+    .. py:method:: mitsuba.render.Texture.pdf_position(self, p, active=True)
 
-        Evaluate the density function of the sample() method as a probability
-        per unit wavelength (in units of 1/nm).
+        Returns the probability per unit area of sample_position()
+
+        Parameter ``p`` (enoki.scalar.Vector2f):
+            *no description available*
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → float:
+            *no description available*
+
+    .. py:method:: mitsuba.render.Texture.pdf_spectrum(self, si, active=True)
+
+        Evaluate the density function of the sample_spectrum() method as a
+        probability per unit wavelength (in units of 1/nm).
 
         Not every implementation necessarily provides this function. The
         default implementation throws an exception.
@@ -13906,7 +14403,30 @@
             A density value for each wavelength in ``si.wavelengths`` (hence
             the Wavelength type).
 
-    .. py:method:: mitsuba.render.Texture.sample(self, si, sample, active=True)
+    .. py:method:: mitsuba.render.Texture.sample_position(self, sample, active=True)
+
+        Importance sample a surface position proportional to the overall
+        spectral reflectance or intensity of the texture
+
+        This function assumes that the texture is implemented as a mapping
+        from 2D UV positions to texture values, which is not necessarily true
+        for all textures (e.g. 3D noise functions, mesh attributes, etc.). For
+        this reason, not every will plugin provide a specialized
+        implementation, and the default implementation simply return the input
+        sample (i.e. uniform sampling is used).
+
+        Parameter ``sample`` (enoki.scalar.Vector2f):
+            A 2D vector of uniform variates
+
+        Parameter ``active`` (bool):
+            Mask to specify active lanes.
+
+        Returns → Tuple[enoki.scalar.Vector2f, float]:
+            1. A texture-space position in the range :math:`[0, 1]^2`
+
+        2. The associated probability per unit area in UV space
+
+    .. py:method:: mitsuba.render.Texture.sample_spectrum(self, si, sample, active=True)
 
         Importance sample a set of wavelengths proportional to the spectrum
         defined at the given surface position
@@ -14059,6 +14579,17 @@
 
 .. py:function:: mitsuba.render.has_flag(overloaded)
 
+
+    .. py:function:: has_flag(arg0, arg1)
+
+        Parameter ``arg0`` (:py:obj:`mitsuba.render.HitComputeFlags`):
+            *no description available*
+
+        Parameter ``arg1`` (:py:obj:`mitsuba.render.HitComputeFlags`):
+            *no description available*
+
+        Returns → bool:
+            *no description available*
 
     .. py:function:: has_flag(arg0, arg1)
 
@@ -14965,6 +15496,13 @@
         Converts all Enoki arrays into PyTorch arrays and return them as a
         dictionary. This is mainly useful when using PyTorch to optimize a
         Mitsuba scene.
+
+    .. py:method:: mitsuba.python.util.ParameterMap.set_dirty(key: str)
+
+        Marks a specific parameter and its parent objects as dirty. A subsequent call
+        to :py:meth:`~:py:obj:`mitsuba.python.util.ParameterMap.update`()` will refresh their internal
+        state. This function is automatically called when overwriting a parameter using
+        :py:meth:`~:py:obj:`mitsuba.python.util.ParameterMap.__setitem__`()`.
 
     .. py:method:: mitsuba.python.util.ParameterMap.update() -> None
 

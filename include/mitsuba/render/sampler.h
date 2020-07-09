@@ -8,13 +8,14 @@
 #include <mitsuba/core/random.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
 /**
  * \brief Base class of all sample generators.
  *
  * For each sample in a pixel, a sample generator produces a (hypothetical)
  * point in the infinite dimensional random number cube. A rendering
  * algorithm can then request subsequent 1D or 2D components of this point
- * using the \ref next_1d() and \ref next_2d() functions.
+ * using the \c next_1d and \c next_2d functions.
  *
  * Scalar and wavefront rendering algorithms will need interact with the sampler
  * interface in a slightly different way:
@@ -73,7 +74,7 @@ public:
     /**
      * \brief Advance to the next sample.
      *
-     * A subsequent call to \ref next_1d() or \ref next_2d() will access the first
+     * A subsequent call to \c next_1d or \c next_2d will access the first
      * 1D or 2D components of this sample.
      */
     virtual void advance();
