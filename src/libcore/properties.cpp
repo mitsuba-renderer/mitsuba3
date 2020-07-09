@@ -44,6 +44,9 @@ struct SortKey {
         while (i < a.size() && i < b.size() && a[i] == b[i])
             ++i;
 
+        while(std::isdigit(a[i-1]))
+            --i;
+
         const char *a_ptr = a.c_str() + i;
         const char *b_ptr = b.c_str() + i;
 
