@@ -1010,9 +1010,6 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
                 else
                     instantiate_recursively();
 
-                // Remove named reference property before adding the object
-                props.remove_property(kv.first);
-
                 // Give the object a chance to recursively expand into sub-objects
                 std::vector<ref<Object>> children = obj->expand();
                 if (children.empty()) {
