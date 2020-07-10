@@ -47,6 +47,9 @@ Perspective pinhole camera (:monosp:`perspective`)
    - |float|
    - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
      and :monosp:`far_clip=1e4` (i.e. :monosp:`10000`))
+ * - principal_point_offset_x, principal_point_offset_y
+   - |float|
+   - Specifies the position of the camera's principal point relative to the center of the film.
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective.jpg
@@ -103,6 +106,13 @@ public:
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         update_camera_transforms();
+
+        m_principal_point_offset = ScalarPoint2f(
+            props.float_("principal_point_offset_x", 0.f),
+            props.float_("principal_point_offset_y", 0.f)
+        );
+        ScalarVector2f crop_size = ScalarVector2f(m_film->crop_size());
+        m_principal_point_offset *= size / crop_size;
     }
 
     void update_camera_transforms() {
@@ -150,7 +160,9 @@ public:
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x(), position_sample.y(), 0.f);
+                         Point3f(position_sample.x() + m_principal_point_offset.x(),
+                                 position_sample.y() + m_principal_point_offset.y(),
+                                 0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = ek::normalize(Vector3f(near_p));
@@ -178,7 +190,9 @@ public:
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x(), position_sample.y(), 0.f);
+                         Point3f(position_sample.x() + m_principal_point_offset.x(),
+                                 position_sample.y() + m_principal_point_offset.y(),
+                                 0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = ek::normalize(Vector3f(near_p));
@@ -301,6 +315,7 @@ private:
     ScalarFloat m_normalization;
     ScalarFloat m_x_fov;
     ScalarVector3f m_dx, m_dy;
+    ScalarVector2f m_principal_point_offset;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(PerspectiveCamera, ProjectiveCamera)
