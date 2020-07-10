@@ -8,9 +8,9 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**!
 
-.. _bsdf-polarizer:
+.. _bsdf-circular:
 
-Linear polarizer material (:monosp:`polarizer`)
+Circular polarizer material (:monosp:`circular`)
 -----------------------------------------------
 
 .. pluginparameters::
@@ -21,60 +21,46 @@ Linear polarizer material (:monosp:`polarizer`)
  * - transmittance
    - |spectrum| or |texture|
    - Optional factor that can be used to modulate the specular transmission. (Default: 1.0)
- * - polarizing
+ * - left_handed
    - |bool|
-   - Optional flag to disable polarization changes in order to use this as a neutral density filter,
-     even in polarized render modes. (Default: |true|, i.e. act as polarizer)
+   - Flag to switch between left and right circular polarization. (Default: |false|, i.e. right circular polarizer)
 
-This material simulates an ideal linear polarizer useful to test polarization aware
-light transport or to conduct virtual optical experiments. The aborbing axis of the
-polarizer is aligned with the *V*-direction of the underlying surface parameterization.
-To rotate the polarizer, either the parameter ``theta`` can be used, or alternative
-a rotation can be applied directly to the associated shape.
+This material simulates an ideal circular polarizer useful to test polarization aware
+light transport or to conduct virtual optical experiments. To rotate the polarizer,
+either the parameter ``theta`` can be used, or alternative a rotation can be applied
+directly to the associated shape.
 
-.. subfigstart::
-.. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_aligned.jpg
-   :caption: Two aligned polarizers. The average intensity is reduced by a factor of 2.
-.. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_absorbing.jpg
-   :caption: Two polarizers offset by 90 degrees. All trasmitted light is aborbed.
-.. subfigure:: ../../resources/data/docs/images/render/bsdf_polarizer_middle.jpg
-   :caption: Two polarizers offset by 90 degrees, with a third polarizer in between at 45 degrees. Some light is transmitted again.
-.. subfigend::
-   :label: fig-polarizer
-
-The following XML snippet describes a linear polarizer material with a rotation
-of 90 degrees.
+The following XML snippet describes a left circular polarizer material:
 
 .. code-block:: xml
-    :name: polarizer
+    :name: circular
 
-    <bsdf type="polarizer">
-        <spectrum name="theta" value="90"/>
+    <bsdf type="circular">
+        <boolean name="left_handed" value="true"/>
     </bsdf>
 
 Apart from a change of polarization, light does not interact with this material
 in any way and does not change its direction.
 Internally, this is implemented as a forward-facing Dirac delta distribution.
-Note that the standard :ref:`path tracer <integrator-path>` does not have a good sampling strategy to deal with this,
-but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
+Note that the standard :ref:`path tracer <integrator-path>` does not have a good
+sampling strategy to deal with this, but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
 
-In *unpolarized* rendering modes, the behaviour defaults to a non-polarizing
-transmitting material that absorbs 50% of the incident illumination.
+In *unpolarized* rendering modes, the behaviour defaults to non-polarizing
+transparent material similar to the :ref:`null <bsdf-null>` BSDF plugin.
 
 */
 template <typename Float, typename Spectrum>
-class LinearPolarizer final : public BSDF<Float, Spectrum> {
+class CircularPolarizer final : public BSDF<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
     MTS_IMPORT_TYPES(Texture)
 
-    LinearPolarizer(const Properties &props) : Base(props) {
+    CircularPolarizer(const Properties &props) : Base(props) {
         m_theta = props.texture<Texture>("theta", 0.f);
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
-        m_polarizing = props.bool_("polarizing", true);
+        m_left_handed = props.bool_("left_handed", false);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
-        ek::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 
@@ -93,15 +79,15 @@ public:
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
 
         if constexpr (is_polarized_v<Spectrum>) {
-            if (!m_polarizing) {
-                return { bs, mueller::absorber(0.5f*transmittance) };
-            }
-
             // Query rotation angle
-            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
 
-            // Get standard Mueller matrix for a linear polarizer.
-            Spectrum M = mueller::linear_polarizer(1.f);
+            // Combine linear polarizer and quarter wave plate
+            Spectrum LP  = mueller::linear_polarizer(1.f);
+            Spectrum QWP = mueller::linear_retarder(0.5f*ek::Pi<Float>);
+            UnpolarizedSpectrum rot = m_left_handed ? 3.f*ek::Pi<Float>/4.f : ek::Pi<Float>/4.f;
+            QWP = mueller::rotated_element(rot, QWP);
+            Spectrum M = QWP * LP;
 
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
@@ -109,16 +95,9 @@ public:
             // Forward direction is always away from light source.
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
-            /* To account for non-perpendicular incidence, we compute the effective
-               transmitting axis based on "The polarization properties of a tilted polarizer"
-               by Korger et al. 2013. */
-            Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = ek::normalize(a_axis - ek::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = ek::cross(forward, eff_a_axis);
-
-            // Rotate in/out basis of M s.t. to standard basis
+            // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
             M = mueller::rotate_mueller_basis_collinear(M, forward,
-                                                        eff_t_axis,
+                                                        Vector3f(1.f, 0.f, 0.f),
                                                         mueller::stokes_basis(forward));
 
             // Handle potential absorption if transmittance < 1.0
@@ -126,7 +105,7 @@ public:
 
             return { bs, M };
         } else {
-            return { bs, 0.5f * transmittance };
+            return { bs, 0.5f*transmittance };
         }
     }
 
@@ -145,15 +124,15 @@ public:
 
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
         if constexpr (is_polarized_v<Spectrum>) {
-            if (!m_polarizing) {
-                return mueller::absorber(0.5f*transmittance);
-            }
-
             // Query rotation angle
-            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
 
-            // Get standard Mueller matrix for a linear polarizer.
-            Spectrum M = mueller::linear_polarizer(1.f);
+            // Combine linear polarizer and quarter wave plate
+            Spectrum LP  = mueller::linear_polarizer(1.f);
+            Spectrum QWP = mueller::linear_retarder(0.5f*ek::Pi<Float>);
+            UnpolarizedSpectrum rot = m_left_handed ? 3.f*ek::Pi<Float>/4.f : ek::Pi<Float>/4.f;
+            QWP = mueller::rotated_element(rot, QWP);
+            Spectrum M = QWP * LP;
 
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
@@ -161,16 +140,9 @@ public:
             // Forward direction is always away from light source.
             Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
 
-            /* To account for non-perpendicular incidence, we compute the effective
-               transmitting axis based on "The polarization properties of a tilted polarizer"
-               by Korger et al. 2013. */
-            Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = ek::normalize(a_axis - ek::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = ek::cross(forward, eff_a_axis);
-
-            // Rotate in/out basis of M s.t. to standard basis
+            // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
             M = mueller::rotate_mueller_basis_collinear(M, forward,
-                                                        eff_t_axis,
+                                                        Vector3f(1.f, 0.f, 0.f),
                                                         mueller::stokes_basis(forward));
 
             // Handle potential absorption if transmittance < 1.0
@@ -178,7 +150,7 @@ public:
 
             return M;
         } else {
-            return 0.5f * transmittance;
+            return 0.5f*transmittance;
         }
     }
 
@@ -189,21 +161,20 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-        oss << "LinearPolarizer[" << std::endl
+        oss << "CircularPolarizer[" << std::endl
             << "  theta = " << string::indent(m_theta) << std::endl
             << "  transmittance = " << string::indent(m_transmittance) << std::endl
-            << "  polarizing = " << m_polarizing << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    bool m_polarizing;
     ref<Texture> m_theta;
     ref<Texture> m_transmittance;
+    bool m_left_handed;
 };
 
-MTS_IMPLEMENT_CLASS_VARIANT(LinearPolarizer, BSDF)
-MTS_EXPORT_PLUGIN(LinearPolarizer, "Linear polarizer material")
+MTS_IMPLEMENT_CLASS_VARIANT(CircularPolarizer, BSDF)
+MTS_EXPORT_PLUGIN(CircularPolarizer, "Circular polarizer material")
 NAMESPACE_END(mitsuba)
