@@ -154,6 +154,14 @@ public:
             ((Object *) m_ptr)->inc_ref();
     }
 
+    /// Construct a reference from another convertible reference
+    template <typename T2>
+    ref(const ref<T2> &r) : m_ptr((T2 *) r.get()) {
+        static_assert(std::is_convertible_v<T2*, T*>, "Cannot create reference to object from another unconvertible reference.");
+        if (m_ptr)
+            ((Object *) m_ptr)->inc_ref();
+    }
+
     /// Copy constructor
     ref(const ref &r) : m_ptr(r.m_ptr) {
         if (m_ptr)
