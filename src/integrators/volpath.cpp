@@ -359,7 +359,7 @@ public:
                 ek::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
         }
-        return { emitter_val * transmittance, ds };
+        return { transmittance * emitter_val, ds };
     }
 
 
