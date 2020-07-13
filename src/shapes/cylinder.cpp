@@ -74,7 +74,8 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children, get_children_string)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+                    get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -241,27 +242,29 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float * /*cache*/,
-                                         Mask active) const override {
+    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray_,
+                                                        Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
+        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+
         Ray3f ray = m_to_object.transform_affine(ray_);
-        Float64 mint = Float64(ray.mint),
-                maxt = Float64(ray.maxt);
+        Double mint = Double(ray.mint),
+               maxt = Double(ray.maxt);
 
-        Float64 ox = Float64(ray.o.x()),
-                oy = Float64(ray.o.y()),
-                oz = Float64(ray.o.z()),
-                dx = Float64(ray.d.x()),
-                dy = Float64(ray.d.y()),
-                dz = Float64(ray.d.z());
+        Double ox = Double(ray.o.x()),
+               oy = Double(ray.o.y()),
+               oz = Double(ray.o.z()),
+               dx = Double(ray.d.x()),
+               dy = Double(ray.d.y()),
+               dz = Double(ray.d.z());
 
-        double  radius = double(m_radius),
-                length = double(m_length);
+        scalar_t<Double> radius = scalar_t<Double>(m_radius),
+                         length = scalar_t<Double>(m_length);
 
-        Float64 A = sqr(dx) + sqr(dy),
-                B = 2.0 * (dx * ox + dy * oy),
-                C = sqr(ox) + sqr(oy) - sqr(radius);
+        Double A = sqr(dx) + sqr(dy),
+               B = scalar_t<Double>(2.f) * (dx * ox + dy * oy),
+               C = sqr(ox) + sqr(oy) - sqr(radius);
 
         auto [solution_found, near_t, far_t] =
             math::solve_quadratic(A, B, C);
@@ -269,49 +272,56 @@ public:
         // Cylinder doesn't intersect with the segment on the ray
         Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
-        Float64 z_pos_near = oz + dz*near_t,
-                z_pos_far  = oz + dz*far_t;
+        Double z_pos_near = oz + dz*near_t,
+               z_pos_far  = oz + dz*far_t;
 
         // Cylinder fully contains the segment of the ray
         Mask in_bounds = near_t < mint && far_t > maxt;
 
-        Mask valid_intersection =
-            active && solution_found && !out_bounds && !in_bounds &&
-            ((z_pos_near >= 0 && z_pos_near <= length && near_t >= mint) ||
-             (z_pos_far  >= 0 && z_pos_far <= length  && far_t <= maxt));
+        active &= solution_found && !out_bounds && !in_bounds &&
+                  ((z_pos_near >= 0 && z_pos_near <= length && near_t >= mint) ||
+                   (z_pos_far  >= 0 && z_pos_far <= length  && far_t <= maxt));
 
-        return { valid_intersection,
-                 select(z_pos_near >= 0 && z_pos_near <= length && near_t >= mint, near_t, far_t) };
+        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+        pi.t = select(active,
+                      select(z_pos_near >= 0 && z_pos_near <= length && near_t >= mint,
+                             Float(near_t), Float(far_t)),
+                      math::Infinity<Float>);
+        pi.shape = this;
+
+        return pi;
     }
 
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
+        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+
         Ray3f ray = m_to_object.transform_affine(ray_);
-        Float64 mint = Float64(ray.mint);
-        Float64 maxt = Float64(ray.maxt);
+        Double mint = Double(ray.mint);
+        Double maxt = Double(ray.maxt);
 
-        Float64 ox = Float64(ray.o.x()),
-                oy = Float64(ray.o.y()),
-                oz = Float64(ray.o.z()),
-                dx = Float64(ray.d.x()),
-                dy = Float64(ray.d.y()),
-                dz = Float64(ray.d.z());
+        Double ox = Double(ray.o.x()),
+               oy = Double(ray.o.y()),
+               oz = Double(ray.o.z()),
+               dx = Double(ray.d.x()),
+               dy = Double(ray.d.y()),
+               dz = Double(ray.d.z());
 
-        double  radius = double(m_radius),
-                length = double(m_length);
+        scalar_t<Double> radius = scalar_t<Double>(m_radius),
+                         length = scalar_t<Double>(m_length);
 
-        Float64 A = sqr(dx) + sqr(dy),
-                B = 2.0 * (dx * ox + dy * oy),
-                C = sqr(ox) + sqr(oy) - sqr(radius);
+        Double A = sqr(dx) + sqr(dy),
+               B = scalar_t<Double>(2.f) * (dx * ox + dy * oy),
+               C = sqr(ox) + sqr(oy) - sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Cylinder doesn't intersect with the segment on the ray
         Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
-        Float64 z_pos_near = oz + dz * near_t,
-                z_pos_far  = oz + dz * far_t;
+        Double z_pos_near = oz + dz * near_t,
+               z_pos_far  = oz + dz * far_t;
 
         // Cylinder fully contains the segment of the ray
         Mask in_bounds = near_t < mint && far_t > maxt;
@@ -324,14 +334,30 @@ public:
         return valid_intersection;
     }
 
-    void fill_surface_interaction(const Ray3f &ray, const Float * /*cache*/,
-                                  SurfaceInteraction3f &si_out, Mask active) const override {
+    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                     PreliminaryIntersection3f pi,
+                                                     HitComputeFlags flags,
+                                                     Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        SurfaceInteraction3f si(si_out);
+        bool differentiable = false;
+        if constexpr (is_diff_array_v<Float>)
+            differentiable = requires_gradient(ray.o) ||
+                             requires_gradient(ray.d) ||
+                             parameters_grad_enabled();
 
-        si.p = ray(si.t);
-        Vector3f local = m_to_object * si.p;
+        // Recompute ray intersection to get differentiable prim_uv and t
+        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+            pi = ray_intersect_preliminary(ray, active);
+
+        active &= pi.is_valid();
+
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = select(active, pi.t, math::Infinity<Float>);
+
+        si.p = ray(pi.t);
+
+        Vector3f local = m_to_object.transform_affine(si.p);
 
         Float phi = atan2(local.y(), local.x());
         masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
@@ -354,18 +380,13 @@ public:
         si.sh_frame.n = si.n;
         si.time = ray.time;
 
-        si_out[active] = si;
-    }
+        std::cout << "flags: " << has_flag(flags, HitComputeFlags::dNSdUV) << std::endl;
+        if (has_flag(flags, HitComputeFlags::dNSdUV)) {
+            si.dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f));
+            si.dn_dv = Vector3f(0.f);
+        }
 
-    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
-                                                    bool /*shading_frame*/,
-                                                    Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
-
-        Vector3f dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f)),
-                 dn_dv = Vector3f(0.f);
-
-        return { dn_du, dn_dv };
+        return si;
     }
 
     //! @}

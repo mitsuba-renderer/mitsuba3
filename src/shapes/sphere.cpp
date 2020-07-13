@@ -88,7 +88,8 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children, get_children_string)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+                    get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -269,20 +270,22 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    std::pair<Mask, Float> ray_intersect(const Ray3f &ray,
-                                         Float * /*cache*/,
-                                         Mask active) const override {
+    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                        Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Float64 mint = Float64(ray.mint);
-        Float64 maxt = Float64(ray.maxt);
+        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+        using Double3 = Vector<Double, 3>;
 
-        Vector3d o = Vector3d(ray.o) - Vector3d(m_center);
-        Vector3d d(ray.d);
+        Double mint = Double(ray.mint);
+        Double maxt = Double(ray.maxt);
 
-        Float64 A = squared_norm(d);
-        Float64 B = 2.0 * dot(o, d);
-        Float64 C = squared_norm(o) - sqr((double) m_radius);
+        Double3 o = Double3(ray.o) - Double3(m_center);
+        Double3 d(ray.d);
+
+        Double A = squared_norm(d);
+        Double B = scalar_t<Double>(2.f) * dot(o, d);
+        Double C = squared_norm(o) - sqr((scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -292,24 +295,32 @@ public:
         // Sphere fully contains the segment of the ray
         Mask in_bounds = near_t < mint && far_t > maxt;
 
-        Mask valid_intersection =
-            active && solution_found && !out_bounds && !in_bounds;
+        active &= solution_found && !out_bounds && !in_bounds;
 
-        return { valid_intersection, select(near_t < mint, far_t, near_t) };
+        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+        pi.t = select(active,
+                      select(near_t < mint, Float(far_t), Float(near_t)),
+                      math::Infinity<Float>);
+        pi.shape = this;
+
+        return pi;
     }
 
     Mask ray_test(const Ray3f &ray, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        Float64 mint = Float64(ray.mint);
-        Float64 maxt = Float64(ray.maxt);
+        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+        using Double3 = Vector<Double, 3>;
 
-        Vector3d o = Vector3d(ray.o) - Vector3d(m_center);
-        Vector3d d(ray.d);
+        Double mint = Double(ray.mint);
+        Double maxt = Double(ray.maxt);
 
-        Float64 A = squared_norm(d);
-        Float64 B = 2.0 * dot(o, d);
-        Float64 C = squared_norm(o) - sqr((double) m_radius);
+        Double3 o = Double3(ray.o) - Double3(m_center);
+        Double3 d(ray.d);
+
+        Double A = squared_norm(d);
+        Double B = scalar_t<Double>(2.f) * dot(o, d);
+        Double C = squared_norm(o) - sqr((scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -322,59 +333,75 @@ public:
         return solution_found && !out_bounds && !in_bounds && active;
     }
 
-    void fill_surface_interaction(const Ray3f &ray, const Float * /*cache*/,
-                                  SurfaceInteraction3f &si_out, Mask active) const override {
+    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                     PreliminaryIntersection3f pi,
+                                                     HitComputeFlags flags,
+                                                     Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        SurfaceInteraction3f si(si_out);
+        bool differentiable = false;
+        if constexpr (is_diff_array_v<Float>)
+            differentiable = requires_gradient(ray.o) ||
+                             requires_gradient(ray.d) ||
+                             parameters_grad_enabled();
 
-        si.sh_frame.n = normalize(ray(si.t) - m_center);
+        // Recompute ray intersection to get differentiable prim_uv and t
+        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+            pi = ray_intersect_preliminary(ray, active);
+
+        active &= pi.is_valid();
+
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = select(active, pi.t, math::Infinity<Float>);
+
+        si.sh_frame.n = normalize(ray(pi.t) - m_center);
 
         // Re-project onto the sphere to improve accuracy
         si.p = fmadd(si.sh_frame.n, m_radius, m_center);
 
-        Vector3f local = m_to_object.transform_affine(si.p);
+        if (likely(has_flag(flags, HitComputeFlags::UV))) {
+            Vector3f local = m_to_object.transform_affine(si.p);
 
-        Float rd_2  = sqr(local.x()) + sqr(local.y()),
-              theta = unit_angle_z(local),
-              phi   = atan2(local.y(), local.x());
+            Float rd_2  = sqr(local.x()) + sqr(local.y()),
+                  theta = unit_angle_z(local),
+                  phi   = atan2(local.y(), local.x());
 
-        masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
+            masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
 
-        si.uv = Point2f(phi * math::InvTwoPi<Float>, theta * math::InvPi<Float>);
-        si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
+            si.uv = Point2f(phi * math::InvTwoPi<Float>, theta * math::InvPi<Float>);
+            if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
+                si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
-        Float rd      = sqrt(rd_2),
-              inv_rd  = rcp(rd),
-              cos_phi = local.x() * inv_rd,
-              sin_phi = local.y() * inv_rd;
+                Float rd      = sqrt(rd_2),
+                      inv_rd  = rcp(rd),
+                      cos_phi = local.x() * inv_rd,
+                      sin_phi = local.y() * inv_rd;
 
-        si.dp_dv = Vector3f(local.z() * cos_phi,
-                            local.z() * sin_phi,
-                            -rd);
+                si.dp_dv = Vector3f(local.z() * cos_phi,
+                                    local.z() * sin_phi,
+                                    -rd);
 
-        Mask singularity_mask = active && eq(rd, 0.f);
-        if (unlikely(any(singularity_mask)))
-            si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
+                Mask singularity_mask = active && eq(rd, 0.f);
+                if (unlikely(any(singularity_mask)))
+                    si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
-        si.dp_du = m_to_world * si.dp_du * (2.f * math::Pi<Float>);
-        si.dp_dv = m_to_world * si.dp_dv * math::Pi<Float>;
+                si.dp_du = m_to_world * si.dp_du * (2.f * math::Pi<Float>);
+                si.dp_dv = m_to_world * si.dp_dv * math::Pi<Float>;
+            }
+        }
 
         if (m_flip_normals)
             si.sh_frame.n = -si.sh_frame.n;
 
         si.n = si.sh_frame.n;
-        si.time = ray.time;
 
-        si_out[active] = si;
-    }
+        if (has_flag(flags, HitComputeFlags::dNSdUV)) {
+            ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
+            si.dn_du = si.dp_du * inv_radius;
+            si.dn_dv = si.dp_dv * inv_radius;
+        }
 
-    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
-                                                    bool /*shading_frame*/,
-                                                    Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
-        ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
-        return { si.dp_du * inv_radius, si.dp_dv * inv_radius };
+        return si;
     }
 
     //! @}

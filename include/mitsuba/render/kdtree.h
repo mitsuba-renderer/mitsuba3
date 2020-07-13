@@ -2066,19 +2066,17 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE std::pair<Mask, Float> ray_intersect(const Ray3f &ray,
-                                                    Float *cache,
-                                                    Mask active) const {
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                                   Mask active) const {
         ENOKI_MARK_USED(active);
         if constexpr (!is_array_v<Float>)
-            return ray_intersect_scalar<ShadowRay>(ray, cache);
+            return ray_intersect_scalar<ShadowRay>(ray);
         else
-            return ray_intersect_packet<ShadowRay>(ray, cache, active);
+            return ray_intersect_packet<ShadowRay>(ray, active);
     }
 
     template <bool ShadowRay>
-    MTS_INLINE std::pair<bool, Float> ray_intersect_scalar(Ray3f ray,
-                                                           Float *cache) const {
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_scalar(Ray3f ray) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2091,8 +2089,8 @@ public:
         KDStackEntry stack[MTS_KD_MAXDEPTH];
         int32_t stack_index = 0;
 
-        // True if an intersection has been found
-        bool hit = false;
+        // Resulting intersection struct
+        PreliminaryIntersection3f pi;
 
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
@@ -2144,18 +2142,16 @@ public:
                 for (Index i = prim_start; i < prim_end; i++) {
                     Index prim_index = m_indices[i];
 
-                    bool prim_hit;
-                    Float prim_t;
-                    std::tie(prim_hit, prim_t) =
-                        intersect_prim<ShadowRay>(prim_index, ray, cache, true);
+                    PreliminaryIntersection3f prim_pi =
+                        intersect_prim<ShadowRay>(prim_index, ray, true);
 
-                    if (unlikely(prim_hit)) {
-                        if (ShadowRay)
-                            return { true, prim_t };
+                    if (unlikely(prim_pi.is_valid())) {
+                        if constexpr (ShadowRay)
+                            return prim_pi;
 
-                        Assert(prim_t >= ray.mint && prim_t <= ray.maxt);
-                        ray.maxt = prim_t;
-                        hit = true;
+                        Assert(prim_pi.t >= ray.mint && prim_pi.t <= ray.maxt);
+                        pi = prim_pi;
+                        ray.maxt = pi.t;
                     }
                 }
             }
@@ -2170,13 +2166,13 @@ public:
                 break;
             }
         }
-        return { hit, hit ? ray.maxt : math::Infinity<Float> };
+
+        return pi;
     }
 
     template <bool ShadowRay>
-    MTS_INLINE std::pair<Mask, Float> ray_intersect_packet(Ray3f ray,
-                                                           Float *cache,
-                                                           Mask active) const {
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_packet(Ray3f ray,
+                                                              Mask active) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2191,8 +2187,8 @@ public:
         KDStackEntry stack[MTS_KD_MAXDEPTH];
         int32_t stack_index = 0;
 
-        // True if an intersection has been found
-        Mask hit = false;
+        // Resulting intersection struct
+        PreliminaryIntersection3f pi;
 
         const KDNode *node = m_nodes.get();
 
@@ -2204,7 +2200,7 @@ public:
         while (true) {
             active = active && (maxt >= mint);
             if (ShadowRay)
-                active = active && !hit;
+                active = active && !pi.is_valid();
 
             if (likely(any(active))) {
                 if (likely(!node->leaf())) { // Inner node
@@ -2270,16 +2266,17 @@ public:
                     for (Index i = prim_start; i < prim_end; i++) {
                         Index prim_index = m_indices[i];
 
-                        Mask prim_hit;
-                        Float prim_t;
-                        std::tie(prim_hit, prim_t) =
-                            intersect_prim<ShadowRay>(prim_index, ray, cache, active);
+                        PreliminaryIntersection3f prim_pi =
+                            intersect_prim<ShadowRay>(prim_index, ray, active);
 
-                        if (!ShadowRay) {
-                            Assert(all(!prim_hit || (prim_t >= ray.mint && prim_t <= ray.maxt)));
-                            masked(ray.maxt, prim_hit) = prim_t;
+                        masked(pi, prim_pi.is_valid()) = prim_pi;
+
+                        if constexpr (!ShadowRay) {
+                            Assert(all(!prim_pi.is_valid() ||
+                                       (prim_pi.t >= ray.mint &&
+                                        prim_pi.t <= ray.maxt)));
+                            masked(ray.maxt, prim_pi.is_valid()) = prim_pi.t;
                         }
-                        hit |= prim_hit;
                     }
                 }
             }
@@ -2296,74 +2293,31 @@ public:
             }
         }
 
-        return { hit, select(hit, ray.maxt, math::Infinity<Float>) };
+        return pi;
     }
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
-    MTS_INLINE std::pair<Mask, Float> ray_intersect_naive(Ray3f ray,
-                                                          Float *cache,
-                                                          Mask active) const {
-        Float hit_t = math::Infinity<Float>;
-        Mask hit(false);
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_naive(Ray3f ray,
+                                                             Mask active) const {
+        PreliminaryIntersection3f pi;
 
         for (Size i = 0; i < primitive_count(); ++i) {
-            Mask prim_hit;
-            Float prim_t;
-            std::tie(prim_hit, prim_t) =
-                intersect_prim<ShadowRay>(i, ray, cache, active);
+            PreliminaryIntersection3f prim_pi =
+                intersect_prim<ShadowRay>(i, ray, active);
 
             if constexpr (is_array_v<Float>) {
-                masked(ray.maxt, prim_hit) = min(ray.maxt, prim_t);
-                masked(hit_t, prim_hit) = prim_t;
-            } else if (all(prim_hit)) {
-                hit_t = ray.maxt = prim_t;
+                masked(pi, prim_pi.is_valid()) = prim_pi;
+            } else if (prim_pi.is_valid()) {
+                pi = prim_pi;
+                ray.maxt = prim_pi.t;
             }
-            hit |= prim_hit;
-            if (ShadowRay && all(hit || !active))
+
+            if (ShadowRay && all(pi.is_valid() || !active))
                 break;
         }
 
-        return { hit, hit_t };
-    }
-
-    /**
-     * \brief Create a \ref SurfaceInteraction data structure by expanding the
-     * temporary information collected during \ref intersect_ray().
-     */
-    MTS_INLINE SurfaceInteraction3f create_surface_interaction(const Ray3f &ray,
-                                                               Float t,
-                                                               const Float *cache,
-                                                               Mask active = true) const {
-        using UInt     = uint_array_t<Float>;
-        using ShapePtr = replace_scalar_t<Float, const Shape *>;
-
-        UInt shape_index = reinterpret_array<UInt>(cache[0]);
-        UInt prim_index = reinterpret_array<UInt>(cache[1]);
-
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>(slices(active));
-
-        // Fill in basic information common to all shapes
-        si.t = t;
-        si.time = ray.time;
-        si.wavelengths = ray.wavelengths;
-        si.shape = gather<ShapePtr>(m_shapes.data(), shape_index, active);
-        si.prim_index = prim_index;
-        si.instance = nullptr;
-        si.duv_dx = si.duv_dy = zero<Point2f>();
-
-        // Ask shape(s) to fill in the rest using the cache
-        si.shape->fill_surface_interaction(ray, cache + 2, si, active);
-
-        // Gram-schmidt orthogonalization to compute local shading frame
-        si.sh_frame.s = normalize(
-            fnmadd(si.sh_frame.n, dot(si.sh_frame.n, si.dp_du), si.dp_du));
-        si.sh_frame.t = cross(si.sh_frame.n, si.sh_frame.s);
-
-        // Incident direction in local coordinates
-        si.wi = select(active, si.to_local(-ray.d), -ray.d);
-
-        return si;
+        return pi;
     }
 
     /// Return a human-readable string representation of the scene contents.
@@ -2405,54 +2359,36 @@ protected:
      * create a detailed intersection record.
      */
     template <bool ShadowRay = false>
-    MTS_INLINE std::pair<Mask, Float>
-    intersect_prim(Index prim_index, const Ray3f &ray,
-                   Float *cache, Mask active) const {
-        using UInt = uint_array_t<Float>;
-
-        Assert(ShadowRay || cache != nullptr,
-               "Standard rays (i.e. non-shadow rays) must provide a `cache`"
-               " pointer to store intersection data.");
-
+    MTS_INLINE PreliminaryIntersection3f
+    intersect_prim(Index prim_index, const Ray3f &ray, Mask active) const {
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
-        bool is_mesh = shape->is_mesh();
 
-        Mask hit;
-        Float u = 0.f, v = 0.f, t = 0.f;
+        PreliminaryIntersection3f pi;
 
-        if (is_mesh)
-            std::tie(hit, u, v, t) = ((const Mesh *) shape)
-                    ->ray_intersect_triangle(prim_index, ray, active);
-        else if (ShadowRay)
-            hit = shape->ray_test(ray, active);
-        else
-            std::tie(hit, t) = shape->ray_intersect(ray, cache + 2, active);
-
-        if (!ShadowRay && any(hit)) {
-            Float shape_index_v = reinterpret_array<Float>(UInt(shape_index));
-            Float prim_index_v = reinterpret_array<Float>(UInt(prim_index));
-
-            if constexpr (!is_array_v<Float>) {
-                cache[0] = shape_index_v;
-                cache[1] = prim_index_v;
+        if constexpr (ShadowRay) {
+            Mask hit;
+            if (shape->is_mesh()) {
+                const Mesh *mesh = (const Mesh *) shape;
+                hit = mesh->ray_intersect_triangle(prim_index, ray, active).is_valid();
             } else {
-                masked(cache[0], hit) = shape_index_v;
-                masked(cache[1], hit) = prim_index_v;
+                hit = shape->ray_test(ray, active);
             }
 
-            if (is_mesh) {
-                if constexpr (!is_array_v<Float>) {
-                    cache[2] = u;
-                    cache[3] = v;
-                } else {
-                    masked(cache[2], hit) = u;
-                    masked(cache[3], hit) = v;
-                }
+            pi.t = select(hit, Float(0.f), math::Infinity<Float>);
+            return pi;
+        } else {
+            if (shape->is_mesh()) {
+                const Mesh *mesh = (const Mesh *) shape;
+                pi = mesh->ray_intersect_triangle(prim_index, ray, active);
+            } else {
+                pi = shape->ray_intersect_preliminary(ray, active);
             }
+
+            pi.shape_index = shape_index;
+
+            return pi;
         }
-
-        return { hit, t };
     }
 
 protected:

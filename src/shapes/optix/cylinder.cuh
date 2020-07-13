@@ -63,18 +63,24 @@ extern "C" __global__ void __intersection__cylinder() {
 extern "C" __global__ void __closesthit__cylinder() {
     unsigned int launch_index = calculate_launch_index();
 
-    if (params.out_hit != nullptr) {
+    if (params.is_ray_test()) {
         params.out_hit[launch_index] = true;
     } else {
         const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
         OptixCylinderData *cylinder = (OptixCylinderData *)sbt_data->data;
 
-        /* Compute and store information describing the intersection. This is
-           very similar to Cylinder::fill_surface_interaction() */
-
         Vector3f ray_o = make_vector3f(optixGetWorldRayOrigin());
         Vector3f ray_d = make_vector3f(optixGetWorldRayDirection());
         float t = optixGetRayTmax();
+
+        // Early return for ray_intersect_preliminary call
+        if (params.is_ray_intersect_preliminary()) {
+            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, Vector2f(), t);
+            return;
+        }
+
+        /* Compute and store information describing the intersection. This is
+           very similar to Cylinder::compute_surface_interaction() */
 
         Vector3f p = fmaf(t, ray_d, ray_o);
 
@@ -82,29 +88,32 @@ extern "C" __global__ void __closesthit__cylinder() {
 
         float phi = atan2(local.y(), local.x());
         if (phi < 0.f)
-            phi += 2.f * M_PI;
+            phi += TwoPi;
 
-        Vector2f uv = Vector2f(phi / (2.f * M_PI), local.z() / cylinder->length);
+        Vector2f uv = Vector2f(phi * InvTwoPi, local.z() / cylinder->length);
 
-        Vector3f dp_du = 2.f * M_PI * Vector3f(-local.y(), local.x(), 0.f);
-        Vector3f dp_dv = Vector3f(0.f, 0.f, cylinder->length);
+        Vector3f ng, ns, dp_du, dp_dv, dn_du, dn_dv;
+
+        dp_du = TwoPi * Vector3f(-local.y(), local.x(), 0.f);
+        dp_dv = Vector3f(0.f, 0.f, cylinder->length);
         dp_du = cylinder->to_world.transform_vector(dp_du);
         dp_dv = cylinder->to_world.transform_vector(dp_dv);
-        Vector3f ns = Vector3f(normalize(cross(dp_du, dp_dv)));
+        ns = Vector3f(normalize(cross(dp_du, dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
-           intersection point */
+        intersection point */
         p += ns * (cylinder->radius - norm(Vector2f(local.x(), local.y())));
 
         if (cylinder->flip_normals)
             ns *= -1.f;
 
-        Vector3f ng = ns;
+        ng = ns;
 
-        write_output_params(params, launch_index,
-                            sbt_data->shape_ptr,
-                            optixGetPrimitiveIndex(),
-                            p, uv, ns, ng, dp_du, dp_dv, t);
+        dn_du = dp_du / (cylinder->radius * (cylinder->flip_normals ? -1.f : 1.f));
+        dn_dv = Vector3f(0.f);
+
+        write_output_si_params(params, launch_index, sbt_data->shape_ptr,
+                               0, p, uv, ns, ng, dp_du, dp_dv, dn_du, dn_dv, t);
     }
 }
 #endif

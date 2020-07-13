@@ -63,6 +63,7 @@ MTS_PY_DECLARE(Integrator);
 MTS_PY_DECLARE(Interaction);
 MTS_PY_DECLARE(SurfaceInteraction);
 MTS_PY_DECLARE(MediumInteraction);
+MTS_PY_DECLARE(PreliminaryIntersection);
 MTS_PY_DECLARE(Medium);
 MTS_PY_DECLARE(mueller);
 MTS_PY_DECLARE(MicrofacetDistribution);
@@ -96,6 +97,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Interaction);
     MTS_PY_IMPORT(SurfaceInteraction);
     MTS_PY_IMPORT(MediumInteraction);
+    MTS_PY_IMPORT(PreliminaryIntersection);
     MTS_PY_IMPORT(PositionSample);
     MTS_PY_IMPORT(DirectionSample);
     MTS_PY_IMPORT(Medium);

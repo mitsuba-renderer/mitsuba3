@@ -123,3 +123,61 @@ def test04_surface_area(variant_scalar_rgb):
                                   [0, 0, 0, 1]])
     })
     assert ek.allclose(rect.surface_area(), 2.0 * 2.0)
+
+
+def test05_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_rgb):
+    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+
+    shape = xml.load_dict({'type' : 'rectangle'})
+
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    pi = shape.ray_intersect_preliminary(ray)
+
+    ek.set_requires_gradient(ray.o)
+    ek.set_requires_gradient(ray.d)
+
+    # If the ray origin is shifted along the x-axis, so does si.p
+    si = pi.compute_surface_interaction(ray)
+    ek.forward(ray.o.x)
+    assert ek.allclose(ek.gradient(si.p), [1, 0, 0])
+
+    # If the ray origin is shifted along the y-axis, so does si.p
+    si = pi.compute_surface_interaction(ray)
+    ek.forward(ray.o.y)
+    assert ek.allclose(ek.gradient(si.p), [0, 1, 0])
+
+    # If the ray origin is shifted along the x-axis, so does si.uv
+    si = pi.compute_surface_interaction(ray)
+    ek.forward(ray.o.x)
+    assert ek.allclose(ek.gradient(si.uv), [0.5, 0])
+
+    # If the ray origin is shifted along the z-axis, so does si.t
+    si = pi.compute_surface_interaction(ray)
+    ek.forward(ray.o.z)
+    assert ek.allclose(ek.gradient(si.t), -1)
+
+    # If the ray direction is shifted along the x-axis, so does si.p
+    si = pi.compute_surface_interaction(ray)
+    ek.forward(ray.d.x)
+    assert ek.allclose(ek.gradient(si.p), [10, 0, 0])
+
+
+def test06_differentiable_surface_interaction_ray_backward(variant_gpu_autodiff_rgb):
+    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+
+    shape = xml.load_dict({'type' : 'rectangle'})
+
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    pi = shape.ray_intersect_preliminary(ray)
+
+    ek.set_requires_gradient(ray.o)
+
+    # If si.p is shifted along the x-axis, so does the ray origin
+    si = pi.compute_surface_interaction(ray)
+    ek.backward(si.p.x)
+    assert ek.allclose(ek.gradient(ray.o), [1, 0, 0])
+
+    # If si.t is changed, so does the ray origin along the z-axis
+    si = pi.compute_surface_interaction(ray)
+    ek.backward(si.t)
+    assert ek.allclose(ek.gradient(ray.o), [0, 0, -1])

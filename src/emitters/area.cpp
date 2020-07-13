@@ -75,8 +75,9 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = math::Infinity<Float>;
 
-        SurfaceInteraction3f si;
         Float pdf = 1.f;
 
         // 1. Two strategies to sample spatial component based on 'm_radiance'

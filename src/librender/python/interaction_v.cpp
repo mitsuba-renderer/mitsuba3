@@ -43,6 +43,8 @@ void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
             res.sh_frame    = slice(si.sh_frame, i);
             res.dp_du       = slice(si.dp_du, i);
             res.dp_dv       = slice(si.dp_dv, i);
+            res.dn_du       = slice(si.dn_du, i);
+            res.dn_dv       = slice(si.dn_dv, i);
             res.duv_dx      = slice(si.duv_dx, i);
             res.duv_dy      = slice(si.duv_dy, i);
             res.wi          = slice(si.wi, i);
@@ -68,6 +70,8 @@ void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
             slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
             slice(r.dp_du, i)       = slice(r2.dp_du, 0);
             slice(r.dp_dv, i)       = slice(r2.dp_dv, 0);
+            slice(r.dn_du, i)       = slice(r2.dn_du, 0);
+            slice(r.dn_dv, i)       = slice(r2.dn_dv, 0);
             slice(r.duv_dx, i)      = slice(r2.duv_dx, 0);
             slice(r.duv_dy, i)      = slice(r2.duv_dy, 0);
             slice(r.wi, i)          = slice(r2.wi, 0);
@@ -100,12 +104,15 @@ MTS_PY_EXPORT(SurfaceInteraction) {
         .def_field(SurfaceInteraction3f, sh_frame,   D(SurfaceInteraction, sh_frame))
         .def_field(SurfaceInteraction3f, dp_du,      D(SurfaceInteraction, dp_du))
         .def_field(SurfaceInteraction3f, dp_dv,      D(SurfaceInteraction, dp_dv))
+        .def_field(SurfaceInteraction3f, dn_du,      D(SurfaceInteraction, dn_du))
+        .def_field(SurfaceInteraction3f, dn_dv,      D(SurfaceInteraction, dn_dv))
         .def_field(SurfaceInteraction3f, duv_dx,     D(SurfaceInteraction, duv_dx))
         .def_field(SurfaceInteraction3f, duv_dy,     D(SurfaceInteraction, duv_dy))
         .def_field(SurfaceInteraction3f, wi,         D(SurfaceInteraction, wi))
         .def_field(SurfaceInteraction3f, prim_index, D(SurfaceInteraction, prim_index))
         .def_field(SurfaceInteraction3f, instance,   D(SurfaceInteraction, instance))
-        // // Methods
+
+        // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
         .def(py::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
@@ -133,11 +140,12 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             "ray"_a, D(SurfaceInteraction, bsdf))
         .def("bsdf", py::overload_cast<>(&SurfaceInteraction3f::bsdf, py::const_),
             D(SurfaceInteraction, bsdf, 2))
-        .def("compute_partials", &SurfaceInteraction3f::compute_partials, "ray"_a,
-            D(SurfaceInteraction, compute_partials))
+        .def("compute_uv_partials", &SurfaceInteraction3f::compute_uv_partials, "ray"_a,
+            D(SurfaceInteraction, compute_uv_partials))
         .def("has_uv_partials", &SurfaceInteraction3f::has_uv_partials,
             D(SurfaceInteraction, has_uv_partials))
-        // .def("normal_derivative", &SurfaceInteraction3f::normal_derivative, D(SurfaceInteraction, normal_derivative)) // TODO
+        .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
+            D(SurfaceInteraction, has_n_partials))
         .def_repr(SurfaceInteraction3f);
 
     // Manually bind the slicing operators to handle ShapePtr properly
@@ -212,4 +220,34 @@ MTS_PY_EXPORT(MediumInteraction) {
 
     // Manually bind the slicing operators to handle ShapePtr properly
     bind_slicing_operator_mediuminteraction<MediumInteraction3f>(inter);
+}
+
+MTS_PY_EXPORT(PreliminaryIntersection) {
+    MTS_PY_IMPORT_TYPES_DYNAMIC()
+
+    m.def("has_flag", [](HitComputeFlags f0, HitComputeFlags f1) { return has_flag(f0, f1); });
+
+    auto pi =
+        py::class_<PreliminaryIntersection3f>(m, "PreliminaryIntersection3f",
+                                              D(PreliminaryIntersection))
+        // Members
+        .def_field(PreliminaryIntersection3f, t,           D(PreliminaryIntersection, t))
+        .def_field(PreliminaryIntersection3f, prim_uv,     D(PreliminaryIntersection, prim_uv))
+        .def_field(PreliminaryIntersection3f, prim_index,  D(PreliminaryIntersection, prim_index))
+        .def_field(PreliminaryIntersection3f, shape_index, D(PreliminaryIntersection, shape_index))
+        .def_field(PreliminaryIntersection3f, shape,       D(PreliminaryIntersection, shape))
+        .def_field(PreliminaryIntersection3f, instance,    D(PreliminaryIntersection, instance))
+
+        // Methods
+        .def(py::init<>(), D(PreliminaryIntersection, PreliminaryIntersection))
+        .def("is_valid", &PreliminaryIntersection3f::is_valid, D(PreliminaryIntersection, is_valid))
+        .def_repr(PreliminaryIntersection3f);
+
+    // Do not binding this method for packet variants
+    if constexpr (!(is_dynamic_v<Float> && !is_cuda_array_v<Float>))
+        pi.def("compute_surface_interaction", &PreliminaryIntersection3f::compute_surface_interaction,
+               D(PreliminaryIntersection, compute_surface_interaction),
+               "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true);
+
+    // TODO bind slicing operator
 }

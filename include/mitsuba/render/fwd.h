@@ -37,30 +37,32 @@ template <typename Float, typename Spectrum> struct PositionSample;
 template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
+template <typename Float, typename Spectrum> struct PreliminaryIntersection;
 template <typename Float, typename Spectrum> struct BSDFSample3;
 template <typename Float, typename Spectrum> struct PhaseFunctionContext;
 
 
 template <typename Float_, typename Spectrum_> struct RenderAliases {
-    using Float                  = Float_;
-    using Spectrum               = Spectrum_;
+    using Float                     = Float_;
+    using Spectrum                  = Spectrum_;
 
-    using Wavelength             = wavelength_t<Spectrum>;
-    using UnpolarizedSpectrum    = depolarize_t<Spectrum>;
+    using Wavelength                = wavelength_t<Spectrum>;
+    using UnpolarizedSpectrum       = depolarize_t<Spectrum>;
 
-    using StokesVector4f         = StokesVector<UnpolarizedSpectrum>;
-    using MuellerMatrix4f        = MuellerMatrix<UnpolarizedSpectrum>;
+    using StokesVector4f            = StokesVector<UnpolarizedSpectrum>;
+    using MuellerMatrix4f           = MuellerMatrix<UnpolarizedSpectrum>;
 
-    using Ray3f                  = Ray<Point<Float, 3>, Spectrum>;
-    using RayDifferential3f      = RayDifferential<Point<Float, 3>, Spectrum>;
+    using Ray3f                     = Ray<Point<Float, 3>, Spectrum>;
+    using RayDifferential3f         = RayDifferential<Point<Float, 3>, Spectrum>;
 
-    using PositionSample3f       = PositionSample<Float, Spectrum>;
-    using DirectionSample3f      = DirectionSample<Float, Spectrum>;
-    using Interaction3f          = Interaction<Float, Spectrum>;
-    using SurfaceInteraction3f   = SurfaceInteraction<Float, Spectrum>;
-    using MediumInteraction3f    = MediumInteraction<Float, Spectrum>;
-    using BSDFSample3f           = BSDFSample3<Float, Spectrum>;
-    using PhaseFunctionContext   = mitsuba::PhaseFunctionContext<Float, Spectrum>;
+    using PositionSample3f          = PositionSample<Float, Spectrum>;
+    using DirectionSample3f         = DirectionSample<Float, Spectrum>;
+    using Interaction3f             = Interaction<Float, Spectrum>;
+    using SurfaceInteraction3f      = SurfaceInteraction<Float, Spectrum>;
+    using MediumInteraction3f       = MediumInteraction<Float, Spectrum>;
+    using PreliminaryIntersection3f = PreliminaryIntersection<Float, Spectrum>;
+    using BSDFSample3f              = BSDFSample3<Float, Spectrum>;
+    using PhaseFunctionContext      = mitsuba::PhaseFunctionContext<Float, Spectrum>;
 
     /// Strip away any masking-related wrappers from 'Float' and 'Spectrum'
     using FloatU                 = underlying_t<Float>;
@@ -113,12 +115,13 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 
 #define MTS_IMPORT_TYPES(...)                                                                      \
     MTS_IMPORT_RENDER_BASIC_TYPES()                                                                \
-    using PositionSample3f     = typename RenderAliases::PositionSample3f;                         \
-    using DirectionSample3f    = typename RenderAliases::DirectionSample3f;                        \
-    using Interaction3f        = typename RenderAliases::Interaction3f;                            \
-    using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;                     \
-    using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;                      \
-    using BSDFSample3f         = typename RenderAliases::BSDFSample3f;                             \
+    using PositionSample3f          = typename RenderAliases::PositionSample3f;                    \
+    using DirectionSample3f         = typename RenderAliases::DirectionSample3f;                   \
+    using Interaction3f             = typename RenderAliases::Interaction3f;                       \
+    using SurfaceInteraction3f      = typename RenderAliases::SurfaceInteraction3f;                \
+    using MediumInteraction3f       = typename RenderAliases::MediumInteraction3f;                 \
+    using PreliminaryIntersection3f = typename RenderAliases::PreliminaryIntersection3f;           \
+    using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
     ENOKI_USING_TYPES(MTS_IMPORT_TYPES_HELPER(__VA_ARGS__))
 
 #define MTS_IMPORT_OBJECT_TYPES()                                                                  \

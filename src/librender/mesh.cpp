@@ -409,16 +409,14 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     Ray3f ray(Point3f(uv.x(), uv.y(), -1), Vector3f(0, 0, 1), 0, 0);
 
-    /// TODO: lighter weight ray intersection would be good, don't care about most fields
-    SurfaceInteraction3f si = m_parameterization->ray_intersect(ray, active);
-    if (none_or<false>(si.is_valid()))
-        return si;
+    PreliminaryIntersection3f pi = m_parameterization->ray_intersect_preliminary(ray, active);
 
-    Float cache[2] = { si.uv.x(), si.uv.y() };
-    fill_surface_interaction(ray, cache, si, active && si.is_valid());
-    si.shape = this;
+    if (none_or<false>(pi.is_valid()))
+        return SurfaceInteraction3f();
 
-    return si;
+    pi.shape = this;
+
+    return pi.compute_surface_interaction(ray, HitComputeFlags::All, active);
 }
 
 MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {
@@ -453,17 +451,29 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
     return {w, u, v};
 }
 
-MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /*ray*/,
-                                                                 const Float *cache,
-                                                                 SurfaceInteraction3f &si,
-                                                                 Mask active) const {
-    // Barycentric coordinates within triangle
-    Float b1 = cache[0],
-          b2 = cache[1];
+MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
+Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
+                                                   PreliminaryIntersection3f pi,
+                                                   HitComputeFlags flags,
+                                                   Mask active) const {
+    MTS_MASK_ARGUMENT(active);
 
+    bool differentiable = false;
+    if constexpr (is_diff_array_v<Float>)
+        differentiable = requires_gradient(m_vertex_positions_buf) ||
+                         requires_gradient(ray.o) || requires_gradient(ray.d);
+
+    // Recompute ray intersection to get differentiable prim_uv and t
+    if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+        pi = ray_intersect_triangle(pi.prim_index, ray, active);
+
+    active &= pi.is_valid();
+
+    Float b1 = pi.prim_uv.x();
+    Float b2 = pi.prim_uv.y();
     Float b0 = 1.f - b1 - b2;
 
-    auto fi = face_indices(si.prim_index, active);
+    auto fi = face_indices(pi.prim_index, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
@@ -472,85 +482,71 @@ MTS_VARIANT void Mesh<Float, Spectrum>::fill_surface_interaction(const Ray3f & /
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
 
+    SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+    si.t = select(active, pi.t, math::Infinity<Float>);
+
     // Re-interpolate intersection using barycentric coordinates
-    si.p[active] = p0 * b0 + p1 * b1 + p2 * b2;
+    si.p = p0 * b0 + p1 * b1 + p2 * b2;
 
     // Face normal
-    Normal3f n = normalize(cross(dp0, dp1));
-    si.n[active] = n;
+    si.n = normalize(cross(dp0, dp1));
 
     // Texture coordinates (if available)
-    auto [dp_du, dp_dv] = coordinate_system(n);
-    Point2f uv(b1, b2);
-    if (has_vertex_texcoords()) {
+    si.uv = Point2f(b1, b2);
+    std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
+    if (has_vertex_texcoords() && likely(has_flag(flags, HitComputeFlags::UV))) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
-        uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
+        si.uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
 
-        Vector2f duv0 = uv1 - uv0,
-                 duv1 = uv2 - uv0;
+        if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
+            Vector2f duv0 = uv1 - uv0,
+                     duv1 = uv2 - uv0;
 
-        Float det     = fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
-              inv_det = rcp(det);
+            Float det     = fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
+                  inv_det = rcp(det);
 
-        Mask valid = neq(det, 0.f);
+            Mask valid = neq(det, 0.f);
 
-        dp_du[valid] = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
-        dp_dv[valid] = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
+            si.dp_du[valid] = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
+            si.dp_dv[valid] = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
+        }
     }
-    si.uv[active] = uv;
 
     // Shading normal (if available)
-    if (has_vertex_normals()) {
+    if (has_vertex_normals() && likely(has_flag(flags, HitComputeFlags::ShadingFrame))) {
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
-        n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
+        si.sh_frame.n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
+
+        si.dn_du = si.dn_dv = zero<Vector3f>();
+        if (has_flag(flags, HitComputeFlags::dNSdUV)) {
+            /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
+               with respect to [u, v] in the local triangle parameterization.
+
+               Since d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
+                   - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
+            */
+
+            Normal3f N = b0 * n1 + b1 * n2 + b2 * n0;
+            Float il = rsqrt(squared_norm(N));
+            N *= il;
+
+            si.dn_du = (n1 - n0) * il;
+            si.dn_dv = (n2 - n0) * il;
+
+            si.dn_du = fnmadd(N, dot(N, si.dn_du), si.dn_du);
+            si.dn_dv = fnmadd(N, dot(N, si.dn_dv), si.dn_dv);
+        }
+    } else {
+        si.sh_frame.n = si.n;
     }
 
-    si.sh_frame.n[active] = n;
-
-    // Tangents
-    si.dp_du[active] = dp_du;
-    si.dp_dv[active] = dp_dv;
-}
-
-MTS_VARIANT std::pair<typename Mesh<Float, Spectrum>::Vector3f, typename Mesh<Float, Spectrum>::Vector3f>
-Mesh<Float, Spectrum>::normal_derivative(const SurfaceInteraction3f &si, bool shading_frame,
-                                         Mask active) const {
-    Assert(has_vertex_normals());
-
-    if (!shading_frame)
-        return { zero<Vector3f>(), zero<Vector3f>() };
-
-    auto fi = face_indices(si.prim_index, active);
-    Point3f b = barycentric_coordinates(si, active);
-
-    Normal3f n0 = vertex_normal(fi[0], active),
-             n1 = vertex_normal(fi[1], active),
-             n2 = vertex_normal(fi[2], active);
-
-    /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
-       with respect to [u, v] in the local triangle parameterization.
-
-       Since d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
-         - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
-    */
-
-    Normal3f N(b[0] * n1 + b[1] * n2 + b[2] * n0);
-    Float il = rsqrt(squared_norm(N));
-    N *= il;
-
-    Vector3f dndu = (n1 - n0) * il;
-    Vector3f dndv = (n2 - n0) * il;
-
-    dndu = fnmadd(N, dot(N, dndu), dndu);
-    dndv = fnmadd(N, dot(N, dndv), dndv);
-
-    return { dndu, dndv };
+    return si;
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
@@ -877,6 +873,14 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
     }
 }
 
+MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
+    if constexpr (is_diff_array_v<Float>)
+        return requires_gradient(m_vertex_positions_buf) ||
+               requires_gradient(m_vertex_normals_buf) ||
+               requires_gradient(m_vertex_texcoords_buf);
+
+    return false;
+}
 
 MTS_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
 MTS_INSTANTIATE_CLASS(Mesh)

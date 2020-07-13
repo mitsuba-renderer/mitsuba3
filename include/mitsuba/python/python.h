@@ -36,6 +36,10 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 #define def_field(Class, Member, ...) \
     def_readwrite(#Member, &Class::Member, ##__VA_ARGS__)
 
+/// Shorthand notation for defining enum members
+#define def_value(Class, Value, ...) \
+    value(#Value, Class::Value, D(Class, Value), ##__VA_ARGS__)
+
 /// Shorthand notation for defining most kinds of methods
 #define def_method(Class, Function, ...) \
     def(#Function, &Class::Function, D(Class, Function), ##__VA_ARGS__)

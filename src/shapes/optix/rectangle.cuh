@@ -32,38 +32,42 @@ extern "C" __global__ void __intersection__rectangle() {
 extern "C" __global__ void __closesthit__rectangle() {
     unsigned int launch_index = calculate_launch_index();
 
-    if (params.out_hit != nullptr) {
+    if (params.is_ray_test()) { // ray_test
         params.out_hit[launch_index] = true;
     } else {
         const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
         OptixRectangleData *rect = (OptixRectangleData *)sbt_data->data;
 
-        /* Compute and store information describing the intersection. This is
-           very similar to Rectangle::fill_surface_interaction() */
-
-        Vector3f ns    = rect->ns;
-        Vector3f dp_du = rect->dp_du;
-        Vector3f dp_dv = rect->dp_dv;
-        Vector3f ng = ns;
-
         // Ray in world-space
         Vector3f ray_o_ = make_vector3f(optixGetWorldRayOrigin());
         Vector3f ray_d_ = make_vector3f(optixGetWorldRayDirection());
+        float t = optixGetRayTmax();
 
         // Ray in object-space
         Vector3f ray_o = rect->to_object.transform_point(ray_o_);
         Vector3f ray_d = rect->to_object.transform_vector(ray_d_);
 
-        float t = -ray_o.z() / ray_d.z();
-        Vector3f p = ray_o_ + ray_d_ * t;
-
         Vector3f local = fmaf(t, ray_d, ray_o);
-        Vector2f uv = 0.5f * Vector2f(local.x(), local.y()) + 0.5f;
+        Vector2f prim_uv = Vector2f(local.x(), local.y());
 
-        write_output_params(params, launch_index,
-                            sbt_data->shape_ptr,
-                            optixGetPrimitiveIndex(),
-                            p, uv, ns, ng, dp_du, dp_dv, t);
+        // Early return for ray_intersect_preliminary call
+        if (params.is_ray_intersect_preliminary()) {
+            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, prim_uv, t);
+            return;
+        }
+
+        /* Compute and store information describing the intersection. This is
+           very similar to Rectangle::compute_surface_interaction() */
+
+        Vector3f p     = ray_o_ + ray_d_ * t;
+        Vector2f uv    = 0.5f * prim_uv + 0.5f;
+        Vector3f ns    = rect->ns;
+        Vector3f ng    = ns;
+        Vector3f dp_du = rect->dp_du;
+        Vector3f dp_dv = rect->dp_dv;
+
+        write_output_si_params(params, launch_index, sbt_data->shape_ptr,
+                               0, p, uv, ns, ng, dp_du, dp_dv, Vector3f(0.f), Vector3f(0.f), t);
     }
 }
 #endif

@@ -21,16 +21,15 @@ MTS_PY_EXPORT(Shape) {
             "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
         .def("pdf_direction", vectorize(&Shape::pdf_direction),
             "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
-        .def("normal_derivative", vectorize(&Shape::normal_derivative),
-            "si"_a, "shading_frame"_a = true, "active"_a = true,
-            D(Shape, normal_derivative))
-        .def("ray_intersect",
-            vectorize(
-                py::overload_cast<const Ray3f &, Mask>(&Shape::ray_intersect, py::const_)),
-            "ray"_a, "active"_a = true, D(Shape, ray_intersect))
+        .def("ray_intersect_preliminary", vectorize(&Shape::ray_intersect_preliminary),
+             "ray"_a, "active"_a = true,
+             D(Shape, ray_intersect_preliminary))
+        .def("ray_intersect", vectorize(&Shape::ray_intersect),
+             "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true,
+             D(Shape, ray_intersect))
         .def("ray_test", vectorize(&Shape::ray_test), "ray"_a, "active"_a = true)
-        .def("fill_surface_interaction", &Shape::fill_surface_interaction,
-                "ray"_a, "cache"_a, "si"_a, "active"_a = true) // TODO vectorize this
+        .def("compute_surface_interaction", &Shape::compute_surface_interaction,
+                "ray"_a, "pi"_a, "flags"_a = HitComputeFlags::All, "active"_a = true)
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
         .def("bbox", py::overload_cast<ScalarUInt32>(
@@ -49,6 +48,7 @@ MTS_PY_EXPORT(Shape) {
                 "active"_a = true)
         .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
         .def("bsdf", py::overload_cast<>(&Shape::bsdf, py::const_))
+        .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count);
 

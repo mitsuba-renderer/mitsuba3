@@ -22,12 +22,14 @@ def test01_intersection_construction(variant_scalar_rgb):
     )
     si.dp_du = [18, 19, 20]
     si.dp_dv = [21, 22, 23]
+    si.dn_du = [18, 19, 20]
+    si.dn_dv = [21, 22, 23]
     si.duv_dx = [24, 25]
     si.duv_dy = [26, 27]
     si.wi = [31, 32, 33]
     si.prim_index = 34
     si.instance = None
-    assert si.sh_frame == Frame3f([9, 10, 11],[12, 13, 14],[15, 16, 17])
+    assert si.sh_frame == Frame3f([9, 10, 11], [12, 13, 14], [15, 16, 17])
     assert repr(si) == """SurfaceInteraction[
   t = 1,
   time = 2,
@@ -43,6 +45,8 @@ def test01_intersection_construction(variant_scalar_rgb):
   ],
   dp_du = [18, 19, 20],
   dp_dv = [21, 22, 23],
+  dn_du = [18, 19, 20],
+  dn_dv = [21, 22, 23],
   duv_dx = [24, 25],
   duv_dy = [26, 27],
   wi = [31, 32, 33],
@@ -76,7 +80,7 @@ def test02_intersection_partials(variant_scalar_rgb):
     si.n /= ek.norm(si.n)
     si.t = 0
 
-    si.compute_partials(r)
+    si.compute_uv_partials(r)
 
     # Positions reached via computed partials
     px1 = si.dp_du * si.duv_dx[0] + si.dp_dv * si.duv_dx[1]
@@ -94,12 +98,12 @@ def test02_intersection_partials(variant_scalar_rgb):
     assert(ek.allclose(py1, py2))
 
     si.dp_du = [0, 0, 0]
-    si.compute_partials(r)
+    si.compute_uv_partials(r)
 
     assert(ek.allclose(px1, px2))
     assert(ek.allclose(py1, py2))
 
-    si.compute_partials(r)
+    si.compute_uv_partials(r)
 
     assert(ek.allclose(si.duv_dx, [0, 0]))
     assert(ek.allclose(si.duv_dy, [0, 0]))

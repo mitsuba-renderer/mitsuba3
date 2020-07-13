@@ -9,16 +9,16 @@
 extern "C" __global__ void __raygen__rg() {
     unsigned int launch_index = calculate_launch_index();
 
-    Vector3f ro = Vector3f(params.in_ox[launch_index],
-                           params.in_oy[launch_index],
-                           params.in_oz[launch_index]),
-             rd = Vector3f(params.in_dx[launch_index],
-                           params.in_dy[launch_index],
-                           params.in_dz[launch_index]);
+    Vector3f ro = Vector3f(params.in_o[0][launch_index],
+                           params.in_o[1][launch_index],
+                           params.in_o[2][launch_index]),
+             rd = Vector3f(params.in_d[0][launch_index],
+                           params.in_d[1][launch_index],
+                           params.in_d[2][launch_index]);
     float mint = params.in_mint[launch_index],
           maxt = params.in_maxt[launch_index];
 
-    if (params.out_hit != nullptr) {
+    if (params.is_ray_test()) {
         if (!params.in_mask[launch_index]) {
             params.out_hit[launch_index] = false;
         } else {
@@ -51,7 +51,7 @@ extern "C" __global__ void __raygen__rg() {
 extern "C" __global__ void __miss__ms() {
     unsigned int launch_index = calculate_launch_index();
 
-    if (params.out_hit != nullptr) {
+    if (params.is_ray_test()) {
         params.out_hit[launch_index] = false;
     } else {
         params.out_shape_ptr[launch_index] = 0;

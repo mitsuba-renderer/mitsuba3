@@ -134,8 +134,8 @@ public:
      *    sizeof(Float[P])</tt> bytes) that must be supplied to cache
      *    information about the intersection.
      */
-    virtual std::pair<Mask, Float> ray_intersect(const Ray3f &ray, Float *cache,
-                                                 Mask active = true) const;
+    virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                                Mask active = true) const;
 
     /**
      * \brief Fast ray shadow test
@@ -146,8 +146,8 @@ public:
      *
      * No details about the intersection are returned, hence the function is
      * only useful for visibility queries. For most shapes, the implementation
-     * will simply forward the call to \ref ray_intersect(). When the shape
-     * actually contains a nested kd-tree, some optimizations are possible.
+     * will simply forward the call to \ref ray_intersect_preliminary(). When
+     * the shape actually contains a nested kd-tree, some optimizations are possible.
      *
      * \param ray
      *     The ray to be tested for an intersection
@@ -155,35 +155,46 @@ public:
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
     /**
-     * \brief Given a surface intersection found by \ref ray_intersect(), fill
-     * a \ref SurfaceInteraction data structure with detailed information
-     * describing the intersection.
+     * \brief Compute and return detailed information related to a surface interaction
      *
-     * The implementation should fill in the fields \c p, \c uv, \c n, \c
-     * sh_frame.n, \c dp_du, and \c dp_dv. The fields \c t, \c time, \c
-     * wavelengths, \c shape, \c prim_index, \c instance, and \c
-     * has_uv_partials will already have been initialized by the caller. The
-     * field \c wi is initialized by the caller following the call to \ref
-     * fill_surface_interaction(), and \c duv_dx, and \c duv_dy are left
-     * uninitialized.
+     * The implementation should at most compute the fields \c p, \c uv, \c n,
+     * \c sh_frame.n, \c dp_du, \c dp_dv, \c dn_du and \c dn_dv. The \c flags parameter
+     * specifies which of those fields should be computed.
      *
-     * \param cache
-     *     Cached information about the previously computed intersection.
+     * The fields \c t, \c time, \c wavelengths, \c shape, \c prim_index, \c instance,
+     * will already have been initialized by the caller. The field \c wi is initialized
+     * by the caller following the call to \ref compute_surface_interaction(), and
+     * \c duv_dx, and \c duv_dy are left uninitialized.
+     *
+     * \param ray
+     *      Ray associated with the ray intersection
+     * \param flags
+     *      Data structure carrying information about the ray intersection
+     * \param flags
+     *      Flags specifying which information should be computed
+     * \return
+     *      A data structure containing the detailed information
      */
-    virtual void fill_surface_interaction(const Ray3f &ray, const Float *cache,
-                                          SurfaceInteraction3f &si, Mask active = true) const;
+    virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                             PreliminaryIntersection3f pi,
+                                                             HitComputeFlags flags = HitComputeFlags::All,
+                                                             Mask active = true) const;
 
     /**
      * \brief Test for an intersection and return detailed information
      *
-     * This operation combines the prior \ref ray_intersect() and \ref
-     * fill_surface_interaction() operations in case intersection with a single
-     * shape is desired.
+     * This operation combines the prior \ref ray_intersect_preliminary() and
+     * \ref compute_surface_interaction() operations.
      *
      * \param ray
      *     The ray to be tested for an intersection
+     *
+     * \param flags
+     *     Describe how the detailed information should be computed
      */
-    SurfaceInteraction3f ray_intersect(const Ray3f &ray, Mask active = true) const;
+    SurfaceInteraction3f ray_intersect(const Ray3f &ray,
+                                       HitComputeFlags flags = HitComputeFlags::All,
+                                       Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -226,28 +237,6 @@ public:
      * The default implementation throws an exception.
      */
     virtual ScalarFloat surface_area() const;
-
-    /**
-     * \brief Return the derivative of the normal vector with respect to the UV
-     * parameterization
-     *
-     * This can be used to compute Gaussian and principal curvatures, amongst
-     * other things.
-     *
-     * \param si
-     *     Surface interaction associated with the query
-     *
-     * \param shading_frame
-     *     Specifies whether to compute the derivative of the
-     *     geometric normal \a or the shading normal of the surface
-     *
-     * \return
-     *     The partial derivatives of the normal vector with
-     *     respect to \c u and \c v.
-     */
-    virtual std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f &si,
-                                                            bool shading_frame = true,
-                                                            Mask active = true) const;
 
     /**
      * \brief Evaluate a specific shape attribute at the given surface interaction.
@@ -405,6 +394,9 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
+    /// Return whether shape's parameters require gradients (default implementation return false)
+    virtual bool parameters_grad_enabled() const;
+
     //! @}
     // =============================================================
 
@@ -446,8 +438,7 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
-    ENOKI_CALL_SUPPORT_METHOD(normal_derivative)
-    ENOKI_CALL_SUPPORT_METHOD(fill_surface_interaction)
+    ENOKI_CALL_SUPPORT_METHOD(compute_surface_interaction)
     ENOKI_CALL_SUPPORT_METHOD(eval_attribute)
     ENOKI_CALL_SUPPORT_METHOD(eval_attribute_1)
     ENOKI_CALL_SUPPORT_METHOD(eval_attribute_3)

@@ -67,7 +67,8 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children, get_children_string)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+                    get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -142,8 +143,8 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float *cache,
-                                         Mask active) const override {
+    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray_,
+                                                        Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
         Ray3f ray     = m_to_object.transform_affine(ray_);
@@ -155,14 +156,12 @@ public:
                         && t <= ray.maxt
                         && local.x()*local.x() + local.y()*local.y() <= 1;
 
-        t = select(active, t, Float(math::Infinity<Float>));
+        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+        pi.t = select(active, t, math::Infinity<Float>);
+        pi.prim_uv = Point2f(local.x(), local.y());
+        pi.shape = this;
 
-        if (cache) {
-            masked(cache[0], active) = local.x();
-            masked(cache[1], active) = local.y();
-        }
-
-        return { active, t };
+        return pi;
     }
 
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
@@ -178,49 +177,52 @@ public:
                       && local.x()*local.x() + local.y()*local.y() <= 1;
     }
 
-    void fill_surface_interaction(const Ray3f &ray_, const Float *cache,
-                                  SurfaceInteraction3f &si_out, Mask active) const override {
+    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                     PreliminaryIntersection3f pi,
+                                                     HitComputeFlags flags,
+                                                     Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-#if !defined(MTS_ENABLE_EMBREE)
-        Float local_x = cache[0];
-        Float local_y = cache[1];
-#else
-        ENOKI_MARK_USED(cache);
-        Ray3f ray     = m_to_object.transform_affine(ray_);
-        Float t       = -ray.o.z() * ray.d_rcp.z();
-        Point3f local = ray(t);
-        Float local_x = local.x();
-        Float local_y = local.y();
-#endif
+        bool differentiable = false;
+        if constexpr (is_diff_array_v<Float>)
+            differentiable = requires_gradient(ray.o) ||
+                             requires_gradient(ray.d) ||
+                             parameters_grad_enabled();
 
-        SurfaceInteraction3f si(si_out);
+        // Recompute ray intersection to get differentiable prim_uv and t
+        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+            pi = ray_intersect_preliminary(ray, active);
 
-        Float r = norm(Point2f(local_x, local_y)),
-              inv_r = rcp(r);
+        active &= pi.is_valid();
 
-        Float v = atan2(local_y, local_x) * math::InvTwoPi<Float>;
-        masked(v, v < 0.f) += 1.f;
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = select(active, pi.t, math::Infinity<Float>);
 
-        Float cos_phi = select(neq(r, 0.f), local_x * inv_r, 1.f),
-              sin_phi = select(neq(r, 0.f), local_y * inv_r, 0.f);
+        si.p = ray(pi.t);
 
-        si.dp_du      = m_to_world * Vector3f( cos_phi, sin_phi, 0.f);
-        si.dp_dv      = m_to_world * Vector3f(-sin_phi, cos_phi, 0.f);
+        if (likely(has_flag(flags, HitComputeFlags::UV))) {
+            Float r = norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
+                  inv_r = rcp(r);
+
+            Float v = atan2(pi.prim_uv.y(), pi.prim_uv.x()) * math::InvTwoPi<Float>;
+            masked(v, v < 0.f) += 1.f;
+            si.uv = Point2f(r, v);
+
+            if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
+                Float cos_phi = select(neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
+                      sin_phi = select(neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
+
+                si.dp_du = m_to_world * Vector3f( cos_phi, sin_phi, 0.f);
+                si.dp_dv = m_to_world * Vector3f(-sin_phi, cos_phi, 0.f);
+            }
+        }
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
-        si.uv         = Point2f(r, v);
-        si.p          = ray_(si.t);
-        si.time       = ray_.time;
 
-        si_out[active] = si;
-    }
+        si.dn_du = si.dn_dv = zero<Vector3f>();
 
-    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f & /*si*/,
-                                                    bool /*shading_frame*/,
-                                                    Mask /*active*/) const override {
-        return { Vector3f(0.f), Vector3f(0.f) };
+        return si;
     }
 
     void traverse(TraversalCallback *callback) override {

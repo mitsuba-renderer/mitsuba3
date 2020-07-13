@@ -67,7 +67,8 @@ The following XML snippet showcases a simple example of a textured rectangle:
 template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children, get_children_string)
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+                    get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -136,8 +137,8 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    std::pair<Mask, Float> ray_intersect(const Ray3f &ray_, Float *cache,
-                                         Mask active) const override {
+    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray_,
+                                                        Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
         Ray3f ray     = m_to_object.transform_affine(ray_);
@@ -150,14 +151,12 @@ public:
                         && abs(local.x()) <= 1.f
                         && abs(local.y()) <= 1.f;
 
-        t = select(active, t, Float(math::Infinity<Float>));
+        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+        pi.t = select(active, t, math::Infinity<Float>);
+        pi.prim_uv = Point2f(local.x(), local.y());
+        pi.shape = this;
 
-        if (cache) {
-            masked(cache[0], active) = local.x();
-            masked(cache[1], active) = local.y();
-        }
-
-        return { active, t };
+        return pi;
     }
 
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
@@ -174,40 +173,39 @@ public:
                       && abs(local.y()) <= 1.f;
     }
 
-    void fill_surface_interaction(const Ray3f &ray_, const Float *cache,
-                                  SurfaceInteraction3f &si_out, Mask active) const override {
+    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
+                                                     PreliminaryIntersection3f pi,
+                                                     HitComputeFlags flags,
+                                                     Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-#if !defined(MTS_ENABLE_EMBREE)
-        Float local_x = cache[0];
-        Float local_y = cache[1];
-#else
-        ENOKI_MARK_USED(cache);
-        Ray3f ray     = m_to_object.transform_affine(ray_);
-        Float t       = -ray.o.z() * ray.d_rcp.z();
-        Point3f local = ray(t);
-        Float local_x = local.x();
-        Float local_y = local.y();
-#endif
+        bool differentiable = false;
+        if constexpr (is_diff_array_v<Float>)
+            differentiable = requires_gradient(ray.o) ||
+                             requires_gradient(ray.d) ||
+                             parameters_grad_enabled();
 
-        SurfaceInteraction3f si(si_out);
+        // Recompute ray intersection to get differentiable prim_uv and t
+        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+            pi = ray_intersect_preliminary(ray, active);
+
+        active &= pi.is_valid();
+
+        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        si.t = select(active, pi.t, math::Infinity<Float>);
+
+        si.p = ray(pi.t);
 
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
         si.dp_du      = m_frame.s;
         si.dp_dv      = m_frame.t;
-        si.p          = ray_(si.t);
-        si.time       = ray_.time;
-        si.uv         = Point2f(fmadd(local_x, .5f, .5f),
-                                fmadd(local_y, .5f, .5f));
+        si.uv         = Point2f(fmadd(pi.prim_uv.x(), .5f, .5f),
+                                fmadd(pi.prim_uv.y(), .5f, .5f));
 
-        si_out[active] = si;
-    }
+        si.dn_du = si.dn_dv = zero<Vector3f>();
 
-    std::pair<Vector3f, Vector3f> normal_derivative(const SurfaceInteraction3f & /*si*/,
-                                                    bool /*shading_frame*/,
-                                                    Mask /*active*/) const override {
-        return { Vector3f(0.f), Vector3f(0.f) };
+        return si;
     }
 
     void traverse(TraversalCallback *callback) override {

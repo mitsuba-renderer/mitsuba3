@@ -53,6 +53,7 @@ add_mitsuba_python_library(render_ext
   emitter.cpp
   main.cpp
   bsdf.cpp
+  interaction.cpp
   microfacet.cpp
   phase.cpp
   spiral.cpp

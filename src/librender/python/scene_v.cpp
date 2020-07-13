@@ -33,14 +33,19 @@ MTS_PY_EXPORT(ShapeKDTree) {
 #endif
 }
 
-#if 1
 MTS_PY_EXPORT(Scene) {
     MTS_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
+        .def("ray_intersect_preliminary",
+             vectorize(&Scene::ray_intersect_preliminary),
+             "ray"_a, "active"_a = true, D(Scene, ray_intersect_preliminary))
         .def("ray_intersect",
-            vectorize(&Scene::ray_intersect),
-            "ray"_a, "active"_a = true, D(Scene, ray_intersect))
+             vectorize(py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, py::const_)),
+             "ray"_a, "active"_a = true, D(Scene, ray_intersect))
+        .def("ray_intersect",
+             vectorize(py::overload_cast<const Ray3f &, HitComputeFlags, Mask>(&Scene::ray_intersect, py::const_)),
+             "ray"_a, "flags"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_test",
             vectorize(&Scene::ray_test),
             "ray"_a, "active"_a = true)
@@ -56,7 +61,7 @@ MTS_PY_EXPORT(Scene) {
             vectorize(&Scene::pdf_emitter_direction),
             "ref"_a, "ds"_a, "active"_a = true)
         // Accessors
-        .def("bbox", &Scene::bbox, D(Scene, bbox))
+        .def_method(Scene, bbox)
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def_method(Scene, environment)
@@ -81,6 +86,6 @@ MTS_PY_EXPORT(Scene) {
                 return py::cast(o);
             },
             D(Scene, integrator))
+        .def_method(Scene, shapes_grad_enabled)
         .def("__repr__", &Scene::to_string);
 }
-#endif

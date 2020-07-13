@@ -7,11 +7,10 @@
 
 MTS_PY_EXPORT(PhaseFunctionExtras) {
     py::enum_<PhaseFunctionFlags>(m, "PhaseFunctionFlags", D(PhaseFunctionFlags))
-        .value("None", PhaseFunctionFlags::None, D(BSDFFlags, None))
-        .value("Isotropic", PhaseFunctionFlags::Isotropic, D(PhaseFunctionFlags, Isotropic))
-        .value("Anisotropic", PhaseFunctionFlags::Anisotropic,
-                D(PhaseFunctionFlags, Anisotropic))
-        .value("Microflake", PhaseFunctionFlags::Microflake, D(PhaseFunctionFlags, Microflake))
+        .def_value(PhaseFunctionFlags, None)
+        .def_value(PhaseFunctionFlags, Isotropic)
+        .def_value(PhaseFunctionFlags, Anisotropic)
+        .def_value(PhaseFunctionFlags, Microflake)
         .def(py::self == py::self)
         .def(py::self | py::self)
         .def(int() | py::self)
