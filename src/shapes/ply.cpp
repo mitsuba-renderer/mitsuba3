@@ -207,6 +207,9 @@ public:
                 m_vertex_normals_buf.managed();
                 m_vertex_texcoords_buf.managed();
 
+                if constexpr (is_cuda_array_v<Float>)
+                    cuda_sync();
+
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;
                 size_t i_packet_size    = i_struct_size * elements_per_packet;

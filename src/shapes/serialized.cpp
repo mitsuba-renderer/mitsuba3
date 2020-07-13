@@ -276,6 +276,9 @@ public:
         m_vertex_texcoords_buf.managed();
         m_faces_buf.managed();
 
+        if constexpr (is_cuda_array_v<Float>)
+            cuda_sync();
+
         bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
 
         read_helper(stream, double_precision, m_vertex_positions_buf.data(), 3);

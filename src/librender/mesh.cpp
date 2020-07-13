@@ -51,6 +51,9 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     m_vertex_normals_buf.managed();
     m_vertex_texcoords_buf.managed();
 
+    if constexpr (is_cuda_array_v<Float>)
+        cuda_sync();
+
     m_mesh = true;
     set_children();
 }
@@ -854,10 +857,15 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions_buf")) {
-        if (has_vertex_normals())
-            recompute_vertex_normals();
+        if constexpr (is_cuda_array_v<Float>) {
+            cuda_eval();
+            cuda_sync();
+        }
 
         recompute_bbox();
+
+        if (has_vertex_normals())
+            recompute_vertex_normals();
 
         if (!m_area_pmf.empty())
             m_area_pmf = DiscreteDistribution<Float>();

@@ -291,6 +291,9 @@ public:
         m_vertex_normals_buf.managed();
         m_vertex_texcoords_buf.managed();
 
+        if constexpr (is_cuda_array_v<Float>)
+            cuda_sync();
+
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;
 
