@@ -62,9 +62,6 @@ The following XML snippet showcases a simple example of a textured rectangle:
             </texture>
         </bsdf>
     </shape>
-
-.. warning:: This plugin is currently not supported by the OptiX raytracing backend.
-
  */
 
 template <typename Float, typename Spectrum>

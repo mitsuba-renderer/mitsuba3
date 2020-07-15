@@ -62,9 +62,6 @@ The following XML snippet instantiates an example of a textured disk shape:
             </texture>
         </bsdf>
     </shape>
-
-.. warning:: This plugin is currently not supported by the OptiX raytracing backend.
-
  */
 
 template <typename Float, typename Spectrum>

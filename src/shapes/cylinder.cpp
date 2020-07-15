@@ -69,9 +69,6 @@ A simple example for instantiating a cylinder, whose interior is visible:
             <bsdf type="diffuse"/>
         </bsdf>
     </shape>
-
-.. warning:: This plugin is currently not supported by the OptiX raytracing backend.
-
  */
 
 template <typename Float, typename Spectrum>

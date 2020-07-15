@@ -83,10 +83,6 @@ This makes it a good default choice for lighting new scenes.
    :caption: Spherical area light modeled using the :ref:`sphere <shape-sphere>` plugin
 .. subfigend::
    :label: fig-sphere-light
-
-
-.. warning:: This plugin is currently not supported by the OptiX raytracing backend.
-
  */
 
 template <typename Float, typename Spectrum>
