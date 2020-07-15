@@ -3,31 +3,36 @@ import pytest
 import enoki as ek
 
 
-def create_camera(o, d, fov=34, fov_axis='x', s_open=1.5, s_close=5):
-    from mitsuba.core.xml import load_string
-    return load_string("""<sensor version='2.0.0' type='perspective'>
-                              <float name='near_clip' value='1'/>
-                              <float name='far_clip' value='35'/>
-                              <float name='focus_distance' value='15'/>
-                              <float name='fov' value='{fov}'/>
-                              <string name='fov_axis' value='{fov_axis}'/>
-                              <float name='shutter_open' value='{so}'/>
-                              <float name='shutter_close' value='{sc}'/>
-                              <transform name="to_world">
-                                  <lookat origin="{ox}, {oy}, {oz}"
-                                          target="{tx}, {ty}, {tz}"
-                                          up    =" 0.0,  1.0,  0.0"/>
-                              </transform>
-                              <film type="hdrfilm">
-                                  <integer name="width" value="512"/>
-                                  <integer name="height" value="256"/>
-                              </film>
-                          </sensor> """.format(ox=o[0], oy=o[1], oz=o[2],
-                                               tx=o[0]+d[0], ty=o[1]+d[1], tz=o[2]+d[2],
-                                               fov=fov, fov_axis=fov_axis, so=s_open, sc=s_close))
+def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5):
+    from mitsuba.core.xml import load_dict
+    from mitsuba.core import ScalarTransform4f, ScalarVector3f
+    t = [o[0] + d[0], o[1] + d[1], o[2] + d[2]]
+
+    camera_dict = {
+        "type": "perspective",
+        "near_clip": 1.0,
+        "far_clip": 35.0,
+        "focus_distance": 15.0,
+        "fov": fov,
+        "fov_axis": fov_axis,
+        "shutter_open": s_open, 
+        "shutter_close": s_close,
+        "to_world": ScalarTransform4f.look_at(
+            origin=o,
+            target=t,
+            up=[0, 1, 0]
+        ),
+        "film": {
+            "type": "hdrfilm",
+            "width": 512,
+            "height": 256,
+        }
+    }
+
+    return load_dict(camera_dict)
 
 
-origins    = [[1.0, 0.0, 1.5], [1.0, 4.0, 1.5]]
+origins = [[1.0, 0.0, 1.5], [1.0, 4.0, 1.5]]
 directions = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]
 
 

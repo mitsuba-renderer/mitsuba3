@@ -5,52 +5,58 @@ import enoki as ek
 import mitsuba
 
 
-def example_shape(radius, center):
-    from mitsuba.core.xml import load_string
+def sensor_shape_dict(radius, center):
+    from mitsuba.core import ScalarTransform4f
 
-    xml = f"""
-    <shape version='2.0.0' type="sphere">
-        <float name="radius" value="{radius}"/>
-        <transform name="to_world">
-            <translate x="{center.x}" y="{center.y}" z="{center.z}"/>
-        </transform>
-        <sensor type="irradiancemeter">
-            <film type="hdrfilm">
-                <integer name="width" value="1"/>
-                <integer name="height" value="1"/>
-            </film>
-        </sensor>
-    </shape>
-    """
-    return load_string(xml)
+    d = {
+        "type": "sphere",
+        "radius": radius,
+        "to_world": ScalarTransform4f.translate(center),
+        "sensor": {
+            "type": "irradiancemeter",
+            "film": {
+                "type": "hdrfilm",
+                "width": 1,
+                "height": 1,
+                "rfilter": {"type": "box"}
+            },
+        }
+    }
+
+    return d
+
 
 def test_construct(variant_scalar_rgb):
-    """
-    We construct an irradiance meter attached to a sphere and assert that the
+    """We construct an irradiance meter attached to a sphere and assert that the
     following parameters get set correctly:
     - associated shape
     - film
     """
-    from mitsuba.core import Vector3f
-    center_v = Vector3f(0.0)
+    from mitsuba.core import ScalarVector3f
+    from mitsuba.core.xml import load_dict
+
+    center_v = ScalarVector3f(0.0)
     radius = 1.0
-    sphere = example_shape(radius, center_v)
+    sphere = load_dict(sensor_shape_dict(radius, center_v))
     sensor = sphere.sensor()
 
     assert sensor.shape() == sphere
     assert ek.allclose(sensor.film().size(), [1, 1])
 
 
-@pytest.mark.parametrize(("center", "radius"), [([2.0, 5.0, 8.3], 2.0), ([0.0, 0.0, 0.0], 1.0), ([1.0, 4.0, 0.0], 5.0)])
+@pytest.mark.parametrize(
+    ("center", "radius"),
+    [([2.0, 5.0, 8.3], 2.0), ([0.0, 0.0, 0.0], 1.0), ([1.0, 4.0, 0.0], 5.0)]
+)
 def test_sampling(variant_scalar_rgb, center, radius):
+    """We construct an irradiance meter attached to a sphere and assert that 
+    sampled rays originate at the sphere's surface
     """
-    We construct an irradiance meter attached to a sphere and assert that sampled
-    rays originate at the sphere's surface
-    """
-    from mitsuba.core import Vector3f
+    from mitsuba.core import ScalarVector3f
+    from mitsuba.core.xml import load_dict
 
-    center_v = Vector3f(center)
-    sphere = example_shape(radius, center_v)
+    center_v = ScalarVector3f(center)
+    sphere = load_dict(sensor_shape_dict(radius, center_v))
     sensor = sphere.sensor()
     num_samples = 100
 
@@ -59,12 +65,21 @@ def test_sampling(variant_scalar_rgb, center, radius):
     dir_samples = np.random.rand(num_samples, 2)
 
     for i in range(100):
-        ray = sensor.sample_ray_differential(0.0, wav_samples[i], pos_samples[i], dir_samples[i])[0]
+        ray = sensor.sample_ray_differential(
+            0.0, wav_samples[i], pos_samples[i], dir_samples[i])[0]
 
         # assert that the ray starts at the sphere surface
         assert ek.allclose(ek.norm(center_v - ray.o), radius)
         # assert that all rays point away from the sphere center
         assert ek.dot(ek.normalize(ray.o - center_v), ray.d) > 0.0
+
+
+def constant_emitter_dict(radiance):
+    return {
+        "type": "constant",
+        "radiance": {"type": "uniform", "value": radiance}
+    }
+
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
 def test_incoming_flux(variant_scalar_rgb, radiance):
@@ -77,39 +92,16 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     We expect the average value to be \\pi * L with L the radiance of the constant
     emitter.
     """
-    from mitsuba.core import Spectrum
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import Spectrum, ScalarVector3f
+    from mitsuba.core.xml import load_dict
 
-    sensor_xml = f"""
-    <shape version='2.0.0' type="sphere">
-        <float name="radius" value="1"/>
-        <transform name="to_world">
-            <translate x="0" y="0" z="0"/>
-        </transform>
-        <sensor type="irradiancemeter">
-            <film type="hdrfilm">
-                <integer name="width" value="1"/>
-                <integer name="height" value="1"/>
-            </film>
-        </sensor>
-    </shape>
-    """
+    scene_dict = {
+        "type": "scene",
+        "sensor": sensor_shape_dict(1, ScalarVector3f(0, 0, 0)),
+        "emitter": constant_emitter_dict(radiance)
+    }
 
-    emitter_xml = f"""
-    <emitter type="constant">
-        <spectrum name="radiance" type='uniform'>
-        	<float name="value" value="{radiance}"/>
-    	</spectrum>
-    </emitter>
-    """
-
-    scene_xml = f"""
-        <scene version="2.0.0">
-            {sensor_xml}
-            {emitter_xml}
-        </scene>
-    """
-    scene = load_string(scene_xml)
+    scene = load_dict(scene_dict)
     sensor = scene.sensors()[0]
 
     power_density_cum = 0.0
@@ -120,13 +112,16 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     dir_samples = np.random.rand(num_samples, 2)
 
     for i in range(100):
-        ray, weight = sensor.sample_ray_differential(0.0, wav_samples[i], pos_samples[i], dir_samples[i])
+        ray, weight = sensor.sample_ray_differential(
+            0.0, wav_samples[i], pos_samples[i], dir_samples[i])
 
         intersection = scene.ray_intersect(ray)
-        power_density_cum += weight * intersection.emitter(scene).eval(intersection)
+        power_density_cum += weight * \
+            intersection.emitter(scene).eval(intersection)
     power_density_avg = power_density_cum / float(num_samples)
 
     assert ek.allclose(power_density_avg, Spectrum(ek.pi * radiance))
+
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
 def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
@@ -140,59 +135,24 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     emitter.
     """
 
-    from mitsuba.core import Spectrum, Bitmap, Struct
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import Spectrum, Bitmap, Struct, ScalarVector3f
+    from mitsuba.core.xml import load_dict
 
-    sensor_xml = f"""
-    <shape version='2.0.0' type="sphere">
-        <float name="radius" value="1"/>
-        <transform name="to_world">
-            <translate x="0" y="0" z="0"/>
-        </transform>
-        <sensor type="irradiancemeter">
-            <film type="hdrfilm">
-                <integer name="width" value="1"/>
-                <integer name="height" value="1"/>
-            </film>
-        </sensor>
-    </shape>
-    """
+    scene_dict = {
+        "type": "scene",
+        "sensor": sensor_shape_dict(1, ScalarVector3f(0, 0, 0)),
+        "emitter": constant_emitter_dict(radiance),
+        "integrator": {"type": "path"}
+    }
 
-    emitter_xml = f"""
-    <emitter type="constant">
-        <spectrum name="radiance" type='uniform'>
-        	<float name="value" value="{radiance}"/>
-    	</spectrum>
-    </emitter>
-    """
-
-    integrator_xml = f"""
-    <integrator type="path">
-
-        <integer name="max_depth" value="-1"/>
-    </integrator>
-    """
-
-    sampler_xml = f"""
-     <sampler type="independent">
-          <integer name="sample_count" value="100"/>
-     </sampler>
-    """
-    scene_xml = f"""
-        <scene version="2.0.0">
-            {integrator_xml}
-            {sensor_xml}
-            {emitter_xml}
-            {sampler_xml}
-        </scene>
-    """
-    scene = load_string(scene_xml)
+    scene = load_dict(scene_dict)
     sensor = scene.sensors()[0]
 
     scene.integrator().render(scene, sensor)
     film = sensor.film()
 
-    img = film.bitmap(raw=True).convert(Bitmap.PixelFormat.Y, Struct.Type.Float32, srgb_gamma=False)
+    img = film.bitmap(raw=True).convert(Bitmap.PixelFormat.Y,
+                                        Struct.Type.Float32, srgb_gamma=False)
     image_np = np.array(img)
 
-    ek.allclose(image_np, (radiance*ek.pi))
+    ek.allclose(image_np, (radiance * ek.pi))
