@@ -1,12 +1,8 @@
-*Please prepend one of those options to the issue title and delete this section:*
-
-- 🐛 [Bug report]
-- ✨ [Feature request]
-- ❓ [General question]
+*Please add the labels (e.g. bug, feature request, ..) corresponding to this issue*
 
 ## Summary
 
-*Enter a brief description of your issue*
+*Please enter a brief description of your issue*
 
 ## System configuration
 
@@ -22,7 +18,7 @@
 
 ## Description
 
-*Enter the full description of your issue*
+*Please enter the full description of your issue*
 
 ## Steps to reproduce
 
