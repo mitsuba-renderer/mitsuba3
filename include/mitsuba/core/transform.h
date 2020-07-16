@@ -423,6 +423,10 @@ public:
         using Quaternion4f = Quaternion<Value>;
         using Vector3f     = Vector<Value, 3>;
 
+        static_assert(!std::is_integral_v<T>,
+                      "AnimatedTransform::eval() should be called with a "
+                      "floating point-typed `time` parameter");
+
         // TODO remove this (fix gather with Stride!=sizeof<float>)
         if constexpr (is_diff_array_v<T>) {
             return Transform<Point<T, 4>>(m_transform.matrix);
