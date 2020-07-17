@@ -104,6 +104,11 @@ public:
         m_flags = +EmitterFlags::DeltaPosition;
     }
 
+    Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
+                        Mask) const override {
+        return 0.f;
+    }
+
     Spectrum eval(const SurfaceInteraction3f & /*si*/,
                   Mask /*active*/) const override {
         return 0.f;
