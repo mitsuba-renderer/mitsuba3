@@ -179,6 +179,8 @@ public:
                 m_component_format = Struct::Type::Float32;
             }
         }
+
+        props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
     void set_destination_file(const fs::path &dest_file) override {
