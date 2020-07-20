@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/ray.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Ray) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()

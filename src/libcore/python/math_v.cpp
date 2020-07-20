@@ -2,8 +2,8 @@
 #include <enoki/morton.h>
 #include <enoki/special.h>
 #include <enoki/color.h>
-#include <mitsuba/python/python.h>
 #include <bitset>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(math) {
     MTS_PY_IMPORT_TYPES()

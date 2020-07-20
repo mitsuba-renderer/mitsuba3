@@ -1,7 +1,7 @@
 #include <mitsuba/core/properties.h>
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/phase.h>
+#include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PyPhaseFunction : public PhaseFunction<Float, Spectrum> {

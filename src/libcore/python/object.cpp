@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/plugin.h>
+#include <mitsuba/python/python.h>
 
 extern py::object cast_object(Object *o);
 

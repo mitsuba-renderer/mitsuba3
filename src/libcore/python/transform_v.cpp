@@ -2,8 +2,8 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <mitsuba/python/python.h>
 
 
 template <typename Float>

@@ -1,9 +1,9 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/progress.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/appender.h>
 #include <mitsuba/core/thread.h>
 #include <pybind11/eval.h>
+#include <mitsuba/python/python.h>
 
 /// Escape strings to make them HTML-safe
 std::string escape_html(const std::string& data) {

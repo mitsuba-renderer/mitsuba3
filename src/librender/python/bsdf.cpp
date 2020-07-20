@@ -1,7 +1,7 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(BSDFContext) {
     py::enum_<TransportMode>(m, "TransportMode", D(TransportMode))

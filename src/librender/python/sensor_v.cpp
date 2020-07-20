@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PySensor : public Sensor<Float, Spectrum> {

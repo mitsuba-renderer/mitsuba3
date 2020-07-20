@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/sampler.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Sampler) {
     MTS_PY_IMPORT_TYPES(Sampler)

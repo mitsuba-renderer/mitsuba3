@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/warp.h>
 #include <enoki/stl.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(warp) {
     MTS_PY_IMPORT_TYPES()

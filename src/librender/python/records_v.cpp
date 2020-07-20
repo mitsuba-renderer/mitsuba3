@@ -1,7 +1,7 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/python/python.h>
 
 template<typename Class, typename PyClass>
 void bind_set_object(PyClass &cl) {

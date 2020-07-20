@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(EmitterExtras) {
     py::enum_<EmitterFlags>(m, "EmitterFlags", D(EmitterFlags))

@@ -1,6 +1,6 @@
 #include <mitsuba/core/rfilter.h>
-#include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(rfilter) {
     py::enum_<FilterBoundaryCondition>(m, "FilterBoundaryCondition", D(FilterBoundaryCondition))

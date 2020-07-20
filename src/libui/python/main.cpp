@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/ui/texture.h>
+#include <mitsuba/python/python.h>
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, nanogui::ref<T>)
 

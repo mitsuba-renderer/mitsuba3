@@ -1,7 +1,7 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/distr_2d.h>
 #include <pybind11/numpy.h>
 #include <enoki/stl.h>
+#include <mitsuba/python/python.h>
 
 template <typename Warp> auto bind_warp(py::module &m,
         const char *name,

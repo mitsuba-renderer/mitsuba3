@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/logger.h>
+#include <mitsuba/python/python.h>
 
 using Caster = py::object(*)(mitsuba::Object *);
 

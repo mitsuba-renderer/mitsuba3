@@ -1,10 +1,10 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Interaction) {
     MTS_PY_IMPORT_TYPES_DYNAMIC()

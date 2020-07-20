@@ -19,7 +19,7 @@ MTS_PY_EXPORT(ShapeKDTree) {
             if (i >= s.primitive_count())
                 throw py::index_error();
             Shape *shape = s.shape(i);
-            if (shape->class_()->derives_from(MTS_CLASS(Mesh)))
+            if (shape->is_mesh())
                 return py::cast(static_cast<Mesh *>(s.shape(i)));
             else
                 return py::cast(s.shape(i));

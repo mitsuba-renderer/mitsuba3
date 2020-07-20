@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/vector.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(BoundingBox);

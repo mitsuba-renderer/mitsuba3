@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/mueller.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(mueller) {
     MTS_PY_IMPORT_TYPES()

@@ -1,6 +1,6 @@
 #include <mitsuba/core/qmc.h>
-#include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(qmc) {
     MTS_PY_IMPORT_TYPES()

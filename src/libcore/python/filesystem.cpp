@@ -1,5 +1,5 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/filesystem.h>
+#include <mitsuba/python/python.h>
 
 using namespace mitsuba::filesystem;
 

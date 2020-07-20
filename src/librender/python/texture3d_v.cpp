@@ -1,7 +1,7 @@
 #include <mitsuba/core/properties.h>
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/spectrum.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Volume) {
     MTS_PY_CLASS(Volume, Object)

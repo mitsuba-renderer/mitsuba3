@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
+#include <mitsuba/python/python.h>
 
 #define GET_ATTR(T)                                                                                \
     if (strcmp(type.name(), typeid(T).name()) == 0)                                                \

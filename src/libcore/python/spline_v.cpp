@@ -1,6 +1,6 @@
 #include <mitsuba/core/spline.h>
-#include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <mitsuba/python/python.h>
 
 template<typename Float_>
 void bind_spline(py::module &m) {

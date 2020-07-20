@@ -1,6 +1,6 @@
 #include <mitsuba/core/vector.h>
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/fwd.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(vector) {
     MTS_PY_IMPORT_TYPES()

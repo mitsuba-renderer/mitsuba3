@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/python/python.h>
 
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {

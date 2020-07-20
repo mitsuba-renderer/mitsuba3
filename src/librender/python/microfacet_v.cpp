@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/microfacet.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(MicrofacetDistribution) {
     MTS_PY_IMPORT_TYPES(MicrofacetDistribution)

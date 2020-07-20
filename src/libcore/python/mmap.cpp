@@ -1,7 +1,7 @@
 #include <mitsuba/core/mmap.h>
 #include <mitsuba/core/filesystem.h>
-#include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(MemoryMappedFile) {
     MTS_PY_CLASS(MemoryMappedFile, Object, py::buffer_protocol())

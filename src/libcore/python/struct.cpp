@@ -1,8 +1,8 @@
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
+#include <mitsuba/python/python.h>
 
 /// Conversion between 'Struct' and NumPy 'dtype' data structures
 py::dtype dtype_for_struct(const Struct *s) {

@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Texture) {
     MTS_PY_IMPORT_TYPES(Texture)

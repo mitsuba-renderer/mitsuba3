@@ -1,6 +1,6 @@
-#include <mitsuba/python/python.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(ImageBlock) {
     MTS_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
