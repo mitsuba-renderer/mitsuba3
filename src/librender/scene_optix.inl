@@ -276,7 +276,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     }
 
     OptixAccelBuildOptions accel_options = {};
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
     accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
     accel_options.motionOptions.numKeys = 0;
 
