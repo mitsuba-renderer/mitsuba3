@@ -69,9 +69,9 @@ struct Properties::PropertiesPrivate {
 };
 
 #define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
-    void Properties::SetterName(const std::string &name, Type const &value, bool warn_duplicates) { \
-        if (has_property(name) && warn_duplicates) \
-            Log(Warn, "Property \"%s\" was specified multiple times!", name); \
+    void Properties::SetterName(const std::string &name, Type const &value, bool error_duplicates) { \
+        if (has_property(name) && error_duplicates) \
+            Log(Error, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
     } \
@@ -367,9 +367,9 @@ size_t Properties::size_(const std::string &name, const size_t &def_val) const {
 }
 
 /// Float setter
-void Properties::set_float(const std::string &name, const Float &value, bool warn_duplicates) {
-    if (has_property(name) && warn_duplicates)
-        Log(Warn, "Property \"%s\" was specified multiple times!", name);
+void Properties::set_float(const std::string &name, const Float &value, bool error_duplicates) {
+    if (has_property(name) && error_duplicates)
+        Log(Error, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = (Float) value;
     d->entries[name].queried = false;
 }
@@ -401,9 +401,9 @@ Float Properties::float_(const std::string &name, const Float &def_val) const {
 }
 
 /// Array3f setter
-void Properties::set_array3f(const std::string &name, const Array3f &value, bool warn_duplicates) {
-    if (has_property(name) && warn_duplicates)
-        Log(Warn, "Property \"%s\" was specified multiple times!", name);
+void Properties::set_array3f(const std::string &name, const Array3f &value, bool error_duplicates) {
+    if (has_property(name) && error_duplicates)
+        Log(Error, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = (Array3f) value;
     d->entries[name].queried = false;
 }
@@ -433,9 +433,9 @@ Array3f Properties::array3f(const std::string &name, const Array3f &def_val) con
 /// AnimatedTransform setter.
 void Properties::set_animated_transform(const std::string &name,
                                         ref<AnimatedTransform> value,
-                                        bool warn_duplicates) {
-    if (has_property(name) && warn_duplicates)
-        Log(Warn, "Property \"%s\" was specified multiple times!", name);
+                                        bool error_duplicates) {
+    if (has_property(name) && error_duplicates)
+        Log(Error, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = ref<Object>(value.get());
     d->entries[name].queried = false;
 }
@@ -443,9 +443,9 @@ void Properties::set_animated_transform(const std::string &name,
 /// AnimatedTransform setter (from a simple Transform).
 void Properties::set_animated_transform(const std::string &name,
                                         const Transform4f &value,
-                                        bool warn_duplicates) {
+                                        bool error_duplicates) {
     ref<AnimatedTransform> trafo(new AnimatedTransform(value));
-    return set_animated_transform(name, trafo, warn_duplicates);
+    return set_animated_transform(name, trafo, error_duplicates);
 }
 
 /// AnimatedTransform getter (without default value).

@@ -337,3 +337,26 @@ def test23_unreferenced_object(variant_scalar_rgb):
                                     <rgb name="aaa" value="0.5"/>
                                 </{interface}>""".format(interface=interface, name=name))
         e.match("unreferenced object")
+
+
+def test24_properties_duplicated(variant_scalar_rgb):
+    from mitsuba.core import xml
+
+    err_str = 'was specified multiple times'
+    with pytest.raises(Exception) as e:
+        xml.load_string("""<scene version="2.0.0">
+                            <sampler type="independent">
+                                <integer name="sample_count" value="16"/>
+                                <integer name="sample_count" value="32"/>
+                            </sampler>
+                        </scene>""")
+    e.match(err_str)
+
+    with pytest.raises(Exception) as e:
+        xml.load_string("""<scene version="2.0.0">
+                            <bsdf type="diffuse">
+                                <rgb name="reflectance" value="0.6"/>
+                                <rgb name="reflectance" value="0.44"/>
+                            </bsdf>
+                        </scene>""")
+    e.match(err_str)
