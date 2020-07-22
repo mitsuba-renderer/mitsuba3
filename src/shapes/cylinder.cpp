@@ -379,7 +379,6 @@ public:
         si.sh_frame.n = si.n;
         si.time = ray.time;
 
-        std::cout << "flags: " << has_flag(flags, HitComputeFlags::dNSdUV) << std::endl;
         if (has_flag(flags, HitComputeFlags::dNSdUV)) {
             si.dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
