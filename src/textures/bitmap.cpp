@@ -301,6 +301,70 @@ public:
         }
     }
 
+    Vector2f eval_1_grad(const SurfaceInteraction3f& si, Mask active = true) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+
+        if constexpr (Channels == 3 && is_spectral_v<Spectrum> && !Raw) {
+            ENOKI_MARK_USED(si);
+            Throw("eval_1_grad(): The bitmap texture %s was queried for a "
+                  "monochromatic gradient value, but texture conversion to color "
+                  "spectra had previously been requested! (raw=false)",
+                  to_string());
+        }
+        else {
+            if (m_filter_type == FilterType::Bilinear) {
+                // Storage representation underlying this texture
+                using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
+                using Int4 = Array<Int32, 4>;
+                using Int24 = Array<Int4, 2>;
+
+                if constexpr (!is_array_v<Mask>)
+                    active = true;
+
+                Point2f uv = m_transform.transform_affine(si.uv);
+
+                // Scale to bitmap resolution and apply shift
+                uv = fmadd(uv, m_resolution, -.5f);
+
+                // Integer pixel positions for bilinear interpolation
+                Vector2i uv_i = floor2int<Vector2i>(uv);
+
+                // Interpolation weights
+                Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
+
+                // Apply wrap mode
+                Int24 uv_i_w = wrap(Int24(Int4(0, 1, 0, 1) + uv_i.x(),
+                                          Int4(0, 0, 1, 1) + uv_i.y()));
+
+                Int4 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
+
+                auto convert_to_monochrome = [](const auto& a) {
+                    if constexpr (Channels == 3)
+                        return luminance(a);
+                    else
+                        return a;
+                };
+
+                Float f00 = convert_to_monochrome(gather<StorageType>(m_data, index.x(), active));
+                Float f10 = convert_to_monochrome(gather<StorageType>(m_data, index.y(), active));
+                Float f01 = convert_to_monochrome(gather<StorageType>(m_data, index.z(), active));
+                Float f11 = convert_to_monochrome(gather<StorageType>(m_data, index.w(), active));
+
+                // Partials w.r.t. pixel coordinate x and y
+                Vector2f df_xy{ fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
+                                fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
+
+                // Partials w.r.t. u and v (include uv transform by transpose multiply)
+                Matrix uv_tm = m_transform.matrix;
+                Vector2f df_uv{ uv_tm.coeff(0, 0) * df_xy.x() + uv_tm.coeff(1, 0) * df_xy.y(),
+                                uv_tm.coeff(0, 1) * df_xy.x() + uv_tm.coeff(1, 1) * df_xy.y() };
+                return m_resolution * df_uv;
+            }
+            // else if (m_filter_type == FilterType::Nearest)
+            return Vector2f(.0f, .0f);
+        }
+    }
+
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 

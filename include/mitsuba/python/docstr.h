@@ -7050,6 +7050,14 @@ Parameter ``si``:
 Returns:
     An scalar intensity or reflectance value)doc";
 
+static const char* __doc_mitsuba_Texture_eval_1_grad =
+R"doc(Monochromatic evaluation of the texture gradient at the given
+surface interaction
+Parameter ``si``:
+    An interaction record describing the associated surface position
+Returns:
+    A (u,v) pair of intensity or reflectance value gradients)doc";
+
 static const char *__doc_mitsuba_Texture_eval_3 =
 R"doc(Trichromatic evaluation of the texture at the given surface
 interaction

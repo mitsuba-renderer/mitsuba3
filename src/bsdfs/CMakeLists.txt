@@ -1,6 +1,7 @@
 set(MTS_PLUGIN_PREFIX "bsdfs")
 
 add_plugin(blendbsdf       blendbsdf.cpp)
+add_plugin(bumpmap         bumpmap.cpp)
 add_plugin(conductor       conductor.cpp)
 add_plugin(dielectric      dielectric.cpp)
 add_plugin(diffuse         diffuse.cpp)

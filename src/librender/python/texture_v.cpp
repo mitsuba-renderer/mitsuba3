@@ -15,6 +15,9 @@ MTS_PY_EXPORT(Texture) {
         .def("eval_1",
             vectorize(&Texture::eval_1),
             "si"_a, "active"_a = true, D(Texture, eval_1))
+        .def("eval_1_grad",
+            vectorize(&Texture::eval_1_grad),
+            "si"_a, "active"_a = true, D(Texture, eval_1_grad))
         .def("eval_3",
             vectorize(&Texture::eval_3),
             "si"_a, "active"_a = true, D(Texture, eval_3))

@@ -133,6 +133,19 @@ public:
                          Mask active = true) const;
 
     /**
+     * \brief Monochromatic evaluation of the texture gradient at the given
+     * surface interaction
+     *
+     * \param si
+     *     An interaction record describing the associated surface position
+     *
+     * \return
+     *     A (u,v) pair of intensity or reflectance value gradients
+     */
+    virtual Vector2f eval_1_grad(const SurfaceInteraction3f &si,
+                                 Mask active = true) const;
+
+    /**
      * \brief Trichromatic evaluation of the texture at the given surface
      * interaction
      *
@@ -149,7 +162,6 @@ public:
      */
     virtual Color3f eval_3(const SurfaceInteraction3f &si,
                            Mask active = true) const;
-
 
     /**
      * Return the mean value of the spectrum over the support
