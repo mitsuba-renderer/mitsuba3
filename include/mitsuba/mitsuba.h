@@ -29,4 +29,3 @@
 
 #include <mitsuba/core/config.h>
 #include <mitsuba/core/platform.h>
-#include <mitsuba/core/fwd.h>

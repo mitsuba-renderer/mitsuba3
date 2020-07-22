@@ -75,8 +75,6 @@ if (MTS_ENABLE_EMBREE)
 endif()
 
 # Update the compilation flags
-enoki_set_compile_flags()
-enoki_set_native_flags()
 get_directory_property(ENOKI_COMPILE_OPTIONS     COMPILE_OPTIONS)
 get_directory_property(ENOKI_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
 set_property(DIRECTORY .. PROPERTY COMPILE_OPTIONS     ${ENOKI_COMPILE_OPTIONS})
