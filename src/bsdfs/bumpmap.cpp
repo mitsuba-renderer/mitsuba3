@@ -13,6 +13,7 @@ Bump map BSDF adapter (:monosp:`bumpmap`)
 -----------------------------------------
 
 .. pluginparameters::
+
  * - (Nested plugin)
    - |texture|
    - Specifies the bump map texture.

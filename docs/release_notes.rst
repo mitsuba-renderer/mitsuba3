@@ -11,6 +11,25 @@ Incoming release
 
 - TBA
 
+Mitsuba 2.2.0
+-------------
+
+*July 22, 2020*
+
+- Instancing support via ``shapegroup`` and ``instance`` plugins (`#170 <https://github.com/mitsuba-renderer/mitsuba2/pull/170>`_)
+- Various sampler plugins: ``stratified``, ``multijitter``, ``orthogonal``,
+  ``ldsampler`` (`#187 <https://github.com/mitsuba-renderer/mitsuba2/pull/187>`_)
+- ``bumpmap`` BSDF plugin (`#201 <https://github.com/mitsuba-renderer/mitsuba2/pull/201>`_)
+- ``normalmap`` BSDF plugin
+- Raytracing API improvements (`#209 <https://github.com/mitsuba-renderer/mitsuba2/pull/209>`_)
+- Differentiable surface interaction (`#209 <https://github.com/mitsuba-renderer/mitsuba2/pull/209>`_)
+- Add ``<path>`` XML tag (`#165 <https://github.com/mitsuba-renderer/mitsuba2/pull/165>`_)
+- `BlenderMesh` shape plugin
+- `Projector` emitter plugin
+- Add support for textured area light sampling
+- Add ``Mesh::eval_parameterization`` to parameterize the mesh using UV values
+- Various bug fixes and other improvements
+
 Mitsuba 2.1.0
 -------------
 

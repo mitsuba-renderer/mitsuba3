@@ -9,7 +9,7 @@
 #pragma once
 
 #define MTS_VERSION_MAJOR 2
-#define MTS_VERSION_MINOR 1
+#define MTS_VERSION_MINOR 2
 #define MTS_VERSION_PATCH 0
 
 #define MTS_STRINGIFY(x) #x

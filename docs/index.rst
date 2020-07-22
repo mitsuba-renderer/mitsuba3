@@ -10,7 +10,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 
 .. toctree::
     :maxdepth: 1
-    :caption: Getting started
+    :caption: Overview
 
     src/getting_started/intro
     src/getting_started/cloning
@@ -19,6 +19,7 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     src/getting_started/file_format
     src/getting_started/differences
     src/getting_started/faq
+    release_notes.rst
 
 .. toctree::
     :maxdepth: 1
@@ -81,5 +82,4 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
     :maxdepth: 1
     :caption: Miscellaneous
 
-    release_notes.rst
     zz_bibliography

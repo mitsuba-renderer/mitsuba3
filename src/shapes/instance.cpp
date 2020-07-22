@@ -33,12 +33,12 @@ Instance (:monosp:`instance`)
 This plugin implements a geometry instance used to efficiently replicate geometry many times. For
 details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 
-.. subfigstart::
-.. subfigure:: ../../resources/data/docs/images/render/shape_instance_fractal.jpg
-   :caption: The Stanford bunny loaded a single time and instanciated 1365 times
-             (equivalent to 100 million triangles)
-.. subfigend::
-   :label: fig-instancing
+    .. image:: ../../resources/data/docs/images/render/shape_instance_fractal.jpg
+        :width: 100%
+        :align: center
+
+    The Stanford bunny loaded a single time and instanciated 1365 times (equivalent to 100 million
+    triangles)
 
 .. warning::
 

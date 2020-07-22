@@ -1,5 +1,5 @@
-Introduction
-==============
+Getting started
+===============
 
 .. image:: ../../images/features.svg
     :width: 100%
