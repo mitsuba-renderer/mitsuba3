@@ -247,7 +247,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
         // Gather information about the instance acceleration structures to be built
         std::vector<OptixInstance> ias;
-        prepare_ias(s.context, m_shapes, 0, s.accel, m_shapes.size(), ScalarTransform4f(), ias);
+        prepare_ias(s.context, m_shapes, 0, s.accel, (uint32_t) m_shapes.size(),
+                    ScalarTransform4f(), ias);
 
         // If there is only a single IAS, no need to build the "master" IAS
         if (ias.size() == 1) {
@@ -269,7 +270,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         OptixBuildInput build_input;
         build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
         build_input.instanceArray.instances = (CUdeviceptr) d_ias;
-        build_input.instanceArray.numInstances = ias.size();
+        build_input.instanceArray.numInstances = (unsigned int) ias.size();
         build_input.instanceArray.aabbs = 0;
         build_input.instanceArray.numAabbs = 0;
 
@@ -320,7 +321,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 /// Helper function to launch the OptiX kernel (try twice if unsuccessful)
 void launch_optix_kernel(const OptixState &s,
                          const OptixParams &params,
-                         unsigned int ray_count) {
+                         size_t ray_count) {
 
     cuda_memcpy_to_device(s.params, &params, sizeof(OptixParams));
 

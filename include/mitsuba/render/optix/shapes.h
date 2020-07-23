@@ -97,7 +97,7 @@ void build_gas(const OptixDeviceContext &context,
             handle.count = 0;
         }
 
-        uint32_t shapes_count = shape_subset.size();
+        size_t shapes_count = shape_subset.size();
 
         if (shapes_count == 0)
             return;
@@ -159,7 +159,7 @@ void build_gas(const OptixDeviceContext &context,
 
         handle.handle = accel;
         handle.buffer = output_buffer;
-        handle.count = shapes_count;
+        handle.count = (uint32_t) shapes_count;
     };
 
     build_single_gas(shape_meshes, out_accel.meshes);
@@ -178,13 +178,13 @@ void prepare_ias(const OptixDeviceContext &context,
     // Find all instances in the list of shapes
     std::vector<Shape*> instances;
     std::vector<uint32_t> instance_offsets;
-    uint32_t i = 0;
+    uint32_t offset = 0;
     for (Shape* shape: shapes) {
         if (shape->is_instance()) {
             instances.push_back(shape);
-            instance_offsets.push_back(i);
+            instance_offsets.push_back(offset);
         }
-        ++i;
+        ++offset;
     }
 
     unsigned int sbt_offset = base_sbt_offset;

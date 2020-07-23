@@ -208,7 +208,7 @@ MTS_PY_EXPORT(MediumInteraction) {
         py::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
                                                         D(MediumInteraction))
         // Members
-        .def_field(MediumInteraction3f, medium,   D(MediumInteraction, medium))
+        .def_field(MediumInteraction3f, medium,     D(MediumInteraction, medium))
         .def_field(MediumInteraction3f, sh_frame,   D(MediumInteraction, sh_frame))
         .def_field(MediumInteraction3f, wi,         D(MediumInteraction, wi))
 
@@ -220,6 +220,18 @@ MTS_PY_EXPORT(MediumInteraction) {
 
     // Manually bind the slicing operators to handle ShapePtr properly
     bind_slicing_operator_mediuminteraction<MediumInteraction3f>(inter);
+}
+
+// MSVC hack to force non compilation for packet variants
+template<typename PreliminaryIntersection3f, typename PyClass>
+void bind_method_preliminaryintersection(PyClass &pi) {
+    // Do not binding this method for packet variants
+    if constexpr(is_cuda_array_v<typename PreliminaryIntersection3f::Float> ||
+                 is_scalar_v<typename PreliminaryIntersection3f::Float>) {
+        pi.def("compute_surface_interaction", &PreliminaryIntersection3f::compute_surface_interaction,
+               D(PreliminaryIntersection, compute_surface_interaction),
+               "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true);
+    }
 }
 
 MTS_PY_EXPORT(PreliminaryIntersection) {
@@ -243,11 +255,7 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("is_valid", &PreliminaryIntersection3f::is_valid, D(PreliminaryIntersection, is_valid))
         .def_repr(PreliminaryIntersection3f);
 
-    // Do not binding this method for packet variants
-    if constexpr (!(is_dynamic_v<Float> && !is_cuda_array_v<Float>))
-        pi.def("compute_surface_interaction", &PreliminaryIntersection3f::compute_surface_interaction,
-               D(PreliminaryIntersection, compute_surface_interaction),
-               "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true);
+    bind_method_preliminaryintersection<PreliminaryIntersection3f>(pi);
 
     // TODO bind slicing operator
 }

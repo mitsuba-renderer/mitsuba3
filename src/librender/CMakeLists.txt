@@ -58,12 +58,12 @@ add_library(mitsuba-render-obj OBJECT
   scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h
   shape.cpp        ${INC_DIR}/shape.h
+  shapegroup.cpp   ${INC_DIR}/shapegroup.h
   texture.cpp      ${INC_DIR}/texture.h
   spiral.cpp       ${INC_DIR}/spiral.h
   srgb.cpp         ${INC_DIR}/srgb.h
                    ${INC_DIR}/optix/common.h
   optix_api.cpp    ${INC_DIR}/optix_api.h
-  ../shapes/shapegroup.cpp  ${INC_DIR}/shapegroup.h
   ${LIBRENDER_EXTRA_SRC}
 )
 

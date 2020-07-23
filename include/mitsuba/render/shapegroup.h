@@ -12,15 +12,14 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
-class ShapeGroup final: public Shape<Float, Spectrum> {
+class MTS_EXPORT_RENDER ShapeGroup : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, is_emitter, is_sensor, m_id)
+    MTS_IMPORT_BASE(Shape, m_id)
     MTS_IMPORT_TYPES(ShapeKDTree)
 
     using typename Base::ScalarSize;
 
     ShapeGroup(const Properties &props);
-
     ~ShapeGroup();
 
 #if defined(MTS_ENABLE_EMBREE)
@@ -28,6 +27,7 @@ public:
 #else
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask active) const override;
+
     Mask ray_test(const Ray3f &ray, Mask active) const override;
 #endif
 
@@ -45,7 +45,6 @@ public:
     MTS_INLINE ScalarSize effective_primitive_count() const override { return 0; }
 
     std::string to_string() const override;
-
 
 #if defined(MTS_ENABLE_OPTIX)
     void optix_prepare_ias(const OptixDeviceContext& context,

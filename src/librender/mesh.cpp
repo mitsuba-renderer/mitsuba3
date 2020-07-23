@@ -871,10 +871,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    if constexpr (is_diff_array_v<Float>)
+    if constexpr (is_diff_array_v<Float>) {
         return requires_gradient(m_vertex_positions_buf) ||
                requires_gradient(m_vertex_normals_buf) ||
                requires_gradient(m_vertex_texcoords_buf);
+    }
 
     return false;
 }

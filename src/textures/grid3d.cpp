@@ -393,7 +393,7 @@ public:
                       "the resolution).",
                       m_size, new_size, m_size, m_size * 8);
             m_metadata.shape *= 2;
-            m_size = new_size;
+            m_size = (ScalarUInt32) new_size;
         }
 
         auto sum = hsum(hsum(detach(m_data)));

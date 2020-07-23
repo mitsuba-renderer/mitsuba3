@@ -142,7 +142,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         Log(Info, "Start rendering...");
 
         ref<Sampler> sampler = sensor->sampler();
-        sampler->set_samples_per_wavefront(samples_per_pass);
+        sampler->set_samples_per_wavefront((uint32_t) samples_per_pass);
 
         ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
         ScalarUInt32 wavefront_size = hprod(film_size) * (uint32_t) samples_per_pass;

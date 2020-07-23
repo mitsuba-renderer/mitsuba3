@@ -44,18 +44,18 @@ struct SortKey {
         while (i < a.size() && i < b.size() && a[i] == b[i])
             ++i;
 
-        while(std::isdigit(a[i-1]))
+        while (i > 0 && std::isdigit(a[i-1]))
             --i;
 
         const char *a_ptr = a.c_str() + i;
         const char *b_ptr = b.c_str() + i;
 
         if (std::isdigit(*a_ptr) && std::isdigit(*b_ptr)) {
-            char *a_end = nullptr,
-                 *b_end = nullptr;
+            char *a_end, *b_end;
             long l1 = std::strtol(a_ptr, &a_end, 10);
             long l2 = std::strtol(b_ptr, &b_end, 10);
-            if (*a_end == '\0' && *b_end == '\0')
+            if (a_end == (a.c_str() + a.size()) &&
+                b_end == (b.c_str() + b.size()))
                 return l1 < l2;
         }
 

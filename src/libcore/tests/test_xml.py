@@ -319,7 +319,7 @@ def test22_fileresolver_unchanged(variant_scalar_rgb):
     fs_backup = Thread.thread().file_resolver()
 
     xml.load_string("""<scene version="2.0.0">
-                            <path value="/tmp"/>
+                            <path value="../"/>
                         </scene>""")
 
     assert fs_backup == Thread.thread().file_resolver()

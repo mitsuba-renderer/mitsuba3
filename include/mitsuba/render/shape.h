@@ -332,7 +332,7 @@ public:
     bool is_mesh() const { return class_()->derives_from(Mesh<Float, Spectrum>::m_class); }
 
     /// Is this shape a shapegroup?
-    bool is_shapegroup() const { return class_()->name() == "ShapeGroup"; };
+    bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };
 
     /// Is this shape an instance?
     bool is_instance() const { return class_()->name() == "Instance"; };
