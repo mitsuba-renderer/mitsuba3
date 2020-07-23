@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/array_utils.h>
 #include <mitsuba/mitsuba.h>
 #include <type_traits>
 #include <atomic>
@@ -20,13 +21,13 @@ private:
 
 public:
     /// Initialize the AtomicFloat with a given floating point value
-    explicit AtomicFloat(Type v = 0.f) { m_bits = memcpy_cast<Storage>(v); }
+    explicit AtomicFloat(Type v = 0.f) { m_bits = ek::memcpy_cast<Storage>(v); }
 
     /// Convert the AtomicFloat into a normal floating point value
-    operator Type() const { return memcpy_cast<Type>(m_bits.load(std::memory_order_relaxed)); }
+    operator Type() const { return ek::memcpy_cast<Type>(m_bits.load(std::memory_order_relaxed)); }
 
     /// Overwrite the AtomicFloat with a floating point value
-    AtomicFloat &operator=(Type v) { m_bits = memcpy_cast<Storage>(v); return *this; }
+    AtomicFloat &operator=(Type v) { m_bits = ek::memcpy_cast<Storage>(v); return *this; }
 
     /// Atomically add a floating point value
     AtomicFloat &operator+=(Type arg) { return do_atomic([arg](Type value) { return value + arg; }); }
@@ -52,7 +53,7 @@ protected:
     template <typename Func> AtomicFloat& do_atomic(Func func) {
         Storage old_bits = m_bits.load(std::memory_order::memory_order_relaxed), new_bits;
         do {
-            new_bits = memcpy_cast<Storage>(func(memcpy_cast<Type>(old_bits)));
+            new_bits = ek::memcpy_cast<Storage>(func(ek::memcpy_cast<Type>(old_bits)));
             if (new_bits == old_bits)
                 break;
         } while (!m_bits.compare_exchange_weak(old_bits, new_bits));

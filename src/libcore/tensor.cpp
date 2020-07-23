@@ -1,7 +1,6 @@
 #include <mitsuba/core/tensor.h>
 #include <mitsuba/core/mstream.h>
 #include <mitsuba/core/util.h>
-#include <enoki/array.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

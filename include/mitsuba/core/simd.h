@@ -1,8 +1,7 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
-#include <enoki/array.h>
-#include <enoki/dynamic.h>
+#include <enoki/array_traits.h>
 
 #if defined(MTS_ENABLE_OPTIX)
 #  include <enoki/cuda.h>
@@ -13,33 +12,35 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Convenience function which computes an array size/type suffix (like '2u' or '3fP')
 template <typename T> std::string type_suffix() {
-    using B = scalar_t<T>;
+    using S = ek::scalar_t<T>;
+    using V = ek::value_t<T>;
 
-    std::string id = std::to_string(array_size_v<T>);
+    std::string id = std::to_string(ek::array_size_v<T>);
 
-    if (std::is_floating_point_v<B>) {
-        if (std::is_same_v<B, enoki::half>) {
+    if constexpr (ek::is_floating_point_v<S>) {
+        if (std::is_same_v<S, ek::half>)
             id += 'h';
-        } else {
-            if constexpr (is_float_v<B>)
-                id += std::is_same_v<B, float> ? 'f' : 'd';
-            else
-                id += std::is_same_v<B, double> ? 'f' : 's';
-        }
+        else if (std::is_same_v<S, float>)
+            id += 'f';
+        else
+            id += 'd';
     } else {
-        if (std::is_signed_v<B>)
+        if (ek::is_signed_v<S>)
             id += 'i';
         else
             id += 'u';
     }
 
-    if (is_static_array_v<value_t<T>>)
-        id += 'P';
-    else if (is_diff_array_v<value_t<T>>)
+    if (ek::is_diff_array_v<V>)
         id += 'D';
-    else if (is_cuda_array_v<value_t<T>>)
+
+    if (ek::is_packed_array_v<V>)
+        id += 'P';
+    else if (ek::is_llvm_array_v<V>)
+        id += 'L';
+    else if (ek::is_cuda_array_v<V>)
         id += 'C';
-    else if (is_dynamic_array_v<value_t<T>>)
+    else if (ek::is_dynamic_array_v<V>)
         id += 'X';
 
     return id;

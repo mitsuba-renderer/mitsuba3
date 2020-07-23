@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mitsuba/core/logger.h>
+#include <enoki/array.h>
 #include <mitsuba/core/simd.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -22,7 +22,7 @@ struct Vector : enoki::StaticArrayImpl<Value_, Size_, false, Vector<Value_, Size
     using Point  = mitsuba::Point<Value_, Size_>;
     using Normal = mitsuba::Normal<Value_, Size_>;
 
-    ENOKI_ARRAY_IMPORT(Base, Vector)
+    ENOKI_ARRAY_IMPORT(Vector, Base)
 };
 
 template <typename Value_, size_t Size_>
@@ -38,7 +38,7 @@ struct Point : enoki::StaticArrayImpl<Value_, Size_, false, Point<Value_, Size_>
     using Vector = mitsuba::Vector<Value_, Size_>;
     using Normal = mitsuba::Normal<Value_, Size_>;
 
-    ENOKI_ARRAY_IMPORT(Base, Point)
+    ENOKI_ARRAY_IMPORT(Point, Base)
 };
 
 template <typename Value_, size_t Size_>
@@ -54,7 +54,7 @@ struct Normal : enoki::StaticArrayImpl<Value_, Size_, false, Normal<Value_, Size
     using Vector = mitsuba::Vector<Value_, Size_>;
     using Point  = mitsuba::Point<Value_, Size_>;
 
-    ENOKI_ARRAY_IMPORT(Base, Normal)
+    ENOKI_ARRAY_IMPORT(Normal, Base)
 };
 
 /// Subtracting two points should always yield a vector
@@ -116,22 +116,22 @@ struct Normal<enoki::detail::MaskedArray<Value_>, Size_>
 template <typename Vector3f> std::pair<Vector3f, Vector3f> coordinate_system(const Vector3f &n) {
     static_assert(Vector3f::Size == 3, "coordinate_system() expects a 3D vector as input!");
 
-    using Float = value_t<Vector3f>;
+    using Float = ek::value_t<Vector3f>;
 
     /* Based on "Building an Orthonormal Basis, Revisited" by
        Tom Duff, James Burgess, Per Christensen,
        Christophe Hery, Andrew Kensler, Max Liani,
        and Ryusuke Villemin (JCGT Vol 6, No 1, 2017) */
 
-    Float sign = enoki::sign(n.z()),
-          a    = -rcp(sign + n.z()),
+    Float sign = ek::sign(n.z()),
+          a    = -ek::rcp(sign + n.z()),
           b    = n.x() * n.y() * a;
 
     return {
-        Vector3f(mulsign(sqr(n.x()) * a, n.z()) + 1.f,
-                 mulsign(b, n.z()),
-                 mulsign_neg(n.x(), n.z())),
-        Vector3f(b, sign + sqr(n.y()) * a, -n.y())
+        Vector3f(ek::mulsign(ek::sqr(n.x()) * a, n.z()) + 1.f,
+                 ek::mulsign(b, n.z()),
+                 ek::mulsign_neg(n.x(), n.z())),
+        Vector3f(b, sign + ek::sqr(n.y()) * a, -n.y())
     };
 }
 

@@ -1,8 +1,12 @@
+#include <enoki/packet.h>
+
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/vector.h>
+
+#include <cmath>
 
 #if defined(__LINUX__)
 #  if !defined(_GNU_SOURCE)
@@ -274,7 +278,7 @@ int terminal_width() {
 }
 
 std::string info_build(int thread_count) {
-    constexpr size_t PacketSize = Packet<float>::Size;
+    constexpr size_t PacketSize = ek::Packet<float>::Size;
 
     std::ostringstream oss;
     oss << "Mitsuba version " << MTS_VERSION << " (";
@@ -311,24 +315,19 @@ std::string info_features() {
     oss << " cuda";
 #endif
 
-    if (enoki::has_avx512f)         oss << " avx512f";
-    if (enoki::has_avx512cd)        oss << " avx512cd";
-    if (enoki::has_avx512dq)        oss << " avx512dq";
-    if (enoki::has_avx512vl)        oss << " avx512vl";
-    if (enoki::has_avx512bw)        oss << " avx512bw";
-    if (enoki::has_avx512pf)        oss << " avx512pf";
-    if (enoki::has_avx512er)        oss << " avx512er";
-    if (enoki::has_avx512vpopcntdq) oss << " avx512vpopcntdq";
-    if (enoki::has_avx2)            oss << " avx2";
-    if (enoki::has_avx)             oss << " avx";
-    if (enoki::has_fma)             oss << " fma";
-    if (enoki::has_f16c)            oss << " f16c";
-    if (enoki::has_sse42)           oss << " sse4.2";
-    if (enoki::has_x86_64)          oss << " x86_64";
-    if (enoki::has_x86_32)          oss << " x86";
-    if (enoki::has_neon)            oss << " neon";
-    if (enoki::has_arm_32)          oss << " arm";
-    if (enoki::has_arm_64)          oss << " aarch64";
+    // TODO refactoring: add print for LLVM
+
+    if (has_avx512)          oss << " avx512";
+    if (has_avx2)            oss << " avx2";
+    if (has_avx)             oss << " avx";
+    if (has_fma)             oss << " fma";
+    if (has_f16c)            oss << " f16c";
+    if (has_sse42)           oss << " sse4.2";
+    if (has_x86_64)          oss << " x86_64";
+    if (has_x86_32)          oss << " x86";
+    if (has_neon)            oss << " neon";
+    if (has_arm_32)          oss << " arm";
+    if (has_arm_64)          oss << " aarch64";
 
     return oss.str();
 }

@@ -46,7 +46,7 @@ struct Color : enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>
     decltype(auto) a() const { return Base::w(); }
     decltype(auto) a() { return Base::w(); }
 
-    ENOKI_ARRAY_IMPORT(Base, Color)
+    ENOKI_ARRAY_IMPORT(Color, Base)
 };
 
 //! @}
@@ -69,7 +69,7 @@ struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, 
     using ArrayType = Spectrum;
     using MaskType = enoki::Mask<Value_, Size_>;
 
-    ENOKI_ARRAY_IMPORT(Base, Spectrum)
+    ENOKI_ARRAY_IMPORT(Spectrum, Base)
 };
 
 /// Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.

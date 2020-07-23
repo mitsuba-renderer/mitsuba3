@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mitsuba/core/platform.h>
-#include <enoki/fwd.h>
 #include <enoki/array_traits.h>
 #include <cstddef>
 #include <cstdint>
@@ -80,7 +79,7 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 //! @{ \name Buffer types
 // =============================================================
 
-// TODO
+// TODO refactoring:
 // template <typename Value,
 //           typename T = std::conditional_t<ek::is_static_array_v<Value>, ek::value_t<Value>, Value>>
 // using DynamicBuffer = std::conditional_t<
@@ -96,7 +95,7 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 //! @{ \name Platform agnostic vector types
 // =============================================================
 
-// TODO
+// TODO refactoring:
 // template <typename T, typename Type = T>
 // using host_vector =
 //     std::vector<scalar_t<T>,
@@ -116,104 +115,103 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 //! @{ \name CoreAliases struct
 // =============================================================
 
-// TODO
-// template <typename Float_> struct CoreAliases {
-//     using Float   = Float_;
+template <typename Float_> struct CoreAliases {
+    using Float = Float_;
 
-//     using Mask    = ek::mask_t<Float>;
+    using Mask = ek::mask_t<Float>;
 
-//     using Int8    = ek::replace_scalar_t<Float, int8_t>;
-//     using Int32   =   ek::int32_array_t<Float>;
-//     using UInt32  =  ek::uint32_array_t<Float>;
-//     using Int64   =   ek::int64_array_t<Float>;
-//     using UInt64  =  ek::uint64_array_t<Float>;
-//     using Float32 = ek::float32_array_t<Float>;
-//     using Float64 = ek::float64_array_t<Float>;
+    using Int8    = ek::replace_scalar_t<Float, int8_t>;
+    using Int32   = ek::int32_array_t<Float>;
+    using UInt32  = ek::uint32_array_t<Float>;
+    using Int64   = ek::int64_array_t<Float>;
+    using UInt64  = ek::uint64_array_t<Float>;
+    using Float32 = ek::float32_array_t<Float>;
+    using Float64 = ek::float64_array_t<Float>;
 
-//     using Vector1i = Vector<Int32, 1>;
-//     using Vector2i = Vector<Int32, 2>;
-//     using Vector3i = Vector<Int32, 3>;
-//     using Vector4i = Vector<Int32, 4>;
+    using Vector1i = Vector<Int32, 1>;
+    using Vector2i = Vector<Int32, 2>;
+    using Vector3i = Vector<Int32, 3>;
+    using Vector4i = Vector<Int32, 4>;
 
-//     using Vector1u = Vector<UInt32, 1>;
-//     using Vector2u = Vector<UInt32, 2>;
-//     using Vector3u = Vector<UInt32, 3>;
-//     using Vector4u = Vector<UInt32, 4>;
+    using Vector1u = Vector<UInt32, 1>;
+    using Vector2u = Vector<UInt32, 2>;
+    using Vector3u = Vector<UInt32, 3>;
+    using Vector4u = Vector<UInt32, 4>;
 
-//     using Vector1f = Vector<Float, 1>;
-//     using Vector2f = Vector<Float, 2>;
-//     using Vector3f = Vector<Float, 3>;
-//     using Vector4f = Vector<Float, 4>;
+    using Vector1f = Vector<Float, 1>;
+    using Vector2f = Vector<Float, 2>;
+    using Vector3f = Vector<Float, 3>;
+    using Vector4f = Vector<Float, 4>;
 
-//     using Vector1d = Vector<Float64, 1>;
-//     using Vector2d = Vector<Float64, 2>;
-//     using Vector3d = Vector<Float64, 3>;
-//     using Vector4d = Vector<Float64, 4>;
+    using Vector1d = Vector<Float64, 1>;
+    using Vector2d = Vector<Float64, 2>;
+    using Vector3d = Vector<Float64, 3>;
+    using Vector4d = Vector<Float64, 4>;
 
-//     using Point1i = Point<Int32, 1>;
-//     using Point2i = Point<Int32, 2>;
-//     using Point3i = Point<Int32, 3>;
-//     using Point4i = Point<Int32, 4>;
+    using Point1i = Point<Int32, 1>;
+    using Point2i = Point<Int32, 2>;
+    using Point3i = Point<Int32, 3>;
+    using Point4i = Point<Int32, 4>;
 
-//     using Point1u = Point<UInt32, 1>;
-//     using Point2u = Point<UInt32, 2>;
-//     using Point3u = Point<UInt32, 3>;
-//     using Point4u = Point<UInt32, 4>;
+    using Point1u = Point<UInt32, 1>;
+    using Point2u = Point<UInt32, 2>;
+    using Point3u = Point<UInt32, 3>;
+    using Point4u = Point<UInt32, 4>;
 
-//     using Point1f = Point<Float, 1>;
-//     using Point2f = Point<Float, 2>;
-//     using Point3f = Point<Float, 3>;
-//     using Point4f = Point<Float, 4>;
+    using Point1f = Point<Float, 1>;
+    using Point2f = Point<Float, 2>;
+    using Point3f = Point<Float, 3>;
+    using Point4f = Point<Float, 4>;
 
-//     using Point1d = Point<Float64, 1>;
-//     using Point2d = Point<Float64, 2>;
-//     using Point3d = Point<Float64, 3>;
-//     using Point4d = Point<Float64, 4>;
+    using Point1d = Point<Float64, 1>;
+    using Point2d = Point<Float64, 2>;
+    using Point3d = Point<Float64, 3>;
+    using Point4d = Point<Float64, 4>;
 
-//     using Normal3f = Normal<Float, 3>;
-//     using Normal3d = Normal<Float64, 3>;
+    using Normal3f = Normal<Float, 3>;
+    using Normal3d = Normal<Float64, 3>;
 
-//     using Matrix2f = Matrix<Float, 2>;
-//     using Matrix2d = Matrix<Float64, 2>;
-//     using Matrix3f = Matrix<Float, 3>;
-//     using Matrix3d = Matrix<Float64, 3>;
-//     using Matrix4f = Matrix<Float, 4>;
-//     using Matrix4d = Matrix<Float64, 4>;
+    using Matrix2f = ek::Matrix<Float, 2>;
+    using Matrix2d = ek::Matrix<Float64, 2>;
+    using Matrix3f = ek::Matrix<Float, 3>;
+    using Matrix3d = ek::Matrix<Float64, 3>;
+    using Matrix4f = ek::Matrix<Float, 4>;
+    using Matrix4d = ek::Matrix<Float64, 4>;
 
-//     using Quaternion4f = Quaternion<Float>;
-//     using Quaternion4d = Quaternion<Float64>;
+    using Quaternion4f = ek::Quaternion<Float>;
+    using Quaternion4d = ek::Quaternion<Float64>;
 
-//     using BoundingBox1f    = BoundingBox<Point1f>;
-//     using BoundingBox2f    = BoundingBox<Point2f>;
-//     using BoundingBox3f    = BoundingBox<Point3f>;
-//     using BoundingBox4f    = BoundingBox<Point4f>;
-//     using BoundingSphere1f = BoundingSphere<Point1f>;
-//     using BoundingSphere2f = BoundingSphere<Point2f>;
-//     using BoundingSphere3f = BoundingSphere<Point3f>;
-//     using BoundingSphere4f = BoundingSphere<Point4f>;
+    using BoundingBox1f    = BoundingBox<Point1f>;
+    using BoundingBox2f    = BoundingBox<Point2f>;
+    using BoundingBox3f    = BoundingBox<Point3f>;
+    using BoundingBox4f    = BoundingBox<Point4f>;
+    using BoundingSphere1f = BoundingSphere<Point1f>;
+    using BoundingSphere2f = BoundingSphere<Point2f>;
+    using BoundingSphere3f = BoundingSphere<Point3f>;
+    using BoundingSphere4f = BoundingSphere<Point4f>;
 
-//     using Frame3f          = Frame<Float>;
-//     using Transform3f      = Transform<Point3f>;
-//     using Transform4f      = Transform<Point4f>;
+    using Frame3f     = Frame<Float>;
+    using Transform3f = Transform<Point3f>;
+    using Transform4f = Transform<Point4f>;
 
-//     using Color1f          = Color<Float, 1>;
-//     using Color3f          = Color<Float, 3>;
+    using Color1f = Color<Float, 1>;
+    using Color3f = Color<Float, 3>;
 
-//     /*
-//      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
-//      * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
-//      */
-//     using Array1f        = Array<Float, 1>;
-//     using Array3f        = Array<Float, 3>;
-//     using DynamicBuffer  = mitsuba::DynamicBuffer<Float>;
-// };
+    /*
+     * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
+     * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
+     */
+    using Array1f = ek::Array<Float, 1>;
+    using Array3f = ek::Array<Float, 3>;
+    // using DynamicBuffer  = mitsuba::DynamicBuffer<Float>;
+};
 
 //! @}
 // =============================================================
 
-// TODO
-// #define MTS_VARIANT template <typename Float, typename Spectrum>
+#define MTS_VARIANT template <typename Float, typename Spectrum>
 
+// TODO refactoring:
 // #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
 //     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
 //     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
@@ -296,11 +294,11 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 //     if constexpr (is_scalar_v<Float>)                                                              \
 //         mask = true;
 
-// NAMESPACE_BEGIN(filesystem)
-// class path;
-// NAMESPACE_END(filesystem)
+NAMESPACE_BEGIN(filesystem)
+class path;
+NAMESPACE_END(filesystem)
 
-// namespace fs = filesystem;
+namespace fs = filesystem;
 
 NAMESPACE_END(mitsuba)
 

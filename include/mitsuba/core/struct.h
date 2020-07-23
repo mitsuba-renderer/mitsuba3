@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/array_traits.h>
 #include <mitsuba/core/object.h>
 #include <vector>
 #include <limits>
@@ -289,7 +290,7 @@ protected:
 
 NAMESPACE_BEGIN(detail)
 template <typename T> struct struct_type {
-    static constexpr Struct::Type value = struct_type<scalar_t<T>>::value;
+    static constexpr Struct::Type value = struct_type<ek::scalar_t<T>>::value;
 };
 
 #define MTS_STRUCT_TYPE(type, entry)                               \
