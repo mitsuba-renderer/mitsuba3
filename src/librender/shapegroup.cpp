@@ -153,8 +153,7 @@ MTS_VARIANT void ShapeGroup<Float, Spectrum>::optix_fill_hitgroup_records(std::v
 
 #endif
 
-MTS_VARIANT std::string
-ShapeGroup<Float, Spectrum>::to_string() const {
+MTS_VARIANT std::string ShapeGroup<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
         oss << "ShapeGroup[" << std::endl
             << "  name = \"" << m_id << "\"," << std::endl
@@ -164,4 +163,5 @@ ShapeGroup<Float, Spectrum>::to_string() const {
 }
 
 MTS_IMPLEMENT_CLASS_VARIANT(ShapeGroup, Shape)
+MTS_INSTANTIATE_CLASS(ShapeGroup)
 NAMESPACE_END(mitsuba)
