@@ -98,7 +98,7 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
 
 template <typename Spectrum, typename Texture>
 ref<Texture> ior_from_file(const std::string &filename) {
-    using ScalarFloat = scalar_t<value_t<Spectrum>>;
+    using ScalarFloat = ek::scalar_t<ek::value_t<Spectrum>>;
     std::vector<ScalarFloat> wavelengths, values;
     spectrum_from_file(filename, wavelengths, values);
 

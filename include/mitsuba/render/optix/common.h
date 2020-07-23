@@ -157,15 +157,15 @@ __device__ void write_output_si_params(OptixParams &params,
 
                 // Determine the length of the transformed normal before it was re-normalized
                 Vector3f tn = to_world.transform_normal(normalize(to_object.transform_normal(ns)));
-                float inv_len = 1.f / norm(tn);
+                float inv_len = 1.f / ek::norm(tn);
                 tn *= inv_len;
 
                 // Apply transform to dn_du and dn_dv
                 dn_du = to_world.transform_normal(dn_du) * inv_len;
                 dn_dv = to_world.transform_normal(dn_dv) * inv_len;
 
-                dn_du -= tn * dot(tn, dn_du);
-                dn_dv -= tn * dot(tn, dn_dv);
+                dn_du -= tn * ek::dot(tn, dn_du);
+                dn_dv -= tn * ek::dot(tn, dn_dv);
             }
 
             params.out_inst_index[launch_index] = inst_index;

@@ -50,7 +50,7 @@ public:
 
     std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f & /* ray */) const override {
-        return { true, 0.f, math::Infinity<Float> };
+        return { true, 0.f, ek::Infinity<Float> };
     }
 
     void traverse(TraversalCallback *callback) override {

@@ -34,7 +34,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
     } else {
         si.wavelengths = ray.wavelengths;
         si.wi = -ray.d;
-        si.t = math::Infinity<Float>;
+        si.t = ek::Infinity<Float>;
     }
 
     return si;
@@ -54,7 +54,7 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
     } else {
         si.wavelengths = ray.wavelengths;
         si.wi = -ray.d;
-        si.t = math::Infinity<Float>;
+        si.t = ek::Infinity<Float>;
     }
 
     return si;

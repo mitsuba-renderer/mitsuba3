@@ -160,7 +160,7 @@ private:
     ScalarPoint2u m_resolution;
     ScalarPoint2f m_inv_resolution;
     ScalarFloat m_inv_sample_count;
-    enoki::divisor<uint32_t> m_resolution_x_div;
+    ek::divisor<uint32_t> m_resolution_x_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

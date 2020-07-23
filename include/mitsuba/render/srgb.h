@@ -13,9 +13,9 @@ MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
     if constexpr (is_spectral_v<Spectrum>) {
         Spectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
-        return select(
-            enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-            max(0.f, fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f))
+        return ek::select(
+            ek::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
+            max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f))
         );
     } else {
         Throw("srgb_model_eval(): invoked for a non-spectral color type!");
@@ -23,14 +23,14 @@ MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
 }
 
 template <typename Array3f>
-MTS_INLINE value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
-    using Float = value_t<Array3f>;
+MTS_INLINE ek::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
+    using Float = ek::value_t<Array3f>;
     using Vec = Array<Float, 16>;
 
     Vec lambda = linspace<Vec>(MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
     Vec v = fmadd(fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
-    Vec result = select(enoki::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-                        max(0.f, fmadd(.5f * v, rsqrt(fmadd(v, v, 1.f)), .5f)));
+    Vec result = ek::select(ek::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
+                        max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f)));
     return hmean(result);
 }
 

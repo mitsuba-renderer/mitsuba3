@@ -2,7 +2,6 @@
 
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/thread.h>
-#include <memory>
 #include <tinyformat.h>
 
 NAMESPACE_BEGIN(mitsuba)

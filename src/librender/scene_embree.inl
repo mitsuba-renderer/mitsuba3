@@ -46,11 +46,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask active) const {
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
-        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         if constexpr (!is_array_v<Float>) {
             RTCRayHit rh;
@@ -94,7 +94,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
             context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
             alignas(alignof(Float)) int valid[MTS_RAY_WIDTH];
-            store(valid, select(active, Int32(-1), Int32(0)));
+            store(valid, ek::select(active, Int32(-1), Int32(0)));
 
             RTCRayHitW rh;
             store(rh.ray.org_x, ray.o.x());
@@ -127,14 +127,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
                 Mask hit_not_inst = hit &&  eq(inst_index, RTC_INVALID_GEOMETRY_ID);
                 Mask hit_inst     = hit && neq(inst_index, RTC_INVALID_GEOMETRY_ID);
 
-                PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
-                pi.t = select(hit, t, math::Infinity<Float>);
+                PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+                pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
                 // Set si.instance and si.shape
-                UInt32 index   = select(hit_inst, inst_index, shape_index);
-                ShapePtr shape = gather<ShapePtr>(m_shapes.data(), index, hit);
-                masked(pi.instance, hit_inst)  = shape;
-                masked(pi.shape, hit_not_inst) = shape;
+                UInt32 index   = ek::select(hit_inst, inst_index, shape_index);
+                ShapePtr shape = ek::gather<ShapePtr>(m_shapes.data(), index, hit);
+                ek::masked(pi.instance, hit_inst)  = shape;
+                ek::masked(pi.shape, hit_not_inst) = shape;
 
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(load<Float>(rh.hit.u), load<Float>(rh.hit.v));
@@ -148,10 +148,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
         if constexpr (!is_array_v<Float>) {
             RTCRayHit rh;
@@ -177,7 +177,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 // We get level 0 because we only support one level of instancing
                 uint32_t inst_index = rh.hit.instID[0];
 
-                PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
+                PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
                 // If the hit is not on an instance
                 if (inst_index == RTC_INVALID_GEOMETRY_ID) {
@@ -198,13 +198,13 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 si.wavelengths = ray.wavelengths;
                 si.time = ray.time;
                 si.wi = -ray.d;
-                si.t = math::Infinity<Float>;
+                si.t = ek::Infinity<Float>;
             }
         } else {
             context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
             alignas(alignof(Float)) int valid[MTS_RAY_WIDTH];
-            store(valid, select(active, Int32(-1), Int32(0)));
+            store(valid, ek::select(active, Int32(-1), Int32(0)));
 
             RTCRayHitW rh;
             store(rh.ray.org_x, ray.o.x());
@@ -238,13 +238,13 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 Mask hit_inst     = hit && neq(inst_index, RTC_INVALID_GEOMETRY_ID);
 
                 PreliminaryIntersection3f pi;
-                pi.t = select(hit, t, math::Infinity<Float>);
+                pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
                 // Set si.instance and si.shape
-                UInt32 index   = select(hit_inst, inst_index, shape_index);
-                ShapePtr shape = gather<ShapePtr>(m_shapes.data(), index, hit);
-                masked(pi.instance, hit_inst)  = shape;
-                masked(pi.shape, hit_not_inst) = shape;
+                UInt32 index   = ek::select(hit_inst, inst_index, shape_index);
+                ShapePtr shape = ek::gather<ShapePtr>(m_shapes.data(), index, hit);
+                ek::masked(pi.instance, hit_inst)  = shape;
+                ek::masked(pi.shape, hit_not_inst) = shape;
 
                 pi.prim_index = prim_index;
                 pi.shape_index = shape_index;
@@ -255,7 +255,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 si.wavelengths = ray.wavelengths;
                 si.time = ray.time;
                 si.wi = -ray.d;
-                si.t = math::Infinity<Float>;
+                si.t = ek::Infinity<Float>;
             }
         }
         return si;
@@ -266,7 +266,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
@@ -290,7 +290,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
             context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
             alignas(alignof(Float)) int valid[MTS_RAY_WIDTH];
-            store(valid, select(active, Int32(-1), Int32(0)));
+            store(valid, ek::select(active, Int32(-1), Int32(0)));
 
             RTCRayW ray2;
             store(ray2.org_x, ray.o.x());

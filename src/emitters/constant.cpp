@@ -63,7 +63,7 @@ public:
 
         // 1. Sample spectrum
         auto [wavelengths, weight] = m_radiance->sample_spectrum(
-            zero<SurfaceInteraction3f>(),
+            ek::zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         // 2. Sample spatial component
@@ -74,7 +74,7 @@ public:
 
         return std::make_pair(Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
                                     Frame3f(-v0).to_world(v1), time, wavelengths),
-                              unpolarized<Spectrum>(weight) * (4.f * sqr(math::Pi<Float> * m_bsphere.radius)));
+                              unpolarized<Spectrum>(weight) * (4.f * sqr(ek::Pi<Float> * m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -95,7 +95,7 @@ public:
         ds.d      = d;
         ds.dist   = dist;
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         return std::make_pair(

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/idiv.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/logger.h>
@@ -63,30 +64,30 @@ public:
      *     Denotes the index that should be mapped through the radical inverse
      *     function
      */
-    template <typename Float, typename UInt64 = uint64_array_t<Float>>
+    template <typename Float, typename UInt64 = ek::uint64_array_t<Float>>
     Float eval(size_t base_index, UInt64 index) const {
         if (unlikely(base_index >= m_base_count))
             Throw("eval(): out of bounds (prime base too large)");
 
         const PrimeBase base = m_base[base_index];
 
-        UInt64 value(zero<UInt64>()),
-                divisor((uint64_t) base.value);
+        UInt64 value(0),
+               divisor((uint64_t) base.value);
         Float factor = Float(1.f),
-            recip(base.recip);
+              recip(base.recip);
 
-        auto active = neq(index, enoki::zero<UInt64>());
+        auto active = ek::neq(index, 0);
 
-        while (any(active)) {
-            auto active_f = reinterpret_array<mask_t<Float>>(active);
-            UInt64 next = base.divisor(index);
-            masked(factor, active_f) = factor * recip;
-            masked(value, active) = (value - next) * divisor + index;
+        while (ek::any(active)) {
+            auto active_f = ek::reinterpret_array<ek::mask_t<Float>>(active);
+            UInt64 next = ek::idiv(index, base.divisor);
+            ek::masked(factor, active_f) = factor * recip;
+            ek::masked(value, active) = (value - next) * divisor + index;
             index = next;
-            active = neq(index, enoki::zero<UInt64>());
+            active = ek::neq(index, 0);
         }
 
-        return min(math::OneMinusEpsilon<Float>, Float(value) * factor);
+        return min(ek::OneMinusEpsilon<Float>, Float(value) * factor);
     }
 
     /**
@@ -97,7 +98,7 @@ public:
      * radical inverse function \ref eval(), except that every digit
      * is run through an extra scrambling permutation.
      */
-    template <typename Float, typename UInt64 = uint64_array_t<Float>>
+    template <typename Float, typename UInt64 = ek::uint64_array_t<Float>>
     Float eval_scrambled(size_t base_index, UInt64 index) const {
         if (unlikely(base_index >= m_base_count))
             Throw("eval(): out of bounds (prime base too large)");
@@ -105,27 +106,27 @@ public:
         const PrimeBase base = m_base[base_index];
         const uint16_t *perm = m_permutations[base_index];
 
-        UInt64 value(zero<UInt64>()),
-                divisor((uint64_t) base.value),
-                mask(0xffffu);
+        UInt64 value(0),
+               divisor((uint64_t) base.value),
+               mask(0xffffu);
         Float factor(1.f),
-            recip(base.recip);
+              recip(base.recip);
 
-        auto active = neq(index, enoki::zero<UInt64>());
+        auto active = ek::neq(index, 0);
 
-        while (any(active)) {
-            auto active_f = reinterpret_array<mask_t<Float>>(active);
-            UInt64 next = base.divisor(index);
-            masked(factor, active_f) = factor * recip;
+        while (ek::any(active)) {
+            auto active_f = ek::reinterpret_array<ek::mask_t<Float>>(active);
+            UInt64 next = ek::idiv(index, base.divisor);
+            ek::masked(factor, active_f) = factor * recip;
             UInt64 digit = index - next * divisor;
-            masked(value, active) =
-                value * divisor + (enoki::gather<UInt64, 2>(perm, digit, active) & mask);
+            ek::masked(value, active) =
+                value * divisor + (ek::gather<UInt64, 2>(perm, digit, active) & mask);
             index = next;
-            active = neq(index, enoki::zero<UInt64>());
+            active = ek::neq(index, 0);
         }
 
         Float correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
-        return min(math::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
+        return min(ek::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
     }
 
     /// Return the permutation corresponding to the given prime number basis
@@ -164,10 +165,9 @@ private:
     /* Precomputed magic constants for efficient division by a constant.
        One entry for each of the first 1024 prime numbers -- 16 KiB of data */
     struct PrimeBase {
-        enoki::divisor<uint64_t> divisor;
-        uint8_t unused;
+        ek::divisor<uint64_t> divisor;
         uint16_t value;
-        float recip;
+        float recip; // TODO refactoring: do we still need this?
     } ENOKI_PACK;
 
 #if defined(_MSC_VER)
@@ -185,9 +185,9 @@ private:
 
 
 /// Van der Corput radical inverse in base 2
-template <typename UInt, typename Float = float_array_t<UInt>>
+template <typename UInt, typename Float = ek::float_array_t<UInt>>
 Float radical_inverse_2(UInt index, UInt scramble = 0) {
-    if constexpr (is_double_v<Float>) {
+    if constexpr (std::is_same_v<ek::scalar_t<Float>, double>) {
         index = (index << 32) | (index >> 32);
         index = ((index & 0x0000ffff0000ffffULL) << 16) | ((index & 0xffff0000ffff0000ULL) >> 16);
         index = ((index & 0x00ff00ff00ff00ffULL) << 8)  | ((index & 0xff00ff00ff00ff00ULL) >> 8);
@@ -197,7 +197,7 @@ Float radical_inverse_2(UInt index, UInt scramble = 0) {
 
         /* Generate an uniformly distributed double precision number in [1,2)
          * from the scrambled index and subtract 1. */
-        return reinterpret_array<Float>(sr<12>(index ^ scramble) | 0x3ff0000000000000ull) - 1.0;
+        return ek::reinterpret_array<Float>(ek::sr<12>(index ^ scramble) | 0x3ff0000000000000ull) - 1.0;
     } else {
         index = (index << 16) | (index >> 16);
         index = ((index & 0x00ff00ff) << 8) | ((index & 0xff00ff00) >> 8);
@@ -207,21 +207,21 @@ Float radical_inverse_2(UInt index, UInt scramble = 0) {
 
         /* Generate an uniformly distributed single precision number in [1,2)
          * from the scrambled index and subtract 1. */
-        return reinterpret_array<Float>(sr<9>(index ^ scramble) | 0x3f800000u) - 1.f;
+        return ek::reinterpret_array<Float>(ek::sr<9>(index ^ scramble) | 0x3f800000u) - 1.f;
     }
 }
 
 
 /// Sobol' radical inverse in base 2
-template <typename UInt, typename Float = float_array_t<UInt>>
+template <typename UInt, typename Float = ek::float_array_t<UInt>>
 Float sobol_2(UInt index, UInt scramble = 0) {
-    if constexpr (is_double_v<Float>) {
+    if constexpr (std::is_same_v<ek::scalar_t<Float>, double>) {
         for (UInt v = 1ULL << 52; index != 0; index >>= 1, v ^= v >> 1)
-            masked(scramble, eq(index & 1U, 1U)) ^= v;
-        return reinterpret_array<Float>(sr<12>(scramble) | 0x3ff0000000000000ull) - 1.0;
+            ek::masked(scramble, ek::eq(index & 1U, 1U)) ^= v;
+        return ek::reinterpret_array<Float>(ek::sr<12>(scramble) | 0x3ff0000000000000ull) - 1.0;
     } else {
         for (UInt v = 1U << 31; index != 0; index >>= 1, v ^= v >> 1)
-            masked(scramble, eq(index & 1U, 1U)) ^= v;
+            ek::masked(scramble, ek::eq(index & 1U, 1U)) ^= v;
         return Float(scramble) / Float(1ULL << 32);
     }
 }

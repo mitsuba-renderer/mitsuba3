@@ -153,7 +153,7 @@ public:
                    direction using BSDF sampling. */
                 Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
-                Float mis = select(ds.delta, Float(1.f), mis_weight(
+                Float mis = ek::select(ds.delta, Float(1.f), mis_weight(
                     ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
                 result[active_e] += mis * bsdf_val * emitter_val;
             }
@@ -186,7 +186,7 @@ public:
                 ds.object = emitter;
 
                 Float emitter_pdf =
-                    select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
+                    ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
 
                 result[active_b] +=
                     bsdf_val * emitter_val *
@@ -210,7 +210,7 @@ public:
     Float mis_weight(Float pdf_a, Float pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Float(0.f));
+        return ek::select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), Float(0.f));
     }
 
     MTS_DECLARE_CLASS()

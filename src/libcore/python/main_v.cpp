@@ -50,10 +50,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     // Import the right variant of Enoki
     const char *enoki_pkg = nullptr;
-    if constexpr (is_cuda_array_v<Float> &&
-                  is_diff_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float> &&
+                  ek::is_diff_array_v<Float>)
         enoki_pkg = "enoki.cuda_autodiff";
-    else if constexpr (is_cuda_array_v<Float>)
+    else if constexpr (ek::is_cuda_array_v<Float>)
         enoki_pkg = "enoki.cuda";
     else if constexpr (is_array_v<Float>)
         enoki_pkg = "enoki.dynamic";
@@ -64,7 +64,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     py::module enoki_scalar = py::module::import("enoki.scalar");
 
     // Ensure that 'enoki.dynamic' is loaded in CPU mode (needed for DynamicArray<> casts)
-    if constexpr (!is_cuda_array_v<Float>)
+    if constexpr (!ek::is_cuda_array_v<Float>)
         py::module::import("enoki.dynamic");
 
     // Basic type aliases in the Enoki module (scalar + vectorized)
@@ -142,7 +142,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("Color1f")        = m.attr("Vector1f");
     m.attr("ScalarColor1f")  = m.attr("ScalarVector1f");
 
-    if constexpr (is_cuda_array_v<Float> && is_diff_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float> && ek::is_diff_array_v<Float>)
         m.attr("PCG32") = py::module::import("enoki.cuda").attr("PCG32");
     else
         m.attr("PCG32") = enoki.attr("PCG32");
@@ -221,7 +221,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
                             UnpolarizedSpectrum>();
 
     if constexpr (is_polarized_v<Spectrum>)
-        pybind11_type_alias<enoki::Matrix<Array<Float, UnpolarizedSpectrum::Size>, 4>,
+        pybind11_type_alias<ek::Matrix<Array<Float, UnpolarizedSpectrum::Size>, 4>,
                             Spectrum>();
 
     if constexpr (is_array_v<Float>)
@@ -237,15 +237,15 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
-    m.attr("USE_OPTIX") = is_cuda_array_v<Float>;
+    m.attr("USE_OPTIX") = ek::is_cuda_array_v<Float>;
 
     #if defined(MTS_ENABLE_EMBREE)
-        m.attr("USE_EMBREE")  = !is_cuda_array_v<Float>;
+        m.attr("USE_EMBREE")  = !ek::is_cuda_array_v<Float>;
     #else
         m.attr("USE_EMBREE")  = false;
     #endif
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         cie_alloc();
 
     MTS_PY_IMPORT(Object);

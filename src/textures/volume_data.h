@@ -80,7 +80,7 @@ read_binary_volume_data(const std::string &filename) {
                                     ScalarPoint3f(dims[3], dims[4], dims[5]));
     meta.transform = detail::bbox_transform(meta.bbox);
     meta.mean      = 0.;
-    meta.max       = -math::Infinity<ScalarFloat>;
+    meta.max       = -ek::Infinity<ScalarFloat>;
 
     auto raw_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * meta.channel_count]);
     size_t k      = 0;

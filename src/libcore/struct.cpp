@@ -616,7 +616,7 @@ public:
             if (field.type == Struct::Type::Float16) {
                 auto ref = cc.newUInt16Const(
                     asmjit::kConstScopeGlobal,
-                    enoki::half::float32_to_float16((float) field.default_));
+                    ek::half::float32_to_float16((float) field.default_));
                 cc.cmp(value.gp.r16(), ref);
             } else if (field.type == Struct::Type::Float32) {
                 auto ref = cc.newFloatConst(asmjit::kConstScopeGlobal, (float) field.default_);
@@ -727,7 +727,7 @@ public:
                     cc.vmovd(vr.xmm, vr.gp.r32());
                     cc.vcvtph2ps(vr.xmm, vr.xmm);
                 #else
-                    auto call = cc.call(imm_ptr((void *) enoki::half::float16_to_float32),
+                    auto call = cc.call(imm_ptr((void *) ek::half::float16_to_float32),
                         FuncSignature1<float, uint16_t>(CallConv::kIdHostCDecl));
                     call->setArg(0, vr.gp);
                     call->setRet(0, vr.xmm);
@@ -791,9 +791,9 @@ public:
             value.xmm = temp;
 
             while ((double) range.first < range_dbl.first)
-                range.first = enoki::next_float(range.first);
+                range.first = ek::next_float(range.first);
             while ((double) range.second > range_dbl.second)
-                range.second = enoki::prev_float(range.second);
+                range.second = ek::prev_float(range.second);
 
             if (has_flag(field.flags, Struct::Flags::Normalized)) {
                 muls(value.xmm, const_(range.second));
@@ -915,7 +915,7 @@ public:
                         cc.vcvtps2ph(temp, value.xmm, 0);
                         cc.vmovd(value.gp.r32(), temp);
                     #else
-                        auto call = cc.call(imm_ptr((void *) enoki::half::float32_to_float16),
+                        auto call = cc.call(imm_ptr((void *) ek::half::float32_to_float16),
                             FuncSignature1<uint16_t, float>(asmjit::CallConv::kIdHost));
                         call->setArg(0, value.xmm);
                         call->setRet(0, value.gp);
@@ -1192,8 +1192,8 @@ std::pair<double, double> Struct::range(Struct::Type type) {
         // Account for rounding errors in the conversions above.
         // (we want the bounds to be conservative)
         if (result.first != 0)
-            result.first = enoki::next_float(result.first);
-        result.second = enoki::prev_float(result.second);
+            result.first = ek::next_float(result.first);
+        result.second = ek::prev_float(result.second);
     }
 
     return result;
@@ -1534,7 +1534,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint16_t val = *((const uint16_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.s = enoki::half::float16_to_float32(val);
+                value.s = ek::half::float16_to_float32(val);
                 value.type = Struct::Type::Float32;
             }
             break;
@@ -1606,7 +1606,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
     dst += f.offset;
 
     if (has_flag(f.flags, Struct::Flags::Gamma) && !has_flag(value.flags, Struct::Flags::Gamma))
-        value.f = enoki::linear_to_srgb(value.f);
+        value.f = ek::linear_to_srgb(value.f);
 
     if (f.is_integer() && value.type == struct_type_v<Float>) {
         auto range = f.range();
@@ -1692,7 +1692,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float16: {
-                uint16_t val = enoki::half::float32_to_float16(value.s);
+                uint16_t val = ek::half::float32_to_float16(value.s);
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint16_t *) dst) = val;

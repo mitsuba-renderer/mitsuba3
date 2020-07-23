@@ -3,9 +3,6 @@
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/spectrum.h>
-#include <memory>
-#include <string>
-#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -53,7 +50,7 @@ public:
     };
 
     using Float = float;
-    using Array3f = Array<Float, 3>;
+    using Array3f = ek::Array<Float, 3>;
     MTS_IMPORT_CORE_TYPES()
 
     /// Construct an empty property container

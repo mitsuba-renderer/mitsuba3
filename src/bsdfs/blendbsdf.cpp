@@ -100,7 +100,7 @@ public:
             return { bs, result };
         }
 
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Spectrum result(0.f);
 
         Mask m0 = active && sample1 >  weight,
@@ -109,15 +109,15 @@ public:
         if (any_or<true>(m0)) {
             auto [bs0, result0] = m_nested_bsdf[0]->sample(
                 ctx, si, (sample1 - weight) / (1 - weight), sample2, m0);
-            masked(bs, m0) = bs0;
-            masked(result, m0) = result0;
+            ek::masked(bs, m0) = bs0;
+            ek::masked(result, m0) = result0;
         }
 
         if (any_or<true>(m1)) {
             auto [bs1, result1] = m_nested_bsdf[1]->sample(
                 ctx, si, sample1 / weight, sample2, m1);
-            masked(bs, m1) = bs1;
-            masked(result, m1) = result1;
+            ek::masked(bs, m1) = bs1;
+            ek::masked(result, m1) = result1;
         }
 
         return { bs, result };

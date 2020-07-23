@@ -157,8 +157,8 @@ public:
             si.dn_du = m_to_world.transform_affine(Normal3f(si.dn_du)) * inv_len;
             si.dn_dv = m_to_world.transform_affine(Normal3f(si.dn_dv)) * inv_len;
 
-            si.dn_du -= tn * dot(tn, si.dn_du);
-            si.dn_dv -= tn * dot(tn, si.dn_dv);
+            si.dn_du -= tn * ek::dot(tn, si.dn_du);
+            si.dn_dv -= tn * ek::dot(tn, si.dn_dv);
         }
 
         si.instance = this;
@@ -180,7 +180,7 @@ public:
 
 #if defined(MTS_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
-        if constexpr (!is_cuda_array_v<Float>) {
+        if constexpr (!ek::is_cuda_array_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
             rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &m_to_world.matrix);

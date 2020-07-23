@@ -77,7 +77,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         bs.wo = -si.wi;
         bs.pdf = 1.f;
         bs.eta = 1.f;
@@ -103,7 +103,7 @@ public:
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
             Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = normalize(a_axis - dot(a_axis, forward)*forward);
+            Vector3f eff_a_axis = normalize(a_axis - ek::dot(a_axis, forward)*forward);
             Vector3f eff_t_axis = cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
@@ -151,7 +151,7 @@ public:
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
             Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = normalize(a_axis - dot(a_axis, forward)*forward);
+            Vector3f eff_a_axis = normalize(a_axis - ek::dot(a_axis, forward)*forward);
             Vector3f eff_t_axis = cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis

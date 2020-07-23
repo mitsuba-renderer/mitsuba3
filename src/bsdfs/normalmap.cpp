@@ -151,7 +151,7 @@ public:
 
         Frame3f result;
         result.n = normalize(n);
-        result.s = normalize(fnmadd(result.n, dot(result.n, si.dp_du), si.dp_du));
+        result.s = normalize(fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
         result.t = cross(result.n, result.s);
         return result;
     }

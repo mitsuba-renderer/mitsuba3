@@ -22,8 +22,8 @@ NAMESPACE_BEGIN(quad)
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename FloatX>
-extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre(int n);
+template <typename Float>
+extern MTS_EXPORT_CORE std::pair<Float, Float> gauss_legendre(int n);
 
 /**
  * \brief Computes the nodes and weights of a Gauss-Lobatto quadrature
@@ -47,8 +47,8 @@ extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_legendre(int n);
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename FloatX>
-extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto(int n);
+template <typename Float>
+extern MTS_EXPORT_CORE std::pair<Float, Float> gauss_lobatto(int n);
 
 /**
  * \brief Computes the nodes and weights of a composite Simpson quadrature
@@ -65,8 +65,8 @@ extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> gauss_lobatto(int n);
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename FloatX>
-extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson(int n);
+template <typename Float>
+extern MTS_EXPORT_CORE std::pair<Float, Float> composite_simpson(int n);
 
 /**
  * \brief Computes the nodes and weights of a composite Simpson 3/8 quadrature
@@ -83,8 +83,8 @@ extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson(int n);
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
-template <typename FloatX>
-extern MTS_EXPORT_CORE std::pair<FloatX, FloatX> composite_simpson_38(int n);
+template <typename Float>
+extern MTS_EXPORT_CORE std::pair<Float, Float> composite_simpson_38(int n);
 
 NAMESPACE_END(quad)
 NAMESPACE_END(mitsuba)

@@ -83,7 +83,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
 
         active &= cos_theta_i > 0.f;
         if (unlikely(none_or<false>(active) ||
@@ -98,7 +98,7 @@ public:
 
         UnpolarizedSpectrum value = m_reflectance->eval(si, active);
 
-        return { bs, select(active && bs.pdf > 0.f, unpolarized<Spectrum>(value), 0.f) };
+        return { bs, ek::select(active && bs.pdf > 0.f, unpolarized<Spectrum>(value), 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -116,7 +116,7 @@ public:
         UnpolarizedSpectrum value =
             m_reflectance->eval(si, active) * math::InvPi<Float> * cos_theta_o;
 
-        return select(active, unpolarized<Spectrum>(value), 0.f);
+        return ek::select(active, unpolarized<Spectrum>(value), 0.f);
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -131,7 +131,7 @@ public:
 
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
-        return select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
+        return ek::select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
     void traverse(TraversalCallback *callback) override {

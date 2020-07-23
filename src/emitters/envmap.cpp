@@ -88,7 +88,7 @@ public:
 
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
             ScalarFloat sin_theta =
-                std::sin(y / ScalarFloat(bitmap->size().y() - 1) * math::Pi<ScalarFloat>);
+                std::sin(y / ScalarFloat(bitmap->size().y() - 1) * ek::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
                 ScalarColor3f rgb = load_unaligned<ScalarVector3f>(ptr);
@@ -159,16 +159,16 @@ public:
 
         auto [uv, pdf] = m_warp.sample(sample);
 
-        Float theta = uv.y() * math::Pi<Float>,
-              phi = uv.x() * (2.f * math::Pi<Float>);
+        Float theta = uv.y() * ek::Pi<Float>,
+              phi = uv.x() * (2.f * ek::Pi<Float>);
 
-        Vector3f d = math::sphdir(theta, phi);
+        Vector3f d = ek::sphdir(theta, phi);
         d = Vector3f(d.y(), d.z(), -d.x());
 
         Float dist = 2.f * m_bsphere.radius;
 
         Float inv_sin_theta =
-            safe_rsqrt(max(sqr(d.x()) + sqr(d.z()), sqr(math::Epsilon<Float>)));
+            safe_ek::rsqrt(max(sqr(d.x()) + sqr(d.z()), sqr(ek::Epsilon<Float>)));
 
         d = m_world_transform->eval(it.time, active).transform_affine(d);
 
@@ -177,7 +177,7 @@ public:
         ds.n      = -d;
         ds.uv     = uv;
         ds.time   = it.time;
-        ds.pdf = select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>))), 0.f);
+        ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * sqr(ek::Pi<Float>))), 0.f);
         ds.delta  = false;
         ds.object = this;
         ds.d      = d;
@@ -203,8 +203,8 @@ public:
         uv -= floor(uv);
 
         Float inv_sin_theta =
-            safe_rsqrt(max(sqr(d.x()) + sqr(d.z()), sqr(math::Epsilon<Float>)));
-        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * sqr(math::Pi<Float>)));
+            safe_ek::rsqrt(max(sqr(d.x()) + sqr(d.z()), sqr(ek::Epsilon<Float>)));
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * sqr(ek::Pi<Float>)));
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -231,7 +231,7 @@ public:
 
             for (size_t y = 0; y < m_resolution.y(); ++y) {
                 ScalarFloat sin_theta =
-                    std::sin(y / ScalarFloat(m_resolution.y() - 1) * math::Pi<ScalarFloat>);
+                    std::sin(y / ScalarFloat(m_resolution.y() - 1) * ek::Pi<ScalarFloat>);
 
                 for (size_t x = 0; x < m_resolution.x(); ++x) {
                     ScalarVector4f coeff = load<ScalarVector4f>(ptr);
@@ -277,10 +277,10 @@ protected:
         const uint32_t width = m_resolution.x();
         UInt32 index = pos.x() + pos.y() * width;
 
-        Vector4f v00 = gather<Vector4f>(m_data, index, active),
-                 v10 = gather<Vector4f>(m_data, index + 1, active),
-                 v01 = gather<Vector4f>(m_data, index + width, active),
-                 v11 = gather<Vector4f>(m_data, index + width + 1, active);
+        Vector4f v00 = ek::gather<Vector4f>(m_data, index, active),
+                 v10 = ek::gather<Vector4f>(m_data, index + 1, active),
+                 v01 = ek::gather<Vector4f>(m_data, index + width, active),
+                 v11 = ek::gather<Vector4f>(m_data, index + width + 1, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
@@ -300,7 +300,7 @@ protected:
             f   = fmadd(w0.y(), f0, w1.y() * f1);
 
             /// Evaluate the whitepoint spectrum
-            SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+            SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
             si.wavelengths = wavelengths;
             UnpolarizedSpectrum wp = m_d65->eval(si, active);
 

@@ -58,7 +58,7 @@ MTS_PY_EXPORT(PhaseFunction) {
                         .def_method(PhaseFunction, id)
                         .def("__repr__", &PhaseFunction::to_string);
 
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         pybind11_type_alias<UInt64, PhaseFunctionPtr>();
     }
 

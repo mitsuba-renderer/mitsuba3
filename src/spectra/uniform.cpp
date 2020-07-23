@@ -32,7 +32,7 @@ public:
             auto active_w = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
                             (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
-            return select(active_w, UnpolarizedSpectrum(m_value),
+            return ek::select(active_w, UnpolarizedSpectrum(m_value),
                                     UnpolarizedSpectrum(0.f));
         } else {
             return m_value;
@@ -51,7 +51,7 @@ public:
             auto active_w = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
                             (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
-            return select(active_w,
+            return ek::select(active_w,
                 Wavelength(1.f / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN)), Wavelength(0.f));
         } else {
             NotImplementedError("pdf");

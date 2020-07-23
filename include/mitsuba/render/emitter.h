@@ -68,7 +68,7 @@ public:
     }
 
     /// Flags for all components combined.
-    uint32_t flags(mask_t<Float> /*active*/ = true) const { return m_flags; }
+    uint32_t flags(ek::mask_t<Float> /*active*/ = true) const { return m_flags; }
 
 
     ENOKI_CALL_SUPPORT_FRIEND()

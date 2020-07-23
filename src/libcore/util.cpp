@@ -6,8 +6,6 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/vector.h>
 
-#include <cmath>
-
 #if defined(__LINUX__)
 #  if !defined(_GNU_SOURCE)
 #    define _GNU_SOURCE
@@ -177,9 +175,9 @@ std::string time_string(float value, bool precise) {
         { 52.1429f, "y"}
     };
 
-    if (std::isnan(value))
+    if (ek::isnan(value))
         return "nan";
-    else if (std::isinf(value))
+    else if (ek::isinf(value))
         return "inf";
     else if (value < 0)
         return "-" + time_string(-value, precise);

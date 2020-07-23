@@ -96,7 +96,7 @@ MTS_PY_EXPORT(Bitmap) {
             "target"_a, "rfilter"_a = py::none(),
             "bc"_a = std::make_pair(FilterBoundaryCondition::Clamp,
                                     FilterBoundaryCondition::Clamp),
-            "clamp"_a = std::make_pair(-math::Infinity<Float>, math::Infinity<Float>),
+            "clamp"_a = std::make_pair(-ek::Infinity<Float>, ek::Infinity<Float>),
             "temp"_a = py::none(),
             D(Bitmap, resample)
         )
@@ -106,7 +106,7 @@ MTS_PY_EXPORT(Bitmap) {
             "res"_a, "rfilter"_a = py::none(),
             "bc"_a = std::make_pair(FilterBoundaryCondition::Clamp,
                                     FilterBoundaryCondition::Clamp),
-            "clamp"_a = std::make_pair(-math::Infinity<Float>, math::Infinity<Float>),
+            "clamp"_a = std::make_pair(-ek::Infinity<Float>, ek::Infinity<Float>),
             D(Bitmap, resample, 2)
         )
         .def("convert", py::overload_cast<Bitmap::PixelFormat, Struct::Type, bool, Bitmap::AlphaTransform>(

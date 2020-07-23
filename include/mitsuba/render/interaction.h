@@ -17,7 +17,7 @@ struct Interaction {
 
     using Float      = Float_;
     using Spectrum   = Spectrum_;
-    using Mask       = mask_t<Float>;
+    using Mask       = ek::mask_t<Float>;
     using Point3f    = Point<Float, 3>;
     using Vector3f   = Vector<Float, 3>;
     using Ray3f      = Ray<Point3f, Spectrum>;
@@ -31,7 +31,7 @@ struct Interaction {
     // =============================================================
 
     /// Distance traveled along the ray
-    Float t = math::Infinity<Float>;
+    Float t = ek::Infinity<Float>;
 
     /// Time value associated with the interaction
     Float time;
@@ -51,19 +51,19 @@ struct Interaction {
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return neq(t, math::Infinity<Float>);
+        return neq(t, ek::Infinity<Float>);
     }
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
         return Ray3f(p, d, (1.f + hmax(abs(p))) * math::RayEpsilon<Float>,
-                     math::Infinity<Float>, time, wavelengths);
+                     ek::Infinity<Float>, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
     Ray3f spawn_ray_to(const Point3f &t) const {
         Vector3f d = t - p;
-        Float dist = norm(d);
+        Float dist = ek::norm(d);
         d /= dist;
 
         return Ray3f(p, d, (1.f + hmax(abs(p))) * math::RayEpsilon<Float>,
@@ -151,7 +151,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
-        sh_frame.s = normalize(fnmadd(sh_frame.n, dot(sh_frame.n, dp_du), dp_du));
+        sh_frame.s = normalize(fnmadd(sh_frame.n, ek::dot(sh_frame.n, dp_du), dp_du));
         sh_frame.t = cross(sh_frame.n, sh_frame.s);
     }
 
@@ -184,7 +184,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * contains the ``ray(this->p, d)``
      */
     MediumPtr target_medium(const Vector3f &d) const {
-        return target_medium(dot(d, n));
+        return target_medium(ek::dot(d, n));
     }
 
     /**
@@ -195,7 +195,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * the interior medium when ``cos_theta <= 0``.
      */
     MediumPtr target_medium(const Float &cos_theta) const {
-        return select(cos_theta > 0, shape->exterior_medium(),
+        return ek::select(cos_theta > 0, shape->exterior_medium(),
                                      shape->interior_medium());
     }
 
@@ -219,27 +219,27 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return;
 
         // Compute interaction with the two offset rays
-        Float d   = dot(n, p),
-              t_x = (d - dot(n, ray.o_x)) / dot(n, ray.d_x),
-              t_y = (d - dot(n, ray.o_y)) / dot(n, ray.d_y);
+        Float d   = ek::dot(n, p),
+              t_x = (d - ek::dot(n, ray.o_x)) / ek::dot(n, ray.d_x),
+              t_y = (d - ek::dot(n, ray.o_y)) / ek::dot(n, ray.d_y);
 
         // Corresponding positions near the surface
         Vector3f dp_dx = fmadd(ray.d_x, t_x, ray.o_x) - p,
                  dp_dy = fmadd(ray.d_y, t_y, ray.o_y) - p;
 
         // Solve a least squares problem to turn this into UV coordinates
-        Float a00 = dot(dp_du, dp_du),
-              a01 = dot(dp_du, dp_dv),
-              a11 = dot(dp_dv, dp_dv),
+        Float a00 = ek::dot(dp_du, dp_du),
+              a01 = ek::dot(dp_du, dp_dv),
+              a11 = ek::dot(dp_dv, dp_dv),
               inv_det = rcp(a00*a11 - a01*a01);
 
-        Float b0x = dot(dp_du, dp_dx),
-              b1x = dot(dp_dv, dp_dx),
-              b0y = dot(dp_du, dp_dy),
-              b1y = dot(dp_dv, dp_dy);
+        Float b0x = ek::dot(dp_du, dp_dx),
+              b1x = ek::dot(dp_dv, dp_dx),
+              b0y = ek::dot(dp_du, dp_dy),
+              b1y = ek::dot(dp_dv, dp_dy);
 
         /* Set the UV partials to zero if dpdu and/or dpdv == 0 */
-        inv_det = select(enoki::isfinite(inv_det), inv_det, 0.f);
+        inv_det = ek::select(ek::isfinite(inv_det), inv_det, 0.f);
 
         duv_dx = Vector2f(fmsub(a11, b0x, a01 * b1x) * inv_det,
                           fmsub(a00, b1x, a01 * b0x) * inv_det);
@@ -341,14 +341,14 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         if constexpr (is_dynamic_v<Float>)
             return slices(duv_dx) > 0 || slices(duv_dy) > 0;
         else
-            return any_nested(neq(duv_dx, 0.f) || neq(duv_dy, 0.f));
+            return ek::any_nested(neq(duv_dx, 0.f) || neq(duv_dy, 0.f));
     }
 
     bool has_n_partials() const {
         if constexpr (is_dynamic_v<Float>)
             return slices(dn_du) > 0 || slices(dn_dv) > 0;
         else
-            return any_nested(neq(dn_du, 0.f) || neq(dn_dv, 0.f));
+            return ek::any_nested(neq(dn_du, 0.f) || neq(dn_dv, 0.f));
     }
 
     //! @}
@@ -529,7 +529,7 @@ struct PreliminaryIntersection {
     // =============================================================
 
     /// Distance traveled along the ray
-    Float t = math::Infinity<Float>;
+    Float t = ek::Infinity<Float>;
 
     /// 2D coordinates on the primitive surface parameterization
     Point2f prim_uv;
@@ -555,7 +555,7 @@ struct PreliminaryIntersection {
 
     /// Is the current interaction valid?
     Mask is_valid() const {
-        return neq(t, math::Infinity<Float>);
+        return neq(t, ek::Infinity<Float>);
     }
 
     /**
@@ -571,14 +571,14 @@ struct PreliminaryIntersection {
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      HitComputeFlags flags,
                                                      Mask active) {
-        ShapePtr target = select(eq(instance, nullptr), shape, instance);
+        ShapePtr target = ek::select(eq(instance, nullptr), shape, instance);
         SurfaceInteraction3f si = target->compute_surface_interaction(ray, *this, flags, active);
         active &= si.is_valid();
-        si.t = select(active, si.t, math::Infinity<Float>);
+        si.t = ek::select(active, si.t, ek::Infinity<Float>);
         si.prim_index  = prim_index;
 
         // Set shape pointer if not already set by compute_surface_interaction()
-        si.shape = select(eq(si.shape, nullptr), shape, si.shape);
+        si.shape = ek::select(eq(si.shape, nullptr), shape, si.shape);
 
         si.instance    = instance;
         si.time        = ray.time;
@@ -588,9 +588,9 @@ struct PreliminaryIntersection {
             si.initialize_sh_frame();
 
         // Incident direction in local coordinates
-        si.wi = select(active, si.to_local(-ray.d), -ray.d);
+        si.wi = ek::select(active, si.to_local(-ray.d), -ray.d);
 
-        si.duv_dx = si.duv_dy = zero<Point2f>();
+        si.duv_dx = si.duv_dy = ek::zero<Point2f>();
 
         return si;
     }

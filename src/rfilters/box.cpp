@@ -31,8 +31,8 @@ public:
         init_discretization();
     }
 
-    Float eval(Float x, mask_t<Float> /* active */) const override {
-        return select(abs(x) <= m_radius, Float(1.f), Float(0.f));
+    Float eval(Float x, ek::mask_t<Float> /* active */) const override {
+        return ek::select(abs(x) <= m_radius, Float(1.f), Float(0.f));
     }
 
     std::string to_string() const override {

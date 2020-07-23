@@ -83,7 +83,7 @@ MTS_PY_EXPORT(BSDF) {
         .def("__repr__", &BSDF::to_string)
         ;
 
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         pybind11_type_alias<UInt64, BSDFPtr>();
         pybind11_type_alias<UInt32, replace_scalar_t<Float, BSDFFlags>>();
     }

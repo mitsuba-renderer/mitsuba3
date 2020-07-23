@@ -1,5 +1,6 @@
 #pragma once
 
+#include <enoki/struct.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/spectrum.h>
@@ -19,26 +20,26 @@ NAMESPACE_BEGIN(mitsuba)
  * ray-object intersection code may produce undefined results.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
-    static constexpr size_t Size = array_size_v<Point_>;
+    static constexpr size_t Size = ek::array_size_v<Point_>;
 
-    using Point                  = Point_;
-    using Float                  = value_t<Point>;
-    using Vector                 = mitsuba::Vector<Float, Size>;
-    using Spectrum               = Spectrum_;
-    using Wavelength             = wavelength_t<Spectrum_>;
+    using Point      = Point_;
+    using Float      = ek::value_t<Point>;
+    using Vector     = mitsuba::Vector<Float, Size>;
+    using Spectrum   = Spectrum_;
+    using Wavelength = wavelength_t<Spectrum_>;
 
     Point o;                              ///< Ray origin
     Vector d;                             ///< Ray direction
     Vector d_rcp;                         ///< Componentwise reciprocals of the ray direction
     Float mint = math::RayEpsilon<Float>; ///< Minimum position on the ray segment
-    Float maxt = math::Infinity<Float>;   ///< Maximum position on the ray segment
+    Float maxt = ek::Infinity<Float>;     ///< Maximum position on the ray segment
     Float time = 0.f;                     ///< Time value associated with this ray
     Wavelength wavelengths;               ///< Wavelength packet associated with the ray
 
     /// Construct a new ray (o, d) at time 'time'
     Ray(const Point &o, const Vector &d, Float time,
         const Wavelength &wavelengths)
-        : o(o), d(d), d_rcp(rcp(d)), time(time),
+        : o(o), d(d), d_rcp(ek::rcp(d)), time(time),
           wavelengths(wavelengths) { }
 
     /// Construct a new ray (o, d) with time
@@ -50,7 +51,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Float mint, Float maxt,
         Float time, const Wavelength &wavelengths)
-        : o(o), d(d), d_rcp(rcp(d)), mint(mint), maxt(maxt),
+        : o(o), d(d), d_rcp(ek::rcp(d)), mint(mint), maxt(maxt),
           time(time), wavelengths(wavelengths) { }
 
     /// Copy a ray, but change the [mint, maxt] interval
@@ -59,10 +60,10 @@ template <typename Point_, typename Spectrum_> struct Ray {
           time(r.time), wavelengths(r.wavelengths) { }
 
     /// Update the reciprocal ray directions after changing 'd'
-    void update() { d_rcp = rcp(d); }
+    void update() { d_rcp = ek::rcp(d); }
 
     /// Return the position of a point along the ray
-    Point operator() (Float t) const { return fmadd(d, t, o); }
+    Point operator() (Float t) const { return ek::fmadd(d, t, o); }
 
     /// Return a ray that points into the opposite direction
     Ray reverse() const {
@@ -80,41 +81,34 @@ template <typename Point_, typename Spectrum_> struct Ray {
     ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 };
 
-/**
- * \brief Ray differential -- enhances the basic ray class with
- * offset rays for two adjacent pixels on the view plane
- */
-template <typename Point_, typename Spectrum_>
-struct RayDifferential : Ray<Point_, Spectrum_> {
-    using Base = Ray<Point_, Spectrum_>;
-    using Base::Base;
+// /**
+//  * \brief Ray differential -- enhances the basic ray class with
+//  * offset rays for two adjacent pixels on the view plane
+//  */
+// template <typename Point_, typename Spectrum_>
+// struct RayDifferential : Ray<Point_, Spectrum_> {
+//     using Base = Ray<Point_, Spectrum_>;
 
-    using typename Base::Float;
-    using typename Base::Point;
-    using typename Base::Vector;
-    using Base::o;
-    using Base::d;
+//     MTS_USING_TYPES(Float, Point, Vector)
+//     MTS_USING_MEMBERS(o, d, d_rcp, mint, maxt, time, wavelengths)
 
-    Point o_x, o_y;
-    Vector d_x, d_y;
-    bool has_differentials = false;
+//     Point o_x, o_y;
+//     Vector d_x, d_y;
+//     bool has_differentials = false;
 
-    /// Construct from a Ray instance
-    RayDifferential(const Base &ray)
-        : Base(ray), has_differentials(false) { }
+//     /// Construct from a Ray instance
+//     RayDifferential(const Base &ray)
+//         : Base(ray), has_differentials(false) { }
 
-    void scale_differential(Float amount) {
-        o_x = fmadd(o_x - o, amount, o);
-        o_y = fmadd(o_y - o, amount, o);
-        d_x = fmadd(d_x - d, amount, d);
-        d_y = fmadd(d_y - d, amount, d);
-    }
+//     void scale_differential(Float amount) {
+//         o_x = fmadd(o_x - o, amount, o);
+//         o_y = fmadd(o_y - o, amount, o);
+//         d_x = fmadd(d_x - d, amount, d);
+//         d_y = fmadd(d_y - d, amount, d);
+//     }
 
-    ENOKI_DERIVED_STRUCT(RayDifferential, Base,
-        ENOKI_BASE_FIELDS(o, d, d_rcp, mint, maxt, time, wavelengths),
-        ENOKI_DERIVED_FIELDS(o_x, o_y, d_x, d_y)
-    )
-};
+//     ENOKI_DERIVED_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time, wavelengths, o_x, o_y, d_x, d_y)
+// };
 
 /// Return a string representation of the ray
 template <typename Point, typename Spectrum>
@@ -140,8 +134,8 @@ NAMESPACE_END(mitsuba)
 // Support for static & dynamic vectorization
 ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 
-ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
-                     time, wavelengths, o_x, o_y, d_x, d_y)
+// ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
+//                      time, wavelengths, o_x, o_y, d_x, d_y)
 
 //! @}
 // -----------------------------------------------------------------------

@@ -170,7 +170,7 @@ public:
                     parse_error |= cur == orig;
                 }
                 p = m_to_world.transform_affine(p);
-                if (unlikely(!all(enoki::isfinite(p))))
+                if (unlikely(!all(ek::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
                 m_bbox.expand(p);
                 vertices.push_back(p);
@@ -184,7 +184,7 @@ public:
                     parse_error |= cur == orig;
                 }
                 n = normalize(m_to_world.transform_affine(n));
-                if (unlikely(!all(enoki::isfinite(n))))
+                if (unlikely(!all(ek::isfinite(n))))
                     fail("mesh contains invalid vertex normal data");
                 normals.push_back(n);
             } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
@@ -291,7 +291,7 @@ public:
         m_vertex_normals_buf.managed();
         m_vertex_texcoords_buf.managed();
 
-        if constexpr (is_cuda_array_v<Float>)
+        if constexpr (ek::is_cuda_array_v<Float>)
             cuda_sync();
 
         for (const auto& v_ : vertex_map) {

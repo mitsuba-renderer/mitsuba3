@@ -235,9 +235,9 @@ public:
         active &= all((p >= 0) && (p <= 1));
 
         if (none_or<false>(active))
-            return zero<ResultType>();
+            return ek::zero<ResultType>();
         ResultType result = interpolate(p, it.wavelengths, active);
-        return select(active, result, zero<ResultType>());
+        return ek::select(active, result, ek::zero<ResultType>());
     }
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
@@ -254,10 +254,10 @@ public:
                       m_inv_resolution_z(value.z())),
               mod = value - div * m_metadata.shape;
 
-            masked(mod, mod < 0) += T(m_metadata.shape);
+            ek::masked(mod, mod < 0) += T(m_metadata.shape);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = select(eq(div & 1, 0) ^ (value < 0), mod, m_metadata.shape - 1 - mod);
+                mod = ek::select(eq(div & 1, 0) ^ (value < 0), mod, m_metadata.shape - 1 - mod);
 
             return mod;
         }
@@ -291,7 +291,7 @@ public:
             p = fmadd(p, m_metadata.shape, -.5f);
 
             // Integer pixel positions for trilinear interpolation
-            Vector3i p_i  = enoki::floor2int<Vector3i>(p);
+            Vector3i p_i  = ek::floor2int<Vector3i>(p);
 
             // Interpolation weights
             Point3f w1 = p - Point3f(p_i),
@@ -305,14 +305,14 @@ public:
             Int8 index = fmadd(fmadd(pi_i_w.z(), ny, pi_i_w.y()), nx, pi_i_w.x());
 
             // Load 8 grid positions to perform trilinear interpolation
-            auto d000 = gather<StorageType>(m_data, index[0], active),
-                 d100 = gather<StorageType>(m_data, index[1], active),
-                 d010 = gather<StorageType>(m_data, index[2], active),
-                 d110 = gather<StorageType>(m_data, index[3], active),
-                 d001 = gather<StorageType>(m_data, index[4], active),
-                 d101 = gather<StorageType>(m_data, index[5], active),
-                 d011 = gather<StorageType>(m_data, index[6], active),
-                 d111 = gather<StorageType>(m_data, index[7], active);
+            auto d000 = ek::gather<StorageType>(m_data, index[0], active),
+                 d100 = ek::gather<StorageType>(m_data, index[1], active),
+                 d010 = ek::gather<StorageType>(m_data, index[2], active),
+                 d110 = ek::gather<StorageType>(m_data, index[3], active),
+                 d001 = ek::gather<StorageType>(m_data, index[4], active),
+                 d101 = ek::gather<StorageType>(m_data, index[5], active),
+                 d011 = ek::gather<StorageType>(m_data, index[6], active),
+                 d111 = ek::gather<StorageType>(m_data, index[7], active);
 
             ResultType v000, v001, v010, v011, v100, v101, v110, v111;
             Float scale = 1.f;
@@ -363,7 +363,7 @@ public:
 
             Int32 index = fmadd(fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
 
-            StorageType v = gather<StorageType>(m_data, index, active);
+            StorageType v = ek::gather<StorageType>(m_data, index, active);
 
             if constexpr (uses_srgb_model)
                 return v.w() * srgb_model_eval<UnpolarizedSpectrum>(head<3>(v), wavelengths);
@@ -396,8 +396,8 @@ public:
             m_size = (ScalarUInt32) new_size;
         }
 
-        auto sum = hsum(hsum(detach(m_data)));
-        m_metadata.mean = (double) enoki::slice(sum, 0) / (double) (m_size * 3);
+        auto sum = ek::hsum(ek::hsum(detach(m_data)));
+        m_metadata.mean = (double) ek::slice(sum, 0) / (double) (m_size * 3);
         if (!m_fixed_max) {
             auto maximum = hmax(hmax(m_data));
             m_metadata.max = slice(maximum, 0);
@@ -421,7 +421,7 @@ protected:
     DynamicBuffer<Float> m_data;
     bool m_fixed_max = false;
     VolumeMetadata m_metadata;
-    enoki::divisor<int32_t> m_inv_resolution_x, m_inv_resolution_y, m_inv_resolution_z;
+    ek::divisor<int32_t> m_inv_resolution_x, m_inv_resolution_y, m_inv_resolution_z;
 
     ScalarUInt32 m_size;
     FilterType m_filter_type;

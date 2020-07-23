@@ -37,19 +37,19 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
                             bool has_vertex_normals, bool has_vertex_texcoords)
     : Base(props), m_name(name), m_vertex_count(vertex_count), m_face_count(face_count) {
 
-    m_faces_buf = zero<DynamicBuffer<UInt32>>(m_face_count * 3);
-    m_vertex_positions_buf = zero<FloatStorage>(m_vertex_count * 3);
+    m_faces_buf = ek::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
+    m_vertex_positions_buf = ek::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_normals)
-        m_vertex_normals_buf = zero<FloatStorage>(m_vertex_count * 3);
+        m_vertex_normals_buf = ek::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
-        m_vertex_texcoords_buf = zero<FloatStorage>(m_vertex_count * 2);
+        m_vertex_texcoords_buf = ek::zero<FloatStorage>(m_vertex_count * 2);
 
     m_faces_buf.managed();
     m_vertex_positions_buf.managed();
     m_vertex_normals_buf.managed();
     m_vertex_texcoords_buf.managed();
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         cuda_sync();
 
     set_children();
@@ -207,7 +207,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
     if constexpr (!is_dynamic_v<Float>) {
         size_t invalid_counter = 0;
-        std::vector<InputNormal3f> normals(m_vertex_count, zero<InputNormal3f>());
+        std::vector<InputNormal3f> normals(m_vertex_count, ek::zero<InputNormal3f>());
 
         for (ScalarSize i = 0; i < m_face_count; ++i) {
             auto fi = face_indices(i);
@@ -222,9 +222,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             InputVector3f side_0 = v[1] - v[0],
                           side_1 = v[2] - v[0];
             InputNormal3f n = cross(side_0, side_1);
-            InputFloat length_sqr = squared_norm(n);
+            InputFloat length_sqr = ek::squared_norm(n);
             if (likely(length_sqr > 0)) {
-                n *= rsqrt(length_sqr);
+                n *= ek::rsqrt(length_sqr);
 
                 // Use Enoki to compute the face angles at the same time
                 auto side1 = transpose(Array<Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
@@ -238,7 +238,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         for (ScalarSize i = 0; i < m_vertex_count; i++) {
             InputNormal3f n = normals[i];
-            InputFloat length = norm(n);
+            InputFloat length = ek::norm(n);
             if (likely(length != 0.f)) {
                 n /= length;
             } else {
@@ -253,7 +253,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             Log(Warn, "\"%s\": computed vertex normals (%i invalid vertices!)",
                 m_name, invalid_counter);
     } else {
-        auto fi = face_indices(arange<UInt32>(m_face_count));
+        auto fi = face_indices(ek::arange<UInt32>(m_face_count));
 
         Vector3f v[3] = { vertex_position(fi[0]),
                           vertex_position(fi[1]),
@@ -261,16 +261,16 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         auto n = normalize(cross(v[1] - v[0], v[2] - v[0]));
 
-        Vector3f normals = zero<Vector3f>(m_vertex_count);
+        Vector3f normals = ek::zero<Vector3f>(m_vertex_count);
         for (int i = 0; i < 3; ++i) {
             auto d0 = normalize(v[(i + 1) % 3] - v[i]);
             auto d1 = normalize(v[(i + 2) % 3] - v[i]);
-            auto face_angle = safe_acos(dot(d0, d1));
+            auto face_angle = safe_acos(ek::dot(d0, d1));
             scatter_add(normals, n * face_angle, fi[i]);
         }
         normals = normalize(normals);
 
-        auto ni = 3 * arange<UInt32>(m_vertex_count);
+        auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
         for (size_t i = 0; i < 3; ++i)
             scatter(m_vertex_normals_buf, normals[i], ni + i);
     }
@@ -302,7 +302,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
             m_face_count
         );
     } else {
-        Float table = face_area(arange<UInt32>(m_face_count)).managed();
+        Float table = face_area(ek::arange<UInt32>(m_face_count)).managed();
 
         m_area_pmf = DiscreteDistribution<Float>(
             table.data(),
@@ -436,9 +436,9 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
 
     /* Solve a least squares problem to determine
        the UV coordinates within the current triangle */
-    Float b1  = dot(du, rel), b2 = dot(dv, rel),
-          a11 = dot(du, du), a12 = dot(du, dv),
-          a22 = dot(dv, dv),
+    Float b1  = ek::dot(du, rel), b2 = ek::dot(dv, rel),
+          a11 = ek::dot(du, du), a12 = ek::dot(du, dv),
+          a22 = ek::dot(dv, dv),
           inv_det = rcp(a11 * a22 - a12 * a12);
 
     Float u = fmsub (a22, b1, a12 * b2) * inv_det,
@@ -456,7 +456,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     MTS_MASK_ARGUMENT(active);
 
     bool differentiable = false;
-    if constexpr (is_diff_array_v<Float>)
+    if constexpr (ek::is_diff_array_v<Float>)
         differentiable = requires_gradient(m_vertex_positions_buf) ||
                          requires_gradient(ray.o) || requires_gradient(ray.d);
 
@@ -479,8 +479,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
 
-    SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
-    si.t = select(active, pi.t, math::Infinity<Float>);
+    SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+    si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
     // Re-interpolate intersection using barycentric coordinates
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
@@ -520,7 +520,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.sh_frame.n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
 
-        si.dn_du = si.dn_dv = zero<Vector3f>();
+        si.dn_du = si.dn_dv = ek::zero<Vector3f>();
         if (has_flag(flags, HitComputeFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
                with respect to [u, v] in the local triangle parameterization.
@@ -530,14 +530,14 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             */
 
             Normal3f N = b0 * n1 + b1 * n2 + b2 * n0;
-            Float il = rsqrt(squared_norm(N));
+            Float il = ek::rsqrt(ek::squared_norm(N));
             N *= il;
 
             si.dn_du = (n1 - n0) * il;
             si.dn_dv = (n2 - n0) * il;
 
-            si.dn_du = fnmadd(N, dot(N, si.dn_du), si.dn_du);
-            si.dn_dv = fnmadd(N, dot(N, si.dn_dv), si.dn_dv);
+            si.dn_du = fnmadd(N, ek::dot(N, si.dn_du), si.dn_du);
+            si.dn_dv = fnmadd(N, ek::dot(N, si.dn_dv), si.dn_dv);
         }
     } else {
         si.sh_frame.n = si.n;
@@ -804,7 +804,7 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 static const uint32_t triangle_input_flags =  OPTIX_GEOMETRY_FLAG_NONE;
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         m_vertex_buffer_ptr = (void*) m_vertex_positions_buf.data();
 
         if (!m_optix_data_ptr)
@@ -850,7 +850,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions_buf")) {
-        if constexpr (is_cuda_array_v<Float>) {
+        if constexpr (ek::is_cuda_array_v<Float>) {
             cuda_eval();
             cuda_sync();
         }
@@ -871,7 +871,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    if constexpr (is_diff_array_v<Float>) {
+    if constexpr (ek::is_diff_array_v<Float>)
         return requires_gradient(m_vertex_positions_buf) ||
                requires_gradient(m_vertex_normals_buf) ||
                requires_gradient(m_vertex_texcoords_buf);

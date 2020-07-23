@@ -139,7 +139,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return 4.f * math::Pi<ScalarFloat> * m_radius * m_radius;
+        return 4.f * ek::Pi<ScalarFloat> * m_radius * m_radius;
     }
 
     // =============================================================
@@ -174,50 +174,50 @@ public:
     DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
                                        Mask active) const override {
         MTS_MASK_ARGUMENT(active);
-        DirectionSample3f result = zero<DirectionSample3f>();
+        DirectionSample3f result = ek::zero<DirectionSample3f>();
 
         Vector3f dc_v = m_center - it.p;
-        Float dc_2 = squared_norm(dc_v);
+        Float dc_2 = ek::squared_norm(dc_v);
 
         Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::RayEpsilon<Float>) :
                                                         (1.f - math::RayEpsilon<Float>));
         Mask outside_mask = active && dc_2 > sqr(radius_adj);
         if (likely(any(outside_mask))) {
-            Float inv_dc            = rsqrt(dc_2),
+            Float inv_dc            = ek::rsqrt(dc_2),
                   sin_theta_max     = m_radius * inv_dc,
                   sin_theta_max_2   = sqr(sin_theta_max),
                   inv_sin_theta_max = rcp(sin_theta_max),
-                  cos_theta_max     = safe_sqrt(1.f - sin_theta_max_2);
+                  cos_theta_max     = ek::safe_sqrt(1.f - sin_theta_max_2);
 
             /* Fall back to a Taylor series expansion for small angles, where
                the standard approach suffers from severe cancellation errors */
-            Float sin_theta_2 = select(sin_theta_max_2 > 0.00068523f, /* sin^2(1.5 deg) */
+            Float sin_theta_2 = ek::select(sin_theta_max_2 > 0.00068523f, /* sin^2(1.5 deg) */
                                        1.f - sqr(fmadd(cos_theta_max - 1.f, sample.x(), 1.f)),
                                        sin_theta_max_2 * sample.x()),
-                  cos_theta = safe_sqrt(1.f - sin_theta_2);
+                  cos_theta = ek::safe_sqrt(1.f - sin_theta_2);
 
             // Based on https://www.akalin.com/sampling-visible-sphere
             Float cos_alpha = sin_theta_2 * inv_sin_theta_max +
-                              cos_theta * safe_sqrt(fnmadd(sin_theta_2, sqr(inv_sin_theta_max), 1.f)),
-                  sin_alpha = safe_sqrt(fnmadd(cos_alpha, cos_alpha, 1.f));
+                              cos_theta * ek::safe_sqrt(fnmadd(sin_theta_2, sqr(inv_sin_theta_max), 1.f)),
+                  sin_alpha = ek::safe_sqrt(fnmadd(cos_alpha, cos_alpha, 1.f));
 
-            auto [sin_phi, cos_phi] = sincos(sample.y() * (2.f * math::Pi<Float>));
+            auto [sin_phi, cos_phi] = sincos(sample.y() * (2.f * ek::Pi<Float>));
 
             Vector3f d = Frame3f(dc_v * -inv_dc).to_world(Vector3f(
                 cos_phi * sin_alpha,
                 sin_phi * sin_alpha,
                 cos_alpha));
 
-            DirectionSample3f ds = zero<DirectionSample3f>();
+            DirectionSample3f ds = ek::zero<DirectionSample3f>();
             ds.p        = fmadd(d, m_radius, m_center);
             ds.n        = d;
             ds.d        = ds.p - it.p;
 
-            Float dist2 = squared_norm(ds.d);
+            Float dist2 = ek::squared_norm(ds.d);
             ds.dist     = sqrt(dist2);
             ds.d        = ds.d / ds.dist;
-            ds.pdf      = warp::square_to_uniform_cone_pdf(zero<Vector3f>(), cos_theta_max);
-            masked(ds.pdf, ds.dist == 0.f) = 0.f;
+            ds.pdf      = warp::square_to_uniform_cone_pdf(ek::zero<Vector3f>(), cos_theta_max);
+            ek::masked(ds.pdf, ds.dist == 0.f) = 0.f;
 
             result[outside_mask] = ds;
         }
@@ -225,15 +225,15 @@ public:
         Mask inside_mask = andnot(active, outside_mask);
         if (unlikely(any(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
-            DirectionSample3f ds = zero<DirectionSample3f>();
+            DirectionSample3f ds = ek::zero<DirectionSample3f>();
             ds.p        = fmadd(d, m_radius, m_center);
             ds.n        = d;
             ds.d        = ds.p - it.p;
 
-            Float dist2 = squared_norm(ds.d);
+            Float dist2 = ek::squared_norm(ds.d);
             ds.dist     = sqrt(dist2);
             ds.d        = ds.d / ds.dist;
-            ds.pdf      = m_inv_surface_area * dist2 / abs_dot(ds.d, ds.n);
+            ds.pdf      = m_inv_surface_area * dist2 / abs_ek::dot(ds.d, ds.n);
 
             result[inside_mask] = ds;
         }
@@ -253,12 +253,12 @@ public:
 
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Float sin_alpha = m_radius * rcp(norm(m_center - it.p)),
-              cos_alpha = enoki::safe_sqrt(1.f - sin_alpha * sin_alpha);
+              cos_alpha = ek::::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
-        return select(sin_alpha < math::OneMinusEpsilon<Float>,
+        return ek::select(sin_alpha < ek::OneMinusEpsilon<Float>,
             // Reference point lies outside the sphere
-            warp::square_to_uniform_cone_pdf(zero<Vector3f>(), cos_alpha),
-            m_inv_surface_area * sqr(ds.dist) / abs_dot(ds.d, ds.n)
+            warp::square_to_uniform_cone_pdf(ek::zero<Vector3f>(), cos_alpha),
+            m_inv_surface_area * sqr(ds.dist) / abs_ek::dot(ds.d, ds.n)
         );
     }
 
@@ -273,7 +273,7 @@ public:
                                                         Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
         using Double3 = Vector<Double, 3>;
 
         Double mint = Double(ray.mint);
@@ -282,9 +282,9 @@ public:
         Double3 o = Double3(ray.o) - Double3(m_center);
         Double3 d(ray.d);
 
-        Double A = squared_norm(d);
-        Double B = scalar_t<Double>(2.f) * dot(o, d);
-        Double C = squared_norm(o) - sqr((scalar_t<Double>) m_radius);
+        Double A = ek::squared_norm(d);
+        Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
+        Double C = ek::squared_norm(o) - sqr((scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -296,10 +296,10 @@ public:
 
         active &= solution_found && !out_bounds && !in_bounds;
 
-        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
-        pi.t = select(active,
-                      select(near_t < mint, Float(far_t), Float(near_t)),
-                      math::Infinity<Float>);
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        pi.t = ek::select(active,
+                      ek::select(near_t < mint, Float(far_t), Float(near_t)),
+                      ek::Infinity<Float>);
         pi.shape = this;
 
         return pi;
@@ -308,7 +308,7 @@ public:
     Mask ray_test(const Ray3f &ray, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
         using Double3 = Vector<Double, 3>;
 
         Double mint = Double(ray.mint);
@@ -317,9 +317,9 @@ public:
         Double3 o = Double3(ray.o) - Double3(m_center);
         Double3 d(ray.d);
 
-        Double A = squared_norm(d);
-        Double B = scalar_t<Double>(2.f) * dot(o, d);
-        Double C = squared_norm(o) - sqr((scalar_t<Double>) m_radius);
+        Double A = ek::squared_norm(d);
+        Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
+        Double C = ek::squared_norm(o) - sqr((scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -339,7 +339,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         bool differentiable = false;
-        if constexpr (is_diff_array_v<Float>)
+        if constexpr (ek::is_diff_array_v<Float>)
             differentiable = requires_gradient(ray.o) ||
                              requires_gradient(ray.d) ||
                              parameters_grad_enabled();
@@ -350,8 +350,8 @@ public:
 
         active &= pi.is_valid();
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
-        si.t = select(active, pi.t, math::Infinity<Float>);
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
         si.sh_frame.n = normalize(ray(pi.t) - m_center);
 
@@ -365,7 +365,7 @@ public:
                   theta = unit_angle_z(local),
                   phi   = atan2(local.y(), local.x());
 
-            masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
+            ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
             si.uv = Point2f(phi * math::InvTwoPi<Float>, theta * math::InvPi<Float>);
             if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
@@ -384,8 +384,8 @@ public:
                 if (unlikely(any(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
-                si.dp_du = m_to_world * si.dp_du * (2.f * math::Pi<Float>);
-                si.dp_dv = m_to_world * si.dp_dv * math::Pi<Float>;
+                si.dp_du = m_to_world * si.dp_du * (2.f * ek::Pi<Float>);
+                si.dp_dv = m_to_world * si.dp_dv * ek::Pi<Float>;
             }
         }
 
@@ -422,7 +422,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (is_cuda_array_v<Float>) {
+        if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = cuda_malloc(sizeof(OptixSphereData));
 

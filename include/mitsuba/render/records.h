@@ -61,7 +61,7 @@ struct PositionSample {
      *
      * Note: we use an array of booleans instead of a mask, so that slicing
      * a dynamic array of PositionSample remains possible even on architectures
-     * where scalar_t<Mask> != bool (e.g. Knights Landing).
+     * where ek::scalar_t<Mask> != bool (e.g. Knights Landing).
      */
     Mask delta;
 
@@ -168,7 +168,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     DirectionSample(const SurfaceInteraction3f &it, const Interaction3f &ref)
         : Base(it) {
         d    = it.p - ref.p;
-        dist = norm(d);
+        dist = ek::norm(d);
         d   /= dist;
         d[!it.is_valid()] = -it.wi; // for environment emitters
     }

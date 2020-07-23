@@ -99,13 +99,13 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 // template <typename T, typename Type = T>
 // using host_vector =
 //     std::vector<scalar_t<T>,
-//                 std::conditional_t<is_cuda_array_v<Type>, cuda_host_allocator<scalar_t<T>>,
+//                 std::conditional_t<ek::is_cuda_array_v<Type>, cuda_host_allocator<scalar_t<T>>,
 //                                    std::allocator<scalar_t<T>>>>;
 
 // template <typename T>
 // using managed_vector =
 //     std::vector<scalar_t<T>,
-//                 std::conditional_t<is_cuda_array_v<T>, cuda_managed_allocator<scalar_t<T>>,
+//                 std::conditional_t<ek::is_cuda_array_v<T>, cuda_managed_allocator<scalar_t<T>>,
 //                                    std::allocator<scalar_t<T>>>>;
 
 //! @}
@@ -212,87 +212,95 @@ template <typename Float_> struct CoreAliases {
 #define MTS_VARIANT template <typename Float, typename Spectrum>
 
 // TODO refactoring:
-// #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
-//     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
-//     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
-//     using prefix ## Int8                 = typename prefix ## CoreAliases::Int8;                   \
-//     using prefix ## Int32                = typename prefix ## CoreAliases::Int32;                  \
-//     using prefix ## UInt32               = typename prefix ## CoreAliases::UInt32;                 \
-//     using prefix ## Int64                = typename prefix ## CoreAliases::Int64;                  \
-//     using prefix ## UInt64               = typename prefix ## CoreAliases::UInt64;                 \
-//     using prefix ## Float32              = typename prefix ## CoreAliases::Float32;                \
-//     using prefix ## Float64              = typename prefix ## CoreAliases::Float64;                \
-//     using prefix ## Vector1i             = typename prefix ## CoreAliases::Vector1i;               \
-//     using prefix ## Vector2i             = typename prefix ## CoreAliases::Vector2i;               \
-//     using prefix ## Vector3i             = typename prefix ## CoreAliases::Vector3i;               \
-//     using prefix ## Vector4i             = typename prefix ## CoreAliases::Vector4i;               \
-//     using prefix ## Vector1u             = typename prefix ## CoreAliases::Vector1u;               \
-//     using prefix ## Vector2u             = typename prefix ## CoreAliases::Vector2u;               \
-//     using prefix ## Vector3u             = typename prefix ## CoreAliases::Vector3u;               \
-//     using prefix ## Vector4u             = typename prefix ## CoreAliases::Vector4u;               \
-//     using prefix ## Vector1f             = typename prefix ## CoreAliases::Vector1f;               \
-//     using prefix ## Vector2f             = typename prefix ## CoreAliases::Vector2f;               \
-//     using prefix ## Vector3f             = typename prefix ## CoreAliases::Vector3f;               \
-//     using prefix ## Vector4f             = typename prefix ## CoreAliases::Vector4f;               \
-//     using prefix ## Vector1d             = typename prefix ## CoreAliases::Vector1d;               \
-//     using prefix ## Vector2d             = typename prefix ## CoreAliases::Vector2d;               \
-//     using prefix ## Vector3d             = typename prefix ## CoreAliases::Vector3d;               \
-//     using prefix ## Vector4d             = typename prefix ## CoreAliases::Vector4d;               \
-//     using prefix ## Point1i              = typename prefix ## CoreAliases::Point1i;                \
-//     using prefix ## Point2i              = typename prefix ## CoreAliases::Point2i;                \
-//     using prefix ## Point3i              = typename prefix ## CoreAliases::Point3i;                \
-//     using prefix ## Point4i              = typename prefix ## CoreAliases::Point4i;                \
-//     using prefix ## Point1u              = typename prefix ## CoreAliases::Point1u;                \
-//     using prefix ## Point2u              = typename prefix ## CoreAliases::Point2u;                \
-//     using prefix ## Point3u              = typename prefix ## CoreAliases::Point3u;                \
-//     using prefix ## Point4u              = typename prefix ## CoreAliases::Point4u;                \
-//     using prefix ## Point1f              = typename prefix ## CoreAliases::Point1f;                \
-//     using prefix ## Point2f              = typename prefix ## CoreAliases::Point2f;                \
-//     using prefix ## Point3f              = typename prefix ## CoreAliases::Point3f;                \
-//     using prefix ## Point4f              = typename prefix ## CoreAliases::Point4f;                \
-//     using prefix ## Point1d              = typename prefix ## CoreAliases::Point1d;                \
-//     using prefix ## Point2d              = typename prefix ## CoreAliases::Point2d;                \
-//     using prefix ## Point3d              = typename prefix ## CoreAliases::Point3d;                \
-//     using prefix ## Point4d              = typename prefix ## CoreAliases::Point4d;                \
-//     using prefix ## Normal3f             = typename prefix ## CoreAliases::Normal3f;               \
-//     using prefix ## Normal3d             = typename prefix ## CoreAliases::Normal3d;               \
-//     using prefix ## Matrix2f             = typename prefix ## CoreAliases::Matrix2f;               \
-//     using prefix ## Matrix2d             = typename prefix ## CoreAliases::Matrix2d;               \
-//     using prefix ## Matrix3f             = typename prefix ## CoreAliases::Matrix3f;               \
-//     using prefix ## Matrix3d             = typename prefix ## CoreAliases::Matrix3d;               \
-//     using prefix ## Matrix4f             = typename prefix ## CoreAliases::Matrix4f;               \
-//     using prefix ## Matrix4d             = typename prefix ## CoreAliases::Matrix4d;               \
-//     using prefix ## Quaternion4f         = typename prefix ## CoreAliases::Quaternion4f;           \
-//     using prefix ## Quaternion4d         = typename prefix ## CoreAliases::Quaternion4d;           \
-//     using prefix ## BoundingBox1f        = typename prefix ## CoreAliases::BoundingBox1f;          \
-//     using prefix ## BoundingBox2f        = typename prefix ## CoreAliases::BoundingBox2f;          \
-//     using prefix ## BoundingBox3f        = typename prefix ## CoreAliases::BoundingBox3f;          \
-//     using prefix ## BoundingBox4f        = typename prefix ## CoreAliases::BoundingBox4f;          \
-//     using prefix ## BoundingSphere1f     = typename prefix ## CoreAliases::BoundingSphere1f;       \
-//     using prefix ## BoundingSphere2f     = typename prefix ## CoreAliases::BoundingSphere2f;       \
-//     using prefix ## BoundingSphere3f     = typename prefix ## CoreAliases::BoundingSphere3f;       \
-//     using prefix ## BoundingSphere4f     = typename prefix ## CoreAliases::BoundingSphere4f;       \
-//     using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
-//     using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
-//     using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
-//     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
-//     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;
+#define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
+    using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
+    using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
+    using prefix ## Int8                 = typename prefix ## CoreAliases::Int8;                   \
+    using prefix ## Int32                = typename prefix ## CoreAliases::Int32;                  \
+    using prefix ## UInt32               = typename prefix ## CoreAliases::UInt32;                 \
+    using prefix ## Int64                = typename prefix ## CoreAliases::Int64;                  \
+    using prefix ## UInt64               = typename prefix ## CoreAliases::UInt64;                 \
+    using prefix ## Float32              = typename prefix ## CoreAliases::Float32;                \
+    using prefix ## Float64              = typename prefix ## CoreAliases::Float64;                \
+    using prefix ## Vector1i             = typename prefix ## CoreAliases::Vector1i;               \
+    using prefix ## Vector2i             = typename prefix ## CoreAliases::Vector2i;               \
+    using prefix ## Vector3i             = typename prefix ## CoreAliases::Vector3i;               \
+    using prefix ## Vector4i             = typename prefix ## CoreAliases::Vector4i;               \
+    using prefix ## Vector1u             = typename prefix ## CoreAliases::Vector1u;               \
+    using prefix ## Vector2u             = typename prefix ## CoreAliases::Vector2u;               \
+    using prefix ## Vector3u             = typename prefix ## CoreAliases::Vector3u;               \
+    using prefix ## Vector4u             = typename prefix ## CoreAliases::Vector4u;               \
+    using prefix ## Vector1f             = typename prefix ## CoreAliases::Vector1f;               \
+    using prefix ## Vector2f             = typename prefix ## CoreAliases::Vector2f;               \
+    using prefix ## Vector3f             = typename prefix ## CoreAliases::Vector3f;               \
+    using prefix ## Vector4f             = typename prefix ## CoreAliases::Vector4f;               \
+    using prefix ## Vector1d             = typename prefix ## CoreAliases::Vector1d;               \
+    using prefix ## Vector2d             = typename prefix ## CoreAliases::Vector2d;               \
+    using prefix ## Vector3d             = typename prefix ## CoreAliases::Vector3d;               \
+    using prefix ## Vector4d             = typename prefix ## CoreAliases::Vector4d;               \
+    using prefix ## Point1i              = typename prefix ## CoreAliases::Point1i;                \
+    using prefix ## Point2i              = typename prefix ## CoreAliases::Point2i;                \
+    using prefix ## Point3i              = typename prefix ## CoreAliases::Point3i;                \
+    using prefix ## Point4i              = typename prefix ## CoreAliases::Point4i;                \
+    using prefix ## Point1u              = typename prefix ## CoreAliases::Point1u;                \
+    using prefix ## Point2u              = typename prefix ## CoreAliases::Point2u;                \
+    using prefix ## Point3u              = typename prefix ## CoreAliases::Point3u;                \
+    using prefix ## Point4u              = typename prefix ## CoreAliases::Point4u;                \
+    using prefix ## Point1f              = typename prefix ## CoreAliases::Point1f;                \
+    using prefix ## Point2f              = typename prefix ## CoreAliases::Point2f;                \
+    using prefix ## Point3f              = typename prefix ## CoreAliases::Point3f;                \
+    using prefix ## Point4f              = typename prefix ## CoreAliases::Point4f;                \
+    using prefix ## Point1d              = typename prefix ## CoreAliases::Point1d;                \
+    using prefix ## Point2d              = typename prefix ## CoreAliases::Point2d;                \
+    using prefix ## Point3d              = typename prefix ## CoreAliases::Point3d;                \
+    using prefix ## Point4d              = typename prefix ## CoreAliases::Point4d;                \
+    using prefix ## Normal3f             = typename prefix ## CoreAliases::Normal3f;               \
+    using prefix ## Normal3d             = typename prefix ## CoreAliases::Normal3d;               \
+    using prefix ## Matrix2f             = typename prefix ## CoreAliases::Matrix2f;               \
+    using prefix ## Matrix2d             = typename prefix ## CoreAliases::Matrix2d;               \
+    using prefix ## Matrix3f             = typename prefix ## CoreAliases::Matrix3f;               \
+    using prefix ## Matrix3d             = typename prefix ## CoreAliases::Matrix3d;               \
+    using prefix ## Matrix4f             = typename prefix ## CoreAliases::Matrix4f;               \
+    using prefix ## Matrix4d             = typename prefix ## CoreAliases::Matrix4d;               \
+    using prefix ## Quaternion4f         = typename prefix ## CoreAliases::Quaternion4f;           \
+    using prefix ## Quaternion4d         = typename prefix ## CoreAliases::Quaternion4d;           \
+    using prefix ## BoundingBox1f        = typename prefix ## CoreAliases::BoundingBox1f;          \
+    using prefix ## BoundingBox2f        = typename prefix ## CoreAliases::BoundingBox2f;          \
+    using prefix ## BoundingBox3f        = typename prefix ## CoreAliases::BoundingBox3f;          \
+    using prefix ## BoundingBox4f        = typename prefix ## CoreAliases::BoundingBox4f;          \
+    using prefix ## BoundingSphere1f     = typename prefix ## CoreAliases::BoundingSphere1f;       \
+    using prefix ## BoundingSphere2f     = typename prefix ## CoreAliases::BoundingSphere2f;       \
+    using prefix ## BoundingSphere3f     = typename prefix ## CoreAliases::BoundingSphere3f;       \
+    using prefix ## BoundingSphere4f     = typename prefix ## CoreAliases::BoundingSphere4f;       \
+    using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
+    using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
+    using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
+    using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
+    using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;
 
-// #define MTS_IMPORT_CORE_TYPES()                                                                    \
-//     MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
-//     using ScalarFloat = scalar_t<Float>;                                                           \
-//     MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
 
-// #define MTS_MASK_ARGUMENT(mask)                                                                    \
-//     (void) mask;                                                                                   \
-//     if constexpr (is_scalar_v<Float>)                                                              \
-//         mask = true;
 
-// #define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
-//     ScopedPhase scope_phase(profiler_phase);                                                       \
-//     (void) mask;                                                                                   \
-//     if constexpr (is_scalar_v<Float>)                                                              \
-//         mask = true;
+#define MTS_USING_TYPES_MACRO(x) using typename Base::x;
+#define MTS_USING_TYPES(...) ENOKI_MAP(MTS_USING_TYPES_MACRO, __VA_ARGS__)
+#define MTS_USING_MEMBERS_MACRO(x) using Base::x;
+#define MTS_USING_MEMBERS(...) ENOKI_MAP(MTS_USING_MEMBERS_MACRO, __VA_ARGS__)
+
+
+#define MTS_IMPORT_CORE_TYPES()                                                                    \
+    MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
+    using ScalarFloat = ek::scalar_t<Float>;                                                           \
+    MTS_IMPORT_CORE_TYPES_PREFIX(ScalarFloat, Scalar)
+
+#define MTS_MASK_ARGUMENT(mask)                                                                    \
+    (void) mask;                                                                                   \
+    if constexpr (ek::is_scalar_v<Float>)                                                              \
+        mask = true;
+
+#define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
+    ScopedPhase scope_phase(profiler_phase);                                                       \
+    (void) mask;                                                                                   \
+    if constexpr (ek::is_scalar_v<Float>)                                                              \
+        mask = true;
 
 NAMESPACE_BEGIN(filesystem)
 class path;

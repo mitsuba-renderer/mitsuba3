@@ -63,7 +63,7 @@ public:
 
     UnpolarizedSpectrum eval_impl(const Wavelength &wavelengths, Mask active_) const {
         if constexpr (is_spectral_v<Spectrum>) {
-            mask_t<Wavelength> active = active_;
+            ek::mask_t<Wavelength> active = active_;
 
             active &= wavelengths >= MTS_WAVELENGTH_MIN
                    && wavelengths <= MTS_WAVELENGTH_MAX;
@@ -80,7 +80,7 @@ public:
             UnpolarizedSpectrum P = 1e-9f * c0 / (lambda5 *
                     (exp(c1 / (lambda * m_temperature)) - 1.f));
 
-            return select(active, P, 0.f);
+            return ek::select(active, P, 0.f);
         } else {
             ENOKI_MARK_USED(wavelengths);
             ENOKI_MARK_USED(active_);
@@ -98,7 +98,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active_);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            mask_t<Wavelength> active = active_;
+            ek::mask_t<Wavelength> active = active_;
 
             active &= si.wavelengths >= MTS_WAVELENGTH_MIN
                    && si.wavelengths <= MTS_WAVELENGTH_MAX;
@@ -111,7 +111,7 @@ public:
             Wavelength pdf = 1e-9f * c0 * exp(-c1 / (lambda * m_temperature))
                 / (lambda5 * m_integral);
 
-            return select(active, pdf, 0.f);
+            return ek::select(active, pdf, 0.f);
         } else {
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");
@@ -150,7 +150,7 @@ public:
                     const Wavelength &sample_, Mask active_) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active_);
 
-        using WavelengthMask = mask_t<Wavelength>;
+        using WavelengthMask = ek::mask_t<Wavelength>;
 
         if constexpr (is_spectral_v<Spectrum>) {
             WavelengthMask active = active_;
@@ -169,7 +169,7 @@ public:
             do {
                 // Fall back to a bisection step when t is out of bounds
                 WavelengthMask bisect_mask = !((t > a) && (t < b));
-                masked(t, bisect_mask && active) = .5f * (a + b);
+                ek::masked(t, bisect_mask && active) = .5f * (a + b);
 
                 // Evaluate the definite integral and its derivative (i.e. the spline)
                 std::tie(value, deriv) = cdf_and_pdf(t);
@@ -184,11 +184,11 @@ public:
 
                 // Update the bisection bounds
                 WavelengthMask update_mask = value <= 0.f;
-                masked(a,  update_mask) = t;
-                masked(b, !update_mask) = t;
+                ek::masked(a,  update_mask) = t;
+                ek::masked(b, !update_mask) = t;
 
                 // Perform a Newton step
-                masked(t, active) = t - value / deriv;
+                ek::masked(t, active) = t - value / deriv;
             } while (true);
 
             Wavelength pdf = deriv / m_integral;

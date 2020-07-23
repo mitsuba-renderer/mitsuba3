@@ -38,7 +38,7 @@
 NAMESPACE_BEGIN(enoki)
 /// Prints the canonical representation of a PCG32 object.
 template <typename Value>
-std::ostream& operator<<(std::ostream &os, const enoki::PCG32<Value> &p) {
+std::ostream& operator<<(std::ostream &os, const PCG32<Value> &p) {
     os << "PCG32[" << std::endl
        << "  state = 0x" << std::hex << p.state << "," << std::endl
        << "  inc = 0x" << std::hex << p.inc << std::endl
@@ -49,9 +49,7 @@ NAMESPACE_END(enoki)
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename UInt32> using PCG32 = std::conditional_t<is_dynamic_array_v<UInt32>,
-                                                            enoki::PCG32<UInt32, 1>,
-                                                            enoki::PCG32<UInt32>>;
+template <typename UInt32> using PCG32 = ek::PCG32<UInt32>;
 
 /**
  * \brief Generate fast and reasonably good pseudorandom numbers using the
@@ -77,8 +75,8 @@ UInt32 sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
 
     ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
-        v0 += (sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (sr<5>(v1) + 0xc8013ea4);
-        v1 += (sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (sr<5>(v0) + 0x7e95761e);
+        v0 += (ek::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (ek::sr<5>(v1) + 0xc8013ea4);
+        v1 += (ek::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (ek::sr<5>(v0) + 0x7e95761e);
     }
 
     return v1;
@@ -103,16 +101,16 @@ UInt32 sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
  */
 
 template <typename UInt32>
-uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
+ek::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
     UInt32 sum = 0;
 
     ENOKI_NOUNROLL for (int i = 0; i < rounds; ++i) {
         sum += 0x9e3779b9;
-        v0 += (sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (sr<5>(v1) + 0xc8013ea4);
-        v1 += (sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (sr<5>(v0) + 0x7e95761e);
+        v0 += (ek::sl<4>(v1) + 0xa341316c) ^ (v1 + sum) ^ (ek::sr<5>(v1) + 0xc8013ea4);
+        v1 += (ek::sl<4>(v0) + 0xad90777d) ^ (v0 + sum) ^ (ek::sr<5>(v0) + 0x7e95761e);
     }
 
-    return uint64_array_t<UInt32>(v0) + sl<32>(uint64_array_t<UInt32>(v1));
+    return ek::uint64_array_t<UInt32>(v0) + ek::sl<32>(ek::uint64_array_t<UInt32>(v1));
 }
 
 
@@ -134,9 +132,9 @@ uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
  *     A uniformly distributed floating point number on the interval <tt>[0, 1)</tt>
  */
 template <typename UInt32>
-float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
-    return reinterpret_array<float32_array_t<UInt32>>(
-        sr<9>(sample_tea_32(v0, v1, rounds)) | 0x3f800000u) - 1.f;
+ek::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
+    return ek::reinterpret_array<ek::float32_array_t<UInt32>>(
+        ek::sr<9>(sample_tea_32(v0, v1, rounds)) | 0x3f800000u) - 1.f;
 }
 
 /**
@@ -158,16 +156,16 @@ float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4)
  */
 
 template <typename UInt32>
-float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds = 4) {
-    return reinterpret_array<float64_array_t<UInt32>>(
-        sr<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
+ek::float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds = 4) {
+    return ek::reinterpret_array<ek::float64_array_t<UInt32>>(
+        ek::sr<12>(sample_tea_64(v0, v1, rounds)) | 0x3ff0000000000000ull) - 1.0;
 }
 
 
 /// Alias to \ref sample_tea_float32 or \ref sample_tea_float64 based given type size
 template <typename UInt>
 auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
-    if constexpr(std::is_same_v<scalar_t<UInt>, uint32_t>)
+    if constexpr(std::is_same_v<ek::scalar_t<UInt>, uint32_t>)
         return sample_tea_float32(v0, v1, rounds);
     else
         return sample_tea_float64(v0, v1, rounds);
@@ -193,14 +191,14 @@ auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
 
 template <typename UInt32>
 UInt32 permute(UInt32 index, uint32_t sample_count, UInt32 seed, int rounds = 2) {
-    uint32_t  n = log2i(sample_count);
+    uint32_t  n = ek::log2i(sample_count);
     Assert((1 << n) == sample_count, "sample_count should be a power of 2");
 
     for (uint32_t  level = 0; level < n; ++level) {
         UInt32 bit = UInt32(1 << level);
         // Take a random integer indentical for indices that might be swapped at this level
         UInt32 rand = sample_tea_32(index | bit, seed, rounds);
-        masked(index, eq(rand & bit, bit)) = index ^ bit;
+        ek::masked(index, ek::eq(rand & bit, bit)) = index ^ bit;
     }
 
     return index;
@@ -226,9 +224,10 @@ UInt32 permute(UInt32 index, uint32_t sample_count, UInt32 seed, int rounds = 2)
  */
 
 template <typename UInt32>
-UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed, mask_t<UInt32> active = true) {
+UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
+                       ek::mask_t<UInt32> active = true) {
     if (sample_count == 1)
-        return zero<UInt32>(slices(index));
+        return ek::zero<UInt32>(index.size());
 
     UInt32 w = sample_count - 1;
     w |= w >> 1;
@@ -240,11 +239,11 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed, mask_t<
     // Worst case is when the index is sequentially mapped to every invalid numbers (out
     // of range) before being mapped into the correct range. E.g. decreasing sequence
     uint32_t max_iter = 0;
-    if constexpr (is_cuda_array_v<UInt32>)
+    if constexpr (ek::is_jit_array_v<UInt32>)
         max_iter = math::round_to_power_of_two(sample_count) - sample_count + 1;
 
     uint32_t iter = 0;
-    mask_t<UInt32> invalid = true;
+    ek::mask_t<UInt32> invalid = true;
     UInt32 tmp;
     do {
         tmp = index;
@@ -266,9 +265,9 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed, mask_t<
         tmp *= 0xc860a3df;
         tmp &= w;
         tmp ^= tmp >> 5;
-        masked(index, invalid) = tmp;
+        ek::masked(index, invalid) = tmp;
         invalid = (index >= sample_count);
-    } while (any_or<false>(active && invalid) || (max_iter > ++iter));
+    } while (ek::any_or<false>(active && invalid) || (max_iter > ++iter));
 
     return (index + seed) % sample_count;
 }

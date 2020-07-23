@@ -138,7 +138,7 @@ public:
 
     ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
         using FloatP8         = Packet<ScalarFloat, 8>;
-        using MaskP8          = mask_t<FloatP8>;
+        using MaskP8          = ek::mask_t<FloatP8>;
         using Point3fP8       = Point<FloatP8, 3>;
         using Vector3fP8      = Vector<FloatP8, 3>;
         using BoundingBox3fP8 = BoundingBox<Point3fP8>;
@@ -154,8 +154,8 @@ public:
         /* Now forget about the cylinder ends and intersect an infinite
            cylinder with each bounding box face, then compute a bounding
            box of the resulting ellipses. */
-        Point3fP8 face_p = zero<Point3fP8>();
-        Vector3fP8 face_n = zero<Vector3fP8>();
+        Point3fP8 face_p = ek::zero<Point3fP8>();
+        Vector3fP8 face_n = ek::zero<Vector3fP8>();
 
         for (size_t i = 0; i < 3; ++i) {
             face_p.coeff(i,  i * 2 + 0) = bbox.min.coeff(i);
@@ -165,13 +165,13 @@ public:
         }
 
         // Project the cylinder direction onto the plane
-        FloatP8 dp   = dot(cyl_d, face_n);
+        FloatP8 dp   = ek::dot(cyl_d, face_n);
         MaskP8 valid = neq(dp, 0.f);
 
         // Compute semimajor/minor axes of ellipse
         Vector3fP8 v1 = fnmadd(face_n, dp, cyl_d);
-        FloatP8 v1_n2 = squared_norm(v1);
-        v1 = select(neq(v1_n2, 0.f), v1 * rsqrt(v1_n2),
+        FloatP8 v1_n2 = ek::squared_norm(v1);
+        v1 = ek::select(neq(v1_n2, 0.f), v1 * ek::rsqrt(v1_n2),
                     coordinate_system(face_n).first);
         Vector3fP8 v2 = cross(face_n, v1);
 
@@ -180,7 +180,7 @@ public:
         v2 *= m_radius;
 
         // Compute center of ellipse
-        FloatP8 t = dot(face_n, face_p - cyl_p) / dp;
+        FloatP8 t = ek::dot(face_n, face_p - cyl_p) / dp;
         Point3fP8 center = fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
         center[neq(face_n, 0.f)] = face_p;
 
@@ -198,7 +198,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return 2.f * math::Pi<ScalarFloat> * m_radius * m_length;
+        return 2.f * ek::Pi<ScalarFloat> * m_radius * m_length;
     }
 
     // =============================================================
@@ -209,7 +209,7 @@ public:
                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        auto [sin_theta, cos_theta] = sincos(2.f * math::Pi<Float> * sample.y());
+        auto [sin_theta, cos_theta] = sincos(2.f * ek::Pi<Float> * sample.y());
 
         Point3f p(cos_theta * m_radius,
                   sin_theta * m_radius,
@@ -245,7 +245,7 @@ public:
                                                         Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
 
         Ray3f ray = m_to_object.transform_affine(ray_);
         Double mint = Double(ray.mint),
@@ -258,11 +258,11 @@ public:
                dy = Double(ray.d.y()),
                dz = Double(ray.d.z());
 
-        scalar_t<Double> radius = scalar_t<Double>(m_radius),
-                         length = scalar_t<Double>(m_length);
+        ek::scalar_t<Double> radius = ek::scalar_t<Double>(m_radius),
+                         length = ek::scalar_t<Double>(m_length);
 
         Double A = sqr(dx) + sqr(dy),
-               B = scalar_t<Double>(2.f) * (dx * ox + dy * oy),
+               B = ek::scalar_t<Double>(2.f) * (dx * ox + dy * oy),
                C = sqr(ox) + sqr(oy) - sqr(radius);
 
         auto [solution_found, near_t, far_t] =
@@ -281,11 +281,11 @@ public:
                   ((z_pos_near >= 0 && z_pos_near <= length && near_t >= mint) ||
                    (z_pos_far  >= 0 && z_pos_far <= length  && far_t <= maxt));
 
-        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
-        pi.t = select(active,
-                      select(z_pos_near >= 0 && z_pos_near <= length && near_t >= mint,
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        pi.t = ek::select(active,
+                      ek::select(z_pos_near >= 0 && z_pos_near <= length && near_t >= mint,
                              Float(near_t), Float(far_t)),
-                      math::Infinity<Float>);
+                      ek::Infinity<Float>);
         pi.shape = this;
 
         return pi;
@@ -294,7 +294,7 @@ public:
     Mask ray_test(const Ray3f &ray_, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
 
         Ray3f ray = m_to_object.transform_affine(ray_);
         Double mint = Double(ray.mint);
@@ -307,11 +307,11 @@ public:
                dy = Double(ray.d.y()),
                dz = Double(ray.d.z());
 
-        scalar_t<Double> radius = scalar_t<Double>(m_radius),
-                         length = scalar_t<Double>(m_length);
+        ek::scalar_t<Double> radius = ek::scalar_t<Double>(m_radius),
+                         length = ek::scalar_t<Double>(m_length);
 
         Double A = sqr(dx) + sqr(dy),
-               B = scalar_t<Double>(2.f) * (dx * ox + dy * oy),
+               B = ek::scalar_t<Double>(2.f) * (dx * ox + dy * oy),
                C = sqr(ox) + sqr(oy) - sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
@@ -340,7 +340,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         bool differentiable = false;
-        if constexpr (is_diff_array_v<Float>)
+        if constexpr (ek::is_diff_array_v<Float>)
             differentiable = requires_gradient(ray.o) ||
                              requires_gradient(ray.d) ||
                              parameters_grad_enabled();
@@ -351,19 +351,19 @@ public:
 
         active &= pi.is_valid();
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
-        si.t = select(active, pi.t, math::Infinity<Float>);
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
         si.p = ray(pi.t);
 
         Vector3f local = m_to_object.transform_affine(si.p);
 
         Float phi = atan2(local.y(), local.x());
-        masked(phi, phi < 0.f) += 2.f * math::Pi<Float>;
+        ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
         si.uv = Point2f(phi * math::InvTwoPi<Float>, local.z() / m_length);
 
-        Vector3f dp_du = 2.f * math::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
+        Vector3f dp_du = 2.f * ek::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
         si.dp_du = m_to_world.transform_affine(dp_du);
         si.dp_dv = m_to_world.transform_affine(dp_dv);
@@ -371,7 +371,7 @@ public:
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */
-        si.p += si.n * (m_radius - norm(head<2>(local)));
+        si.p += si.n * (m_radius - ek::norm(head<2>(local)));
 
         if (m_flip_normals)
             si.n *= -1.f;
@@ -406,7 +406,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (is_cuda_array_v<Float>) {
+        if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = cuda_malloc(sizeof(OptixCylinderData));
 

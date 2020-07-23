@@ -94,12 +94,12 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 
     using MeshAttribute          = mitsuba::MeshAttribute<FloatU, SpectrumU>;
 
-    using ObjectPtr              = replace_scalar_t<Float, const Object *>;
-    using BSDFPtr                = replace_scalar_t<Float, const BSDF *>;
-    using MediumPtr              = replace_scalar_t<Float, const Medium *>;
-    using PhaseFunctionPtr       = replace_scalar_t<Float, const PhaseFunction *>;
-    using ShapePtr               = replace_scalar_t<Float, const Shape *>;
-    using EmitterPtr             = replace_scalar_t<Float, const Emitter *>;
+    using ObjectPtr              = ek::replace_scalar_t<Float, const Object *>;
+    using BSDFPtr                = ek::replace_scalar_t<Float, const BSDF *>;
+    using MediumPtr              = ek::replace_scalar_t<Float, const Medium *>;
+    using PhaseFunctionPtr       = ek::replace_scalar_t<Float, const PhaseFunction *>;
+    using ShapePtr               = ek::replace_scalar_t<Float, const Shape *>;
+    using EmitterPtr             = ek::replace_scalar_t<Float, const Emitter *>;
 };
 
 #define MTS_IMPORT_RENDER_BASIC_TYPES()                                                            \

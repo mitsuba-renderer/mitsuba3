@@ -63,10 +63,10 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
-            zero<SurfaceInteraction3f>(),
+            ek::zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
 
-        spec_weight *= 4.f * math::Pi<Float>;
+        spec_weight *= 4.f * ek::Pi<Float>;
 
         const auto &trafo = m_world_transform->eval(time);
 
@@ -93,12 +93,12 @@ public:
         ds.delta = true;
         ds.object = this;
         ds.d     = ds.p - it.p;
-        ds.dist  = norm(ds.d);
+        ds.dist  = ek::norm(ds.d);
 
         Float inv_dist = rcp(ds.dist);
         ds.d *= inv_dist;
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
         UnpolarizedSpectrum spec =

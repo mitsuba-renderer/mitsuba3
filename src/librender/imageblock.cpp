@@ -32,10 +32,10 @@ MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() {
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
     size_t size = m_channel_count * hprod(m_size + 2 * m_border_size);
-    if constexpr (!is_cuda_array_v<Float>)
+    if constexpr (!ek::is_cuda_array_v<Float>)
         memset(m_data.data(), 0, size * sizeof(ScalarFloat));
     else
-        m_data = zero<DynamicBuffer<Float>>(size);
+        m_data = ek::zero<DynamicBuffer<Float>>(size);
 }
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &size) {
@@ -59,7 +59,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
     ScalarPoint2i  source_offset = block->offset() - block->border_size(),
                    target_offset =        offset() -        border_size();
 
-    if constexpr (is_cuda_array_v<Float> || is_diff_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float> || ek::is_diff_array_v<Float>) {
         accumulate_2d<Float &, const Float &>(
             block->data(), source_size,
             data(), target_size,
@@ -92,7 +92,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
         if (m_warn_invalid) {
             for (uint32_t k = 0; k < m_channel_count; ++k)
-                is_valid &= enoki::isfinite(value[k]);
+                is_valid &= ek::isfinite(value[k]);
         }
 
         if (unlikely(any(active && !is_valid))) {
@@ -124,7 +124,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
         Point2f base = lo - pos;
         for (uint32_t i = 0; i < n; ++i) {
             Point2f p = base + i;
-            if constexpr (!is_cuda_array_v<Float>) {
+            if constexpr (!ek::is_cuda_array_v<Float>) {
                 m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
                 m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
             } else {

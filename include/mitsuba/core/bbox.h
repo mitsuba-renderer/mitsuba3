@@ -21,13 +21,13 @@ NAMESPACE_BEGIN(mitsuba)
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
 template <typename Point_> struct BoundingBox {
-    static constexpr size_t Dimension = array_size_v<Point_>;
-    using Point                       = Point_;
-    using Value                       = value_t<Point>;
-    using Scalar                      = scalar_t<Point>;
-    using Vector                      = typename Point::Vector;
-    using UInt32                      = uint32_array_t<Value>;
-    using Mask                        = mask_t<Value>;
+    static constexpr size_t Dimension = ek::array_size_v<Point_>;
+    using Point  = Point_;
+    using Value  = ek::value_t<Point>;
+    using Scalar = ek::scalar_t<Point>;
+    using Vector = typename Point::Vector;
+    using UInt32 = ek::uint32_array_t<Value>;
+    using Mask   = ek::mask_t<Value>;
 
     /**
      * \brief Create a new invalid bounding box
@@ -52,12 +52,12 @@ template <typename Point_> struct BoundingBox {
 
     /// Test for equality against another bounding box
     bool operator==(const BoundingBox &bbox) const {
-        return all_nested(eq(min, bbox.min) && eq(max, bbox.max));
+        return ek::all_nested(eq(min, bbox.min) && eq(max, bbox.max));
     }
 
     /// Test for inequality against another bounding box
     bool operator!=(const BoundingBox &bbox) const {
-        return any_nested(neq(min, bbox.min) || neq(max, bbox.max));
+        return ek::any_nested(neq(min, bbox.min) || neq(max, bbox.max));
     }
 
     /**
@@ -70,12 +70,12 @@ template <typename Point_> struct BoundingBox {
      * holds for each component \c i.
      */
     Mask valid() const {
-        return all(max >= min);
+        return ek::all(max >= min);
     }
 
     /// Check whether this bounding box has collapsed to a point, line, or plane
     Mask collapsed() const {
-        return any(eq(min, max));
+        return ek::any(ek::eq(min, max));
     }
 
     /// Return the dimension index with the index associated side length
@@ -86,8 +86,8 @@ template <typename Point_> struct BoundingBox {
 
         for (uint32_t i = 1; i < Dimension; ++i) {
             auto mask = d[i] > value;
-            masked(index, mask) = i;
-            masked(value, mask) = d[i];
+            ek::masked(index, mask) = i;
+            ek::masked(value, mask) = d[i];
         }
 
         return index;
@@ -101,8 +101,8 @@ template <typename Point_> struct BoundingBox {
 
         for (uint32_t i = 1; i < Dimension; ++i) {
             Mask mask = d[i] < value;
-            masked(index, mask) = i;
-            masked(value, mask) = d[i];
+            ek::masked(index, mask) = i;
+            ek::masked(value, mask) = d[i];
         }
 
         return index;
@@ -110,7 +110,7 @@ template <typename Point_> struct BoundingBox {
 
     /// Return the center point
     Point center() const {
-        return (max + min) * Scalar(.5f);
+        return (max + min) * Scalar(0.5f);
     }
 
     /**
@@ -135,7 +135,7 @@ template <typename Point_> struct BoundingBox {
         if constexpr (Dimension == 3) {
             /// Fast path for n = 3
             Vector d = max - min;
-            return hsum(enoki::shuffle<1, 2, 0>(d) * d) * Scalar(2);
+            return ek::hsum(ek::shuffle<1, 2, 0>(d) * d) * Scalar(2);
         } else {
             /// Generic case
             Vector d = max - min;
@@ -165,12 +165,12 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    template <bool Strict = false, typename T, typename Result = ek::mask_t<ek::expr_t<T, Value>>>
     Result contains(const mitsuba::Point<T, Point::Size> &p) const {
         if constexpr (Strict)
-            return all((p > min) && (p < max));
+            return ek::all((p > min) && (p < max));
         else
-            return all((p >= min) && (p <= max));
+            return ek::all((p >= min) && (p <= max));
     }
 
     /**
@@ -187,12 +187,12 @@ template <typename Point_> struct BoundingBox {
      * \remark In the Python bindings, the 'Strict' argument is a normal
      *         function parameter with default value \c False.
      */
-    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    template <bool Strict = false, typename T, typename Result = ek::mask_t<ek::expr_t<T, Value>>>
     Result contains(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         if constexpr (Strict)
-            return all((bbox.min > min) && (bbox.max < max));
+            return ek::all((bbox.min > min) && (bbox.max < max));
         else
-            return all((bbox.min >= min) && (bbox.max <= max));
+            return ek::all((bbox.min >= min) && (bbox.max <= max));
     }
 
     /**
@@ -206,49 +206,49 @@ template <typename Point_> struct BoundingBox {
      *
      * \return \c true If overlap was detected.
      */
-    template <bool Strict = false, typename T, typename Result = mask_t<expr_t<T, Value>>>
+    template <bool Strict = false, typename T, typename Result = ek::mask_t<ek::expr_t<T, Value>>>
     Result overlaps(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
         if constexpr (Strict)
-            return all((bbox.min < max) && (bbox.max > min));
+            return ek::all((bbox.min < max) && (bbox.max > min));
         else
-            return all((bbox.min <= max) && (bbox.max >= min));
+            return ek::all((bbox.min <= max) && (bbox.max >= min));
     }
 
     /**
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = ek::expr_t<T, Value>>
     Result squared_distance(const mitsuba::Point<T, Point::Size> &p) const {
-        return squared_norm(((min - p) & (p < min)) + ((p - max) & (p > max)));
+        return ek::squared_norm(((min - p) & (p < min)) + ((p - max) & (p > max)));
     }
 
     /**
      * \brief Calculate the shortest squared distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = ek::expr_t<T, Value>>
     Result squared_distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
-        return squared_norm(((min - bbox.max) & (bbox.max < min)) +
-                            ((bbox.min - max) & (bbox.min > max)));
+        return ek::squared_norm(((min - bbox.max) & (bbox.max < min)) +
+                                ((bbox.min - max) & (bbox.min > max)));
     }
 
     /**
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and the point \c p.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = ek::expr_t<T, Value>>
     Result distance(const mitsuba::Point<T, Point::Size> &p) const {
-        return enoki::sqrt(squared_distance(p));
+        return ek::sqrt(squared_distance(p));
     }
 
     /**
      * \brief Calculate the shortest distance between
      * the axis-aligned bounding box and \c bbox.
      */
-    template <typename T, typename Result = expr_t<T, Value>>
+    template <typename T, typename Result = ek::expr_t<T, Value>>
     Result distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
-        return enoki::sqrt(squared_distance(bbox));
+        return ek::sqrt(squared_distance(bbox));
     }
 
     /**
@@ -259,36 +259,36 @@ template <typename Point_> struct BoundingBox {
      * respectively.
      */
     void reset() {
-        min =  std::numeric_limits<Value>::infinity();
-        max = -std::numeric_limits<Value>::infinity();
+        min =  ek::Infinity<Value>;
+        max = -ek::Infinity<Value>;
     }
 
     /// Clip this bounding box to another bounding box
     template <typename T>
     void clip(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) {
-        min = enoki::max(min, bbox.min);
-        max = enoki::min(max, bbox.max);
+        min = ek::max(min, bbox.min);
+        max = ek::min(max, bbox.max);
     }
 
     /// Expand the bounding box to contain another point
     template <typename T>
     void expand(const mitsuba::Point<T, Point::Size> &p) {
-        min = enoki::min(min, p);
-        max = enoki::max(max, p);
+        min = ek::min(min, p);
+        max = ek::max(max, p);
     }
 
     /// Expand the bounding box to contain another bounding box
     template <typename T>
     void expand(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) {
-        min = enoki::min(min, bbox.min);
-        max = enoki::max(max, bbox.max);
+        min = ek::min(min, bbox.min);
+        max = ek::max(max, bbox.max);
     }
 
     /// Merge two bounding boxes
     static BoundingBox merge(const BoundingBox &bbox1, const BoundingBox &bbox2) {
         return BoundingBox(
-            enoki::min(bbox1.min, bbox2.min),
-            enoki::max(bbox1.max, bbox2.max)
+            ek::min(bbox1.min, bbox2.min),
+            ek::max(bbox1.max, bbox2.max)
         );
     }
 
@@ -305,19 +305,19 @@ template <typename Point_> struct BoundingBox {
 
         /* First, ensure that the ray either has a nonzero slope on each axis,
            or that its origin on a zero-valued axis is within the box bounds */
-        auto active = all(neq(ray.d, zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
+        auto active = ek::all(ek::neq(ray.d, ek::zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
         // Compute intersection intervals for each axis
         Vector t1 = (min - ray.o) * ray.d_rcp,
                t2 = (max - ray.o) * ray.d_rcp;
 
         // Ensure proper ordering
-        Vector t1p = enoki::min(t1, t2),
-               t2p = enoki::max(t1, t2);
+        Vector t1p = ek::min(t1, t2),
+               t2p = ek::max(t1, t2);
 
         // Intersect intervals
-        Float mint = hmax(t1p),
-              maxt = hmin(t2p);
+        Float mint = ek::hmax(t1p),
+              maxt = ek::hmin(t2p);
 
         active = active && maxt >= mint;
 
@@ -328,7 +328,7 @@ template <typename Point_> struct BoundingBox {
     template <typename Result = BoundingSphere<Point>>
     Result bounding_sphere() const {
         Point c = center();
-        return { c, norm(c - max) };
+        return { c, ek::norm(c - max) };
     }
 
     Point min; ///< Component-wise minimum
@@ -339,7 +339,7 @@ template <typename Point_> struct BoundingBox {
 template <typename Point>
 std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {
     os << "BoundingBox" << type_suffix<Point>();
-    if (all(!bbox.valid()))
+    if (ek::all(!bbox.valid()))
         os << "[invalid]";
     else
         os << "[" << std::endl

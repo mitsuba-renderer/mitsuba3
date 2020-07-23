@@ -196,7 +196,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     // =============================================================
 
     using Vector3f = Vector<Float, 3>;
-    using UInt32   = uint32_array_t<Float>;
+    using UInt32   = ek::uint32_array_t<Float>;
 
     //! @}
     // =============================================================
@@ -476,7 +476,7 @@ std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& b
         << "  wo = " << bs.wo << "," << std::endl
         << "  pdf = " << bs.pdf << "," << std::endl
         << "  eta = " << bs.eta << "," << std::endl
-        << "  sampled_type = " << "TODO" /*type_mask_to_string(bs.sampled_type)*/ << "," << std::endl
+        << "  sampled_type = " << "TODO" /*type_ek::mask_to_string(bs.sampled_type)*/ << "," << std::endl
         << "  sampled_component = " << bs.sampled_component << std::endl
         << "]";
     return os;
@@ -489,7 +489,7 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
 
     /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using
     /// differentials
-    if constexpr (!is_diff_array_v<Float>) {
+    if constexpr (!ek::is_diff_array_v<Float>) {
         if (!has_uv_partials() && any(bsdf->needs_differentials()))
             compute_uv_partials(ray);
     } else {

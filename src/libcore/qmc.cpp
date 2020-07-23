@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(detail)
 template <typename T> std::vector<T> sieve(T n) {
     std::vector<bool> sieve(n + 1, true);
 
-    for (T i = 2, bound = std::sqrt(n); i <= bound; i++) {
+    for (T i = 2, bound = ek::sqrt(n); i <= bound; i++) {
         if (!sieve[i])
             continue;
 
@@ -32,7 +32,8 @@ template <typename T> std::vector<T> sieve(T n) {
 NAMESPACE_END(detail)
 
 RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scramble) {
-    static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
+    // TODO refactoring
+    // static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
 
     Timer timer;
     auto primes = detail::sieve(max_base);
@@ -48,7 +49,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         uint64_t value = primes[i];
         d.value = (uint16_t) value;
         d.recip = 1.f / (float) value;
-        d.divisor = enoki::divisor<uint64_t>(value);
+        d.divisor = ek::divisor<uint64_t>(value);
     }
 
     /* Compute the size of the final permutation table (corresponding to primes) */

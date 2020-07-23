@@ -48,14 +48,14 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 
 MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 #if defined(MTS_ENABLE_EMBREE)
-    if constexpr (!is_cuda_array_v<Float>)
+    if constexpr (!ek::is_cuda_array_v<Float>)
         rtcReleaseScene(m_embree_scene);
 #endif
 }
 
 #if defined(MTS_ENABLE_EMBREE)
 MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice device) override {
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         // Construct the BVH only once
         if (m_embree_scene == nullptr) {
             m_embree_scene = rtcNewScene(device);
@@ -77,7 +77,7 @@ ShapeGroup<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
                                                        Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         Throw("ShapeGroup::ray_intersect_preliminary() should only be called in CPU mode.");
 
     return m_kdtree->template ray_intersect_preliminary<false>(ray, active);
@@ -87,7 +87,7 @@ MTS_VARIANT typename ShapeGroup<Float, Spectrum>::Mask
 ShapeGroup<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         Throw("ShapeGroup::ray_test() should only be called in CPU mode.");
 
     return m_kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
@@ -102,14 +102,14 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     MTS_MASK_ARGUMENT(active);
 
 #if defined(MTS_ENABLE_EMBREE)
-    if constexpr (!is_cuda_array_v<Float>) {
-        if constexpr (!is_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
+        if constexpr (!ek::is_array_v<Float>) {
             Assert(pi.shape_index < m_shapes.size());
             pi.shape = m_shapes[pi.shape_index];
         } else {
             using ShapePtr = replace_scalar_t<Float, const Base *>;
-            Assert(all(pi.shape_index < m_shapes.size()));
-            pi.shape = gather<ShapePtr>(m_shapes.data(), pi.shape_index, active);
+            Assert(ek::all(pi.shape_index < m_shapes.size()));
+            pi.shape = ek::gather<ShapePtr>(m_shapes.data(), pi.shape_index, active);
         }
 
         SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, flags, active);
@@ -125,7 +125,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize
 ShapeGroup<Float, Spectrum>::primitive_count() const {
 #if !defined(MTS_ENABLE_EMBREE)
-    if constexpr (!is_cuda_array_v<Float>)
+    if constexpr (!ek::is_cuda_array_v<Float>)
         return m_kdtree->primitive_count();
 #endif
 

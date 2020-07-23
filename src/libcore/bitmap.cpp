@@ -9,6 +9,8 @@
 #include <tbb/tbb.h>
 #include <unordered_map>
 
+#include <enoki/half.h>
+
 /* libpng */
 #include <png.h>
 
@@ -327,7 +329,7 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
 
     switch (m_component_format) {
         case Struct::Type::Float16:
-            mitsuba::resample<enoki::half, false>(target, this, rfilter, bc,
+            mitsuba::resample<ek::half, false>(target, this, rfilter, bc,
                                                   clamp, temp);
             break;
 
@@ -529,7 +531,7 @@ void Bitmap::accumulate(const Bitmap *source,
             break;
 
         case Struct::Type::Float16:
-            accumulate_2d((const enoki::half *) source->data(), source->size(), (enoki::half *) data(),
+            accumulate_2d((const ek::half *) source->data(), source->size(), (ek::half *) data(),
                           m_size, source_offset, target_offset, size, channel_count());
             break;
 
@@ -1199,7 +1201,7 @@ void Bitmap::read_openexr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((enoki::half *) m_data.get()); break;
+            case Struct::Type::Float16: convert((ek::half *) m_data.get()); break;
             case Struct::Type::Float32: convert((float *)       m_data.get()); break;
             case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
@@ -1270,7 +1272,7 @@ void Bitmap::read_openexr(Stream *stream) {
         };
 
         switch (m_component_format) {
-            case Struct::Type::Float16: convert((enoki::half *) m_data.get()); break;
+            case Struct::Type::Float16: convert((ek::half *) m_data.get()); break;
             case Struct::Type::Float32: convert((float *)       m_data.get()); break;
             case Struct::Type::UInt32:  convert((uint32_t*)     m_data.get()); break;
             default: Throw("Internal error!");
@@ -1319,7 +1321,7 @@ void Bitmap::write_openexr(Stream *stream, int quality) const {
                 header.insert(it->c_str(), Imf::IntAttribute(metadata.int_(*it)));
                 break;
             case Type::Float:
-                if constexpr (is_double_v<Float>)
+                if constexpr (std::is_same_v<Float, double>)
                     header.insert(it->c_str(), Imf::DoubleAttribute((double)metadata.float_(*it)));
                 else
                     header.insert(it->c_str(), Imf::FloatAttribute(metadata.float_(*it)));

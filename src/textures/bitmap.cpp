@@ -345,10 +345,10 @@ public:
                         return a;
                 };
 
-                Float f00 = convert_to_monochrome(gather<StorageType>(m_data, index.x(), active));
-                Float f10 = convert_to_monochrome(gather<StorageType>(m_data, index.y(), active));
-                Float f01 = convert_to_monochrome(gather<StorageType>(m_data, index.z(), active));
-                Float f11 = convert_to_monochrome(gather<StorageType>(m_data, index.w(), active));
+                Float f00 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.x(), active));
+                Float f10 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.y(), active));
+                Float f01 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.z(), active));
+                Float f11 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.w(), active));
 
                 // Partials w.r.t. pixel coordinate x and y
                 Vector2f df_xy{ fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
@@ -391,10 +391,10 @@ public:
                       m_inv_resolution_y(value.y())),
               mod = value - div * m_resolution;
 
-            masked(mod, mod < 0) += T(m_resolution);
+            ek::masked(mod, mod < 0) += T(m_resolution);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = select(eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
+                mod = ek::select(eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
 
             return mod;
         }
@@ -430,10 +430,10 @@ public:
             Int4 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
 
             /// TODO: merge into a single gather with the upcoming Enoki
-            StorageType v00 = gather<StorageType>(m_data, index.x(), active),
-                        v10 = gather<StorageType>(m_data, index.y(), active),
-                        v01 = gather<StorageType>(m_data, index.z(), active),
-                        v11 = gather<StorageType>(m_data, index.w(), active);
+            StorageType v00 = ek::gather<StorageType>(m_data, index.x(), active),
+                        v10 = ek::gather<StorageType>(m_data, index.y(), active),
+                        v01 = ek::gather<StorageType>(m_data, index.z(), active),
+                        v11 = ek::gather<StorageType>(m_data, index.w(), active);
 
             // Bilinear interpolation
             if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
@@ -465,7 +465,7 @@ public:
 
             Int32 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
 
-            StorageType v = gather<StorageType>(m_data, index, active);
+            StorageType v = ek::gather<StorageType>(m_data, index, active);
             if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3)
                 return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
             else
@@ -655,8 +655,8 @@ protected:
 protected:
     DynamicBuffer<Float> m_data;
     ScalarVector2i m_resolution;
-    enoki::divisor<int32_t> m_inv_resolution_x;
-    enoki::divisor<int32_t> m_inv_resolution_y;
+    ek::divisor<int32_t> m_inv_resolution_x;
+    ek::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;
     ScalarTransform3f m_transform;
     ScalarFloat m_mean;

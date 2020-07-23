@@ -101,7 +101,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return norm(cross(m_frame.s, m_frame.t));
+        return ek::norm(cross(m_frame.s, m_frame.t));
     }
 
     // =============================================================
@@ -150,8 +150,8 @@ public:
                         && abs(local.x()) <= 1.f
                         && abs(local.y()) <= 1.f;
 
-        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
-        pi.t = select(active, t, math::Infinity<Float>);
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        pi.t = ek::select(active, t, ek::Infinity<Float>);
         pi.prim_uv = Point2f(local.x(), local.y());
         pi.shape = this;
 
@@ -179,7 +179,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         bool differentiable = false;
-        if constexpr (is_diff_array_v<Float>)
+        if constexpr (ek::is_diff_array_v<Float>)
             differentiable = requires_gradient(ray.o) ||
                              requires_gradient(ray.d) ||
                              parameters_grad_enabled();
@@ -190,8 +190,8 @@ public:
 
         active &= pi.is_valid();
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
-        si.t = select(active, pi.t, math::Infinity<Float>);
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
         si.p = ray(pi.t);
 
@@ -202,7 +202,7 @@ public:
         si.uv         = Point2f(fmadd(pi.prim_uv.x(), .5f, .5f),
                                 fmadd(pi.prim_uv.y(), .5f, .5f));
 
-        si.dn_du = si.dn_dv = zero<Vector3f>();
+        si.dn_du = si.dn_dv = ek::zero<Vector3f>();
 
         return si;
     }
@@ -223,7 +223,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (is_cuda_array_v<Float>) {
+        if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = cuda_malloc(sizeof(OptixRectangleData));
 

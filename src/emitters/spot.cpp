@@ -95,7 +95,7 @@ public:
     }
 
     UnpolarizedSpectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
         UnpolarizedSpectrum result = m_intensity->eval(si, active);
 
@@ -108,10 +108,10 @@ public:
             result *= m_texture->eval(si, active);
         }
 
-        UnpolarizedSpectrum beam_res = select(cos_theta >= m_cos_beam_width, result,
+        UnpolarizedSpectrum beam_res = ek::select(cos_theta >= m_cos_beam_width, result,
                                result * ((m_cutoff_angle - acos(cos_theta)) * m_inv_transition_width));
 
-        return select(cos_theta <= m_cos_cutoff_angle, UnpolarizedSpectrum(0.0f), beam_res);
+        return ek::select(cos_theta <= m_cos_cutoff_angle, UnpolarizedSpectrum(0.0f), beam_res);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -127,7 +127,7 @@ public:
 
         // 2. Sample spectrum
         auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
-            zero<SurfaceInteraction3f>(),
+            ek::zero<SurfaceInteraction3f>(),
             math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_dir, wavelengths, active);
@@ -152,7 +152,7 @@ public:
         ds.delta    = true;
         ds.object   = this;
         ds.d        = ds.p - it.p;
-        ds.dist     = norm(ds.d);
+        ds.dist     = ek::norm(ds.d);
         Float inv_dist = rcp(ds.dist);
         ds.d        *= inv_dist;
         Vector3f local_d = trafo.inverse() * -ds.d;

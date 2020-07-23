@@ -261,7 +261,7 @@ public:
            chosen crop rectangle */
         Mask valid = ct > 0 && m_image_rect.contains(p);
 
-        return select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
+        return ek::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
     }
 
     //! @}

@@ -415,7 +415,7 @@ public:
                   const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                       { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
                   const std::pair<Float, Float> &bound =
-                  { -math::Infinity<Float>, math::Infinity<Float> },
+                  { -ek::Infinity<Float>, ek::Infinity<Float> },
                   Bitmap *temp = nullptr) const;
 
     /**
@@ -450,7 +450,7 @@ public:
                          const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc =
                              { FilterBoundaryCondition::Clamp, FilterBoundaryCondition::Clamp },
                          const std::pair<Float, Float> &bound =
-                             { -math::Infinity<Float>, math::Infinity<Float> }) const;
+                             { -ek::Infinity<Float>, ek::Infinity<Float> }) const;
 
     /**
      * \brief Convert the bitmap into another pixel and/or component format
@@ -666,11 +666,11 @@ void accumulate_2d(ConstT source,
     using Value = std::decay_t<T>;
 
     /// Clip against bounds of source and target image
-    Vector<int, 2> shift = max(0, max(-source_offset, -target_offset));
+    Vector<int, 2> shift = ek::max(0, ek::max(-source_offset, -target_offset));
     source_offset += shift;
     target_offset += shift;
-    size -= max(source_offset + size - source_size, 0);
-    size -= max(target_offset + size - target_size, 0);
+    size -= ek::max(source_offset + size - source_size, 0);
+    size -= ek::max(target_offset + size - target_size, 0);
 
     if (any(size <= 0))
         return;
@@ -687,7 +687,7 @@ void accumulate_2d(ConstT source,
         for (int y = 0; y < size.y(); ++y) {
             for (int i = 0; i < n; ++i) {
                 if constexpr (std::is_integral_v<Value>)
-                    target[i] = (Value) max(maxval, source[i] + target[i]);
+                    target[i] = (Value) ek::max(maxval, source[i] + target[i]);
                 else
                     target[i] += source[i];
             }
@@ -696,8 +696,8 @@ void accumulate_2d(ConstT source,
             target += target_size.x() * channel_count;
         }
     } else {
-        using Int32 = int32_array_t<Value>;
-        Int32 index = arange<Int32>(n * size.y());
+        using Int32 = ek::int32_array_t<Value>;
+        Int32 index = ek::arange<Int32>(n * size.y());
 
         Int32 y   = index / n,
               col = index - y * n;
@@ -707,9 +707,9 @@ void accumulate_2d(ConstT source,
               index_target = col + (target_offset.x() + target_size.x() * (y + target_offset.y())) *
                                        channel_count;
 
-        scatter(
+        ek::scatter(
             target,
-            gather<Value>(source, index_source) + gather<Value>(target, index_target),
+            ek::gather<Value>(source, index_source) + ek::gather<Value>(target, index_target),
             index_target
         );
     }

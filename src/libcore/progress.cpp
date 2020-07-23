@@ -1,6 +1,6 @@
+#include <enoki/math.h>
 #include <mitsuba/core/progress.h>
 #include <mitsuba/core/logger.h>
-#include <cmath>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -28,14 +28,14 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
 ProgressReporter::~ProgressReporter() { }
 
 void ProgressReporter::update(float progress) {
-    progress = std::min(std::max(progress, 0.f), 1.f);
+    progress = ek::min(ek::max(progress, 0.f), 1.f);
 
     if (progress == m_last_progress)
         return;
 
     size_t elapsed = m_timer.value();
     if (progress != 1.f && (elapsed - m_last_update < 500 ||
-                            std::abs(progress - m_last_progress) < 0.01f))
+                            ek::abs(progress - m_last_progress) < 0.01f))
         return; // Don't refresh too often
 
     float remaining = elapsed / progress * (1 - progress);
@@ -44,7 +44,7 @@ void ProgressReporter::update(float progress) {
         eta.resize(22);
 
     if (m_bar_size > 0) {
-        size_t filled = std::min(m_bar_size, (size_t) std::round(m_bar_size * progress)),
+        size_t filled = ek::min(m_bar_size, (size_t) ek::round(m_bar_size * progress)),
                eta_pos = m_bar_start + m_bar_size + 2;
         memset((char *) m_line.data() + m_bar_start, '=', filled);
         memset((char *) m_line.data() + eta_pos, ' ', m_line.size() - eta_pos - 1);

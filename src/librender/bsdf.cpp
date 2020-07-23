@@ -16,7 +16,7 @@ MTS_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
 MTS_VARIANT std::string BSDF<Float, Spectrum>::id() const { return m_id; }
 
 template <typename Index>
-std::string type_mask_to_string(Index type_mask) {
+std::string type_ek::mask_to_string(Index type_mask) {
     std::ostringstream oss;
     oss << "{ ";
 
@@ -119,7 +119,7 @@ std::string type_mask_to_string(Index type_mask) {
 std::ostream &operator<<(std::ostream &os, const BSDFContext& ctx) {
     os << "BSDFContext[" << std::endl
         << "  mode = " << ctx.mode << "," << std::endl
-        << "  type_mask = " << type_mask_to_string(ctx.type_mask) << "," << std::endl
+        << "  type_mask = " << type_ek::mask_to_string(ctx.type_mask) << "," << std::endl
         << "  component = ";
     if (ctx.component == (uint32_t) -1)
         os << "all";

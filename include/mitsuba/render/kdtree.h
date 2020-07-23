@@ -105,7 +105,7 @@ public:
     using Derived     = Derived_;
     using Point       = typename BoundingBox::Point;
     using Vector      = typename BoundingBox::Vector;
-    using Scalar      = value_t<Vector>;
+    using Scalar      = ek::value_t<Vector>;
     using IndexVector = std::vector<Index>;
 
     static constexpr size_t Dimension = Vector::Size;
@@ -580,7 +580,7 @@ protected:
 
     /// Data type for split candidates suggested by the tree cost model
     struct SplitCandidate {
-        Scalar cost = math::Infinity<Scalar>;
+        Scalar cost = ek::Infinity<Scalar>;
         Scalar split = 0;
         int axis = 0;
         Size left_count = 0, right_count = 0;
@@ -725,8 +725,8 @@ protected:
             Vector rel_min = (bbox.min - m_bbox.min) * m_inv_bin_size;
             Vector rel_max = (bbox.max - m_bbox.min) * m_inv_bin_size;
 
-            rel_min = min(max(rel_min, zero<Vector>()), m_max_bin);
-            rel_max = min(max(rel_max, zero<Vector>()), m_max_bin);
+            rel_min = min(max(rel_min, ek::zero<Vector>()), m_max_bin);
+            rel_max = min(max(rel_max, ek::zero<Vector>()), m_max_bin);
 
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
@@ -735,8 +735,8 @@ protected:
             index_min = index_min + index_min + offset_min;
             index_max = index_max + index_max + offset_max;
 
-            IndexArray minCounts = gather<IndexArray>(ptr, index_min),
-                       maxCounts = gather<IndexArray>(ptr, index_max);
+            IndexArray minCounts = ek::gather<IndexArray>(ptr, index_min),
+                       maxCounts = ek::gather<IndexArray>(ptr, index_max);
 
             scatter(ptr, minCounts + 1, index_min);
             scatter(ptr, maxCounts + 1, index_max);
@@ -832,7 +832,7 @@ protected:
                 /* Double-check that it worked */
                 Assert(predicate(best.split));
                 Assert(!predicate(std::nextafter(
-                    best.split, math::Infinity<Scalar>)));
+                    best.split, ek::Infinity<Scalar>)));
             }
 
             return best;
@@ -1808,7 +1808,7 @@ protected:
 
         /* Slightly avoid the bounding box to avoid numerical issues
            involving geometry that exactly lies on the boundary */
-        Vector extra = (m_bbox.extents() + 1.f) * math::Epsilon<Scalar>;
+        Vector extra = (m_bbox.extents() + 1.f) * ek::Epsilon<Scalar>;
         m_bbox.min -= extra;
         m_bbox.max += extra;
 
@@ -2194,8 +2194,8 @@ public:
 
         /* Intersect against the scene bounding box */
         auto bbox_result = m_bbox.ray_intersect(ray);
-        Float mint = enoki::max(ray.mint, std::get<1>(bbox_result));
-        Float maxt = enoki::min(ray.maxt, std::get<2>(bbox_result));
+        Float mint = ek::max(ray.mint, std::get<1>(bbox_result));
+        Float maxt = ek::min(ray.maxt, std::get<2>(bbox_result));
 
         while (true) {
             active = active && (maxt >= mint);
@@ -2204,7 +2204,7 @@ public:
 
             if (likely(any(active))) {
                 if (likely(!node->leaf())) { // Inner node
-                    const scalar_t<Float> split = node->split();
+                    const ek::scalar_t<Float> split = node->split();
                     const uint32_t axis = node->axis();
 
                     // Compute parametric distance along the rays to the split plane
@@ -2212,7 +2212,7 @@ public:
                     Mask left_first        = (ray.o[axis] < split) ||
                                               (eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
                          start_after       = t_plane < mint,
-                         end_before        = t_plane > maxt || t_plane < 0.f || !enoki::isfinite(t_plane),
+                         end_before        = t_plane > maxt || t_plane < 0.f || !ek::isfinite(t_plane),
                          single_node       = start_after || end_before,
                          visit_left        = eq(end_before, left_first),
                          visit_only_left   = single_node &&  visit_left,
@@ -2249,14 +2249,14 @@ public:
                     Mask sel0 =  correct_order && visit_both,
                          sel1 = !correct_order && visit_both;
                     KDStackEntry& entry = stack[stack_index++];
-                    entry.mint = select(sel0, t_plane, mint);
-                    entry.maxt = select(sel1, t_plane, maxt);
+                    entry.mint = ek::select(sel0, t_plane, mint);
+                    entry.maxt = ek::select(sel1, t_plane, maxt);
                     entry.active = active && visit_next;
                     entry.node = n_next;
 
                     /* Visit 'n_cur' now */
-                    mint = select(sel1, t_plane, mint);
-                    maxt = select(sel0, t_plane, maxt);
+                    mint = ek::select(sel1, t_plane, mint);
+                    maxt = ek::select(sel0, t_plane, maxt);
                     active = active && visit_cur;
                     node = n_cur;
                     continue;
@@ -2269,13 +2269,13 @@ public:
                         PreliminaryIntersection3f prim_pi =
                             intersect_prim<ShadowRay>(prim_index, ray, active);
 
-                        masked(pi, prim_pi.is_valid()) = prim_pi;
+                        ek::masked(pi, prim_pi.is_valid()) = prim_pi;
 
                         if constexpr (!ShadowRay) {
                             Assert(all(!prim_pi.is_valid() ||
                                        (prim_pi.t >= ray.mint &&
                                         prim_pi.t <= ray.maxt)));
-                            masked(ray.maxt, prim_pi.is_valid()) = prim_pi.t;
+                            ek::masked(ray.maxt, prim_pi.is_valid()) = prim_pi.t;
                         }
                     }
                 }
@@ -2285,7 +2285,7 @@ public:
                 --stack_index;
                 KDStackEntry& entry = stack[stack_index];
                 mint = entry.mint;
-                maxt = enoki::min(entry.maxt, ray.maxt);
+                maxt = ek::min(entry.maxt, ray.maxt);
                 active = entry.active;
                 node = entry.node;
             } else {
@@ -2307,7 +2307,7 @@ public:
                 intersect_prim<ShadowRay>(i, ray, active);
 
             if constexpr (is_array_v<Float>) {
-                masked(pi, prim_pi.is_valid()) = prim_pi;
+                ek::masked(pi, prim_pi.is_valid()) = prim_pi;
             } else if (prim_pi.is_valid()) {
                 pi = prim_pi;
                 ray.maxt = prim_pi.t;
@@ -2375,7 +2375,7 @@ protected:
                 hit = shape->ray_test(ray, active);
             }
 
-            pi.t = select(hit, Float(0.f), math::Infinity<Float>);
+            pi.t = ek::select(hit, Float(0.f), ek::Infinity<Float>);
             return pi;
         } else {
             if (shape->is_mesh()) {

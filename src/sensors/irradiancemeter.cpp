@@ -79,13 +79,13 @@ public:
 
         return std::make_pair(
             RayDifferential3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelengths),
-            unpolarized<Spectrum>(wav_weight) * math::Pi<ScalarFloat>
+            unpolarized<Spectrum>(wav_weight) * ek::Pi<ScalarFloat>
         );
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
-        return std::make_pair(m_shape->sample_direction(it, sample, active), math::Pi<ScalarFloat>);
+        return std::make_pair(m_shape->sample_direction(it, sample, active), ek::Pi<ScalarFloat>);
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
@@ -94,7 +94,7 @@ public:
     }
 
     Spectrum eval(const SurfaceInteraction3f &/*si*/, Mask /*active*/) const override {
-        return math::Pi<ScalarFloat> / m_shape->surface_area();
+        return ek::Pi<ScalarFloat> / m_shape->surface_area();
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <enoki/math.h>
+#include <enoki/util.h>
+#include <enoki/array_constants.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
-#include <cmath>
-#include <algorithm>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(math)
@@ -13,48 +14,8 @@ NAMESPACE_BEGIN(math)
 //! @{ \name Useful constants in various precisions
 // -----------------------------------------------------------------------
 
-template <typename T> constexpr auto E               = scalar_t<T>(2.71828182845904523536);
-template <typename T> constexpr auto Pi              = scalar_t<T>(3.14159265358979323846);
-template <typename T> constexpr auto TwoPi           = scalar_t<T>(6.28318530717958647692);
-template <typename T> constexpr auto InvPi           = scalar_t<T>(0.31830988618379067154);
-template <typename T> constexpr auto InvTwoPi        = scalar_t<T>(0.15915494309189533577);
-template <typename T> constexpr auto InvFourPi       = scalar_t<T>(0.07957747154594766788);
-template <typename T> constexpr auto SqrtPi          = scalar_t<T>(1.77245385090551602793);
-template <typename T> constexpr auto InvSqrtPi       = scalar_t<T>(0.56418958354775628695);
-template <typename T> constexpr auto SqrtTwo         = scalar_t<T>(1.41421356237309504880);
-template <typename T> constexpr auto InvSqrtTwo      = scalar_t<T>(0.70710678118654752440);
-template <typename T> constexpr auto SqrtTwoPi       = scalar_t<T>(2.50662827463100050242);
-template <typename T> constexpr auto InvSqrtTwoPi    = scalar_t<T>(0.39894228040143267794);
-template <typename T> constexpr auto Infinity        = std::numeric_limits<scalar_t<T>>::infinity();
-template <typename T> constexpr auto Min             = std::numeric_limits<scalar_t<T>>::min();
-template <typename T> constexpr auto Max             = std::numeric_limits<scalar_t<T>>::max();
-template <typename T> constexpr auto OneMinusEpsilon = scalar_t<T>(sizeof(scalar_t<T>) == 8
-                                                                   ? 0x1.fffffffffffffp-1
-                                                                   : 0x1.fffffep-1);
-template <typename T> constexpr auto RecipOverflow   = scalar_t<T>(sizeof(scalar_t<T>) == 8
-                                                                   ? 0x1p-1024 : 0x1p-128);
-template <typename T> constexpr auto Epsilon         = std::numeric_limits<scalar_t<T>>::epsilon() / 2;
-template <typename T> constexpr auto RayEpsilon      = Epsilon<T> * 1500;
+template <typename T> constexpr auto RayEpsilon      = ek::Epsilon<T> * 1500;
 template <typename T> constexpr auto ShadowEpsilon   = RayEpsilon<T> * 10;
-
-//! @}
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
-//! @{ \name Helper functions for spherical geometry
-// -----------------------------------------------------------------------
-
-template <typename T, typename Value = expr_t<T>>
-Vector<Value, 3> sphdir(const T &theta, const T &phi) {
-    auto [sin_theta, cos_theta] = sincos(theta);
-    auto [sin_phi,   cos_phi]   = sincos(phi);
-
-    return Vector<Value, 3>(
-        cos_phi * sin_theta,
-        sin_phi * sin_theta,
-        cos_theta
-    );
-}
 
 //! @}
 // -----------------------------------------------------------------------
@@ -66,7 +27,7 @@ Vector<Value, 3> sphdir(const T &theta, const T &phi) {
 /// Evaluate the l-th Legendre polynomial using recurrence
 template <typename Value>
 Value legendre_p(int l, Value x) {
-    using Scalar = scalar_t<Value>;
+    using Scalar = ek::scalar_t<Value>;
     Value l_cur = Value(0.f);
 
     assert(l >= 0);
@@ -91,12 +52,12 @@ Value legendre_p(int l, Value x) {
 /// Evaluate an associated Legendre polynomial using recurrence
 template <typename Value>
 Value legendre_p(int l, int m, Value x) {
-    using Scalar = scalar_t<Value>;
+    using Scalar = ek::scalar_t<Value>;
 
     Value p_mm = Scalar(1);
 
     if (likely(m > 0)) {
-        Value somx2 = sqrt((Scalar(1) - x) * (Scalar(1) + x));
+        Value somx2 = ek::sqrt((Scalar(1) - x) * (Scalar(1) + x));
         Value fact = Scalar(1);
         for (int i = 1; i <= m; i++) {
             p_mm *= (-fact) * somx2;
@@ -125,7 +86,7 @@ Value legendre_p(int l, int m, Value x) {
 /// Evaluate the l-th Legendre polynomial and its derivative using recurrence
 template <typename Value>
 std::pair<Value, Value> legendre_pd(int l, Value x) {
-    using Scalar = scalar_t<Value>;
+    using Scalar = ek::scalar_t<Value>;
 
     assert(l >= 0);
     Value l_cur = Scalar(0), d_cur = Scalar(0);
@@ -150,13 +111,13 @@ std::pair<Value, Value> legendre_pd(int l, Value x) {
         }
     }
 
-    return std::make_pair(l_cur, d_cur);
+    return { l_cur, d_cur };
 }
 
 /// Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x)
 template <typename Value>
 std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
-    using Scalar = scalar_t<Value>;
+    using Scalar = ek::scalar_t<Value>;
     assert(l >= 1);
 
     if (likely(l > 1)) {
@@ -175,10 +136,10 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
         Value l_next = (k0 * x * l_pred - k2 * l_p_pred) / k1;
         Value d_next = d_p_pred + k0 * l_pred;
 
-        return std::make_pair(l_next - l_p_pred, d_next - d_p_pred);
+        return { l_next - l_p_pred, d_next - d_p_pred };
     } else {
-        return std::make_pair(Scalar(.5) * (Scalar(3) * x * x - Scalar(1)) -
-                                  Scalar(1), Scalar(3) * x);
+        return { Scalar(0.5) * (Scalar(3) * x * x - Scalar(1)) - Scalar(1),
+                 Scalar(3) * x };
     }
 }
 
@@ -198,22 +159,22 @@ template <typename T> T ulpdiff(T ref, T val) {
 
     /* Express mantissa wrt. same exponent */
     int e_ref, e_val;
-    T m_ref = std::frexp(ref, &e_ref);
-    T m_val = std::frexp(val, &e_val);
+    T m_ref = ek::frexp(ref, &e_ref);
+    T m_val = ek::frexp(val, &e_val);
 
     T diff;
     if (e_ref == e_val)
         diff = m_ref - m_val;
     else
-        diff = m_ref - std::ldexp(m_val, e_val-e_ref);
+        diff = m_ref - ek::ldexp(m_val, e_val-e_ref);
 
-    return std::abs(diff) / eps;
+    return ek::abs(diff) / eps;
 }
 
 /// Always-positive modulo function
 template <typename T> T modulo(T a, T b) {
     T result = a - (a / b) * b;
-    return select(result < 0, result + b, result);
+    return ek::select(result < 0, result + b, result);
 }
 
 /// Check whether the provided integer is a power of two
@@ -225,13 +186,13 @@ template <typename T> bool is_power_of_two(T i) {
 template <typename T> T round_to_power_of_two(T i) {
     if (i <= 1)
         return 1;
-    return T(1) << (log2i(i - 1) + 1);
+    return T(1) << (ek::log2i(i - 1) + 1);
 }
 
 /// Ceiling of base-2 logarithm
 template <typename T> T log2i_ceil(T value) {
-    T result = 8 * sizeof(scalar_t<T>) - 1u - lzcnt(value);
-    masked(result, neq(value & (value - 1u), 0u)) += 1u;
+    T result = 8 * sizeof(ek::scalar_t<T>) - 1u - ek::lzcnt(value);
+    ek::masked(result, ek::neq(value & (value - 1u), 0u)) += 1u;
     return result;
 }
 
@@ -259,20 +220,16 @@ template <typename T> T log2i_ceil(T value) {
  *
  * UInt32 index = find_interval(
  *     sizeof(my_list) / sizeof(float),
- *     [](UInt32 index, mask_t<UInt32> active) {
- *         return gather<Float>(my_list, index, active) < x;
+ *     [](UInt32 index, ek::mask_t<UInt32> active) {
+ *         return ek::gather<Float>(my_list, index, active) < x;
  *     }
  * );
  * \endcode
  */
-template <typename Predicate,
-          typename Args = typename function_traits<Predicate>::Args,
-          typename Index = std::decay_t<std::tuple_element_t<0, Args>>>
-MTS_INLINE Index find_interval(scalar_t<Index> size,
-                 const Predicate &pred) {
-    using ScalarIndex = scalar_t<Index>;
-    return enoki::binary_search(ScalarIndex(1), size - ScalarIndex(1), pred) -
-           ScalarIndex(1);
+template <typename Index, typename Predicate>
+MTS_INLINE Index find_interval(ek::scalar_t<Index> size,
+                               const Predicate &pred) {
+    return ek::binary_search<Index>(1, size - 1, pred) - 1;
 }
 
 /**
@@ -296,7 +253,8 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
 
         /* Paranoid stopping criterion */
         if (middle <= left || middle >= right) {
-            middle = std::nextafter(left, right);
+            // middle = std::nextafter(left, right); TODO refactoring
+            middle = left + ek::sign(right - left) * ek::Epsilon<Scalar>;
             if (middle == right)
                 break;
         }
@@ -306,7 +264,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
         else
             right = middle;
         it++;
-        if (it > (is_float_v<Scalar> ? 100 : 150))
+        if (it > (ek::is_floating_point_v<Scalar> ? 100 : 150))
             throw std::runtime_error("Internal error in util::bisect!");
     }
 
@@ -334,7 +292,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
  *
  */
 template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
-        chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
+chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
     Scalar chsq = 0, pooled_obs = 0, pooled_exp = 0;
     size_t dof = 0, n_pooled_in = 0, n_pooled_out = 0;
 
@@ -360,7 +318,7 @@ template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
         }
     }
 
-    return std::make_tuple(chsq, dof - 1, n_pooled_in, n_pooled_out);
+    return { chsq, dof - 1, n_pooled_in, n_pooled_out };
 }
 
 /**
@@ -368,12 +326,13 @@ template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
  * \return \c true if a solution could be found
  */
 template <typename Value>
-MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &a, const Value &b, const Value &c) {
-    using Scalar = scalar_t<Value>;
-    using Mask = mask_t<Value>;
+MTS_INLINE std::tuple<ek::mask_t<Value>, Value, Value>
+solve_quadratic(const Value &a, const Value &b, const Value &c) {
+    using Scalar = ek::scalar_t<Value>;
+    using Mask = ek::mask_t<Value>;
 
     /* Is this perhaps a linear equation? */
-    Mask linear_case = eq(a, Scalar(0));
+    Mask linear_case = ek::eq(a, Scalar(0));
 
     /* If so, we require b > 0 */
     Mask active = !linear_case || (b > Scalar(0));
@@ -383,11 +342,11 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
     x0 = x1 = -c / b;
 
     /* Check if the quadratic equation is solvable */
-    Value discrim = fmsub(b, b, Scalar(4) * a * c);
+    Value discrim = ek::fmsub(b, b, Scalar(4) * a * c);
     active &= linear_case || (discrim >= 0);
 
-    if (likely(any_or<true>(active))) {
-        Value sqrt_discrim = sqrt(discrim);
+    if (likely(ek::any_or<true>(active))) {
+        Value sqrt_discrim = ek::sqrt(discrim);
 
         /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
          *
@@ -396,28 +355,28 @@ MTS_INLINE std::tuple<mask_t<Value>, Value, Value> solve_quadratic(const Value &
          * greater magnitude which does not suffer from loss of
          * precision and then uses the identity x1 * x2 = c / a
          */
-        Value temp = -Scalar(0.5) * (b + copysign(sqrt_discrim, b));
+        Value temp = -Scalar(0.5) * (b + ek::copysign(sqrt_discrim, b));
 
         Value x0p = temp / a,
               x1p = c / temp;
 
         /* Order the results so that x0 < x1 */
-        Value x0m = min(x0p, x1p),
-              x1m = max(x0p, x1p);
+        Value x0m = ek::min(x0p, x1p),
+              x1m = ek::max(x0p, x1p);
 
-        x0 = select(linear_case, x0, x0m);
-        x1 = select(linear_case, x0, x1m);
+        x0 = ek::select(linear_case, x0, x0m);
+        x1 = ek::select(linear_case, x0, x1m);
     }
 
-    return std::make_tuple(active, x0, x1);
+    return { active, x0, x1 };
 }
 
 //! @}
 // -----------------------------------------------------------------------
 
-template <typename Array, size_t... Index, typename Value = value_t<Array>>
+template <typename Array, size_t... Index, typename Value = ek::value_t<Array>>
 ENOKI_INLINE Array sample_shifted(const Value &sample, std::index_sequence<Index...>) {
-    const Array shift(Index / scalar_t<Array>(Array::Size)...);
+    const Array shift(Index / ek::scalar_t<Array>(Array::Size)...);
 
     Array value = Array(sample) + shift;
     value[value > Value(1)] -= Value(1);
@@ -436,7 +395,7 @@ ENOKI_INLINE Array sample_shifted(const Value &sample, std::index_sequence<Index
  * This operation is useful to implement a type of correlated stratification in
  * the context of Monte Carlo integration.
  */
-template <typename Array> Array sample_shifted(const value_t<Array> &sample) {
+template <typename Array> Array sample_shifted(const ek::value_t<Array> &sample) {
     return sample_shifted<Array>(
         sample, std::make_index_sequence<Array::Size>());
 }

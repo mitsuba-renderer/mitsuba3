@@ -149,7 +149,7 @@ private:
     ScalarUInt32 m_resolution;
     ScalarFloat m_inv_resolution;
     ScalarFloat m_inv_sample_count;
-    enoki::divisor<ScalarUInt32> m_resolution_div;
+    ek::divisor<ScalarUInt32> m_resolution_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

@@ -5,7 +5,7 @@ NAMESPACE_BEGIN(quad)
 
 template <typename FloatX>
 std::pair<FloatX, FloatX> gauss_legendre(int n) {
-    using Float = scalar_t<FloatX>;
+    using Float = ek::scalar_t<FloatX>;
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
 
@@ -19,7 +19,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
         nodes[0] = (Float) 0;
         weights[0] = (Float) 2;
     } else if (n == 1) {
-        nodes[0] = (Float) -std::sqrt(1.0 / 3.0);
+        nodes[0] = (Float) -ek::sqrt(1.0 / 3.0);
         nodes[1] = -nodes[0];
         weights[0] = weights[1] = (Float) 1;
     }
@@ -27,7 +27,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     int m = (n + 1) / 2;
     for (int i = 0; i < m; ++i) {
         // Initial guess for this root using that of a Chebyshev polynomial
-        double x = -std::cos((double) (2*i + 1) / (double) (2*n + 2) * math::Pi<double>);
+        double x = -ek::cos((double) (2*i + 1) / (double) (2*n + 2) * ek::Pi<double>);
         int it = 0;
 
         while (true) {
@@ -41,8 +41,8 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
             double step = L.first / L.second;
             x -= step;
 
-            if (std::abs(step) <=
-                4 * std::abs(x) * std::numeric_limits<double>::epsilon())
+            if (ek::abs(step) <=
+                4 * ek::abs(x) * std::numeric_limits<double>::epsilon())
                 break;
         }
 
@@ -65,7 +65,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
 
 template <typename FloatX>
 std::pair<FloatX, FloatX> gauss_lobatto(int n) {
-    using Float = scalar_t<FloatX>;
+    using Float = ek::scalar_t<FloatX>;
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
 
@@ -84,8 +84,8 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
         /* Initial guess for this root -- see "On the Legendre-Gauss-Lobatto Points
            and Weights" by Seymor V. Parter, Journal of Sci. Comp., Vol. 14, 4, 1999 */
 
-        double x = -std::cos((i + 0.25) * math::Pi<double> / n -
-                             3 / (8 * n * math::Pi<double> * (i + 0.25)));
+        double x = -ek::cos((i + 0.25) * ek::Pi<double> / n -
+                            3 / (8 * n * ek::Pi<double> * (i + 0.25)));
         int it = 0;
 
         while (true) {
@@ -100,7 +100,7 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
             double step = Q.first / Q.second;
             x -= step;
 
-            if (std::abs(step) <= 4 * std::abs(x) * std::numeric_limits<double>::epsilon())
+            if (ek::abs(step) <= 4 * ek::abs(x) * std::numeric_limits<double>::epsilon())
                 break;
         }
 
@@ -121,7 +121,7 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
 
 template <typename FloatX>
 std::pair<FloatX, FloatX> composite_simpson(int n) {
-    using Float = scalar_t<FloatX>;
+    using Float = ek::scalar_t<FloatX>;
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
 
@@ -149,7 +149,7 @@ std::pair<FloatX, FloatX> composite_simpson(int n) {
 
 template <typename FloatX>
 std::pair<FloatX, FloatX> composite_simpson_38(int n) {
-    using Float = scalar_t<FloatX>;
+    using Float = ek::scalar_t<FloatX>;
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
 
@@ -177,18 +177,18 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     return { nodes, weights };
 }
 
-using Float32X = DynamicArray<Packet<float>>;
-using Float64X = DynamicArray<Packet<double>>;
+// using Float32X = DynamicArray<Packet<float>>;
+// using Float64X = DynamicArray<Packet<double>>;
 
-template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_legendre<Float32X>(int n);
-template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_lobatto<Float32X>(int n);
-template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson<Float32X>(int n);
-template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson_38<Float32X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_legendre<Float32X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_lobatto<Float32X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson<Float32X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson_38<Float32X>(int n);
 
-template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_legendre<Float64X>(int n);
-template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_lobatto<Float64X>(int n);
-template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson<Float64X>(int n);
-template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson_38<Float64X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_legendre<Float64X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_lobatto<Float64X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson<Float64X>(int n);
+// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson_38<Float64X>(int n);
 
 NAMESPACE_END(quad)
 NAMESPACE_END(mitsuba)

@@ -47,8 +47,8 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         Point2f uv = m_transform.transform_affine(it.uv);
-        mask_t<Point2f> mask = uv - floor(uv) > .5f;
-        UnpolarizedSpectrum result = zero<UnpolarizedSpectrum>();
+        ek::mask_t<Point2f> mask = uv - floor(uv) > .5f;
+        UnpolarizedSpectrum result = ek::zero<UnpolarizedSpectrum>();
 
         Mask m0 = eq(mask.x(), mask.y()),
              m1 = !m0;
@@ -68,7 +68,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         Point2f uv = m_transform.transform_affine(it.uv);
-        mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
+        ek::mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
         Float result = 0.f;
 
         Mask m0 = neq(mask.x(), mask.y()),
@@ -77,10 +77,10 @@ public:
         m0 &= active; m1 &= active;
 
         if (any_or<true>(m0))
-            masked(result, m0) = m_color0->eval_1(it, m0);
+            ek::masked(result, m0) = m_color0->eval_1(it, m0);
 
         if (any_or<true>(m1))
-            masked(result, m1) = m_color1->eval_1(it, m1);
+            ek::masked(result, m1) = m_color1->eval_1(it, m1);
 
         return result;
     }

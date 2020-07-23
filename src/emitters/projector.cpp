@@ -129,7 +129,7 @@ public:
         auto [uv, pdf] = m_irradiance->sample_position(direction_sample, active);
 
         // 3. Query irradiance on film
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.uv = uv;
         si.wavelengths = wavelengths;
         weight *= m_irradiance->eval(si, active) * m_intensity->eval(si, active);
@@ -165,7 +165,7 @@ public:
         active &= all(uv >= 0 && uv <= 1) && it_local.z() > 0;
 
         // 3. Query texture
-        SurfaceInteraction3f it_query = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f it_query = ek::zero<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;
         it_query.uv = uv;
         UnpolarizedSpectrum spec = m_irradiance->eval(it_query, active);
@@ -181,13 +181,13 @@ public:
         ds.object   = this;
 
         ds.d = ds.p - it.p;
-        Float dist_squared = squared_norm(ds.d);
+        Float dist_squared = ek::squared_norm(ds.d);
         ds.dist = sqrt(dist_squared);
         ds.d *= rcp(ds.dist);
 
         // Scale so that irradiance at z=1 is correct
-        spec *= math::Pi<Float> * m_intensity->eval(it_query, active) *
-                sqr(rcp(it_local.z())) / -dot(ds.n, ds.d);
+        spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) *
+                sqr(rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
 
         return { ds, unpolarized<Spectrum>(spec & active) };
     }

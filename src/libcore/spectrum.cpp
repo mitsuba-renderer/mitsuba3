@@ -1,5 +1,6 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/core/spectrum.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -52,7 +53,7 @@ Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
             continue;
 
         // Find interval containing 'x'
-        uint32_t index = math::find_interval(
+        uint32_t index = math::find_interval<uint32_t>(
             (uint32_t) wavelengths.size(),
             [&](uint32_t idx) {
                 return wavelengths[idx] <= x;

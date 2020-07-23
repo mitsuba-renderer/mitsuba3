@@ -17,7 +17,7 @@ template <typename Spectrum> struct spectrum_traits { };
 
 template <typename Float>
 struct spectrum_traits<Color<Float, 1>> {
-    using Scalar                             = Color<scalar_t<Float>, 1>;
+    using Scalar                             = Color<ek::scalar_t<Float>, 1>;
     using Wavelength                         = Color<Float, 1>;
     using Unpolarized                        = Color<Float, 1>;
     static constexpr bool is_monochromatic   = true;
@@ -28,7 +28,7 @@ struct spectrum_traits<Color<Float, 1>> {
 
 template <typename Float>
 struct spectrum_traits<Color<Float, 3>> {
-    using Scalar                             = Color<scalar_t<Float>, 3>;
+    using Scalar                             = Color<ek::scalar_t<Float>, 3>;
     using Wavelength                         = Color<Float, 0>;
     using Unpolarized                        = Color<Float, 3>;
     static constexpr bool is_monochromatic   = false;
@@ -39,7 +39,7 @@ struct spectrum_traits<Color<Float, 3>> {
 
 template <typename Float, size_t Size>
 struct spectrum_traits<Spectrum<Float, Size>> {
-    using Scalar                             = Spectrum<scalar_t<Float>, Size>;
+    using Scalar                             = Spectrum<ek::scalar_t<Float>, Size>;
     using Wavelength                         = Spectrum<Float, Size>;
     using Unpolarized                        = Spectrum<Float, Size>;
     static constexpr bool is_monochromatic   = false;
@@ -63,10 +63,10 @@ struct spectrum_traits<void> {
 };
 
 template <typename T>
-struct spectrum_traits<enoki::detail::MaskedArray<T>> : spectrum_traits<T> {
-    using Scalar       = enoki::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
-    using Wavelength   = enoki::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
-    using Unpolarized  = enoki::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
+struct spectrum_traits<ek::detail::MaskedArray<T>> : spectrum_traits<T> {
+    using Scalar       = ek::detail::MaskedArray<typename spectrum_traits<T>::Scalar>;
+    using Wavelength   = ek::detail::MaskedArray<typename spectrum_traits<T>::Wavelength>;
+    using Unpolarized  = ek::detail::MaskedArray<typename spectrum_traits<T>::Unpolarized>;
 };
 
 NAMESPACE_END(detail)
@@ -86,22 +86,22 @@ NAMESPACE_BEGIN(detail)
 
 /// Type trait to strip away dynamic/masking-related type wrappers
 template <typename T> struct underlying {
-    using type = expr_t<T>;
+    using type = ek::expr_t<T>;
 };
 
 template <> struct underlying<void> {
     using type = void;
 };
 
-template <typename T> struct underlying<enoki::DynamicArray<T>> {
-    using type = typename underlying<T>::type;
-};
+// template <typename T> struct underlying<ek::DynamicArray<T>> {
+//     using type = typename underlying<T>::type;
+// };
 
-template <typename T> struct underlying<enoki::DynamicArrayReference<T>> {
-    using type = typename underlying<T>::type;
-};
+// template <typename T> struct underlying<ek::DynamicArrayReference<T>> {
+//     using type = typename underlying<T>::type;
+// };
 
-template <typename T> struct underlying<enoki::detail::MaskedArray<T>> {
+template <typename T> struct underlying<ek::detail::MaskedArray<T>> {
     using type = typename underlying<T>::type;
 };
 

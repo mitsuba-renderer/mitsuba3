@@ -33,7 +33,7 @@ NAMESPACE_BEGIN(mueller)
 *   The value of the (0, 0) element
 */
 template <typename Float> MuellerMatrix<Float> depolarizer(Float value = 1.f) {
-    MuellerMatrix<Float> result = zero<MuellerMatrix<Float>>();
+    MuellerMatrix<Float> result = ek::zero<MuellerMatrix<Float>>();
     result(0, 0) = value;
     return result;
 }
@@ -100,7 +100,7 @@ template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
 template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
     Float a = .5f * (x + y),
           b = .5f * (x - y),
-          c = sqrt(x * y);
+          c = ek::sqrt(x * y);
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,
@@ -171,22 +171,22 @@ MuellerMatrix<Float> reverse(const MuellerMatrix<Float> &M) {
  */
 template <typename Float, typename Eta>
 MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
-    Complex<Float> a_s, a_p;
+    ek::Complex<Float> a_s, a_p;
 
     std::tie(a_s, a_p, std::ignore, std::ignore, std::ignore) =
         fresnel_polarized(cos_theta_i, eta);
 
     Float sin_delta, cos_delta;
-    std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_s, a_p);
+    std::tie(sin_delta, cos_delta) = ek::sincos_arg_diff(a_s, a_p);
 
-    Float r_s = abs(sqr(a_s)),
-          r_p = abs(sqr(a_p)),
+    Float r_s = ek::abs(ek::sqr(a_s)),
+          r_p = ek::abs(ek::sqr(a_p)),
           a = .5f * (r_s + r_p),
           b = .5f * (r_s - r_p),
-          c = sqrt(r_s * r_p);
+          c = ek::sqrt(r_s * r_p);
 
-    masked(sin_delta, eq(c, 0.f)) = 0.f; // avoid issues with NaNs
-    masked(cos_delta, eq(c, 0.f)) = 0.f;
+    ek::masked(sin_delta, ek::eq(c, 0.f)) = 0.f; // avoid issues with NaNs
+    ek::masked(cos_delta, ek::eq(c, 0.f)) = 0.f;
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,
@@ -210,25 +210,25 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
  */
 template <typename Float>
 MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
-    Complex<Float> a_s, a_p;
+    ek::Complex<Float> a_s, a_p;
     Float cos_theta_t, eta_it, eta_ti;
 
     std::tie(a_s, a_p, cos_theta_t, eta_it, eta_ti) =
         fresnel_polarized(cos_theta_i, eta);
 
     // Unit conversion factor
-    Float factor = -eta_it * select(abs(cos_theta_i) > 1e-8f,
+    Float factor = -eta_it * ek::select(ek::abs(cos_theta_i) > 1e-8f,
                                     cos_theta_t / cos_theta_i, 0.f);
 
     // Compute transmission amplitudes
     Float a_s_r = real(a_s) + 1.f,
           a_p_r = (1.f - real(a_p)) * eta_ti;
 
-    Float t_s = sqr(a_s_r),
-          t_p = sqr(a_p_r),
+    Float t_s = ek::sqr(a_s_r),
+          t_p = ek::sqr(a_p_r),
           a = .5f * factor * (t_s + t_p),
           b = .5f * factor * (t_s - t_p),
-          c = factor * sqrt(t_s * t_p);
+          c = factor * ek::sqrt(t_s * t_p);
 
     return MuellerMatrix<Float>(
         a, b, 0, 0,
@@ -285,7 +285,7 @@ Vector3 stokes_basis(const Vector3 &w) {
  *      Mueller matrix that performs the desired change of reference frames.
  */
 template <typename Vector3,
-          typename Float = value_t<Vector3>,
+          typename Float = ek::value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
                                   const Vector3 &basis_current,
@@ -293,7 +293,7 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
     Float theta = unit_angle(normalize(basis_current),
                              normalize(basis_target));
 
-    masked(theta, dot(forward, cross(basis_current, basis_target)) < 0) *= -1.f;
+    ek::masked(theta, ek::dot(forward, cross(basis_current, basis_target)) < 0) *= -1.f;
     return rotator(theta);
 }
 
@@ -331,7 +331,7 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
  *      New Mueller matrix that operates from \c in_basis_target to \c out_basis_target.
  */
 template <typename Vector3,
-          typename Float = value_t<Vector3>,
+          typename Float = ek::value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
                                    const Vector3 &in_forward,
@@ -370,7 +370,7 @@ MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
  *      New Mueller matrix that operates from \c basis_target to \c basis_target.
  */
 template <typename Vector3,
-          typename Float = value_t<Vector3>,
+          typename Float = ek::value_t<Vector3>,
           typename MuellerMatrix = MuellerMatrix<Float>>
 MuellerMatrix rotate_mueller_basis_collinear(const MuellerMatrix &M,
                                              const Vector3 &forward,

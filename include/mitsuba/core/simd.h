@@ -2,6 +2,7 @@
 
 #include <mitsuba/mitsuba.h>
 #include <enoki/array_traits.h>
+#include <string>
 
 #if defined(MTS_ENABLE_OPTIX)
 #  include <enoki/cuda.h>

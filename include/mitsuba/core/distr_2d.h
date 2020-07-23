@@ -64,11 +64,11 @@ template <typename Float_, size_t Dimension_ = 0>
 class DiscreteDistribution2D {
 public:
     using Float                       = Float_;
-    using UInt32                      = uint32_array_t<Float>;
-    using Mask                        = mask_t<Float>;
+    using UInt32                      = ek::uint32_array_t<Float>;
+    using Mask                        = ek::mask_t<Float>;
     using Point2f                     = Point<Float, 2>;
     using Point2u                     = Point<UInt32, 2>;
-    using ScalarFloat                 = scalar_t<Float>;
+    using ScalarFloat                 = ek::scalar_t<Float>;
     using ScalarVector2u              = Vector<uint32_t, 2>;
     using FloatStorage                = DynamicBuffer<Float>;
 
@@ -111,8 +111,8 @@ public:
     Float eval(const Point2u &pos, Mask active = true) const {
         UInt32 index = pos.x() + pos.y() * m_size.x();
 
-        return gather<Float>(m_cond_cdf, index, active) -
-               gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0);
+        return ek::gather<Float>(m_cond_cdf, index, active) -
+               ek::gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0);
     }
 
     /// Evaluate the normalized function value at the given integer position
@@ -134,39 +134,39 @@ public:
         Point2f sample(sample_);
 
         // Avoid degeneracies on the domain boundary
-        sample = clamp(sample, std::numeric_limits<ScalarFloat>::min(),
-                       math::OneMinusEpsilon<Float>);
+        sample = ek::clamp(sample, std::numeric_limits<ScalarFloat>::min(),
+                       ek::OneMinusEpsilon<Float>);
 
         // Scale sample Y range
         sample.y() *= m_inv_normalization;
 
         // Sample the row from the marginal distribution
-        UInt32 row = enoki::binary_search(
+        UInt32 row = ek::binary_search(
             0u, m_size.y() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_marg_cdf, idx, active) < sample.y();
+                return ek::gather<Float>(m_marg_cdf, idx, active) < sample.y();
             });
 
         UInt32 offset = row * m_size.x();
 
         // Scale sample X range
-        sample.x() *= gather<Float>(m_cond_cdf, offset + m_size.x() - 1, active);
+        sample.x() *= ek::gather<Float>(m_cond_cdf, offset + m_size.x() - 1, active);
 
         // Sample the column from the conditional distribution
-        UInt32 col = enoki::binary_search(
+        UInt32 col = ek::binary_search(
             0u, m_size.x() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_cond_cdf, idx + offset, active) < sample.x();
+                return ek::gather<Float>(m_cond_cdf, idx + offset, active) < sample.x();
             });
 
         // Re-scale uniform variate
-        Float col_cdf_0 = gather<Float>(m_cond_cdf, offset + col - 1, active && col > 0),
-              col_cdf_1 = gather<Float>(m_cond_cdf, offset + col, active),
-              row_cdf_0 = gather<Float>(m_marg_cdf, row - 1, active && row > 0),
-              row_cdf_1 = gather<Float>(m_marg_cdf, row, active);
+        Float col_cdf_0 = ek::gather<Float>(m_cond_cdf, offset + col - 1, active && col > 0),
+              col_cdf_1 = ek::gather<Float>(m_cond_cdf, offset + col, active),
+              row_cdf_0 = ek::gather<Float>(m_marg_cdf, row - 1, active && row > 0),
+              row_cdf_1 = ek::gather<Float>(m_marg_cdf, row, active);
 
         sample.x() -= col_cdf_0;
         sample.y() -= row_cdf_0;
-        masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
-        masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        ek::masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        ek::masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         return { Point2u(col, row), (col_cdf_1 - col_cdf_0) * m_normalization, sample };
     }
@@ -200,13 +200,13 @@ template <typename Float_, size_t Dimension_ = 0> class Distribution2D {
 public:
     static constexpr size_t Dimension = Dimension_;
     using Float                       = Float_;
-    using UInt32                      = uint32_array_t<Float>;
-    using Int32                       = int32_array_t<Float>;
-    using Mask                        = mask_t<Float>;
+    using UInt32                      = ek::uint32_array_t<Float>;
+    using Int32                       = ek::int32_array_t<Float>;
+    using Mask                        = ek::mask_t<Float>;
     using Point2f                     = Point<Float, 2>;
     using Point2i                     = Point<Int32, 2>;
     using Point2u                     = Point<UInt32, 2>;
-    using ScalarFloat                 = scalar_t<Float>;
+    using ScalarFloat                 = ek::scalar_t<Float>;
     using ScalarVector2f              = Vector<ScalarFloat, 2>;
     using ScalarVector2u              = Vector<uint32_t, 2>;
     using FloatStorage                = DynamicBuffer<Float>;
@@ -246,7 +246,7 @@ protected:
         if constexpr (Dimension > 0) {
             MTS_MASK_ARGUMENT(active);
 
-            UInt32 slice_offset = zero<UInt32>();
+            UInt32 slice_offset = ek::zero<UInt32>();
             for (size_t dim = 0; dim < Dimension; ++dim) {
                 if (unlikely(m_param_values[dim].size() == 1)) {
                     param_weight[2 * dim] = 1.f;
@@ -257,15 +257,15 @@ protected:
                 UInt32 param_index = math::find_interval(
                     (uint32_t) m_param_values[dim].size(),
                     [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                        return gather<Float>(m_param_values[dim], idx, active) <
+                        return ek::gather<Float>(m_param_values[dim], idx, active) <
                                param[dim];
                     });
 
-                Float p0 = gather<Float>(m_param_values[dim], param_index, active),
-                      p1 = gather<Float>(m_param_values[dim], param_index + 1, active);
+                Float p0 = ek::gather<Float>(m_param_values[dim], param_index, active),
+                      p1 = ek::gather<Float>(m_param_values[dim], param_index + 1, active);
 
                 param_weight[2 * dim + 1] =
-                    clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
+                    ek::clamp((param[dim] - p0) / (p1 - p0), 0.f, 1.f);
                 param_weight[2 * dim] = 1.f - param_weight[2 * dim + 1];
                 slice_offset += m_param_strides[dim] * param_index;
             }
@@ -480,10 +480,10 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = clamp(sample, 0.f, 1.f);
+        sample = ek::clamp(sample, 0.f, 1.f);
 
         // Hierarchical sample warping
-        Point2u offset = zero<Point2u>();
+        Point2u offset = ek::zero<Point2u>();
         for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
@@ -508,25 +508,25 @@ public:
                                      param_weight, active);
 
             // Avoid issues with roundoff error
-            sample = clamp(sample, 0.f, 1.f);
+            sample = ek::clamp(sample, 0.f, 1.f);
 
             // Select the row
             Float r0 = v00 + v10,
                   r1 = v01 + v11;
             sample.y() *= r0 + r1;
             Mask mask = sample.y() > r0;
-            masked(offset.y(), mask) += 1u;
-            masked(sample.y(), mask) -= r0;
-            sample.y() /= select(mask, r1, r0);
+            ek::masked(offset.y(), mask) += 1u;
+            ek::masked(sample.y(), mask) -= r0;
+            sample.y() /= ek::select(mask, r1, r0);
 
             // Select the column
-            Float c0 = select(mask, v01, v00),
-                  c1 = select(mask, v11, v10);
+            Float c0 = ek::select(mask, v01, v00),
+                  c1 = ek::select(mask, v11, v10);
             sample.x() *= c0 + c1;
             mask = sample.x() > c0;
-            masked(sample.x(), mask) -= c0;
-            sample.x() /= select(mask, c1, c0);
-            masked(offset.x(), mask) += 1u;
+            ek::masked(sample.x(), mask) -= c0;
+            sample.x() /= ek::select(mask, c1, c0);
+            ek::masked(offset.x(), mask) += 1u;
         }
 
         const Level &level0 = m_levels[0];
@@ -569,7 +569,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = clamp(sample, 0.f, 1.f);
+        sample = ek::clamp(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         const Level &level0 = m_levels[0];
@@ -624,19 +624,19 @@ public:
 
             Float r0 = v00 + v10,
                   r1 = v01 + v11,
-                  c0 = select(y_mask, v01, v00),
-                  c1 = select(y_mask, v11, v10);
+                  c0 = ek::select(y_mask, v01, v00),
+                  c1 = ek::select(y_mask, v11, v10);
 
-            sample.y() *= select(y_mask, r1, r0);
-            masked(sample.y(), y_mask) += r0;
+            sample.y() *= ek::select(y_mask, r1, r0);
+            ek::masked(sample.y(), y_mask) += r0;
             sample.y() /= r0 + r1;
 
-            sample.x() *= select(x_mask, c1, c0);
-            masked(sample.x(), x_mask) += c0;
+            sample.x() *= ek::select(x_mask, c1, c0);
+            ek::masked(sample.x(), x_mask) += c0;
             sample.x() /= c0 + c1;
 
             // Avoid issues with roundoff error
-            sample = clamp(sample, 0.f, 1.f);
+            sample = ek::clamp(sample, 0.f, 1.f);
 
             offset = sr<1>(offset);
         }
@@ -655,7 +655,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        pos = clamp(pos, 0.f, 1.f);
+        pos = ek::clamp(pos, 0.f, 1.f);
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
@@ -723,7 +723,7 @@ protected:
         Level() { }
         Level(ScalarVector2u res, uint32_t slices)
             : size(hprod(res)), width(res.x()),
-              data(zero<FloatStorage>(hprod(res) * slices)) {
+              data(ek::zero<FloatStorage>(hprod(res) * slices)) {
             data.managed();
             data_ptr = data.data();
         }
@@ -736,7 +736,7 @@ protected:
          * improve cache locality during hierarchical traversals
          */
         template <typename Point2u>
-        MTS_INLINE value_t<Point2u> index(const Point2u &p) const {
+        MTS_INLINE ek::value_t<Point2u> index(const Point2u &p) const {
             return ((p.x() & 1u) | sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
@@ -766,7 +766,7 @@ protected:
             } else {
                 ENOKI_MARK_USED(param_strides);
                 ENOKI_MARK_USED(param_weight);
-                return gather<Float>(data, i0, active);
+                return ek::gather<Float>(data, i0, active);
             }
         }
     };
@@ -1010,7 +1010,7 @@ public:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        pos = clamp(pos, 0.f, 1.f);
+        pos = ek::clamp(pos, 0.f, 1.f);
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
@@ -1082,7 +1082,7 @@ protected:
         } else {
             ENOKI_MARK_USED(param_weight);
             ENOKI_MARK_USED(size);
-            return gather<Float>(data, i0, active);
+            return ek::gather<Float>(data, i0, active);
         }
     }
 
@@ -1102,7 +1102,7 @@ protected:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid degeneracies on the domain boundary
-        sample = clamp(sample, math::Epsilon<Float>, math::OneMinusEpsilon<Float>);
+        sample = ek::clamp(sample, ek::Epsilon<Float>, ek::OneMinusEpsilon<Float>);
 
         /// Multiply by last entry of marginal CDF if the data is not normalized
         UInt32 offset_marg = slice_offset * n_marg;
@@ -1117,7 +1117,7 @@ protected:
             sample.y() *= fetch_marginal(n_marg - 1, active);
 
         // Sample the row from the marginal distribution
-        UInt32 row = enoki::binary_search(
+        UInt32 row = ek::binary_search(
             0u, n_marg - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return fetch_marginal(idx, active) < sample.y();
             });
@@ -1127,7 +1127,7 @@ protected:
               row_cdf_1 = fetch_marginal(row, active);
 
         sample.y() -= row_cdf_0;
-        masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        ek::masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         /// Multiply by last entry of conditional CDF
         UInt32 offset_cond = slice_offset * n_cond + row * (m_size.x() - 1);
@@ -1136,7 +1136,7 @@ protected:
                              n_cond, param_weight, active);
 
         // Sample the column from the conditional distribution
-        UInt32 col = enoki::binary_search(
+        UInt32 col = ek::binary_search(
             0u, m_size.x() - 2, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return lookup(m_cond_cdf.data(),
                               offset_cond + idx, n_cond,
@@ -1150,7 +1150,7 @@ protected:
                                  n_cond, param_weight, active);
 
         sample.x() -= col_cdf_0;
-        masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        ek::masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
 
         // Sample a position on the bilinear patch
         UInt32 offset_data = slice_offset * n_data + row * m_size.x() + col;
@@ -1186,7 +1186,7 @@ protected:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = clamp(sample, 0.f, 1.f);
+        sample = ek::clamp(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
@@ -1249,8 +1249,8 @@ protected:
         ENOKI_MARK_USED(slice_offset);
 
         // Avoid degeneracies on the domain boundary
-        sample = clamp(sample, math::Epsilon<Float>,
-                       math::OneMinusEpsilon<Float>);
+        sample = ek::clamp(sample, ek::Epsilon<Float>,
+                       ek::OneMinusEpsilon<Float>);
 
         // Sample the row first
         UInt32 offset_marg = slice_offset * n_marg;
@@ -1264,7 +1264,7 @@ protected:
         if (!m_normalized)
             sample.y() *= fetch_marginal(n_marg - 1, active);
 
-        UInt32 row = enoki::binary_search(
+        UInt32 row = ek::binary_search(
             0u, n_marg - 1,
             [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return fetch_marginal(idx, active) < sample.y();
@@ -1297,7 +1297,7 @@ protected:
             return lerp(v0, v1, sample.y());
         };
 
-        UInt32 col = enoki::binary_search(
+        UInt32 col = ek::binary_search(
             0, m_size.x() - 1,
             [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return fetch_conditional(idx, active) < sample.x();
@@ -1343,7 +1343,7 @@ protected:
         UInt32 slice_offset = interpolate_weights(param, param_weight, active);
 
         // Avoid issues with roundoff error
-        sample = clamp(sample, 0.f, 1.f);
+        sample = ek::clamp(sample, 0.f, 1.f);
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
@@ -1408,11 +1408,11 @@ protected:
     MTS_INLINE Float sample_segment(Float sample, ScalarFloat inv_width,
                                     Float v0, Float v1) const {
         Mask non_const = abs(v0 - v1) > 1e-4f * (v0 + v1);
-        Float divisor = select(non_const, v0 - v1, v0 + v1);
+        Float divisor = ek::select(non_const, v0 - v1, v0 + v1);
         sample *= 2.f * inv_width;
-        masked(sample, non_const) =
-            v0 - safe_sqrt(sqr(v0) + sample * (v1 - v0));
-        masked(sample, neq(divisor, 0.f)) /= divisor;
+        ek::masked(sample, non_const) =
+            v0 - ek::safe_sqrt(ek::sqr(v0) + sample * (v1 - v0));
+        ek::masked(sample, neq(divisor, 0.f)) /= divisor;
         return sample;
     }
 

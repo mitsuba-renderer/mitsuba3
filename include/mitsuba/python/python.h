@@ -88,8 +88,8 @@ void bind_slicing_operators(PyClass &cl) {
               slice(c, i) = c2;
           })
           // TODO enabled this when ENOKI_STRUCT_SUPPORT is fixed for structs containing Matrix
-          // .def("__setitem__", [](Class &c, const mask_t<Float> &mask, const Class &c2) {
-          //     masked(c, mask) = c2;
+          // .def("__setitem__", [](Class &c, const ek::mask_t<Float> &mask, const Class &c2) {
+          //     ek::masked(c, mask) = c2;
           // })
           .def("__len__", [](const Class &c) {
               return slices(c);
@@ -101,7 +101,7 @@ void bind_slicing_operators(PyClass &cl) {
                 if (size != 1)
                     throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
             }
-            return zero<Class>(size);
+            return ek::zero<Class>(size);
         }, "size"_a = 1
     );
 }
@@ -146,7 +146,7 @@ template <typename Type> pybind11::handle get_type_handle() {
 template <typename Func>
 decltype(auto) vectorize(const Func &func) {
 #if MTS_VARIANT_VECTORIZE == 1
-    return enoki::vectorize_wrapper(func);
+    return ek::vectorize_wrapper(func);
 #else
     return func;
 #endif

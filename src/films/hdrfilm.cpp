@@ -249,7 +249,7 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
-        if constexpr (is_cuda_array_v<Float>) {
+        if constexpr (ek::is_cuda_array_v<Float>) {
             cuda_eval();
             cuda_sync();
         }

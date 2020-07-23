@@ -101,7 +101,7 @@ public:
             Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius, d,
                   time, wavelengths),
             unpolarized<Spectrum>(weight) *
-                (math::Pi<Float> * sqr(m_bsphere.radius)));
+                (ek::Pi<Float> * sqr(m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -124,7 +124,7 @@ public:
         ds.d      = -d;
         ds.dist   = dist;
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths          = it.wavelengths;
 
         // No need to divide by the PDF here (always equal to 1.f)

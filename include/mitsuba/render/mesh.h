@@ -77,42 +77,42 @@ public:
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
-    MTS_INLINE auto face_indices(Index index, mask_t<Index> active = true) const {
+    MTS_INLINE auto face_indices(Index index, ek::mask_t<Index> active = true) const {
         using Result = Array<replace_scalar_t<Index, uint32_t>, 3>;
-        return gather<Result>(m_faces_buf, index, active);
+        return ek::gather<Result>(m_faces_buf, index, active);
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_position(Index index, mask_t<Index> active = true) const {
+    MTS_INLINE auto vertex_position(Index index, ek::mask_t<Index> active = true) const {
         using Result = Point<replace_scalar_t<Index, InputFloat>, 3>;
-        return gather<Result>(m_vertex_positions_buf, index, active);
+        return ek::gather<Result>(m_vertex_positions_buf, index, active);
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_normal(Index index, mask_t<Index> active = true) const {
+    MTS_INLINE auto vertex_normal(Index index, ek::mask_t<Index> active = true) const {
         using Result = Normal<replace_scalar_t<Index, InputFloat>, 3>;
-        return gather<Result>(m_vertex_normals_buf, index, active);
+        return ek::gather<Result>(m_vertex_normals_buf, index, active);
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_texcoord(Index index, mask_t<Index> active = true) const {
+    MTS_INLINE auto vertex_texcoord(Index index, ek::mask_t<Index> active = true) const {
         using Result = Point<replace_scalar_t<Index, InputFloat>, 2>;
-        return gather<Result>(m_vertex_texcoords_buf, index, active);
+        return ek::gather<Result>(m_vertex_texcoords_buf, index, active);
     }
 
     /// Returns the surface area of the face with index \c index
     template <typename Index>
-    auto face_area(Index index, mask_t<Index> active = true) const {
+    auto face_area(Index index, ek::mask_t<Index> active = true) const {
         auto fi = face_indices(index, active);
 
         auto p0 = vertex_position(fi[0], active),
              p1 = vertex_position(fi[1], active),
              p2 = vertex_position(fi[2], active);
 
-        return 0.5f * norm(cross(p1 - p0, p2 - p0));
+        return 0.5f * ek::norm(cross(p1 - p0, p2 - p0));
     }
 
     /// Does this mesh have per-vertex normals?
@@ -203,21 +203,21 @@ public:
         Vector3f e1 = p1 - p0, e2 = p2 - p0;
 
         Vector3f pvec = cross(ray.d, e2);
-        Float inv_det = rcp(dot(e1, pvec));
+        Float inv_det = rcp(ek::dot(e1, pvec));
 
         Vector3f tvec = ray.o - p0;
-        Float u = dot(tvec, pvec) * inv_det;
+        Float u = ek::dot(tvec, pvec) * inv_det;
         active &= u >= 0.f && u <= 1.f;
 
         Vector3f qvec = cross(tvec, e1);
-        Float v = dot(ray.d, qvec) * inv_det;
+        Float v = ek::dot(ray.d, qvec) * inv_det;
         active &= v >= 0.f && u + v <= 1.f;
 
-        Float t = dot(e2, qvec) * inv_det;
+        Float t = ek::dot(e2, qvec) * inv_det;
         active &= t >= ray.mint && t <= ray.maxt;
 
-        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
-        pi.t = select(active, t, math::Infinity<Float>);
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        pi.t = ek::select(active, t, ek::Infinity<Float>);
         pi.prim_uv = Point2f(u, v);
         pi.prim_index = index;
         pi.shape = this;
@@ -305,9 +305,9 @@ protected:
             auto fi = face_indices(si.prim_index, active);
             Point3f b = barycentric_coordinates(si, active);
 
-            StorageType v0 = gather<StorageType>(buf, fi[0], active),
-                        v1 = gather<StorageType>(buf, fi[1], active),
-                        v2 = gather<StorageType>(buf, fi[2], active);
+            StorageType v0 = ek::gather<StorageType>(buf, fi[0], active),
+                        v1 = ek::gather<StorageType>(buf, fi[1], active),
+                        v2 = ek::gather<StorageType>(buf, fi[2], active);
 
             // Barycentric interpolation
             if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw) {
@@ -325,7 +325,7 @@ protected:
                 return (ReturnType) fmadd(v0, b[0], fmadd(v1, b[1], v2 * b[2]));
             }
         } else {
-            StorageType v = gather<StorageType>(buf, si.prim_index, active);
+            StorageType v = ek::gather<StorageType>(buf, si.prim_index, active);
             if constexpr (is_spectral_v<Spectrum> && Size == 3 && !Raw) {
                 return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
             } else {

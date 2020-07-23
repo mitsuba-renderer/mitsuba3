@@ -306,7 +306,7 @@ MTS_STRUCT_TYPE(int32_t,     Int32);
 MTS_STRUCT_TYPE(uint32_t,    UInt32);
 MTS_STRUCT_TYPE(int64_t,     Int64);
 MTS_STRUCT_TYPE(uint64_t,    UInt64);
-MTS_STRUCT_TYPE(enoki::half, Float16);
+MTS_STRUCT_TYPE(ek::half, Float16);
 MTS_STRUCT_TYPE(float,       Float32);
 MTS_STRUCT_TYPE(double,      Float64);
 #undef MTS_STRUCT_TYPE

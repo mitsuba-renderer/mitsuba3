@@ -116,13 +116,13 @@ public:
         Float t = 1.f - r;
 
         // Select the lobe to be sampled
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         UnpolarizedSpectrum weight;
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r && active;
             weight = 1.f;
-            bs.pdf = select(selected_r, r, t);
+            bs.pdf = ek::select(selected_r, r, t);
         } else {
             if (has_reflection || has_transmission) {
                 selected_r = Mask(has_reflection) && active;
@@ -133,11 +133,11 @@ public:
             }
         }
 
-        bs.wo = select(selected_r, reflect(si.wi), -si.wi);
+        bs.wo = ek::select(selected_r, reflect(si.wi), -si.wi);
         bs.eta = 1.f;
-        bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
+        bs.sampled_component = ek::select(selected_r, UInt32(0), UInt32(1));
         bs.sampled_type =
-            select(selected_r, UInt32(+BSDFFlags::DeltaReflection), UInt32(+BSDFFlags::Null));
+            ek::select(selected_r, UInt32(+BSDFFlags::DeltaReflection), UInt32(+BSDFFlags::Null));
 
         if (m_specular_reflectance && any_or<true>(selected_r))
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
@@ -146,7 +146,7 @@ public:
         if (m_specular_transmittance && any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
-        return { bs, select(active, unpolarized<Spectrum>(weight), 0.f) };
+        return { bs, ek::select(active, unpolarized<Spectrum>(weight), 0.f) };
     }
 
     Spectrum eval(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,

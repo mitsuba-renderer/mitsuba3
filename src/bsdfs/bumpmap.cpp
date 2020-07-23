@@ -134,7 +134,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return select(active, m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        return ek::select(active, m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -150,7 +150,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
+        return ek::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
@@ -158,21 +158,21 @@ public:
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);
 
         // Compute perturbed differential geometry
-        Vector3f dp_du = fmadd(si.sh_frame.n, grad_uv.x() - dot(si.sh_frame.n, si.dp_du), si.dp_du);
-        Vector3f dp_dv = fmadd(si.sh_frame.n, grad_uv.y() - dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
+        Vector3f dp_du = fmadd(si.sh_frame.n, grad_uv.x() - ek::dot(si.sh_frame.n, si.dp_du), si.dp_du);
+        Vector3f dp_dv = fmadd(si.sh_frame.n, grad_uv.y() - ek::dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
 
         // Bump-mapped shading normal
         Frame3f result;
         result.n = normalize(cross(dp_du, dp_dv));
 
         // Flip if not aligned with geometric normal
-        result.n[dot(si.n, result.n) < .0f] *= -1.f;
+        result.n[ek::dot(si.n, result.n) < .0f] *= -1.f;
 
         // Convert to small rotation from original shading frame
         result.n = si.to_local(result.n);
 
         // Gram-schmidt orthogonalization to compute local shading frame
-        result.s = normalize(fnmadd(result.n, dot(result.n, si.dp_du), si.dp_du));
+        result.s = normalize(fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
         result.t = cross(result.n, result.s);
 
         return result;

@@ -4,7 +4,6 @@
 
 #include <enoki/matrix.h>
 #include <mitsuba/core/fwd.h>
-#include <mitsuba/core/logger.h>
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
@@ -25,14 +24,14 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 3>
-struct Color : enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>>;
+struct Color : ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Color<T, Size_>;
 
     using ArrayType = Color;
-    using MaskType = enoki::Mask<Value_, Size_>;
+    using MaskType = ek::Mask<Value_, Size_>;
 
     decltype(auto) r() const { return Base::x(); }
     decltype(auto) r() { return Base::x(); }
@@ -57,8 +56,8 @@ struct Color : enoki::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 4>
-struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>>;
+struct Spectrum : ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Size_>>;
 
     // Never allow matrix-vector products involving this type (important for polarized rendering)
     static constexpr bool IsVector = false;
@@ -67,7 +66,7 @@ struct Spectrum : enoki::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, 
     template <typename T> using ReplaceValue = Spectrum<T, Size_>;
 
     using ArrayType = Spectrum;
-    using MaskType = enoki::Mask<Value_, Size_>;
+    using MaskType = ek::Mask<Value_, Size_>;
 
     ENOKI_ARRAY_IMPORT(Spectrum, Base)
 };
@@ -88,7 +87,7 @@ template <typename T> depolarize_t<T> depolarize(const T& spectrum) {
  */
 template <typename T> auto unpolarized(const T &spectrum) {
     if constexpr (is_polarized_v<T>) {
-        T result = zero<T>();
+        T result = ek::zero<T>();
         result(0, 0) = spectrum(0, 0);
         return result;
     } else {
@@ -104,18 +103,18 @@ template <typename T> auto unpolarized(const T &spectrum) {
 // =======================================================================
 
 template <typename Value_, size_t Size_>
-struct Color<enoki::detail::MaskedArray<Value_>, Size_>
-    : enoki::detail::MaskedArray<Color<Value_, Size_>> {
-    using Base = enoki::detail::MaskedArray<Color<Value_, Size_>>;
+struct Color<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Color<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Color<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Color(const Base &b) : Base(b) { }
 };
 
 template <typename Value_, size_t Size_>
-struct Spectrum<enoki::detail::MaskedArray<Value_>, Size_>
-    : enoki::detail::MaskedArray<Spectrum<Value_, Size_>> {
-    using Base = enoki::detail::MaskedArray<Spectrum<Value_, Size_>>;
+struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Spectrum<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Spectrum<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Spectrum(const Base &b) : Base(b) { }
@@ -145,10 +144,10 @@ extern MTS_EXPORT_CORE void cie_alloc();
  * in nanometers
  */
 template <typename Float, typename Result = Color<Float, 3>>
-Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
-    using Int32       = int32_array_t<Float>;
-    using Float32     = float32_array_t<Float>;
-    using ScalarFloat = scalar_t<Float>;
+Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
+    using Int32       = ek::int32_array_t<Float>;
+    using Float32     = ek::float32_array_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
 
     Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
               ((MTS_CIE_SAMPLES - 1) /
@@ -157,22 +156,22 @@ Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
+    Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Float v0_x = (Float) gather<Float32>(cie1931_x_data, i0, active),
-          v1_x = (Float) gather<Float32>(cie1931_x_data, i1, active),
-          v0_y = (Float) gather<Float32>(cie1931_y_data, i0, active),
-          v1_y = (Float) gather<Float32>(cie1931_y_data, i1, active),
-          v0_z = (Float) gather<Float32>(cie1931_z_data, i0, active),
-          v1_z = (Float) gather<Float32>(cie1931_z_data, i1, active);
+    Float v0_x = (Float) ek::gather<Float32>(cie1931_x_data, i0, active),
+          v1_x = (Float) ek::gather<Float32>(cie1931_x_data, i1, active),
+          v0_y = (Float) ek::gather<Float32>(cie1931_y_data, i0, active),
+          v1_y = (Float) ek::gather<Float32>(cie1931_y_data, i1, active),
+          v0_z = (Float) ek::gather<Float32>(cie1931_z_data, i0, active),
+          v1_z = (Float) ek::gather<Float32>(cie1931_z_data, i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
 
-    return Result(fmadd(w0, v0_x, w1 * v1_x),
-                  fmadd(w0, v0_y, w1 * v1_y),
-                  fmadd(w0, v0_z, w1 * v1_z)) & mask_t<Result>(active);
+    return Result(ek::fmadd(w0, v0_x, w1 * v1_x),
+                  ek::fmadd(w0, v0_y, w1 * v1_y),
+                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active);
 }
 
 /**
@@ -181,10 +180,10 @@ Result cie1931_xyz(Float wavelength, mask_t<Float> active = true) {
  */
 
 template <typename Float>
-Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
-    using Int32       = int32_array_t<Float>;
-    using Float32     = float32_array_t<Float>;
-    using ScalarFloat = scalar_t<Float>;
+Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
+    using Int32       = ek::int32_array_t<Float>;
+    using Float32     = ek::float32_array_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
 
     Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
               ((MTS_CIE_SAMPLES - 1) /
@@ -193,33 +192,33 @@ Float cie1931_y(Float wavelength, mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    Int32 i0 = clamp(Int32(t), zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
+    Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Float v0 = (Float) gather<Float32>(cie1931_y_data, i0, active),
-          v1 = (Float) gather<Float32>(cie1931_y_data, i1, active);
+    Float v0 = (Float) ek::gather<Float32>(cie1931_y_data, i0, active),
+          v1 = (Float) ek::gather<Float32>(cie1931_y_data, i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
 
-    return select(active, fmadd(w0, v0, w1 * v1), 0.f);
+    return ek::select(active, ek::fmadd(w0, v0, w1 * v1), 0.f);
 }
 
 /// Spectral responses to XYZ.
 template <typename Float, size_t Size>
 Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
                                 const Spectrum<Float, Size> &wavelengths,
-                                mask_t<Float> active = true) {
-    Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
-    return { hmean(XYZ.x() * value),
-             hmean(XYZ.y() * value),
-             hmean(XYZ.z() * value) };
+                                ek::mask_t<Float> active = true) {
+    ek::Array<Spectrum<Float, Size>, 3> XYZ = cie1931_xyz(wavelengths, active);
+    return { ek::hmean(XYZ.x() * value),
+             ek::hmean(XYZ.y() * value),
+             ek::hmean(XYZ.z() * value) };
 }
 
 /// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
 template <typename Float>
-Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, mask_t<Float> /*active*/ = true) {
-    using ScalarMatrix3f = enoki::Matrix<scalar_t<Float>, 3>;
+Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, ek::mask_t<Float> /*active*/ = true) {
+    using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
     const ScalarMatrix3f M(0.412453f, 0.357580f, 0.180423f,
                            0.212671f, 0.715160f, 0.072169f,
                            0.019334f, 0.119193f, 0.950227f);
@@ -228,8 +227,8 @@ Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, mask_t<Float> /*active*/
 
 /// Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB
 template <typename Float>
-Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &rgb, mask_t<Float> /*active*/ = true) {
-    using ScalarMatrix3f = enoki::Matrix<scalar_t<Float>, 3>;
+Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &rgb, ek::mask_t<Float> /*active*/ = true) {
+    using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
     const ScalarMatrix3f M(3.240479f, -1.537150f, -0.498535f,
                           -0.969256f,  1.875991f,  0.041556f,
                            0.055648f, -0.204043f,  1.057311f);
@@ -239,8 +238,8 @@ Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &rgb, mask_t<Float> /*active*/
 template <typename Float, size_t Size>
 Float luminance(const Spectrum<Float, Size> &value,
                 const Spectrum<Float, Size> &wavelengths,
-                mask_t<Float> active = true) {
-    return hmean(cie1931_y(wavelengths, active) * value);
+                ek::mask_t<Float> active = true) {
+    return ek::hmean(cie1931_y(wavelengths, active) * value);
 }
 
 template <typename Float> Float luminance(const Color<Float, 3> &c) {
@@ -293,8 +292,8 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
         Value tmp = sech(0.0072f * (wavelengths - 538.f));
-        return select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
-                      0.003939804229326285f * tmp * tmp, zero<Value>());
+        return ek::select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
+                      0.003939804229326285f * tmp * tmp, ek::zero<Value>());
     } else {
         return pdf_uniform_spectrum(wavelengths);
     }
@@ -306,7 +305,7 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     if constexpr (!is_spectral_v<Spectrum>) {
         ENOKI_MARK_USED(sample);
         // Note: wavelengths should not be used when rendering in RGB mode.
-        return { std::numeric_limits<scalar_t<Float>>::quiet_NaN(), 1.f };
+        return { std::numeric_limits<ek::scalar_t<Float>>::quiet_NaN(), 1.f };
     } else {
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
         return sample_rgb_spectrum(wav_sample);

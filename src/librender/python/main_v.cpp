@@ -85,7 +85,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     using Float = MTS_VARIANT_FLOAT;
 #if defined(MTS_ENABLE_OPTIX)
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         optix_initialize();
 #endif
 
@@ -126,7 +126,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     casters->push_back((void *) caster);
 
 #if defined(MTS_ENABLE_OPTIX)
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         /* Register a cleanup callback function that is invoked when
            the 'mitsuba::BSDF' Python type is garbage collected */
         py::cpp_function cleanup_callback(

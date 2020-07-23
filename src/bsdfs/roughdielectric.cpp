@@ -211,7 +211,7 @@ public:
         bool has_reflection    = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
              has_transmission  = ctx.is_enabled(BSDFFlags::GlossyTransmission, 1);
 
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
 
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
 
@@ -238,7 +238,7 @@ public:
         active &= neq(bs.pdf, 0.f);
 
         auto [F, cos_theta_t, eta_it, eta_ti] =
-            fresnel(dot(si.wi, m), Float(m_eta));
+            fresnel(ek::dot(si.wi, m), Float(m_eta));
 
         // Select the lobe to be sampled
         UnpolarizedSpectrum weight;
@@ -246,7 +246,7 @@ public:
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= F && active;
             weight = 1.f;
-            bs.pdf *= select(selected_r, F, 1.f - F);
+            bs.pdf *= ek::select(selected_r, F, 1.f - F);
         } else {
             if (has_reflection || has_transmission) {
                 selected_r = Mask(has_reflection) && active;
@@ -258,9 +258,9 @@ public:
 
         selected_t = !selected_r && active;
 
-        bs.eta               = select(selected_r, Float(1.f), eta_it);
-        bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
-        bs.sampled_type      = select(selected_r,
+        bs.eta               = ek::select(selected_r, Float(1.f), eta_it);
+        bs.sampled_component = ek::select(selected_r, UInt32(0), UInt32(1));
+        bs.sampled_type      = ek::select(selected_r,
                                       UInt32(+BSDFFlags::GlossyReflection),
                                       UInt32(+BSDFFlags::GlossyTransmission));
 
@@ -275,7 +275,7 @@ public:
                 weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
             // Jacobian of the half-direction mapping
-            dwh_dwo = rcp(4.f * dot(bs.wo, m));
+            dwh_dwo = rcp(4.f * ek::dot(bs.wo, m));
         }
 
         // Transmission sampling
@@ -293,20 +293,20 @@ public:
             weight[selected_t] *= factor;
 
             // Jacobian of the half-direction mapping
-            masked(dwh_dwo, selected_t) =
-                (sqr(bs.eta) * dot(bs.wo, m)) /
-                 sqr(dot(si.wi, m) + bs.eta * dot(bs.wo, m));
+            ek::masked(dwh_dwo, selected_t) =
+                (sqr(bs.eta) * ek::dot(bs.wo, m)) /
+                 sqr(ek::dot(si.wi, m) + bs.eta * ek::dot(bs.wo, m));
         }
 
         if (likely(m_sample_visible))
             weight *= distr.smith_g1(bs.wo, m);
         else
-            weight *= distr.G(si.wi, bs.wo, m) * dot(si.wi, m) /
+            weight *= distr.G(si.wi, bs.wo, m) * ek::dot(si.wi, m) /
                       (cos_theta_i * Frame3f::cos_theta(m));
 
         bs.pdf *= abs(dwh_dwo);
 
-        return { bs, select(active, unpolarized<Spectrum>(weight), 0.f) };
+        return { bs, ek::select(active, unpolarized<Spectrum>(weight), 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -326,11 +326,11 @@ public:
         Mask reflect = cos_theta_i * cos_theta_o > 0.f;
 
         // Determine the relative index of refraction
-        Float eta     = select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta)),
-              inv_eta = select(cos_theta_i > 0.f, Float(m_inv_eta), Float(m_eta));
+        Float eta     = ek::select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta)),
+              inv_eta = ek::select(cos_theta_i > 0.f, Float(m_inv_eta), Float(m_eta));
 
         // Compute the half-vector
-        Vector3f m = normalize(si.wi + wo * select(reflect, Float(1.f), eta));
+        Vector3f m = normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = mulsign(m, Frame3f::cos_theta(m));
@@ -346,7 +346,7 @@ public:
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(dot(si.wi, m), Float(m_eta)));
+        Float F = std::get<0>(fresnel(ek::dot(si.wi, m), Float(m_eta)));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
@@ -373,8 +373,8 @@ public:
 
             // Compute the total amount of transmission
             UnpolarizedSpectrum value = abs(
-                (scale * (1.f - F) * D * G * eta * eta * dot(si.wi, m) * dot(wo, m)) /
-                (cos_theta_i * sqr(dot(si.wi, m) + eta * dot(wo, m))));
+                (scale * (1.f - F) * D * G * eta * eta * ek::dot(si.wi, m) * ek::dot(wo, m)) /
+                (cos_theta_i * sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m))));
 
             if (m_specular_transmittance)
                 value *= m_specular_transmittance->eval(si, eval_t);
@@ -404,10 +404,10 @@ public:
                   (Mask(has_transmission) && !reflect);
 
         // Determine the relative index of refraction
-        Float eta = select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta));
+        Float eta = ek::select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta));
 
         // Compute the half-vector
-        Vector3f m = normalize(si.wi + wo * select(reflect, Float(1.f), eta));
+        Vector3f m = normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = mulsign(m, Frame3f::cos_theta(m));
@@ -416,13 +416,13 @@ public:
            This logic is evaluated in smith_g1() called as part of the eval()
            and sample() methods and needs to be replicated in the probability
            density computation as well. */
-        active &= dot(si.wi, m) * Frame3f::cos_theta(si.wi) > 0.f &&
-                  dot(wo,    m) * Frame3f::cos_theta(wo)    > 0.f;
+        active &= ek::dot(si.wi, m) * Frame3f::cos_theta(si.wi) > 0.f &&
+                  ek::dot(wo,    m) * Frame3f::cos_theta(wo)    > 0.f;
 
         // Jacobian of the half-direction mapping
-        Float dwh_dwo = select(reflect, rcp(4.f * dot(wo, m)),
-                               (eta * eta * dot(wo, m)) /
-                                   sqr(dot(si.wi, m) + eta * dot(wo, m)));
+        Float dwh_dwo = ek::select(reflect, rcp(4.f * ek::dot(wo, m)),
+                               (eta * eta * ek::dot(wo, m)) /
+                                   sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m)));
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
@@ -443,11 +443,11 @@ public:
         Float prob = sample_distr.pdf(mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
 
         if (likely(has_transmission && has_reflection)) {
-            Float F = std::get<0>(fresnel(dot(si.wi, m), Float(m_eta)));
-            prob *= select(reflect, F, 1.f - F);
+            Float F = std::get<0>(fresnel(ek::dot(si.wi, m), Float(m_eta)));
+            prob *= ek::select(reflect, F, 1.f - F);
         }
 
-        return select(active, prob * abs(dwh_dwo), 0.f);
+        return ek::select(active, prob * abs(dwh_dwo), 0.f);
     }
 
     void traverse(TraversalCallback *callback) override {

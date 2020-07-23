@@ -54,7 +54,7 @@ MTS_PY_EXPORT(Emitter) {
         .def_method(Emitter, is_environment)
         .def_method(Emitter, flags);
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         pybind11_type_alias<UInt64, EmitterPtr>();
 
     if constexpr (is_array_v<Float>) {

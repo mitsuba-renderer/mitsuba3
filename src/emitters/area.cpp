@@ -63,7 +63,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        return select(
+        return ek::select(
             Frame3f::cos_theta(si.wi) > 0.f,
             unpolarized<Spectrum>(m_radiance->eval(si, active)),
             0.f
@@ -75,8 +75,8 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
-        si.t = math::Infinity<Float>;
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::Infinity<Float>;
 
         Float pdf = 1.f;
 
@@ -85,7 +85,7 @@ public:
             PositionSample3f ps = m_shape->sample_position(time, sample2, active);
 
             // Radiance not spatially varying, use area-based sampling of shape
-            si = SurfaceInteraction3f(ps, zero<Wavelength>());
+            si = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
             pdf = ps.pdf;
         } else {
             // Ipmortance sample texture
@@ -95,7 +95,7 @@ public:
             si = m_shape->eval_parameterization(Point2f(si.uv), active);
             active &= si.is_valid();
 
-            pdf /= norm(cross(si.dp_du, si.dp_dv));
+            pdf /= ek::norm(cross(si.dp_du, si.dp_dv));
         }
 
         // 2. Sample directional component
@@ -108,13 +108,13 @@ public:
             std::tie(wavelength, spec_weight) = m_radiance->sample_spectrum(
                 si, math::sample_shifted<Wavelength>(wavelength_sample), active);
         } else {
-            wavelength = zero<Wavelength>();
+            wavelength = ek::zero<Wavelength>();
             spec_weight = m_radiance->eval(si, active);
         }
 
         return std::make_pair(
             Ray3f(si.p, si.to_world(local), time, wavelength),
-            unpolarized<Spectrum>(spec_weight) * (math::Pi<Float> / pdf)
+            unpolarized<Spectrum>(spec_weight) * (ek::Pi<Float> / pdf)
         );
     }
 
@@ -129,7 +129,7 @@ public:
         if (!m_radiance->is_spatially_varying()) {
             // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
             ds = m_shape->sample_direction(it, sample, active);
-            active &= dot(ds.d, ds.n) < 0.f && neq(ds.pdf, 0.f);
+            active &= ek::dot(ds.d, ds.n) < 0.f && neq(ds.pdf, 0.f);
 
             SurfaceInteraction3f si(ds, it.wavelengths);
             spec = m_radiance->eval(si, active) / ds.pdf;
@@ -149,13 +149,13 @@ public:
             ds.delta = false;
             ds.d = ds.p - it.p;
 
-            Float dist_squared = squared_norm(ds.d);
+            Float dist_squared = ek::squared_norm(ds.d);
             ds.dist = sqrt(dist_squared);
             ds.d /= ds.dist;
 
-            Float dp = dot(ds.d, ds.n);
+            Float dp = ek::dot(ds.d, ds.n);
             active &= dp < 0;
-            ds.pdf = select(active, pdf / norm(cross(si.dp_du, si.dp_dv)) *
+            ds.pdf = ek::select(active, pdf / ek::norm(cross(si.dp_du, si.dp_dv)) *
                                         dist_squared / -dp, 0.f);
 
             spec = m_radiance->eval(si, active) / ds.pdf;
@@ -168,7 +168,7 @@ public:
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        Float dp = dot(ds.d, ds.n);
+        Float dp = ek::dot(ds.d, ds.n);
         active &= dp < 0.f;
 
         Float value;
@@ -183,7 +183,7 @@ public:
                     (norm(cross(si.dp_du, si.dp_dv)) * -dp);
         }
 
-        return select(active, value, 0.f);
+        return ek::select(active, value, 0.f);
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }

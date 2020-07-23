@@ -60,8 +60,8 @@ public:
 
     /// Evaluate a discretized version of the filter (generally faster than 'eval')
     MTS_INLINE Float eval_discretized(Float x, Mask active = true) const {
-        Int32 index = min(Int32(abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
-        return gather<Float>(m_values.data(), index, active);
+        Int32 index = ek::min(Int32(ek::abs(x * m_scale_factor)), MTS_FILTER_RESOLUTION);
+        return ek::gather<Float>(m_values.data(), index, active);
     }
 
     MTS_DECLARE_CLASS()
@@ -117,11 +117,11 @@ template <typename Scalar_> struct Resampler {
         /* Low-pass filter: scale reconstruction filters when downsampling */
         if (target_res < source_res) {
             scale = (Float) source_res / (Float) target_res;
-            inv_scale = rcp(scale);
+            inv_scale = ek::rcp(scale);
             filter_radius *= scale;
         }
 
-        m_taps = enoki::ceil2int<uint32_t>(filter_radius * 2);
+        m_taps = ek::ceil2int<uint32_t>(filter_radius * 2);
         if (source_res == target_res && (m_taps % 2) != 1)
             --m_taps;
 
@@ -141,7 +141,7 @@ template <typename Scalar_> struct Resampler {
 
                 /* Determine the index of the first original sample
                    that might contribute */
-                m_start[i] = enoki::floor2int<uint32_t>(center - filter_radius + Float(0.5));
+                m_start[i] = ek::floor2int<uint32_t>(center - filter_radius + Float(0.5));
 
                 /* Determine the size of center region, on which to run
                    the fast non condition-aware code */
@@ -308,7 +308,7 @@ private:
                     result += lookup(source, offset + (uint32_t) j,
                                      source_stride, ch) * weights[j];
 
-                *target++ = Clamp ? enoki::template clamp<Scalar>(result, min, max) : result;
+                *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
             }
 
             target += target_stride;
@@ -329,7 +329,7 @@ private:
                         source[source_stride * (offset + (int32_t) j) + ch] *
                         weights[j];
 
-                *target++ = Clamp ? enoki::template clamp<Scalar>(result, min, max) : result;
+                *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
             }
 
             target += target_stride;
@@ -349,7 +349,7 @@ private:
                     result += lookup(source, offset + (int32_t) j,
                                      source_stride, ch) * weights[j];
 
-                *target++ = Clamp ? enoki::template clamp<Scalar>(result, min, max) : result;
+                *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
             }
 
             target += target_stride;
@@ -363,7 +363,7 @@ private:
         if (unlikely(pos < 0 || pos >= (int32_t) m_source_res)) {
             switch (m_bc) {
                 case FilterBoundaryCondition::Clamp:
-                    pos = enoki::clamp(pos, 0, (int32_t) m_source_res - 1);
+                    pos = ek::clamp(pos, 0, (int32_t) m_source_res - 1);
                     break;
 
                 case FilterBoundaryCondition::Repeat:

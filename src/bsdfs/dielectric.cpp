@@ -215,11 +215,11 @@ public:
         Float t_i = 1.f - r_i;
 
         // Lobe selection
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Mask selected_r;
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= r_i && active;
-            bs.pdf = select(selected_r, r_i, t_i);
+            bs.pdf = ek::select(selected_r, r_i, t_i);
         } else {
             if (has_reflection || has_transmission) {
                 selected_r = Mask(has_reflection) && active;
@@ -230,15 +230,15 @@ public:
         }
         Mask selected_t = !selected_r && active;
 
-        bs.sampled_component = select(selected_r, UInt32(0), UInt32(1));
-        bs.sampled_type      = select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
+        bs.sampled_component = ek::select(selected_r, UInt32(0), UInt32(1));
+        bs.sampled_type      = ek::select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
                                                   UInt32(+BSDFFlags::DeltaTransmission));
 
-        bs.wo = select(selected_r,
+        bs.wo = ek::select(selected_r,
                        reflect(si.wi),
                        refract(si.wi, cos_theta_t, eta_ti));
 
-        bs.eta = select(selected_r, Float(1.f), eta_it);
+        bs.eta = ek::select(selected_r, Float(1.f), eta_it);
 
         UnpolarizedSpectrum reflectance = 1.f, transmittance = 1.f;
         if (m_specular_reflectance)
@@ -261,7 +261,7 @@ public:
                      T = mueller::specular_transmission(UnpolarizedSpectrum(cos_theta_i_hat), UnpolarizedSpectrum(m_eta));
 
             if (likely(has_reflection && has_transmission)) {
-                weight = select(selected_r, R, T) / bs.pdf;
+                weight = ek::select(selected_r, R, T) / bs.pdf;
             } else if (has_reflection || has_transmission) {
                 weight = has_reflection ? R : T;
                 bs.pdf = 1.f;
@@ -312,7 +312,7 @@ public:
             weight[selected_t] *= sqr(factor);
         }
 
-        return { bs, select(active, weight, 0.f) };
+        return { bs, ek::select(active, weight, 0.f) };
     }
 
     Spectrum eval(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,

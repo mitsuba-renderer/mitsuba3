@@ -200,7 +200,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
@@ -231,11 +231,11 @@ public:
         if (likely(m_sample_visible))
             weight = distr.smith_g1(bs.wo, m);
         else
-            weight = distr.G(si.wi, bs.wo, m) * dot(si.wi, m) /
+            weight = distr.G(si.wi, bs.wo, m) * ek::dot(si.wi, m) /
                      (cos_theta_i * Frame3f::cos_theta(m));
 
         // Jacobian of the half-direction mapping
-        bs.pdf /= 4.f * dot(bs.wo, m);
+        bs.pdf /= 4.f * ek::dot(bs.wo, m);
 
         // Evaluate the Fresnel factor
         Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
@@ -270,7 +270,7 @@ public:
                                               -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
                                                wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
         } else {
-            F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, m)), eta_c);
+            F = fresnel_conductor(UnpolarizedSpectrum(ek::dot(si.wi, m)), eta_c);
         }
 
         /* If requested, include the specular reflectance component */
@@ -346,7 +346,7 @@ public:
                                               -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
                                                wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
         } else {
-            F = fresnel_conductor(UnpolarizedSpectrum(dot(si.wi, H)), eta_c);
+            F = fresnel_conductor(UnpolarizedSpectrum(ek::dot(si.wi, H)), eta_c);
         }
 
         /* If requested, include the specular reflectance component */
@@ -371,7 +371,7 @@ public:
            and sample() methods and needs to be replicated in the probability
            density computation as well. */
         active &= cos_theta_i   > 0.f && cos_theta_o   > 0.f &&
-                  dot(si.wi, m) > 0.f && dot(wo,    m) > 0.f;
+                  ek::dot(si.wi, m) > 0.f && ek::dot(wo,    m) > 0.f;
 
         if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
             return 0.f;
@@ -388,9 +388,9 @@ public:
             result = distr.eval(m) * distr.smith_g1(si.wi, m) /
                      (4.f * cos_theta_i);
         else
-            result = distr.pdf(si.wi, m) / (4.f * dot(wo, m));
+            result = distr.pdf(si.wi, m) / (4.f * ek::dot(wo, m));
 
-        return select(active, result, 0.f);
+        return ek::select(active, result, 0.f);
     }
 
     void traverse(TraversalCallback *callback) override {

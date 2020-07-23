@@ -39,17 +39,17 @@ struct OptixState {
     void* params;
     char *custom_optix_shapes_program_names[2 * custom_optix_shapes_count];
 
-    enoki::CUDAArray<const void*> shapes_ptr;
+    ek::CUDAArray<const void*> shapes_ptr;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         Log(Info, "Building scene in OptiX ..");
         m_accel = new OptixState();
         OptixState &s = *(OptixState *) m_accel;
 
         // Copy shapes pointers to the GPU
-        s.shapes_ptr = enoki::CUDAArray<const void*>::copy((void**)m_shapes.data(), m_shapes.size());
+        s.shapes_ptr = ek::CUDAArray<const void*>::copy((void**)m_shapes.data(), m_shapes.size());
 
         // ------------------------
         //  OptiX context creation
@@ -234,7 +234,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         if (m_shapes.empty())
             return;
 
@@ -300,7 +300,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         OptixState &s = *(OptixState *) m_accel;
         cuda_free((void*)s.sbt.raygenRecord);
         cuda_free((void*)s.params);
@@ -361,7 +361,7 @@ void launch_optix_kernel(const OptixState &s,
 /// Helper function to bind CUDAArray data pointer to fields in the OptixParams struct
 template <typename T> void bind_data(scalar_t<T> **field, T &value) {
     if constexpr (is_static_array_v<T>) {
-        for (size_t i = 0; i < array_size_v<T>; ++i)
+        for (size_t i = 0; i < ek::array_size_v<T>; ++i)
             field[i] = value[i].data();
     } else {
         *field = value.data();
@@ -370,7 +370,7 @@ template <typename T> void bind_data(scalar_t<T> **field, T &value) {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask active) const {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
         OptixState &s = *(OptixState *) m_accel;
 
@@ -412,7 +412,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < max_inst_index;
         pi.instance =
-            gather<ShapePtr>(reinterpret_array<ShapePtr>(s.shapes_ptr),
+            ek::gather<ShapePtr>(reinterpret_array<ShapePtr>(s.shapes_ptr),
                              instance_index, active & valid_instances);
 
         return pi;
@@ -425,11 +425,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags flags, Mask active) const {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
         OptixState &s = *(OptixState *) m_accel;
 
-        if constexpr (is_diff_array_v<Float>) {
+        if constexpr (ek::is_diff_array_v<Float>) {
             // Differentiable SurfaceInteraction needs to be computed outside of the OptiX kernel
             if (!has_flag(flags, HitComputeFlags::NonDifferentiable) &&
                 (requires_gradient(ray_.o) || shapes_grad_enabled())) {
@@ -528,7 +528,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         si.time = ray.time;
         si.wavelengths = ray.wavelengths;
-        si.duv_dx = si.duv_dy = zero<Point2f>();
+        si.duv_dx = si.duv_dy = ek::zero<Point2f>();
 
         if (has_flag(flags, HitComputeFlags::ShadingFrame))
             si.initialize_sh_frame();
@@ -536,11 +536,11 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < m_shapes.size();
         si.instance =
-            gather<ShapePtr>(reinterpret_array<ShapePtr>(s.shapes_ptr),
+            ek::gather<ShapePtr>(reinterpret_array<ShapePtr>(s.shapes_ptr),
                              instance_index, active & valid_instances);
 
         // Incident direction in local coordinates
-        si.wi = select(si.is_valid(), si.to_local(-ray.d), -ray.d);
+        si.wi = ek::select(si.is_valid(), si.to_local(-ray.d), -ray.d);
 
         return si;
     } else {
@@ -553,7 +553,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
         size_t ray_count = std::max(slices(ray.o), slices(ray.d));

@@ -10,14 +10,14 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 template <typename Value_, size_t Size_>
-struct Vector : enoki::StaticArrayImpl<Value_, Size_, false, Vector<Value_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Vector<Value_, Size_>>;
+struct Vector : ek::StaticArrayImpl<Value_, Size_, false, Vector<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Vector<Value_, Size_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Vector<T, Size_>;
 
     using ArrayType = Vector;
-    using MaskType = enoki::Mask<Value_, Size_>;
+    using MaskType = ek::Mask<Value_, Size_>;
 
     using Point  = mitsuba::Point<Value_, Size_>;
     using Normal = mitsuba::Normal<Value_, Size_>;
@@ -26,14 +26,14 @@ struct Vector : enoki::StaticArrayImpl<Value_, Size_, false, Vector<Value_, Size
 };
 
 template <typename Value_, size_t Size_>
-struct Point : enoki::StaticArrayImpl<Value_, Size_, false, Point<Value_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Point<Value_, Size_>>;
+struct Point : ek::StaticArrayImpl<Value_, Size_, false, Point<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Point<Value_, Size_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Point<T, Size_>;
 
     using ArrayType = Point;
-    using MaskType = enoki::Mask<Value_, Size_>;
+    using MaskType = ek::Mask<Value_, Size_>;
 
     using Vector = mitsuba::Vector<Value_, Size_>;
     using Normal = mitsuba::Normal<Value_, Size_>;
@@ -42,14 +42,14 @@ struct Point : enoki::StaticArrayImpl<Value_, Size_, false, Point<Value_, Size_>
 };
 
 template <typename Value_, size_t Size_>
-struct Normal : enoki::StaticArrayImpl<Value_, Size_, false, Normal<Value_, Size_>> {
-    using Base = enoki::StaticArrayImpl<Value_, Size_, false, Normal<Value_, Size_>>;
+struct Normal : ek::StaticArrayImpl<Value_, Size_, false, Normal<Value_, Size_>> {
+    using Base = ek::StaticArrayImpl<Value_, Size_, false, Normal<Value_, Size_>>;
 
     /// Helper alias used to implement type promotion rules
     template <typename T> using ReplaceValue = Normal<T, Size_>;
 
     using ArrayType = Normal;
-    using MaskType = enoki::Mask<Value_, Size_>;
+    using MaskType = ek::Mask<Value_, Size_>;
 
     using Vector = mitsuba::Vector<Value_, Size_>;
     using Point  = mitsuba::Point<Value_, Size_>;
@@ -83,27 +83,27 @@ auto operator+(const Point<T1, S1> &p1, const Vector<T2, S2> &v2) {
 // =======================================================================
 
 template <typename Value_, size_t Size_>
-struct Vector<enoki::detail::MaskedArray<Value_>, Size_>
-    : enoki::detail::MaskedArray<Vector<Value_, Size_>> {
-    using Base = enoki::detail::MaskedArray<Vector<Value_, Size_>>;
+struct Vector<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Vector<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Vector<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Vector(const Base &b) : Base(b) { }
 };
 
 template <typename Value_, size_t Size_>
-struct Point<enoki::detail::MaskedArray<Value_>, Size_>
-    : enoki::detail::MaskedArray<Point<Value_, Size_>> {
-    using Base = enoki::detail::MaskedArray<Point<Value_, Size_>>;
+struct Point<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Point<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Point<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Point(const Base &b) : Base(b) { }
 };
 
 template <typename Value_, size_t Size_>
-struct Normal<enoki::detail::MaskedArray<Value_>, Size_>
-    : enoki::detail::MaskedArray<Normal<Value_, Size_>> {
-    using Base = enoki::detail::MaskedArray<Normal<Value_, Size_>>;
+struct Normal<ek::detail::MaskedArray<Value_>, Size_>
+    : ek::detail::MaskedArray<Normal<Value_, Size_>> {
+    using Base = ek::detail::MaskedArray<Normal<Value_, Size_>>;
     using Base::Base;
     using Base::operator=;
     Normal(const Base &b) : Base(b) { }

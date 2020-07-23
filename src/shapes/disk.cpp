@@ -86,8 +86,8 @@ public:
         ScalarVector3f dp_du = m_to_world * ScalarVector3f(1.f, 0.f, 0.f);
         ScalarVector3f dp_dv = m_to_world * ScalarVector3f(0.f, 1.f, 0.f);
 
-        m_du = norm(dp_du);
-        m_dv = norm(dp_dv);
+        m_du = ek::norm(dp_du);
+        m_dv = ek::norm(dp_dv);
 
         ScalarNormal3f n = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, n);
@@ -106,8 +106,8 @@ public:
 
     ScalarFloat surface_area() const override {
         // First compute height of the ellipse
-        ScalarFloat h = sqrt(sqr(m_dv) - sqr(dot(m_dv * m_frame.t, m_frame.s)));
-        return math::Pi<ScalarFloat> * m_du * h;
+        ScalarFloat h = sqrt(sqr(m_dv) - sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
+        return ek::Pi<ScalarFloat> * m_du * h;
     }
 
     // =============================================================
@@ -155,8 +155,8 @@ public:
                         && t <= ray.maxt
                         && local.x()*local.x() + local.y()*local.y() <= 1;
 
-        PreliminaryIntersection3f pi = zero<PreliminaryIntersection3f>();
-        pi.t = select(active, t, math::Infinity<Float>);
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        pi.t = ek::select(active, t, ek::Infinity<Float>);
         pi.prim_uv = Point2f(local.x(), local.y());
         pi.shape = this;
 
@@ -183,7 +183,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         bool differentiable = false;
-        if constexpr (is_diff_array_v<Float>)
+        if constexpr (ek::is_diff_array_v<Float>)
             differentiable = requires_gradient(ray.o) ||
                              requires_gradient(ray.d) ||
                              parameters_grad_enabled();
@@ -194,22 +194,22 @@ public:
 
         active &= pi.is_valid();
 
-        SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
-        si.t = select(active, pi.t, math::Infinity<Float>);
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
         si.p = ray(pi.t);
 
         if (likely(has_flag(flags, HitComputeFlags::UV))) {
-            Float r = norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
+            Float r = ek::norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
                   inv_r = rcp(r);
 
             Float v = atan2(pi.prim_uv.y(), pi.prim_uv.x()) * math::InvTwoPi<Float>;
-            masked(v, v < 0.f) += 1.f;
+            ek::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
             if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
-                Float cos_phi = select(neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
-                      sin_phi = select(neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
+                Float cos_phi = ek::select(neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
+                      sin_phi = ek::select(neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
 
                 si.dp_du = m_to_world * Vector3f( cos_phi, sin_phi, 0.f);
                 si.dp_dv = m_to_world * Vector3f(-sin_phi, cos_phi, 0.f);
@@ -219,7 +219,7 @@ public:
         si.n          = m_frame.n;
         si.sh_frame.n = m_frame.n;
 
-        si.dn_du = si.dn_dv = zero<Vector3f>();
+        si.dn_du = si.dn_dv = ek::zero<Vector3f>();
 
         return si;
     }
@@ -240,7 +240,7 @@ public:
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {
-        if constexpr (is_cuda_array_v<Float>) {
+        if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = cuda_malloc(sizeof(OptixDiskData));
 

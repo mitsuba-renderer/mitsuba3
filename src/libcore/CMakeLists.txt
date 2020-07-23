@@ -15,7 +15,7 @@ add_library(mitsuba-core-obj OBJECT
 #   ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
-#   ${INC_DIR}/math.h
+  ${INC_DIR}/math.h
   ${INC_DIR}/jit.h
   ${INC_DIR}/simd.h
   ${INC_DIR}/platform.h
@@ -24,9 +24,9 @@ add_library(mitsuba-core-obj OBJECT
   string.cpp           ${INC_DIR}/string.h
   appender.cpp         ${INC_DIR}/appender.h
   argparser.cpp        ${INC_DIR}/argparser.h
-#                        ${INC_DIR}/bbox.h
-#   bitmap.cpp           ${INC_DIR}/bitmap.h
-#                        ${INC_DIR}/bsphere.h
+                       ${INC_DIR}/bbox.h
+  bitmap.cpp           ${INC_DIR}/bitmap.h
+                       ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
 #                        ${INC_DIR}/distr_1d.h
 #                        ${INC_DIR}/distr_2d.h
@@ -41,28 +41,29 @@ add_library(mitsuba-core-obj OBJECT
   tensor.cpp           ${INC_DIR}/tensor.h
   mstream.cpp          ${INC_DIR}/mstream.h
   object.cpp           ${INC_DIR}/object.h
-#   plugin.cpp           ${INC_DIR}/plugin.h
+  plugin.cpp           ${INC_DIR}/plugin.h
   profiler.cpp         ${INC_DIR}/profiler.h
   progress.cpp         ${INC_DIR}/progress.h
 #   properties.cpp       ${INC_DIR}/properties.h
-#   qmc.cpp              ${INC_DIR}/qmc.h
-#                        ${INC_DIR}/random.h
-#                        ${INC_DIR}/ray.h
-#   rfilter.cpp          ${INC_DIR}/rfilter.h
-#   spectrum.cpp         ${INC_DIR}/spectrum.h
-#                        ${INC_DIR}/spline.h
+  qmc.cpp              ${INC_DIR}/qmc.h
+                       ${INC_DIR}/random.h
+                       ${INC_DIR}/ray.h
+  rfilter.cpp          ${INC_DIR}/rfilter.h
+  spectrum.cpp         ${INC_DIR}/spectrum.h
+                       ${INC_DIR}/spline.h
   stream.cpp           ${INC_DIR}/stream.h
-#   struct.cpp           ${INC_DIR}/struct.h
+  struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
                        ${INC_DIR}/timer.h
   tls.cpp              ${INC_DIR}/tls.h
-#   transform.cpp        ${INC_DIR}/transform.h
+  transform.cpp        ${INC_DIR}/transform.h
+                       ${INC_DIR}/traits.h
   util.cpp             ${INC_DIR}/util.h
                        ${INC_DIR}/vector.h
 #                        ${INC_DIR}/warp.h
 #   xml.cpp              ${INC_DIR}/xml.h
   zstream.cpp          ${INC_DIR}/zstream.h
-#   quad.cpp             ${INC_DIR}/quad.h
+  quad.cpp             ${INC_DIR}/quad.h
 
   dither-matrix256.cpp
 )

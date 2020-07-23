@@ -114,8 +114,8 @@ public:
         m_aperture_radius = props.float_("aperture_radius");
 
         if (m_aperture_radius == 0.f) {
-            Log(Warn, "Can't have a zero aperture radius -- setting to %f", math::Epsilon<Float>);
-            m_aperture_radius = math::Epsilon<Float>;
+            Log(Warn, "Can't have a zero aperture radius -- setting to %f", ek::Epsilon<Float>);
+            m_aperture_radius = ek::Epsilon<Float>;
         }
 
         if (m_world_transform->has_scale())

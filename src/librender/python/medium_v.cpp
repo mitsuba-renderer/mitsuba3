@@ -49,7 +49,7 @@ MTS_PY_EXPORT(Medium) {
             .def_method(Medium, id)
             .def("__repr__", &Medium::to_string);
 
-    if constexpr (is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>) {
         pybind11_type_alias<UInt64, MediumPtr>();
     }
 

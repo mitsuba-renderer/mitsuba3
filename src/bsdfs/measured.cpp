@@ -95,7 +95,7 @@ public:
 
         if (!m_isotropic) {
             ScalarFloat *phi_i_data = (ScalarFloat *) phi_i.data;
-            m_reduction = (int) std::rint((2 * math::Pi<ScalarFloat>) /
+            m_reduction = (int) std::rint((2 * ek::Pi<ScalarFloat>) /
                 (phi_i_data[phi_i.shape[0] - 1] - phi_i_data[0]));
         }
 
@@ -174,7 +174,7 @@ public:
                                              Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
 
@@ -224,10 +224,10 @@ public:
             cos_theta_m
         );
 
-        Float jacobian = enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() *
-                                    sin_theta_m, 1e-6f) * 4.f * dot(wi, m);
+        Float jacobian = ek::max(2.f * sqr(ek::Pi<Float>) * u_m.x() *
+                                    sin_theta_m, 1e-6f) * 4.f * ek::dot(wi, m);
 
-        bs.wo = fmsub(m, 2.f * dot(m, wi), wi);
+        bs.wo = fmsub(m, 2.f * ek::dot(m, wi), wi);
         bs.pdf = ndf_pdf * pdf / jacobian;
 #else // MTS_SAMPLE_DIFFUSE
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
@@ -252,7 +252,7 @@ public:
         bs.sampled_component = 0;
 
         UnpolarizedSpectrum spec;
-        for (size_t i = 0; i < array_size_v<UnpolarizedSpectrum>; ++i) {
+        for (size_t i = 0; i < ek::array_size_v<UnpolarizedSpectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
@@ -266,7 +266,7 @@ public:
 
         active &= Frame3f::cos_theta(bs.wo) > 0;
 
-        return { bs, select(active, unpolarized<Spectrum>(spec) / bs.pdf, Spectrum(0.f)) };
+        return { bs, ek::select(active, unpolarized<Spectrum>(spec) / bs.pdf, Spectrum(0.f)) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -310,7 +310,7 @@ public:
         auto [sample, unused] = m_vndf.invert(u_m, params, active);
 
         UnpolarizedSpectrum spec;
-        for (size_t i = 0; i < array_size_v<UnpolarizedSpectrum>; ++i) {
+        for (size_t i = 0; i < ek::array_size_v<UnpolarizedSpectrum>; ++i) {
             Float params_spec[3] = { phi_i, theta_i, si.wavelengths[i] };
             spec[i] = m_spectra.eval(sample, params_spec, active);
         }
@@ -345,7 +345,7 @@ public:
         }
 
 #if MTS_SAMPLE_DIFFUSE == 1
-        return select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
+        return ek::select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
 #else // MTS_SAMPLE_DIFFUSE
         Vector3f m = normalize(wo + wi);
 
@@ -371,12 +371,12 @@ public:
         #endif
 
         Float jacobian =
-            enoki::max(2.f * sqr(math::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
-            dot(wi, m);
+            ek::max(2.f * sqr(ek::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
+            ek::dot(wi, m);
 
         pdf = vndf_pdf * pdf / jacobian;
 
-        return select(active, pdf, 0.f);
+        return ek::select(active, pdf, 0.f);
 #endif // MTS_SAMPLE_DIFFUSE
     }
 
@@ -396,19 +396,19 @@ public:
     MTS_DECLARE_CLASS()
 private:
     template <typename Value> Value u2theta(Value u) const {
-        return sqr(u) * (math::Pi<Float> / 2.f);
+        return sqr(u) * (ek::Pi<Float> / 2.f);
     }
 
     template <typename Value> Value u2phi(Value u) const {
-        return (2.f * u - 1.f) * math::Pi<Float>;
+        return (2.f * u - 1.f) * ek::Pi<Float>;
     }
 
     template <typename Value> Value theta2u(Value theta) const {
-        return sqrt(theta * (2.f / math::Pi<Float>));
+        return sqrt(theta * (2.f / ek::Pi<Float>));
     }
 
     template <typename Value> Value phi2u(Value phi) const {
-        return (phi + math::Pi<Float>) * math::InvTwoPi<Float>;
+        return (phi + ek::Pi<Float>) * math::InvTwoPi<Float>;
     }
 
 private:

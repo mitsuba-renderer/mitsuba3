@@ -255,7 +255,7 @@ ColorMode variant_to_color_mode() {
 
 template <typename Float, typename Spectrum>
 bool check_cuda() {
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         return true;
     else
         return false;
@@ -908,12 +908,12 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     Point3f target = parse_named_vector(src, node, "target");
                     Vector3f up = parse_named_vector(src, node, "up");
 
-                    if (squared_norm(up) == 0)
+                    if (ek::squared_norm(up) == 0)
                         std::tie(up, std::ignore) =
                             coordinate_system(normalize(target - origin));
 
                     auto result = Transform4f::look_at(origin, target, up);
-                    if (any_nested(enoki::isnan(result.matrix)))
+                    if (ek::any_nested(ek::isnan(result.matrix)))
                         src.throw_error(node, "invalid lookat transformation");
                     ctx.transform = result * ctx.transform;
                 }
@@ -1132,7 +1132,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 Throw("Wavelengths must be specified in increasing order!");
             if (n == 1)
                 interval = distance;
-            else if (std::abs(distance - interval) > math::Epsilon<float>)
+            else if (std::abs(distance - interval) > ek::Epsilon<float>)
                 is_regular = false;
         }
 

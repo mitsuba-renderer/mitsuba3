@@ -44,30 +44,30 @@ NAMESPACE_BEGIN(spline)
 */
 
 #define GET_SPLINE_UNIFORM(idx)                                              \
-    auto mask_low_idx = mask_t<Value>(idx > 0);                              \
-    auto mask_up_idx  = mask_t<Value>(idx + 2 < size);                       \
-    Value f_1         = gather<Value>(values, idx - 1, mask_low_idx);        \
-    Value f0          = gather<Value>(values, idx);                          \
-    Value f1          = gather<Value>(values, idx + 1);                      \
-    Value f2          = gather<Value>(values, idx + 2, mask_up_idx);         \
-    Value d0          = select(mask_low_idx, .5f * (f1 - f_1), f1 - f0);     \
-    Value d1          = select(mask_up_idx, .5f * (f2 - f0), f1 - f0);
+    auto mask_low_idx = ek::mask_t<Value>(idx > 0);                              \
+    auto mask_up_idx  = ek::mask_t<Value>(idx + 2 < size);                       \
+    Value f_1         = ek::gather<Value>(values, idx - 1, mask_low_idx);        \
+    Value f0          = ek::gather<Value>(values, idx);                          \
+    Value f1          = ek::gather<Value>(values, idx + 1);                      \
+    Value f2          = ek::gather<Value>(values, idx + 2, mask_up_idx);         \
+    Value d0          = ek::select(mask_low_idx, .5f * (f1 - f_1), f1 - f0);     \
+    Value d1          = ek::select(mask_up_idx, .5f * (f2 - f0), f1 - f0);
 
 #define GET_SPLINE_NONUNIFORM(idx)                                           \
-    auto mask_low_idx = mask_t<Value>(idx > 0);                              \
-    auto mask_up_idx  = mask_t<Value>(idx + 2 < size);                       \
-    Value f_1         = gather<Value>(values, idx - 1, mask_low_idx);        \
-    Value f0          = gather<Value>(values, idx);                          \
-    Value f1          = gather<Value>(values, idx + 1);                      \
-    Value f2          = gather<Value>(values, idx + 2, mask_up_idx);         \
-    Value x_1         = gather<Value>(nodes, idx - 1, mask_low_idx);         \
-    Value x0          = gather<Value>(nodes, idx);                           \
-    Value x1          = gather<Value>(nodes, idx + 1);                       \
-    Value x2          = gather<Value>(nodes, idx + 2, mask_up_idx);          \
+    auto mask_low_idx = ek::mask_t<Value>(idx > 0);                              \
+    auto mask_up_idx  = ek::mask_t<Value>(idx + 2 < size);                       \
+    Value f_1         = ek::gather<Value>(values, idx - 1, mask_low_idx);        \
+    Value f0          = ek::gather<Value>(values, idx);                          \
+    Value f1          = ek::gather<Value>(values, idx + 1);                      \
+    Value f2          = ek::gather<Value>(values, idx + 2, mask_up_idx);         \
+    Value x_1         = ek::gather<Value>(nodes, idx - 1, mask_low_idx);         \
+    Value x0          = ek::gather<Value>(nodes, idx);                           \
+    Value x1          = ek::gather<Value>(nodes, idx + 1);                       \
+    Value x2          = ek::gather<Value>(nodes, idx + 2, mask_up_idx);          \
     Value width       = x1 - x0;                                             \
-    Value d0          = select(mask_low_idx, width * (f1 - f_1) /            \
+    Value d0          = ek::select(mask_low_idx, width * (f1 - f_1) /            \
                                                      (x1 - x_1), f1 - f0);   \
-    Value d1          = select(mask_up_idx,  width * (f2 - f0) /             \
+    Value d1          = ek::select(mask_up_idx,  width * (f2 - f0) /             \
                                                      (x2 - x0), f1 - f0);
 
 // =======================================================================
@@ -213,20 +213,20 @@ std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
 template <bool Extrapolate = false, typename Value, typename Float>
 Value eval_1d(Float min, Float max, const Float *values,
               uint32_t size, Value x) {
-    using Mask = mask_t<Value>;
-    using Index = uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= min) && (x <= max);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
-        return zero<Value>();
+        return ek::zero<Value>();
 
     /* Transform 'x' so that nodes lie at integer positions */
     Value t = (x - min) * (Float(size - 1) / (max - min));
 
     /* Find the index of the left node in the queried subinterval */
-    Index idx = enoki::max(Index(0), enoki::min(Index(t), Index(size - 2)));
+    Index idx = ek::max(Index(0), ek::min(Index(t), Index(size - 2)));
 
     GET_SPLINE_UNIFORM(idx);
 
@@ -234,7 +234,7 @@ Value eval_1d(Float min, Float max, const Float *values,
     t -= idx;
 
     if (!Extrapolate)
-        return select(mask_valid, eval_spline(f0, f1, d0, d1, t), zero<Value>());
+        return ek::select(mask_valid, eval_spline(f0, f1, d0, d1, t), ek::zero<Value>());
     else
         return eval_spline(f0, f1, d0, d1, t);
 }
@@ -272,19 +272,19 @@ Value eval_1d(Float min, Float max, const Float *values,
 template <bool Extrapolate = false, typename Value, typename Float>
 Value eval_1d(const Float *nodes, const Float *values,
               uint32_t size, Value x) {
-    using Mask = mask_t<Value>;
-    using Index = uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
-        return zero<Value>();
+        return ek::zero<Value>();
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval(size,
         [&](Index idx) {
-            return gather<Value>(nodes, idx, mask_valid) <= x;
+            return ek::gather<Value>(nodes, idx, mask_valid) <= x;
         }
     );
 
@@ -294,7 +294,7 @@ Value eval_1d(const Float *nodes, const Float *values,
     Value t = (x - x0) / width;
 
     if (!Extrapolate)
-        return select(mask_valid, eval_spline(f0, f1, d0, d1, t), zero<Value>());
+        return ek::select(mask_valid, eval_spline(f0, f1, d0, d1, t), ek::zero<Value>());
     else
         return eval_spline(f0, f1, d0, d1, t);
 }
@@ -401,8 +401,8 @@ void integrate_1d(const Value *nodes, const Value *values,
 template <typename Value, typename Float>
 Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
                 Value y, Float eps = 1e-6f) {
-    using Mask = mask_t<Value>;
-    using Index = uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     Mask in_bounds_low  = y > values[0],
@@ -411,7 +411,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
 
     /* Assuming that the lookup is out of bounds */
     Value out_of_bounds_value =
-        select(in_bounds_high, Value(min), Value(max));
+        ek::select(in_bounds_high, Value(min), Value(max));
 
     if (unlikely(none(in_bounds)))
         return out_of_bounds_value;
@@ -420,7 +420,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
        'values' array (which is assumed to be monotonic) */
     Index idx = math::find_interval(size,
         [&](Index idx) {
-            return gather<Value>(values, idx, in_bounds) <= y;
+            return ek::gather<Value>(values, idx, in_bounds) <= y;
         }
     );
 
@@ -428,7 +428,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     GET_SPLINE_UNIFORM(idx);
 
     /* Invert the spline interpolant using Newton-Bisection */
-    Value a = zero<Value>(), b = Value(1.f), t = Value(.5f);
+    Value a = ek::zero<Value>(), b = Value(1.f), t = Value(.5f);
 
     /* Keep track all which lane is still active */
     Mask active(true);
@@ -439,7 +439,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     do {
         /* Fall back to a bisection step when t is out of bounds */
         Mask bisect_mask = !((t > a) && (t < b));
-        masked(t, bisect_mask && active) = .5f * (a + b);
+        ek::masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the spline and its derivative */
         Value value, deriv;
@@ -455,16 +455,16 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
 
         /* Update the bisection bounds */
         Mask update_mask = value <= 0;
-        masked(a,  update_mask) = t;
-        masked(b, !update_mask) = t;
+        ek::masked(a,  update_mask) = t;
+        ek::masked(b, !update_mask) = t;
 
         /* Perform a Newton step */
-        t = select(active, t - value / deriv, t);
+        t = ek::select(active, t - value / deriv, t);
     } while (true);
 
     Value result = min + (idx + t) * width;
 
-    return select(in_bounds, result, out_of_bounds_value);
+    return ek::select(in_bounds, result, out_of_bounds_value);
 }
 
 /**
@@ -490,8 +490,8 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
 template <typename Value, typename Float>
 Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
                 Value y, Float eps = 1e-6f) {
-    using Mask = mask_t<Value>;
-    using Index = uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     Mask in_bounds_low  = y > values[0],
@@ -500,7 +500,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
 
     /* Assuming that the lookup is out of bounds */
     Value out_of_bounds_value =
-        select(in_bounds_high, Value(nodes[0]), Value(nodes[size - 1]));
+        ek::select(in_bounds_high, Value(nodes[0]), Value(nodes[size - 1]));
 
     if (unlikely(none(in_bounds)))
         return out_of_bounds_value;
@@ -511,7 +511,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
        'values' array (which is assumed to be monotonic) */
     Index idx = math::find_interval(size,
         [&](Index idx) {
-            return gather<Value>(values, idx, in_bounds) <= y;
+            return ek::gather<Value>(values, idx, in_bounds) <= y;
         }
     );
 
@@ -529,7 +529,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
     do {
         /* Fall back to a bisection step when t is out of bounds */
         Mask bisect_mask = !((t > a) && (t < b));
-        masked(t, bisect_mask && active) = .5f * (a + b);
+        ek::masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the spline and its derivative */
         std::tie(value, deriv) = eval_spline_d(f0, f1, d0, d1, t);
@@ -544,16 +544,16 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
 
         /* Update the bisection bounds */
         Mask update_mask = value <= 0;
-        masked(a,  update_mask) = t;
-        masked(b, !update_mask) = t;
+        ek::masked(a,  update_mask) = t;
+        ek::masked(b, !update_mask) = t;
 
         /* Perform a Newton step */
-        t = select(active, t - value / deriv, t);
+        t = ek::select(active, t - value / deriv, t);
     } while (true);
 
     result = x0 + t * width;
 
-    return select(in_bounds, result, out_of_bounds_value);
+    return ek::select(in_bounds, result, out_of_bounds_value);
 }
 
 /**
@@ -586,8 +586,8 @@ template <typename Value, typename Float>
 std::tuple<Value, Value, Value>
 sample_1d(Float min, Float max, const Float *values, const Float *cdf,
           uint32_t size, Value sample, Float eps = 1e-6f) {
-    using Mask = mask_t<Value>;
-    using Index = uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     const Float full_width = max - min,
                 width      = full_width / (size - 1),
@@ -605,27 +605,27 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
         [&](Index idx) {
-            return gather<Value>(cdf, idx) <= sample;
+            return ek::gather<Value>(cdf, idx) <= sample;
         }
     );
 
     GET_SPLINE_UNIFORM(idx);
 
     // Re-scale the sample after having chosen the interval
-    sample = (sample - gather<Value>(cdf, idx)) * inv_width;
+    sample = (sample - ek::gather<Value>(cdf, idx)) * inv_width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
     Value t_linear =
-        (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+        (f0 - ek::safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Value t_const  = sample / f0;
-    Value t = select(neq(f0, f1), t_linear, t_const);
+    Value t = ek::select(neq(f0, f1), t_linear, t_const);
 
     Value a = 0, b = 1, value, deriv;
     Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
         Mask bisect_mask = !((t > a) && (t < b));
-        masked(t, bisect_mask && active) = .5f * (a + b);
+        ek::masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
@@ -641,11 +641,11 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
 
         /* Update the bisection bounds */
         Mask update_mask = value <= 0;
-        masked(a,  update_mask) = t;
-        masked(b, !update_mask) = t;
+        ek::masked(a,  update_mask) = t;
+        ek::masked(b, !update_mask) = t;
 
         /* Perform a Newton step */
-        t = select(active, t - value / deriv, t);
+        t = ek::select(active, t - value / deriv, t);
     } while (true);
 
     return std::make_tuple(
@@ -684,8 +684,8 @@ template <typename Value, typename Float>
 std::tuple<Value, Value, Value>
 sample_1d(const Float *nodes, const Float *values, const Float *cdf,
           uint32_t size, Value sample, Float eps = 1e-6f) {
-    using Mask = mask_t<Value>;
-    using Index = uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     const Float last = cdf[size - 1],
                 eps_domain = eps * (nodes[size - 1] - nodes[0]),
@@ -700,27 +700,27 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
        monotonic 'cdf' array */
     Index idx = math::find_interval(size,
         [&](Index idx) {
-            return gather<Value>(cdf, idx) <= sample;
+            return ek::gather<Value>(cdf, idx) <= sample;
         }
     );
 
     GET_SPLINE_NONUNIFORM(idx);
 
     // Re-scale the sample after having chosen the interval
-    sample = (sample - gather<Value>(cdf, idx)) / width;
+    sample = (sample - ek::gather<Value>(cdf, idx)) / width;
 
     /* Importance sample linear interpolant as initial guess for 't'*/
     Value t_linear =
-        (f0 - safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
+        (f0 - ek::safe_sqrt(f0 * f0 + 2 * sample * (f1 - f0))) / (f0 - f1);
     Value t_const  = sample / f0;
-    Value t = select(neq(f0, f1), t_linear, t_const);
+    Value t = ek::select(neq(f0, f1), t_linear, t_const);
 
     Value a = 0, b = 1, value, deriv;
     Mask active(true);
     do {
         /* Fall back to a bisection step when t is out of bounds */
         Mask bisect_mask = !((t > a) && (t < b));
-        masked(t, bisect_mask && active) = .5f * (a + b);
+        ek::masked(t, bisect_mask && active) = .5f * (a + b);
 
         /* Evaluate the definite integral and its derivative
            (i.e. the spline) */
@@ -736,11 +736,11 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
 
         /* Update the bisection bounds */
         Mask update_mask = value <= 0;
-        masked(a,  update_mask) = t;
-        masked(b, !update_mask) = t;
+        ek::masked(a,  update_mask) = t;
+        ek::masked(b, !update_mask) = t;
 
         /* Perform a Newton step */
-        t = select(active, t - value / deriv, t);
+        t = ek::select(active, t - value / deriv, t);
     } while (true);
 
     return std::make_tuple(
@@ -780,23 +780,23 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
  */
 template <bool Extrapolate = false,
           typename Value, typename Float,
-          typename Int32 = int32_array_t<Value>,
-          typename Mask = mask_t<Value>>
+          typename Int32 = ek::int32_array_t<Value>,
+          typename Mask = ek::mask_t<Value>>
 std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
                                            Value x, Value *weights) {
-    using Index = uint32_array_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     auto mask_valid = (x >= min) && (x <= max);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
-        return std::make_pair(Mask(false), zero<Int32>());
+        return std::make_pair(Mask(false), ek::zero<Int32>());
 
     /* Transform 'x' so that nodes lie at integer positions */
     Value t = (x - min) * (Float(size - 1) / (max - min));
 
     /* Find the index of the left node in the queried subinterval */
-    Index idx = enoki::max(Index(0), enoki::min(Index(t), Index(size - 2)));
+    Index idx = ek::max(Index(0), ek::min(Index(t), Index(size - 2)));
 
     /* Compute the relative position within the interval */
     t -= (Value) idx;
@@ -805,10 +805,10 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
            w0, w1, w2, w3;
 
     /* Function value weights */
-    w0 = zero<Value>();
+    w0 = ek::zero<Value>();
     w1 =  2 * t3 - 3 * t2 + 1;
     w2 = -2 * t3 + 3 * t2;
-    w3 = zero<Value>();
+    w3 = ek::zero<Value>();
     Int32 offset = (Int32) idx - 1;
 
     /* Turn derivative weights into node weights using
@@ -816,14 +816,14 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     Value d0 = t3 - 2*t2 + t, d1 = t3 - t2;
 
     auto valid_boundary_left = idx > 0;
-    w0 = select(valid_boundary_left, w0 - d0 * .5f, w0);
-    w1 = select(valid_boundary_left, w1, w1 - d0);
-    w2 = select(valid_boundary_left, w2 + d0 * .5f, w2 + d0);
+    w0 = ek::select(valid_boundary_left, w0 - d0 * .5f, w0);
+    w1 = ek::select(valid_boundary_left, w1, w1 - d0);
+    w2 = ek::select(valid_boundary_left, w2 + d0 * .5f, w2 + d0);
 
     auto valid_boundary_right = idx + 2 < size;
-    w1 = select(valid_boundary_right, w1 - d1 * .5f, w1 - d1);
-    w2 = select(valid_boundary_right, w2, w2 + d1);
-    w3 = select(valid_boundary_right, w3 + d1 * .5f, w3);
+    w1 = ek::select(valid_boundary_right, w1 - d1 * .5f, w1 - d1);
+    w2 = ek::select(valid_boundary_right, w2, w2 + d1);
+    w3 = ek::select(valid_boundary_right, w3 + d1 * .5f, w3);
 
     store(weights,     w0);
     store(weights + 1, w1);
@@ -870,27 +870,27 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
 template <bool Extrapolate = false,
           typename Value,
           typename Float,
-          typename Int32 = int32_array_t<Value>,
-          typename Mask = mask_t<Value>>
+          typename Int32 = ek::int32_array_t<Value>,
+          typename Mask = ek::mask_t<Value>>
 std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
                                            Value x, Value *weights) {
-    using Index = uint32_array_t<Value>;
+    using Index = ek::uint32_array_t<Value>;
 
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
     if (unlikely(!Extrapolate && none(mask_valid)))
-        return std::make_pair(Mask(false), zero<Int32>());
+        return std::make_pair(Mask(false), ek::zero<Int32>());
 
     /* Find the index of the left node in the queried subinterval */
     Index idx = math::find_interval(size,
         [&](Index idx) {
-            return gather<Value>(nodes, idx, mask_valid) <= x;
+            return ek::gather<Value>(nodes, idx, mask_valid) <= x;
         }
     );
 
-    Value x0 = gather<Value>(nodes, idx),
-           x1 = gather<Value>(nodes, idx + 1),
+    Value x0 = ek::gather<Value>(nodes, idx),
+           x1 = ek::gather<Value>(nodes, idx + 1),
            width = x1 - x0;
 
     /* Compute the relative position within the interval and powers of 't' */
@@ -900,10 +900,10 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
            w0, w1, w2, w3;
 
     /* Function value weights */
-    w0 = zero<Value>();
+    w0 = ek::zero<Value>();
     w1 = 2*t3 - 3*t2 + 1;
     w2 = -2*t3 + 3*t2;
-    w3 = zero<Value>();
+    w3 = ek::zero<Value>();
 
     Int32 offset = (Int32) idx - 1;
 
@@ -913,23 +913,23 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
 
     auto valide_boundary_left = idx > 0;
     Value width_nodes_1 =
-        gather<Value>(nodes, idx + 1) -
-        gather<Value>(nodes, idx - 1, valide_boundary_left);
+        ek::gather<Value>(nodes, idx + 1) -
+        ek::gather<Value>(nodes, idx - 1, valide_boundary_left);
 
     Value factor = width / width_nodes_1;
-    w0 = select(valide_boundary_left, w0 - (d0 * factor), w0);
-    w1 = select(valide_boundary_left, w1, w1 - d0);
-    w2 = select(valide_boundary_left, w2 + d0 * factor, w2 + d0);
+    w0 = ek::select(valide_boundary_left, w0 - (d0 * factor), w0);
+    w1 = ek::select(valide_boundary_left, w1, w1 - d0);
+    w2 = ek::select(valide_boundary_left, w2 + d0 * factor, w2 + d0);
 
     auto valid_boundary_right = idx + 2 < size;
     Value width_nodes_2 =
-        gather<Value>(nodes, idx + 2, valid_boundary_right) -
-        gather<Value>(nodes, idx);
+        ek::gather<Value>(nodes, idx + 2, valid_boundary_right) -
+        ek::gather<Value>(nodes, idx);
 
     factor = width / width_nodes_2;
-    w1 = select(valid_boundary_right, w1 - (d1 * factor), w1 - d1);
-    w2 = select(valid_boundary_right, w2, w2 + d1);
-    w3 = select(valid_boundary_right, w3 + d1 * factor, w3);
+    w1 = ek::select(valid_boundary_right, w1 - (d1 * factor), w1 - d1);
+    w2 = ek::select(valid_boundary_right, w2, w2 + d1);
+    w3 = ek::select(valid_boundary_right, w3 + d1 * factor, w3);
 
     store(weights,     w0);
     store(weights + 1, w1);
@@ -982,8 +982,8 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
 template <bool Extrapolate = false, typename Value, typename Float>
 Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
               uint32_t size2, const Float *values, Value x, Value y) {
-    using Mask = mask_t<Value>;
-    using Index = int32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
+    using Index = ek::int32_array_t<Value>;
 
     Value weights[2][4];
     Index offset[2];
@@ -996,7 +996,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
 
     /* Compute interpolation weights separately for each dimension */
     if (unlikely(none(valid_x && valid_y)))
-        return zero<Value>();
+        return ek::zero<Value>();
 
     Index index = offset[1] * size1 + offset[0];
     Value result(0);
@@ -1008,8 +1008,8 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
             Value weight_x  = weights[0][xi];
             Value weight_xy = weight_x * weight_y;
 
-            Mask weight_valid = neq(weight_xy, zero<Value>());
-            Value value = gather<Value>(values, index, weight_valid);
+            Mask weight_valid = neq(weight_xy, ek::zero<Value>());
+            Value value = ek::gather<Value>(values, index, weight_valid);
 
             result = fmadd(value, weight_xy, result);
             index += 1;

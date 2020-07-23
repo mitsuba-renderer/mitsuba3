@@ -74,7 +74,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
     film->prepare(channels);
 
     m_render_timer.reset();
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         /// Render on the CPU using a spiral pattern
         size_t n_threads = __global_thread_count;
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
@@ -144,12 +144,12 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         ref<Sampler> sampler = sensor->sampler();
         sampler->set_samples_per_wavefront((uint32_t) samples_per_pass);
 
-        ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
+        ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());
         ScalarUInt32 wavefront_size = hprod(film_size) * (uint32_t) samples_per_pass;
         if (sampler->wavefront_size() != wavefront_size)
             sampler->seed(0, wavefront_size);
 
-        UInt32 idx = arange<UInt32>(wavefront_size);
+        UInt32 idx = ek::arange<UInt32>(wavefront_size);
         if (samples_per_pass != 1)
             idx /= (uint32_t) samples_per_pass;
 
@@ -188,13 +188,13 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                                            ? sampler->sample_count()
                                            : sample_count_);
 
-    ScalarFloat diff_scale_factor = rsqrt((ScalarFloat) sampler->sample_count());
+    ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());
 
     if constexpr (!is_array_v<Float>) {
         for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
             sampler->seed(block_id * pixel_count + i);
 
-            ScalarPoint2u pos = enoki::morton_decode<ScalarPoint2u>(i);
+            ScalarPoint2u pos = ek::morton_decode<ScalarPoint2u>(i);
             if (any(pos >= block->size()))
                 continue;
 
@@ -204,14 +204,14 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                               pos, diff_scale_factor);
             }
         }
-    } else if constexpr (is_array_v<Float> && !is_cuda_array_v<Float>) {
+    } else if constexpr (is_array_v<Float> && !ek::is_cuda_array_v<Float>) {
         // Ensure that the sample generation is fully deterministic
         sampler->seed(block_id);
 
         for (auto [index, active] : range<UInt32>(pixel_count * sample_count)) {
             if (should_stop())
                 break;
-            Point2u pos = enoki::morton_decode<Point2u>(index / UInt32(sample_count));
+            Point2u pos = ek::morton_decode<Point2u>(index / UInt32(sample_count));
             active &= !any(pos >= block->size());
             pos += block->offset();
             render_sample(scene, sensor, sampler, block, aovs, pos, diff_scale_factor, active);
@@ -276,7 +276,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     aovs[0] = xyz.x();
     aovs[1] = xyz.y();
     aovs[2] = xyz.z();
-    aovs[3] = select(result.second, Float(1.f), Float(0.f));
+    aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
     aovs[4] = 1.f;
 
     block->put(position_sample, aovs, active);

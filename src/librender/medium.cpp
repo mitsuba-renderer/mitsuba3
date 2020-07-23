@@ -45,10 +45,10 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     mi.wavelengths = ray.wavelengths;
 
     auto [aabb_its, mint, maxt] = intersect_aabb(ray);
-    aabb_its &= (enoki::isfinite(mint) || enoki::isfinite(maxt));
+    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
     active &= aabb_its;
-    masked(mint, !active) = 0.f;
-    masked(maxt, !active) = math::Infinity<Float>;
+    ek::masked(mint, !active) = 0.f;
+    ek::masked(maxt, !active) = ek::Infinity<Float>;
 
     mint = max(ray.mint, mint);
     maxt = min(ray.maxt, maxt);
@@ -56,15 +56,15 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     auto combined_extinction = get_combined_extinction(mi, active);
     Float m                  = combined_extinction[0];
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-        masked(m, eq(channel, 1u)) = combined_extinction[1];
-        masked(m, eq(channel, 2u)) = combined_extinction[2];
+        ek::masked(m, eq(channel, 1u)) = combined_extinction[1];
+        ek::masked(m, eq(channel, 2u)) = combined_extinction[2];
     } else {
         ENOKI_MARK_USED(channel);
     }
 
-    Float sampled_t = mint + (-enoki::log(1 - sample) / m);
+    Float sampled_t = mint + (-ek::log(1 - sample) / m);
     Mask valid_mi   = active && (sampled_t <= maxt);
-    mi.t            = select(valid_mi, sampled_t, math::Infinity<Float>);
+    mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p            = ray(sampled_t);
     mi.medium       = this;
     mi.mint         = mint;
@@ -84,7 +84,7 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
 
     Float t      = min(mi.t, si.t) - mi.mint;
     UnpolarizedSpectrum tr  = exp(-t * mi.combined_extinction);
-    UnpolarizedSpectrum pdf = select(si.t < mi.t, tr, tr * mi.combined_extinction);
+    UnpolarizedSpectrum pdf = ek::select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };
 }
 

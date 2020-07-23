@@ -28,9 +28,9 @@ Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
     }
 
     if (c == Array3f(0.f))
-        return Array3f(0.f, 0.f, -math::Infinity<float>);
+        return Array3f(0.f, 0.f, -ek::Infinity<float>);
     else if (c == Array3f(1.f))
-        return Array3f(0.f, 0.f,  math::Infinity<float>);
+        return Array3f(0.f, 0.f,  ek::Infinity<float>);
 
     float rgb[3] = { (float) c.r(), (float) c.g(), (float) c.b() };
     float out[3];
@@ -57,7 +57,7 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
 
     const size_t n_samples = ((MTS_CIE_SAMPLES - 1) * 3 + 1);
 
-    SurfaceInteraction3f si = zero<SurfaceInteraction3f>();
+    SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
     Array3f accum = 0.f;
     float h = (MTS_CIE_MAX - MTS_CIE_MIN) / (n_samples - 1);
     for (size_t i = 0; i < n_samples; ++i) {

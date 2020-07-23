@@ -83,7 +83,7 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
 
 MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
 #if defined(MTS_ENABLE_OPTIX)
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         cuda_free(m_optix_data_ptr);
 #endif
 }
@@ -157,7 +157,7 @@ void embree_intersect_scalar(int* valid,
         }
     } else {
         if (shape->ray_test(ray))
-            rtc_ray->tfar = -math::Infinity<Float>;
+            rtc_ray->tfar = -ek::Infinity<Float>;
     }
 }
 
@@ -202,7 +202,7 @@ void embree_intersect_packet(int* valid,
         store(hits->instID[0], Int(instID), active);
     } else {
         active &= shape->ray_test(ray);
-        store(rays->tfar, Float(-math::Infinity<Float>), active);
+        store(rays->tfar, Float(-ek::Infinity<Float>), active);
     }
 }
 
@@ -236,7 +236,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
 }
 
 MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
-    if constexpr (!is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);
         rtcSetGeometryUserData(geom, (void *) this);
@@ -306,12 +306,12 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
     DirectionSample3f ds(sample_position(it.time, sample, active));
     ds.d = ds.p - it.p;
 
-    Float dist_squared = squared_norm(ds.d);
+    Float dist_squared = ek::squared_norm(ds.d);
     ds.dist = sqrt(dist_squared);
     ds.d /= ds.dist;
 
-    Float dp = abs_dot(ds.d, ds.n);
-    ds.pdf *= select(neq(dp, 0.f), dist_squared / dp, 0.f);
+    Float dp = abs_ek::dot(ds.d, ds.n);
+    ds.pdf *= ek::select(neq(dp, 0.f), dist_squared / dp, 0.f);
     ds.object = (const Object *) this;
 
     return ds;
@@ -323,9 +323,9 @@ MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*
     MTS_MASK_ARGUMENT(active);
 
     Float pdf = pdf_position(ds, active),
-           dp = abs_dot(ds.d, ds.n);
+           dp = abs_ek::dot(ds.d, ds.n);
 
-    pdf *= select(neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
+    pdf *= ek::select(neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
 
     return pdf;
 }

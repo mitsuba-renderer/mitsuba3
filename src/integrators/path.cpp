@@ -145,7 +145,7 @@ public:
             // in GPU mode when the number of requested bounces is infinite
             // since it causes a costly synchronization.
             if ((uint32_t) depth >= (uint32_t) m_max_depth ||
-                ((!is_cuda_array_v<Float> || m_max_depth < 0) && none(active)))
+                ((!ek::is_cuda_array_v<Float> || m_max_depth < 0) && none(active)))
                 break;
 
             // --------------------- Emitter sampling ---------------------
@@ -167,7 +167,7 @@ public:
                 // Determine density of sampling that same direction using BSDF sampling
                 Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
-                Float mis = select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
+                Float mis = ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
                 result[active_e] += mis * throughput * bsdf_val * emitter_val;
             }
 
@@ -197,7 +197,7 @@ public:
 
             if (any_or<true>(neq(emitter, nullptr))) {
                 Float emitter_pdf =
-                    select(neq(emitter, nullptr) && !has_flag(bs.sampled_type, BSDFFlags::Delta),
+                    ek::select(neq(emitter, nullptr) && !has_flag(bs.sampled_type, BSDFFlags::Delta),
                            scene->pdf_emitter_direction(si, ds),
                            0.f);
 
@@ -223,7 +223,7 @@ public:
     Float mis_weight(Float pdf_a, Float pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), 0.f);
+        return ek::select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), 0.f);
     }
 
     MTS_DECLARE_CLASS()

@@ -50,7 +50,7 @@ public:
 
     MTS_INLINE Float eval_hg(Float cos_theta) const {
         Float temp = 1.0f + m_g * m_g + 2.0f * m_g * cos_theta;
-        return math::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * enoki::sqrt(temp));
+        return math::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * ek::sqrt(temp));
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
@@ -59,15 +59,15 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float cos_theta;
-        if (std::abs(m_g) < math::Epsilon<ScalarFloat>) {
+        if (std::abs(m_g) < ek::Epsilon<ScalarFloat>) {
             cos_theta = 1 - 2 * sample.x();
         } else {
             Float sqr_term = (1 - m_g * m_g) / (1 - m_g + 2 * m_g * sample.x());
             cos_theta = (1 + m_g * m_g - sqr_term * sqr_term) / (2 * m_g);
         }
 
-        Float sin_theta = enoki::safe_sqrt(1.0f - cos_theta * cos_theta);
-        auto [sin_phi, cos_phi] = enoki::sincos(2 * math::Pi<ScalarFloat> * sample.y());
+        Float sin_theta = ek::::safe_sqrt(1.0f - cos_theta * cos_theta);
+        auto [sin_phi, cos_phi] = ek::sincos(2 * ek::Pi<ScalarFloat> * sample.y());
         auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
         wo = mi.to_world(wo);
         Float pdf = eval_hg(-cos_theta);
@@ -77,7 +77,7 @@ public:
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f &mi,
                const Vector3f &wo, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
-        return eval_hg(dot(wo, mi.wi));
+        return eval_hg(ek::dot(wo, mi.wi));
     }
 
     void traverse(TraversalCallback *callback) override {

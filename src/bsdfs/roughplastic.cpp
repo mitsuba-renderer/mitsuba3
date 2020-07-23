@@ -195,7 +195,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        BSDFSample3f bs = zero<BSDFSample3f>();
+        BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Spectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
             return { bs, result };
@@ -222,22 +222,22 @@ public:
             MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
-            masked(bs.wo, sample_specular) = reflect(si.wi, m);
-            masked(bs.sampled_component, sample_specular) = 0;
-            masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
+            ek::masked(bs.wo, sample_specular) = reflect(si.wi, m);
+            ek::masked(bs.sampled_component, sample_specular) = 0;
+            ek::masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
         }
 
         if (any_or<true>(sample_diffuse)) {
-            masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
-            masked(bs.sampled_component, sample_diffuse) = 1;
-            masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
+            ek::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
+            ek::masked(bs.sampled_component, sample_diffuse) = 1;
+            ek::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
         }
 
         bs.pdf = pdf(ctx, si, bs.wo, active);
         active &= bs.pdf > 0.f;
         result = eval(ctx, si, bs.wo, active);
 
-        return { bs, select(active, unpolarized<Spectrum>(result) / bs.pdf, 0.f) };
+        return { bs, ek::select(active, unpolarized<Spectrum>(result) / bs.pdf, 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -266,7 +266,7 @@ public:
             Float D = distr.eval(H);
 
             // Fresnel term
-            Float F = std::get<0>(fresnel(dot(si.wi, H), Float(m_eta)));
+            Float F = std::get<0>(fresnel(ek::dot(si.wi, H), Float(m_eta)));
 
             // Smith's shadow-masking function
             Float G = distr.G(si.wi, wo, H);
@@ -293,18 +293,18 @@ public:
             result += diff * (math::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
-        return select(active, unpolarized<Spectrum>(result), 0.f);
+        return ek::select(active, unpolarized<Spectrum>(result), 0.f);
     }
 
-    Float lerp_gather(const scalar_t<Float> *data, Float x, size_t size,
+    Float lerp_gather(const ek::scalar_t<Float> *data, Float x, size_t size,
                       Mask active = true) const {
         using UInt = uint_array_t<Float>;
         x *= Float(size - 1);
 
-        UInt index = min(UInt(x), scalar_t<UInt>(size - 2));
+        UInt index = min(UInt(x), ek::scalar_t<UInt>(size - 2));
 
-        Float v0 = gather<Float>(data, index, active),
-              v1 = gather<Float>(data + 1, index, active);
+        Float v0 = ek::gather<Float>(data, index, active),
+              v1 = ek::gather<Float>(data + 1, index, active);
 
         return lerp(v0, v1, x - Float(index));
     }
@@ -345,7 +345,7 @@ public:
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /
                      (4.f * cos_theta_i);
         else
-            result = distr.pdf(si.wi, H) / (4.f * dot(wo, H));
+            result = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
         result *= prob_specular;
 
         result += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
@@ -381,7 +381,7 @@ public:
             using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
 
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);
-            Vector3fX wi = zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
+            Vector3fX wi = ek::zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
             for (size_t i = 0; i < slices(wi); ++i) {
                 ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
                 slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);

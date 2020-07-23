@@ -164,7 +164,7 @@ public:
         std::pair<Spectrum, Mask> result { 0.f, false };
 
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
-        si[!si.is_valid()] = zero<SurfaceInteraction3f>();
+        si[!si.is_valid()] = ek::zero<SurfaceInteraction3f>();
         size_t ctr = 0;
 
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
@@ -234,12 +234,12 @@ public:
                             static_assert(is_spectral_v<Spectrum>);
                             /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                             auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                            spec_u *= select(neq(pdf, 0.f), rcp(pdf), 0.f);
+                            spec_u *= ek::select(neq(pdf, 0.f), rcp(pdf), 0.f);
                             rgb = xyz_to_srgb(spectrum_to_xyz(spec_u, ray.wavelengths, active));
                         }
 
                         *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();
-                        *aovs++ = select(result_sub.second, Float(1.f), Float(0.f));
+                        *aovs++ = ek::select(result_sub.second, Float(1.f), Float(0.f));
 
                         if (ctr == 0)
                             result = result_sub;

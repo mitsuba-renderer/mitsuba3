@@ -165,7 +165,7 @@ private:
                uint32_t j, // dimension
                UInt32 p,   // pseudo-random permutation seed
                Mask active = true) {
-        uint32_t N = enoki::pow(m_resolution, int(m_strength));
+        uint32_t N = ek::pow(m_resolution, int(m_strength));
         uint32_t stm = m_resolution_div(N);
 
         // Convert the permuted sample index to base strength
@@ -223,7 +223,7 @@ private:
 
     /// Stratification grid resolution
     uint32_t m_resolution;
-    enoki::divisor<uint32_t> m_resolution_div;
+    ek::divisor<uint32_t> m_resolution_div;
 
     /// Per-sequence permutation seed
     UInt32 m_permutation_seed;

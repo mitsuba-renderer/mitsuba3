@@ -207,7 +207,7 @@ public:
                 m_vertex_normals_buf.managed();
                 m_vertex_texcoords_buf.managed();
 
-                if constexpr (is_cuda_array_v<Float>)
+                if constexpr (ek::is_cuda_array_v<Float>)
                     cuda_sync();
 
                 size_t packet_count     = el.count / elements_per_packet;
@@ -232,16 +232,16 @@ public:
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < count; ++j) {
-                        InputPoint3f p = enoki::load<InputPoint3f>(target);
+                        InputPoint3f p = ek::load<InputPoint3f>(target);
                         p = m_to_world.transform_affine(p);
-                        if (unlikely(!all(enoki::isfinite(p))))
+                        if (unlikely(!all(ek::isfinite(p))))
                             fail("mesh contains invalid vertex positions/normal data");
                         m_bbox.expand(p);
                         store_unaligned(position_ptr, p);
                         position_ptr += 3;
 
                         if (has_vertex_normals) {
-                            InputNormal3f n = enoki::load<InputNormal3f>(
+                            InputNormal3f n = ek::load<InputNormal3f>(
                                 target + sizeof(InputFloat) * 3);
                             n = normalize(m_to_world.transform_affine(n));
                             store_unaligned(normal_ptr, n);
@@ -249,7 +249,7 @@ public:
                         }
 
                         if (has_vertex_texcoords) {
-                            InputVector2f uv = enoki::load<InputVector2f>(
+                            InputVector2f uv = ek::load<InputVector2f>(
                                 target + (m_disable_vertex_normals
                                               ? sizeof(InputFloat) * 3
                                               : sizeof(InputFloat) * 6));
@@ -340,7 +340,7 @@ public:
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < count; ++j) {
-                        ScalarIndex3 fi = enoki::load<ScalarIndex3>(target);
+                        ScalarIndex3 fi = ek::load<ScalarIndex3>(target);
                         store_unaligned(face_ptr, fi);
                         face_ptr += 3;
 
@@ -594,7 +594,7 @@ private:
                         case Struct::Type::Float16: {
                                 float value;
                                 if (!(is >> value)) Throw("Could not parse \"half\" value for field %s", field.name);
-                                out->write(enoki::half::float32_to_float16(value));
+                                out->write(ek::half::float32_to_float16(value));
                             }
                             break;
 

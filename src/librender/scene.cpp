@@ -70,7 +70,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             ScalarVector3f extents = m_bbox.extents();
 
             ScalarFloat distance =
-                hmax(extents) / (2.f * std::tan(45.f * .5f * math::Pi<ScalarFloat> / 180.f));
+                hmax(extents) / (2.f * std::tan(45.f * .5f * ek::Pi<ScalarFloat> / 180.f));
 
             sensor_props.set_float("far_clip", hmax(extents) * 5 + distance);
             sensor_props.set_float("near_clip", distance / 100);
@@ -91,7 +91,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             create_object<Integrator>(Properties("path"));
     }
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         accel_init_gpu(props);
     else
         accel_init_cpu(props);
@@ -104,7 +104,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 }
 
 MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         accel_release_gpu();
     else
         accel_release_cpu();
@@ -114,7 +114,7 @@ MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         return ray_intersect_gpu(ray, HitComputeFlags::All, active);
     else
         return ray_intersect_cpu(ray, HitComputeFlags::All, active);
@@ -124,7 +124,7 @@ MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         return ray_intersect_gpu(ray, flags, active);
     else
         return ray_intersect_cpu(ray, flags, active);
@@ -132,7 +132,7 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, HitComputeFlags flags, M
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray, Mask active) const {
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         return ray_intersect_preliminary_gpu(ray, active);
     else
         return ray_intersect_preliminary_cpu(ray, active);
@@ -143,7 +143,7 @@ Scene<Float, Spectrum>::ray_intersect_naive(const Ray3f &ray, Mask active) const
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
 #if !defined(MTS_ENABLE_EMBREE)
-    if constexpr (!is_cuda_array_v<Float>)
+    if constexpr (!ek::is_cuda_array_v<Float>)
         return ray_intersect_naive_cpu(ray, active);
 #endif
     ENOKI_MARK_USED(ray);
@@ -155,7 +155,7 @@ MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
 
-    if constexpr (is_cuda_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float>)
         return ray_test_gpu(ray, active);
     else
         return ray_test_cpu(ray, active);
@@ -187,7 +187,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
             // Rescale sample.x() to lie in [0,1) again
             sample.x() = (sample.x() - index*emitter_pdf) * m_emitters.size();
 
-            EmitterPtr emitter = gather<EmitterPtr>(m_emitters.data(), index, active);
+            EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters.data(), index, active);
 
             // Sample a direction towards the emitter
             std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
@@ -206,7 +206,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
             spec[ray_test(ray, active)] = 0.f;
         }
     } else {
-        ds = zero<DirectionSample3f>();
+        ds = ek::zero<DirectionSample3f>();
         spec = 0.f;
     }
 
@@ -252,7 +252,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<st
     }
 
     if (update_accel) {
-        if constexpr (is_cuda_array_v<Float>)
+        if constexpr (ek::is_cuda_array_v<Float>)
             accel_parameters_changed_gpu();
         else {
             // TODO update Embree BVH or Mitsuba kdtree if necessary
@@ -261,7 +261,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<st
 
     // Checks whether any of the shape's parameters require gradient
     m_shapes_grad_enabled = false;
-    if constexpr (is_diff_array_v<Float>) {
+    if constexpr (ek::is_diff_array_v<Float>) {
         for (auto& s : m_shapes) {
             m_shapes_grad_enabled |= s->parameters_grad_enabled();
             if (m_shapes_grad_enabled) break;

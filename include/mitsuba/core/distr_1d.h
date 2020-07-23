@@ -18,10 +18,9 @@ NAMESPACE_BEGIN(mitsuba)
  */
 template <typename Float> struct DiscreteDistribution {
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = uint32_array_t<Float>;
-    using Mask = mask_t<Float>;
-
-    using ScalarFloat = scalar_t<Float>;
+    using Index          = ek::uint32_array_t<Float>;
+    using Mask           = ek::mask_t<Float>;
+    using ScalarFloat    = ek::scalar_t<Float>;
     using ScalarVector2u = Array<uint32_t, 2>;
 
 public:
@@ -53,7 +52,7 @@ public:
             Throw("DiscreteDistribution: empty distribution!");
 
         if (m_cdf.size() != size)
-            m_cdf = enoki::empty<FloatStorage>(size);
+            m_cdf = ek::empty<FloatStorage>(size);
 
         // Ensure that we can access these arrays on the CPU
         m_pmf.managed();
@@ -80,7 +79,7 @@ public:
             }
         }
 
-        if (any(eq(m_valid, (uint32_t) -1)))
+        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("DiscreteDistribution: no probability mass found!");
 
         m_sum = ScalarFloat(sum);
@@ -113,22 +112,22 @@ public:
 
     /// Evaluate the unnormalized probability mass function (PMF) at index \c index
     Float eval_pmf(Index index, Mask active = true) const {
-        return gather<Float>(m_pmf, index, active);
+        return ek::gather<Float>(m_pmf, index, active);
     }
 
     /// Evaluate the normalized probability mass function (PMF) at index \c index
     Float eval_pmf_normalized(Index index, Mask active = true) const {
-        return gather<Float>(m_pmf, index, active) * m_normalization;
+        return ek::gather<Float>(m_pmf, index, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at index \c index
     Float eval_cdf(Index index, Mask active = true) const {
-        return gather<Float>(m_cdf, index, active);
+        return ek::gather<Float>(m_cdf, index, active);
     }
 
     /// Evaluate the normalized cumulative distribution function (CDF) at index \c index
     Float eval_cdf_normalized(Index index, Mask active = true) const {
-        return gather<Float>(m_cdf, index, active) * m_normalization;
+        return ek::gather<Float>(m_cdf, index, active) * m_normalization;
     }
 
     /**
@@ -146,10 +145,10 @@ public:
 
         value *= m_sum;
 
-        return enoki::binary_search(
+        return ek::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Float>(m_cdf, index, active) < value;
             }
         );
     }
@@ -257,10 +256,10 @@ private:
  */
 template <typename Float> struct ContinuousDistribution {
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = uint32_array_t<Float>;
-    using Mask = mask_t<Float>;
+    using Index = ek::uint32_array_t<Float>;
+    using Mask = ek::mask_t<Float>;
 
-    using ScalarFloat = scalar_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
     using ScalarVector2f = Vector<ScalarFloat, 2>;
     using ScalarVector2u = Vector<uint32_t, 2>;
 
@@ -300,7 +299,7 @@ public:
             Throw("ContinuousDistribution: invalid range!");
 
         if (m_cdf.size() != size - 1)
-            m_cdf = enoki::empty<FloatStorage>(size - 1);
+            m_cdf = ek::empty<FloatStorage>(size - 1);
 
         // Ensure that we can access these arrays on the CPU
         m_pdf.managed();
@@ -335,7 +334,7 @@ public:
             }
         }
 
-        if (any(eq(m_valid, (uint32_t) -1)))
+        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("ContinuousDistribution: no probability mass found!");
 
         m_integral = ScalarFloat(integral);
@@ -381,10 +380,10 @@ public:
         active &= x >= m_range.x() && x <= m_range.y();
         x = (x - m_range.x()) * m_inv_interval_size;
 
-        Index index = clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
+        Index index = ek::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        Float y0 = gather<Float>(m_pdf, index,      active),
-              y1 = gather<Float>(m_pdf, index + 1u, active);
+        Float y0 = ek::gather<Float>(m_pdf, index,      active),
+              y1 = ek::gather<Float>(m_pdf, index + 1u, active);
 
         Float w1 = x - Float(index),
               w0 = 1.f - w1;
@@ -405,14 +404,14 @@ public:
 
         Float x = (x_ - m_range.x()) * m_inv_interval_size;
 
-        Index index = clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
+        Index index = ek::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        Float y0 = gather<Float>(m_pdf, index,      active),
-              y1 = gather<Float>(m_pdf, index + 1u, active),
-              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0u);
+        Float y0 = ek::gather<Float>(m_pdf, index,      active),
+              y1 = ek::gather<Float>(m_pdf, index + 1u, active),
+              c0 = ek::gather<Float>(m_cdf, index - 1u, active && index > 0u);
 
 
-        Float t   = clamp(x - Float(index), 0.f, 1.f),
+        Float t   = ek::clamp(x - Float(index), 0.f, 1.f),
               cdf = c0 + t * (y0 + .5f * t * (y1 - y0)) * m_interval_size;
 
         return cdf;
@@ -440,22 +439,22 @@ public:
 
         value *= m_integral;
 
-        Index index = enoki::binary_search(
+        Index index = ek::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        Float y0 = gather<Float>(m_pdf, index,      active),
-              y1 = gather<Float>(m_pdf, index + 1u, active),
-              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0);
+        Float y0 = ek::gather<Float>(m_pdf, index,      active),
+              y1 = ek::gather<Float>(m_pdf, index + 1u, active),
+              c0 = ek::gather<Float>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = select(eq(y0, y1), t_const, t_linear);
+              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
         return fmadd(Float(index) + t, m_interval_size, m_range.x());
     }
@@ -478,25 +477,25 @@ public:
 
         value *= m_integral;
 
-        Index index = enoki::binary_search(
+        Index index = ek::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        Float y0 = gather<Float>(m_pdf, index,      active),
-              y1 = gather<Float>(m_pdf, index + 1u, active),
-              c0 = gather<Float>(m_cdf, index - 1u, active && index > 0);
+        Float y0 = ek::gather<Float>(m_pdf, index,      active),
+              y1 = ek::gather<Float>(m_pdf, index + 1u, active),
+              c0 = ek::gather<Float>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = select(eq(y0, y1), t_const, t_linear);
+              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
-        return { fmadd(Float(index) + t, m_interval_size, m_range.x()),
-                 fmadd(t, y1 - y0, y0) * m_normalization };
+        return { ek::fmadd(Float(index) + t, m_interval_size, m_range.x()),
+                 ek::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
 private:
@@ -524,10 +523,10 @@ private:
  */
 template <typename Float> struct IrregularContinuousDistribution {
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = uint32_array_t<Float>;
-    using Mask = mask_t<Float>;
+    using Index = ek::uint32_array_t<Float>;
+    using Mask = ek::mask_t<Float>;
 
-    using ScalarFloat = scalar_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
     using ScalarVector2f = Array<ScalarFloat, 2>;
     using ScalarVector2u = Array<uint32_t, 2>;
 
@@ -568,7 +567,7 @@ public:
             Throw("IrregularContinuousDistribution: needs at least two entries!");
 
         if (m_cdf.size() != size - 1)
-            m_cdf = enoki::empty<FloatStorage>(size - 1);
+            m_cdf = ek::empty<FloatStorage>(size - 1);
 
         // Ensure that we can access these arrays on the CPU
         m_pdf.managed();
@@ -581,8 +580,8 @@ public:
 
         m_valid = (uint32_t) -1;
         m_range = ScalarVector2f(
-             math::Infinity<Float>,
-            -math::Infinity<Float>
+             ek::Infinity<Float>,
+            -ek::Infinity<Float>
         );
 
         double integral = 0.;
@@ -595,8 +594,8 @@ public:
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
 
-            m_range.x() = min(m_range.x(), x0);
-            m_range.y() = max(m_range.y(), x1);
+            m_range.x() = ek::min(m_range.x(), x0);
+            m_range.y() = ek::max(m_range.y(), x1);
 
             integral += value;
             *cdf_ptr++ = (ScalarFloat) integral;
@@ -657,23 +656,23 @@ public:
 
         active &= x >= m_range.x() && x <= m_range.y();
 
-        Index index = enoki::binary_search(
+        Index index = ek::binary_search(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_nodes, index, active) < x;
+                return ek::gather<Float>(m_nodes, index, active) < x;
             }
         );
 
-        index = enoki::max(enoki::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
+        index = ek::max(ek::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        Float x0 = gather<Float>(m_nodes, index,      active),
-              x1 = gather<Float>(m_nodes, index + 1u, active),
-              y0 = gather<Float>(m_pdf,   index,      active),
-              y1 = gather<Float>(m_pdf,   index + 1u, active);
+        Float x0 = ek::gather<Float>(m_nodes, index,      active),
+              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Float>(m_pdf,   index,      active),
+              y1 = ek::gather<Float>(m_pdf,   index + 1u, active);
 
         x = (x - x0) / (x1 - x0);
 
-        return select(active, fmadd(x, y1 - y0, y0), 0.f);
+        return ek::select(active, ek::fmadd(x, y1 - y0, y0), 0.f);
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
@@ -687,23 +686,23 @@ public:
     Float eval_cdf(Float x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
-        Index index = enoki::binary_search(
+        Index index = ek::binary_search(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_nodes, index, active) < x;
+                return ek::gather<Float>(m_nodes, index, active) < x;
             }
         );
 
-        index = enoki::max(enoki::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
+        index = ek::max(ek::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        Float x0 = gather<Float>(m_nodes, index,      active),
-              x1 = gather<Float>(m_nodes, index + 1u, active),
-              y0 = gather<Float>(m_pdf,   index,      active),
-              y1 = gather<Float>(m_pdf,   index + 1u, active),
-              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0u);
+        Float x0 = ek::gather<Float>(m_nodes, index,      active),
+              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Float>(m_pdf,   index,      active),
+              y1 = ek::gather<Float>(m_pdf,   index + 1u, active),
+              c0 = ek::gather<Float>(m_cdf,   index - 1u, active && index > 0u);
 
         Float w   = x1 - x0,
-              t   = clamp((x - x0) / w, 0.f, 1.f),
+              t   = ek::clamp((x - x0) / w, 0.f, 1.f),
               cdf = c0 + w * t * (y0 + .5f * t * (y1 - y0));
 
         return cdf;
@@ -731,25 +730,25 @@ public:
 
         value *= m_integral;
 
-        Index index = enoki::binary_search(
+        Index index = ek::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        Float x0 = gather<Float>(m_nodes, index,      active),
-              x1 = gather<Float>(m_nodes, index + 1u, active),
-              y0 = gather<Float>(m_pdf,   index,      active),
-              y1 = gather<Float>(m_pdf,   index + 1u, active),
-              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0),
+        Float x0 = ek::gather<Float>(m_nodes, index,      active),
+              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Float>(m_pdf,   index,      active),
+              y1 = ek::gather<Float>(m_pdf,   index + 1u, active),
+              c0 = ek::gather<Float>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = select(eq(y0, y1), t_const, t_linear);
+              t        = ek::select(eq(y0, y1), t_const, t_linear);
 
         return fmadd(t, w, x0);
     }
@@ -772,28 +771,28 @@ public:
 
         value *= m_integral;
 
-        Index index = enoki::binary_search(
+        Index index = ek::binary_search(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Float>(m_cdf, index, active) < value;
             }
         );
 
-        Float x0 = gather<Float>(m_nodes, index,      active),
-              x1 = gather<Float>(m_nodes, index + 1u, active),
-              y0 = gather<Float>(m_pdf,   index,      active),
-              y1 = gather<Float>(m_pdf,   index + 1u, active),
-              c0 = gather<Float>(m_cdf,   index - 1u, active && index > 0),
+        Float x0 = ek::gather<Float>(m_nodes, index,      active),
+              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Float>(m_pdf,   index,      active),
+              y1 = ek::gather<Float>(m_pdf,   index + 1u, active),
+              c0 = ek::gather<Float>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        Float t_linear = (y0 - safe_sqrt(sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = select(eq(y0, y1), t_const, t_linear);
+              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
-        return { fmadd(t, w, x0),
-            fmadd(t, y1 - y0, y0) * m_normalization };
+        return { ek::fmadd(t, w, x0),
+                 ek::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
 private:
