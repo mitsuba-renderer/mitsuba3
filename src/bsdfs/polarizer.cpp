@@ -103,8 +103,8 @@ public:
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
             Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = normalize(a_axis - ek::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = cross(forward, eff_a_axis);
+            Vector3f eff_a_axis = ek::normalize(a_axis - ek::dot(a_axis, forward)*forward);
+            Vector3f eff_t_axis = ek::cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
             M = mueller::rotate_mueller_basis_collinear(M, forward,
@@ -151,8 +151,8 @@ public:
                transmitting axis based on "The polarization properties of a tilted polarizer"
                by Korger et al. 2013. */
             Vector3f a_axis(0, 1, 0);
-            Vector3f eff_a_axis = normalize(a_axis - ek::dot(a_axis, forward)*forward);
-            Vector3f eff_t_axis = cross(forward, eff_a_axis);
+            Vector3f eff_a_axis = ek::normalize(a_axis - ek::dot(a_axis, forward)*forward);
+            Vector3f eff_t_axis = ek::cross(forward, eff_a_axis);
 
             // Rotate in/out basis of M s.t. to standard basis
             M = mueller::rotate_mueller_basis_collinear(M, forward,

@@ -322,7 +322,7 @@ public:
             m_bbox.expand(p);
 
             if (has_vertex_normals()) {
-                InputNormal3f n = normalize(m_to_world.transform_affine(vertex_normal(i)));
+                InputNormal3f n = ek::normalize(m_to_world.transform_affine(vertex_normal(i)));
                 store_unaligned(normal_ptr, n);
                 normal_ptr += 3;
             }

@@ -153,7 +153,7 @@ public:
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = normalize(Vector3f(near_p));
+        Vector3f d = ek::normalize(Vector3f(near_p));
 
         Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
@@ -182,7 +182,7 @@ public:
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = normalize(Vector3f(near_p));
+        Vector3f d = ek::normalize(Vector3f(near_p));
         Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
@@ -194,8 +194,8 @@ public:
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = trafo * normalize(Vector3f(near_p) + m_dx);
-        ray.d_y = trafo * normalize(Vector3f(near_p) + m_dy);
+        ray.d_x = trafo * ek::normalize(Vector3f(near_p) + m_dx);
+        ray.d_y = trafo * ek::normalize(Vector3f(near_p) + m_dy);
         ray.has_differentials = true;
 
         return std::make_pair(ray, wav_weight);
@@ -220,7 +220,7 @@ public:
 
            Then the visible rectangular portion of the plane has the area
 
-              A = (2 * tan(0.5 * xfov in radians))^2 / aspect
+              A = (2 * ek::tan(0.5 * xfov in radians))^2 / aspect
 
            Since we allow crop regions, the actual visible area is
            potentially reduced:

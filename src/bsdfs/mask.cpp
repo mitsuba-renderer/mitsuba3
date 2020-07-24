@@ -119,7 +119,7 @@ public:
         result               = 1.f;
 
         Mask nested_mask = active && sample1 < opacity;
-        if (any_or<true>(nested_mask)) {
+        if (ek::any_or<true>(nested_mask)) {
             sample1 /= opacity;
             auto tmp                = m_nested_bsdf->sample(ctx, si, sample1, sample2, nested_mask);
             ek::masked(bs, nested_mask) = tmp.first;

@@ -88,7 +88,7 @@ public:
 
             // Write second moment AOVs
             for (size_t j = 0; j < m_integrators[i].second + 3; j++)
-                *(aovs - j + offset - 1) = sqr(*(aovs - j - 1));
+                *(aovs - j + offset - 1) = ek::sqr(*(aovs - j - 1));
 
             if (i == 0)
                 result = result_sub;

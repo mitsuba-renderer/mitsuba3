@@ -234,7 +234,7 @@ public:
         auto p = m_world_to_local * it.p;
         active &= all((p >= 0) && (p <= 1));
 
-        if (none_or<false>(active))
+        if (ek::none_or<false>(active))
             return ek::zero<ResultType>();
         ResultType result = interpolate(p, it.wavelengths, active);
         return ek::select(active, result, ek::zero<ResultType>());
@@ -288,7 +288,7 @@ public:
 
 
             // Scale to bitmap resolution and apply shift
-            p = fmadd(p, m_metadata.shape, -.5f);
+            p = ek::fmadd(p, m_metadata.shape, -.5f);
 
             // Integer pixel positions for trilinear interpolation
             Vector3i p_i  = ek::floor2int<Vector3i>(p);
@@ -302,7 +302,7 @@ public:
                                       Int8(0, 0, 0, 0, 1, 1, 1, 1) + p_i.z()));
 
             // (z * ny + y) * nx + x
-            Int8 index = fmadd(fmadd(pi_i_w.z(), ny, pi_i_w.y()), nx, pi_i_w.x());
+            Int8 index = ek::fmadd(ek::fmadd(pi_i_w.z(), ny, pi_i_w.y()), nx, pi_i_w.x());
 
             // Load 8 grid positions to perform trilinear interpolation
             auto d000 = ek::gather<StorageType>(m_data, index[0], active),
@@ -326,13 +326,13 @@ public:
                 v011 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d011), wavelengths);
                 v111 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d111), wavelengths);
                 // Interpolate scaling factor
-                Float f00 = fmadd(w0.x(), d000.w(), w1.x() * d100.w()),
-                      f01 = fmadd(w0.x(), d001.w(), w1.x() * d101.w()),
-                      f10 = fmadd(w0.x(), d010.w(), w1.x() * d110.w()),
-                      f11 = fmadd(w0.x(), d011.w(), w1.x() * d111.w());
-                Float f0  = fmadd(w0.y(), f00, w1.y() * f10),
-                      f1  = fmadd(w0.y(), f01, w1.y() * f11);
-                    scale = fmadd(w0.z(), f0, w1.z() * f1);
+                Float f00 = ek::fmadd(w0.x(), d000.w(), w1.x() * d100.w()),
+                      f01 = ek::fmadd(w0.x(), d001.w(), w1.x() * d101.w()),
+                      f10 = ek::fmadd(w0.x(), d010.w(), w1.x() * d110.w()),
+                      f11 = ek::fmadd(w0.x(), d011.w(), w1.x() * d111.w());
+                Float f0  = ek::fmadd(w0.y(), f00, w1.y() * f10),
+                      f1  = ek::fmadd(w0.y(), f01, w1.y() * f11);
+                    scale = ek::fmadd(w0.z(), f0, w1.z() * f1);
             } else {
                 v000 = d000; v001 = d001; v010 = d010; v011 = d011;
                 v100 = d100; v101 = d101; v110 = d110; v111 = d111;
@@ -341,13 +341,13 @@ public:
             }
 
             // Trilinear interpolation
-            ResultType v00 = fmadd(w0.x(), v000, w1.x() * v100),
-                       v01 = fmadd(w0.x(), v001, w1.x() * v101),
-                       v10 = fmadd(w0.x(), v010, w1.x() * v110),
-                       v11 = fmadd(w0.x(), v011, w1.x() * v111);
-            ResultType v0  = fmadd(w0.y(), v00, w1.y() * v10),
-                       v1  = fmadd(w0.y(), v01, w1.y() * v11);
-            ResultType result = fmadd(w0.z(), v0, w1.z() * v1);
+            ResultType v00 = ek::fmadd(w0.x(), v000, w1.x() * v100),
+                       v01 = ek::fmadd(w0.x(), v001, w1.x() * v101),
+                       v10 = ek::fmadd(w0.x(), v010, w1.x() * v110),
+                       v11 = ek::fmadd(w0.x(), v011, w1.x() * v111);
+            ResultType v0  = ek::fmadd(w0.y(), v00, w1.y() * v10),
+                       v1  = ek::fmadd(w0.y(), v01, w1.y() * v11);
+            ResultType result = ek::fmadd(w0.z(), v0, w1.z() * v1);
 
             if constexpr (uses_srgb_model)
                 result *= scale;
@@ -361,7 +361,7 @@ public:
             Vector3i p_i   = floor2int<Vector3i>(p),
                     p_i_w = wrap(p_i);
 
-            Int32 index = fmadd(fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
+            Int32 index = ek::fmadd(ek::fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
 
             StorageType v = ek::gather<StorageType>(m_data, index, active);
 

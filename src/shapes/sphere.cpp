@@ -153,7 +153,7 @@ public:
         Point3f local = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps;
-        ps.p = fmadd(local, m_radius, m_center);
+        ps.p = ek::fmadd(local, m_radius, m_center);
         ps.n = local;
 
         if (m_flip_normals)
@@ -181,24 +181,24 @@ public:
 
         Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::RayEpsilon<Float>) :
                                                         (1.f - math::RayEpsilon<Float>));
-        Mask outside_mask = active && dc_2 > sqr(radius_adj);
+        Mask outside_mask = active && dc_2 > ek::sqr(radius_adj);
         if (likely(any(outside_mask))) {
             Float inv_dc            = ek::rsqrt(dc_2),
                   sin_theta_max     = m_radius * inv_dc,
-                  sin_theta_max_2   = sqr(sin_theta_max),
+                  sin_theta_max_2   = ek::sqr(sin_theta_max),
                   inv_sin_theta_max = ek::rcp(sin_theta_max),
                   cos_theta_max     = ek::safe_sqrt(1.f - sin_theta_max_2);
 
             /* Fall back to a Taylor series expansion for small angles, where
                the standard approach suffers from severe cancellation errors */
             Float sin_theta_2 = ek::select(sin_theta_max_2 > 0.00068523f, /* sin^2(1.5 deg) */
-                                       1.f - sqr(fmadd(cos_theta_max - 1.f, sample.x(), 1.f)),
+                                       1.f - ek::sqr(ek::fmadd(cos_theta_max - 1.f, sample.x(), 1.f)),
                                        sin_theta_max_2 * sample.x()),
                   cos_theta = ek::safe_sqrt(1.f - sin_theta_2);
 
             // Based on https://www.akalin.com/sampling-visible-sphere
             Float cos_alpha = sin_theta_2 * inv_sin_theta_max +
-                              cos_theta * ek::safe_sqrt(ek::fnmadd(sin_theta_2, sqr(inv_sin_theta_max), 1.f)),
+                              cos_theta * ek::safe_sqrt(ek::fnmadd(sin_theta_2, ek::sqr(inv_sin_theta_max), 1.f)),
                   sin_alpha = ek::safe_sqrt(ek::fnmadd(cos_alpha, cos_alpha, 1.f));
 
             auto [sin_phi, cos_phi] = ek::sincos(sample.y() * (2.f * ek::Pi<Float>));
@@ -209,7 +209,7 @@ public:
                 cos_alpha));
 
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
-            ds.p        = fmadd(d, m_radius, m_center);
+            ds.p        = ek::fmadd(d, m_radius, m_center);
             ds.n        = d;
             ds.d        = ds.p - it.p;
 
@@ -226,14 +226,14 @@ public:
         if (unlikely(any(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
-            ds.p        = fmadd(d, m_radius, m_center);
+            ds.p        = ek::fmadd(d, m_radius, m_center);
             ds.n        = d;
             ds.d        = ds.p - it.p;
 
             Float dist2 = ek::squared_norm(ds.d);
             ds.dist     = ek::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
-            ds.pdf      = m_inv_surface_area * dist2 / abs_ek::dot(ds.d, ds.n);
+            ds.pdf      = m_inv_surface_area * dist2 / ek::abs_dot(ds.d, ds.n);
 
             result[inside_mask] = ds;
         }
@@ -258,7 +258,7 @@ public:
         return ek::select(sin_alpha < ek::OneMinusEpsilon<Float>,
             // Reference point lies outside the sphere
             warp::square_to_uniform_cone_pdf(ek::zero<Vector3f>(), cos_alpha),
-            m_inv_surface_area * sqr(ds.dist) / abs_ek::dot(ds.d, ds.n)
+            m_inv_surface_area * ek::sqr(ds.dist) / ek::abs_dot(ds.d, ds.n)
         );
     }
 
@@ -284,7 +284,7 @@ public:
 
         Double A = ek::squared_norm(d);
         Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
-        Double C = ek::squared_norm(o) - sqr((scalar_t<Double>) m_radius);
+        Double C = ek::squared_norm(o) - ek::sqr((scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -319,7 +319,7 @@ public:
 
         Double A = ek::squared_norm(d);
         Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
-        Double C = ek::squared_norm(o) - sqr((scalar_t<Double>) m_radius);
+        Double C = ek::squared_norm(o) - ek::sqr((scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -353,15 +353,15 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
-        si.sh_frame.n = normalize(ray(pi.t) - m_center);
+        si.sh_frame.n = ek::normalize(ray(pi.t) - m_center);
 
         // Re-project onto the sphere to improve accuracy
-        si.p = fmadd(si.sh_frame.n, m_radius, m_center);
+        si.p = ek::fmadd(si.sh_frame.n, m_radius, m_center);
 
         if (likely(has_flag(flags, HitComputeFlags::UV))) {
             Vector3f local = m_to_object.transform_affine(si.p);
 
-            Float rd_2  = sqr(local.x()) + sqr(local.y()),
+            Float rd_2  = ek::sqr(local.x()) + ek::sqr(local.y()),
                   theta = unit_angle_z(local),
                   phi   = ek::atan2(local.y(), local.x());
 

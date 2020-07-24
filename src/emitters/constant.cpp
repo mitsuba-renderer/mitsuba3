@@ -74,7 +74,7 @@ public:
 
         return std::make_pair(Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
                                     Frame3f(-v0).to_world(v1), time, wavelengths),
-                              unpolarized<Spectrum>(weight) * (4.f * sqr(ek::Pi<Float> * m_bsphere.radius)));
+                              unpolarized<Spectrum>(weight) * (4.f * ek::sqr(ek::Pi<Float> * m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>

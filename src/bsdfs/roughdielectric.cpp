@@ -267,7 +267,7 @@ public:
         Float dwh_dwo = 0.f;
 
         // Reflection sampling
-        if (any_or<true>(selected_r)) {
+        if (ek::any_or<true>(selected_r)) {
             // Perfect specular reflection based on the microfacet normal
             bs.wo[selected_r] = reflect(si.wi, m);
 
@@ -279,13 +279,13 @@ public:
         }
 
         // Transmission sampling
-        if (any_or<true>(selected_t)) {
+        if (ek::any_or<true>(selected_t)) {
             // Perfect specular transmission based on the microfacet normal
             bs.wo[selected_t]  = refract(si.wi, m, cos_theta_t, eta_ti);
 
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
-            UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? sqr(eta_ti) : Float(1.f);
+            UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? ek::sqr(eta_ti) : Float(1.f);
 
             if (m_specular_transmittance)
                 factor *= m_specular_transmittance->eval(si, selected_t);
@@ -294,8 +294,8 @@ public:
 
             // Jacobian of the half-direction mapping
             ek::masked(dwh_dwo, selected_t) =
-                (sqr(bs.eta) * ek::dot(bs.wo, m)) /
-                 sqr(ek::dot(si.wi, m) + bs.eta * ek::dot(bs.wo, m));
+                (ek::sqr(bs.eta) * ek::dot(bs.wo, m)) /
+                 ek::sqr(ek::dot(si.wi, m) + bs.eta * ek::dot(bs.wo, m));
         }
 
         if (likely(m_sample_visible))
@@ -330,7 +330,7 @@ public:
               inv_eta = ek::select(cos_theta_i > 0.f, Float(m_inv_eta), Float(m_eta));
 
         // Compute the half-vector
-        Vector3f m = normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
+        Vector3f m = ek::normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = ek::mulsign(m, Frame3f::cos_theta(m));
@@ -356,7 +356,7 @@ public:
         Mask eval_r = Mask(has_reflection) && reflect && active,
              eval_t = Mask(has_transmission) && !reflect && active;
 
-        if (any_or<true>(eval_r)) {
+        if (ek::any_or<true>(eval_r)) {
             UnpolarizedSpectrum value = F * D * G / (4.f * ek::abs(cos_theta_i));
 
             if (m_specular_reflectance)
@@ -365,16 +365,16 @@ public:
             result[eval_r] = value;
         }
 
-        if (any_or<true>(eval_t)) {
+        if (ek::any_or<true>(eval_t)) {
             /* Missing term in the original paper: account for the solid angle
                compression when tracing radiance -- this is necessary for
                bidirectional methods. */
-            Float scale = (ctx.mode == TransportMode::Radiance) ? sqr(inv_eta) : Float(1.f);
+            Float scale = (ctx.mode == TransportMode::Radiance) ? ek::sqr(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
             UnpolarizedSpectrum value = ek::abs(
                 (scale * (1.f - F) * D * G * eta * eta * ek::dot(si.wi, m) * ek::dot(wo, m)) /
-                (cos_theta_i * sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m))));
+                (cos_theta_i * ek::sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m))));
 
             if (m_specular_transmittance)
                 value *= m_specular_transmittance->eval(si, eval_t);
@@ -407,7 +407,7 @@ public:
         Float eta = ek::select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta));
 
         // Compute the half-vector
-        Vector3f m = normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
+        Vector3f m = ek::normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = ek::mulsign(m, Frame3f::cos_theta(m));
@@ -422,7 +422,7 @@ public:
         // Jacobian of the half-direction mapping
         Float dwh_dwo = ek::select(reflect, ek::rcp(4.f * ek::dot(wo, m)),
                                (eta * eta * ek::dot(wo, m)) /
-                                   sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m)));
+                                   ek::sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m)));
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */

@@ -101,10 +101,10 @@ template <typename Point_, typename Spectrum_> struct Ray {
 //         : Base(ray), has_differentials(false) { }
 
 //     void scale_differential(Float amount) {
-//         o_x = fmadd(o_x - o, amount, o);
-//         o_y = fmadd(o_y - o, amount, o);
-//         d_x = fmadd(d_x - d, amount, d);
-//         d_y = fmadd(d_y - d, amount, d);
+//         o_x = ek::fmadd(o_x - o, amount, o);
+//         o_y = ek::fmadd(o_y - o, amount, o);
+//         d_x = ek::fmadd(d_x - d, amount, d);
+//         d_y = ek::fmadd(d_y - d, amount, d);
 //     }
 
 //     ENOKI_DERIVED_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time, wavelengths, o_x, o_y, d_x, d_y)

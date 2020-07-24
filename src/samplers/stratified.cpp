@@ -63,13 +63,13 @@ public:
 
         // Make sure sample_count is a square number
         m_resolution = 1;
-        while (sqr(m_resolution) < m_sample_count)
+        while (ek::sqr(m_resolution) < m_sample_count)
             m_resolution++;
 
-        if (m_sample_count != sqr(m_resolution))
-            Log(Warn, "Sample count should be square and power of two, rounding to %i", sqr(m_resolution));
+        if (m_sample_count != ek::sqr(m_resolution))
+            Log(Warn, "Sample count should be square and power of two, rounding to %i", ek::sqr(m_resolution));
 
-        m_sample_count = sqr(m_resolution);
+        m_sample_count = ek::sqr(m_resolution);
         m_inv_sample_count = ek::rcp(ScalarFloat(m_sample_count));
         m_inv_resolution   = ek::rcp(ScalarFloat(m_resolution));
         m_resolution_div = m_resolution;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <enoki/special.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
@@ -65,9 +64,6 @@ template <typename Float, typename Spectrum>
 class MicrofacetDistribution {
 public:
     MTS_IMPORT_TYPES()
-
-    static constexpr auto Pi        = ek::Pi<scalar_t<Float>>;
-    static constexpr auto InvSqrtPi = math::InvSqrtPi<scalar_t<Float>>;
 
     /**
      * Create an isotropic microfacet distribution of the specified type
@@ -189,12 +185,16 @@ public:
 
         if (m_type == MicrofacetType::Beckmann) {
             // Beckmann distribution function for Gaussian random surfaces
-            result = ek::exp(-(ek::sqr(m.x() / m_alpha_u) + ek::sqr(m.y() / m_alpha_v)) / cos_theta_2)
-                / (Pi * alpha_uv * ek::sqr(cos_theta_2));
+            result = ek::exp(-(ek::sqr(m.x() / m_alpha_u) +
+                               ek::sqr(m.y() / m_alpha_v)) /
+                             cos_theta_2) /
+                     (ek::Pi<Float> * alpha_uv * ek::sqr(cos_theta_2));
         } else {
             // GGX / Trowbridge-Reitz distribution function
-            result = ek::rcp(Pi * alpha_uv *
-                ek::sqr(ek::sqr(m.x() / m_alpha_u) + ek::sqr(m.y() / m_alpha_v) + ek::sqr(m.z())));
+            result =
+                ek::rcp(ek::Pi<Float> * alpha_uv *
+                        ek::sqr(ek::sqr(m.x() / m_alpha_u) +
+                                ek::sqr(m.y() / m_alpha_v) + ek::sqr(m.z())));
         }
 
         // Prevent potential numerical issues in other stages of the model
@@ -215,7 +215,7 @@ public:
         Float result = eval(m);
 
         if (m_sample_visible)
-            result *= smith_g1(wi, m) * abs_ek::dot(wi, m) / Frame3f::cos_theta(wi);
+            result *= smith_g1(wi, m) * ek::abs_dot(wi, m) / Frame3f::cos_theta(wi);
         else
             result *= Frame3f::cos_theta(m);
 
@@ -238,31 +238,31 @@ public:
 
             // Sample azimuth component (identical for Beckmann & GGX)
             if (is_isotropic()) {
-                std::tie(sin_phi, cos_phi) = ek::sincos((2.f * Pi) * sample.y());
+                std::tie(sin_phi, cos_phi) = ek::sincos((2.f * ek::Pi<Float>) * sample.y());
 
                 alpha_2 = m_alpha_u * m_alpha_u;
             } else {
                 Float ratio  = m_alpha_v / m_alpha_u,
-                      tmp    = ratio * tan((2.f * Pi) * sample.y());
+                      tmp    = ratio * ek::tan((2.f * ek::Pi<Float>) * sample.y());
 
-                cos_phi = ek::rsqrt(fmadd(tmp, tmp, 1));
-                cos_phi = ek::mulsign(cos_phi, ek::abs(sample.y() - .5f) - .25f);
+                cos_phi = ek::rsqrt(ek::fmadd(tmp, tmp, 1));
+                cos_phi = ek::mulsign(cos_phi, ek::abs(sample.y() - 0.5f) - 0.25f);
 
                 sin_phi = cos_phi * tmp;
 
                 alpha_2 = ek::rcp(ek::sqr(cos_phi / m_alpha_u) +
-                              ek::sqr(sin_phi / m_alpha_v));
+                                  ek::sqr(sin_phi / m_alpha_v));
             }
 
             // Sample elevation component
             if (m_type == MicrofacetType::Beckmann) {
                 // Beckmann distribution function for Gaussian random surfaces
-                cos_theta = ek::rsqrt(ek::fnmadd(alpha_2, log(1.f - sample.x()), 1.f));
+                cos_theta = ek::rsqrt(ek::fnmadd(alpha_2, ek::log(1.f - sample.x()), 1.f));
                 cos_theta_2 = ek::sqr(cos_theta);
 
                 // Compute probability density of the sampled position
                 Float cos_theta_3 = ek::max(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = (1.f - sample.x()) / (Pi * m_alpha_u * m_alpha_v * cos_theta_3);
+                pdf = (1.f - sample.x()) / (ek::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3);
             } else {
                 // GGX / Trowbridge-Reitz distribution function
                 Float tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
@@ -272,7 +272,7 @@ public:
                 // Compute probability density of the sampled position
                 Float temp = 1.f + tan_theta_m_2 / alpha_2,
                       cos_theta_3 = ek::max(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = ek::rcp(Pi * m_alpha_u * m_alpha_v * cos_theta_3 * ek::sqr(temp));
+                pdf = ek::rcp(ek::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * ek::sqr(temp));
             }
 
             Float sin_theta = ek::sqrt(1.f - cos_theta_2);
@@ -288,7 +288,7 @@ public:
             Float sin_phi, cos_phi, cos_theta;
 
             // Step 1: stretch wi
-            Vector3f wi_p = normalize(Vector3f(
+            Vector3f wi_p = ek::normalize(Vector3f(
                 m_alpha_u * wi.x(),
                 m_alpha_v * wi.y(),
                 wi.z()
@@ -303,12 +303,12 @@ public:
             // Step 3: rotate & unstretch
             slope = Vector2f(
                 ek::fmsub(cos_phi, slope.x(), sin_phi * slope.y()) * m_alpha_u,
-                fmadd(sin_phi, slope.x(), cos_phi * slope.y()) * m_alpha_v);
+                ek::fmadd(sin_phi, slope.x(), cos_phi * slope.y()) * m_alpha_v);
 
             // Step 4: compute normal & PDF
-            Normal3f m = normalize(Vector3f(-slope.x(), -slope.y(), 1));
+            Normal3f m = ek::normalize(Vector3f(-slope.x(), -slope.y(), 1));
 
-            Float pdf = eval(m) * smith_g1(wi, m) * abs_ek::dot(wi, m) /
+            Float pdf = eval(m) * smith_g1(wi, m) * ek::abs_dot(wi, m) /
                         Frame3f::cos_theta(wi);
 
             return { m, pdf };
@@ -338,8 +338,8 @@ public:
             /* Use a fast and accurate (<0.35% rel. error) rational
                approximation to the shadowing-masking function */
             result = ek::select(a >= 1.6f, 1.f,
-                            (3.535f * a + 2.181f * a_sqr) /
-                            (1.f + 2.276f * a + 2.577f * a_sqr));
+                                (3.535f * a + 2.181f * a_sqr) /
+                                    (1.f + 2.276f * a + 2.577f * a_sqr));
         } else {
             result = 2.f / (1.f + ek::sqrt(1.f + tan_theta_alpha_2));
         }
@@ -369,21 +369,21 @@ public:
 
             /* Search interval -- everything is parameterized
                in the erf() domain */
-            Float maxval = erf(cot_theta_i);
+            Float maxval = ek::erf(cot_theta_i);
 
             /* Start with a good initial guess (analytic solution for
                theta_i = pi/2, which is the most nonlinear case) */
             sample = ek::max(min(sample, 1.f - 1e-6f), 1e-6f);
-            Float x = maxval - (maxval + 1.f) * erf(sqrt(-log(sample.x())));
+            Float x = maxval - (maxval + 1.f) * ek::erf(ek::sqrt(-ek::log(sample.x())));
 
             // Normalization factor for the CDF
-            sample.x() *= 1.f + maxval + InvSqrtPi *
+            sample.x() *= 1.f + maxval + ek::InvSqrtPi<Float> *
                           tan_theta_i * ek::exp(-ek::sqr(cot_theta_i));
 
             // Three Newton iterations
             ENOKI_NOUNROLL for (size_t i = 0; i < 3; ++i) {
-                Float slope = erfinv(x),
-                      value = 1.f + x + InvSqrtPi * tan_theta_i *
+                Float slope = ek::erfinv(x),
+                      value = 1.f + x + ek::InvSqrtPi<Float> * tan_theta_i *
                               ek::exp(-ek::sqr(slope)) - sample.x(),
                       derivative = 1.f - slope * tan_theta_i;
 
@@ -391,12 +391,12 @@ public:
             }
 
             // Now convert back into a slope value
-            return erfinv(Vector2f(x, ek::fmsub(2.f, sample.y(), 1.f)));
+            return ek::erfinv(Vector2f(x, ek::fmsub(2.f, sample.y(), 1.f)));
         } else {
             // Choose a projection direction and re-scale the sample
             Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
-            Float s = .5f * (1.f + cos_theta_i);
+            Float s = 0.5f * (1.f + cos_theta_i);
             p.y() = ek::lerp(ek::safe_sqrt(1.f - ek::sqr(p.x())), p.y(), s);
 
             // Project onto chosen side of the hemisphere
@@ -405,7 +405,7 @@ public:
 
             // Convert to slope
             Float sin_theta_i = ek::safe_sqrt(1.f - ek::sqr(cos_theta_i));
-            Float norm = ek::rcp(fmadd(sin_theta_i, y, cos_theta_i * z));
+            Float norm = ek::rcp(ek::fmadd(sin_theta_i, y, cos_theta_i * z));
             return Vector2f(ek::fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
         }
     }
@@ -450,104 +450,105 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
     return os;
 }
 
-template <typename FloatP, typename Spectrum>
-DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
-                                      const Vector<DynamicArray<FloatP>, 3> &wi_,
-                                      ek::scalar_t<FloatP> eta) {
-    using Float     = ek::scalar_t<FloatP>;
-    using FloatX    = DynamicArray<FloatP>;
-    using Vector2fP = Vector<FloatP, 2>;
-    using Vector3fP = Vector<FloatP, 3>;
-    using Normal3fP = Normal<FloatP, 3>;
-    using Vector2fX = Vector<FloatX, 2>;
-    using Vector3fX = Vector<FloatX, 3>;
+// TODO refactoring
+// template <typename FloatP, typename Spectrum>
+// DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
+//                                       const Vector<DynamicArray<FloatP>, 3> &wi_,
+//                                       ek::scalar_t<FloatP> eta) {
+//     using Float     = ek::scalar_t<FloatP>;
+//     using FloatX    = DynamicArray<FloatP>;
+//     using Vector2fP = Vector<FloatP, 2>;
+//     using Vector3fP = Vector<FloatP, 3>;
+//     using Normal3fP = Normal<FloatP, 3>;
+//     using Vector2fX = Vector<FloatX, 2>;
+//     using Vector3fX = Vector<FloatX, 3>;
 
-    if (!distr.sample_visible())
-        Throw("eval_reflectance(): requires visible normal sampling!");
+//     if (!distr.sample_visible())
+//         Throw("eval_reflectance(): requires visible normal sampling!");
 
-    int res = 128;
-    if (eta > 1)
-        res = 32;
-    while (res % FloatP::Size != 0)
-        ++res;
+//     int res = 128;
+//     if (eta > 1)
+//         res = 32;
+//     while (res % FloatP::Size != 0)
+//         ++res;
 
-    FloatX nodes, weights, result;
-    std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
-    set_slices(result, slices(wi_));
+//     FloatX nodes, weights, result;
+//     std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
+//     set_slices(result, slices(wi_));
 
-    Vector2fX nodes_2    = meshgrid(nodes, nodes),
-              weights_2  = meshgrid(weights, weights);
+//     Vector2fX nodes_2    = ek::meshgrid(nodes, nodes),
+//               weights_2  = ek::meshgrid(weights, weights);
 
-    for (size_t i = 0; i < slices(wi_); ++i) {
-        auto wi      = slice(wi_, i);
-        FloatP accum = ek::zero<FloatP>();
+//     for (size_t i = 0; i < slices(wi_); ++i) {
+//         auto wi      = slice(wi_, i);
+//         FloatP accum = ek::zero<FloatP>();
 
-        for (size_t j = 0; j < packets(nodes_2); ++j) {
-            Vector2fP node(packet(nodes_2, j)),
-                      weight(packet(weights_2, j));
-            node = fmadd(node, .5f, .5f);
+//         for (size_t j = 0; j < packets(nodes_2); ++j) {
+//             Vector2fP node(packet(nodes_2, j)),
+//                       weight(packet(weights_2, j));
+//             node = ek::fmadd(node, 0.5f, 0.5f);
 
-            Normal3fP m = std::get<0>(distr.sample(wi, node));
-            Vector3fP wo = reflect(Vector3fP(wi), m);
-            FloatP f = std::get<0>(fresnel(ek::dot(wi, m), FloatP(eta)));
-            FloatP smith = distr.smith_g1(wo, m) * f;
-            smith[wo.z() <= 0.f || wi.z() <= 0.f] = 0.f;
+//             Normal3fP m = std::get<0>(distr.sample(wi, node));
+//             Vector3fP wo = reflect(Vector3fP(wi), m);
+//             FloatP f = std::get<0>(fresnel(ek::dot(wi, m), FloatP(eta)));
+//             FloatP smith = distr.smith_g1(wo, m) * f;
+//             smith[wo.z() <= 0.f || wi.z() <= 0.f] = 0.f;
 
-            accum += smith * ek::hprod(weight);
-        }
-        slice(result, i) = ek::hsum(accum) * .25f;
-    }
-    return result;
-}
+//             accum += smith * ek::hprod(weight);
+//         }
+//         slice(result, i) = ek::hsum(accum) * 0.25f;
+//     }
+//     return result;
+// }
 
-template <typename FloatP, typename Spectrum>
-DynamicArray<FloatP> eval_transmittance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
-                                        const Vector<DynamicArray<FloatP>, 3> &wi_,
-                                        ek::scalar_t<FloatP> eta) {
-    using Float     = ek::scalar_t<FloatP>;
-    using FloatX    = DynamicArray<FloatP>;
-    using Vector2fP = Vector<FloatP, 2>;
-    using Vector3fP = Vector<FloatP, 3>;
-    using Normal3fP = Normal<FloatP, 3>;
-    using Vector2fX = Vector<FloatX, 2>;
-    using Vector3fX = Vector<FloatX, 3>;
+// template <typename FloatP, typename Spectrum>
+// DynamicArray<FloatP> eval_transmittance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
+//                                         const Vector<DynamicArray<FloatP>, 3> &wi_,
+//                                         ek::scalar_t<FloatP> eta) {
+//     using Float     = ek::scalar_t<FloatP>;
+//     using FloatX    = DynamicArray<FloatP>;
+//     using Vector2fP = Vector<FloatP, 2>;
+//     using Vector3fP = Vector<FloatP, 3>;
+//     using Normal3fP = Normal<FloatP, 3>;
+//     using Vector2fX = Vector<FloatX, 2>;
+//     using Vector3fX = Vector<FloatX, 3>;
 
-    if (!distr.sample_visible())
-        Throw("eval_transmittance(): requires visible normal sampling!");
+//     if (!distr.sample_visible())
+//         Throw("eval_transmittance(): requires visible normal sampling!");
 
-    int res = 128;
-    if (eta > 1)
-        res = 32;
-    while (res % FloatP::Size != 0)
-        ++res;
+//     int res = 128;
+//     if (eta > 1)
+//         res = 32;
+//     while (res % FloatP::Size != 0)
+//         ++res;
 
-    FloatX nodes, weights, result;
-    std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
-    set_slices(result, slices(wi_));
+//     FloatX nodes, weights, result;
+//     std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
+//     set_slices(result, slices(wi_));
 
-    Vector2fX nodes_2    = meshgrid(nodes, nodes),
-              weights_2  = meshgrid(weights, weights);
+//     Vector2fX nodes_2    = ek::meshgrid(nodes, nodes),
+//               weights_2  = ek::meshgrid(weights, weights);
 
-    for (size_t i = 0; i < slices(wi_); ++i) {
-        auto wi      = slice(wi_, i);
-        FloatP accum = ek::zero<FloatP>();
+//     for (size_t i = 0; i < slices(wi_); ++i) {
+//         auto wi      = slice(wi_, i);
+//         FloatP accum = ek::zero<FloatP>();
 
-        for (size_t j = 0; j < packets(nodes_2); ++j) {
-            Vector2fP node(packet(nodes_2, j)),
-                      weight(packet(weights_2, j));
-            node = fmadd(node, .5f, .5f);
+//         for (size_t j = 0; j < packets(nodes_2); ++j) {
+//             Vector2fP node(packet(nodes_2, j)),
+//                       weight(packet(weights_2, j));
+//             node = ek::fmadd(node, 0.5f, 0.5f);
 
-            Normal3fP m = std::get<0>(distr.sample(wi, node));
-            auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi, m), FloatP(eta));
-            Vector3fP wo = refract(Vector3fP(wi), m, cos_theta_t, eta_ti);
-            FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
-            smith[wo.z() * wi.z() >= 0.f] = 0.f;
+//             Normal3fP m = std::get<0>(distr.sample(wi, node));
+//             auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi, m), FloatP(eta));
+//             Vector3fP wo = refract(Vector3fP(wi), m, cos_theta_t, eta_ti);
+//             FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
+//             smith[wo.z() * wi.z() >= 0.f] = 0.f;
 
-            accum += smith * ek::hprod(weight);
-        }
-        slice(result, i) = ek::hsum(accum) * .25f;
-    }
-    return result;
-}
+//             accum += smith * ek::hprod(weight);
+//         }
+//         slice(result, i) = ek::hsum(accum) * 0.25f;
+//     }
+//     return result;
+// }
 
 NAMESPACE_END(mitsuba)

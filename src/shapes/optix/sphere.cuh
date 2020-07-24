@@ -66,7 +66,7 @@ extern "C" __global__ void __closesthit__sphere() {
         /* Compute and store information describing the intersection. This is
            very similar to Sphere::compute_surface_interaction() */
 
-        Vector3f ns = normalize(ray(ray.maxt) - sphere->center);
+        Vector3f ns = ek::normalize(ray(ray.maxt) - sphere->center);
 
         if (sphere->flip_normals)
             ns = -ns;

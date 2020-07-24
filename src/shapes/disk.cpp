@@ -89,7 +89,7 @@ public:
         m_du = ek::norm(dp_du);
         m_dv = ek::norm(dp_dv);
 
-        ScalarNormal3f n = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        ScalarNormal3f n = ek::normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, n);
 
         m_inv_surface_area = 1.f / surface_area();
@@ -106,7 +106,7 @@ public:
 
     ScalarFloat surface_area() const override {
         // First compute height of the ellipse
-        ScalarFloat h = ek::sqrt(sqr(m_dv) - sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
+        ScalarFloat h = ek::sqrt(ek::sqr(m_dv) - ek::sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
         return ek::Pi<ScalarFloat> * m_du * h;
     }
 

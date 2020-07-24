@@ -91,7 +91,7 @@ public:
         m_cos_cutoff_angle = cos(m_cutoff_angle);
         m_cos_beam_width = cos(m_beam_width);
         Assert(m_cutoff_angle >= m_beam_width);
-        m_uv_factor = tan(m_cutoff_angle);
+        m_uv_factor = ek::tan(m_cutoff_angle);
     }
 
     UnpolarizedSpectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
@@ -99,7 +99,7 @@ public:
         si.wavelengths = wavelengths;
         UnpolarizedSpectrum result = m_intensity->eval(si, active);
 
-        Vector3f local_dir = normalize(d);
+        Vector3f local_dir = ek::normalize(d);
         Float cos_theta = local_dir.z();
 
         if (m_texture->is_spatially_varying()) {

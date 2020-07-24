@@ -291,9 +291,9 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
                                   const Vector3 &basis_current,
                                   const Vector3 &basis_target) {
     Float theta = unit_angle(normalize(basis_current),
-                             normalize(basis_target));
+                             ek::normalize(basis_target));
 
-    ek::masked(theta, ek::dot(forward, cross(basis_current, basis_target)) < 0) *= -1.f;
+    ek::masked(theta, ek::dot(forward, ek::cross(basis_current, basis_target)) < 0) *= -1.f;
     return rotator(theta);
 }
 

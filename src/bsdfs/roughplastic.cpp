@@ -197,7 +197,7 @@ public:
 
         BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Spectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return { bs, result };
 
         Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
@@ -218,7 +218,7 @@ public:
 
         bs.eta = 1.f;
 
-        if (any_or<true>(sample_specular)) {
+        if (ek::any_or<true>(sample_specular)) {
             MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
@@ -227,7 +227,7 @@ public:
             ek::masked(bs.sampled_type, sample_specular) = +BSDFFlags::GlossyReflection;
         }
 
-        if (any_or<true>(sample_diffuse)) {
+        if (ek::any_or<true>(sample_diffuse)) {
             ek::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
             ek::masked(bs.sampled_component, sample_diffuse) = 1;
             ek::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
@@ -255,12 +255,12 @@ public:
         MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
 
         UnpolarizedSpectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return result;
 
         if (has_specular) {
             // Calculate the reflection half-vector
-            Vector3f H = normalize(wo + si.wi);
+            Vector3f H = ek::normalize(wo + si.wi);
 
             // Evaluate the microfacet normal distribution
             Float D = distr.eval(H);
@@ -321,7 +321,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return 0.f;
 
         Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
@@ -337,7 +337,7 @@ public:
             prob_specular = prob_specular / (prob_specular + prob_diffuse);
         prob_diffuse = 1.f - prob_specular;
 
-        Vector3f H = normalize(wo + si.wi);
+        Vector3f H = ek::normalize(wo + si.wi);
 
         MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
         Float result = 0.f;

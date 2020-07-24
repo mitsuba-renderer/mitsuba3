@@ -226,7 +226,7 @@ public:
 
         BSDFSample3f bs = ek::zero<BSDFSample3f>();
         Spectrum value(0.f);
-        if (unlikely(none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
+        if (unlikely(ek::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::DeltaReflection)))
             return { bs, value };
 
         bs.sampled_component = 0;
@@ -257,10 +257,10 @@ public:
             /* The Stokes reference frame vector of this matrix lies in the plane
                of reflection. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in = normalize(cross(n, -wi_hat)),
-                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
-                     s_axis_out = normalize(cross(n, wo_hat)),
-                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+            Vector3f s_axis_in = ek::normalize(ek::cross(n, -wi_hat)),
+                     p_axis_in = ek::normalize(ek::cross(-wi_hat, s_axis_in)),
+                     s_axis_out = ek::normalize(ek::cross(n, wo_hat)),
+                     p_axis_out = ek::normalize(ek::cross(wo_hat, s_axis_out));
 
             /* Rotate in/out reference vector of M s.t. it aligns with the implicit
                Stokes bases of -wi_hat & wo_hat. */

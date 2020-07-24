@@ -141,7 +141,7 @@ public:
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
                              safe_acos(v.y()) * ek::InvPi<Float>);
-        uv -= floor(uv);
+        uv -= ek::floor(uv);
 
         return unpolarized<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
     }
@@ -168,7 +168,7 @@ public:
         Float dist = 2.f * m_bsphere.radius;
 
         Float inv_sin_theta =
-            safe_ek::rsqrt(max(sqr(d.x()) + sqr(d.z()), sqr(ek::Epsilon<Float>)));
+            safe_ek::rsqrt(max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
 
         d = m_world_transform->eval(it.time, active).transform_affine(d);
 
@@ -177,7 +177,7 @@ public:
         ds.n      = -d;
         ds.uv     = uv;
         ds.time   = it.time;
-        ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * sqr(ek::Pi<Float>))), 0.f);
+        ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))), 0.f);
         ds.delta  = false;
         ds.object = this;
         ds.d      = d;
@@ -200,11 +200,11 @@ public:
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,
                              safe_acos(d.y()) * ek::InvPi<Float>);
-        uv -= floor(uv);
+        uv -= ek::floor(uv);
 
         Float inv_sin_theta =
-            safe_ek::rsqrt(max(sqr(d.x()) + sqr(d.z()), sqr(ek::Epsilon<Float>)));
-        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * sqr(ek::Pi<Float>)));
+            safe_ek::rsqrt(max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -291,13 +291,13 @@ protected:
             s01 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v01), wavelengths);
             s11 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v11), wavelengths);
 
-            s0  = fmadd(w0.x(), s00, w1.x() * s10);
-            s1  = fmadd(w0.x(), s01, w1.x() * s11);
-            f0  = fmadd(w0.x(), v00.w(), w1.x() * v10.w());
-            f1  = fmadd(w0.x(), v01.w(), w1.x() * v11.w());
+            s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
+            s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
+            f0  = ek::fmadd(w0.x(), v00.w(), w1.x() * v10.w());
+            f1  = ek::fmadd(w0.x(), v01.w(), w1.x() * v11.w());
 
-            s   = fmadd(w0.y(), s0, w1.y() * s1);
-            f   = fmadd(w0.y(), f0, w1.y() * f1);
+            s   = ek::fmadd(w0.y(), s0, w1.y() * s1);
+            f   = ek::fmadd(w0.y(), f0, w1.y() * f1);
 
             /// Evaluate the whitepoint spectrum
             SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
@@ -307,9 +307,9 @@ protected:
             return s * wp * f * m_scale;
         } else {
             ENOKI_MARK_USED(wavelengths);
-            Vector4f v0 = fmadd(w0.x(), v00, w1.x() * v10),
-                     v1 = fmadd(w0.x(), v01, w1.x() * v11),
-                     v  = fmadd(w0.y(), v0, w1.y() * v1);
+            Vector4f v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
+                     v1 = ek::fmadd(w0.x(), v01, w1.x() * v11),
+                     v  = ek::fmadd(w0.y(), v0, w1.y() * v1);
 
             if constexpr (is_monochromatic_v<Spectrum>)
                 return ek::head<1>(v) * m_scale;

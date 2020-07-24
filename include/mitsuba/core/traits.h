@@ -93,14 +93,6 @@ template <> struct underlying<void> {
     using type = void;
 };
 
-// template <typename T> struct underlying<ek::DynamicArray<T>> {
-//     using type = typename underlying<T>::type;
-// };
-
-// template <typename T> struct underlying<ek::DynamicArrayReference<T>> {
-//     using type = typename underlying<T>::type;
-// };
-
 template <typename T> struct underlying<ek::detail::MaskedArray<T>> {
     using type = typename underlying<T>::type;
 };

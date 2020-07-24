@@ -762,7 +762,7 @@ protected:
                       v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
                       v1 = lookup<Dim - 1>(i1, param_strides, param_weight, active);
 
-                return fmadd(v0, w0, v1 * w1);
+                return ek::fmadd(v0, w0, v1 * w1);
             } else {
                 ENOKI_MARK_USED(param_strides);
                 ENOKI_MARK_USED(param_weight);
@@ -1078,7 +1078,7 @@ protected:
                   v0 = lookup<Dim - 1>(data, i0, size, param_weight, active),
                   v1 = lookup<Dim - 1>(data, i1, size, param_weight, active);
 
-            return fmadd(v0, w0, v1 * w1);
+            return ek::fmadd(v0, w0, v1 * w1);
         } else {
             ENOKI_MARK_USED(param_weight);
             ENOKI_MARK_USED(size);

@@ -183,7 +183,7 @@ public:
                     n[i] = strtof(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                n = normalize(m_to_world.transform_affine(n));
+                n = ek::normalize(m_to_world.transform_affine(n));
                 if (unlikely(!all(ek::isfinite(n))))
                     fail("mesh contains invalid vertex normal data");
                 normals.push_back(n);

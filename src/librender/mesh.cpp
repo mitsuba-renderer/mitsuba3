@@ -221,7 +221,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
             InputVector3f side_0 = v[1] - v[0],
                           side_1 = v[2] - v[0];
-            InputNormal3f n = cross(side_0, side_1);
+            InputNormal3f n = ek::cross(side_0, side_1);
             InputFloat length_sqr = ek::squared_norm(n);
             if (likely(length_sqr > 0)) {
                 n *= ek::rsqrt(length_sqr);
@@ -229,7 +229,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                 // Use Enoki to compute the face angles at the same time
                 auto side1 = transpose(Array<Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
                 auto side2 = transpose(Array<Packet<InputFloat, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
-                InputVector3f face_angles = unit_angle(normalize(side1), normalize(side2));
+                InputVector3f face_angles = unit_angle(normalize(side1), ek::normalize(side2));
 
                 for (size_t j = 0; j < 3; ++j)
                     normals[fi[j]] += n * face_angles[j];
@@ -259,16 +259,16 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                           vertex_position(fi[1]),
                           vertex_position(fi[2]) };
 
-        auto n = normalize(cross(v[1] - v[0], v[2] - v[0]));
+        auto n = ek::normalize(ek::cross(v[1] - v[0], v[2] - v[0]));
 
         Vector3f normals = ek::zero<Vector3f>(m_vertex_count);
         for (int i = 0; i < 3; ++i) {
-            auto d0 = normalize(v[(i + 1) % 3] - v[i]);
-            auto d1 = normalize(v[(i + 2) % 3] - v[i]);
+            auto d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
+            auto d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
             auto face_angle = safe_acos(ek::dot(d0, d1));
             scatter_add(normals, n * face_angle, fi[i]);
         }
-        normals = normalize(normals);
+        normals = ek::normalize(normals);
 
         auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
         for (size_t i = 0; i < 3; ++i)
@@ -387,10 +387,10 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
-        ps.n = normalize(n0 * (1.f - b.x() - b.y())
+        ps.n = ek::normalize(n0 * (1.f - b.x() - b.y())
                        + n1 * b.x() + n2 * b.y());
     } else {
-        ps.n = normalize(cross(e0, e1));
+        ps.n = ek::normalize(ek::cross(e0, e1));
     }
 
     return ps;
@@ -408,7 +408,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     PreliminaryIntersection3f pi = m_parameterization->ray_intersect_preliminary(ray, active);
 
-    if (none_or<false>(pi.is_valid()))
+    if (ek::none_or<false>(pi.is_valid()))
         return SurfaceInteraction3f();
 
     pi.shape = this;
@@ -486,7 +486,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
 
     // Face normal
-    si.n = normalize(cross(dp0, dp1));
+    si.n = ek::normalize(ek::cross(dp0, dp1));
 
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
@@ -518,7 +518,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
-        si.sh_frame.n = normalize(n0 * b0 + n1 * b1 + n2 * b2);
+        si.sh_frame.n = ek::normalize(n0 * b0 + n1 * b1 + n2 * b2);
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
         if (has_flag(flags, HitComputeFlags::dNSdUV)) {

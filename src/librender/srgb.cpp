@@ -77,7 +77,7 @@ Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
         float model_eval =
             srgb_model_eval<Spectrum>(coeff, Wavelength(lambda)).x();
 
-        accum = fmadd(weight_v, model_eval, accum);
+        accum = ek::fmadd(weight_v, model_eval, accum);
     }
 
     Matrix3f xyz_to_srgb(

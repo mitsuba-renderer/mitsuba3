@@ -62,7 +62,7 @@ extern "C" __global__ void __closesthit__mesh() {
         Vector3f dp0 = p1 - p0,
                  dp1 = p2 - p0;
 
-        Vector3f ng = normalize(cross(dp0, dp1));
+        Vector3f ng = ek::normalize(cross(dp0, dp1));
 
         Vector3f ns = ng;
 
@@ -73,7 +73,7 @@ extern "C" __global__ void __closesthit__mesh() {
                      n1 =  load_3d(mesh->vertex_normals, face.y()),
                      n2 =  load_3d(mesh->vertex_normals, face.z());
 
-            ns = normalize(n0 * b0 + n1 * b1 + n2 * b2);
+            ns = ek::normalize(n0 * b0 + n1 * b1 + n2 * b2);
 
             if (params.has_dns_duv()) {
                 Vector3f N = b0 * n1 + b1 * n2 + b2 * n0;

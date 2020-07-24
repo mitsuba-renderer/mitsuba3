@@ -243,7 +243,7 @@ public:
                         if (has_vertex_normals) {
                             InputNormal3f n = ek::load<InputNormal3f>(
                                 target + sizeof(InputFloat) * 3);
-                            n = normalize(m_to_world.transform_affine(n));
+                            n = ek::normalize(m_to_world.transform_affine(n));
                             store_unaligned(normal_ptr, n);
                             normal_ptr += 3;
                         }

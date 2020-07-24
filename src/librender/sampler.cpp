@@ -44,7 +44,7 @@ Sampler<Float, Spectrum>::next_2d(Mask) {
 
 MTS_VARIANT void
 Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefront) {
-    if constexpr (is_scalar_v<Float>)
+    if constexpr (!ek::is_array_v<Float>)
         Throw("set_samples_per_wavefront should not be used in scalar variants of the renderer.");
 
     m_samples_per_wavefront = samples_per_wavefront;
@@ -86,7 +86,7 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
 
     uint64_t seed_value = m_base_seed + seed_offset;
 
-    if constexpr (is_dynamic_array_v<Float>) {
+    if constexpr (ek::is_array_v<Float>) {
         UInt64 idx = ek::arange<UInt64>(wavefront_size);
         m_rng.seed(sample_tea_64(UInt64(seed_value), idx),
                    sample_tea_64(idx, UInt64(seed_value)));

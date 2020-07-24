@@ -118,12 +118,12 @@ public:
         // ----------------------- Visible emitters -----------------------
         if (!m_hide_emitters) {
             EmitterPtr emitter_vis = si.emitter(scene, active);
-            if (any_or<true>(ek::neq(emitter_vis, nullptr)))
+            if (ek::any_or<true>(ek::neq(emitter_vis, nullptr)))
                 result += emitter_vis->eval(si, active);
         }
 
         active &= si.is_valid();
-        if (none_or<false>(active))
+        if (ek::none_or<false>(active))
             return { result, valid_ray };
 
         // ----------------------- Emitter sampling -----------------------
@@ -132,7 +132,7 @@ public:
         BSDFPtr bsdf = si.bsdf(ray);
         Mask sample_emitter = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
-        if (any_or<true>(sample_emitter)) {
+        if (ek::any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
                 Mask active_e = sample_emitter;
                 DirectionSample3f ds;
@@ -140,7 +140,7 @@ public:
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
                 active_e &= ek::neq(ds.pdf, 0.f);
-                if (none_or<false>(active_e))
+                if (ek::none_or<false>(active_e))
                     continue;
 
                 // Query the BSDF for that emitter-sampled direction
@@ -176,7 +176,7 @@ public:
             EmitterPtr emitter = si_bsdf.emitter(scene, active_b);
             active_b &= ek::neq(emitter, nullptr);
 
-            if (any_or<true>(active_b)) {
+            if (ek::any_or<true>(active_b)) {
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 

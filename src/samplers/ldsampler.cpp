@@ -68,13 +68,13 @@ public:
     LowDiscrepancySampler (const Properties &props = Properties()) : Base(props) {
         // Make sure sample_count is power of two and square (e.g. 4, 16, 64, 256, 1024, ...)
         ScalarUInt32 res = 2;
-        while (sqr(res) < m_sample_count)
+        while (ek::sqr(res) < m_sample_count)
             res = math::round_to_power_of_two(++res);
 
-        if (m_sample_count != sqr(res))
-            Log(Warn, "Sample count should be square and power of two, rounding to %i", sqr(res));
+        if (m_sample_count != ek::sqr(res))
+            Log(Warn, "Sample count should be square and power of two, rounding to %i", ek::sqr(res));
 
-        m_sample_count = sqr(res);
+        m_sample_count = ek::sqr(res);
     }
 
     ref<Sampler<Float, Spectrum>> clone() override {

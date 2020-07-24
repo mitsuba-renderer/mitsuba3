@@ -388,7 +388,7 @@ public:
         Float w1 = x - Float(index),
               w0 = 1.f - w1;
 
-        return fmadd(w0, y0, w1 * y1);
+        return ek::fmadd(w0, y0, w1 * y1);
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
@@ -456,7 +456,7 @@ public:
               t_const  = value / y0,
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
-        return fmadd(Float(index) + t, m_interval_size, m_range.x());
+        return ek::fmadd(Float(index) + t, m_interval_size, m_range.x());
     }
 
     /**
@@ -750,7 +750,7 @@ public:
               t_const  = value / y0,
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
-        return fmadd(t, w, x0);
+        return ek::fmadd(t, w, x0);
     }
 
     /**

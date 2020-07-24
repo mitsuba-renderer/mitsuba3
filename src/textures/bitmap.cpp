@@ -324,7 +324,7 @@ public:
                 Point2f uv = m_transform.transform_affine(si.uv);
 
                 // Scale to bitmap resolution and apply shift
-                uv = fmadd(uv, m_resolution, -.5f);
+                uv = ek::fmadd(uv, m_resolution, -.5f);
 
                 // Integer pixel positions for bilinear interpolation
                 Vector2i uv_i = floor2int<Vector2i>(uv);
@@ -351,8 +351,8 @@ public:
                 Float f11 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.w(), active));
 
                 // Partials w.r.t. pixel coordinate x and y
-                Vector2f df_xy{ fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
-                                fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
+                Vector2f df_xy{ ek::fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
+                                ek::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
 
                 // Partials w.r.t. u and v (include uv transform by transpose multiply)
                 Matrix uv_tm = m_transform.matrix;
@@ -414,7 +414,7 @@ public:
             using Int24 = Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
-            uv = fmadd(uv, m_resolution, -.5f);
+            uv = ek::fmadd(uv, m_resolution, -.5f);
 
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i = floor2int<Vector2i>(uv);
@@ -445,15 +445,15 @@ public:
                 c01 = srgb_model_eval<UnpolarizedSpectrum>(v01, si.wavelengths);
                 c11 = srgb_model_eval<UnpolarizedSpectrum>(v11, si.wavelengths);
 
-                c0 = fmadd(w0.x(), c00, w1.x() * c10);
-                c1 = fmadd(w0.x(), c01, w1.x() * c11);
+                c0 = ek::fmadd(w0.x(), c00, w1.x() * c10);
+                c1 = ek::fmadd(w0.x(), c01, w1.x() * c11);
 
-                return fmadd(w0.y(), c0, w1.y() * c1);
+                return ek::fmadd(w0.y(), c0, w1.y() * c1);
             } else {
-                StorageType v0 = fmadd(w0.x(), v00, w1.x() * v10),
-                            v1 = fmadd(w0.x(), v01, w1.x() * v11);
+                StorageType v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
+                            v1 = ek::fmadd(w0.x(), v01, w1.x() * v11);
 
-                return fmadd(w0.y(), v0, w1.y() * v1);
+                return ek::fmadd(w0.y(), v0, w1.y() * v1);
             }
         } else {
             // Scale to bitmap resolution, no shift
@@ -529,7 +529,7 @@ public:
             using Int24 = Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
-            Point2f uv = fmadd(pos_, m_resolution, -.5f);
+            Point2f uv = ek::fmadd(pos_, m_resolution, -.5f);
 
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i = floor2int<Vector2i>(uv);
@@ -543,10 +543,10 @@ public:
                   v01 = m_distr2d->pdf(wrap(uv_i + Point2i(0, 1)), active),
                   v11 = m_distr2d->pdf(wrap(uv_i + Point2i(1, 1)), active);
 
-            Float v0 = fmadd(w0.x(), v00, w1.x() * v10),
-                  v1 = fmadd(w0.x(), v01, w1.x() * v11);
+            Float v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
+                  v1 = ek::fmadd(w0.x(), v01, w1.x() * v11);
 
-            return fmadd(w0.y(), v0, w1.y() * v1) * ek::hprod(m_resolution);
+            return ek::fmadd(w0.y(), v0, w1.y() * v1) * ek::hprod(m_resolution);
         } else {
             // Scale to bitmap resolution, no shift
             Point2f uv = pos_ * m_resolution;

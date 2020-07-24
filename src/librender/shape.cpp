@@ -310,7 +310,7 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
     ds.dist = ek::sqrt(dist_squared);
     ds.d /= ds.dist;
 
-    Float dp = abs_ek::dot(ds.d, ds.n);
+    Float dp = ek::abs_dot(ds.d, ds.n);
     ds.pdf *= ek::select(ek::neq(dp, 0.f), dist_squared / dp, 0.f);
     ds.object = (const Object *) this;
 
@@ -323,7 +323,7 @@ MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*
     MTS_MASK_ARGUMENT(active);
 
     Float pdf = pdf_position(ds, active),
-           dp = abs_ek::dot(ds.d, ds.n);
+           dp = ek::abs_dot(ds.d, ds.n);
 
     pdf *= ek::select(ek::neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
 

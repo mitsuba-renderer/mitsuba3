@@ -151,8 +151,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
-        sh_frame.s = normalize(ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, dp_du), dp_du));
-        sh_frame.t = cross(sh_frame.n, sh_frame.s);
+        sh_frame.s = ek::normalize(ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, dp_du), dp_du));
+        sh_frame.t = ek::cross(sh_frame.n, sh_frame.s);
     }
 
     /// Convert a local shading-space vector into world space
@@ -224,8 +224,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
               t_y = (d - ek::dot(n, ray.o_y)) / ek::dot(n, ray.d_y);
 
         // Corresponding positions near the surface
-        Vector3f dp_dx = fmadd(ray.d_x, t_x, ray.o_x) - p,
-                 dp_dy = fmadd(ray.d_y, t_y, ray.o_y) - p;
+        Vector3f dp_dx = ek::fmadd(ray.d_x, t_x, ray.o_x) - p,
+                 dp_dy = ek::fmadd(ray.d_y, t_y, ray.o_y) - p;
 
         // Solve a least squares problem to turn this into UV coordinates
         Float a00 = ek::dot(dp_du, dp_du),

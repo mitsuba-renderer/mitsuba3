@@ -85,7 +85,7 @@ public:
 
         ScalarVector3f dp_du = m_to_world * ScalarVector3f(2.f, 0.f, 0.f);
         ScalarVector3f dp_dv = m_to_world * ScalarVector3f(0.f, 2.f, 0.f);
-        ScalarNormal3f normal = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        ScalarNormal3f normal = ek::normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(dp_du, dp_dv, normal);
 
         m_inv_surface_area = ek::rcp(surface_area());
@@ -101,7 +101,7 @@ public:
     }
 
     ScalarFloat surface_area() const override {
-        return ek::norm(cross(m_frame.s, m_frame.t));
+        return ek::norm(ek::cross(m_frame.s, m_frame.t));
     }
 
     // =============================================================
@@ -199,8 +199,8 @@ public:
         si.sh_frame.n = m_frame.n;
         si.dp_du      = m_frame.s;
         si.dp_dv      = m_frame.t;
-        si.uv         = Point2f(fmadd(pi.prim_uv.x(), .5f, .5f),
-                                fmadd(pi.prim_uv.y(), .5f, .5f));
+        si.uv         = Point2f(ek::fmadd(pi.prim_uv.x(), .5f, .5f),
+                                ek::fmadd(pi.prim_uv.y(), .5f, .5f));
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
 

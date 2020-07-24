@@ -28,8 +28,8 @@ add_library(mitsuba-core-obj OBJECT
   bitmap.cpp           ${INC_DIR}/bitmap.h
                        ${INC_DIR}/bsphere.h
   class.cpp            ${INC_DIR}/class.h
-#                        ${INC_DIR}/distr_1d.h
-#                        ${INC_DIR}/distr_2d.h
+                       ${INC_DIR}/distr_1d.h
+                       ${INC_DIR}/distr_2d.h
   dstream.cpp          ${INC_DIR}/dstream.h
   filesystem.cpp       ${INC_DIR}/filesystem.h
   formatter.cpp        ${INC_DIR}/formatter.h

@@ -101,7 +101,7 @@ public:
             Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius, d,
                   time, wavelengths),
             unpolarized<Spectrum>(weight) *
-                (ek::Pi<Float> * sqr(m_bsphere.radius)));
+                (ek::Pi<Float> * ek::sqr(m_bsphere.radius)));
     }
 
     std::pair<DirectionSample3f, Spectrum>

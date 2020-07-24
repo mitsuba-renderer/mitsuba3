@@ -187,7 +187,7 @@ public:
 
         // Scale so that irradiance at z=1 is correct
         spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) *
-                sqr(ek::rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
+                ek::sqr(ek::rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
 
         return { ds, unpolarized<Spectrum>(spec & active) };
     }

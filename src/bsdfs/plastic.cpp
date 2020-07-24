@@ -192,7 +192,7 @@ public:
 
         BSDFSample3f bs = ek::zero<BSDFSample3f>();
         UnpolarizedSpectrum result(0.f);
-        if (unlikely((!has_specular && !has_diffuse) || none_or<false>(active)))
+        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return { bs, result };
 
         // Determine which component should be sampled
@@ -213,7 +213,7 @@ public:
         bs.eta = 1.f;
         bs.pdf = 0.f;
 
-        if (any_or<true>(sample_specular)) {
+        if (ek::any_or<true>(sample_specular)) {
             ek::masked(bs.wo, sample_specular) = reflect(si.wi);
             ek::masked(bs.pdf, sample_specular) = prob_specular;
             ek::masked(bs.sampled_component, sample_specular) = 0;
@@ -225,7 +225,7 @@ public:
             result[sample_specular] = value;
         }
 
-        if (any_or<true>(sample_diffuse)) {
+        if (ek::any_or<true>(sample_diffuse)) {
             ek::masked(bs.wo, sample_diffuse) = warp::square_to_cosine_hemisphere(sample2);
             ek::masked(bs.pdf, sample_diffuse) = prob_diffuse * warp::square_to_cosine_hemisphere_pdf(bs.wo);
             ek::masked(bs.sampled_component, sample_diffuse) = 1;
@@ -252,7 +252,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!has_diffuse || none_or<false>(active)))
+        if (unlikely(!has_diffuse || ek::none_or<false>(active)))
             return 0.f;
 
         Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
@@ -276,7 +276,7 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::DiffuseReflection, 1) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::DiffuseReflection, 1) || ek::none_or<false>(active)))
             return 0.f;
 
         Float prob_diffuse = 1.f;
@@ -304,16 +304,15 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothPlastic[" << std::endl
-            << "  diffuse_reflectance = "      << m_diffuse_reflectance               << "," << std::endl;
-
+            << "  diffuse_reflectance = "      << m_diffuse_reflectance      << "," << std::endl;
         if (m_specular_reflectance)
-            oss << "  specular_reflectance = "     << m_specular_reflectance              << "," << std::endl;
+            oss << "  specular_reflectance = " << m_specular_reflectance     << "," << std::endl;
 
-        oss << "  specular_sampling_weight = " << m_specular_sampling_weight          << "," << std::endl
-            << "  nonlinear = "                << (int) m_nonlinear                   << "," << std::endl
-            << "  eta = "                      << m_eta                               << "," << std::endl
-            << "  fdr_int = "                  << m_fdr_int                           << "," << std::endl
-            << "  fdr_ext = "                  << m_fdr_ext                           << std::endl
+        oss << "  specular_sampling_weight = " << m_specular_sampling_weight << "," << std::endl
+            << "  nonlinear = "                << (int) m_nonlinear          << "," << std::endl
+            << "  eta = "                      << m_eta                      << "," << std::endl
+            << "  fdr_int = "                  << m_fdr_int                  << "," << std::endl
+            << "  fdr_ext = "                  << m_fdr_ext                         << std::endl
             << "]";
         return oss.str();
     }

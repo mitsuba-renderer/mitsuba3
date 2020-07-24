@@ -81,14 +81,14 @@ public:
         };
 
         m_resolution = 2;
-        while (sqr(m_resolution) < m_sample_count || !is_prime(m_resolution))
+        while (ek::sqr(m_resolution) < m_sample_count || !is_prime(m_resolution))
             m_resolution++;
 
-        if (m_sample_count != sqr(m_resolution))
+        if (m_sample_count != ek::sqr(m_resolution))
             Log(Warn, "Sample count should be the square of a prime"
-                "number, rounding to %i", sqr(m_resolution));
+                "number, rounding to %i", ek::sqr(m_resolution));
 
-        m_sample_count = sqr(m_resolution);
+        m_sample_count = ek::sqr(m_resolution);
         m_resolution_div = m_resolution;
     }
 

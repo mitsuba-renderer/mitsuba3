@@ -132,10 +132,10 @@ public:
             m_to_object.transform_affine(ray), pi, flags, active);
 
         si.p = m_to_world.transform_affine(si.p);
-        si.n = normalize(m_to_world.transform_affine(si.n));
+        si.n = ek::normalize(m_to_world.transform_affine(si.n));
 
         if (likely(has_flag(flags, HitComputeFlags::ShadingFrame))) {
-            si.sh_frame.n = normalize(m_to_world.transform_affine(si.sh_frame.n));
+            si.sh_frame.n = ek::normalize(m_to_world.transform_affine(si.sh_frame.n));
             si.initialize_sh_frame();
         }
 
@@ -149,7 +149,7 @@ public:
 
             // Determine the length of the transformed normal before it was re-normalized
             Normal3f tn = m_to_world.transform_affine(
-                normalize(m_to_object.transform_affine(n)));
+                ek::normalize(m_to_object.transform_affine(n)));
             Float inv_len = ek::rcp(ek::norm(tn));
             tn *= inv_len;
 

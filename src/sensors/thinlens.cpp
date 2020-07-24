@@ -175,7 +175,7 @@ public:
         Point3f focus_p = near_p * (m_focus_distance / near_p.z());
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = normalize(Vector3f(focus_p - aperture_p));
+        Vector3f d = ek::normalize(Vector3f(focus_p - aperture_p));
         Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
@@ -214,7 +214,7 @@ public:
                 focus_p_y = (near_p + m_dy) * f_dist;
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = normalize(Vector3f(focus_p - aperture_p));
+        Vector3f d = ek::normalize(Vector3f(focus_p - aperture_p));
         Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
@@ -226,8 +226,8 @@ public:
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = trafo * normalize(Vector3f(focus_p_x - aperture_p));
-        ray.d_y = trafo * normalize(Vector3f(focus_p_y - aperture_p));
+        ray.d_x = trafo * ek::normalize(Vector3f(focus_p_x - aperture_p));
+        ray.d_y = trafo * ek::normalize(Vector3f(focus_p_y - aperture_p));
         ray.has_differentials = true;
 
         return std::make_pair(ray, wav_weight);

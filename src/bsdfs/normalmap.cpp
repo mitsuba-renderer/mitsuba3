@@ -147,12 +147,12 @@ public:
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
-        Normal3f n = fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
+        Normal3f n = ek::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
 
         Frame3f result;
-        result.n = normalize(n);
-        result.s = normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
-        result.t = cross(result.n, result.s);
+        result.n = ek::normalize(n);
+        result.s = ek::normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
+        result.t = ek::cross(result.n, result.s);
         return result;
     }
 

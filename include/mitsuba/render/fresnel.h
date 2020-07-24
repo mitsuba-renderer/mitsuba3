@@ -54,12 +54,12 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
 
     /* Amplitudes of reflected waves */
     Float a_s = ek::fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
-                 fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
+                ek::fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
 
     Float a_p = ek::fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
-                 fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
+                ek::fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
 
-    Float r = .5f * (ek::sqr(a_s) + ek::sqr(a_p));
+    Float r = 0.5f * (ek::sqr(a_s) + ek::sqr(a_p));
 
     ek::masked(r, special_case) = r_sc;
 
@@ -306,7 +306,7 @@ Vector<Float, 3> refract(const Vector<Float, 3> &wi, Float cos_theta_t, Float et
 template <typename Float>
 Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, Float cos_theta_t,
                          Float eta_ti) {
-    return ek::fmsub(m, fmadd(ek::dot(wi, m), eta_ti, cos_theta_t), wi * eta_ti);
+    return ek::fmsub(m, ek::fmadd(ek::dot(wi, m), eta_ti, cos_theta_t), wi * eta_ti);
 }
 
 /**

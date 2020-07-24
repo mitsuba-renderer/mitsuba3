@@ -158,12 +158,12 @@ public:
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);
 
         // Compute perturbed differential geometry
-        Vector3f dp_du = fmadd(si.sh_frame.n, grad_uv.x() - ek::dot(si.sh_frame.n, si.dp_du), si.dp_du);
-        Vector3f dp_dv = fmadd(si.sh_frame.n, grad_uv.y() - ek::dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
+        Vector3f dp_du = ek::fmadd(si.sh_frame.n, grad_uv.x() - ek::dot(si.sh_frame.n, si.dp_du), si.dp_du);
+        Vector3f dp_dv = ek::fmadd(si.sh_frame.n, grad_uv.y() - ek::dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
 
         // Bump-mapped shading normal
         Frame3f result;
-        result.n = normalize(cross(dp_du, dp_dv));
+        result.n = ek::normalize(ek::cross(dp_du, dp_dv));
 
         // Flip if not aligned with geometric normal
         result.n[ek::dot(si.n, result.n) < .0f] *= -1.f;
@@ -172,8 +172,8 @@ public:
         result.n = si.to_local(result.n);
 
         // Gram-schmidt orthogonalization to compute local shading frame
-        result.s = normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
-        result.t = cross(result.n, result.s);
+        result.s = ek::normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
+        result.t = ek::cross(result.n, result.s);
 
         return result;
     }

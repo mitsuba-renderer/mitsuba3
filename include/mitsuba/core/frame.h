@@ -58,7 +58,7 @@ template <typename Float_> struct Frame {
      * of the elevation angle in a reference spherical coordinate system (see
      * the \ref Frame description)
      */
-    static Float sin_theta_2(const Vector3f &v) { return fmadd(v.x(), v.x(), ek::sqr(v.y())); }
+    static Float sin_theta_2(const Vector3f &v) { return ek::fmadd(v.x(), v.x(), ek::sqr(v.y())); }
 
     /** \brief Give a unit direction, this function returns the tangent
      * of the elevation angle in a reference spherical coordinate system (see

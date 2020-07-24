@@ -6,7 +6,7 @@
 
 # Mitsuba support libraries
 add_subdirectory(libcore)
-# add_subdirectory(librender)
+add_subdirectory(librender)
 # if (MTS_ENABLE_GUI)
 #     add_subdirectory(libui)
 # endif()

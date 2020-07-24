@@ -107,11 +107,11 @@ public:
              back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
         Result result = ek::zero<Result>();
-        if (any_or<true>(front_side))
+        if (ek::any_or<true>(front_side))
             ek::masked(result, front_side) =
                 m_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
 
-        if (any_or<true>(back_side)) {
+        if (ek::any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
@@ -136,10 +136,10 @@ public:
         Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
              back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
-        if (any_or<true>(front_side))
+        if (ek::any_or<true>(front_side))
             result = m_brdf[0]->eval(ctx, si, wo, front_side);
 
-        if (any_or<true>(back_side)) {
+        if (ek::any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
@@ -164,10 +164,10 @@ public:
         Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
              back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
-        if (any_or<true>(front_side))
+        if (ek::any_or<true>(front_side))
             result = m_brdf[0]->pdf(ctx, si, wo, front_side);
 
-        if (any_or<true>(back_side)) {
+        if (ek::any_or<true>(back_side)) {
             if (ctx.component != (uint32_t) -1)
                 ctx.component -= (uint32_t) m_brdf[0]->component_count();
 

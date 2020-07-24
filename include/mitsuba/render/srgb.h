@@ -11,11 +11,11 @@ MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
     static_assert(!is_polarized_v<Spectrum>, "srgb_model_eval(): requires unpolarized spectrum type!");
 
     if constexpr (is_spectral_v<Spectrum>) {
-        Spectrum v = fmadd(fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
+        Spectrum v = ek::fmadd(ek::fmadd(coeff.x(), wavelengths, coeff.y()), wavelengths, coeff.z());
 
         return ek::select(
-            ek::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-            ek::max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f))
+            ek::isinf(coeff.z()), ek::fmadd(sign(coeff.z()), .5f, .5f),
+            ek::max(0.f, ek::fmadd(.5f * v, ek::rsqrt(ek::fmadd(v, v, 1.f)), .5f))
         );
     } else {
         Throw("srgb_model_eval(): invoked for a non-spectral color type!");
@@ -28,9 +28,9 @@ MTS_INLINE ek::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
     using Vec = Array<Float, 16>;
 
     Vec lambda = linspace<Vec>(MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
-    Vec v = fmadd(fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
-    Vec result = ek::select(ek::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-                        ek::max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f)));
+    Vec v = ek::fmadd(ek::fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
+    Vec result = ek::select(ek::isinf(coeff.z()), ek::fmadd(sign(coeff.z()), .5f, .5f),
+                        ek::max(0.f, ek::fmadd(.5f * v, ek::rsqrt(ek::fmadd(v, v, 1.f)), .5f)));
     return hmean(result);
 }
 

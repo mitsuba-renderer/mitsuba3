@@ -69,7 +69,7 @@ public:
         m_jitter = props.bool_("jitter", true);
 
         // Find stratification grid resolution with aspect ratio close to 1
-        m_resolution[1] = uint32_t(sqrt(ScalarFloat(m_sample_count)));
+        m_resolution[1] = uint32_t(ek::sqrt(ScalarFloat(m_sample_count)));
         m_resolution[0] = (m_sample_count + m_resolution[1] - 1) / m_resolution[1];
 
         if (m_sample_count != ek::hprod(m_resolution))

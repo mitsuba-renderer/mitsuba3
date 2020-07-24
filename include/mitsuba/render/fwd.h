@@ -1,13 +1,11 @@
 #pragma once
 
-#include <enoki/array_traits.h>
 #include <mitsuba/core/fwd.h>
-#include <mitsuba/core/spectrum.h>
+// #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/traits.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-class DifferentiableParameters;
 struct BSDFContext;
 template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class Emitter;
@@ -102,6 +100,33 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using EmitterPtr             = ek::replace_scalar_t<Float, const Emitter *>;
 };
 
+#define MMTS_USING_MEMBERS_MACRO2(x) \
+    using Base::x;
+
+/**
+ * \brief Imports the desired methods and fields by generating a sequence of
+ * `using` declarations. This is useful when inheriting from template parents,
+ * since methods and fields must be explicitly made visible.
+ *
+ * For example,
+ *
+ * \code
+ *     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
+ * \endcode
+ *
+ * expands to
+ *
+ * \code
+ *     using Base = BSDF<Float, Spectrum>;
+ *     using Base::m_flags;
+ *     using Base::m_components;
+ * \endcode
+ */
+#define MTS_IMPORT_BASE(Name, ...)                                                                 \
+    using Base = Name<Float, Spectrum>;                                                            \
+    MTS_USING_MEMBERS(__VA_ARGS__)
+
+
 #define MTS_IMPORT_RENDER_BASIC_TYPES()                                                            \
     MTS_IMPORT_CORE_TYPES()                                                                        \
     using RenderAliases        = mitsuba::RenderAliases<Float, Spectrum>;                          \
@@ -112,8 +137,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
-// This macro is needed to get this to compile across all compilers
-#define MTS_IMPORT_TYPES_HELPER(...) RenderAliases, ##__VA_ARGS__
+#define MTS_IMPORT_TYPES_MACRO(x) using x = typename RenderAliases::x;
 
 #define MTS_IMPORT_TYPES(...)                                                                      \
     MTS_IMPORT_RENDER_BASIC_TYPES()                                                                \
@@ -124,7 +148,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumInteraction3f       = typename RenderAliases::MediumInteraction3f;                 \
     using PreliminaryIntersection3f = typename RenderAliases::PreliminaryIntersection3f;           \
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
-    ENOKI_USING_TYPES(MTS_IMPORT_TYPES_HELPER(__VA_ARGS__))
+    ENOKI_MAP(MTS_IMPORT_TYPES_MACRO, __VA_ARGS__)
 
 #define MTS_IMPORT_OBJECT_TYPES()                                                                  \
     using Scene                  = typename RenderAliases::Scene;                                  \
@@ -153,7 +177,5 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
     using EmitterPtr             = typename RenderAliases::EmitterPtr;
-
-// -----------------------------------------------------------------------------
 
 NAMESPACE_END(mitsuba)

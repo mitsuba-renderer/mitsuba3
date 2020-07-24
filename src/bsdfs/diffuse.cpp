@@ -86,7 +86,7 @@ public:
         BSDFSample3f bs = ek::zero<BSDFSample3f>();
 
         active &= cos_theta_i > 0.f;
-        if (unlikely(none_or<false>(active) ||
+        if (unlikely(ek::none_or<false>(active) ||
                      !ctx.is_enabled(BSDFFlags::DiffuseReflection)))
             return { bs, 0.f };
 

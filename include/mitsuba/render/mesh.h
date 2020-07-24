@@ -112,7 +112,7 @@ public:
              p1 = vertex_position(fi[1], active),
              p2 = vertex_position(fi[2], active);
 
-        return 0.5f * ek::norm(cross(p1 - p0, p2 - p0));
+        return 0.5f * ek::norm(ek::cross(p1 - p0, p2 - p0));
     }
 
     /// Does this mesh have per-vertex normals?
@@ -202,14 +202,14 @@ public:
 
         Vector3f e1 = p1 - p0, e2 = p2 - p0;
 
-        Vector3f pvec = cross(ray.d, e2);
+        Vector3f pvec = ek::cross(ray.d, e2);
         Float inv_det = ek::rcp(ek::dot(e1, pvec));
 
         Vector3f tvec = ray.o - p0;
         Float u = ek::dot(tvec, pvec) * inv_det;
         active &= u >= 0.f && u <= 1.f;
 
-        Vector3f qvec = cross(tvec, e1);
+        Vector3f qvec = ek::cross(tvec, e1);
         Float v = ek::dot(ray.d, qvec) * inv_det;
         active &= v >= 0.f && u + v <= 1.f;
 
@@ -320,9 +320,9 @@ protected:
                 c1 = srgb_model_eval<UnpolarizedSpectrum>(v1, si.wavelengths);
                 c2 = srgb_model_eval<UnpolarizedSpectrum>(v2, si.wavelengths);
 
-                return fmadd(c0, b[0], fmadd(c1, b[1], c2 * b[2]));
+                return ek::fmadd(c0, b[0], ek::fmadd(c1, b[1], c2 * b[2]));
             } else {
-                return (ReturnType) fmadd(v0, b[0], fmadd(v1, b[1], v2 * b[2]));
+                return (ReturnType) ek::fmadd(v0, b[0], ek::fmadd(v1, b[1], v2 * b[2]));
             }
         } else {
             StorageType v = ek::gather<StorageType>(buf, si.prim_index, active);

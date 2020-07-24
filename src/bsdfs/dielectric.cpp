@@ -274,10 +274,10 @@ public:
             /* The Stokes reference frame vector of this matrix lies in the plane
                of reflection / refraction. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in = normalize(cross(n, -wi_hat)),
-                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
-                     s_axis_out = normalize(cross(n, wo_hat)),
-                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+            Vector3f s_axis_in = ek::normalize(ek::cross(n, -wi_hat)),
+                     p_axis_in = ek::normalize(ek::cross(-wi_hat, s_axis_in)),
+                     s_axis_out = ek::normalize(ek::cross(n, wo_hat)),
+                     p_axis_out = ek::normalize(ek::cross(wo_hat, s_axis_out));
 
             /* Rotate in/out reference vector of weight s.t. it aligns with the
                implicit Stokes bases of -wi_hat & wo_hat. */
@@ -285,10 +285,10 @@ public:
                                                    -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
                                                     wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
 
-            if (any_or<true>(selected_r))
+            if (ek::any_or<true>(selected_r))
                 weight[selected_r] *= mueller::absorber(reflectance);
 
-            if (any_or<true>(selected_t))
+            if (ek::any_or<true>(selected_t))
                 weight[selected_t] *= mueller::absorber(transmittance);
 
         } else {
@@ -298,18 +298,18 @@ public:
                 weight = has_reflection ? r_i : t_i;
             }
 
-            if (any_or<true>(selected_r))
+            if (ek::any_or<true>(selected_r))
                 weight[selected_r] *= reflectance;
 
-            if (any_or<true>(selected_t))
+            if (ek::any_or<true>(selected_t))
                 weight[selected_t] *= transmittance;
         }
 
-        if (any_or<true>(selected_t)) {
+        if (ek::any_or<true>(selected_t)) {
             /* For transmission, radiance must be scaled to account for the solid
                angle compression that occurs when crossing the interface. */
             Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
-            weight[selected_t] *= sqr(factor);
+            weight[selected_t] *= ek::sqr(factor);
         }
 
         return { bs, ek::select(active, weight, 0.f) };

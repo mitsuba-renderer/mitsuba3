@@ -1011,7 +1011,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
             Mask weight_valid = ek::neq(weight_xy, ek::zero<Value>());
             Value value = ek::gather<Value>(values, index, weight_valid);
 
-            result = fmadd(value, weight_xy, result);
+            result = ek::fmadd(value, weight_xy, result);
             index += 1;
         }
 

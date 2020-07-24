@@ -204,7 +204,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
         active &= cos_theta_i > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
             return { bs, 0.f };
 
         /* Construct a microfacet distribution matching the
@@ -259,10 +259,10 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies in the plane
                of reflection. */
-            Vector3f s_axis_in = normalize(cross(m, -wi_hat)),
-                     p_axis_in = normalize(cross(-wi_hat, s_axis_in)),
-                     s_axis_out = normalize(cross(m, wo_hat)),
-                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+            Vector3f s_axis_in = ek::normalize(ek::cross(m, -wi_hat)),
+                     p_axis_in = ek::normalize(ek::cross(-wi_hat, s_axis_in)),
+                     s_axis_out = ek::normalize(ek::cross(m, wo_hat)),
+                     p_axis_out = ek::normalize(ek::cross(wo_hat, s_axis_out));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wi_hat & wo_hat. */
@@ -289,11 +289,11 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
             return 0.f;
 
         // Calculate the half-direction vector
-        Vector3f H = normalize(wo + si.wi);
+        Vector3f H = ek::normalize(wo + si.wi);
 
         /* Construct a microfacet distribution matching the
            roughness values at the current surface position. */
@@ -335,10 +335,10 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies in the plane
                of reflection. */
-            Vector3f s_axis_in  = normalize(cross(H, -wi_hat)),
-                     p_axis_in  = normalize(cross(-wi_hat, s_axis_in)),
-                     s_axis_out = normalize(cross(H, wo_hat)),
-                     p_axis_out = normalize(cross(wo_hat, s_axis_out));
+            Vector3f s_axis_in  = ek::normalize(ek::cross(H, -wi_hat)),
+                     p_axis_in  = ek::normalize(ek::cross(-wi_hat, s_axis_in)),
+                     s_axis_out = ek::normalize(ek::cross(H, wo_hat)),
+                     p_axis_out = ek::normalize(ek::cross(wo_hat, s_axis_out));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wi_hat & wo_hat. */
@@ -364,16 +364,16 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Calculate the half-direction vector
-        Vector3f m = normalize(wo + si.wi);
+        Vector3f m = ek::normalize(wo + si.wi);
 
         /* Filter cases where the micro/macro-surface don't agree on the side.
            This logic is evaluated in smith_g1() called as part of the eval()
            and sample() methods and needs to be replicated in the probability
            density computation as well. */
-        active &= cos_theta_i   > 0.f && cos_theta_o   > 0.f &&
-                  ek::dot(si.wi, m) > 0.f && ek::dot(wo,    m) > 0.f;
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
+                  ek::dot(si.wi, m) > 0.f && ek::dot(wo, m) > 0.f;
 
-        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active)))
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
             return 0.f;
 
         /* Construct a microfacet distribution matching the

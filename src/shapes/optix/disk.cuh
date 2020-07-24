@@ -60,7 +60,7 @@ extern "C" __global__ void __closesthit__disk() {
 
         Vector3f p = ray_(t);
 
-        Vector3f ns = normalize(disk->to_world.transform_normal(Vector3f(0.f, 0.f, 1.f)));
+        Vector3f ns = ek::normalize(disk->to_world.transform_normal(Vector3f(0.f, 0.f, 1.f)));
         Vector3f ng = ns;
 
         Vector2f uv;

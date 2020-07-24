@@ -95,7 +95,7 @@ public:
             si = m_shape->eval_parameterization(Point2f(si.uv), active);
             active &= si.is_valid();
 
-            pdf /= ek::norm(cross(si.dp_du, si.dp_dv));
+            pdf /= ek::norm(ek::cross(si.dp_du, si.dp_dv));
         }
 
         // 2. Sample directional component
@@ -155,7 +155,7 @@ public:
 
             Float dp = ek::dot(ds.d, ds.n);
             active &= dp < 0;
-            ds.pdf = ek::select(active, pdf / ek::norm(cross(si.dp_du, si.dp_dv)) *
+            ds.pdf = ek::select(active, pdf / ek::norm(ek::cross(si.dp_du, si.dp_dv)) *
                                         dist_squared / -dp, 0.f);
 
             spec = m_radiance->eval(si, active) / ds.pdf;
@@ -179,8 +179,8 @@ public:
             SurfaceInteraction3f si = m_shape->eval_parameterization(ds.uv, active);
             active &= si.is_valid();
 
-            value = m_radiance->pdf_position(ds.uv, active) * sqr(ds.dist) /
-                    (ek::norm(cross(si.dp_du, si.dp_dv)) * -dp);
+            value = m_radiance->pdf_position(ds.uv, active) * ek::sqr(ds.dist) /
+                    (ek::norm(ek::cross(si.dp_du, si.dp_dv)) * -dp);
         }
 
         return ek::select(active, value, 0.f);

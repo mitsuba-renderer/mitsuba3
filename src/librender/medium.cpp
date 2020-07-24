@@ -62,7 +62,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         ENOKI_MARK_USED(channel);
     }
 
-    Float sampled_t = mint + (-log(1 - sample) / m);
+    Float sampled_t = mint + (-ek::log(1 - sample) / m);
     Mask valid_mi   = active && (sampled_t <= maxt);
     mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p            = ray(sampled_t);

@@ -37,13 +37,13 @@ public:
         m_radius = 4 * m_stddev;
 
         m_alpha = -1.f / (2.f * m_stddev * m_stddev);
-        m_bias = std::exp(m_alpha * sqr(m_radius));
+        m_bias = std::exp(m_alpha * ek::sqr(m_radius));
 
         init_discretization();
     }
 
     Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        return ek::max(0.f, ek::exp(m_alpha * sqr(x)) - m_bias);
+        return ek::max(0.f, ek::exp(m_alpha * ek::sqr(x)) - m_bias);
     }
 
     std::string to_string() const override {

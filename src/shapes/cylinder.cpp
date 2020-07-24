@@ -126,7 +126,7 @@ public:
     ScalarBoundingBox3f bbox() const override {
         ScalarVector3f x1 = m_to_world * ScalarVector3f(m_radius, 0.f, 0.f),
                        x2 = m_to_world * ScalarVector3f(0.f, m_radius, 0.f),
-                       x  = ek::sqrt(sqr(x1) + sqr(x2));
+                       x  = ek::sqrt(ek::sqr(x1) + ek::sqr(x2));
 
         ScalarPoint3f p0 = m_to_world * ScalarPoint3f(0.f, 0.f, 0.f),
                       p1 = m_to_world * ScalarPoint3f(0.f, 0.f, m_length);
@@ -173,7 +173,7 @@ public:
         FloatP8 v1_n2 = ek::squared_norm(v1);
         v1 = ek::select(ek::neq(v1_n2, 0.f), v1 * ek::rsqrt(v1_n2),
                     coordinate_system(face_n).first);
-        Vector3fP8 v2 = cross(face_n, v1);
+        Vector3fP8 v2 = ek::cross(face_n, v1);
 
         // Compute length of axes
         v1 *= m_radius / ek::abs(dp);
@@ -181,11 +181,11 @@ public:
 
         // Compute center of ellipse
         FloatP8 t = ek::dot(face_n, face_p - cyl_p) / dp;
-        Point3fP8 center = fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
+        Point3fP8 center = ek::fmadd(Vector3fP8(cyl_d), t, Vector3fP8(cyl_p));
         center[neq(face_n, 0.f)] = face_p;
 
         // Compute ellipse minima and maxima
-        Vector3fP8 x = ek::sqrt(sqr(v1) + sqr(v2));
+        Vector3fP8 x = ek::sqrt(ek::sqr(v1) + ek::sqr(v2));
         BoundingBox3fP8 ellipse_bounds(center - x, center + x);
         MaskP8 ellipse_overlap = valid && bbox.overlaps(ellipse_bounds);
         ellipse_bounds.clip(bbox);
@@ -222,7 +222,7 @@ public:
 
         PositionSample3f ps;
         ps.p     = m_to_world.transform_affine(p);
-        ps.n     = normalize(n);
+        ps.n     = ek::normalize(n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;
@@ -261,9 +261,9 @@ public:
         ek::scalar_t<Double> radius = ek::scalar_t<Double>(m_radius),
                          length = ek::scalar_t<Double>(m_length);
 
-        Double A = sqr(dx) + sqr(dy),
+        Double A = ek::sqr(dx) + ek::sqr(dy),
                B = ek::scalar_t<Double>(2.f) * (dx * ox + dy * oy),
-               C = sqr(ox) + sqr(oy) - sqr(radius);
+               C = ek::sqr(ox) + ek::sqr(oy) - ek::sqr(radius);
 
         auto [solution_found, near_t, far_t] =
             math::solve_quadratic(A, B, C);
@@ -310,9 +310,9 @@ public:
         ek::scalar_t<Double> radius = ek::scalar_t<Double>(m_radius),
                          length = ek::scalar_t<Double>(m_length);
 
-        Double A = sqr(dx) + sqr(dy),
+        Double A = ek::sqr(dx) + ek::sqr(dy),
                B = ek::scalar_t<Double>(2.f) * (dx * ox + dy * oy),
-               C = sqr(ox) + sqr(oy) - sqr(radius);
+               C = ek::sqr(ox) + ek::sqr(oy) - ek::sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -367,7 +367,7 @@ public:
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
         si.dp_du = m_to_world.transform_affine(dp_du);
         si.dp_dv = m_to_world.transform_affine(dp_dv);
-        si.n = Normal3f(normalize(cross(si.dp_du, si.dp_dv)));
+        si.n = Normal3f(normalize(ek::cross(si.dp_du, si.dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */

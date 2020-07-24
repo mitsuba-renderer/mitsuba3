@@ -1957,7 +1957,7 @@ public:
         m_temp2 = (a + b) * temp;
 
         m_temp0 = ek::fnmadd(m_temp2, bbox.min, m_temp0);
-        m_temp1 = fmadd(m_temp2, bbox.max, m_temp1);
+        m_temp1 = ek::fmadd(m_temp2, bbox.max, m_temp1);
     }
 
     /// \brief Evaluate the cost of a leaf node

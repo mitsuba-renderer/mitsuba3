@@ -71,8 +71,8 @@ public:
             /* The scale factors of 1e-9f are needed to perform a conversion between
                densities per unit nanometer and per unit meter. */
             Wavelength lambda  = wavelengths * 1e-9f,
-                       lambda2 = sqr(lambda),
-                       lambda5 = sqr(lambda2) * lambda;
+                       lambda2 = ek::sqr(lambda),
+                       lambda5 = ek::sqr(lambda2) * lambda;
 
             /* Watts per unit surface area (m^-2)
                      per unit wavelength (nm^-1)
@@ -104,8 +104,8 @@ public:
                    && si.wavelengths <= MTS_WAVELENGTH_MAX;
 
             Wavelength lambda  = si.wavelengths * 1e-9f,
-                       lambda2 = sqr(lambda),
-                       lambda5 = sqr(lambda2) * lambda;
+                       lambda2 = ek::sqr(lambda),
+                       lambda5 = ek::sqr(lambda2) * lambda;
 
             // Wien's approximation to Planck's law
             Wavelength pdf = 1e-9f * c0 * ek::exp(-c1 / (lambda * m_temperature))
@@ -120,17 +120,17 @@ public:
 
     template <typename Value>
     std::pair<Value, Value> cdf_and_pdf(Value lambda) const {
-        Value c1_2 = sqr(c1),
+        Value c1_2 = ek::sqr(c1),
               c1_3 = c1_2 * c1,
-              c1_4 = sqr(c1_2);
+              c1_4 = ek::sqr(c1_2);
 
         const Value K  = m_temperature,
-                    K2 = sqr(K),
+                    K2 = ek::sqr(K),
                     K3 = K2*K;
 
         lambda *= 1e-9f;
 
-        Value lambda2 = sqr(lambda),
+        Value lambda2 = ek::sqr(lambda),
               lambda3 = lambda2 * lambda,
               lambda5 = lambda2 * lambda3;
 
@@ -155,7 +155,7 @@ public:
         if constexpr (is_spectral_v<Spectrum>) {
             WavelengthMask active = active_;
 
-            Wavelength sample = fmadd(sample_, Wavelength(m_integral), Wavelength(m_integral_min));
+            Wavelength sample = ek::fmadd(sample_, Wavelength(m_integral), Wavelength(m_integral_min));
 
             const ScalarFloat eps        = 1e-5f,
                               eps_domain = eps * (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN),

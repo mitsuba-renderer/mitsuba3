@@ -163,8 +163,8 @@ public:
      *     safe_acos(Frame3f::cos_theta(d))
      */
     auto elevation(const Vector3f &d) const {
-        auto dist = ek::sqrt(sqr(d.x()) + sqr(d.y()) + sqr(d.z() - 1.f));
-        return 2.f * safe_asin(.5f * dist);
+        auto dist = ek::sqrt(ek::sqr(d.x()) + ek::sqr(d.y()) + ek::sqr(d.z() - 1.f));
+        return 2.f * ek::safe_asin(.5f * dist);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -178,7 +178,7 @@ public:
         Vector3f wi = si.wi;
         active &= Frame3f::cos_theta(wi) > 0;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active))
             return { bs, 0.f };
 
         Float sx = -1.f, sy = -1.f;
@@ -186,8 +186,8 @@ public:
         if (m_reduction >= 2) {
             sy = wi.y();
             sx = (m_reduction == 4) ? wi.x() : sy;
-            wi.x() = mulsign_neg(wi.x(), sx);
-            wi.y() = mulsign_neg(wi.y(), sy);
+            wi.x() = ek::mulsign_neg(wi.x(), sx);
+            wi.y() = ek::mulsign_neg(wi.y(), sy);
         }
 
         Float theta_i = elevation(wi),
@@ -224,7 +224,7 @@ public:
             cos_theta_m
         );
 
-        Float jacobian = ek::max(2.f * sqr(ek::Pi<Float>) * u_m.x() *
+        Float jacobian = ek::max(2.f * ek::sqr(ek::Pi<Float>) * u_m.x() *
                                     sin_theta_m, 1e-6f) * 4.f * ek::dot(wi, m);
 
         bs.wo = ek::fmsub(m, 2.f * ek::dot(m, wi), wi);
@@ -233,16 +233,16 @@ public:
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
         bs.pdf = warp::square_to_cosine_hemisphere_pdf(bs.wo);
 
-        Vector3f m = normalize(bs.wo + wi);
+        Vector3f m = ek::normalize(bs.wo + wi);
 
         // Cartesian -> spherical coordinates
         Float theta_m = elevation(m),
-            phi_m   = ek::atan2(m.y(), m.x());
+              phi_m   = ek::atan2(m.y(), m.x());
 
         Vector2f u_m(theta2u(theta_m),
-                    phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
+                     phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-        u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - ek::floor(u_m[1]);
 
     std::tie(sample, std::ignore) = m_vndf.invert(u_m, params, active);
 #endif // MTS_SAMPLE_DIFFUSE
@@ -261,8 +261,8 @@ public:
             spec *= m_ndf.eval(u_m, params, active) /
                     (4 * m_sigma.eval(u_wi, params, active));
 
-        bs.wo.x() = mulsign_neg(bs.wo.x(), sx);
-        bs.wo.y() = mulsign_neg(bs.wo.y(), sy);
+        bs.wo.x() = ek::mulsign_neg(bs.wo.x(), sx);
+        bs.wo.y() = ek::mulsign_neg(bs.wo.y(), sy);
 
         active &= Frame3f::cos_theta(bs.wo) > 0;
 
@@ -276,35 +276,35 @@ public:
         Vector3f wi = si.wi, wo = wo_;
 
         active &= Frame3f::cos_theta(wi) > 0.f &&
-                Frame3f::cos_theta(wo) > 0.f;
+                  Frame3f::cos_theta(wo) > 0.f;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active))
             return Spectrum(0.f);
 
         if (m_reduction >= 2) {
             Float sy = wi.y(),
                 sx = (m_reduction == 4) ? wi.x() : sy;
 
-            wi.x() = mulsign_neg(wi.x(), sx);
-            wi.y() = mulsign_neg(wi.y(), sy);
-            wo.x() = mulsign_neg(wo.x(), sx);
-            wo.y() = mulsign_neg(wo.y(), sy);
+            wi.x() = ek::mulsign_neg(wi.x(), sx);
+            wi.y() = ek::mulsign_neg(wi.y(), sy);
+            wo.x() = ek::mulsign_neg(wo.x(), sx);
+            wo.y() = ek::mulsign_neg(wo.y(), sy);
         }
 
-        Vector3f m = normalize(wo + wi);
+        Vector3f m = ek::normalize(wo + wi);
 
         // Cartesian -> spherical coordinates
         Float theta_i = elevation(wi),
-            phi_i   = ek::atan2(wi.y(), wi.x()),
-            theta_m = elevation(m),
-            phi_m   = ek::atan2(m.y(), m.x());
+              phi_i   = ek::atan2(wi.y(), wi.x()),
+              theta_m = elevation(m),
+              phi_m   = ek::atan2(m.y(), m.x());
 
         // Spherical coordinates -> unit coordinate system
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i)),
-                u_m (theta2u(theta_m), phi2u(
-                    m_isotropic ? (phi_m - phi_i) : phi_m));
+                 u_m (theta2u(theta_m), phi2u(
+                     m_isotropic ? (phi_m - phi_i) : phi_m));
 
-        u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - ek::floor(u_m[1]);
 
         Float params[2] = { phi_i, theta_i };
         auto [sample, unused] = m_vndf.invert(u_m, params, active);
@@ -329,38 +329,38 @@ public:
         Vector3f wi = si.wi, wo = wo_;
 
         active &= Frame3f::cos_theta(wi) > 0.f &&
-                Frame3f::cos_theta(wo) > 0.f;
+                  Frame3f::cos_theta(wo) > 0.f;
 
-        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || none_or<false>(active))
+        if (!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active))
             return 0.f;
 
         if (m_reduction >= 2) {
             Float sy = wi.y(),
                 sx = (m_reduction == 4) ? wi.x() : sy;
 
-            wi.x() = mulsign_neg(wi.x(), sx);
-            wi.y() = mulsign_neg(wi.y(), sy);
-            wo.x() = mulsign_neg(wo.x(), sx);
-            wo.y() = mulsign_neg(wo.y(), sy);
+            wi.x() = ek::mulsign_neg(wi.x(), sx);
+            wi.y() = ek::mulsign_neg(wi.y(), sy);
+            wo.x() = ek::mulsign_neg(wo.x(), sx);
+            wo.y() = ek::mulsign_neg(wo.y(), sy);
         }
 
 #if MTS_SAMPLE_DIFFUSE == 1
         return ek::select(active, warp::square_to_cosine_hemisphere_pdf(wo), 0.f);
 #else // MTS_SAMPLE_DIFFUSE
-        Vector3f m = normalize(wo + wi);
+        Vector3f m = ek::normalize(wo + wi);
 
         // Cartesian -> spherical coordinates
         Float theta_i = elevation(wi),
-            phi_i   = ek::atan2(wi.y(), wi.x()),
-            theta_m = elevation(m),
-            phi_m   = ek::atan2(m.y(), m.x());
+              phi_i   = ek::atan2(wi.y(), wi.x()),
+              theta_m = elevation(m),
+              phi_m   = ek::atan2(m.y(), m.x());
 
         // Spherical coordinates -> unit coordinate system
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
         Vector2f u_m (theta2u(theta_m),
-                    phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
+                      phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
 
-        u_m[1] = u_m[1] - floor(u_m[1]);
+        u_m[1] = u_m[1] - ek::floor(u_m[1]);
 
         Float params[2] = { phi_i, theta_i };
         auto [sample, vndf_pdf] = m_vndf.invert(u_m, params, active);
@@ -371,7 +371,7 @@ public:
         #endif
 
         Float jacobian =
-            ek::max(2.f * sqr(ek::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
+            ek::max(2.f * ek::sqr(ek::Pi<Float>) * u_m.x() * Frame3f::sin_theta(m), 1e-6f) * 4.f *
             ek::dot(wi, m);
 
         pdf = vndf_pdf * pdf / jacobian;
@@ -396,7 +396,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     template <typename Value> Value u2theta(Value u) const {
-        return sqr(u) * (ek::Pi<Float> / 2.f);
+        return ek::sqr(u) * (ek::Pi<Float> / 2.f);
     }
 
     template <typename Value> Value u2phi(Value u) const {

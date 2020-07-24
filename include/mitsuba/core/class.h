@@ -210,32 +210,6 @@ public:                                             \
     }                                                                                              \
     MTS_INSTANTIATE_CLASS(Name)
 
-// This macro is needed to get this to compile across all compilers
-#define MTS_IMPORT_BASE_HELPER(...) Base, ##__VA_ARGS__
-
-/**
- * \brief Imports the desired methods and fields by generating a sequence of
- * `using` declarations. This is useful when inheriting from template parents,
- * since methods and fields must be explicitly made visible.
- *
- * For example,
- *
- * \code
- *     MTS_IMPORT_BASE(BSDF, m_flags, m_components)
- * \endcode
- *
- * expands to
- *
- * \code
- *     using Base = BSDF<Float, Spectrum>;
- *     using Base::m_flags;
- *     using Base::m_components;
- * \endcode
- */
-#define MTS_IMPORT_BASE(Name, ...)                                                                 \
-    using Base = Name<Float, Spectrum>;                                                            \
-    ENOKI_USING_MEMBERS(MTS_IMPORT_BASE_HELPER(__VA_ARGS__))
-
 NAMESPACE_BEGIN(detail)
 template <typename, typename Arg, typename = void>
 struct is_constructiblee : std::false_type { };

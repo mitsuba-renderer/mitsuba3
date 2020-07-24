@@ -47,7 +47,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         Point2f uv = m_transform.transform_affine(it.uv);
-        ek::mask_t<Point2f> mask = uv - floor(uv) > .5f;
+        ek::mask_t<Point2f> mask = uv - ek::floor(uv) > .5f;
         UnpolarizedSpectrum result = ek::zero<UnpolarizedSpectrum>();
 
         Mask m0 = ek::eq(mask.x(), mask.y()),
@@ -55,10 +55,10 @@ public:
 
         m0 &= active; m1 &= active;
 
-        if (any_or<true>(m0))
+        if (ek::any_or<true>(m0))
             result[m0] = m_color0->eval(it, m0);
 
-        if (any_or<true>(m1))
+        if (ek::any_or<true>(m1))
             result[m1] = m_color1->eval(it, m1);
 
         return result;
@@ -68,7 +68,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         Point2f uv = m_transform.transform_affine(it.uv);
-        ek::mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
+        ek::mask_t<Point2f> mask = (uv - ek::floor(uv)) > .5f;
         Float result = 0.f;
 
         Mask m0 = ek::neq(mask.x(), mask.y()),
@@ -76,10 +76,10 @@ public:
 
         m0 &= active; m1 &= active;
 
-        if (any_or<true>(m0))
+        if (ek::any_or<true>(m0))
             ek::masked(result, m0) = m_color0->eval_1(it, m0);
 
-        if (any_or<true>(m1))
+        if (ek::any_or<true>(m1))
             ek::masked(result, m1) = m_color1->eval_1(it, m1);
 
         return result;

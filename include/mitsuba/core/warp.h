@@ -196,7 +196,7 @@ MTS_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
 template <typename Value>
 Value interval_to_tent(Value sample) {
     sample -= 0.5f;
-    return ek::copysign(1.f - ek::safe_sqrt(fmadd(ek::abs(sample), -2.f, 1.f)), sample);
+    return ek::copysign(1.f - ek::safe_sqrt(ek::fmadd(ek::abs(sample), -2.f, 1.f)), sample);
 }
 
 /// Warp a uniformly distributed sample on [0, 1] to a tent distribution
