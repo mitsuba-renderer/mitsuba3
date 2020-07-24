@@ -76,7 +76,7 @@ template <typename Class, typename ScalarClass, typename PyClass>
 void bind_slicing_operators(PyClass &cl) {
     using Float = typename Class::Float;
 
-    if constexpr (is_dynamic_v<Float>) {
+    if constexpr (ek::is_dynamic_v<Float>) {
         cl.def("__getitem__", [](Class &c, size_t i) -> ScalarClass {
               if (i >= slices(c))
                   throw py::index_error();
@@ -97,7 +97,7 @@ void bind_slicing_operators(PyClass &cl) {
     }
 
     cl.def_static("zero", [](size_t size) {
-            if constexpr (!is_dynamic_v<Float>) {
+            if constexpr (!ek::is_dynamic_v<Float>) {
                 if (size != 1)
                     throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
             }

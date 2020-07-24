@@ -205,7 +205,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
     /* Weighting scheme based on "Computing Vertex Normals from Polygonal Facets"
        by Grit Thuermer and Charles A. Wuethrich, JGT 1998, Vol 3 */
 
-    if constexpr (!is_dynamic_v<Float>) {
+    if constexpr (!ek::is_dynamic_v<Float>) {
         size_t invalid_counter = 0;
         std::vector<InputNormal3f> normals(m_vertex_count, ek::zero<InputNormal3f>());
 
@@ -292,7 +292,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
     // TODO could use manage() as area_pmf doesn't need to be differentiable
-    if constexpr (!is_dynamic_v<Float>) {
+    if constexpr (!ek::is_dynamic_v<Float>) {
         std::vector<ScalarFloat> table(m_face_count);
         for (ScalarIndex i = 0; i < m_face_count; i++)
             table[i] = face_area(i);

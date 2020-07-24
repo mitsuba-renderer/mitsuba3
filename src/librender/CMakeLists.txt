@@ -42,7 +42,7 @@ add_library(mitsuba-render-obj OBJECT
 
 #   bsdf.cpp         ${INC_DIR}/bsdf.h
 #   emitter.cpp      ${INC_DIR}/emitter.h
-#   endpoint.cpp     ${INC_DIR}/endpoint.h
+  endpoint.cpp     ${INC_DIR}/endpoint.h
 #   film.cpp         ${INC_DIR}/film.h
                    ${INC_DIR}/fresnel.h
 #   imageblock.cpp   ${INC_DIR}/imageblock.h

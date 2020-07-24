@@ -248,7 +248,8 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
+    // TODO refactoring
+    // ENOKI_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
 };
 
 
@@ -441,8 +442,9 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    ENOKI_CALL_SUPPORT_FRIEND()
-    ENOKI_PINNED_OPERATOR_NEW(Float)
+    // TODO refactoring
+    // ENOKI_CALL_SUPPORT_FRIEND()
+    // ENOKI_PINNED_OPERATOR_NEW(Float)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -509,8 +511,9 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
-                     sampled_type, sampled_component)
+// TODO refactoring
+// ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
+//                      sampled_type, sampled_component)
 
 //! @}
 // -----------------------------------------------------------------------
@@ -519,17 +522,17 @@ ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
-    ENOKI_CALL_SUPPORT_METHOD(sample)
-    ENOKI_CALL_SUPPORT_METHOD(eval)
-    ENOKI_CALL_SUPPORT_METHOD(eval_null_transmission)
-    ENOKI_CALL_SUPPORT_METHOD(pdf)
-    ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
+// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
+//     ENOKI_CALL_SUPPORT_METHOD(sample)
+//     ENOKI_CALL_SUPPORT_METHOD(eval)
+//     ENOKI_CALL_SUPPORT_METHOD(eval_null_transmission)
+//     ENOKI_CALL_SUPPORT_METHOD(pdf)
+//     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
 
-    auto needs_differentials() const {
-        return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
-    }
-ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::BSDF)
+//     auto needs_differentials() const {
+//         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
+//     }
+// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::BSDF)
 
 //! @}
 // -----------------------------------------------------------------------

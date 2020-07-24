@@ -4,7 +4,6 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
-#include <enoki/stl.h>
 
 #if defined(MTS_ENABLE_OPTIX)
 #  include <mitsuba/render/optix/common.h>
@@ -486,8 +485,9 @@ public:
     //! @}
     // =============================================================
 
-    ENOKI_CALL_SUPPORT_FRIEND()
-    ENOKI_PINNED_OPERATOR_NEW(Float)
+    // TODO refactoring
+    // ENOKI_CALL_SUPPORT_FRIEND()
+    // ENOKI_PINNED_OPERATOR_NEW(Float)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -522,23 +522,24 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
-    ENOKI_CALL_SUPPORT_METHOD(compute_surface_interaction)
-    ENOKI_CALL_SUPPORT_METHOD(eval_attribute)
-    ENOKI_CALL_SUPPORT_METHOD(eval_attribute_1)
-    ENOKI_CALL_SUPPORT_METHOD(eval_attribute_3)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const typename Class::Emitter *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const typename Class::Sensor *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const typename Class::BSDF *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(interior_medium, m_interior_medium,
-                                   const typename Class::Medium *)
-    ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium,
-                                   const typename Class::Medium *)
-    auto is_emitter() const { return ek::neq(emitter(), nullptr); }
-    auto is_sensor() const { return ek::neq(sensor(), nullptr); }
-    auto is_medium_transition() const { return ek::neq(interior_medium(), nullptr) ||
-                                               ek::neq(exterior_medium(), nullptr); }
-ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Shape)
+// TODO refactoring
+// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
+//     ENOKI_CALL_SUPPORT_METHOD(compute_surface_interaction)
+//     ENOKI_CALL_SUPPORT_METHOD(eval_attribute)
+//     ENOKI_CALL_SUPPORT_METHOD(eval_attribute_1)
+//     ENOKI_CALL_SUPPORT_METHOD(eval_attribute_3)
+//     ENOKI_CALL_SUPPORT_GETTER_TYPE(emitter, m_emitter, const typename Class::Emitter *)
+//     ENOKI_CALL_SUPPORT_GETTER_TYPE(sensor, m_sensor, const typename Class::Sensor *)
+//     ENOKI_CALL_SUPPORT_GETTER_TYPE(bsdf, m_bsdf, const typename Class::BSDF *)
+//     ENOKI_CALL_SUPPORT_GETTER_TYPE(interior_medium, m_interior_medium,
+//                                    const typename Class::Medium *)
+//     ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium,
+//                                    const typename Class::Medium *)
+//     auto is_emitter() const { return ek::neq(emitter(), nullptr); }
+//     auto is_sensor() const { return ek::neq(sensor(), nullptr); }
+//     auto is_medium_transition() const { return ek::neq(interior_medium(), nullptr) ||
+//                                                ek::neq(exterior_medium(), nullptr); }
+// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Shape)
 
 //! @}
 // -----------------------------------------------------------------------

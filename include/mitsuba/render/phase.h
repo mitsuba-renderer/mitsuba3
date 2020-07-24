@@ -165,8 +165,9 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    ENOKI_CALL_SUPPORT_FRIEND()
-    ENOKI_PINNED_OPERATOR_NEW(Float)
+    // TODO refactoring
+    // ENOKI_CALL_SUPPORT_FRIEND()
+    // ENOKI_PINNED_OPERATOR_NEW(Float)
     MTS_DECLARE_CLASS()
 protected:
     PhaseFunction(const Properties &props);
@@ -197,13 +198,14 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
-    ENOKI_CALL_SUPPORT_METHOD(sample)
-    ENOKI_CALL_SUPPORT_METHOD(eval)
-    ENOKI_CALL_SUPPORT_METHOD(projected_area)
-    ENOKI_CALL_SUPPORT_METHOD(max_projected_area)
-    ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
-ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::PhaseFunction)
+// TODO refactoring
+// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
+//     ENOKI_CALL_SUPPORT_METHOD(sample)
+//     ENOKI_CALL_SUPPORT_METHOD(eval)
+//     ENOKI_CALL_SUPPORT_METHOD(projected_area)
+//     ENOKI_CALL_SUPPORT_METHOD(max_projected_area)
+//     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
+// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::PhaseFunction)
 
 //! @}
 // -----------------------------------------------------------------------

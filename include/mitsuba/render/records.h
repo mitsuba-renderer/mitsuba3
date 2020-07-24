@@ -91,12 +91,13 @@ struct PositionSample {
      */
     PositionSample(const SurfaceInteraction3f &si)
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
-          delta(false), object(reinterpret_array<ObjectPtr>(si.shape)) { }
+          delta(false), object(ek::reinterpret_array<ObjectPtr>(si.shape)) { }
 
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
+    // TODO refactoring
+    // ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
 };
 
 // -----------------------------------------------------------------------------
@@ -202,10 +203,10 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_DERIVED_STRUCT(DirectionSample, Base,
-        ENOKI_BASE_FIELDS(p, n, uv, time, pdf, delta, object),
-        ENOKI_DERIVED_FIELDS(d, dist)
-    )
+    // ENOKI_DERIVED_STRUCT(DirectionSample, Base,
+    //     ENOKI_BASE_FIELDS(p, n, uv, time, pdf, delta, object),
+    //     ENOKI_DERIVED_FIELDS(d, dist)
+    // )
 };
 
 // -----------------------------------------------------------------------------
@@ -248,11 +249,12 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
-                     pdf, delta, object)
+// TODO refactoring
+// ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
+//                      pdf, delta, object)
 
-ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
-                     delta, object, d, dist)
+// ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
+//                      delta, object, d, dist)
 
 //! @}
 // -----------------------------------------------------------------------

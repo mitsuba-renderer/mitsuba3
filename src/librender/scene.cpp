@@ -225,7 +225,7 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
         // Fast path if there is only one emitter
         return m_emitters[0]->pdf_direction(ref, ds, active);
     } else {
-        return reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
+        return ek::reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
             (1.f / m_emitters.size());
     }
 }
