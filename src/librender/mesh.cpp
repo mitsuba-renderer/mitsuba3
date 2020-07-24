@@ -266,13 +266,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             auto d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
             auto d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
             auto face_angle = safe_acos(ek::dot(d0, d1));
-            scatter_add(normals, n * face_angle, fi[i]);
+            ek::scatter_add(normals, n * face_angle, fi[i]);
         }
         normals = ek::normalize(normals);
 
         auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
         for (size_t i = 0; i < 3; ++i)
-            scatter(m_vertex_normals_buf, normals[i], ni + i);
+            ek::scatter(m_vertex_normals_buf, normals[i], ni + i);
     }
 }
 

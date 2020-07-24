@@ -738,8 +738,8 @@ protected:
             IndexArray minCounts = ek::gather<IndexArray>(ptr, index_min),
                        maxCounts = ek::gather<IndexArray>(ptr, index_max);
 
-            scatter(ptr, minCounts + 1, index_min);
-            scatter(ptr, maxCounts + 1, index_max);
+            ek::scatter(ptr, minCounts + 1, index_min);
+            ek::scatter(ptr, maxCounts + 1, index_max);
         }
 
         SplitCandidate best_candidate(Size prim_count, const CostModel &model) const {
