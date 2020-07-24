@@ -40,8 +40,8 @@ add_library(mitsuba-render-obj OBJECT
 #   ${INC_DIR}/records.h
 #   ${INC_DIR}/volume_texture.h
 
-#   bsdf.cpp         ${INC_DIR}/bsdf.h
-#   emitter.cpp      ${INC_DIR}/emitter.h
+  bsdf.cpp         ${INC_DIR}/bsdf.h
+  emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
 #   film.cpp         ${INC_DIR}/film.h
                    ${INC_DIR}/fresnel.h
@@ -53,7 +53,7 @@ add_library(mitsuba-render-obj OBJECT
 #   mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h
 #                    ${INC_DIR}/mueller.h
-#   phase.cpp        ${INC_DIR}/phase.h
+  phase.cpp        ${INC_DIR}/phase.h
   sampler.cpp      ${INC_DIR}/sampler.h
 #   scene.cpp        ${INC_DIR}/scene.h
 #   sensor.cpp       ${INC_DIR}/sensor.h

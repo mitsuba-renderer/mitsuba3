@@ -5,7 +5,6 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/kdtree.h>
 #include <mitsuba/render/integrator.h>
-#include <enoki/stl.h>
 
 #if defined(MTS_ENABLE_EMBREE)
 #  include "scene_embree.inl"

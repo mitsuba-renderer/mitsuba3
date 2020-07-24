@@ -9,7 +9,6 @@
 
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
-    #include <enoki/transform.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)

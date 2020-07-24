@@ -1,4 +1,3 @@
-#include <enoki/stl.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>

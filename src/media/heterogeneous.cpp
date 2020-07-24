@@ -1,5 +1,3 @@
-#include <enoki/stl.h>
-
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>

@@ -1,5 +1,3 @@
-#include <enoki/stl.h>
-
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>

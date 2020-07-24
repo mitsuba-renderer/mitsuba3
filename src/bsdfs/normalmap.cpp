@@ -5,7 +5,6 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
-// #include <enoki/stl.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -1,5 +1,4 @@
 #include <random>
-#include <enoki/stl.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>

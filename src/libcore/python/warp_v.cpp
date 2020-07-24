@@ -1,5 +1,4 @@
 #include <mitsuba/core/warp.h>
-#include <enoki/stl.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(warp) {

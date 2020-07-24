@@ -478,7 +478,7 @@ std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& b
         << "  wo = " << bs.wo << "," << std::endl
         << "  pdf = " << bs.pdf << "," << std::endl
         << "  eta = " << bs.eta << "," << std::endl
-        << "  sampled_type = " << "TODO" /*type_ek::mask_to_string(bs.sampled_type)*/ << "," << std::endl
+        << "  sampled_type = " << "TODO" /*type_mask_to_string(bs.sampled_type)*/ << "," << std::endl
         << "  sampled_component = " << bs.sampled_component << std::endl
         << "]";
     return os;
