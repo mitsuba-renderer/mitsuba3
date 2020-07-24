@@ -90,7 +90,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         if (m_block_size == 0) {
             uint32_t block_size = MTS_BLOCK_SIZE;
             while (true) {
-                if (block_size == 1 || hprod((film_size + block_size - 1) / block_size) >= n_threads)
+                if (block_size == 1 || ek::hprod((film_size + block_size - 1) / block_size) >= n_threads)
                     break;
                 block_size /= 2;
             }
@@ -121,7 +121,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                 // For each block
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                     auto [offset, size, block_id] = spiral.next_block();
-                    Assert(hprod(size) != 0);
+                    Assert(ek::hprod(size) != 0);
                     block->set_size(size);
                     block->set_offset(offset);
 
@@ -145,7 +145,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         sampler->set_samples_per_wavefront((uint32_t) samples_per_pass);
 
         ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());
-        ScalarUInt32 wavefront_size = hprod(film_size) * (uint32_t) samples_per_pass;
+        ScalarUInt32 wavefront_size = ek::hprod(film_size) * (uint32_t) samples_per_pass;
         if (sampler->wavefront_size() != wavefront_size)
             sampler->seed(0, wavefront_size);
 

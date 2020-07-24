@@ -534,10 +534,10 @@ ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Shape)
                                    const typename Class::Medium *)
     ENOKI_CALL_SUPPORT_GETTER_TYPE(exterior_medium, m_exterior_medium,
                                    const typename Class::Medium *)
-    auto is_emitter() const { return neq(emitter(), nullptr); }
-    auto is_sensor() const { return neq(sensor(), nullptr); }
-    auto is_medium_transition() const { return neq(interior_medium(), nullptr) ||
-                                               neq(exterior_medium(), nullptr); }
+    auto is_emitter() const { return ek::neq(emitter(), nullptr); }
+    auto is_sensor() const { return ek::neq(sensor(), nullptr); }
+    auto is_medium_transition() const { return ek::neq(interior_medium(), nullptr) ||
+                                               ek::neq(exterior_medium(), nullptr); }
 ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Shape)
 
 //! @}

@@ -261,7 +261,7 @@ public:
           m_name(name), m_transform(transform), m_mean(mean),
           m_filter_type(filter_type), m_wrap_mode(wrap_mode){
         m_data = DynamicBuffer<Float>::copy(bitmap->data(),
-            hprod(m_resolution) * Channels);
+            ek::hprod(m_resolution) * Channels);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -394,7 +394,7 @@ public:
             ek::masked(mod, mod < 0) += T(m_resolution);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = ek::select(eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
+                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
 
             return mod;
         }
@@ -485,7 +485,7 @@ public:
         }
 
         auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
-        ScalarVector2f inv_resolution = rcp(ScalarVector2f(m_resolution));
+        ScalarVector2f inv_resolution = ek::rcp(ScalarVector2f(m_resolution));
 
         if (m_filter_type == FilterType::Nearest) {
             sample2 = (Point2f(pos) + sample2) * inv_resolution;
@@ -511,7 +511,7 @@ public:
             }
         }
 
-        return { sample2, pdf * hprod(m_resolution) };
+        return { sample2, pdf * ek::hprod(m_resolution) };
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
@@ -546,7 +546,7 @@ public:
             Float v0 = fmadd(w0.x(), v00, w1.x() * v10),
                   v1 = fmadd(w0.x(), v01, w1.x() * v11);
 
-            return fmadd(w0.y(), v0, w1.y() * v1) * hprod(m_resolution);
+            return fmadd(w0.y(), v0, w1.y() * v1) * ek::hprod(m_resolution);
         } else {
             // Scale to bitmap resolution, no shift
             Point2f uv = pos_ * m_resolution;
@@ -554,7 +554,7 @@ public:
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i = wrap(floor2int<Vector2i>(uv));
 
-            return m_distr2d->pdf(uv_i, active) * hprod(m_resolution);
+            return m_distr2d->pdf(uv_i, active) * ek::hprod(m_resolution);
         }
     }
 
@@ -604,7 +604,7 @@ protected:
         const ScalarFloat *ptr = m_data.data();
 
         double mean = 0.0;
-        size_t pixel_count = (size_t) hprod(m_resolution);
+        size_t pixel_count = (size_t) ek::hprod(m_resolution);
         bool bad = false;
 
         if (Channels == 3) {

@@ -10,9 +10,9 @@ MTS_PY_EXPORT(math) {
 
     m.attr("E")               = py::cast(math::E<Float>);
     m.attr("Pi")              = py::cast(ek::Pi<Float>);
-    m.attr("InvPi")           = py::cast(math::InvPi<Float>);
-    m.attr("InvTwoPi")        = py::cast(math::InvTwoPi<Float>);
-    m.attr("InvFourPi")       = py::cast(math::InvFourPi<Float>);
+    m.attr("InvPi")           = py::cast(ek::InvPi<Float>);
+    m.attr("InvTwoPi")        = py::cast(ek::InvTwoPi<Float>);
+    m.attr("InvFourPi")       = py::cast(ek::InvFourPi<Float>);
     m.attr("SqrtPi")          = py::cast(math::SqrtPi<Float>);
     m.attr("InvSqrtPi")       = py::cast(math::InvSqrtPi<Float>);
     m.attr("SqrtTwo")         = py::cast(math::SqrtTwo<Float>);

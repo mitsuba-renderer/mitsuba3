@@ -613,7 +613,7 @@ public:
             }
         }
 
-        if (any(eq(m_valid, (uint32_t) -1)))
+        if (any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
         m_integral = ScalarFloat(integral);
@@ -748,7 +748,7 @@ public:
 
         Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
-              t        = ek::select(eq(y0, y1), t_const, t_linear);
+              t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
         return fmadd(t, w, x0);
     }

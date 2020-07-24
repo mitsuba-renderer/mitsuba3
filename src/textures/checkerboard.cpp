@@ -50,7 +50,7 @@ public:
         ek::mask_t<Point2f> mask = uv - floor(uv) > .5f;
         UnpolarizedSpectrum result = ek::zero<UnpolarizedSpectrum>();
 
-        Mask m0 = eq(mask.x(), mask.y()),
+        Mask m0 = ek::eq(mask.x(), mask.y()),
              m1 = !m0;
 
         m0 &= active; m1 &= active;
@@ -71,7 +71,7 @@ public:
         ek::mask_t<Point2f> mask = (uv - floor(uv)) > .5f;
         Float result = 0.f;
 
-        Mask m0 = neq(mask.x(), mask.y()),
+        Mask m0 = ek::neq(mask.x(), mask.y()),
              m1 = !m0;
 
         m0 &= active; m1 &= active;

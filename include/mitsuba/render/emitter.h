@@ -53,7 +53,7 @@ constexpr uint32_t operator &(uint32_t f1, EmitterFlags f2)      { return f1 & (
 constexpr uint32_t operator ~(EmitterFlags f1)                   { return ~(uint32_t) f1; }
 constexpr uint32_t operator +(EmitterFlags e)                    { return (uint32_t) e; }
 template <typename UInt32>
-constexpr auto has_flag(UInt32 flags, EmitterFlags f)            { return neq(flags & (uint32_t) f, 0u); }
+constexpr auto has_flag(UInt32 flags, EmitterFlags f)            { return ek::neq(flags & (uint32_t) f, 0u); }
 
 
 

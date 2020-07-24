@@ -83,7 +83,7 @@ template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.
  */
 template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
     Float s, c;
-    std::tie(s, c) = sincos(phase);
+    std::tie(s, c) = ek::sincos(phase);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -123,7 +123,7 @@ template <typename Float> MuellerMatrix<Float> diattenuator(Float x, Float y) {
   * "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
   */
 template <typename Float> MuellerMatrix<Float> rotator(Float theta) {
-    auto [s, c] = sincos(2.f * theta);
+    auto [s, c] = ek::sincos(2.f * theta);
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, c, s, 0,
@@ -177,7 +177,7 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
         fresnel_polarized(cos_theta_i, eta);
 
     Float sin_delta, cos_delta;
-    std::tie(sin_delta, cos_delta) = ek::sincos_arg_diff(a_s, a_p);
+    std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_s, a_p);
 
     Float r_s = ek::abs(ek::sqr(a_s)),
           r_p = ek::abs(ek::sqr(a_p)),

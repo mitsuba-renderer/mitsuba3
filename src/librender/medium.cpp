@@ -50,19 +50,19 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint = max(ray.mint, mint);
-    maxt = min(ray.maxt, maxt);
+    mint = ek::max(ray.mint, mint);
+    maxt = ek::min(ray.maxt, maxt);
 
     auto combined_extinction = get_combined_extinction(mi, active);
     Float m                  = combined_extinction[0];
     if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-        ek::masked(m, eq(channel, 1u)) = combined_extinction[1];
-        ek::masked(m, eq(channel, 2u)) = combined_extinction[2];
+        ek::masked(m, ek::eq(channel, 1u)) = combined_extinction[1];
+        ek::masked(m, ek::eq(channel, 2u)) = combined_extinction[2];
     } else {
         ENOKI_MARK_USED(channel);
     }
 
-    Float sampled_t = mint + (-ek::log(1 - sample) / m);
+    Float sampled_t = mint + (-log(1 - sample) / m);
     Mask valid_mi   = active && (sampled_t <= maxt);
     mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p            = ray(sampled_t);
@@ -82,8 +82,8 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
                                          Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
-    Float t      = min(mi.t, si.t) - mi.mint;
-    UnpolarizedSpectrum tr  = exp(-t * mi.combined_extinction);
+    Float t      = ek::min(mi.t, si.t) - mi.mint;
+    UnpolarizedSpectrum tr  = ek::exp(-t * mi.combined_extinction);
     UnpolarizedSpectrum pdf = ek::select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };
 }

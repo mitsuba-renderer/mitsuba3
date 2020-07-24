@@ -101,11 +101,11 @@ public:
          // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
         auto [S, Q, T] = transform_decompose(m_to_world.matrix, 25);
 
-        if (abs(S[0][1]) > 1e-6f || abs(S[0][2]) > 1e-6f || abs(S[1][0]) > 1e-6f ||
-            abs(S[1][2]) > 1e-6f || abs(S[2][0]) > 1e-6f || abs(S[2][1]) > 1e-6f)
+        if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
+            ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
             Log(Warn, "'to_world' transform shouldn't contain any shearing!");
 
-        if (!(abs(S[0][0] - S[1][1]) < 1e-6f))
+        if (!(ek::abs(S[0][0] - S[1][1]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
 
         m_radius = S[0][0];
@@ -120,20 +120,20 @@ public:
         m_to_world = transform_compose(ScalarMatrix3f(1.f), Q, T);
         m_to_object = m_to_world.inverse();
 
-        m_inv_surface_area = rcp(surface_area());
+        m_inv_surface_area = ek::rcp(surface_area());
     }
 
     ScalarBoundingBox3f bbox() const override {
         ScalarVector3f x1 = m_to_world * ScalarVector3f(m_radius, 0.f, 0.f),
                        x2 = m_to_world * ScalarVector3f(0.f, m_radius, 0.f),
-                       x  = sqrt(sqr(x1) + sqr(x2));
+                       x  = ek::sqrt(sqr(x1) + sqr(x2));
 
         ScalarPoint3f p0 = m_to_world * ScalarPoint3f(0.f, 0.f, 0.f),
                       p1 = m_to_world * ScalarPoint3f(0.f, 0.f, m_length);
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
-        return ScalarBoundingBox3f(min(p0 - x, p1 - x), max(p0 + x, p1 + x));
+        return ScalarBoundingBox3f(min(p0 - x, p1 - x), ek::max(p0 + x, p1 + x));
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
@@ -166,17 +166,17 @@ public:
 
         // Project the cylinder direction onto the plane
         FloatP8 dp   = ek::dot(cyl_d, face_n);
-        MaskP8 valid = neq(dp, 0.f);
+        MaskP8 valid = ek::neq(dp, 0.f);
 
         // Compute semimajor/minor axes of ellipse
-        Vector3fP8 v1 = fnmadd(face_n, dp, cyl_d);
+        Vector3fP8 v1 = ek::fnmadd(face_n, dp, cyl_d);
         FloatP8 v1_n2 = ek::squared_norm(v1);
-        v1 = ek::select(neq(v1_n2, 0.f), v1 * ek::rsqrt(v1_n2),
+        v1 = ek::select(ek::neq(v1_n2, 0.f), v1 * ek::rsqrt(v1_n2),
                     coordinate_system(face_n).first);
         Vector3fP8 v2 = cross(face_n, v1);
 
         // Compute length of axes
-        v1 *= m_radius / abs(dp);
+        v1 *= m_radius / ek::abs(dp);
         v2 *= m_radius;
 
         // Compute center of ellipse
@@ -185,16 +185,16 @@ public:
         center[neq(face_n, 0.f)] = face_p;
 
         // Compute ellipse minima and maxima
-        Vector3fP8 x = sqrt(sqr(v1) + sqr(v2));
+        Vector3fP8 x = ek::sqrt(sqr(v1) + sqr(v2));
         BoundingBox3fP8 ellipse_bounds(center - x, center + x);
         MaskP8 ellipse_overlap = valid && bbox.overlaps(ellipse_bounds);
         ellipse_bounds.clip(bbox);
 
         return ScalarBoundingBox3f(
             hmin_inner(select(ellipse_overlap, ellipse_bounds.min,
-                              Point3fP8(std::numeric_limits<ScalarFloat>::infinity()))),
+                              Point3fP8(ek::Infinity<ScalarFloat>))),
             hmax_inner(select(ellipse_overlap, ellipse_bounds.max,
-                              Point3fP8(-std::numeric_limits<ScalarFloat>::infinity()))));
+                              Point3fP8(-ek::Infinity<ScalarFloat>))));
     }
 
     ScalarFloat surface_area() const override {
@@ -209,7 +209,7 @@ public:
                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        auto [sin_theta, cos_theta] = sincos(2.f * ek::Pi<Float> * sample.y());
+        auto [sin_theta, cos_theta] = ek::sincos(2.f * ek::Pi<Float> * sample.y());
 
         Point3f p(cos_theta * m_radius,
                   sin_theta * m_radius,
@@ -358,10 +358,10 @@ public:
 
         Vector3f local = m_to_object.transform_affine(si.p);
 
-        Float phi = atan2(local.y(), local.x());
+        Float phi = ek::atan2(local.y(), local.x());
         ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
-        si.uv = Point2f(phi * math::InvTwoPi<Float>, local.z() / m_length);
+        si.uv = Point2f(phi * ek::InvTwoPi<Float>, local.z() / m_length);
 
         Vector3f dp_du = 2.f * ek::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
@@ -371,7 +371,7 @@ public:
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */
-        si.p += si.n * (m_radius - ek::norm(head<2>(local)));
+        si.p += si.n * (m_radius - ek::norm(ek::head<2>(local)));
 
         if (m_flip_normals)
             si.n *= -1.f;

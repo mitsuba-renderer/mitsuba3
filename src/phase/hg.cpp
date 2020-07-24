@@ -50,7 +50,7 @@ public:
 
     MTS_INLINE Float eval_hg(Float cos_theta) const {
         Float temp = 1.0f + m_g * m_g + 2.0f * m_g * cos_theta;
-        return math::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * ek::sqrt(temp));
+        return ek::InvFourPi<ScalarFloat> * (1 - m_g * m_g) / (temp * ek::sqrt(temp));
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,

@@ -68,7 +68,7 @@ public:
     void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
         m_bsphere.radius =
-            max(math::RayEpsilon<Float>,
+            ek::max(math::RayEpsilon<Float>,
                 m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
     }
 

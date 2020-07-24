@@ -203,7 +203,7 @@ public:
         Vector3f e1 = p1 - p0, e2 = p2 - p0;
 
         Vector3f pvec = cross(ray.d, e2);
-        Float inv_det = rcp(ek::dot(e1, pvec));
+        Float inv_det = ek::rcp(ek::dot(e1, pvec));
 
         Vector3f tvec = ray.o - p0;
         Float u = ek::dot(tvec, pvec) * inv_det;

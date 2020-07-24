@@ -38,7 +38,7 @@ public:
     }
 
     Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        x = abs(x);
+        x = ek::abs(x);
 
         Float x1     = ek::Pi<Float> * x,
               x2     = x1 / m_radius,

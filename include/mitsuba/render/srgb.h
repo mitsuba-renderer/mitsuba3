@@ -15,7 +15,7 @@ MTS_INLINE Spectrum srgb_model_eval(const Array3f &coeff,
 
         return ek::select(
             ek::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-            max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f))
+            ek::max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f))
         );
     } else {
         Throw("srgb_model_eval(): invoked for a non-spectral color type!");
@@ -30,7 +30,7 @@ MTS_INLINE ek::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
     Vec lambda = linspace<Vec>(MTS_WAVELENGTH_MIN, MTS_WAVELENGTH_MAX);
     Vec v = fmadd(fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
     Vec result = ek::select(ek::isinf(coeff.z()), fmadd(sign(coeff.z()), .5f, .5f),
-                        max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f)));
+                        ek::max(0.f, fmadd(.5f * v, ek::rsqrt(fmadd(v, v, 1.f)), .5f)));
     return hmean(result);
 }
 

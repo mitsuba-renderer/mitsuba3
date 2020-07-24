@@ -150,7 +150,7 @@ public:
             // Determine the length of the transformed normal before it was re-normalized
             Normal3f tn = m_to_world.transform_affine(
                 normalize(m_to_object.transform_affine(n)));
-            Float inv_len = rcp(norm(tn));
+            Float inv_len = ek::rcp(ek::norm(tn));
             tn *= inv_len;
 
             // Apply transform to dn_du and dn_dv

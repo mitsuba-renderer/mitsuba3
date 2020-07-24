@@ -88,7 +88,7 @@ public:
         ScalarNormal3f normal = normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
         m_frame = ScalarFrame3f(dp_du, dp_dv, normal);
 
-        m_inv_surface_area = rcp(surface_area());
+        m_inv_surface_area = ek::rcp(surface_area());
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -147,8 +147,8 @@ public:
         // Is intersection within ray segment and rectangle?
         active = active && t >= ray.mint
                         && t <= ray.maxt
-                        && abs(local.x()) <= 1.f
-                        && abs(local.y()) <= 1.f;
+                        && ek::abs(local.x()) <= 1.f
+                        && ek::abs(local.y()) <= 1.f;
 
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
         pi.t = ek::select(active, t, ek::Infinity<Float>);
@@ -168,8 +168,8 @@ public:
         // Is intersection within ray segment and rectangle?
         return active && t >= ray.mint
                       && t <= ray.maxt
-                      && abs(local.x()) <= 1.f
-                      && abs(local.y()) <= 1.f;
+                      && ek::abs(local.x()) <= 1.f
+                      && ek::abs(local.y()) <= 1.f;
     }
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,

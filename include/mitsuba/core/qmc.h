@@ -87,7 +87,7 @@ public:
             active = ek::neq(index, 0);
         }
 
-        return min(ek::OneMinusEpsilon<Float>, Float(value) * factor);
+        return ek::min(ek::OneMinusEpsilon<Float>, Float(value) * factor);
     }
 
     /**
@@ -126,7 +126,7 @@ public:
         }
 
         Float correction(base.recip * (Float) perm[0] / ((Float) 1 - base.recip));
-        return min(ek::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
+        return ek::min(ek::OneMinusEpsilon<Float>, (Float(value) + correction) * factor);
     }
 
     /// Return the permutation corresponding to the given prime number basis

@@ -106,7 +106,7 @@ public:
 
     ScalarFloat surface_area() const override {
         // First compute height of the ellipse
-        ScalarFloat h = sqrt(sqr(m_dv) - sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
+        ScalarFloat h = ek::sqrt(sqr(m_dv) - sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
         return ek::Pi<ScalarFloat> * m_du * h;
     }
 
@@ -201,15 +201,15 @@ public:
 
         if (likely(has_flag(flags, HitComputeFlags::UV))) {
             Float r = ek::norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
-                  inv_r = rcp(r);
+                  inv_r = ek::rcp(r);
 
-            Float v = atan2(pi.prim_uv.y(), pi.prim_uv.x()) * math::InvTwoPi<Float>;
+            Float v = ek::atan2(pi.prim_uv.y(), pi.prim_uv.x()) * ek::InvTwoPi<Float>;
             ek::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
             if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
-                Float cos_phi = ek::select(neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
-                      sin_phi = ek::select(neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
+                Float cos_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
+                      sin_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
 
                 si.dp_du = m_to_world * Vector3f( cos_phi, sin_phi, 0.f);
                 si.dp_dv = m_to_world * Vector3f(-sin_phi, cos_phi, 0.f);

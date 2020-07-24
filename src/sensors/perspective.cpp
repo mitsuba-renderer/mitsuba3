@@ -155,7 +155,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = normalize(Vector3f(near_p));
 
-        Float inv_z = rcp(d.z());
+        Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
@@ -183,7 +183,7 @@ public:
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = normalize(Vector3f(near_p));
-        Float inv_z = rcp(d.z());
+        Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
@@ -252,7 +252,7 @@ public:
               d_omega = 1 / (A' * cos^3(theta))
         */
 
-        Float ct = Frame3f::cos_theta(d), inv_ct = rcp(ct);
+        Float ct = Frame3f::cos_theta(d), inv_ct = ek::rcp(ct);
 
         // Compute the position on the plane at distance 1
         Point2f p(d.x() * inv_ct, d.y() * inv_ct);

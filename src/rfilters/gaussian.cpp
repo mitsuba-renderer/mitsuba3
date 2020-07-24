@@ -43,7 +43,7 @@ public:
     }
 
     Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        return max(0.f, exp(m_alpha * sqr(x)) - m_bias);
+        return ek::max(0.f, ek::exp(m_alpha * sqr(x)) - m_bias);
     }
 
     std::string to_string() const override {

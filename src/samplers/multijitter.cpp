@@ -72,12 +72,12 @@ public:
         m_resolution[1] = uint32_t(sqrt(ScalarFloat(m_sample_count)));
         m_resolution[0] = (m_sample_count + m_resolution[1] - 1) / m_resolution[1];
 
-        if (m_sample_count != hprod(m_resolution))
-            Log(Warn, "Sample count rounded up to %i", hprod(m_resolution));
+        if (m_sample_count != ek::hprod(m_resolution))
+            Log(Warn, "Sample count rounded up to %i", ek::hprod(m_resolution));
 
-        m_sample_count = hprod(m_resolution);
-        m_inv_sample_count = rcp(ScalarFloat(m_sample_count));
-        m_inv_resolution   = rcp(ScalarPoint2f(m_resolution));
+        m_sample_count = ek::hprod(m_resolution);
+        m_inv_sample_count = ek::rcp(ScalarFloat(m_sample_count));
+        m_inv_resolution   = ek::rcp(ScalarPoint2f(m_resolution));
         m_resolution_x_div = m_resolution[0];
     }
 

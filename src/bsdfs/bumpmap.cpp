@@ -110,7 +110,7 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= any(neq(depolarize(weight), 0.f));
+        active &= any(ek::neq(depolarize(weight), 0.f));
 
         // Transform sampled 'wo' back to original frame and check orientation
         Vector3f perturbed_wo = perturbed_si.to_world(bs.wo);
@@ -172,7 +172,7 @@ public:
         result.n = si.to_local(result.n);
 
         // Gram-schmidt orthogonalization to compute local shading frame
-        result.s = normalize(fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
+        result.s = normalize(ek::fnmadd(result.n, ek::dot(result.n, si.dp_du), si.dp_du));
         result.t = cross(result.n, result.s);
 
         return result;

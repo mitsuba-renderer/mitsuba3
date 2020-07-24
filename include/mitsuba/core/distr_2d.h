@@ -82,7 +82,7 @@ public:
                            const ScalarVector2u &size)
         : m_size(size) {
 
-        m_cond_cdf = empty<FloatStorage>(hprod(m_size));
+        m_cond_cdf = empty<FloatStorage>(ek::hprod(m_size));
         m_cond_cdf.managed();
         m_marg_cdf = empty<FloatStorage>(m_size.y());
         m_marg_cdf.managed();
@@ -165,8 +165,8 @@ public:
 
         sample.x() -= col_cdf_0;
         sample.y() -= row_cdf_0;
-        ek::masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
-        ek::masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        ek::masked(sample.x(), ek::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        ek::masked(sample.y(), ek::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         return { Point2u(col, row), (col_cdf_1 - col_cdf_0) * m_normalization, sample };
     }
@@ -397,7 +397,7 @@ public:
                     double sum = 0.0;
                     for (uint32_t i = 0; i < m_levels[0].size; ++i)
                         sum += (double) data[offset + i];
-                    scale = hprod(n_patches) / (ScalarFloat) sum;
+                    scale = ek::hprod(n_patches) / (ScalarFloat) sum;
                 }
                 for (uint32_t i = 0; i < m_levels[0].size; ++i)
                     m_levels[0].data_ptr[offset + i] = data[offset + i] * scale;
@@ -414,7 +414,7 @@ public:
         for (int level = max_level; level >= 0; --level) {
             level_size += level_size & 1u; // zero-pad
             m_levels.emplace_back(level_size, m_slices);
-            level_size = sr<1>(level_size);
+            level_size = ek::sr<1>(level_size);
         }
 
         for (uint32_t slice = 0; slice < m_slices; ++slice) {
@@ -437,7 +437,7 @@ public:
             }
 
             // Copy and normalize fine resolution interpolant
-            ScalarFloat scale = normalize ? (ScalarFloat) (hprod(n_patches) / sum) : 1.f;
+            ScalarFloat scale = normalize ? (ScalarFloat) (ek::hprod(n_patches) / sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
                 m_levels[0].data_ptr[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
@@ -450,7 +450,7 @@ public:
                 Level &l1 = m_levels[level];
                 offset0 = l0.size * slice;
                 offset1 = l1.size * slice;
-                level_size = sr<1>(level_size + 1u);
+                level_size = ek::sr<1>(level_size + 1u);
 
                 // Downsample
                 for (uint32_t y = 0; y < level_size.y(); ++y) {
@@ -487,7 +487,7 @@ public:
         for (int l = (int) m_levels.size() - 2; l > 0; --l) {
             const Level &level = m_levels[l];
 
-            offset = sl<1>(offset);
+            offset = ek::sl<1>(offset);
 
             // Fetch values from next MIP level
             UInt32 offset_i = level.index(offset) + slice_offset * level.size;
@@ -576,7 +576,7 @@ public:
         sample *= m_inv_patch_size;
 
         /// Point2f() -> Point2i() cast because AVX2 has no _mm256_cvtps_epu32 :(
-        Point2u offset = min(Point2u(Point2i(sample)), m_max_patch_index);
+        Point2u offset = ek::min(Point2u(Point2i(sample)), m_max_patch_index);
         UInt32 offset_i =
             offset.x() + offset.y() * level0.width + slice_offset * level0.size;
 
@@ -619,8 +619,8 @@ public:
             v11 = level.lookup(offset_i, m_param_strides,
                                param_weight, active);
 
-            Mask x_mask = neq(offset.x() & 1u, 0u),
-                 y_mask = neq(offset.y() & 1u, 0u);
+            Mask x_mask = ek::neq(offset.x() & 1u, 0u),
+                 y_mask = ek::neq(offset.y() & 1u, 0u);
 
             Float r0 = v00 + v10,
                   r1 = v01 + v11,
@@ -638,7 +638,7 @@ public:
             // Avoid issues with roundoff error
             sample = ek::clamp(sample, 0.f, 1.f);
 
-            offset = sr<1>(offset);
+            offset = ek::sr<1>(offset);
         }
 
         return { sample, pdf };
@@ -659,7 +659,7 @@ public:
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Point2u offset = min(Point2u(Point2i(pos)), m_max_patch_index);
+        Point2u offset = ek::min(Point2u(Point2i(pos)), m_max_patch_index);
         pos -= Point2f(Point2i(offset));
 
         const Level &level0 = m_levels[0];
@@ -722,8 +722,8 @@ protected:
 
         Level() { }
         Level(ScalarVector2u res, uint32_t slices)
-            : size(hprod(res)), width(res.x()),
-              data(ek::zero<FloatStorage>(hprod(res) * slices)) {
+            : size(ek::hprod(res)), width(res.x()),
+              data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
             data.managed();
             data_ptr = data.data();
         }
@@ -737,7 +737,7 @@ protected:
          */
         template <typename Point2u>
         MTS_INLINE ek::value_t<Point2u> index(const Point2u &p) const {
-            return ((p.x() & 1u) | sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
+            return ((p.x() & 1u) | ek::sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
 
@@ -1014,12 +1014,12 @@ public:
 
         // Compute linear interpolation weights
         pos *= m_inv_patch_size;
-        Point2u offset = min(Point2u(Point2i(pos)), m_size - 2u);
+        Point2u offset = ek::min(Point2u(Point2i(pos)), m_size - 2u);
         pos -= Point2f(Point2i(offset));
 
         UInt32 index = offset.x() + offset.y() * m_size.x();
 
-        uint32_t size = hprod(m_size);
+        uint32_t size = ek::hprod(m_size);
         if (Dimension != 0)
             index += slice_offset * size;
 
@@ -1057,7 +1057,7 @@ public:
         }
         oss << "  storage = { " << m_slices << " slice" << (m_slices > 1 ? "s" : "")
             << ", ";
-        size_t size = m_slices * (hprod(m_size) * 2 + m_size.y());
+        size_t size = m_slices * (ek::hprod(m_size) * 2 + m_size.y());
         oss << util::mem_string(size * sizeof(ScalarFloat)) << " }" << std::endl
             << "]";
         return oss.str();
@@ -1093,9 +1093,9 @@ protected:
         MTS_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
-        uint32_t n_cond = hprod(m_size - 1),
+        uint32_t n_cond = ek::hprod(m_size - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = hprod(m_size);
+                 n_data = ek::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1127,7 +1127,7 @@ protected:
               row_cdf_1 = fetch_marginal(row, active);
 
         sample.y() -= row_cdf_0;
-        ek::masked(sample.y(), neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
+        ek::masked(sample.y(), ek::neq(row_cdf_1, row_cdf_0)) /= row_cdf_1 - row_cdf_0;
 
         /// Multiply by last entry of conditional CDF
         UInt32 offset_cond = slice_offset * n_cond + row * (m_size.x() - 1);
@@ -1150,7 +1150,7 @@ protected:
                                  n_cond, param_weight, active);
 
         sample.x() -= col_cdf_0;
-        ek::masked(sample.x(), neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
+        ek::masked(sample.x(), ek::neq(col_cdf_1, col_cdf_0)) /= col_cdf_1 - col_cdf_0;
 
         // Sample a position on the bilinear patch
         UInt32 offset_data = slice_offset * n_data + row * m_size.x() + col;
@@ -1177,9 +1177,9 @@ protected:
         MTS_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
-        uint32_t n_cond = hprod(m_size - 1),
+        uint32_t n_cond = ek::hprod(m_size - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = hprod(m_size);
+                 n_data = ek::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1190,7 +1190,7 @@ protected:
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Point2u offset = min(Point2u(Point2i(sample)), m_size - 2u);
+        Point2u offset = ek::min(Point2u(Point2i(sample)), m_size - 2u);
         UInt32 index = offset.x() + offset.y() * m_size.x() + slice_offset * n_data;
         sample -= Point2f(Point2i(offset));
 
@@ -1218,8 +1218,8 @@ protected:
               col_cdf_1 = lookup(m_cond_cdf.data(), offset_cond + offset.x(),
                                  n_cond, param_weight, active);
 
-        sample.x() = lerp(col_cdf_0, col_cdf_1, sample.x());
-        sample.y() = lerp(row_cdf_0, row_cdf_1, sample.y());
+        sample.x() = ek::lerp(col_cdf_0, col_cdf_1, sample.x());
+        sample.y() = ek::lerp(row_cdf_0, row_cdf_1, sample.y());
 
         sample.x() /= lookup(m_cond_cdf.data(),
                              offset_cond + m_size.x() - 2,
@@ -1241,7 +1241,7 @@ protected:
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = hprod(m_size);
+                 n_data = ek::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1284,7 +1284,7 @@ protected:
         sample.y() = sample_segment(sample.y(), m_inv_patch_size.y(), r0, r1);
 
         // Multiply sample.x() by the integrated density along the 'x' axis
-        sample.x() *= lerp(r0, r1, sample.y());
+        sample.x() *= ek::lerp(r0, r1, sample.y());
 
         // Sample the column next
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
@@ -1294,7 +1294,7 @@ protected:
                               idx, n_cond, param_weight, mask),
                   v1 = lookup(m_cond_cdf.data() + m_size.x() - 1,
                               idx, n_cond, param_weight, mask);
-            return lerp(v0, v1, sample.y());
+            return ek::lerp(v0, v1, sample.y());
         };
 
         UInt32 col = ek::binary_search(
@@ -1316,14 +1316,14 @@ protected:
                            n_data, param_weight, active),
               v11 = lookup(m_data.data() + m_size.x() + 1, offset_data,
                            n_data, param_weight, active),
-              c0  = lerp(v00, v01, sample.y()),
-              c1  = lerp(v10, v11, sample.y());
+              c0  = ek::lerp(v00, v01, sample.y()),
+              c1  = ek::lerp(v10, v11, sample.y());
 
         sample.x() = sample_segment(sample.x(), m_inv_patch_size.x(), c0, c1);
 
         return {
             (Point2i(Point2u(col, row)) + sample) * m_patch_size,
-            lerp(c0, c1, sample.x())
+            ek::lerp(c0, c1, sample.x())
         };
     }
 
@@ -1336,7 +1336,7 @@ protected:
         // Size of a slice of various tables (conditional/marginal/data)
         uint32_t n_cond = m_size.y() * (m_size.x() - 1),
                  n_marg = m_size.y() - 1,
-                 n_data = hprod(m_size);
+                 n_data = ek::hprod(m_size);
 
         /// Find offset and interpolation weights wrt. conditional parameters
         Float param_weight[2 * DimensionInt];
@@ -1347,7 +1347,7 @@ protected:
 
         // Fetch values at corners of bilinear patch
         sample *= m_inv_patch_size;
-        Point2u pos = min(Point2u(Point2i(sample)), m_size - 2u);
+        Point2u pos = ek::min(Point2u(Point2i(sample)), m_size - 2u);
         sample -= Point2f(Point2i(pos));
 
         UInt32 offset_data =
@@ -1363,9 +1363,9 @@ protected:
               v11 = lookup(m_data.data() + m_size.x() + 1, offset_data,
                            n_data, param_weight, active);
 
-        Float c0  = lerp(v00, v01, sample.y()),
-              c1  = lerp(v10, v11, sample.y()),
-              pdf = lerp(c0, c1, sample.x());
+        Float c0  = ek::lerp(v00, v01, sample.y()),
+              c1  = ek::lerp(v10, v11, sample.y()),
+              pdf = ek::lerp(c0, c1, sample.x());
 
         sample.x() = invert_segment(sample.x(), m_patch_size.x(), c0, c1);
 
@@ -1379,7 +1379,7 @@ protected:
                               idx, n_cond, param_weight, mask),
                   v1 = lookup(m_cond_cdf.data() + m_size.x() - 1,
                               idx, n_cond, param_weight, mask);
-            return lerp(v0, v1, sample.y());
+            return ek::lerp(v0, v1, sample.y());
         };
 
         sample.x() += fetch_conditional(pos.x() - 1, active && pos.x() > 0);
@@ -1389,7 +1389,7 @@ protected:
               r1 = lookup(m_cond_cdf.data() + 2 * (m_size.x() - 1) - 1,
                           offset_cond, n_cond, param_weight, active);
 
-        sample.x() /= lerp(r0, r1, sample.y());
+        sample.x() /= ek::lerp(r0, r1, sample.y());
 
         // Invert the Y component
         sample.y() = invert_segment(sample.y(), m_patch_size.y(), r0, r1);
@@ -1407,18 +1407,18 @@ protected:
 
     MTS_INLINE Float sample_segment(Float sample, ScalarFloat inv_width,
                                     Float v0, Float v1) const {
-        Mask non_const = abs(v0 - v1) > 1e-4f * (v0 + v1);
+        Mask non_const = ek::abs(v0 - v1) > 1e-4f * (v0 + v1);
         Float divisor = ek::select(non_const, v0 - v1, v0 + v1);
         sample *= 2.f * inv_width;
         ek::masked(sample, non_const) =
             v0 - ek::safe_sqrt(ek::sqr(v0) + sample * (v1 - v0));
-        ek::masked(sample, neq(divisor, 0.f)) /= divisor;
+        ek::masked(sample, ek::neq(divisor, 0.f)) /= divisor;
         return sample;
     }
 
     MTS_INLINE Float invert_segment(Float sample, ScalarFloat width,
                                     Float v0, Float v1) const {
-        return sample * lerp(v0, v1, .5f * sample) * width;
+        return sample * ek::lerp(v0, v1, .5f * sample) * width;
     }
 protected:
     /// Resolution of the discretized density function

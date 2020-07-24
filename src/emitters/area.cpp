@@ -90,7 +90,7 @@ public:
         } else {
             // Ipmortance sample texture
             std::tie(si.uv, pdf) = m_radiance->sample_position(sample2, active);
-            active &= neq(pdf, 0.f);
+            active &= ek::neq(pdf, 0.f);
 
             si = m_shape->eval_parameterization(Point2f(si.uv), active);
             active &= si.is_valid();
@@ -129,14 +129,14 @@ public:
         if (!m_radiance->is_spatially_varying()) {
             // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
             ds = m_shape->sample_direction(it, sample, active);
-            active &= ek::dot(ds.d, ds.n) < 0.f && neq(ds.pdf, 0.f);
+            active &= ek::dot(ds.d, ds.n) < 0.f && ek::neq(ds.pdf, 0.f);
 
             SurfaceInteraction3f si(ds, it.wavelengths);
             spec = m_radiance->eval(si, active) / ds.pdf;
         } else {
             // Importance sample the texture, then map onto the shape
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
-            active &= neq(pdf, 0.f);
+            active &= ek::neq(pdf, 0.f);
 
             SurfaceInteraction3f si = m_shape->eval_parameterization(uv, active);
             si.wavelengths = it.wavelengths;
@@ -150,7 +150,7 @@ public:
             ds.d = ds.p - it.p;
 
             Float dist_squared = ek::squared_norm(ds.d);
-            ds.dist = sqrt(dist_squared);
+            ds.dist = ek::sqrt(dist_squared);
             ds.d /= ds.dist;
 
             Float dp = ek::dot(ds.d, ds.n);
@@ -180,7 +180,7 @@ public:
             active &= si.is_valid();
 
             value = m_radiance->pdf_position(ds.uv, active) * sqr(ds.dist) /
-                    (norm(cross(si.dp_du, si.dp_dv)) * -dp);
+                    (ek::norm(cross(si.dp_du, si.dp_dv)) * -dp);
         }
 
         return ek::select(active, value, 0.f);

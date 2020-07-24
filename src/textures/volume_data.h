@@ -25,7 +25,7 @@ template <typename Float>
 auto bbox_transform(const BoundingBox<Point<Float, 3>> &bbox) {
     MTS_IMPORT_CORE_TYPES()
 
-    ScalarVector3f d  = rcp(bbox.max - bbox.min);
+    ScalarVector3f d  = ek::rcp(bbox.max - bbox.min);
     auto scale_transf = ScalarTransform4f::scale(d);
     ScalarVector3f t  = -1.f * ScalarVector3f(bbox.min.x(), bbox.min.y(), bbox.min.z());
     auto translation  = ScalarTransform4f::translate(t);
@@ -65,7 +65,7 @@ read_binary_volume_data(const std::string &filename) {
     meta.shape.x() = detail::read<int32_t>(f);
     meta.shape.y() = detail::read<int32_t>(f);
     meta.shape.z() = detail::read<int32_t>(f);
-    size_t size    = hprod(meta.shape);
+    size_t size    = ek::hprod(meta.shape);
     if (size < 8)
         Throw("Invalid grid dimensions: %d x %d x %d < 8 (must have at "
               "least one value at each corner)",

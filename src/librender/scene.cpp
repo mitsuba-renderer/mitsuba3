@@ -181,7 +181,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
             // Randomly pick an emitter
             UInt32 index =
-                min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()),
+                ek::min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()),
                     (uint32_t) m_emitters.size() - 1);
 
             // Rescale sample.x() to lie in [0,1) again
@@ -194,14 +194,14 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
             // Account for the discrete probability of sampling this emitter
             ds.pdf *= emitter_pdf;
-            spec *= rcp(emitter_pdf);
+            spec *= ek::rcp(emitter_pdf);
         }
 
-        active &= neq(ds.pdf, 0.f);
+        active &= ek::neq(ds.pdf, 0.f);
 
         // Perform a visibility test if requested
         if (test_visibility && any_or<true>(active)) {
-            Ray3f ray(ref.p, ds.d, math::RayEpsilon<Float> * (1.f + hmax(abs(ref.p))),
+            Ray3f ray(ref.p, ds.d, math::RayEpsilon<Float> * (1.f + hmax(ek::abs(ref.p))),
                       ds.dist * (1.f - math::ShadowEpsilon<Float>), ref.time, ref.wavelengths);
             spec[ray_test(ray, active)] = 0.f;
         }

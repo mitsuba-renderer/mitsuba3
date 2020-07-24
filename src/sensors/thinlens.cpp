@@ -176,7 +176,7 @@ public:
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = normalize(Vector3f(focus_p - aperture_p));
-        Float inv_z = rcp(d.z());
+        Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
@@ -215,7 +215,7 @@ public:
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = normalize(Vector3f(focus_p - aperture_p));
-        Float inv_z = rcp(d.z());
+        Float inv_z = ek::rcp(d.z());
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 

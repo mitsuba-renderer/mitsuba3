@@ -70,8 +70,8 @@ public:
             Log(Warn, "Sample count should be square and power of two, rounding to %i", sqr(m_resolution));
 
         m_sample_count = sqr(m_resolution);
-        m_inv_sample_count = rcp(ScalarFloat(m_sample_count));
-        m_inv_resolution   = rcp(ScalarFloat(m_resolution));
+        m_inv_sample_count = ek::rcp(ScalarFloat(m_sample_count));
+        m_inv_resolution   = ek::rcp(ScalarFloat(m_resolution));
         m_resolution_div = m_resolution;
     }
 

@@ -52,12 +52,12 @@ template <typename Point_> struct BoundingBox {
 
     /// Test for equality against another bounding box
     bool operator==(const BoundingBox &bbox) const {
-        return ek::all_nested(eq(min, bbox.min) && eq(max, bbox.max));
+        return ek::all_nested(ek::eq(min, bbox.min) && ek::eq(max, bbox.max));
     }
 
     /// Test for inequality against another bounding box
     bool operator!=(const BoundingBox &bbox) const {
-        return ek::any_nested(neq(min, bbox.min) || neq(max, bbox.max));
+        return ek::any_nested(ek::neq(min, bbox.min) || ek::neq(max, bbox.max));
     }
 
     /**
@@ -128,7 +128,7 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Calculate the n-dimensional volume of the bounding box
-    Value volume() const { return hprod(max - min); }
+    Value volume() const { return ek::hprod(max - min); }
 
     /// Calculate the 2-dimensional surface area of a 3D bounding box
     Value surface_area() const {

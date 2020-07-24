@@ -11,7 +11,7 @@ Spiral::Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes)
       m_remaining_passes(passes) {
 
     m_blocks = Vector2i(ceil(Vector2f(m_size) / m_block_size));
-    m_block_count = hprod(m_blocks);
+    m_block_count = ek::hprod(m_blocks);
 
     reset();
 }
@@ -41,7 +41,7 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
     size_t block_id = m_block_counter + (m_remaining_passes - 1) * m_block_count;
 
     Vector2i offset(m_position * (int) m_block_size);
-    Vector2i size = min((int) m_block_size, m_size - offset);
+    Vector2i size = ek::min((int) m_block_size, m_size - offset);
     offset += m_offset;
 
     Assert(all(size > 0));

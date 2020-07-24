@@ -173,7 +173,7 @@ void embree_intersect_packet(int* valid,
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 
-    Mask active = neq(load<Int>(valid), 0);
+    Mask active = ek::neq(load<Int>(valid), 0);
     if (none(active))
         return;
 
@@ -307,11 +307,11 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
     ds.d = ds.p - it.p;
 
     Float dist_squared = ek::squared_norm(ds.d);
-    ds.dist = sqrt(dist_squared);
+    ds.dist = ek::sqrt(dist_squared);
     ds.d /= ds.dist;
 
     Float dp = abs_ek::dot(ds.d, ds.n);
-    ds.pdf *= ek::select(neq(dp, 0.f), dist_squared / dp, 0.f);
+    ds.pdf *= ek::select(ek::neq(dp, 0.f), dist_squared / dp, 0.f);
     ds.object = (const Object *) this;
 
     return ds;
@@ -325,7 +325,7 @@ MTS_VARIANT Float Shape<Float, Spectrum>::pdf_direction(const Interaction3f & /*
     Float pdf = pdf_position(ds, active),
            dp = abs_ek::dot(ds.d, ds.n);
 
-    pdf *= ek::select(neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
+    pdf *= ek::select(ek::neq(dp, 0.f), (ds.dist * ds.dist) / dp, 0.f);
 
     return pdf;
 }

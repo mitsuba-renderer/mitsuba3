@@ -38,7 +38,7 @@ public:
     }
 
     Float eval(Float x, ek::mask_t<Float> /* active */) const override {
-        x = abs(x);
+        x = ek::abs(x);
         Float x2 = sqr(x), x3 = x2*x;
 
         Float result = (1.f / 6.f) * ek::select(

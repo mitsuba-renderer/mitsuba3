@@ -77,7 +77,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                   v2 = vertex_position(fi[2]);
 
     return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(min(min(v0, v1), v2),
-                                                               max(max(v0, v1), v2));
+                                                               ek::max(max(v0, v1), v2));
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
@@ -439,10 +439,10 @@ Mesh<Float, Spectrum>::barycentric_coordinates(const SurfaceInteraction3f &si,
     Float b1  = ek::dot(du, rel), b2 = ek::dot(dv, rel),
           a11 = ek::dot(du, du), a12 = ek::dot(du, dv),
           a22 = ek::dot(dv, dv),
-          inv_det = rcp(a11 * a22 - a12 * a12);
+          inv_det = ek::rcp(a11 * a22 - a12 * a12);
 
-    Float u = fmsub (a22, b1, a12 * b2) * inv_det,
-          v = fnmadd(a12, b1, a11 * b2) * inv_det,
+    Float u = ek::fmsub (a22, b1, a12 * b2) * inv_det,
+          v = ek::fnmadd(a12, b1, a11 * b2) * inv_det,
           w = 1.f - u - v;
 
     return {w, u, v};
@@ -502,13 +502,13 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 
-            Float det     = fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
-                  inv_det = rcp(det);
+            Float det     = ek::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
+                  inv_det = ek::rcp(det);
 
-            Mask valid = neq(det, 0.f);
+            Mask valid = ek::neq(det, 0.f);
 
-            si.dp_du[valid] = fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
-            si.dp_dv[valid] = fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
+            si.dp_du[valid] = ek::fmsub( duv1.y(), dp0, duv0.y() * dp1) * inv_det;
+            si.dp_dv[valid] = ek::fnmadd(duv1.x(), dp0, duv0.x() * dp1) * inv_det;
         }
     }
 
@@ -536,8 +536,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             si.dn_du = (n1 - n0) * il;
             si.dn_dv = (n2 - n0) * il;
 
-            si.dn_du = fnmadd(N, ek::dot(N, si.dn_du), si.dn_du);
-            si.dn_dv = fnmadd(N, ek::dot(N, si.dn_dv), si.dn_dv);
+            si.dn_du = ek::fnmadd(N, ek::dot(N, si.dn_du), si.dn_du);
+            si.dn_dv = ek::fnmadd(N, ek::dot(N, si.dn_dv), si.dn_dv);
         }
     } else {
         si.sh_frame.n = si.n;

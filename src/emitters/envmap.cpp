@@ -117,7 +117,7 @@ public:
         }
 
         m_resolution = bitmap->size();
-        m_data = DynamicBuffer<Float>::copy(bitmap->data(), hprod(m_resolution) * 4);
+        m_data = DynamicBuffer<Float>::copy(bitmap->data(), ek::hprod(m_resolution) * 4);
 
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(luminance.get(), m_resolution);
@@ -127,7 +127,7 @@ public:
 
     void set_scene(const Scene *scene) override {
         m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = max(math::RayEpsilon<Float>,
+        m_bsphere.radius = ek::max(math::RayEpsilon<Float>,
                                m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
     }
 
@@ -139,8 +139,8 @@ public:
                          .transform_affine(-si.wi);
 
         /* Convert to latitude-longitude texture coordinates */
-        Point2f uv = Point2f(atan2(v.x(), -v.z()) * math::InvTwoPi<Float>,
-                             safe_acos(v.y()) * math::InvPi<Float>);
+        Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
+                             safe_acos(v.y()) * ek::InvPi<Float>);
         uv -= floor(uv);
 
         return unpolarized<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
@@ -198,8 +198,8 @@ public:
                          .transform_affine(ds.d);
 
         /* Convert to latitude-longitude texture coordinates */
-        Point2f uv = Point2f(atan2(d.x(), -d.z()) * math::InvTwoPi<Float>,
-                             safe_acos(d.y()) * math::InvPi<Float>);
+        Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,
+                             safe_acos(d.y()) * ek::InvPi<Float>);
         uv -= floor(uv);
 
         Float inv_sin_theta =
@@ -223,7 +223,7 @@ public:
         if (keys.empty() || string::contains(keys, "data")) {
             m_data.managed();
 
-            std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[hprod(m_resolution)]);
+            std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
 
             ScalarFloat *ptr     = (ScalarFloat *) m_data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
@@ -240,10 +240,10 @@ public:
                     if constexpr (is_monochromatic_v<Spectrum>) {
                         lum = coeff.x();
                     } else if constexpr (is_rgb_v<Spectrum>) {
-                        lum = mitsuba::luminance(ScalarColor3f(head<3>(coeff)));
+                        lum = mitsuba::luminance(ScalarColor3f(ek::head<3>(coeff)));
                     } else {
                         static_assert(is_spectral_v<Spectrum>);
-                        lum = srgb_model_mean(head<3>(coeff)) * coeff.w();
+                        lum = srgb_model_mean(ek::head<3>(coeff)) * coeff.w();
                     }
 
                     *lum_ptr++ = lum * sin_theta;
@@ -269,7 +269,7 @@ protected:
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
         uv *= Vector2f(m_resolution - 1u);
 
-        Point2u pos = min(Point2u(uv), m_resolution - 2u);
+        Point2u pos = ek::min(Point2u(uv), m_resolution - 2u);
 
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
@@ -286,10 +286,10 @@ protected:
             UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
             Float f0, f1, f;
 
-            s00 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v00), wavelengths);
-            s10 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v10), wavelengths);
-            s01 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v01), wavelengths);
-            s11 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(v11), wavelengths);
+            s00 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v00), wavelengths);
+            s10 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v10), wavelengths);
+            s01 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v01), wavelengths);
+            s11 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v11), wavelengths);
 
             s0  = fmadd(w0.x(), s00, w1.x() * s10);
             s1  = fmadd(w0.x(), s01, w1.x() * s11);
@@ -312,9 +312,9 @@ protected:
                      v  = fmadd(w0.y(), v0, w1.y() * v1);
 
             if constexpr (is_monochromatic_v<Spectrum>)
-                return head<1>(v) * m_scale;
+                return ek::head<1>(v) * m_scale;
             else
-                return head<3>(v) * m_scale;
+                return ek::head<3>(v) * m_scale;
         }
     }
 

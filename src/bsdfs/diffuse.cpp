@@ -114,7 +114,7 @@ public:
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
         UnpolarizedSpectrum value =
-            m_reflectance->eval(si, active) * math::InvPi<Float> * cos_theta_o;
+            m_reflectance->eval(si, active) * ek::InvPi<Float> * cos_theta_o;
 
         return ek::select(active, unpolarized<Spectrum>(value), 0.f);
     }

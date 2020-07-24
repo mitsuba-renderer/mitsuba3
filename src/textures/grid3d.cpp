@@ -64,7 +64,7 @@ public:
         auto [metadata, raw_data] = read_binary_volume_data<Float>(props.string("filename"));
         m_metadata                = metadata;
         m_raw                     = props.bool_("raw", false);
-        ScalarUInt32 size         = hprod(m_metadata.shape);
+        ScalarUInt32 size         = ek::hprod(m_metadata.shape);
         // Apply spectral conversion if necessary
         if (is_spectral_v<Spectrum> && m_metadata.channel_count == 3 && !m_raw) {
             ScalarFloat *ptr = raw_data.get();
@@ -152,7 +152,7 @@ public:
 
 
 
-        m_size     = hprod(m_metadata.shape);
+        m_size     = ek::hprod(m_metadata.shape);
         if (props.bool_("use_grid_bbox", false)) {
             m_world_to_local = m_metadata.transform * m_world_to_local;
             update_bbox();
@@ -257,7 +257,7 @@ public:
             ek::masked(mod, mod < 0) += T(m_metadata.shape);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = ek::select(eq(div & 1, 0) ^ (value < 0), mod, m_metadata.shape - 1 - mod);
+                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, m_metadata.shape - 1 - mod);
 
             return mod;
         }
@@ -317,14 +317,14 @@ public:
             ResultType v000, v001, v010, v011, v100, v101, v110, v111;
             Float scale = 1.f;
             if constexpr (uses_srgb_model) {
-                v000 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d000), wavelengths);
-                v100 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d100), wavelengths);
-                v010 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d010), wavelengths);
-                v110 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d110), wavelengths);
-                v001 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d001), wavelengths);
-                v101 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d101), wavelengths);
-                v011 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d011), wavelengths);
-                v111 = srgb_model_eval<UnpolarizedSpectrum>(head<3>(d111), wavelengths);
+                v000 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d000), wavelengths);
+                v100 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d100), wavelengths);
+                v010 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d010), wavelengths);
+                v110 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d110), wavelengths);
+                v001 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d001), wavelengths);
+                v101 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d101), wavelengths);
+                v011 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d011), wavelengths);
+                v111 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(d111), wavelengths);
                 // Interpolate scaling factor
                 Float f00 = fmadd(w0.x(), d000.w(), w1.x() * d100.w()),
                       f01 = fmadd(w0.x(), d001.w(), w1.x() * d101.w()),
@@ -366,14 +366,14 @@ public:
             StorageType v = ek::gather<StorageType>(m_data, index, active);
 
             if constexpr (uses_srgb_model)
-                return v.w() * srgb_model_eval<UnpolarizedSpectrum>(head<3>(v), wavelengths);
+                return v.w() * srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v), wavelengths);
             else
                 return v;
 
         }
     }
 
-    ScalarFloat max() const override { return m_metadata.max; }
+    ScalarFloat ek::max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };
     auto data_size() const { return m_data.size(); }
 

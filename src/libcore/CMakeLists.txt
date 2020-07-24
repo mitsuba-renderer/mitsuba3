@@ -44,7 +44,7 @@ add_library(mitsuba-core-obj OBJECT
   plugin.cpp           ${INC_DIR}/plugin.h
   profiler.cpp         ${INC_DIR}/profiler.h
   progress.cpp         ${INC_DIR}/progress.h
-#   properties.cpp       ${INC_DIR}/properties.h
+  properties.cpp       ${INC_DIR}/properties.h
   qmc.cpp              ${INC_DIR}/qmc.h
                        ${INC_DIR}/random.h
                        ${INC_DIR}/ray.h

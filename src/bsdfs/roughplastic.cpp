@@ -290,7 +290,7 @@ public:
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
-            result += diff * (math::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+            result += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
         return ek::select(active, unpolarized<Spectrum>(result), 0.f);
@@ -301,12 +301,12 @@ public:
         using UInt = uint_array_t<Float>;
         x *= Float(size - 1);
 
-        UInt index = min(UInt(x), ek::scalar_t<UInt>(size - 2));
+        UInt index = ek::min(UInt(x), ek::scalar_t<UInt>(size - 2));
 
         Float v0 = ek::gather<Float>(data, index, active),
               v1 = ek::gather<Float>(data + 1, index, active);
 
-        return lerp(v0, v1, x - Float(index));
+        return ek::lerp(v0, v1, x - Float(index));
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,

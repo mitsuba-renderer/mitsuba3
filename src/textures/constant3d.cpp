@@ -38,7 +38,7 @@ public:
         return all((p >= 0) && (p <= 1));
     }
 
-    ScalarFloat max() const override { NotImplementedError("max"); }
+    ScalarFloat ek::max() const override { NotImplementedError("max"); }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_object("color", m_color.get());

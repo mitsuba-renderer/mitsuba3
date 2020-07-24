@@ -95,7 +95,7 @@ public:
         ds.d     = ds.p - it.p;
         ds.dist  = ek::norm(ds.d);
 
-        Float inv_dist = rcp(ds.dist);
+        Float inv_dist = ek::rcp(ds.dist);
         ds.d *= inv_dist;
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();

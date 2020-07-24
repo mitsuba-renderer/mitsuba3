@@ -98,7 +98,7 @@ public:
                     static_assert(is_spectral_v<Spectrum>);
                     /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                     auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                    UnpolarizedSpectrum spec = stokes[i] * ek::select(neq(pdf, 0.f), rcp(pdf), 0.f);
+                    UnpolarizedSpectrum spec = stokes[i] * ek::select(ek::neq(pdf, 0.f), ek::rcp(pdf), 0.f);
                     rgb = xyz_to_srgb(spectrum_to_xyz(spec, ray.wavelengths, active));
                 }
 

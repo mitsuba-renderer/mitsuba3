@@ -207,13 +207,13 @@ public:
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
                 normal = m_to_world.transform_affine(cross(e1, e2));
-                if(unlikely(all(eq(normal, 0.f))))
+                if(unlikely(all(ek::eq(normal, 0.f))))
                     continue; // Degenerate triangle, ignore it
                 else
                     normal = normalize(normal);
             }
 
-            InputFloat color_factor = rcp(255.f);
+            InputFloat color_factor = ek::rcp(255.f);
 
             for (int i = 0; i < 3; i++) {
                 const size_t loop_index = tri_loop.tri[i];
@@ -227,7 +227,7 @@ public:
                 if (blender::ME_SMOOTH & face.flag) {
                     // Smooth shading, store per vertex normals
                     normal = m_to_world.transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
-                    if(unlikely(all(eq(normal, 0.f))))
+                    if(unlikely(all(ek::eq(normal, 0.f))))
                         fail("Mesh has invalid normals!");
                     else
                         normal = normalize(normal);

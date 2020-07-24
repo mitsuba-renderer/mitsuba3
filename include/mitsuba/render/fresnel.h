@@ -160,7 +160,7 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
 
     /* Find the cosines of the incident/transmitted rays */
     Float cos_theta_i_abs = ek::abs(cos_theta_i);
-    ek::Complex<Float> cos_theta_t = ek::sqrtz(cos_theta_t_sqr);
+    ek::Complex<Float> cos_theta_t = ek::sqrt(ek::Complex<Float>(cos_theta_t_sqr));
 
     /* Choose the appropriate sign of the root (important when computing the
        phase difference under total internal reflection, see appendix A.2 of
@@ -276,7 +276,7 @@ Vector<Float, 3> reflect(const Vector<Float, 3> &wi) {
 /// Reflect \c wi with respect to a given surface normal
 template <typename Float>
 Vector<Float, 3> reflect(const Vector<Float, 3> &wi, const Normal<Float, 3> &m) {
-    return fmsub(Vector<Float, 3>(m), 2.f * ek::dot(wi, m), wi);
+    return ek::fmsub(Vector<Float, 3>(m), 2.f * ek::dot(wi, m), wi);
 }
 
 /**
@@ -306,7 +306,7 @@ Vector<Float, 3> refract(const Vector<Float, 3> &wi, Float cos_theta_t, Float et
 template <typename Float>
 Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, Float cos_theta_t,
                          Float eta_ti) {
-    return fmsub(m, fmadd(ek::dot(wi, m), eta_ti, cos_theta_t), wi * eta_ti);
+    return ek::fmsub(m, fmadd(ek::dot(wi, m), eta_ti, cos_theta_t), wi * eta_ti);
 }
 
 /**

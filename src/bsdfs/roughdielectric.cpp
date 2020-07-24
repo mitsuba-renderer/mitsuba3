@@ -216,7 +216,7 @@ public:
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
 
         // Ignore perfectly grazing configurations
-        active &= neq(cos_theta_i, 0.f);
+        active &= ek::neq(cos_theta_i, 0.f);
 
         /* Construct the microfacet distribution matching the roughness values at the current surface position. */
         MicrofacetDistribution distr(m_type,
@@ -229,13 +229,13 @@ public:
            Heitz and D'Eon sampling technique. */
         MicrofacetDistribution sample_distr(distr);
         if (unlikely(!m_sample_visible))
-            sample_distr.scale_alpha(1.2f - .2f * sqrt(abs(cos_theta_i)));
+            sample_distr.scale_alpha(1.2f - .2f * ek::sqrt(ek::abs(cos_theta_i)));
 
         // Sample the microfacet normal
         Normal3f m;
         std::tie(m, bs.pdf) =
-            sample_distr.sample(mulsign(si.wi, cos_theta_i), sample2);
-        active &= neq(bs.pdf, 0.f);
+            sample_distr.sample(ek::mulsign(si.wi, cos_theta_i), sample2);
+        active &= ek::neq(bs.pdf, 0.f);
 
         auto [F, cos_theta_t, eta_it, eta_ti] =
             fresnel(ek::dot(si.wi, m), Float(m_eta));
@@ -275,7 +275,7 @@ public:
                 weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
             // Jacobian of the half-direction mapping
-            dwh_dwo = rcp(4.f * ek::dot(bs.wo, m));
+            dwh_dwo = ek::rcp(4.f * ek::dot(bs.wo, m));
         }
 
         // Transmission sampling
@@ -304,7 +304,7 @@ public:
             weight *= distr.G(si.wi, bs.wo, m) * ek::dot(si.wi, m) /
                       (cos_theta_i * Frame3f::cos_theta(m));
 
-        bs.pdf *= abs(dwh_dwo);
+        bs.pdf *= ek::abs(dwh_dwo);
 
         return { bs, ek::select(active, unpolarized<Spectrum>(weight), 0.f) };
     }
@@ -317,7 +317,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Ignore perfectly grazing configurations
-        active &= neq(cos_theta_i, 0.f);
+        active &= ek::neq(cos_theta_i, 0.f);
 
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
@@ -333,7 +333,7 @@ public:
         Vector3f m = normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
-        m = mulsign(m, Frame3f::cos_theta(m));
+        m = ek::mulsign(m, Frame3f::cos_theta(m));
 
         /* Construct the microfacet distribution matching the
            roughness values at the current surface position. */
@@ -357,7 +357,7 @@ public:
              eval_t = Mask(has_transmission) && !reflect && active;
 
         if (any_or<true>(eval_r)) {
-            UnpolarizedSpectrum value = F * D * G / (4.f * abs(cos_theta_i));
+            UnpolarizedSpectrum value = F * D * G / (4.f * ek::abs(cos_theta_i));
 
             if (m_specular_reflectance)
                 value *= m_specular_reflectance->eval(si, eval_r);
@@ -372,7 +372,7 @@ public:
             Float scale = (ctx.mode == TransportMode::Radiance) ? sqr(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
-            UnpolarizedSpectrum value = abs(
+            UnpolarizedSpectrum value = ek::abs(
                 (scale * (1.f - F) * D * G * eta * eta * ek::dot(si.wi, m) * ek::dot(wo, m)) /
                 (cos_theta_i * sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m))));
 
@@ -393,7 +393,7 @@ public:
               cos_theta_o = Frame3f::cos_theta(wo);
 
         // Ignore perfectly grazing configurations
-        active &= neq(cos_theta_i, 0.f);
+        active &= ek::neq(cos_theta_i, 0.f);
 
         // Determine the type of interaction
         bool has_reflection   = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
@@ -410,7 +410,7 @@ public:
         Vector3f m = normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
 
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
-        m = mulsign(m, Frame3f::cos_theta(m));
+        m = ek::mulsign(m, Frame3f::cos_theta(m));
 
         /* Filter cases where the micro/macro-surface don't agree on the side.
            This logic is evaluated in smith_g1() called as part of the eval()
@@ -420,7 +420,7 @@ public:
                   ek::dot(wo,    m) * Frame3f::cos_theta(wo)    > 0.f;
 
         // Jacobian of the half-direction mapping
-        Float dwh_dwo = ek::select(reflect, rcp(4.f * ek::dot(wo, m)),
+        Float dwh_dwo = ek::select(reflect, ek::rcp(4.f * ek::dot(wo, m)),
                                (eta * eta * ek::dot(wo, m)) /
                                    sqr(ek::dot(si.wi, m) + eta * ek::dot(wo, m)));
 
@@ -437,17 +437,17 @@ public:
            reduce importance sampling weights. Not needed for the
            Heitz and D'Eon sampling technique. */
         if (unlikely(!m_sample_visible))
-            sample_distr.scale_alpha(1.2f - .2f * sqrt(abs(Frame3f::cos_theta(si.wi))));
+            sample_distr.scale_alpha(1.2f - .2f * ek::sqrt(ek::abs(Frame3f::cos_theta(si.wi))));
 
         // Evaluate the microfacet model sampling density function
-        Float prob = sample_distr.pdf(mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
+        Float prob = sample_distr.pdf(ek::mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
 
         if (likely(has_transmission && has_reflection)) {
             Float F = std::get<0>(fresnel(ek::dot(si.wi, m), Float(m_eta)));
             prob *= ek::select(reflect, F, 1.f - F);
         }
 
-        return ek::select(active, prob * abs(dwh_dwo), 0.f);
+        return ek::select(active, prob * ek::abs(dwh_dwo), 0.f);
     }
 
     void traverse(TraversalCallback *callback) override {

@@ -41,8 +41,7 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
             double step = L.first / L.second;
             x -= step;
 
-            if (ek::abs(step) <=
-                4 * ek::abs(x) * std::numeric_limits<double>::epsilon())
+            if (ek::abs(step) <= 4 * ek::abs(x) * ek::Epsilon<double>)
                 break;
         }
 
@@ -100,7 +99,7 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
             double step = Q.first / Q.second;
             x -= step;
 
-            if (ek::abs(step) <= 4 * ek::abs(x) * std::numeric_limits<double>::epsilon())
+            if (ek::abs(step) <= 4 * ek::abs(x) * ek::Epsilon<double>)
                 break;
         }
 

@@ -108,7 +108,7 @@ public:
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);
 
-        Float r = std::get<0>(fresnel(abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
+        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -162,7 +162,7 @@ public:
     Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
                                 Mask active) const override {
 
-        Float r = std::get<0>(fresnel(abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
+        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);

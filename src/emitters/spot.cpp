@@ -153,7 +153,7 @@ public:
         ds.object   = this;
         ds.d        = ds.p - it.p;
         ds.dist     = ek::norm(ds.d);
-        Float inv_dist = rcp(ds.dist);
+        Float inv_dist = ek::rcp(ds.dist);
         ds.d        *= inv_dist;
         Vector3f local_d = trafo.inverse() * -ds.d;
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);

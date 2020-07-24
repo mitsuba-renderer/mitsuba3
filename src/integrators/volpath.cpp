@@ -27,8 +27,8 @@ public:
     Float index_spectrum(const UnpolarizedSpectrum &spec, const UInt32 &idx) const {
         Float m = spec[0];
         if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-            ek::masked(m, eq(idx, 1u)) = spec[1];
-            ek::masked(m, eq(idx, 2u)) = spec[2];
+            ek::masked(m, ek::eq(idx, 1u)) = spec[1];
+            ek::masked(m, ek::eq(idx, 2u)) = spec[2];
         } else {
             ENOKI_MARK_USED(idx);
         }
@@ -45,7 +45,7 @@ public:
 
         // If there is an environment emitter and emitters are visible: all rays will be valid
         // Otherwise, it will depend on whether a valid interaction is sampled
-        Mask valid_ray = !m_hide_emitters && neq(scene->environment(), nullptr);
+        Mask valid_ray = !m_hide_emitters && ek::neq(scene->environment(), nullptr);
 
         // For now, don't use ray differentials
         Ray3f ray = ray_;
@@ -63,7 +63,7 @@ public:
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
             uint32_t n_channels = (uint32_t) ek::array_size_v<Spectrum>;
-            channel = (UInt32) min(sampler->next_1d(active) * n_channels, n_channels - 1);
+            channel = (UInt32) ek::min(sampler->next_1d(active) * n_channels, n_channels - 1);
         }
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
@@ -76,18 +76,18 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
 
-            active &= any(neq(depolarize(throughput), 0.f));
-            Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
+            active &= any(ek::neq(depolarize(throughput), 0.f));
+            Float q = ek::min(hmax(depolarize(throughput)) * sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
-            ek::masked(throughput, perform_rr) *= rcp(detach(q));
+            ek::masked(throughput, perform_rr) *= ek::rcp(detach(q));
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
             if (none(active) || all(exceeded_max_depth))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
-            Mask active_medium  = active && neq(medium, nullptr);
+            Mask active_medium  = active && ek::neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
             Mask act_null_scatter = false, act_medium_scatter = false,
                  escaped_medium = false;
@@ -185,7 +185,7 @@ public:
                 // ---------------- Intersection with emitters ----------------
                 EmitterPtr emitter = si.emitter(scene);
                 Mask use_emitter_contribution =
-                    active_surface && specular_chain && neq(emitter, nullptr);
+                    active_surface && specular_chain && ek::neq(emitter, nullptr);
                 if (any_or<true>(use_emitter_contribution))
                     ek::masked(result, use_emitter_contribution) +=
                         throughput * emitter->eval(si, use_emitter_contribution);
@@ -231,7 +231,7 @@ public:
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
 
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
-                                   any(neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
+                                   any(ek::neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
                 act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
 
                 // Intersect the indirect ray against the scene
@@ -243,7 +243,7 @@ public:
 
                 auto [emitted, emitter_pdf] = evaluate_direct_light(si, scene, sampler,
                                                                     medium, ray, si_new, channel, add_emitter);
-                result += ek::select(add_emitter && neq(emitter_pdf, 0),
+                result += ek::select(add_emitter && ek::neq(emitter_pdf, 0),
                                 mis_weight(bs.pdf, emitter_pdf) * throughput * emitted, 0.0f);
 
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
@@ -265,8 +265,8 @@ public:
         Spectrum transmittance(1.0f);
 
         auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
-        ek::masked(emitter_val, eq(ds.pdf, 0.f)) = 0.f;
-        active &= neq(ds.pdf, 0.f);
+        ek::masked(emitter_val, ek::eq(ds.pdf, 0.f)) = 0.f;
+        active &= ek::neq(ds.pdf, 0.f);
 
         if (none_or<false>(active)) {
             return { emitter_val, ds };
@@ -287,12 +287,12 @@ public:
                 break;
 
             Mask escaped_medium = false;
-            Mask active_medium  = active && neq(medium, nullptr);
+            Mask active_medium  = active && ek::neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
 
             if (any_or<true>(active_medium)) {
                 auto mi = medium->sample_interaction(ray, sampler->next_1d(active_medium), channel, active_medium);
-                ek::masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = min(mi.t, remaining_dist);
+                ek::masked(ray.maxt, active_medium && medium->is_homogeneous() && mi.is_valid()) = ek::min(mi.t, remaining_dist);
                 Mask intersect = needs_intersection && active_medium;
                 if (any_or<true>(intersect))
                     ek::masked(si, intersect) = scene->ray_intersect(ray, intersect);
@@ -303,8 +303,8 @@ public:
                 Mask is_spectral = medium->has_spectral_extinction() && active_medium;
                 Mask not_spectral = !is_spectral && active_medium;
                 if (any_or<true>(is_spectral)) {
-                    Float t      = min(remaining_dist, min(mi.t, si.t)) - mi.mint;
-                    UnpolarizedSpectrum tr  = exp(-t * mi.combined_extinction);
+                    Float t      = ek::min(remaining_dist, ek::min(mi.t, si.t)) - mi.mint;
+                    UnpolarizedSpectrum tr  = ek::exp(-t * mi.combined_extinction);
                     UnpolarizedSpectrum free_flight_pdf = ek::select(si.t < mi.t || mi.t > remaining_dist, tr, tr * mi.combined_extinction);
                     Float tr_pdf = index_spectrum(free_flight_pdf, channel);
                     ek::masked(transmittance, is_spectral) *= ek::select(tr_pdf > 0.f, tr / tr_pdf, 0.f);
@@ -355,7 +355,7 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && any(neq(depolarize(transmittance), 0.f));
+            active &= (active_medium || active_surface) && any(ek::neq(depolarize(transmittance), 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();
@@ -384,7 +384,7 @@ public:
         SurfaceInteraction3f si = si_ray;
         while (any(active)) {
             Mask escaped_medium = false;
-            Mask active_medium  = active && neq(medium, nullptr);
+            Mask active_medium  = active && ek::neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
             SurfaceInteraction3f si_medium;
             if (any_or<true>(active_medium)) {
@@ -428,7 +428,7 @@ public:
 
             // Check if we hit an emitter and add illumination if needed
             EmitterPtr emitter = si.emitter(scene, active_surface);
-            Mask emitter_hit   = neq(emitter, nullptr) && active_surface;
+            Mask emitter_hit   = ek::neq(emitter, nullptr) && active_surface;
             if (any_or<true>(emitter_hit)) {
                 DirectionSample3f ds(si, ref_interaction);
                 ds.object                        = emitter;
@@ -453,7 +453,7 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && any(neq(depolarize(transmittance), 0.f));
+            active &= (active_medium || active_surface) && any(ek::neq(depolarize(transmittance), 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();

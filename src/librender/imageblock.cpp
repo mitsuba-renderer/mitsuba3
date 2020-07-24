@@ -31,7 +31,7 @@ MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() {
 }
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
-    size_t size = m_channel_count * hprod(m_size + 2 * m_border_size);
+    size_t size = m_channel_count * ek::hprod(m_size + 2 * m_border_size);
     if constexpr (!ek::is_cuda_array_v<Float>)
         memset(m_data.data(), 0, size * sizeof(ScalarFloat));
     else
@@ -43,7 +43,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &siz
         return;
     m_size = size;
     m_data = empty<DynamicBuffer<Float>>(
-        m_channel_count * hprod(size + 2 * m_border_size));
+        m_channel_count * ek::hprod(size + 2 * m_border_size));
 }
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
@@ -140,7 +140,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
                 wy += m_weights_y[i];
             }
 
-            Float factor = rcp(wx * wy);
+            Float factor = ek::rcp(wx * wy);
             for (uint32_t i = 0; i <= n; ++i)
                 m_weights_x[i] *= factor;
         }

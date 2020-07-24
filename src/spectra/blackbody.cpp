@@ -78,7 +78,7 @@ public:
                      per unit wavelength (nm^-1)
                      per unit steradian (sr^-1) */
             UnpolarizedSpectrum P = 1e-9f * c0 / (lambda5 *
-                    (exp(c1 / (lambda * m_temperature)) - 1.f));
+                    (ek::exp(c1 / (lambda * m_temperature)) - 1.f));
 
             return ek::select(active, P, 0.f);
         } else {
@@ -108,7 +108,7 @@ public:
                        lambda5 = sqr(lambda2) * lambda;
 
             // Wien's approximation to Planck's law
-            Wavelength pdf = 1e-9f * c0 * exp(-c1 / (lambda * m_temperature))
+            Wavelength pdf = 1e-9f * c0 * ek::exp(-c1 / (lambda * m_temperature))
                 / (lambda5 * m_integral);
 
             return ek::select(active, pdf, 0.f);
@@ -134,7 +134,7 @@ public:
               lambda3 = lambda2 * lambda,
               lambda5 = lambda2 * lambda3;
 
-        Value expval = exp(-c1 / (K * lambda));
+        Value expval = ek::exp(-c1 / (K * lambda));
 
         Value cdf = c0 * K * expval *
                 (c1_3 + 3 * c1_2 * K * lambda + 6 * c1 * K2 * lambda2 +
@@ -176,7 +176,7 @@ public:
                 value -= sample;
 
                 // Update which lanes are still active
-                active = active && (abs(value) > eps_value) && (b - a > eps_domain);
+                active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
 
                 // Stop the iteration if converged
                 if (none_nested(active))

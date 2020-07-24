@@ -270,10 +270,10 @@ template <typename Value>
 std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
         Value wavelengths =
-            538.f - atanh(0.8569106254698279f -
-                          1.8275019724092267f * sample) * 138.88888888888889f;
+            538.f - ek::atanh(0.8569106254698279f -
+                              1.8275019724092267f * sample) * 138.88888888888889f;
 
-        Value tmp    = cosh(0.0072f * (wavelengths - 538.f));
+        Value tmp    = ek::cosh(0.0072f * (wavelengths - 538.f));
         Value weight = 253.82f * tmp * tmp;
 
         return { wavelengths, weight };

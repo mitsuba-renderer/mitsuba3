@@ -125,7 +125,7 @@ public:
 
             // ---------------- Intersection with emitters ----------------
 
-            if (any_or<true>(neq(emitter, nullptr)))
+            if (any_or<true>(ek::neq(emitter, nullptr)))
                 result[active] += emission_weight * throughput * emitter->eval(si, active);
 
             active &= si.is_valid();
@@ -135,9 +135,9 @@ public:
                index boundaries. Stop with at least some probability to avoid
                getting stuck (e.g. due to total internal reflection) */
             if (depth > m_rr_depth) {
-                Float q = min(hmax(depolarize(throughput)) * sqr(eta), .95f);
+                Float q = ek::min(hmax(depolarize(throughput)) * sqr(eta), .95f);
                 active &= sampler->next_1d(active) < q;
-                throughput *= rcp(q);
+                throughput *= ek::rcp(q);
             }
 
             // Stop if we've exceeded the number of requested bounces, or
@@ -157,7 +157,7 @@ public:
             if (likely(any_or<true>(active_e))) {
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
                     si, sampler->next_2d(active_e), true, active_e);
-                active_e &= neq(ds.pdf, 0.f);
+                active_e &= ek::neq(ds.pdf, 0.f);
 
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
@@ -179,7 +179,7 @@ public:
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
             throughput = throughput * bsdf_val;
-            active &= any(neq(depolarize(throughput), 0.f));
+            active &= any(ek::neq(depolarize(throughput), 0.f));
             if (none_or<false>(active))
                 break;
 
@@ -195,9 +195,9 @@ public:
             DirectionSample3f ds(si_bsdf, si);
             ds.object = emitter;
 
-            if (any_or<true>(neq(emitter, nullptr))) {
+            if (any_or<true>(ek::neq(emitter, nullptr))) {
                 Float emitter_pdf =
-                    ek::select(neq(emitter, nullptr) && !has_flag(bs.sampled_type, BSDFFlags::Delta),
+                    ek::select(ek::neq(emitter, nullptr) && !has_flag(bs.sampled_type, BSDFFlags::Delta),
                            scene->pdf_emitter_direction(si, ds),
                            0.f);
 

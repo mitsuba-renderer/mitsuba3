@@ -84,7 +84,7 @@ public:
             UnpolarizedSpectrum delta = deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
-            delta *= abs(Frame3f::cos_theta(si.wi));
+            delta *= ek::abs(Frame3f::cos_theta(si.wi));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_retarder(delta);
@@ -126,7 +126,7 @@ public:
             UnpolarizedSpectrum delta = deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
-            delta *= abs(Frame3f::cos_theta(si.wi));
+            delta *= ek::abs(Frame3f::cos_theta(si.wi));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_retarder(delta);

@@ -725,8 +725,8 @@ protected:
             Vector rel_min = (bbox.min - m_bbox.min) * m_inv_bin_size;
             Vector rel_max = (bbox.max - m_bbox.min) * m_inv_bin_size;
 
-            rel_min = min(max(rel_min, ek::zero<Vector>()), m_max_bin);
-            rel_max = min(max(rel_max, ek::zero<Vector>()), m_max_bin);
+            rel_min = ek::min(max(rel_min, ek::zero<Vector>()), m_max_bin);
+            rel_max = ek::min(max(rel_max, ek::zero<Vector>()), m_max_bin);
 
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
@@ -1724,21 +1724,21 @@ protected:
             m_max_depth = (int) (8 + 1.3f * log2i(prim_count));
         m_max_depth = std::min(m_max_depth, (Size) MTS_KD_MAXDEPTH);
 
-        Log(m_log_level, "kd-tree configuration:");
-        Log(m_log_level, "   Cost model               : %s",
+        log(m_log_level, "kd-tree configuration:");
+        log(m_log_level, "   Cost model               : %s",
             string::indent(m_cost_model, 30));
-        Log(m_log_level, "   Max. tree depth          : %i", m_max_depth);
-        Log(m_log_level, "   Scene bounding box (min) : %s", m_bbox.min);
-        Log(m_log_level, "   Scene bounding box (max) : %s", m_bbox.max);
-        Log(m_log_level, "   Min-max bins             : %i", m_min_max_bins);
-        Log(m_log_level, "   O(n log n) method        : use for <= %i primitives",
+        log(m_log_level, "   Max. tree depth          : %i", m_max_depth);
+        log(m_log_level, "   Scene bounding box (min) : %s", m_bbox.min);
+        log(m_log_level, "   Scene bounding box (max) : %s", m_bbox.max);
+        log(m_log_level, "   Min-max bins             : %i", m_min_max_bins);
+        log(m_log_level, "   O(n log n) method        : use for <= %i primitives",
             m_exact_prim_threshold);
-        Log(m_log_level, "   Stopping primitive count : %i", m_stop_primitives);
-        Log(m_log_level, "   Perfect splits           : %s",
+        log(m_log_level, "   Stopping primitive count : %i", m_stop_primitives);
+        log(m_log_level, "   Perfect splits           : %s",
             m_clip_primitives ? "yes" : "no");
-        Log(m_log_level, "   Retract bad splits       : %s",
+        log(m_log_level, "   Retract bad splits       : %s",
             m_retract_bad_splits ? "yes" : "no");
-        Log(m_log_level, "");
+        log(m_log_level, "");
 
         /* ==================================================================== */
         /*              Create build context and preallocate memory             */
@@ -1762,7 +1762,7 @@ protected:
             m_bbox.min = 0.f;
             m_bbox.max = 0.f;
         } else {
-            Log(m_log_level, "Creating a preliminary index list (%s)",
+            log(m_log_level, "Creating a preliminary index list (%s)",
                 util::mem_string(prim_count * sizeof(Index)).c_str());
 
             IndexVector indices(prim_count);
@@ -1776,7 +1776,7 @@ protected:
             tbb::task::spawn_root_and_wait(task);
         }
 
-        Log(m_log_level, "Structural kd-tree statistics:");
+        log(m_log_level, "Structural kd-tree statistics:");
 
         /* ==================================================================== */
         /*     Store the node and index lists in a compact contiguous format    */
@@ -1828,19 +1828,19 @@ protected:
             ctx.temp_storage += ctx.node_storage.size() * sizeof(KDNode);
             ctx.temp_storage += ctx.index_storage.size() * sizeof(Index);
 
-            Log(m_log_level, "   Primitive references        : %i (%s)",
+            log(m_log_level, "   Primitive references        : %i (%s)",
                 m_index_count, util::mem_string(m_index_count * sizeof(Index)));
 
-            Log(m_log_level, "   kd-tree nodes               : %i (%s)",
+            log(m_log_level, "   kd-tree nodes               : %i (%s)",
                 m_node_count, util::mem_string(m_node_count * sizeof(KDNode)));
 
-            Log(m_log_level, "   kd-tree depth               : %i",
+            log(m_log_level, "   kd-tree depth               : %i",
                 ctx.max_depth);
 
-            Log(m_log_level, "   Temporary storage used      : %s",
+            log(m_log_level, "   Temporary storage used      : %s",
                 util::mem_string(ctx.temp_storage));
 
-            Log(m_log_level, "   Parallel work units         : %i",
+            log(m_log_level, "   Parallel work units         : %i",
                 ctx.work_units);
 
             std::ostringstream oss;
@@ -1849,34 +1849,34 @@ protected:
             for (Size i = 0; i < prim_bucket_count; i++) {
                 oss << i << "(" << ctx.prim_buckets[i] << ") ";
                 if ((i + 1) % 4 == 0 && i + 1 < prim_bucket_count) {
-                    Log(m_log_level, "%s", oss.str());
+                    log(m_log_level, "%s", oss.str());
                     oss.str("");
                     oss << "                                 ";
                 }
             }
-            Log(m_log_level, "%s", oss.str().c_str());
-            Log(m_log_level, "");
+            log(m_log_level, "%s", oss.str().c_str());
+            log(m_log_level, "");
 
-            Log(m_log_level, "Qualitative kd-tree statistics:");
-            Log(m_log_level, "   Retracted splits            : %i",
+            log(m_log_level, "Qualitative kd-tree statistics:");
+            log(m_log_level, "   Retracted splits            : %i",
                 ctx.retracted_splits);
-            Log(m_log_level, "   Bad refines                 : %i",
+            log(m_log_level, "   Bad refines                 : %i",
                 ctx.bad_refines);
-            Log(m_log_level, "   Pruned                      : %i",
+            log(m_log_level, "   Pruned                      : %i",
                 ctx.pruned);
-            Log(m_log_level, "   Largest leaf node           : %i primitives",
+            log(m_log_level, "   Largest leaf node           : %i primitives",
                 ctx.max_prims_in_leaf);
-            Log(m_log_level, "   Avg. prims/nonempty leaf    : %.2f",
+            log(m_log_level, "   Avg. prims/nonempty leaf    : %.2f",
                 m_index_count / (Scalar) ctx.nonempty_leaf_count);
-            Log(m_log_level, "   Expected traversals/query   : %.2f",
+            log(m_log_level, "   Expected traversals/query   : %.2f",
                 ctx.exp_traversal_steps);
-            Log(m_log_level, "   Expected leaf visits/query  : %.2f",
+            log(m_log_level, "   Expected leaf visits/query  : %.2f",
                 ctx.exp_leaves_visited);
-            Log(m_log_level, "   Expected prim. visits/query : %.2f",
+            log(m_log_level, "   Expected prim. visits/query : %.2f",
                 ctx.exp_primitives_queried);
-            Log(m_log_level, "   Final cost                  : %.2f",
+            log(m_log_level, "   Final cost                  : %.2f",
                 final_cost);
-            Log(m_log_level, "");
+            log(m_log_level, "");
         }
     }
 
@@ -1956,7 +1956,7 @@ public:
         m_temp0 = m_temp1 = (a * b) * temp;
         m_temp2 = (a + b) * temp;
 
-        m_temp0 = fnmadd(m_temp2, bbox.min, m_temp0);
+        m_temp0 = ek::fnmadd(m_temp2, bbox.min, m_temp0);
         m_temp1 = fmadd(m_temp2, bbox.max, m_temp1);
     }
 
@@ -2210,11 +2210,11 @@ public:
                     // Compute parametric distance along the rays to the split plane
                     Float t_plane          = (split - ray.o[axis]) * ray.d_rcp[axis];
                     Mask left_first        = (ray.o[axis] < split) ||
-                                              (eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
+                                              (ek::eq(ray.o[axis], split) && ray.d[axis] >= 0.f),
                          start_after       = t_plane < mint,
                          end_before        = t_plane > maxt || t_plane < 0.f || !ek::isfinite(t_plane),
                          single_node       = start_after || end_before,
-                         visit_left        = eq(end_before, left_first),
+                         visit_left        = ek::eq(end_before, left_first),
                          visit_only_left   = single_node &&  visit_left,
                          visit_only_right  = single_node && !visit_left;
 
@@ -2234,10 +2234,10 @@ public:
                     bool go_left = left_votes >= right_votes;
 
                     Mask go_left_bcast = Mask(go_left),
-                         correct_order = eq(left_first, go_left_bcast),
+                         correct_order = ek::eq(left_first, go_left_bcast),
                          visit_both    = !single_node,
                          visit_cur     = visit_both || eq (visit_left, go_left_bcast),
-                         visit_next    = visit_both || neq(visit_left, go_left_bcast);
+                         visit_next    = visit_both || ek::neq(visit_left, go_left_bcast);
 
                     /* Visit both child nodes in the right order */
                     Index node_offset = go_left ? 0 : 1;

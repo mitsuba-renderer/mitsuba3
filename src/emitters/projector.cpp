@@ -161,7 +161,7 @@ public:
         Point it_local = trafo.inverse().transform_affine(it.p);
 
         // 2. Map to UV coordinates
-        Point2f uv = head<2>(m_camera_to_sample * it_local);
+        Point2f uv = ek::head<2>(m_camera_to_sample * it_local);
         active &= all(uv >= 0 && uv <= 1) && it_local.z() > 0;
 
         // 3. Query texture
@@ -182,12 +182,12 @@ public:
 
         ds.d = ds.p - it.p;
         Float dist_squared = ek::squared_norm(ds.d);
-        ds.dist = sqrt(dist_squared);
-        ds.d *= rcp(ds.dist);
+        ds.dist = ek::sqrt(dist_squared);
+        ds.d *= ek::rcp(ds.dist);
 
         // Scale so that irradiance at z=1 is correct
         spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) *
-                sqr(rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
+                sqr(ek::rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
 
         return { ds, unpolarized<Spectrum>(spec & active) };
     }

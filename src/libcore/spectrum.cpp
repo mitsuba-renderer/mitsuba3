@@ -80,7 +80,7 @@ Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
         color = clamp(color, (Scalar) 0.f, (Scalar) 1.f);
     } else if (!bounded && any(color < (Scalar) 0.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
-        color = max(color, (Scalar) 0.f);
+        color = ek::max(color, (Scalar) 0.f);
     }
 
     return color;

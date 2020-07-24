@@ -20,20 +20,20 @@ NAMESPACE_BEGIN(warp)
 // =======================================================================
 
 template <typename Value>
-Value circ(Value x) { return ek::safe_sqrt(fnmadd(x, x, 1.f)); }
+Value circ(Value x) { return ek::safe_sqrt(ek::fnmadd(x, x, 1.f)); }
 
 /// Uniformly sample a vector on a 2D disk
 template <typename Value>
 MTS_INLINE Point<Value, 2> square_to_uniform_disk(const Point<Value, 2> &sample) {
-    Value r = sqrt(sample.y());
-    auto [s, c] = sincos(math::TwoPi<Value> * sample.x());
+    Value r = ek::sqrt(sample.y());
+    auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
     return { c * r, s * r };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_disk
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_disk_to_square(const Point<Value, 2> &p) {
-    Value phi = atan2(p.y(), p.x()) * math::InvTwoPi<Value>;
+    Value phi = ek::atan2(p.y(), p.x()) * ek::InvTwoPi<Value>;
     return { ek::select(phi < 0.f, phi + 1.f, phi), ek::squared_norm(p) };
 }
 
@@ -42,9 +42,9 @@ template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_disk_pdf(const Point<Value, 2> &p) {
     ENOKI_MARK_USED(p);
     if constexpr (TestDomain)
-        return ek::select(ek::squared_norm(p) > 1.f, ek::zero<Value>(), math::InvPi<Value>);
+        return ek::select(ek::squared_norm(p) > 1.f, 0.f, ek::InvPi<Value>);
     else
-        return math::InvPi<Value>;
+        return ek::InvPi<Value>;
 }
 
 // =======================================================================
@@ -54,8 +54,8 @@ template <typename Value>
 MTS_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 2> &sample) {
     using Mask   = ek::mask_t<Value>;
 
-    Value x = fmsub(2.f, sample.x(), 1.f),
-          y = fmsub(2.f, sample.y(), 1.f);
+    Value x = ek::fmsub(2.f, sample.x(), 1.f),
+          y = ek::fmsub(2.f, sample.y(), 1.f);
 
     /* Modified concentric map code with less branching (by Dave Cline), see
        http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
@@ -74,32 +74,32 @@ MTS_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 
         }
     */
 
-    Mask is_zero         = eq(x, ek::zero<Value>()) &&
-                           eq(y, ek::zero<Value>()),
-         quadrant_1_or_3 = abs(x) < abs(y);
+    Mask is_zero         = ek::eq(x, 0.f) &&
+                           ek::eq(y, 0.f),
+         quadrant_1_or_3 = ek::abs(x) < ek::abs(y);
 
     Value r  = ek::select(quadrant_1_or_3, y, x),
           rp = ek::select(quadrant_1_or_3, x, y);
 
-    Value phi = .25f * ek::Pi<Value> * rp / r;
-    ek::masked(phi, quadrant_1_or_3) = .5f * ek::Pi<Value> - phi;
-    ek::masked(phi, is_zero) = ek::zero<Value>();
+    Value phi = 0.25f * ek::Pi<Value> * rp / r;
+    ek::masked(phi, quadrant_1_or_3) = 0.5f * ek::Pi<Value> - phi;
+    ek::masked(phi, is_zero) = 0.f;
 
-    auto [s, c] = sincos(phi);
+    auto [s, c] = ek::sincos(phi);
     return { r * c, r * s };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_disk_concentric
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 2> &p) {
-    using Mask   = ek::mask_t<Value>;
+    using Mask = ek::mask_t<Value>;
 
-    Mask quadrant_0_or_2 = abs(p.x()) > abs(p.y());
+    Mask quadrant_0_or_2 = ek::abs(p.x()) > ek::abs(p.y());
     Value r_sign = ek::select(quadrant_0_or_2, p.x(), p.y());
-    Value r = copysign(norm(p), r_sign);
+    Value r = ek::copysign(ek::norm(p), r_sign);
 
-    Value phi = atan2(mulsign(p.y(), r_sign),
-                      mulsign(p.x(), r_sign));
+    Value phi = ek::atan2(ek::mulsign(p.y(), r_sign),
+                          ek::mulsign(p.x(), r_sign));
 
     Value t = 4.f / ek::Pi<Value> * phi;
     t = ek::select(quadrant_0_or_2, t, 2.f - t) * r;
@@ -107,7 +107,7 @@ MTS_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 
     Value a = ek::select(quadrant_0_or_2, r, t);
     Value b = ek::select(quadrant_0_or_2, t, r);
 
-    return { (a + 1.f) * .5f, (b + 1.f) * .5f };
+    return { (a + 1.f) * 0.5f, (b + 1.f) * 0.5f };
 }
 
 /// Density of \ref square_to_uniform_disk per unit area
@@ -115,9 +115,9 @@ template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p) {
     ENOKI_MARK_USED(p);
     if constexpr (TestDomain)
-        return ek::select(ek::squared_norm(p) > 1.f, ek::zero<Value>(), math::InvPi<Value>);
+        return ek::select(ek::squared_norm(p) > 1.f, 0.f, ek::InvPi<Value>);
     else
-        return math::InvPi<Value>;
+        return ek::InvPi<Value>;
 }
 
 // =======================================================================
@@ -128,19 +128,19 @@ MTS_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p)
  */
 template <typename Value> MTS_INLINE Point<Value, 2>
 square_to_uniform_square_concentric(const Point<Value, 2> &sample) {
-    using Mask   = ek::mask_t<Value>;
+    using Mask = ek::mask_t<Value>;
 
-    Value x = fmsub(2.f, sample.x(), 1.f),
-          y = fmsub(2.f, sample.y(), 1.f);
+    Value x = ek::fmsub(2.f, sample.x(), 1.f),
+          y = ek::fmsub(2.f, sample.y(), 1.f);
 
-    Mask quadrant_1_or_3 = abs(x) < abs(y);
+    Mask quadrant_1_or_3 = ek::abs(x) < ek::abs(y);
 
     Value r  = ek::select(quadrant_1_or_3, y, x),
           rp = ek::select(quadrant_1_or_3, x, y);
 
-    Value phi = rp / r * .125f;
-    ek::masked(phi, quadrant_1_or_3) = .25f - phi;
-    ek::masked(phi, r < 0.f) += .5f;
+    Value phi = rp / r * 0.125f;
+    ek::masked(phi, quadrant_1_or_3) = 0.25f - phi;
+    ek::masked(phi, r < 0.f) += 0.5f;
     ek::masked(phi, phi < 0.f) += 1.f;
 
     return { phi, ek::sqr(r) };
@@ -166,12 +166,8 @@ MTS_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) 
 template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
     if constexpr (TestDomain) {
-        return ek::select(
-            p.x() < ek::zero<Value>() || p.y() < ek::zero<Value>()
-                                  || (p.x() + p.y() > 1.f),
-            ek::zero<Value>(),
-            2.f
-        );
+        return ek::select(p.x() < 0.f || p.y() < 0.f || (p.x() + p.y() > 1.f),
+                          0.f, 2.f);
     } else {
         return 2.f;
     }
@@ -182,16 +178,16 @@ MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
 /// Sample a point on a 2D standard normal distribution. Internally uses the Box-Muller transformation
 template <typename Value>
 MTS_INLINE Point<Value, 2> square_to_std_normal(const Point<Value, 2> &sample) {
-    Value r   = sqrt(-2.f * log(1.f - sample.x())),
+    Value r   = ek::sqrt(-2.f * log(1.f - sample.x())),
           phi = 2.f * ek::Pi<Value> * sample.y();
 
-    auto [s, c] = sincos(phi);
+    auto [s, c] = ek::sincos(phi);
     return { c * r, s * r };
 }
 
 template <typename Value>
 MTS_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
-    return math::InvTwoPi<Value> * exp(-.5f * ek::squared_norm(p));
+    return ek::InvTwoPi<Value> * ek::exp(-.5f * ek::squared_norm(p));
 }
 
 // =======================================================================
@@ -199,14 +195,14 @@ MTS_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
 /// Warp a uniformly distributed sample on [0, 1] to a tent distribution
 template <typename Value>
 Value interval_to_tent(Value sample) {
-    sample -= .5f;
-    return copysign(1.f - ek::safe_sqrt(fmadd(abs(sample), -2.f, 1.f)), sample);
+    sample -= 0.5f;
+    return ek::copysign(1.f - ek::safe_sqrt(fmadd(ek::abs(sample), -2.f, 1.f)), sample);
 }
 
 /// Warp a uniformly distributed sample on [0, 1] to a tent distribution
 template <typename Value>
 Value tent_to_interval(const Value &value) {
-    return .5f * (1.f + value * (2.f - abs(value)));
+    return 0.5f * (1.f + value * (2.f - ek::abs(value)));
 }
 
 /// Warp a uniformly distributed sample on [0, 1] to a nonuniform tent distribution with nodes <tt>{a, b, c}</tt>
@@ -236,11 +232,10 @@ Point<Value, 2> tent_to_square(const Point<Value, 2> &p) {
 /// Density of \ref square_to_tent per unit area.
 template <typename Value>
 Value square_to_tent_pdf(const Point<Value, 2> &p_) {
-    auto p = abs(p_);
-
+    auto p = ek::abs(p_);
     return ek::select(p.x() <= 1 && p.y() <= 1,
-                  (1.f - p.x()) * (1.f - p.y()),
-                  ek::zero<Value>());
+                      (1.f - p.x()) * (1.f - p.y()),
+                      0.f);
 }
 
 //! @}
@@ -253,19 +248,19 @@ Value square_to_tent_pdf(const Point<Value, 2> &p_) {
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
 template <typename Value>
 MTS_INLINE Vector<Value, 3> square_to_uniform_sphere(const Point<Value, 2> &sample) {
-    Value z = fnmadd(2.f, sample.y(), 1.f),
+    Value z = ek::fnmadd(2.f, sample.y(), 1.f),
           r = circ(z);
-    auto [s, c] = sincos(2.f * ek::Pi<Value> * sample.x());
+    auto [s, c] = ek::sincos(2.f * ek::Pi<Value> * sample.x());
     return { r * c, r * s, z };
 }
 
 /// Inverse of the mapping \ref square_to_uniform_sphere
 template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_sphere_to_square(const Vector<Value, 3> &p) {
-    Value phi = atan2(p.y(), p.x()) * math::InvTwoPi<Value>;
+    Value phi = ek::atan2(p.y(), p.x()) * ek::InvTwoPi<Value>;
     return {
         ek::select(phi < 0.f, phi + 1.f, phi),
-        (1.f - p.z()) * .5f
+        (1.f - p.z()) * 0.5f
     };
 }
 
@@ -274,10 +269,10 @@ template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return ek::select(abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value>,
-                      ek::zero<Value>(), math::InvFourPi<Value>);
+        return ek::select(ek::abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value>,
+                          0.f, ek::InvFourPi<Value>);
     else
-        return math::InvFourPi<Value>;
+        return ek::InvFourPi<Value>;
 }
 
 // =======================================================================
@@ -289,13 +284,13 @@ MTS_INLINE Vector<Value, 3> square_to_uniform_hemisphere(const Point<Value, 2> &
     // Approach 1: warping method based on standard disk mapping
     Value z   = sample.y(),
           tmp = circ(z);
-    auto [s, c] = sincos(Scalar(2 * ek::Pi) * sample.x());
+    auto [s, c] = ek::sincos(Scalar(2 * ek::Pi) * sample.x());
     return { c * tmp, s * tmp, z };
 #else
     // Approach 2: low-distortion warping technique based on concentric disk mapping
     Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
     Value z = 1.f - ek::squared_norm(p);
-    p *= sqrt(z + 1.f);
+    p *= ek::sqrt(z + 1.f);
     return { p.x(), p.y(), z };
 #endif
 }
@@ -312,10 +307,10 @@ template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_uniform_hemisphere_pdf(const Vector<Value, 3> &v) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return ek::select(abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
-                      v.z() < 0.f, ek::zero<Value>(), math::InvTwoPi<Value>);
+        return ek::select(ek::abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
+                      v.z() < 0.f, 0.f, ek::InvTwoPi<Value>);
     else
-        return math::InvTwoPi<Value>;
+        return ek::InvTwoPi<Value>;
 }
 
 // =======================================================================
@@ -342,10 +337,10 @@ MTS_INLINE Point<Value, 2> cosine_hemisphere_to_square(const Vector<Value, 3> &v
 template <bool TestDomain = false, typename Value>
 MTS_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
     if constexpr (TestDomain)
-        return ek::select(abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
-                      v.z() < 0.f, ek::zero<Value>(), math::InvPi<Value> * v.z());
+        return ek::select(ek::abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
+                          v.z() < 0.f, 0.f, ek::InvPi<Value> * v.z());
     else
-        return math::InvPi<Value> * v.z();
+        return ek::InvPi<Value> * v.z();
 }
 
 /**
@@ -359,8 +354,8 @@ MTS_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
 template <typename Value>
 MTS_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
     return ek::select(
-        abs(v0 - v1) > 1e-4f * (v0 + v1),
-        (v0 - ek::safe_sqrt(lerp(ek::sqr(v0), ek::sqr(v1), sample))) / (v0 - v1),
+        ek::abs(v0 - v1) > 1e-4f * (v0 + v1),
+        (v0 - ek::safe_sqrt(ek::lerp(ek::sqr(v0), ek::sqr(v1), sample))) / (v0 - v1),
         sample
     );
 }
@@ -369,7 +364,7 @@ MTS_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
 template <typename Value>
 MTS_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
     return ek::select(
-        abs(v0 - v1) > 1e-4f * (v0 + v1),
+        ek::abs(v0 - v1) > 1e-4f * (v0 + v1),
         sample * ((2.f - sample) * v0 + sample * v1) / (v0 + v1),
         sample
     );
@@ -399,11 +394,11 @@ square_to_bilinear(Value v00, Value v10, Value v01, Value v11,
     sample.y() = interval_to_linear(r0, r1, sample.y());
 
     // Invert conditional CDF in the 'y' parameter
-    Value c0 = lerp(v00, v01, sample.y()),
-          c1 = lerp(v10, v11, sample.y());
+    Value c0 = ek::lerp(v00, v01, sample.y()),
+          c1 = ek::lerp(v10, v11, sample.y());
     sample.x() = interval_to_linear(c0, c1, sample.x());
 
-    return { sample, lerp(c0, c1, sample.x()) };
+    return { sample, ek::lerp(c0, c1, sample.x()) };
 }
 
 /// Inverse of \ref square_to_bilinear
@@ -415,9 +410,9 @@ bilinear_to_square(Value v00, Value v10, Value v01, Value v11,
 
     Value r0  = v00 + v10,
           r1  = v01 + v11,
-          c0  = lerp(v00, v01, sample.y()),
-          c1  = lerp(v10, v11, sample.y()),
-          pdf = lerp(c0, c1, sample.x());
+          c0  = ek::lerp(v00, v01, sample.y()),
+          c1  = ek::lerp(v10, v11, sample.y()),
+          pdf = ek::lerp(c0, c1, sample.x());
 
     sample.x() = linear_to_interval(c0, c1, sample.x());
     sample.y() = linear_to_interval(r0, r1, sample.y());
@@ -428,9 +423,9 @@ bilinear_to_square(Value v00, Value v10, Value v01, Value v11,
 template <typename Value> MTS_INLINE Value
 square_to_bilinear_pdf(Value v00, Value v10, Value v01, Value v11,
                        const Point<Value, 2> &sample) {
-    return lerp(lerp(v00, v10, sample.x()),
-                lerp(v01, v11, sample.x()),
-                sample.y());
+    return ek::lerp(ek::lerp(v00, v10, sample.x()),
+                    ek::lerp(v01, v11, sample.x()),
+                    sample.y());
 }
 
 // =======================================================================
@@ -450,7 +445,7 @@ MTS_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample
     Value cos_theta = (1.f - sample.y()) + sample.y() * cos_cutoff,
           sin_theta = circ(cos_theta);
 
-    auto [s, c] = sincos(math::TwoPi<Value> * sample.x());
+    auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
     return { c * sin_theta, s * sin_theta, cos_theta };
 #else
     // Approach 2: low-distortion warping technique based on concentric disk mapping
@@ -468,7 +463,7 @@ template <typename Value>
 MTS_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
                                                   const Value &cos_cutoff) {
     Point<Value, 2> p = Point<Value, 2>(v.x(), v.y());
-    p *= sqrt((1.f - v.z()) / (ek::squared_norm(p) * (1.f - cos_cutoff)));
+    p *= ek::sqrt((1.f - v.z()) / (ek::squared_norm(p) * (1.f - cos_cutoff)));
     return uniform_disk_to_square_concentric(p);
 }
 
@@ -482,11 +477,11 @@ MTS_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
                                             const Value &cos_cutoff) {
     ENOKI_MARK_USED(v);
     if constexpr (TestDomain)
-        return ek::select(abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value> || v.z() < cos_cutoff,
-                      ek::zero<Value>(),
-                      math::InvTwoPi<Value> / (1.f - cos_cutoff));
+        return ek::select(ek::abs(ek::squared_norm(v) - 1.f) > math::RayEpsilon<Value> ||
+                          v.z() < cos_cutoff,
+                          0.f, ek::InvTwoPi<Value> / (1.f - cos_cutoff));
     else
-        return math::InvTwoPi<Value> / (1.f - cos_cutoff);
+        return ek::InvTwoPi<Value> / (1.f - cos_cutoff);
 }
 
 // =======================================================================
@@ -497,7 +492,7 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
                                                const Value &alpha) {
 #if 0
     // Approach 1: warping method based on standard disk mapping
-    auto [s, c] = sincos(math::TwoPi<Value> * sample.x());
+    auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
 
     Value tan_theta_m_sqr = -ek::sqr(alpha) * log(1.f - sample.y());
     Value cos_theta_m = ek::rsqrt(1 + tan_theta_m_sqr),
@@ -511,7 +506,7 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 
     Value tan_theta_m_sqr = -ek::sqr(alpha) * log(1.f - r2);
     Value cos_theta_m = ek::rsqrt(1.f + tan_theta_m_sqr);
-    p *= ek::safe_sqrt(fnmadd(cos_theta_m, cos_theta_m, 1.f) / r2);
+    p *= ek::safe_sqrt(ek::fnmadd(cos_theta_m, cos_theta_m, 1.f) / r2);
 
     return { p.x(), p.y(), cos_theta_m };
 #endif
@@ -521,9 +516,9 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 template <typename Value>
 MTS_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Value &alpha) {
     Point<Value, 2> p(v.x(), v.y());
-    Value tan_theta_m_sqr = rcp(ek::sqr(v.z())) - 1.f;
+    Value tan_theta_m_sqr = ek::rcp(ek::sqr(v.z())) - 1.f;
 
-    Value r2 = 1.f - exp(tan_theta_m_sqr * (-1.f / ek::sqr(alpha)));
+    Value r2 = 1.f - ek::exp(tan_theta_m_sqr * (-1.f / ek::sqr(alpha)));
 
     p *= ek::safe_sqrt(r2 / (1.f - ek::sqr(v.z())));
 
@@ -539,9 +534,9 @@ MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
     Value temp = Frame::tan_theta(m) / alpha,
           ct   = Frame::cos_theta(m);
 
-    Value result = exp(-ek::sqr(temp)) / (ek::Pi<Value> * ek::sqr(alpha * ct) * ct);
+    Value result = ek::exp(-ek::sqr(temp)) / (ek::Pi<Value> * ek::sqr(alpha * ct) * ct);
 
-    return ek::select(ct < 1e-9f, ek::zero<Value>(), result);
+    return ek::select(ct < 1e-9f, 0.f, result);
 }
 
 // =======================================================================
@@ -556,17 +551,17 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
     #if 0
         /* Approach 1.1: standard inversion method algorithm for sampling the
            von Mises Fisher distribution (numerically unstable!) */
-        Value cos_theta = log(exp(-kappa) + 2.f *
-                              sample.y() * sinh(kappa)) / kappa;
-    #else
+        Value cos_theta = log(ek::exp(-kappa) + 2.f *
+                              sample.y() * ek::sinh(kappa)) / kappa;
+#else
         /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
            distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
-        Value sy = max(1.f - sample.y(), 1e-6f);
+        Value sy = ek::max(1.f - sample.y(), 1e-6f);
         Value cos_theta = 1.f + log(sy + (1.f - sy)
-            * exp(-2.f * kappa)) / kappa;
+            * ek::exp(-2.f * kappa)) / kappa;
     #endif
 
-    auto [s, c] = sincos(math::TwoPi<Value> * sample.x());
+    auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
     Value sin_theta = ek::safe_sqrt(1.f - ek::sqr(cos_theta));
     Vector<Value, 3> result = { c * sin_theta, s * sin_theta, cos_theta };
 #else
@@ -574,15 +569,15 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
     Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
 
     Value r2 = ek::squared_norm(p),
-          sy = max(1.f - r2, 1e-6f),
-          cos_theta = 1.f + log(sy + (1.f - sy) * exp(-2.f * kappa)) / kappa;
+          sy = ek::max(1.f - r2, 1e-6f),
+          cos_theta = 1.f + log(sy + (1.f - sy) * ek::exp(-2.f * kappa)) / kappa;
 
     p *= ek::safe_sqrt((1.f - ek::sqr(cos_theta)) / r2);
 
     Vector<Value, 3> result = { p.x(), p.y(), cos_theta };
 #endif
 
-    ek::masked(result, eq(kappa, 0.f)) = square_to_uniform_sphere(sample);
+    ek::masked(result, ek::eq(kappa, 0.f)) = square_to_uniform_sphere(sample);
 
     return result;
 }
@@ -590,8 +585,8 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
 /// Inverse of the mapping \ref von_mises_fisher_to_square
 template <typename Value>
 MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v, ek::scalar_t<Value> kappa) {
-    Value expm2k = exp(-2.f * kappa),
-          t      = exp((v.z() - 1.f) * kappa),
+    Value expm2k = ek::exp(-2.f * kappa),
+          t      = ek::exp((v.z() - 1.f) * kappa),
           sy     = (expm2k - t) / (expm2k - 1.f),
           r2     = 1.f - sy;
 
@@ -607,10 +602,10 @@ MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, ek::s
 
     assert(kappa >= 0);
     if (unlikely(kappa == 0))
-        return math::InvFourPi<Value>;
+        return ek::InvFourPi<Value>;
     else
-        return exp(kappa * (v.z() - 1.f)) * (kappa * math::InvTwoPi<Value>) /
-               (1.f - exp(-2.f * kappa));
+        return ek::exp(kappa * (v.z() - 1.f)) * (kappa * ek::InvTwoPi<Value>) /
+               (1.f - ek::exp(-2.f * kappa));
 }
 
 // =======================================================================
@@ -631,7 +626,7 @@ Vector<Value, 3> square_to_rough_fiber(const Point<Value, 3> &sample,
     Vector3 wi = tframe.to_local(wi_);
 
     // Sample a point on the reflection cone
-    auto [s, c] = sincos(math::TwoPi<Value> * sample.x());
+    auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
 
     Value cos_theta = wi.z(),
           sin_theta = circ(cos_theta);
@@ -668,7 +663,7 @@ namespace detail {
     template <typename Value>
     Value log_i0(Value x) {
         return ek::select(x > 12.f,
-                      x + 0.5f * (log(rcp(math::TwoPi<Value> * x)) + rcp(8.f * x)),
+                      x + 0.5f * (log(ek::rcp(ek::TwoPi<Value> * x)) + ek::rcp(8.f * x)),
                       log(i0(x)));
     }
 }
@@ -694,9 +689,9 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
           s = sin_theta_i * sin_theta_o * kappa;
 
     if (kappa > 10.f)
-        return exp(-c + detail::log_i0(s) - kappa + .6931f + log(.5f * kappa)) * math::InvTwoPi<Value>;
+        return ek::exp(-c + detail::log_i0(s) - kappa + 0.6931f + log(.5f * kappa)) * ek::InvTwoPi<Value>;
     else
-        return exp(-c) * detail::i0(s) * kappa / (2.f * sinh(kappa)) * math::InvTwoPi<Value>;
+        return ek::exp(-c) * detail::i0(s) * kappa / (2.f * ek::sinh(kappa)) * ek::InvTwoPi<Value>;
 }
 
 //! @}

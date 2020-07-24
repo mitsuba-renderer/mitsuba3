@@ -232,7 +232,7 @@ public:
                                                                    Mask active = true) const;
 
     /// Returns the maximum value of the texture over all dimensions.
-    virtual ScalarFloat max() const;
+    virtual ScalarFloat ek::max() const;
 
     /// Returns the bounding box of the 3d texture
     ScalarBoundingBox3f bbox() const { return m_bbox; }

@@ -163,7 +163,7 @@ public:
      *     safe_acos(Frame3f::cos_theta(d))
      */
     auto elevation(const Vector3f &d) const {
-        auto dist = sqrt(sqr(d.x()) + sqr(d.y()) + sqr(d.z() - 1.f));
+        auto dist = ek::sqrt(sqr(d.x()) + sqr(d.y()) + sqr(d.z() - 1.f));
         return 2.f * safe_asin(.5f * dist);
     }
 
@@ -191,7 +191,7 @@ public:
         }
 
         Float theta_i = elevation(wi),
-            phi_i   = atan2(wi.y(), wi.x());
+            phi_i   = ek::atan2(wi.y(), wi.x());
 
         Float params[2] = { phi_i, theta_i };
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
@@ -215,8 +215,8 @@ public:
             phi_m += phi_i;
 
         // Spherical -> Cartesian coordinates
-        auto [sin_phi_m, cos_phi_m] = sincos(phi_m);
-        auto [sin_theta_m, cos_theta_m] = sincos(theta_m);
+        auto [sin_phi_m, cos_phi_m] = ek::sincos(phi_m);
+        auto [sin_theta_m, cos_theta_m] = ek::sincos(theta_m);
 
         Vector3f m(
             cos_phi_m * sin_theta_m,
@@ -227,7 +227,7 @@ public:
         Float jacobian = ek::max(2.f * sqr(ek::Pi<Float>) * u_m.x() *
                                     sin_theta_m, 1e-6f) * 4.f * ek::dot(wi, m);
 
-        bs.wo = fmsub(m, 2.f * ek::dot(m, wi), wi);
+        bs.wo = ek::fmsub(m, 2.f * ek::dot(m, wi), wi);
         bs.pdf = ndf_pdf * pdf / jacobian;
 #else // MTS_SAMPLE_DIFFUSE
         bs.wo = warp::square_to_cosine_hemisphere(sample2);
@@ -237,7 +237,7 @@ public:
 
         // Cartesian -> spherical coordinates
         Float theta_m = elevation(m),
-            phi_m   = atan2(m.y(), m.x());
+            phi_m   = ek::atan2(m.y(), m.x());
 
         Vector2f u_m(theta2u(theta_m),
                     phi2u(m_isotropic ? (phi_m - phi_i) : phi_m));
@@ -295,9 +295,9 @@ public:
 
         // Cartesian -> spherical coordinates
         Float theta_i = elevation(wi),
-            phi_i   = atan2(wi.y(), wi.x()),
+            phi_i   = ek::atan2(wi.y(), wi.x()),
             theta_m = elevation(m),
-            phi_m   = atan2(m.y(), m.x());
+            phi_m   = ek::atan2(m.y(), m.x());
 
         // Spherical coordinates -> unit coordinate system
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i)),
@@ -351,9 +351,9 @@ public:
 
         // Cartesian -> spherical coordinates
         Float theta_i = elevation(wi),
-            phi_i   = atan2(wi.y(), wi.x()),
+            phi_i   = ek::atan2(wi.y(), wi.x()),
             theta_m = elevation(m),
-            phi_m   = atan2(m.y(), m.x());
+            phi_m   = ek::atan2(m.y(), m.x());
 
         // Spherical coordinates -> unit coordinate system
         Vector2f u_wi(theta2u(theta_i), phi2u(phi_i));
@@ -404,11 +404,11 @@ private:
     }
 
     template <typename Value> Value theta2u(Value theta) const {
-        return sqrt(theta * (2.f / ek::Pi<Float>));
+        return ek::sqrt(theta * (2.f / ek::Pi<Float>));
     }
 
     template <typename Value> Value phi2u(Value phi) const {
-        return (phi + ek::Pi<Float>) * math::InvTwoPi<Float>;
+        return (phi + ek::Pi<Float>) * ek::InvTwoPi<Float>;
     }
 
 private:

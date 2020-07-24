@@ -155,7 +155,7 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
  * given floating point number
  */
 template <typename T> T ulpdiff(T ref, T val) {
-    constexpr T eps = std::numeric_limits<T>::epsilon() / 2;
+    constexpr T eps = ek::Epsilon<T> / 2;
 
     /* Express mantissa wrt. same exponent */
     int e_ref, e_val;

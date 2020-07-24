@@ -225,7 +225,7 @@ public:
         bs.sampled_type = +BSDFFlags::GlossyReflection;
 
         // Ensure that this is a valid sample
-        active &= neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
+        active &= ek::neq(bs.pdf, 0.f) && Frame3f::cos_theta(bs.wo) > 0.f;
 
         UnpolarizedSpectrum weight;
         if (likely(m_sample_visible))
@@ -305,7 +305,7 @@ public:
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
 
-        active &= neq(D, 0.f);
+        active &= ek::neq(D, 0.f);
 
         // Evaluate Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, H);

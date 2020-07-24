@@ -109,11 +109,11 @@ public:
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
         auto [S, Q, T] = transform_decompose(m_to_world.matrix, 25);
 
-        if (abs(S[0][1]) > 1e-6f || abs(S[0][2]) > 1e-6f || abs(S[1][0]) > 1e-6f ||
-            abs(S[1][2]) > 1e-6f || abs(S[2][0]) > 1e-6f || abs(S[2][1]) > 1e-6f)
+        if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
+            ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
             Log(Warn, "'to_world' transform shouldn't contain any shearing!");
 
-        if (!(abs(S[0][0] - S[1][1]) < 1e-6f && abs(S[0][0] - S[2][2]) < 1e-6f))
+        if (!(ek::abs(S[0][0] - S[1][1]) < 1e-6f && ek::abs(S[0][0] - S[2][2]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
 
         m_center = T;
@@ -128,7 +128,7 @@ public:
         m_to_world = transform_compose(ScalarMatrix3f(m_radius), Q, T);
         m_to_object = m_to_world.inverse();
 
-        m_inv_surface_area = rcp(surface_area());
+        m_inv_surface_area = ek::rcp(surface_area());
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -186,7 +186,7 @@ public:
             Float inv_dc            = ek::rsqrt(dc_2),
                   sin_theta_max     = m_radius * inv_dc,
                   sin_theta_max_2   = sqr(sin_theta_max),
-                  inv_sin_theta_max = rcp(sin_theta_max),
+                  inv_sin_theta_max = ek::rcp(sin_theta_max),
                   cos_theta_max     = ek::safe_sqrt(1.f - sin_theta_max_2);
 
             /* Fall back to a Taylor series expansion for small angles, where
@@ -198,10 +198,10 @@ public:
 
             // Based on https://www.akalin.com/sampling-visible-sphere
             Float cos_alpha = sin_theta_2 * inv_sin_theta_max +
-                              cos_theta * ek::safe_sqrt(fnmadd(sin_theta_2, sqr(inv_sin_theta_max), 1.f)),
-                  sin_alpha = ek::safe_sqrt(fnmadd(cos_alpha, cos_alpha, 1.f));
+                              cos_theta * ek::safe_sqrt(ek::fnmadd(sin_theta_2, sqr(inv_sin_theta_max), 1.f)),
+                  sin_alpha = ek::safe_sqrt(ek::fnmadd(cos_alpha, cos_alpha, 1.f));
 
-            auto [sin_phi, cos_phi] = sincos(sample.y() * (2.f * ek::Pi<Float>));
+            auto [sin_phi, cos_phi] = ek::sincos(sample.y() * (2.f * ek::Pi<Float>));
 
             Vector3f d = Frame3f(dc_v * -inv_dc).to_world(Vector3f(
                 cos_phi * sin_alpha,
@@ -214,7 +214,7 @@ public:
             ds.d        = ds.p - it.p;
 
             Float dist2 = ek::squared_norm(ds.d);
-            ds.dist     = sqrt(dist2);
+            ds.dist     = ek::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
             ds.pdf      = warp::square_to_uniform_cone_pdf(ek::zero<Vector3f>(), cos_theta_max);
             ek::masked(ds.pdf, ds.dist == 0.f) = 0.f;
@@ -231,7 +231,7 @@ public:
             ds.d        = ds.p - it.p;
 
             Float dist2 = ek::squared_norm(ds.d);
-            ds.dist     = sqrt(dist2);
+            ds.dist     = ek::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
             ds.pdf      = m_inv_surface_area * dist2 / abs_ek::dot(ds.d, ds.n);
 
@@ -252,7 +252,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
-        Float sin_alpha = m_radius * rcp(norm(m_center - it.p)),
+        Float sin_alpha = m_radius * ek::rcp(ek::norm(m_center - it.p)),
               cos_alpha = ek::::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
         return ek::select(sin_alpha < ek::OneMinusEpsilon<Float>,
@@ -363,16 +363,16 @@ public:
 
             Float rd_2  = sqr(local.x()) + sqr(local.y()),
                   theta = unit_angle_z(local),
-                  phi   = atan2(local.y(), local.x());
+                  phi   = ek::atan2(local.y(), local.x());
 
             ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
-            si.uv = Point2f(phi * math::InvTwoPi<Float>, theta * math::InvPi<Float>);
+            si.uv = Point2f(phi * ek::InvTwoPi<Float>, theta * ek::InvPi<Float>);
             if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
                 si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
-                Float rd      = sqrt(rd_2),
-                      inv_rd  = rcp(rd),
+                Float rd      = ek::sqrt(rd_2),
+                      inv_rd  = ek::rcp(rd),
                       cos_phi = local.x() * inv_rd,
                       sin_phi = local.y() * inv_rd;
 
@@ -380,7 +380,7 @@ public:
                                     local.z() * sin_phi,
                                     -rd);
 
-                Mask singularity_mask = active && eq(rd, 0.f);
+                Mask singularity_mask = active && ek::eq(rd, 0.f);
                 if (unlikely(any(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 

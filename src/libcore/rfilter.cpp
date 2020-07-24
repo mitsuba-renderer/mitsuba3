@@ -12,7 +12,7 @@ MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
 
     // Evaluate and store the filter values
     for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
-        m_values[i] = ek::extract_scalar(ek::hmax(eval((m_radius * i) / MTS_FILTER_RESOLUTION)));
+        m_values[i] = ek::hmax(eval((m_radius * i) / MTS_FILTER_RESOLUTION));
 
     m_values[MTS_FILTER_RESOLUTION] = 0;
     m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;

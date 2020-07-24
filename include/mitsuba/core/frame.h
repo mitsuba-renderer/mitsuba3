@@ -85,8 +85,8 @@ template <typename Float_> struct Frame {
     static Float sin_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = ek::rsqrt(Frame::sin_theta_2(v));
-        return ek::select(abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 0.f,
-                      ek::clamp(v.y() * inv_sin_theta, -1.f, 1.f));
+        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 0.f,
+                          ek::clamp(v.y() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the cosine of the
@@ -96,8 +96,8 @@ template <typename Float_> struct Frame {
     static Float cos_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = ek::rsqrt(Frame::sin_theta_2(v));
-        return ek::select(abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 1.f,
-                      ek::clamp(v.x() * inv_sin_theta, -1.f, 1.f));
+        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 1.f,
+                          ek::clamp(v.x() * inv_sin_theta, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the sine and cosine
@@ -108,11 +108,11 @@ template <typename Float_> struct Frame {
         Float sin_theta_2 = Frame::sin_theta_2(v),
               inv_sin_theta = ek::rsqrt(Frame::sin_theta_2(v));
 
-        Vector2f result = head<2>(v) * inv_sin_theta;
+        Vector2f result = ek::head<2>(v) * inv_sin_theta;
 
-        result = ek::select(abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>,
-                        Vector2f(1.f, 0.f),
-                        ek::clamp(result, -1.f, 1.f));
+        result = ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>,
+                            Vector2f(1.f, 0.f),
+                            ek::clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
@@ -123,8 +123,8 @@ template <typename Float_> struct Frame {
      */
     static Float sin_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
-        return ek::select(abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 0.f,
-                      ek::clamp(ek::sqr(v.y()) / sin_theta_2, -1.f, 1.f));
+        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 0.f,
+                          ek::clamp(ek::sqr(v.y()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared cosine of
@@ -133,8 +133,8 @@ template <typename Float_> struct Frame {
      */
     static Float cos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
-        return ek::select(abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 1.f,
-                      ek::clamp(ek::sqr(v.x()) / sin_theta_2, -1.f, 1.f));
+        return ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>, 1.f,
+                          ek::clamp(ek::sqr(v.x()) / sin_theta_2, -1.f, 1.f));
     }
 
     /** \brief Give a unit direction, this function returns the squared sine
@@ -143,12 +143,12 @@ template <typename Float_> struct Frame {
      */
     static std::pair<Float, Float> sincos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
-              inv_sin_theta_2 = rcp(sin_theta_2);
+              inv_sin_theta_2 = ek::rcp(sin_theta_2);
 
-        Vector2f result = ek::sqr(head<2>(v)) * inv_sin_theta_2;
+        Vector2f result = ek::sqr(ek::head<2>(v)) * inv_sin_theta_2;
 
-        result = ek::select(abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>,
-                        Vector2f(1.f, 0.f), ek::clamp(result, -1.f, 1.f));
+        result = ek::select(ek::abs(sin_theta_2) <= 4.f * ek::Epsilon<Float>,
+                            Vector2f(1.f, 0.f), ek::clamp(result, -1.f, 1.f));
 
         return { result.y(), result.x() };
     }
