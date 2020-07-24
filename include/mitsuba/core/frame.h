@@ -1,8 +1,8 @@
 #pragma once
 
 #include <mitsuba/core/math.h>
-#include <mitsuba/core/stream.h>
 #include <mitsuba/core/vector.h>
+#include <enoki/struct.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

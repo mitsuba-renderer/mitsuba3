@@ -2,9 +2,6 @@
 
 #include <mitsuba/core/platform.h>
 #include <enoki/array_traits.h>
-#include <cstddef>
-#include <cstdint>
-#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 

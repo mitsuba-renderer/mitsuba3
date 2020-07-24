@@ -3,7 +3,6 @@
 #include <enoki/array_utils.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/logger.h>
-#include <vector>
 #include <set>
 
 #if defined(__WINDOWS__)

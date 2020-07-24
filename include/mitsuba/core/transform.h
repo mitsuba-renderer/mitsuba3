@@ -247,42 +247,17 @@ template <typename Point_> struct Transform {
     static Transform look_at(const Point<Float, 3> &origin,
                              const Point<Float, 3> &target,
                              const Vector<Float, 3> &up) {
-        using Vector3 = Vector<Float, 3>;
-
-        Vector3 dir = normalize(target - origin);
-        dir = normalize(dir);
-        Vector3 left = normalize(cross(up, dir));
-
-        Vector3 new_up = cross(dir, left);
-
-        // TODO refactoring
-        Matrix result, inverse;
-        // Matrix result = Matrix::from_cols(
-        //     concat(left, Scalar(0)),
-        //     concat(new_up, Scalar(0)),
-        //     concat(dir, Scalar(0)),
-        //     concat(origin, Scalar(1))
-        // );
-
-        // Matrix inverse = Matrix::from_rows(
-        //     concat(left, Scalar(0)),
-        //     concat(new_up, Scalar(0)),
-        //     concat(dir, Scalar(0)),
-        //     Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
-        // );
-
-        inverse[3] = inverse * concat(-origin, Scalar(1));
-
-        return Transform(result, transpose(inverse));
+        return Transform(ek::look_at<Matrix>(origin, target, up));
     }
 
     /// Creates a transformation that converts from the standard basis to 'frame'
     template <typename Value, size_t N = Size, ek::enable_if_t<N == 4> = 0>
     static Transform to_frame(const Frame<Value> &frame) {
+        ek::Array<Scalar, 1> z(0);
         Matrix result = Matrix::from_cols(
-            concat(frame.s, Scalar(0)),
-            concat(frame.t, Scalar(0)),
-            concat(frame.n, Scalar(0)),
+            concat(frame.s, z),
+            concat(frame.t, z),
+            concat(frame.n, z),
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         );
 
@@ -292,10 +267,11 @@ template <typename Point_> struct Transform {
     /// Creates a transformation that converts from 'frame' to the standard basis
     template <typename Value, size_t N = Size, ek::enable_if_t<N == 4> = 0>
     static Transform from_frame(const Frame<Value> &frame) {
+        ek::Array<Scalar, 1> z(0);
         Matrix result = Matrix::from_rows(
-            concat(frame.s, Scalar(0)),
-            concat(frame.t, Scalar(0)),
-            concat(frame.n, Scalar(0)),
+            concat(frame.s, z),
+            concat(frame.t, z),
+            concat(frame.n, z),
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
         );
 

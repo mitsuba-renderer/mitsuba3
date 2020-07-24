@@ -12,7 +12,7 @@ set(INC_DIR "../../include/mitsuba/core")
 add_library(mitsuba-core-obj OBJECT
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/atomic.h
-#   ${INC_DIR}/frame.h
+  ${INC_DIR}/frame.h
   ${INC_DIR}/fwd.h
   ${INC_DIR}/hash.h
   ${INC_DIR}/math.h
@@ -60,8 +60,8 @@ add_library(mitsuba-core-obj OBJECT
                        ${INC_DIR}/traits.h
   util.cpp             ${INC_DIR}/util.h
                        ${INC_DIR}/vector.h
-#                        ${INC_DIR}/warp.h
-#   xml.cpp              ${INC_DIR}/xml.h
+                       ${INC_DIR}/warp.h
+  xml.cpp              ${INC_DIR}/xml.h
   zstream.cpp          ${INC_DIR}/zstream.h
   quad.cpp             ${INC_DIR}/quad.h
 

@@ -5,7 +5,6 @@
 #include <mitsuba/core/util.h>
 
 #include <thread>
-#include <vector>
 #include <iostream>
 #include <algorithm>
 #include <mutex>

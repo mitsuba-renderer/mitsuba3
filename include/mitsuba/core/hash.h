@@ -2,7 +2,6 @@
 
 #include <mitsuba/core/object.h>
 #include <functional>
-#include <vector>
 #include <tuple>
 #include <iostream>
 

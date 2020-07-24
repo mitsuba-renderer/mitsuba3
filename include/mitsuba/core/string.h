@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <algorithm>
 #include <ostream>
 
 /// Turns a vector of elements into a human-readable representation

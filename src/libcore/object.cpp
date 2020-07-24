@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <sstream>
-#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
