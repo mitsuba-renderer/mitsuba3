@@ -52,7 +52,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
 
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
-        if constexpr (!is_array_v<Float>) {
+        if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;
             rh.ray.org_x = ray.o.x();
             rh.ray.org_y = ray.o.y();
@@ -153,7 +153,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
         rtcInitIntersectContext(&context);
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
-        if constexpr (!is_array_v<Float>) {
+        if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;
             rh.ray.org_x = ray.o.x();
             rh.ray.org_y = ray.o.y();
@@ -270,7 +270,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
 
-        if constexpr (!is_array_v<Float>) {
+        if constexpr (!ek::is_array_v<Float>) {
             RTCRay ray2;
             ray2.org_x = ray.o.x();
             ray2.org_y = ray.o.y();

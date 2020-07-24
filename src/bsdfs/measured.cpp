@@ -4,6 +4,7 @@
 #include <mitsuba/core/distr_2d.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/bsdf.h>
+#include <array>
 
 /// Set to 1 to fall back to cosine-weighted sampling (for debugging)
 #define MTS_SAMPLE_DIFFUSE     0

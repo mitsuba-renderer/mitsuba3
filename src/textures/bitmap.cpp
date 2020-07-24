@@ -319,7 +319,7 @@ public:
                 using Int4 = ek::Array<Int32, 4>;
                 using Int24 = ek::Array<Int4, 2>;
 
-                if constexpr (!is_array_v<Mask>)
+                if constexpr (!ek::is_array_v<Mask>)
                     active = true;
 
                 Point2f uv = m_transform.transform_affine(si.uv);
@@ -405,7 +405,7 @@ public:
         // Storage representation underlying this texture
         using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
 
-        if constexpr (!is_array_v<Mask>)
+        if constexpr (!ek::is_array_v<Mask>)
             active = true;
 
         Point2f uv = m_transform.transform_affine(si.uv);

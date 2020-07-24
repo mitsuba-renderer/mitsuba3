@@ -248,8 +248,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     //! @}
     // =============================================================
 
-    // TODO refactoring
-    // ENOKI_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
+    ENOKI_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
 };
 
 
@@ -492,7 +491,7 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
     /// TODO: revisit the 'false' default for autodiff mode once there are actually BRDFs using
     /// differentials
     if constexpr (!ek::is_diff_array_v<Float>) {
-        if (!has_uv_partials() && any(bsdf->needs_differentials()))
+        if (!has_uv_partials() && ek::any(bsdf->needs_differentials()))
             compute_uv_partials(ray);
     } else {
         ENOKI_MARK_USED(ray);
@@ -511,9 +510,8 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-// TODO refactoring
-// ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
-//                      sampled_type, sampled_component)
+ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
+                     sampled_type, sampled_component)
 
 //! @}
 // -----------------------------------------------------------------------

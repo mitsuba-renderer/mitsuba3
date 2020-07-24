@@ -174,7 +174,7 @@ void embree_intersect_packet(int* valid,
     const Shape* shape = (const Shape*) geometryUserPtr;
 
     Mask active = ek::neq(load<Int>(valid), 0);
-    if (none(active))
+    if (ek::none(active))
         return;
 
     // Create Mitsuba ray
@@ -208,7 +208,7 @@ void embree_intersect_packet(int* valid,
 
 template <typename Float, typename Spectrum>
 void embree_intersect(const RTCIntersectFunctionNArguments* args) {
-    if constexpr (!is_array_v<Float>) {
+    if constexpr (!ek::is_array_v<Float>) {
         RTCRayHit *rh = (RTCRayHit *) args->rayhit;
         embree_intersect_scalar<Float, Spectrum>(
             args->valid, args->geometryUserPtr, args->geomID,
@@ -224,7 +224,7 @@ void embree_intersect(const RTCIntersectFunctionNArguments* args) {
 
 template <typename Float, typename Spectrum>
 void embree_occluded(const RTCOccludedFunctionNArguments* args) {
-    if constexpr (!is_array_v<Float>) {
+    if constexpr (!ek::is_array_v<Float>) {
         embree_intersect_scalar<Float, Spectrum>(
             args->valid, args->geometryUserPtr, args->geomID,
             args->context->instID[0], (RTCRay *) args->ray, nullptr);

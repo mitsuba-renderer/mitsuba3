@@ -603,7 +603,7 @@ struct PreliminaryIntersection {
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &it) {
-    if (none(it.is_valid())) {
+    if (ek::none(it.is_valid())) {
         os << "Interaction[invalid]";
     } else {
         os << "Interaction[" << std::endl
@@ -618,7 +618,7 @@ std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &i
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spectrum> &it) {
-    if (none(it.is_valid())) {
+    if (ek::none(it.is_valid())) {
         os << "SurfaceInteraction[invalid]";
     } else {
         os << "SurfaceInteraction[" << std::endl
@@ -652,7 +652,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectrum> &it) {
-    if (none(it.is_valid())) {
+    if (ek::none(it.is_valid())) {
         os << "MediumInteraction[invalid]";
     } else {
         os << "MediumInteraction[" << std::endl
@@ -670,7 +670,7 @@ std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectr
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, Spectrum> &pi) {
-    if (none(pi.is_valid())) {
+    if (ek::none(pi.is_valid())) {
         os << "PreliminaryIntersection[invalid]";
     } else {
         os << "PreliminaryIntersection[" << std::endl

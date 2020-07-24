@@ -133,7 +133,7 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
             // Spectrum mis_throughput = mis_weight(p_over_f);
-            // active &= any(ek::neq(depolarize(mis_throughput), 0.f));
+            // active &= ek::any(ek::neq(depolarize(mis_throughput), 0.f));
             // Float q = ek::min(hmax(depolarize(mis_throughput)) * ek::sqr(eta), .95f);
             // Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             // active &= !(sampler->next_1d(active) >= q && perform_rr);
@@ -141,9 +141,9 @@ public:
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
             active &= !exceeded_max_depth;
-            active &= any(ek::neq(depolarize(mis_weight(p_over_f)), 0.f));
+            active &= ek::any(ek::neq(depolarize(mis_weight(p_over_f)), 0.f));
 
-            if (none(active))
+            if (ek::none(active))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
@@ -353,7 +353,7 @@ public:
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
-            if (none(active))
+            if (ek::none(active))
                 break;
 
             Mask escaped_medium = false;
@@ -426,10 +426,10 @@ public:
 
             // Continue tracing through scene if non-zero weights exist
             if constexpr (SpectralMis)
-                active &= (active_medium || active_surface) && any(ek::neq(mis_weight(p_over_f_uni), 0.f));
+                active &= (active_medium || active_surface) && ek::any(ek::neq(mis_weight(p_over_f_uni), 0.f));
             else
                 active &= (active_medium || active_surface) &&
-                      (ek::any(ek::neq(depolarize(p_over_f_uni), 0.f)) || any(ek::neq(depolarize(p_over_f_nee), 0.f)) );
+                      (ek::any(ek::neq(depolarize(p_over_f_uni), 0.f)) || ek::any(ek::neq(depolarize(p_over_f_nee), 0.f)) );
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();

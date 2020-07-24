@@ -238,7 +238,7 @@ public:
         bs.pdf /= 4.f * ek::dot(bs.wo, m);
 
         // Evaluate the Fresnel factor
-        Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+        ek::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                            m_k->eval(si, active));
 
         Spectrum F;
@@ -314,7 +314,7 @@ public:
         UnpolarizedSpectrum result = D * G / (4.f * Frame3f::cos_theta(si.wi));
 
         // Evaluate the Fresnel factor
-        Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+        ek::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
                                            m_k->eval(si, active));
 
         Spectrum F;

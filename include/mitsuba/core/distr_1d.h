@@ -56,8 +56,8 @@ public:
             m_cdf = ek::empty<FloatStorage>(size);
 
         // Ensure that we can access these arrays on the CPU
-        m_pmf.managed();
-        m_cdf.managed();
+        // m_pmf.managed();
+        // m_cdf.managed();
 
         ScalarFloat *pmf_ptr = m_pmf.data(),
                     *cdf_ptr = m_cdf.data();
@@ -286,7 +286,7 @@ public:
     ContinuousDistribution(const ScalarVector2f &range,
                            const ScalarFloat *values,
                            size_t size)
-        : ContinuousDistribution(range, FloatStorage::copy(values, size)) {
+        : ContinuousDistribution(range, ek::load_unaligned<FloatStorage>(values, size)) {
     }
 
     /// Update the internal state. Must be invoked when changing the pdf or range.
@@ -303,8 +303,8 @@ public:
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
         // Ensure that we can access these arrays on the CPU
-        m_pdf.managed();
-        m_cdf.managed();
+        // m_pdf.managed();
+        // m_cdf.managed();
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
                     *cdf_ptr = m_cdf.data();
@@ -553,8 +553,8 @@ public:
     IrregularContinuousDistribution(const ScalarFloat *nodes,
                                     const ScalarFloat *values,
                                     size_t size)
-        : IrregularContinuousDistribution(FloatStorage::copy(nodes, size),
-                                          FloatStorage::copy(values, size)) {
+        : IrregularContinuousDistribution(ek::load_unaligned<FloatStorage>(nodes, size),
+                                          ek::load_unaligned<FloatStorage>(values, size)) {
     }
 
     /// Update the internal state. Must be invoked when changing the pdf or range.
@@ -571,9 +571,10 @@ public:
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
         // Ensure that we can access these arrays on the CPU
-        m_pdf.managed();
-        m_cdf.managed();
-        m_nodes.managed();
+        // TODO refactoring
+        // m_pdf.managed();
+        // m_cdf.managed();
+        // m_nodes.managed();
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
                     *cdf_ptr = m_cdf.data(),

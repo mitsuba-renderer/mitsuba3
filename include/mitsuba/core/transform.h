@@ -214,11 +214,11 @@ template <typename Point_> struct Transform {
         Float tan = ek::tan(ek::deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 
-        Matrix trafo = ek::diag<Matrix>(Vector<Float, Size>(cot, cot, far_ * recip, 0.f));
+        Matrix trafo = ek::diag(Vector<Float, Size>(cot, cot, far_ * recip, 0.f));
         trafo(2, 3) = -near_ * far_ * recip;
         trafo(3, 2) = 1.f;
 
-        Matrix inv_trafo = ek::diag<Matrix>(Vector<Float, Size>(tan, tan, 0.f, ek::rcp(near_)));
+        Matrix inv_trafo = ek::diag(Vector<Float, Size>(tan, tan, 0.f, ek::rcp(near_)));
         inv_trafo(2, 3) = 1.f;
         inv_trafo(3, 2) = (near_ - far_) / (far_ * near_);
 

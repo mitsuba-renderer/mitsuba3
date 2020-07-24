@@ -57,7 +57,7 @@ MTS_PY_EXPORT(Emitter) {
     if constexpr (ek::is_cuda_array_v<Float>)
         pybind11_type_alias<UInt64, EmitterPtr>();
 
-    if constexpr (is_array_v<Float>) {
+    if constexpr (ek::is_array_v<Float>) {
         emitter.def_static("sample_ray_vec",
                             vectorize([](const EmitterPtr &ptr, Float time, Float sample1,
                                          const Point2f &sample2, const Point2f &sample3,

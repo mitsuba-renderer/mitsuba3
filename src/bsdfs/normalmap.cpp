@@ -102,8 +102,8 @@ public:
         perturbed_si.wi = perturbed_si.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
-        active &= any(ek::neq(depolarize(weight), 0.f));
-        if (none(active))
+        active &= ek::any(ek::neq(depolarize(weight), 0.f));
+        if (ek::none(active))
             return { bs, 0.f };
 
         // Transform sampled 'wo' back to original frame and check orientation

@@ -275,7 +275,7 @@ public:
         using StorageType = std::conditional_t<uses_srgb_model, ek::Array<Float, 4>, ek::Array<Float, Channels>>;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
-        if constexpr (!is_array_v<Mask>)
+        if constexpr (!ek::is_array_v<Mask>)
             active = true;
 
         const uint32_t nx = m_metadata.shape.x();

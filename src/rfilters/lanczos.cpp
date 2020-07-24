@@ -42,7 +42,7 @@ public:
 
         Float x1     = ek::Pi<Float> * x,
               x2     = x1 / m_radius,
-              result = (sin(x1) * sin(x2)) / (x1 * x2);
+              result = (ek::sin(x1) * ek::sin(x2)) / (x1 * x2);
 
         return ek::select(x < ek::Epsilon<Float>,
                       1.f,

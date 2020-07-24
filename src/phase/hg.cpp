@@ -59,19 +59,19 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float cos_theta;
-        if (std::abs(m_g) < ek::Epsilon<ScalarFloat>) {
+        if (ek::abs(m_g) < ek::Epsilon<ScalarFloat>) {
             cos_theta = 1 - 2 * sample.x();
         } else {
             Float sqr_term = (1 - m_g * m_g) / (1 - m_g + 2 * m_g * sample.x());
             cos_theta = (1 + m_g * m_g - sqr_term * sqr_term) / (2 * m_g);
         }
 
-        Float sin_theta = ek::::safe_sqrt(1.0f - cos_theta * cos_theta);
+        Float sin_theta = ek::safe_sqrt(1.0f - cos_theta * cos_theta);
         auto [sin_phi, cos_phi] = ek::sincos(2 * ek::Pi<ScalarFloat> * sample.y());
         auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
         wo = mi.to_world(wo);
         Float pdf = eval_hg(-cos_theta);
-        return std::make_pair(wo, pdf);
+        return { wo, pdf };
     }
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f &mi,

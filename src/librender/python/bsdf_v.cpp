@@ -88,7 +88,7 @@ MTS_PY_EXPORT(BSDF) {
         pybind11_type_alias<UInt32, ek::replace_scalar_t<Float, BSDFFlags>>();
     }
 
-    if constexpr (is_array_v<Float>) {
+    if constexpr (ek::is_array_v<Float>) {
         bsdf.def_static(
             "sample_vec",
             vectorize([](const BSDFPtr &ptr, const BSDFContext &ctx,

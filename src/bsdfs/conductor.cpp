@@ -235,8 +235,8 @@ public:
         bs.eta = 1.f;
         bs.pdf = 1.f;
 
-        Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
-                                         m_k->eval(si, active));
+        ek::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
+                                             m_k->eval(si, active));
         UnpolarizedSpectrum reflectance = m_specular_reflectance->eval(si, active);
 
         if constexpr (is_polarized_v<Spectrum>) {

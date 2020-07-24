@@ -144,7 +144,7 @@ public:
             // in GPU mode when the number of requested bounces is infinite
             // since it causes a costly synchronization.
             if ((uint32_t) depth >= (uint32_t) m_max_depth ||
-                ((!ek::is_cuda_array_v<Float> || m_max_depth < 0) && none(active)))
+                ((!ek::is_cuda_array_v<Float> || m_max_depth < 0) && ek::none(active)))
                 break;
 
             // --------------------- Emitter sampling ---------------------
@@ -178,7 +178,7 @@ public:
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
             throughput = throughput * bsdf_val;
-            active &= any(ek::neq(depolarize(throughput), 0.f));
+            active &= ek::any(ek::neq(depolarize(throughput), 0.f));
             if (ek::none_or<false>(active))
                 break;
 

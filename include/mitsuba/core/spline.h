@@ -219,7 +219,7 @@ Value eval_1d(Float min, Float max, const Float *values,
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= min) && (x <= max);
 
-    if (unlikely(!Extrapolate && none(mask_valid)))
+    if (unlikely(!Extrapolate && ek::none(mask_valid)))
         return ek::zero<Value>();
 
     /* Transform 'x' so that nodes lie at integer positions */
@@ -278,7 +278,7 @@ Value eval_1d(const Float *nodes, const Float *values,
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
-    if (unlikely(!Extrapolate && none(mask_valid)))
+    if (unlikely(!Extrapolate && ek::none(mask_valid)))
         return ek::zero<Value>();
 
     /* Find the index of the left node in the queried subinterval */
@@ -413,7 +413,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     Value out_of_bounds_value =
         ek::select(in_bounds_high, Value(min), Value(max));
 
-    if (unlikely(none(in_bounds)))
+    if (unlikely(ek::ek::none(in_bounds)))
         return out_of_bounds_value;
 
     /* Map y to a spline interval by searching through the
@@ -502,7 +502,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
     Value out_of_bounds_value =
         ek::select(in_bounds_high, Value(nodes[0]), Value(nodes[size - 1]));
 
-    if (unlikely(none(in_bounds)))
+    if (unlikely(ek::ek::none(in_bounds)))
         return out_of_bounds_value;
 
     Value result;
@@ -789,7 +789,7 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     /* Give up when given an out-of-range or NaN argument */
     auto mask_valid = (x >= min) && (x <= max);
 
-    if (unlikely(!Extrapolate && none(mask_valid)))
+    if (unlikely(!Extrapolate && ek::none(mask_valid)))
         return std::make_pair(Mask(false), ek::zero<Int32>());
 
     /* Transform 'x' so that nodes lie at integer positions */
@@ -879,7 +879,7 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
     /* Give up when given an out-of-range or NaN argument */
     Mask mask_valid = (x >= nodes[0]) && (x <= nodes[size-1]);
 
-    if (unlikely(!Extrapolate && none(mask_valid)))
+    if (unlikely(!Extrapolate && ek::none(mask_valid)))
         return std::make_pair(Mask(false), ek::zero<Int32>());
 
     /* Find the index of the left node in the queried subinterval */
@@ -995,7 +995,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
         eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
 
     /* Compute interpolation weights separately for each dimension */
-    if (unlikely(none(valid_x && valid_y)))
+    if (unlikely(ek::ek::none(valid_x && valid_y)))
         return ek::zero<Value>();
 
     Index index = offset[1] * size1 + offset[0];

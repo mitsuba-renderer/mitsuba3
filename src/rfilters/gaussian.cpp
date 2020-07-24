@@ -37,7 +37,7 @@ public:
         m_radius = 4 * m_stddev;
 
         m_alpha = -1.f / (2.f * m_stddev * m_stddev);
-        m_bias = std::exp(m_alpha * ek::sqr(m_radius));
+        m_bias = ek::exp(m_alpha * ek::sqr(m_radius));
 
         init_discretization();
     }

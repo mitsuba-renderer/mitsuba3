@@ -160,7 +160,7 @@ public:
     }
 
     MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
-        return clamp(m_weight->eval_1(si, active), 0.f, 1.f);
+        return ek::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
     void traverse(TraversalCallback *callback) override {

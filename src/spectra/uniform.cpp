@@ -72,7 +72,7 @@ public:
         }
     }
 
-    ScalarFloat mean() const override { return scalar_cast(hmean(m_value)); }
+    ScalarFloat mean() const override { return ek::hmean(m_value); }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("value", m_value);

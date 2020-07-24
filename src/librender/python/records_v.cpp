@@ -9,7 +9,7 @@ void bind_set_object(PyClass &cl) {
     using UInt64  =  uint64_array_t<Float>;
     using ObjectPtr = ek::replace_scalar_t<Float, const Object *>;
 
-    if constexpr (is_array_v<Float>)
+    if constexpr (ek::is_array_v<Float>)
         cl.def("set_object", [](Class& ps, UInt64 ptr) { ps.object = static_cast<ObjectPtr>(ptr); });
 }
 

@@ -62,7 +62,7 @@ MTS_PY_EXPORT(PhaseFunction) {
         pybind11_type_alias<UInt64, PhaseFunctionPtr>();
     }
 
-    if constexpr (is_array_v<Float>) {
+    if constexpr (ek::is_array_v<Float>) {
         phase.def_static(
             "sample_vec",
             vectorize([](const PhaseFunctionPtr &ptr, const PhaseFunctionContext &ctx,

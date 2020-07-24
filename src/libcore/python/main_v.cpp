@@ -55,7 +55,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         enoki_pkg = "enoki.cuda_autodiff";
     else if constexpr (ek::is_cuda_array_v<Float>)
         enoki_pkg = "enoki.cuda";
-    else if constexpr (is_array_v<Float>)
+    else if constexpr (ek::is_array_v<Float>)
         enoki_pkg = "enoki.dynamic";
     else
         enoki_pkg = "enoki.scalar";
@@ -186,7 +186,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     pybind11_type_alias<Array<UInt32, 4>, Vector4u>();
     pybind11_type_alias<Array<UInt32, 4>, Point4u>();
 
-    if constexpr (is_array_v<Float>) {
+    if constexpr (ek::is_array_v<Float>) {
         pybind11_type_alias<Array<ScalarFloat, 1>,  ScalarVector1f>();
         pybind11_type_alias<Array<ScalarFloat, 1>,  ScalarPoint1f>();
         pybind11_type_alias<Array<ScalarFloat, 1>,  ScalarColor1f>();
@@ -224,7 +224,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         pybind11_type_alias<ek::Matrix<Array<Float, UnpolarizedSpectrum::Size>, 4>,
                             Spectrum>();
 
-    if constexpr (is_array_v<Float>)
+    if constexpr (ek::is_array_v<Float>)
         pybind11_type_alias<UInt64, ek::replace_scalar_t<Float, const Object *>>();
 
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();

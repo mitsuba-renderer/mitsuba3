@@ -51,9 +51,9 @@ public:
 
     ScalarFloat mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return scalar_cast(hmean(srgb_model_mean(m_value)));
+            return ek::hmean(srgb_model_mean(m_value));
         else
-            return scalar_cast(hmean(hmean(m_value)));
+            return ek::hmean(hmean(m_value));
     }
 
     void traverse(TraversalCallback *callback) override {

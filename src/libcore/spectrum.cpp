@@ -75,10 +75,10 @@ Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
     color *= ((Scalar) MTS_WAVELENGTH_MAX - (Scalar) MTS_WAVELENGTH_MIN) / (Scalar) steps;
     color = xyz_to_srgb(color);
 
-    if (bounded && any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
+    if (bounded && ek::any(color < (Scalar) 0.f || color > (Scalar) 1.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
         color = clamp(color, (Scalar) 0.f, (Scalar) 1.f);
-    } else if (!bounded && any(color < (Scalar) 0.f)) {
+    } else if (!bounded && ek::any(color < (Scalar) 0.f)) {
         Log(Warn, "Spectrum: clamping out-of-gamut color %s", color);
         color = ek::max(color, (Scalar) 0.f);
     }

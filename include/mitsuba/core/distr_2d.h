@@ -84,9 +84,9 @@ public:
         : m_size(size) {
 
         m_cond_cdf = ek::empty<FloatStorage>(ek::hprod(m_size));
-        m_cond_cdf.managed();
+        // m_cond_cdf TODO refactoring
         m_marg_cdf = ek::empty<FloatStorage>(m_size.y());
-        m_marg_cdf.managed();
+        // m_marg_cdf TODO refactoring
 
         ScalarFloat *cond_cdf = m_cond_cdf.data(),
                     *marg_cdf = m_marg_cdf.data();
@@ -142,7 +142,7 @@ public:
         sample.y() *= m_inv_normalization;
 
         // Sample the row from the marginal distribution
-        UInt32 row = ek::binary_search(
+        UInt32 row = ek::binary_search<UInt32>(
             0u, m_size.y() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_marg_cdf, idx, active) < sample.y();
             });
@@ -153,7 +153,7 @@ public:
         sample.x() *= ek::gather<Float>(m_cond_cdf, offset + m_size.x() - 1, active);
 
         // Sample the column from the conditional distribution
-        UInt32 col = ek::binary_search(
+        UInt32 col = ek::binary_search<UInt32>(
             0u, m_size.x() - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_cond_cdf, idx + offset, active) < sample.x();
             });
@@ -233,7 +233,8 @@ protected:
             if (param_res[i] < 1)
                 Throw("Distribution2D(): parameter resolution must be >= 1!");
 
-            m_param_values[i] = FloatStorage::copy(param_values[i], param_res[i]);
+            // TODO refactoring: check this!
+            m_param_values[i] = ek::load_unaligned<FloatStorage>(param_values[i], param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? m_slices : 0;
             m_slices *= param_res[i];
         }
@@ -255,7 +256,7 @@ protected:
                     continue;
                 }
 
-                UInt32 param_index = math::find_interval(
+                UInt32 param_index = math::find_interval<UInt32>(
                     (uint32_t) m_param_values[dim].size(),
                     [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                         return ek::gather<Float>(m_param_values[dim], idx, active) <
@@ -338,16 +339,12 @@ class Hierarchical2D : public Distribution2D<Float_, Dimension_> {
 public:
     using Base = Distribution2D<Float_, Dimension_>;
 
-    ENOKI_USING_TYPES(Base,
-        Float, UInt32, Mask, ScalarFloat, Point2i, Point2f,
-        Point2u, ScalarVector2f, ScalarVector2u, FloatStorage
-    )
+    MTS_USING_TYPES(Float, UInt32, Mask, ScalarFloat, Point2i, Point2f, Point2u,
+                    ScalarVector2f, ScalarVector2u, FloatStorage)
 
-    ENOKI_USING_MEMBERS(Base,
-        Dimension, DimensionInt, m_patch_size, m_inv_patch_size,
-        m_param_strides, m_param_values, m_slices,
-        interpolate_weights
-    )
+    MTS_USING_MEMBERS(Dimension, DimensionInt, m_patch_size, m_inv_patch_size,
+                      m_param_strides, m_param_values, m_slices,
+                      interpolate_weights)
 
     Hierarchical2D() = default;
 
@@ -725,7 +722,7 @@ protected:
         Level(ScalarVector2u res, uint32_t slices)
             : size(ek::hprod(res)), width(res.x()),
               data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
-            data.managed();
+            // data TODO refactoring
             data_ptr = data.data();
         }
 
@@ -821,12 +818,12 @@ class Marginal2D : public Distribution2D<Float_, Dimension_> {
 public:
     using Base = Distribution2D<Float_, Dimension_>;
 
-    ENOKI_USING_TYPES(Base,
+    MTS_USING_TYPES(
         Float, UInt32, Mask, ScalarFloat, Point2f, Point2i,
         Point2u, ScalarVector2f, ScalarVector2u, FloatStorage
     )
 
-    ENOKI_USING_MEMBERS(Base,
+    MTS_USING_MEMBERS(
         Dimension, DimensionInt, m_patch_size, m_inv_patch_size,
         m_param_strides, m_param_values, m_slices, interpolate_weights
     )
@@ -867,14 +864,14 @@ public:
                scale_y = .5 / (h - 1);
 
         m_data = ek::empty<FloatStorage>(m_slices * n_data);
-        m_data.managed();
+        // m_data TODO refactoring
 
         if (enable_sampling) {
             m_marg_cdf = ek::empty<FloatStorage>(m_slices * n_marg);
-            m_marg_cdf.managed();
+            // m_marg_cdf TODO refactoring
 
             m_cond_cdf = ek::empty<FloatStorage>(m_slices * n_cond);
-            m_cond_cdf.managed();
+            // m_cond_cdf TODO refactoring
 
             ScalarFloat *marg_cdf = m_marg_cdf.data(),
                         *cond_cdf = m_cond_cdf.data(),
@@ -1118,7 +1115,7 @@ protected:
             sample.y() *= fetch_marginal(n_marg - 1, active);
 
         // Sample the row from the marginal distribution
-        UInt32 row = ek::binary_search(
+        UInt32 row = ek::binary_search<UInt32>(
             0u, n_marg - 1, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return fetch_marginal(idx, active) < sample.y();
             });
@@ -1137,7 +1134,7 @@ protected:
                              n_cond, param_weight, active);
 
         // Sample the column from the conditional distribution
-        UInt32 col = ek::binary_search(
+        UInt32 col = ek::binary_search<UInt32>(
             0u, m_size.x() - 2, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return lookup(m_cond_cdf.data(),
                               offset_cond + idx, n_cond,
@@ -1265,7 +1262,7 @@ protected:
         if (!m_normalized)
             sample.y() *= fetch_marginal(n_marg - 1, active);
 
-        UInt32 row = ek::binary_search(
+        UInt32 row = ek::binary_search<UInt32>(
             0u, n_marg - 1,
             [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return fetch_marginal(idx, active) < sample.y();
@@ -1298,7 +1295,7 @@ protected:
             return ek::lerp(v0, v1, sample.y());
         };
 
-        UInt32 col = ek::binary_search(
+        UInt32 col = ek::binary_search<UInt32>(
             0, m_size.x() - 1,
             [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
                 return fetch_conditional(idx, active) < sample.x();

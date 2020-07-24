@@ -75,14 +75,14 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
 
-            active &= any(ek::neq(depolarize(throughput), 0.f));
+            active &= ek::any(ek::neq(depolarize(throughput), 0.f));
             Float q = ek::min(hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
             ek::masked(throughput, perform_rr) *= ek::rcp(detach(q));
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
-            if (none(active) || ek::all(exceeded_max_depth))
+            if (ek::none(active) || ek::all(exceeded_max_depth))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
@@ -230,7 +230,7 @@ public:
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
 
                 Mask add_emitter = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Delta) &&
-                                   any(ek::neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
+                                   ek::any(ek::neq(depolarize(throughput), 0.f)) && (depth < (uint32_t) m_max_depth);
                 act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
 
                 // Intersect the indirect ray against the scene
@@ -282,7 +282,7 @@ public:
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
-            if (none(active))
+            if (ek::none(active))
                 break;
 
             Mask escaped_medium = false;
@@ -354,7 +354,7 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && any(ek::neq(depolarize(transmittance), 0.f));
+            active &= (active_medium || active_surface) && ek::any(ek::neq(depolarize(transmittance), 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();
@@ -452,7 +452,7 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && any(ek::neq(depolarize(transmittance), 0.f));
+            active &= (active_medium || active_surface) && ek::any(ek::neq(depolarize(transmittance), 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();
