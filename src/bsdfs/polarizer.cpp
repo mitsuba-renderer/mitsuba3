@@ -88,7 +88,7 @@ public:
 
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
-            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
@@ -136,7 +136,7 @@ public:
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
-            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
 
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);

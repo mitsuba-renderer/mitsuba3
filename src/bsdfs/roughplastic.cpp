@@ -8,6 +8,7 @@
 #include <mitsuba/render/ior.h>
 #include <mitsuba/render/microfacet.h>
 #include <mitsuba/render/texture.h>
+#include <enoki/dynamic.h>
 
 #define MTS_ROUGH_TRANSMITTANCE_RES 64
 
@@ -384,14 +385,14 @@ public:
             Vector3fX wi = ek::zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
             for (size_t i = 0; i < slices(wi); ++i) {
                 ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
-                slice(wi, i) = ScalarVector3f(std::sqrt(1 - mu * mu), 0.f, mu);
+                slice(wi, i) = ScalarVector3f(ek::sqrt(1 - mu * mu), 0.f, mu);
             }
 
             auto external_transmittance = eval_transmittance(distr_p, wi, m_eta);
             m_external_transmittance = DynamicBuffer<Float>::copy(external_transmittance.data(),
                                                                   slices(external_transmittance));
             m_internal_reflectance =
-                hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
+                ek::hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
     }
 

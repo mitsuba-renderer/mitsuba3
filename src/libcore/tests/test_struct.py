@@ -121,7 +121,7 @@ def test03_convert(param):
     values = list(range(10))
     if Struct.is_signed(p1[1]) and Struct.is_signed(p2[1]):
         values += list(range(-10, 0))
-    max_range = int(min(Struct.range(p1[1])[1], Struct.range(p2[1])[1]))
+    max_range = int(ek::min(Struct.range(p1[1])[1], Struct.range(p2[1])[1]))
     if max_range > 1024:
         values += list(range(1000, 1024))
 

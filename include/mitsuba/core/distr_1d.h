@@ -3,6 +3,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/math.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -21,7 +22,7 @@ template <typename Float> struct DiscreteDistribution {
     using Index          = ek::uint32_array_t<Float>;
     using Mask           = ek::mask_t<Float>;
     using ScalarFloat    = ek::scalar_t<Float>;
-    using ScalarVector2u = Array<uint32_t, 2>;
+    using ScalarVector2u = ek::Array<uint32_t, 2>;
 
 public:
     /// Create an unitialized DiscreteDistribution instance
@@ -527,8 +528,8 @@ template <typename Float> struct IrregularContinuousDistribution {
     using Mask = ek::mask_t<Float>;
 
     using ScalarFloat = ek::scalar_t<Float>;
-    using ScalarVector2f = Array<ScalarFloat, 2>;
-    using ScalarVector2u = Array<uint32_t, 2>;
+    using ScalarVector2f = ek::Array<ScalarFloat, 2>;
+    using ScalarVector2u = ek::Array<uint32_t, 2>;
 
 public:
     /// Create an unitialized IrregularContinuousDistribution instance
@@ -613,7 +614,7 @@ public:
             }
         }
 
-        if (any(ek::eq(m_valid, (uint32_t) -1)))
+        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
         m_integral = ScalarFloat(integral);

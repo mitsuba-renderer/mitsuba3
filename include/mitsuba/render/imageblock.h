@@ -1,9 +1,11 @@
 #pragma once
 
 #include <mitsuba/core/fwd.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

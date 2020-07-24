@@ -82,7 +82,7 @@ public:
             ek::masked(throughput, perform_rr) *= ek::rcp(detach(q));
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
-            if (none(active) || all(exceeded_max_depth))
+            if (none(active) || ek::all(exceeded_max_depth))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
@@ -260,7 +260,7 @@ public:
     std::tuple<Spectrum, DirectionSample3f>
     sample_emitter(const Interaction3f &ref_interaction, Mask is_medium_interaction, const Scene *scene,
                           Sampler *sampler, MediumPtr medium, UInt32 channel, Mask active) const {
-        using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+        using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         Spectrum transmittance(1.0f);
 
         auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
@@ -278,7 +278,7 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::Infinity<Float>;
         Mask needs_intersection = true;
-        while (any(active)) {
+        while (ek::any(active)) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
@@ -371,7 +371,7 @@ public:
                           Sampler *sampler, MediumPtr medium, Ray3f ray,
                           const SurfaceInteraction3f &si_ray,
                           UInt32 channel, Mask active) const {
-        using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+        using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
 
         Spectrum emitter_val(0.0f);
 
@@ -381,7 +381,7 @@ public:
         Spectrum transmittance(1.0f);
         Float emitter_pdf(0.0f);
         SurfaceInteraction3f si = si_ray;
-        while (any(active)) {
+        while (ek::any(active)) {
             Mask escaped_medium = false;
             Mask active_medium  = active && ek::neq(medium, nullptr);
             Mask active_surface = active && !active_medium;

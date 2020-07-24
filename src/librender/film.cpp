@@ -53,7 +53,7 @@ MTS_VARIANT Film<Float, Spectrum>::~Film() {}
 
 MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2i &crop_offset,
                                                         const ScalarVector2i &crop_size) {
-    if (any(crop_offset < 0 || crop_size <= 0 || crop_offset + crop_size > m_size))
+    if (ek::any(crop_offset < 0 || crop_size <= 0 || crop_offset + crop_size > m_size))
         Throw("Invalid crop window specification!\n"
               "offset %s + crop size %s vs full size %s",
               crop_offset, crop_size, m_size);

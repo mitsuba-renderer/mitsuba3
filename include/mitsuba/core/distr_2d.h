@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/util.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -82,9 +83,9 @@ public:
                            const ScalarVector2u &size)
         : m_size(size) {
 
-        m_cond_cdf = empty<FloatStorage>(ek::hprod(m_size));
+        m_cond_cdf = ek::empty<FloatStorage>(ek::hprod(m_size));
         m_cond_cdf.managed();
-        m_marg_cdf = empty<FloatStorage>(m_size.y());
+        m_marg_cdf = ek::empty<FloatStorage>(m_size.y());
         m_marg_cdf.managed();
 
         ScalarFloat *cond_cdf = m_cond_cdf.data(),
@@ -217,7 +218,7 @@ protected:
     Distribution2D(const ScalarVector2u &size,
                    const std::array<uint32_t, Dimension> &param_res,
                    const std::array<const ScalarFloat *, Dimension> &param_values) {
-        if (any(size < 2))
+        if (ek::any(size < 2))
             Throw("Distribution2D(): input array resolution must be >= 2!");
 
         // The linear interpolant has 'size-1' patches
@@ -865,14 +866,14 @@ public:
         double scale_x = .5 / (w - 1),
                scale_y = .5 / (h - 1);
 
-        m_data = empty<FloatStorage>(m_slices * n_data);
+        m_data = ek::empty<FloatStorage>(m_slices * n_data);
         m_data.managed();
 
         if (enable_sampling) {
-            m_marg_cdf = empty<FloatStorage>(m_slices * n_marg);
+            m_marg_cdf = ek::empty<FloatStorage>(m_slices * n_marg);
             m_marg_cdf.managed();
 
-            m_cond_cdf = empty<FloatStorage>(m_slices * n_cond);
+            m_cond_cdf = ek::empty<FloatStorage>(m_slices * n_cond);
             m_cond_cdf.managed();
 
             ScalarFloat *marg_cdf = m_marg_cdf.data(),

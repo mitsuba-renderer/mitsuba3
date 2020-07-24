@@ -74,7 +74,7 @@ public:
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
-    using ScalarIndex3 = Array<ScalarIndex, 3>;
+    using ScalarIndex3 = ek::Array<ScalarIndex, 3>;
     using typename Base::InputFloat;
     using typename Base::InputPoint3f ;
     using typename Base::InputVector2f;
@@ -192,14 +192,14 @@ public:
                 }
 
                 m_vertex_count = (ScalarSize) el.count;
-                m_vertex_positions_buf = empty<FloatStorage>(m_vertex_count * 3);
+                m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
                 if (!m_disable_vertex_normals)
-                    m_vertex_normals_buf = empty<FloatStorage>(m_vertex_count * 3);
+                    m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
                 if (has_vertex_texcoords)
-                    m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
+                    m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
                 for (auto& descr: vertex_attributes_descriptors) {
-                    descr.buf = empty<FloatStorage>(m_vertex_count * descr.dim);
+                    descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
                     descr.buf.managed();
                 }
 
@@ -311,11 +311,11 @@ public:
                 }
 
                 m_face_count = (ScalarSize) el.count;
-                m_faces_buf = empty<DynamicBuffer<UInt32>>(m_face_count * 3);
+                m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
                 m_faces_buf.managed();
 
                 for (auto& descr: face_attributes_descriptors) {
-                    descr.buf = empty<FloatStorage>(m_face_count * descr.dim);
+                    descr.buf = ek::empty<FloatStorage>(m_face_count * descr.dim);
                     descr.buf.managed();
                 }
 

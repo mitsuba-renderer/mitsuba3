@@ -672,7 +672,7 @@ void accumulate_2d(ConstT source,
     size -= ek::max(source_offset + size - source_size, 0);
     size -= ek::max(target_offset + size - target_size, 0);
 
-    if (any(size <= 0))
+    if (ek::any(size <= 0))
         return;
 
     int n = (int) (size.x() * channel_count);

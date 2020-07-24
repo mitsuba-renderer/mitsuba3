@@ -17,7 +17,6 @@
 #include <mitsuba/core/fwd.h>
 #include <iosfwd>
 #include <string>
-#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 

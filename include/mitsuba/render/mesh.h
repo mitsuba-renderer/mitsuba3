@@ -9,6 +9,7 @@
 #include <mitsuba/core/properties.h>
 #include <tbb/spin_mutex.h>
 #include <unordered_map>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -25,7 +26,7 @@ public:
     using InputVector3f = Vector<InputFloat, 3>;
     using InputNormal3f = Normal<InputFloat, 3>;
 
-    using FloatStorage = DynamicBuffer<replace_scalar_t<Float, InputFloat>>;
+    using FloatStorage = DynamicBuffer<ek::replace_scalar_t<Float, InputFloat>>;
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
@@ -78,28 +79,28 @@ public:
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
     MTS_INLINE auto face_indices(Index index, ek::mask_t<Index> active = true) const {
-        using Result = Array<replace_scalar_t<Index, uint32_t>, 3>;
+        using Result = ek::Array<ek::replace_scalar_t<Index, uint32_t>, 3>;
         return ek::gather<Result>(m_faces_buf, index, active);
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index, ek::mask_t<Index> active = true) const {
-        using Result = Point<replace_scalar_t<Index, InputFloat>, 3>;
+        using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 3>;
         return ek::gather<Result>(m_vertex_positions_buf, index, active);
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index, ek::mask_t<Index> active = true) const {
-        using Result = Normal<replace_scalar_t<Index, InputFloat>, 3>;
+        using Result = Normal<ek::replace_scalar_t<Index, InputFloat>, 3>;
         return ek::gather<Result>(m_vertex_normals_buf, index, active);
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index, ek::mask_t<Index> active = true) const {
-        using Result = Point<replace_scalar_t<Index, InputFloat>, 2>;
+        using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 2>;
         return ek::gather<Result>(m_vertex_texcoords_buf, index, active);
     }
 
@@ -297,8 +298,8 @@ protected:
                                Mask active) const {
         using StorageType =
             std::conditional_t<Size == 1,
-                               replace_scalar_t<Float, InputFloat>,
-                               replace_scalar_t<Color3f, InputFloat>>;
+                               ek::replace_scalar_t<Float, InputFloat>,
+                               ek::replace_scalar_t<Color3f, InputFloat>>;
         using ReturnType = std::conditional_t<Size == 1, Float, Color3f>;
 
         if (type == MeshAttributeType::Vertex) {

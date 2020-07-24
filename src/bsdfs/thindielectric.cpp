@@ -139,11 +139,11 @@ public:
         bs.sampled_type =
             ek::select(selected_r, UInt32(+BSDFFlags::DeltaReflection), UInt32(+BSDFFlags::Null));
 
-        if (m_specular_reflectance && any_or<true>(selected_r))
+        if (m_specular_reflectance && ek::any_or<true>(selected_r))
             weight[selected_r] *= m_specular_reflectance->eval(si, selected_r);
 
         Mask selected_t = !selected_r && active;
-        if (m_specular_transmittance && any_or<true>(selected_t))
+        if (m_specular_transmittance && ek::any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
         return { bs, ek::select(active, unpolarized<Spectrum>(weight), 0.f) };

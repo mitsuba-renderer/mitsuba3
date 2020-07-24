@@ -78,37 +78,37 @@ template <typename Point_, typename Spectrum_> struct Ray {
         return result;
     }
 
-    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
+    // ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 };
 
-// /**
-//  * \brief Ray differential -- enhances the basic ray class with
-//  * offset rays for two adjacent pixels on the view plane
-//  */
-// template <typename Point_, typename Spectrum_>
-// struct RayDifferential : Ray<Point_, Spectrum_> {
-//     using Base = Ray<Point_, Spectrum_>;
+/**
+ * \brief Ray differential -- enhances the basic ray class with
+ * offset rays for two adjacent pixels on the view plane
+ */
+template <typename Point_, typename Spectrum_>
+struct RayDifferential : Ray<Point_, Spectrum_> {
+    using Base = Ray<Point_, Spectrum_>;
 
-//     MTS_USING_TYPES(Float, Point, Vector)
-//     MTS_USING_MEMBERS(o, d, d_rcp, mint, maxt, time, wavelengths)
+    MTS_USING_TYPES(Float, Point, Vector)
+    MTS_USING_MEMBERS(o, d, d_rcp, mint, maxt, time, wavelengths)
 
-//     Point o_x, o_y;
-//     Vector d_x, d_y;
-//     bool has_differentials = false;
+    Point o_x, o_y;
+    Vector d_x, d_y;
+    bool has_differentials = false;
 
-//     /// Construct from a Ray instance
-//     RayDifferential(const Base &ray)
-//         : Base(ray), has_differentials(false) { }
+    /// Construct from a Ray instance
+    RayDifferential(const Base &ray)
+        : Base(ray), has_differentials(false) { }
 
-//     void scale_differential(Float amount) {
-//         o_x = ek::fmadd(o_x - o, amount, o);
-//         o_y = ek::fmadd(o_y - o, amount, o);
-//         d_x = ek::fmadd(d_x - d, amount, d);
-//         d_y = ek::fmadd(d_y - d, amount, d);
-//     }
+    void scale_differential(Float amount) {
+        o_x = ek::fmadd(o_x - o, amount, o);
+        o_y = ek::fmadd(o_y - o, amount, o);
+        d_x = ek::fmadd(d_x - d, amount, d);
+        d_y = ek::fmadd(d_y - d, amount, d);
+    }
 
-//     ENOKI_DERIVED_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time, wavelengths, o_x, o_y, d_x, d_y)
-// };
+    // ENOKI_DERIVED_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time, wavelengths, o_x, o_y, d_x, d_y)
+};
 
 /// Return a string representation of the ray
 template <typename Point, typename Spectrum>
@@ -131,8 +131,9 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for static & dynamic vectorization
 // -----------------------------------------------------------------------
 
+// TODO refactoring
 // Support for static & dynamic vectorization
-ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
+// ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
 
 // ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
 //                      time, wavelengths, o_x, o_y, d_x, d_y)

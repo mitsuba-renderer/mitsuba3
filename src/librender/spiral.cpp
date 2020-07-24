@@ -65,7 +65,7 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
                     ++m_steps;
                 m_steps_left = m_steps;
             }
-        } while (any(m_position < 0 || m_position >= m_blocks));
+        } while (ek::any(m_position < 0 || m_position >= m_blocks));
     }
 
     return { offset, size, block_id };

@@ -279,11 +279,11 @@ public:
         m_face_count = (ScalarSize) triangles.size();
 
         m_faces_buf = DynamicBuffer<UInt32>::copy(triangles.data(), m_face_count * 3);
-        m_vertex_positions_buf = empty<FloatStorage>(m_vertex_count * 3);
+        m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!m_disable_vertex_normals)
-            m_vertex_normals_buf = empty<FloatStorage>(m_vertex_count * 3);
+            m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!texcoords.empty())
-            m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
+            m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
         // TODO this is needed for the bbox(..) methods, but is it slower?
         m_faces_buf.managed();

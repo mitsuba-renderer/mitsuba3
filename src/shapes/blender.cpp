@@ -196,7 +196,7 @@ public:
             const blender::MVert &v1 = verts[loops[tri_loop.tri[1]].v];
             const blender::MVert &v2 = verts[loops[tri_loop.tri[2]].v];
 
-            Array<InputPoint3f, 3> face_points;
+            ek::Array<InputPoint3f, 3> face_points;
             face_points[0] = InputPoint3f(v0.co[0], v0.co[1], v0.co[2]);
             face_points[1] = InputPoint3f(v1.co[0], v1.co[1], v1.co[2]);
             face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);

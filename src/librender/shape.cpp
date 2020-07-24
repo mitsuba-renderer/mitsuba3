@@ -169,7 +169,7 @@ void embree_intersect_packet(int* valid,
                              RTCRayW* rays,
                              RTCHitW* hits) {
     MTS_IMPORT_TYPES(Shape)
-    using Int = replace_scalar_t<Float, int>;
+    using Int = ek::replace_scalar_t<Float, int>;
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 

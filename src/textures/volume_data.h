@@ -40,7 +40,7 @@ NAMESPACE_END(detail)
 // TODO: document data format.
 // TODO: what if Float is a GPU array, should we upload to it directly?
 template <typename Float>
-std::pair<VolumeMetadata, std::unique_ptr<scalar_t<Float>[]>>
+std::pair<VolumeMetadata, std::unique_ptr<ek::scalar_t<Float>[]>>
 read_binary_volume_data(const std::string &filename) {
     MTS_IMPORT_CORE_TYPES()
 

@@ -97,7 +97,7 @@ struct PositionSample {
     // =============================================================
 
     // TODO refactoring
-    // ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
+    ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
 };
 
 // -----------------------------------------------------------------------------
@@ -203,10 +203,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    // ENOKI_DERIVED_STRUCT(DirectionSample, Base,
-    //     ENOKI_BASE_FIELDS(p, n, uv, time, pdf, delta, object),
-    //     ENOKI_DERIVED_FIELDS(d, dist)
-    // )
+    // ENOKI_DERIVED_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, object, d, dist)
 };
 
 // -----------------------------------------------------------------------------
@@ -250,8 +247,8 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // TODO refactoring
-// ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
-//                      pdf, delta, object)
+ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
+                     pdf, delta, object)
 
 // ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
 //                      delta, object, d, dist)

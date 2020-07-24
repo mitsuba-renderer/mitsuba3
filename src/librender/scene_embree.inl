@@ -22,7 +22,7 @@ NAMESPACE_BEGIN(mitsuba)
 static RTCDevice __embree_device = nullptr;
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
-    static_assert(is_float_v<scalar_t<Float>>, "Embree is not supported in double precision mode.");
+    static_assert(is_float_v<ek::scalar_t<Float>>, "Embree is not supported in double precision mode.");
     if (!__embree_device)
         __embree_device = rtcNewDevice("");
 
@@ -115,7 +115,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
             Float t = load<Float>(rh.ray.tfar);
             Mask hit = active && neq(t, ray.maxt);
 
-            if (likely(any(hit))) {
+            if (likely(ek::any(hit))) {
                 using ShapePtr = replace_scalar_t<Float, const Shape *>;
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
                 UInt32 shape_index = load<UInt32>(rh.hit.geomID);
@@ -225,7 +225,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
             Float t = load<Float>(rh.ray.tfar);
             Mask hit = active && neq(t, ray.maxt);
 
-            if (likely(any(hit))) {
+            if (likely(ek::any(hit))) {
                 using ShapePtr = replace_scalar_t<Float, const Shape *>;
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
                 UInt32 shape_index = load<UInt32>(rh.hit.geomID);

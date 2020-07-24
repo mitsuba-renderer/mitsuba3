@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
 static RGB2Spec *model = nullptr;
 static tbb::spin_mutex model_mutex;
 
-Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
-    using Array3f = Array<float, 3>;
+ek::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
+    using Array3f = ek::Array<float, 3>;
 
     if (unlikely(model == nullptr)) {
         tbb::spin_mutex::scoped_lock sl(model_mutex);
@@ -40,8 +40,8 @@ Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
 }
 
 #if 0
-Color<float, 3> srgb_model_eval_rgb(const Array<float, 3> &coeff) {
-    using Array3f = Array<float, 3>;
+Color<float, 3> srgb_model_eval_rgb(const ek::Array<float, 3> &coeff) {
+    using Array3f = ek::Array<float, 3>;
     using Spectrum = Spectrum<float, 4>;
     using Matrix3f = Matrix<float, 3>;
     using Texture = Texture<float, Spectrum>;

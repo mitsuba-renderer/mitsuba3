@@ -15,7 +15,7 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2i &size, size_t chann
 
     if (filter) {
         // Temporary buffers used in put()
-        int filter_size = (int) std::ceil(2 * filter->radius()) + 1;
+        int filter_size = (int) ek::ceil(2 * filter->radius()) + 1;
         m_weights_x = new Float[2 * filter_size];
         m_weights_y = m_weights_x + filter_size;
     }
@@ -42,7 +42,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &siz
     if (size == m_size)
         return;
     m_size = size;
-    m_data = empty<DynamicBuffer<Float>>(
+    m_data = ek::empty<DynamicBuffer<Float>>(
         m_channel_count * ek::hprod(size + 2 * m_border_size));
 }
 
@@ -95,7 +95,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
                 is_valid &= ek::isfinite(value[k]);
         }
 
-        if (unlikely(any(active && !is_valid))) {
+        if (unlikely(ek::any(active && !is_valid))) {
             std::ostringstream oss;
             oss << "Invalid sample value: [";
             for (uint32_t i = 0; i < m_channel_count; ++i) {
@@ -116,10 +116,10 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
     if (filter_radius > 0.5f + math::RayEpsilon<Float>) {
         // Determine the affected range of pixels
-        Point2u lo = Point2u(max(ceil2int <Point2i>(pos - filter_radius), 0)),
-                hi = Point2u(min(floor2int<Point2i>(pos + filter_radius), size - 1));
+        Point2u lo = Point2u(ek::max(ek::ceil2int <Point2i>(pos - filter_radius), 0)),
+                hi = Point2u(ek::min(ek::floor2int<Point2i>(pos + filter_radius), size - 1));
 
-        uint32_t n = ceil2int<uint32_t>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
+        uint32_t n = ek::ceil2int<uint32_t>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
 
         Point2f base = lo - pos;
         for (uint32_t i = 0; i < n; ++i) {
@@ -160,10 +160,10 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             }
         }
     } else {
-        Point2u lo = ceil2int<Point2i>(pos - .5f);
+        Point2u lo = ek::ceil2int<Point2i>(pos - .5f);
         UInt32 offset = m_channel_count * (lo.y() * size.x() + lo.x());
 
-        Mask enabled = active && all(lo >= 0u && lo < size);
+        Mask enabled = active && ek::all(lo >= 0u && lo < size);
         ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
             ek::scatter_add(m_data, value[k], offset + k, enabled);
     }

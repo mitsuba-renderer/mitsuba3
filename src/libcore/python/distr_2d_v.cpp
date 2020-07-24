@@ -56,21 +56,21 @@ template <typename Warp> auto bind_warp(py::module &m,
 
     warp.def("sample",
              vectorize([](const Warp *w, const Vector2f &sample,
-                          const Array<Float, Warp::Dimension> &param,
+                          const ek::Array<Float, Warp::Dimension> &param,
                           Mask active) {
                  return w->sample(sample, param.data(), active);
              }),
              "sample"_a, "param"_a = zero, "active"_a = true, doc_sample)
         .def("invert",
              vectorize([](const Warp *w, const Vector2f &sample,
-                          const Array<Float, Warp::Dimension> &param,
+                          const ek::Array<Float, Warp::Dimension> &param,
                           Mask active) {
                  return w->invert(sample, param.data(), active);
              }),
              "sample"_a, "param"_a = zero, "active"_a = true, doc_invert)
         .def("eval",
              vectorize([](const Warp *w, const Vector2f &pos,
-                          const Array<Float, Warp::Dimension> &param,
+                          const ek::Array<Float, Warp::Dimension> &param,
                           Mask active) {
                  return w->eval(pos, param.data(), active);
              }),

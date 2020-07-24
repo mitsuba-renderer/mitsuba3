@@ -2,7 +2,6 @@
 
 #include <atomic>
 #include <stdexcept>
-#include <vector>
 #include <mitsuba/core/class.h>
 
 NAMESPACE_BEGIN(mitsuba)

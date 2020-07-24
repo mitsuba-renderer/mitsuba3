@@ -379,7 +379,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         set_slices(ray, ray_count);
         set_slices(active, ray_count);
 
-        PreliminaryIntersection3f pi = empty<PreliminaryIntersection3f>(ray_count);
+        PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(ray_count);
 
         // Initialize instance index with the highest possible index an instance
         // could have in m_shapes. As the hierarchy of IAS is built, this value
@@ -444,28 +444,28 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         set_slices(active, ray_count);
 
         // Allocate only the required fields of the SurfaceInteraction struct
-        SurfaceInteraction3f si = empty<SurfaceInteraction3f>(1); // needed for virtual calls
+        SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
 
-        si.t          = empty<Float>(ray_count);
-        si.p          = empty<Point3f>(ray_count);
-        si.n          = empty<Normal3f>(ray_count);
-        si.prim_index = empty<UInt32>(ray_count);
-        si.shape      = empty<ShapePtr>(ray_count);
+        si.t          = ek::empty<Float>(ray_count);
+        si.p          = ek::empty<Point3f>(ray_count);
+        si.n          = ek::empty<Normal3f>(ray_count);
+        si.prim_index = ek::empty<UInt32>(ray_count);
+        si.shape      = ek::empty<ShapePtr>(ray_count);
 
         if (has_flag(flags, HitComputeFlags::ShadingFrame))
-            si.sh_frame.n = empty<Normal3f>(ray_count);
+            si.sh_frame.n = ek::empty<Normal3f>(ray_count);
 
         if (has_flag(flags, HitComputeFlags::UV))
-            si.uv = empty<Point2f>(ray_count);
+            si.uv = ek::empty<Point2f>(ray_count);
 
         if (has_flag(flags, HitComputeFlags::dPdUV)) {
-            si.dp_du = empty<Vector3f>(ray_count);
-            si.dp_dv = empty<Vector3f>(ray_count);
+            si.dp_du = ek::empty<Vector3f>(ray_count);
+            si.dp_dv = ek::empty<Vector3f>(ray_count);
         }
 
         if (has_flag(flags, HitComputeFlags::dNGdUV) || has_flag(flags, HitComputeFlags::dNSdUV)) {
-            si.dn_du = empty<Vector3f>(ray_count);
-            si.dn_dv = empty<Vector3f>(ray_count);
+            si.dn_du = ek::empty<Vector3f>(ray_count);
+            si.dn_dv = ek::empty<Vector3f>(ray_count);
         }
 
         // DEBUG mode: Explicitly instantiate `si` with NaN values.
@@ -473,7 +473,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // `si.is_valid()==true`, this makes it easier to catch bugs in the
         // masking logic implemented in the integrator.
 #if !defined(NDEBUG)
-        #define SET_NAN(name) name = full<decltype(name)>(std::numeric_limits<scalar_t<Float>>::quiet_NaN(), ray_count);
+        #define SET_NAN(name) name = full<decltype(name)>(std::numeric_limits<ek::scalar_t<Float>>::quiet_NaN(), ray_count);
         SET_NAN(si.t); SET_NAN(si.time); SET_NAN(si.p); SET_NAN(si.uv); SET_NAN(si.n);
         SET_NAN(si.sh_frame.n); SET_NAN(si.dp_du); SET_NAN(si.dp_dv);
         #undef SET_NAN
@@ -557,7 +557,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
         size_t ray_count = std::max(slices(ray.o), slices(ray.d));
-        Mask hit = empty<Mask>(ray_count);
+        Mask hit = ek::empty<Mask>(ray_count);
 
         set_slices(ray, ray_count);
         set_slices(active, ray_count);

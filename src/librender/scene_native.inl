@@ -28,7 +28,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
     active &= pi.is_valid();
 
     SurfaceInteraction3f si;
-    if (likely(any(active))) {
+    if (likely(ek::any(active))) {
         ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
         si = pi.compute_surface_interaction(ray, flags, active);
     } else {
@@ -48,7 +48,7 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
     active &= pi.is_valid();
 
     SurfaceInteraction3f si;
-    if (likely(any(active))) {
+    if (likely(ek::any(active))) {
         ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
         si = pi.compute_surface_interaction(ray, HitComputeFlags::All, active);
     } else {

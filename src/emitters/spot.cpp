@@ -85,8 +85,8 @@ public:
 
         m_cutoff_angle = props.float_("cutoff_angle", 20.0f);
         m_beam_width = props.float_("beam_width", m_cutoff_angle * 3.0f / 4.0f);
-        m_cutoff_angle = deg_to_rad(m_cutoff_angle);
-        m_beam_width = deg_to_rad(m_beam_width);
+        m_cutoff_angle = ek::deg_to_rad(m_cutoff_angle);
+        m_beam_width = ek::deg_to_rad(m_beam_width);
         m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
         m_cos_cutoff_angle = cos(m_cutoff_angle);
         m_cos_beam_width = cos(m_beam_width);

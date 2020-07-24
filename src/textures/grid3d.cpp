@@ -5,6 +5,7 @@
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume_texture.h>
+#include <enoki/dynamic.h>
 
 #include "volume_data.h"
 
@@ -73,7 +74,7 @@ public:
             for (ScalarUInt32 i = 0; i < size; ++i) {
                 ScalarColor3f rgb = load_unaligned<ScalarColor3f>(ptr);
                 // TODO: Make this scaling optional if the RGB values are between 0 and 1
-                ScalarFloat scale = hmax(rgb) * 2.f;
+                ScalarFloat scale = ek::hmax(rgb) * 2.f;
                 ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
                 mean += (double) (srgb_model_mean(coeff) * scale);
@@ -199,7 +200,7 @@ public:
             if constexpr (Channels == 3)
                 return mitsuba::luminance(Color3f(result));
             else
-                return hmean(result);
+                return ek::hmean(result);
         }
     }
 
@@ -225,12 +226,12 @@ public:
     MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        using StorageType = Array<Float, Channels>;
+        using StorageType = ek::Array<Float, Channels>;
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         auto p = m_world_to_local * it.p;
-        active &= all((p >= 0) && (p <= 1));
+        active &= ek::all((p >= 0) && (p <= 1));
 
         if (ek::none_or<false>(active))
             return ek::zero<ResultType>();
@@ -240,7 +241,7 @@ public:
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
         auto p = m_world_to_local * it.p;
-        return all((p >= 0) && (p <= 1));
+        return ek::all((p >= 0) && (p <= 1));
     }
 
     template <typename T> T wrap(const T &value) const {
@@ -271,7 +272,7 @@ public:
     MTS_INLINE auto interpolate(Point3f p, const Wavelength &wavelengths,
                                 Mask active) const {
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
-        using StorageType = std::conditional_t<uses_srgb_model, Array<Float, 4>, Array<Float, Channels>>;
+        using StorageType = std::conditional_t<uses_srgb_model, ek::Array<Float, 4>, ek::Array<Float, Channels>>;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         if constexpr (!is_array_v<Mask>)
@@ -281,8 +282,8 @@ public:
         const uint32_t ny = m_metadata.shape.y();
 
         if (m_filter_type == FilterType::Trilinear) {
-            using Int8  = Array<Int32, 8>;
-            using Int38 = Array<Int8, 3>;
+            using Int8  = ek::Array<Int32, 8>;
+            using Int38 = ek::Array<Int8, 3>;
 
 
             // Scale to bitmap resolution and apply shift
@@ -356,7 +357,7 @@ public:
             p *= m_metadata.shape;
 
             // Integer voxel positions for lookup
-            Vector3i p_i   = floor2int<Vector3i>(p),
+            Vector3i p_i   = ek::floor2int<Vector3i>(p),
                     p_i_w = wrap(p_i);
 
             Int32 index = ek::fmadd(ek::fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
@@ -371,7 +372,7 @@ public:
         }
     }
 
-    ScalarFloat ek::max() const override { return m_metadata.max; }
+    ScalarFloat max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };
     auto data_size() const { return m_data.size(); }
 
@@ -397,7 +398,7 @@ public:
         auto sum = ek::hsum(ek::hsum(detach(m_data)));
         m_metadata.mean = (double) ek::slice(sum, 0) / (double) (m_size * 3);
         if (!m_fixed_max) {
-            auto maximum = hmax(hmax(m_data));
+            auto maximum = ek::hmax(hmax(m_data));
             m_metadata.max = slice(maximum, 0);
         }
     }

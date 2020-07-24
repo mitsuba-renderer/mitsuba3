@@ -2,7 +2,6 @@
 
 #include <mitsuba/mitsuba.h>
 #include <string>
-#include <vector>
 
 /// Max level of nested <include> directives
 #define MTS_XML_INCLUDE_MAX_RECURSION 15

@@ -7,6 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
+#include <enoki/dynamic.h>
 #include <mutex>
 #include <tbb/spin_mutex.h>
 
@@ -152,12 +153,12 @@ public:
         // Convert the image into the working floating point representation
         m_bitmap = m_bitmap->convert(pixel_format, struct_type_v<ScalarFloat>, false);
 
-        if (any(m_bitmap->size() < 2)) {
+        if (ek::any(m_bitmap->size() < 2)) {
             Log(Warn, "Image must be at least 2x2 pixels in size, up-sampling..");
             using ReconstructionFilter = Bitmap::ReconstructionFilter;
             ref<ReconstructionFilter> rfilter =
                 PluginManager::instance()->create_object<ReconstructionFilter>(Properties("tent"));
-            m_bitmap = m_bitmap->resample(max(m_bitmap->size(), 2), rfilter);
+            m_bitmap = m_bitmap->resample(ek::max(m_bitmap->size(), 2), rfilter);
         }
 
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
@@ -315,8 +316,8 @@ public:
             if (m_filter_type == FilterType::Bilinear) {
                 // Storage representation underlying this texture
                 using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
-                using Int4 = Array<Int32, 4>;
-                using Int24 = Array<Int4, 2>;
+                using Int4 = ek::Array<Int32, 4>;
+                using Int24 = ek::Array<Int4, 2>;
 
                 if constexpr (!is_array_v<Mask>)
                     active = true;
@@ -327,7 +328,7 @@ public:
                 uv = ek::fmadd(uv, m_resolution, -.5f);
 
                 // Integer pixel positions for bilinear interpolation
-                Vector2i uv_i = floor2int<Vector2i>(uv);
+                Vector2i uv_i = ek::floor2int<Vector2i>(uv);
 
                 // Interpolation weights
                 Point2f w1 = uv - Point2f(uv_i), w0 = 1.f - w1;
@@ -410,14 +411,14 @@ public:
         Point2f uv = m_transform.transform_affine(si.uv);
 
         if (m_filter_type == FilterType::Bilinear) {
-            using Int4  = Array<Int32, 4>;
-            using Int24 = Array<Int4, 2>;
+            using Int4  = ek::Array<Int32, 4>;
+            using Int24 = ek::Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
             uv = ek::fmadd(uv, m_resolution, -.5f);
 
             // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = floor2int<Vector2i>(uv);
+            Vector2i uv_i = ek::floor2int<Vector2i>(uv);
 
             // Interpolation weights
             Point2f w1 = uv - Point2f(uv_i),
@@ -460,7 +461,7 @@ public:
             uv *= m_resolution;
 
             // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i   = floor2int<Vector2i>(uv),
+            Vector2i uv_i   = ek::floor2int<Vector2i>(uv),
                      uv_i_w = wrap(uv_i);
 
             Int32 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
@@ -525,14 +526,14 @@ public:
         }
 
         if (m_filter_type == FilterType::Bilinear) {
-            using Int4  = Array<Int32, 4>;
-            using Int24 = Array<Int4, 2>;
+            using Int4  = ek::Array<Int32, 4>;
+            using Int24 = ek::Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
             Point2f uv = ek::fmadd(pos_, m_resolution, -.5f);
 
             // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = floor2int<Vector2i>(uv);
+            Vector2i uv_i = ek::floor2int<Vector2i>(uv);
 
             // Interpolation weights
             Point2f w1 = uv - Point2f(uv_i),
@@ -552,7 +553,7 @@ public:
             Point2f uv = pos_ * m_resolution;
 
             // Integer pixel positions for bilinear interpolation
-            Vector2i uv_i = wrap(floor2int<Vector2i>(uv));
+            Vector2i uv_i = wrap(ek::floor2int<Vector2i>(uv));
 
             return m_distr2d->pdf(uv_i, active) * ek::hprod(m_resolution);
         }

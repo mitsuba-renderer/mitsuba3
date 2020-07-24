@@ -7,6 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -105,7 +106,7 @@ public:
                        reflectance value (colors in [0, 1]) which is accomplished here by
                        scaling. We use a color where the highest component is 50%,
                        which generally yields a fairly smooth spectrum. */
-                    ScalarFloat scale = hmax(rgb) * 2.f;
+                    ScalarFloat scale = ek::hmax(rgb) * 2.f;
                     ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
                     coeff = concat((ScalarColor3f) srgb_model_fetch(rgb_norm), scale);
                 }
@@ -168,7 +169,7 @@ public:
         Float dist = 2.f * m_bsphere.radius;
 
         Float inv_sin_theta =
-            safe_ek::rsqrt(max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+            safe_ek::rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
 
         d = m_world_transform->eval(it.time, active).transform_affine(d);
 
@@ -203,7 +204,7 @@ public:
         uv -= ek::floor(uv);
 
         Float inv_sin_theta =
-            safe_ek::rsqrt(max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+            safe_ek::rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
         return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
     }
 

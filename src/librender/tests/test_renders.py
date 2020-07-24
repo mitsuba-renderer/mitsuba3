@@ -27,7 +27,7 @@ scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 # List of test scene folders to exclude
 EXCLUDE_FOLDERS = []
 
-# Don't test participating media in GPU modes 
+# Don't test participating media in GPU modes
 # to reduce the time needed to run all tests
 GPU_EXCLUDE_FOLDERS = ['participating_media']
 
@@ -130,10 +130,10 @@ def test_render(variants_all, scene_fname):
     success = (p_value > alpha)
 
     if (np.count_nonzero(success) / 3) >= (0.9975 * pixel_count):
-        print('Accepted the null hypothesis (min(p-value) = %f, significance level = %f)' %
+        print('Accepted the null hypothesis (ek::min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
     else:
-        print('Reject the null hypothesis (min(p-value) = %f, significance level = %f)' %
+        print('Reject the null hypothesis (ek::min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
 
         output_dir = join(scene_dir, 'error_output')

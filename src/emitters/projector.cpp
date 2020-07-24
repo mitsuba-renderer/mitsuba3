@@ -162,7 +162,7 @@ public:
 
         // 2. Map to UV coordinates
         Point2f uv = ek::head<2>(m_camera_to_sample * it_local);
-        active &= all(uv >= 0 && uv <= 1) && it_local.z() > 0;
+        active &= ek::all(uv >= 0 && uv <= 1) && it_local.z() > 0;
 
         // 3. Query texture
         SurfaceInteraction3f it_query = ek::zero<SurfaceInteraction3f>();

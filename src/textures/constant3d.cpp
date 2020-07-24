@@ -35,10 +35,10 @@ public:
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
         auto p = m_world_to_local * it.p;
-        return all((p >= 0) && (p <= 1));
+        return ek::all((p >= 0) && (p <= 1));
     }
 
-    ScalarFloat ek::max() const override { NotImplementedError("max"); }
+    ScalarFloat max() const override { NotImplementedError("max"); }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_object("color", m_color.get());

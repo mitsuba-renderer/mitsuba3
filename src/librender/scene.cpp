@@ -69,9 +69,9 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             ScalarVector3f extents = m_bbox.extents();
 
             ScalarFloat distance =
-                hmax(extents) / (2.f * std::tan(45.f * .5f * ek::Pi<ScalarFloat> / 180.f));
+                ek::hmax(extents) / (2.f * ek::tan(45.f * .5f * ek::Pi<ScalarFloat> / 180.f));
 
-            sensor_props.set_float("far_clip", hmax(extents) * 5 + distance);
+            sensor_props.set_float("far_clip", ek::hmax(extents) * 5 + distance);
             sensor_props.set_float("near_clip", distance / 100);
 
             sensor_props.set_float("focus_distance", distance + extents.z() / 2);
@@ -165,7 +165,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
                                                  bool test_visibility, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
-    using EmitterPtr = replace_scalar_t<Float, Emitter*>;
+    using EmitterPtr = ek::replace_scalar_t<Float, Emitter*>;
 
     Point2f sample(sample_);
     DirectionSample3f ds;
@@ -199,8 +199,8 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         active &= ek::neq(ds.pdf, 0.f);
 
         // Perform a visibility test if requested
-        if (test_visibility && any_or<true>(active)) {
-            Ray3f ray(ref.p, ds.d, math::RayEpsilon<Float> * (1.f + hmax(ek::abs(ref.p))),
+        if (test_visibility && ek::any_or<true>(active)) {
+            Ray3f ray(ref.p, ds.d, math::RayEpsilon<Float> * (1.f + ek::hmax(ek::abs(ref.p))),
                       ds.dist * (1.f - math::ShadowEpsilon<Float>), ref.time, ref.wavelengths);
             spec[ray_test(ray, active)] = 0.f;
         }
@@ -217,7 +217,7 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
     MTS_MASK_ARGUMENT(active);
-    using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+    using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
 
 
     if (m_emitters.size() == 1) {

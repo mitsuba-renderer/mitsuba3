@@ -78,10 +78,10 @@ public:
 
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
-            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
 
             // Query phase difference
-            UnpolarizedSpectrum delta = deg_to_rad(m_delta->eval(si, active));
+            UnpolarizedSpectrum delta = ek::deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
             delta *= ek::abs(Frame3f::cos_theta(si.wi));
@@ -120,10 +120,10 @@ public:
 
         if constexpr (is_polarized_v<Spectrum>) {
             // Query rotation angle
-            UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
+            UnpolarizedSpectrum theta = ek::deg_to_rad(m_theta->eval(si, active));
 
             // Query phase difference
-            UnpolarizedSpectrum delta = deg_to_rad(m_delta->eval(si, active));
+            UnpolarizedSpectrum delta = ek::deg_to_rad(m_delta->eval(si, active));
 
             // Approximate angle-of-incidence behaviour with a cosine falloff
             delta *= ek::abs(Frame3f::cos_theta(si.wi));

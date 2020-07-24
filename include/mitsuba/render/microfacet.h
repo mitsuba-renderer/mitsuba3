@@ -373,7 +373,7 @@ public:
 
             /* Start with a good initial guess (analytic solution for
                theta_i = pi/2, which is the most nonlinear case) */
-            sample = ek::max(min(sample, 1.f - 1e-6f), 1e-6f);
+            sample = ek::max(ek::min(sample, 1.f - 1e-6f), 1e-6f);
             Float x = maxval - (maxval + 1.f) * ek::erf(ek::sqrt(-ek::log(sample.x())));
 
             // Normalization factor for the CDF

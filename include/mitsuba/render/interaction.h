@@ -56,7 +56,7 @@ struct Interaction {
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
-        return Ray3f(p, d, (1.f + hmax(ek::abs(p))) * math::RayEpsilon<Float>,
+        return Ray3f(p, d, (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>,
                      ek::Infinity<Float>, time, wavelengths);
     }
 
@@ -66,7 +66,7 @@ struct Interaction {
         Float dist = ek::norm(d);
         d /= dist;
 
-        return Ray3f(p, d, (1.f + hmax(ek::abs(p))) * math::RayEpsilon<Float>,
+        return Ray3f(p, d, (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>,
                      dist * (1.f - math::ShadowEpsilon<Float>), time, wavelengths);
     }
 

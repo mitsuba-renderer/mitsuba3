@@ -141,7 +141,7 @@ float parse_fov(const Properties &props, float aspect) {
         }
 
         fov = 2.f *
-                rad_to_deg(std::atan(std::sqrt(float(36 * 36 + 24 * 24)) / (2.f * value)));
+                ek::rad_to_deg(ek::atan(ek::sqrt(float(36 * 36 + 24 * 24)) / (2.f * value)));
         fov_axis = "diagonal";
     }
 
@@ -149,12 +149,12 @@ float parse_fov(const Properties &props, float aspect) {
     if (fov_axis == "x") {
         result = fov;
     } else if (fov_axis == "y") {
-        result = rad_to_deg(
-            2.f * std::atan(std::tan(.5f * deg_to_rad(fov)) * aspect));
+        result = ek::rad_to_deg(
+            2.f * ek::atan(ek::tan(.5f * ek::deg_to_rad(fov)) * aspect));
     } else if (fov_axis == "diagonal") {
-        float diagonal = 2.f * std::tan(.5f * deg_to_rad(fov));
-        float width    = diagonal / std::sqrt(1.f + 1.f / (aspect * aspect));
-        result = rad_to_deg(2.f * std::atan(width*.5f));
+        float diagonal = 2.f * ek::tan(.5f * ek::deg_to_rad(fov));
+        float width    = diagonal / ek::sqrt(1.f + 1.f / (aspect * aspect));
+        result = ek::rad_to_deg(2.f * ek::atan(width*.5f));
     } else {
         Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
                 "'larger', 'diagonal', 'x', or 'y'!");

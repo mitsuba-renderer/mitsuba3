@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
-#include <vector>
 #include <string>
 
 NAMESPACE_BEGIN(mitsuba)

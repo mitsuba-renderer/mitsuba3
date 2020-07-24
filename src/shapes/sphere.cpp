@@ -182,7 +182,7 @@ public:
         Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::RayEpsilon<Float>) :
                                                         (1.f - math::RayEpsilon<Float>));
         Mask outside_mask = active && dc_2 > ek::sqr(radius_adj);
-        if (likely(any(outside_mask))) {
+        if (likely(ek::any(outside_mask))) {
             Float inv_dc            = ek::rsqrt(dc_2),
                   sin_theta_max     = m_radius * inv_dc,
                   sin_theta_max_2   = ek::sqr(sin_theta_max),
@@ -223,7 +223,7 @@ public:
         }
 
         Mask inside_mask = andnot(active, outside_mask);
-        if (unlikely(any(inside_mask))) {
+        if (unlikely(ek::any(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
             ds.p        = ek::fmadd(d, m_radius, m_center);
@@ -381,7 +381,7 @@ public:
                                     -rd);
 
                 Mask singularity_mask = active && ek::eq(rd, 0.f);
-                if (unlikely(any(singularity_mask)))
+                if (unlikely(ek::any(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
                 si.dp_du = m_to_world * si.dp_du * (2.f * ek::Pi<Float>);

@@ -76,8 +76,8 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
                   v1 = vertex_position(fi[1]),
                   v2 = vertex_position(fi[2]);
 
-    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(min(min(v0, v1), v2),
-                                                               ek::max(max(v0, v1), v2));
+    return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(ek::min(min(v0, v1), v2),
+                                                               ek::max(ek::max(v0, v1), v2));
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
@@ -353,12 +353,12 @@ MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
 Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask active) const {
     ensure_pmf_built();
 
-    using Index = replace_scalar_t<Float, ScalarIndex>;
+    using Index = ek::replace_scalar_t<Float, ScalarIndex>;
     Index face_idx;
     Point2f sample = sample_;
     std::tie(face_idx, sample.y()) = m_area_pmf.sample_reuse(sample.y(), active);
 
-    Array<Index, 3> fi = face_indices(face_idx, active);
+    ek::Array<Index, 3> fi = face_indices(face_idx, active);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),

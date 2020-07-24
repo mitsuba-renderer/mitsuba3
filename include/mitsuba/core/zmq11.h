@@ -9,7 +9,6 @@
 #include <cassert>
 #include <string>
 #include <exception>
-#include <vector>
 #include <tuple>
 #include <iostream>
 #include <iomanip>

@@ -115,7 +115,8 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                 ref<ImageBlock> block = new ImageBlock(m_block_size, channels.size(),
                                                        film->reconstruction_filter(),
                                                        !has_aovs);
-                scoped_flush_denormals flush_denormals(true);
+                // TODO refactoring: do we still need this?
+                // scoped_flush_denormals flush_denormals(true);
                 std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
 
                 // For each block
@@ -190,12 +191,12 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
 
     ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());
 
-    if constexpr (!is_array_v<Float>) {
+    if constexpr (!ek::is_array_v<Float>) {
         for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
             sampler->seed(block_id * pixel_count + i);
 
             ScalarPoint2u pos = ek::morton_decode<ScalarPoint2u>(i);
-            if (any(pos >= block->size()))
+            if (ek::any(pos >= block->size()))
                 continue;
 
             pos += block->offset();
@@ -204,11 +205,11 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                               pos, diff_scale_factor);
             }
         }
-    } else if constexpr (is_array_v<Float> && !ek::is_cuda_array_v<Float>) {
+    } else if constexpr (ek::is_array_v<Float> && !ek::is_cuda_array_v<Float>) {
         // Ensure that the sample generation is fully deterministic
         sampler->seed(block_id);
 
-        for (auto [index, active] : range<UInt32>(pixel_count * sample_count)) {
+        for (auto [index, active] : ek::range<UInt32>(pixel_count * sample_count)) {
             if (should_stop())
                 break;
             Point2u pos = ek::morton_decode<Point2u>(index / UInt32(sample_count));

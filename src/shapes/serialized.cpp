@@ -263,13 +263,13 @@ public:
         m_vertex_count = (ScalarSize) vertex_count;
         m_face_count = (ScalarSize) face_count;
 
-        m_vertex_positions_buf = empty<FloatStorage>(m_vertex_count * 3);
+        m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!m_disable_vertex_normals)
-            m_vertex_normals_buf = empty<FloatStorage>(m_vertex_count * 3);
+            m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (has_flag(flags, TriMeshFlags::HasTexcoords))
-            m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
+            m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
-        m_faces_buf = empty<DynamicBuffer<UInt32>>(m_face_count * 3);
+        m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
 
         m_vertex_positions_buf.managed();
         m_vertex_normals_buf.managed();

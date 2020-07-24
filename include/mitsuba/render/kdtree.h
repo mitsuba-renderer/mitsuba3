@@ -716,7 +716,7 @@ protected:
         }
 
         MTS_INLINE void put(BoundingBox bbox) {
-            using IndexArray = Array<Index, 3>;
+            using IndexArray = ek::Array<Index, 3>;
             const IndexArray offset_min = IndexArray(0, 2 * m_bin_count, 4 * m_bin_count);
             const IndexArray offset_max = offset_min + 1;
             Index *ptr = m_bins.data();
@@ -725,8 +725,8 @@ protected:
             Vector rel_min = (bbox.min - m_bbox.min) * m_inv_bin_size;
             Vector rel_max = (bbox.max - m_bbox.min) * m_inv_bin_size;
 
-            rel_min = ek::min(max(rel_min, ek::zero<Vector>()), m_max_bin);
-            rel_max = ek::min(max(rel_max, ek::zero<Vector>()), m_max_bin);
+            rel_min = ek::min(ek::max(rel_min, ek::zero<Vector>()), m_max_bin);
+            rel_max = ek::min(ek::max(rel_max, ek::zero<Vector>()), m_max_bin);
 
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
@@ -1721,24 +1721,24 @@ protected:
 
         Size prim_count = derived().primitive_count();
         if (m_max_depth == 0)
-            m_max_depth = (int) (8 + 1.3f * log2i(prim_count));
+            m_max_depth = (int) (8 + 1.3f * ek::log2i(prim_count));
         m_max_depth = std::min(m_max_depth, (Size) MTS_KD_MAXDEPTH);
 
-        log(m_log_level, "kd-tree configuration:");
-        log(m_log_level, "   Cost model               : %s",
+        Log(m_log_level, "kd-tree configuration:");
+        Log(m_log_level, "   Cost model               : %s",
             string::indent(m_cost_model, 30));
-        log(m_log_level, "   Max. tree depth          : %i", m_max_depth);
-        log(m_log_level, "   Scene bounding box (min) : %s", m_bbox.min);
-        log(m_log_level, "   Scene bounding box (max) : %s", m_bbox.max);
-        log(m_log_level, "   Min-max bins             : %i", m_min_max_bins);
-        log(m_log_level, "   O(n log n) method        : use for <= %i primitives",
+        Log(m_log_level, "   Max. tree depth          : %i", m_max_depth);
+        Log(m_log_level, "   Scene bounding box (min) : %s", m_bbox.min);
+        Log(m_log_level, "   Scene bounding box (max) : %s", m_bbox.max);
+        Log(m_log_level, "   Min-max bins             : %i", m_min_max_bins);
+        Log(m_log_level, "   O(n log n) method        : use for <= %i primitives",
             m_exact_prim_threshold);
-        log(m_log_level, "   Stopping primitive count : %i", m_stop_primitives);
-        log(m_log_level, "   Perfect splits           : %s",
+        Log(m_log_level, "   Stopping primitive count : %i", m_stop_primitives);
+        Log(m_log_level, "   Perfect splits           : %s",
             m_clip_primitives ? "yes" : "no");
-        log(m_log_level, "   Retract bad splits       : %s",
+        Log(m_log_level, "   Retract bad splits       : %s",
             m_retract_bad_splits ? "yes" : "no");
-        log(m_log_level, "");
+        Log(m_log_level, "");
 
         /* ==================================================================== */
         /*              Create build context and preallocate memory             */
@@ -1762,7 +1762,7 @@ protected:
             m_bbox.min = 0.f;
             m_bbox.max = 0.f;
         } else {
-            log(m_log_level, "Creating a preliminary index list (%s)",
+            Log(m_log_level, "Creating a preliminary index list (%s)",
                 util::mem_string(prim_count * sizeof(Index)).c_str());
 
             IndexVector indices(prim_count);
@@ -1776,7 +1776,7 @@ protected:
             tbb::task::spawn_root_and_wait(task);
         }
 
-        log(m_log_level, "Structural kd-tree statistics:");
+        Log(m_log_level, "Structural kd-tree statistics:");
 
         /* ==================================================================== */
         /*     Store the node and index lists in a compact contiguous format    */
@@ -1828,19 +1828,19 @@ protected:
             ctx.temp_storage += ctx.node_storage.size() * sizeof(KDNode);
             ctx.temp_storage += ctx.index_storage.size() * sizeof(Index);
 
-            log(m_log_level, "   Primitive references        : %i (%s)",
+            Log(m_log_level, "   Primitive references        : %i (%s)",
                 m_index_count, util::mem_string(m_index_count * sizeof(Index)));
 
-            log(m_log_level, "   kd-tree nodes               : %i (%s)",
+            Log(m_log_level, "   kd-tree nodes               : %i (%s)",
                 m_node_count, util::mem_string(m_node_count * sizeof(KDNode)));
 
-            log(m_log_level, "   kd-tree depth               : %i",
+            Log(m_log_level, "   kd-tree depth               : %i",
                 ctx.max_depth);
 
-            log(m_log_level, "   Temporary storage used      : %s",
+            Log(m_log_level, "   Temporary storage used      : %s",
                 util::mem_string(ctx.temp_storage));
 
-            log(m_log_level, "   Parallel work units         : %i",
+            Log(m_log_level, "   Parallel work units         : %i",
                 ctx.work_units);
 
             std::ostringstream oss;
@@ -1849,34 +1849,34 @@ protected:
             for (Size i = 0; i < prim_bucket_count; i++) {
                 oss << i << "(" << ctx.prim_buckets[i] << ") ";
                 if ((i + 1) % 4 == 0 && i + 1 < prim_bucket_count) {
-                    log(m_log_level, "%s", oss.str());
+                    Log(m_log_level, "%s", oss.str());
                     oss.str("");
                     oss << "                                 ";
                 }
             }
-            log(m_log_level, "%s", oss.str().c_str());
-            log(m_log_level, "");
+            Log(m_log_level, "%s", oss.str().c_str());
+            Log(m_log_level, "");
 
-            log(m_log_level, "Qualitative kd-tree statistics:");
-            log(m_log_level, "   Retracted splits            : %i",
+            Log(m_log_level, "Qualitative kd-tree statistics:");
+            Log(m_log_level, "   Retracted splits            : %i",
                 ctx.retracted_splits);
-            log(m_log_level, "   Bad refines                 : %i",
+            Log(m_log_level, "   Bad refines                 : %i",
                 ctx.bad_refines);
-            log(m_log_level, "   Pruned                      : %i",
+            Log(m_log_level, "   Pruned                      : %i",
                 ctx.pruned);
-            log(m_log_level, "   Largest leaf node           : %i primitives",
+            Log(m_log_level, "   Largest leaf node           : %i primitives",
                 ctx.max_prims_in_leaf);
-            log(m_log_level, "   Avg. prims/nonempty leaf    : %.2f",
+            Log(m_log_level, "   Avg. prims/nonempty leaf    : %.2f",
                 m_index_count / (Scalar) ctx.nonempty_leaf_count);
-            log(m_log_level, "   Expected traversals/query   : %.2f",
+            Log(m_log_level, "   Expected traversals/query   : %.2f",
                 ctx.exp_traversal_steps);
-            log(m_log_level, "   Expected leaf visits/query  : %.2f",
+            Log(m_log_level, "   Expected leaf visits/query  : %.2f",
                 ctx.exp_leaves_visited);
-            log(m_log_level, "   Expected prim. visits/query : %.2f",
+            Log(m_log_level, "   Expected prim. visits/query : %.2f",
                 ctx.exp_primitives_queried);
-            log(m_log_level, "   Final cost                  : %.2f",
+            Log(m_log_level, "   Final cost                  : %.2f",
                 final_cost);
-            log(m_log_level, "");
+            Log(m_log_level, "");
         }
     }
 
@@ -1951,8 +1951,8 @@ public:
     void set_bounding_box(const BoundingBox3f &bbox) {
         auto extents = bbox.extents();
         Float temp = 2.f / bbox.surface_area();
-        auto a = shuffle<1, 2, 0>(extents);
-        auto b = shuffle<2, 0, 1>(extents);
+        auto a = ek::shuffle<1, 2, 0>(extents);
+        auto b = ek::shuffle<2, 0, 1>(extents);
         m_temp0 = m_temp1 = (a * b) * temp;
         m_temp2 = (a + b) * temp;
 
@@ -2006,8 +2006,8 @@ private:
 };
 
 template <typename Float, typename Spectrum>
-class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<scalar_t<Float>, 3>>, uint32_t,
-                                                          SurfaceAreaHeuristic3<scalar_t<Float>>,
+class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<ek::scalar_t<Float>, 3>>, uint32_t,
+                                                          SurfaceAreaHeuristic3<ek::scalar_t<Float>>,
                                                           ShapeKDTree<Float, Spectrum>> {
 public:
     MTS_IMPORT_TYPES(Shape, Mesh)
@@ -2069,7 +2069,7 @@ public:
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                    Mask active) const {
         ENOKI_MARK_USED(active);
-        if constexpr (!is_array_v<Float>)
+        if constexpr (!ek::is_array_v<Float>)
             return ray_intersect_scalar<ShadowRay>(ray);
         else
             return ray_intersect_packet<ShadowRay>(ray, active);
@@ -2202,7 +2202,7 @@ public:
             if (ShadowRay)
                 active = active && !pi.is_valid();
 
-            if (likely(any(active))) {
+            if (likely(ek::any(active))) {
                 if (likely(!node->leaf())) { // Inner node
                     const ek::scalar_t<Float> split = node->split();
                     const uint32_t axis = node->axis();
@@ -2218,8 +2218,8 @@ public:
                          visit_only_left   = single_node &&  visit_left,
                          visit_only_right  = single_node && !visit_left;
 
-                    bool all_visit_only_left  = all(visit_only_left || !active),
-                         all_visit_only_right = all(visit_only_right || !active),
+                    bool all_visit_only_left  = ek::all(visit_only_left || !active),
+                         all_visit_only_right = ek::all(visit_only_right || !active),
                          all_visit_same_node  = all_visit_only_left || all_visit_only_right;
 
                     /* If we only need to visit one node, just pick the correct one and continue */
@@ -2306,14 +2306,14 @@ public:
             PreliminaryIntersection3f prim_pi =
                 intersect_prim<ShadowRay>(i, ray, active);
 
-            if constexpr (is_array_v<Float>) {
+            if constexpr (ek::is_array_v<Float>) {
                 ek::masked(pi, prim_pi.is_valid()) = prim_pi;
             } else if (prim_pi.is_valid()) {
                 pi = prim_pi;
                 ray.maxt = prim_pi.t;
             }
 
-            if (ShadowRay && all(pi.is_valid() || !active))
+            if (ShadowRay && ek::all(pi.is_valid() || !active))
                 break;
         }
 
@@ -2335,7 +2335,7 @@ protected:
     MTS_INLINE Index find_shape(Index &i) const {
         Assert(i < primitive_count());
 
-        Index shape_index = math::find_interval(
+        Index shape_index = math::find_interval<Index>(
             Size(m_primitive_map.size()),
             [&](Index k) ENOKI_INLINE_LAMBDA {
                 return m_primitive_map[k] <= i;

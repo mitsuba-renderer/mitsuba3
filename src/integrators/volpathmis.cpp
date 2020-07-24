@@ -328,7 +328,7 @@ public:
 
     std::tuple<WeightMatrix, WeightMatrix, Spectrum, DirectionSample3f> sample_emitter(const Interaction3f &ref_interaction, Mask is_medium_interaction,
                 const Scene *scene, Sampler *sampler,  MediumPtr medium, const WeightMatrix &p_over_f, UInt32 channel, Mask active) const {
-        using EmitterPtr = replace_scalar_t<Float, const Emitter *>;
+        using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
 
         auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
@@ -349,7 +349,7 @@ public:
         si.t = ek::Infinity<Float>;
 
         Mask needs_intersection = true;
-        while (any(active)) {
+        while (ek::any(active)) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
@@ -429,7 +429,7 @@ public:
                 active &= (active_medium || active_surface) && any(ek::neq(mis_weight(p_over_f_uni), 0.f));
             else
                 active &= (active_medium || active_surface) &&
-                      (any(ek::neq(depolarize(p_over_f_uni), 0.f)) || any(ek::neq(depolarize(p_over_f_nee), 0.f)) );
+                      (ek::any(ek::neq(depolarize(p_over_f_uni), 0.f)) || any(ek::neq(depolarize(p_over_f_nee), 0.f)) );
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();

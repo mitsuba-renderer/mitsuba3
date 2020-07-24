@@ -2,8 +2,6 @@
 
 #include <enoki/array_traits.h>
 #include <mitsuba/core/object.h>
-#include <vector>
-#include <limits>
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -3,6 +3,7 @@
 #include <mitsuba/core/platform.h>
 #include <enoki/array_traits.h>
 #include <enoki/map.h>
+#include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -78,13 +79,13 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 // =============================================================
 
 // TODO refactoring:
-// template <typename Value,
-//           typename T = std::conditional_t<ek::is_static_array_v<Value>, ek::value_t<Value>, Value>>
-// using DynamicBuffer = std::conditional_t<
-//     is_dynamic_array_v<T>,
-//     T,
-//     DynamicArray<Packet<scalar_t<T>>>
-// >;
+template <typename Value,
+          typename T = std::conditional_t<ek::is_static_array_v<Value>, ek::value_t<Value>, Value>>
+using DynamicBuffer = std::conditional_t<
+    ek::is_dynamic_array_v<T>,
+    T,
+    ek::DynamicArray<T>
+>;
 
 //! @}
 // =============================================================
@@ -96,15 +97,17 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 // TODO refactoring:
 // template <typename T, typename Type = T>
 // using host_vector =
-//     std::vector<scalar_t<T>,
-//                 std::conditional_t<ek::is_cuda_array_v<Type>, cuda_host_allocator<scalar_t<T>>,
-//                                    std::allocator<scalar_t<T>>>>;
+//     std::vector<ek::scalar_t<T>,
+//                 std::conditional_t<ek::is_cuda_array_v<Type>, cuda_host_allocator<ek::scalar_t<T>>,
+//                                    std::allocator<ek::scalar_t<T>>>>;
+template <typename T, typename Type = T>
+using host_vector = std::vector<ek::scalar_t<T>>;
 
 // template <typename T>
 // using managed_vector =
-//     std::vector<scalar_t<T>,
-//                 std::conditional_t<ek::is_cuda_array_v<T>, cuda_managed_allocator<scalar_t<T>>,
-//                                    std::allocator<scalar_t<T>>>>;
+//     std::vector<ek::scalar_t<T>,
+//                 std::conditional_t<ek::is_cuda_array_v<T>, cuda_managed_allocator<ek::scalar_t<T>>,
+//                                    std::allocator<ek::scalar_t<T>>>>;
 
 //! @}
 // =============================================================
@@ -201,7 +204,7 @@ template <typename Float_> struct CoreAliases {
      */
     using Array1f = ek::Array<Float, 1>;
     using Array3f = ek::Array<Float, 3>;
-    // using DynamicBuffer  = mitsuba::DynamicBuffer<Float>;
+    using DynamicBuffer  = mitsuba::DynamicBuffer<Float>;
 };
 
 //! @}
@@ -290,13 +293,13 @@ template <typename Float_> struct CoreAliases {
 
 #define MTS_MASK_ARGUMENT(mask)                                                                    \
     (void) mask;                                                                                   \
-    if constexpr (ek::is_scalar_v<Float>)                                                          \
+    if constexpr (!ek::is_array_v<Float>)                                                          \
         mask = true;
 
 #define MTS_MASKED_FUNCTION(profiler_phase, mask)                                                  \
     ScopedPhase scope_phase(profiler_phase);                                                       \
     (void) mask;                                                                                   \
-    if constexpr (ek::is_scalar_v<Float>)                                                          \
+    if constexpr (!ek::is_array_v<Float>)                                                          \
         mask = true;
 
 NAMESPACE_BEGIN(filesystem)

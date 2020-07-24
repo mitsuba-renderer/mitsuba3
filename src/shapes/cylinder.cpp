@@ -133,7 +133,7 @@ public:
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
-        return ScalarBoundingBox3f(min(p0 - x, p1 - x), ek::max(p0 + x, p1 + x));
+        return ScalarBoundingBox3f(ek::min(p0 - x, p1 - x), ek::max(p0 + x, p1 + x));
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {

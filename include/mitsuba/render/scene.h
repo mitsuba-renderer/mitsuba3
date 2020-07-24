@@ -242,7 +242,7 @@ void DirectionSample<Float, Spectrum>::set_query(const Ray3f &ray, const Surface
 template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
 SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
-    if constexpr (!is_array_v<ShapePtr>) {
+    if constexpr (!ek::is_array_v<ShapePtr>) {
         if (is_valid())
             return shape->emitter(active);
         else

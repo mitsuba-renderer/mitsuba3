@@ -35,34 +35,34 @@ include_directories(
 
 add_library(mitsuba-render-obj OBJECT
   ${INC_DIR}/fwd.h
-#   ${INC_DIR}/ior.h
-#   ${INC_DIR}/microfacet.h
-#   ${INC_DIR}/records.h
-#   ${INC_DIR}/volume_texture.h
+  ${INC_DIR}/ior.h
+  ${INC_DIR}/microfacet.h
+  ${INC_DIR}/records.h
+  ${INC_DIR}/volume_texture.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
-#   film.cpp         ${INC_DIR}/film.h
+  film.cpp         ${INC_DIR}/film.h
                    ${INC_DIR}/fresnel.h
-#   imageblock.cpp   ${INC_DIR}/imageblock.h
-#   integrator.cpp   ${INC_DIR}/integrator.h
-#                    ${INC_DIR}/interaction.h
-#   kdtree.cpp       ${INC_DIR}/kdtree.h
-#   medium.cpp       ${INC_DIR}/medium.h
+  imageblock.cpp   ${INC_DIR}/imageblock.h
+  integrator.cpp   ${INC_DIR}/integrator.h
+                   ${INC_DIR}/interaction.h
+  kdtree.cpp       ${INC_DIR}/kdtree.h
+  medium.cpp       ${INC_DIR}/medium.h
 #   mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h
-#                    ${INC_DIR}/mueller.h
+                   ${INC_DIR}/mueller.h
   phase.cpp        ${INC_DIR}/phase.h
   sampler.cpp      ${INC_DIR}/sampler.h
 #   scene.cpp        ${INC_DIR}/scene.h
-#   sensor.cpp       ${INC_DIR}/sensor.h
-#   shape.cpp        ${INC_DIR}/shape.h
-#   texture.cpp      ${INC_DIR}/texture.h
-#   spiral.cpp       ${INC_DIR}/spiral.h
-#   srgb.cpp         ${INC_DIR}/srgb.h
-#                    ${INC_DIR}/optix/common.h
-#   optix_api.cpp    ${INC_DIR}/optix_api.h
+  sensor.cpp       ${INC_DIR}/sensor.h
+  shape.cpp        ${INC_DIR}/shape.h
+  texture.cpp      ${INC_DIR}/texture.h
+  spiral.cpp       ${INC_DIR}/spiral.h
+  srgb.cpp         ${INC_DIR}/srgb.h
+                   ${INC_DIR}/optix/common.h
+  optix_api.cpp    ${INC_DIR}/optix_api.h
 #   shapegroup.cpp   ${INC_DIR}/shapegroup.h
   ${LIBRENDER_EXTRA_SRC}
 )

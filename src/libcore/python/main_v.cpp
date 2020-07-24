@@ -225,7 +225,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
                             Spectrum>();
 
     if constexpr (is_array_v<Float>)
-        pybind11_type_alias<UInt64, replace_scalar_t<Float, const Object *>>();
+        pybind11_type_alias<UInt64, ek::replace_scalar_t<Float, const Object *>>();
 
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
     m.attr("Spectrum") = get_type_handle<Spectrum>();
