@@ -227,7 +227,7 @@ template <typename UInt32>
 UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
                        ek::mask_t<UInt32> active = true) {
     if (sample_count == 1)
-        return ek::zero<UInt32>(index.size());
+        return ek::zero<UInt32>(ek::width(index));
 
     UInt32 w = sample_count - 1;
     w |= w >> 1;

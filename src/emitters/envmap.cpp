@@ -92,7 +92,7 @@ public:
                 std::sin(y / ScalarFloat(bitmap->size().y() - 1) * ek::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                ScalarColor3f rgb = load_unaligned<ScalarVector3f>(ptr);
+                ScalarColor3f rgb = ek::load_unaligned<ScalarVector3f>(ptr);
                 ScalarFloat lum   = mitsuba::luminance(rgb);
 
                 ScalarVector4f coeff;
@@ -112,7 +112,7 @@ public:
                 }
 
                 *lum_ptr++ = lum * sin_theta;
-                store_unaligned(ptr, coeff);
+                ek::store_unaligned(ptr, coeff);
                 ptr += 4;
             }
         }

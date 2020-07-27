@@ -57,12 +57,7 @@ struct PositionSample {
     /// Probability density at the sample
     Float pdf;
 
-    /** Set if the sample was drawn from a degenerate (Dirac delta) distribution
-     *
-     * Note: we use an array of booleans instead of a mask, so that slicing
-     * a dynamic array of PositionSample remains possible even on architectures
-     * where ek::scalar_t<Mask> != bool (e.g. Knights Landing).
-     */
+    /// Set if the sample was drawn from a degenerate (Dirac delta) distribution
     Mask delta;
 
     /**
@@ -96,7 +91,6 @@ struct PositionSample {
     //! @}
     // =============================================================
 
-    // TODO refactoring
     ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
 };
 
@@ -203,7 +197,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    // ENOKI_DERIVED_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, object, d, dist)
+    ENOKI_DERIVED_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, object, d, dist)
 };
 
 // -----------------------------------------------------------------------------
@@ -246,12 +240,11 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-// TODO refactoring
-ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time,
-                     pdf, delta, object)
+ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time, pdf,
+                     delta, object)
 
-// ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
-//                      delta, object, d, dist)
+ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
+                     delta, object, d, dist)
 
 //! @}
 // -----------------------------------------------------------------------

@@ -910,7 +910,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                     if (ek::squared_norm(up) == 0)
                         std::tie(up, std::ignore) =
-                            coordinate_system(normalize(target - origin));
+                            coordinate_system(ek::normalize(target - origin));
 
                     auto result = Transform4f::look_at(origin, target, up);
                     if (ek::any_nested(ek::isnan(result.matrix)))
@@ -1132,7 +1132,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 Throw("Wavelengths must be specified in increasing order!");
             if (n == 1)
                 interval = distance;
-            else if (std::abs(distance - interval) > ek::Epsilon<float>)
+            else if (ek::abs(distance - interval) > ek::Epsilon<float>)
                 is_regular = false;
         }
 

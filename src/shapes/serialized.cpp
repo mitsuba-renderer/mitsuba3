@@ -317,13 +317,13 @@ public:
         InputFloat* normal_ptr   = m_vertex_normals_buf.data();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
             InputPoint3f p = m_to_world.transform_affine(vertex_position(i));
-            store_unaligned(position_ptr, p);
+            ek::store_unaligned(position_ptr, p);
             position_ptr += 3;
             m_bbox.expand(p);
 
             if (has_vertex_normals()) {
                 InputNormal3f n = ek::normalize(m_to_world.transform_affine(vertex_normal(i)));
-                store_unaligned(normal_ptr, n);
+                ek::store_unaligned(normal_ptr, n);
                 normal_ptr += 3;
             }
         }

@@ -292,30 +292,32 @@ public:
             return;
 
         m_face_count = (ScalarSize) tmp_triangles.size();
-        m_faces_buf = DynamicBuffer<UInt32>::copy(tmp_triangles.data(), m_face_count * 3);
+        m_faces_buf = ek::load_unaligned<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
 
         m_vertex_count = vertex_ctr;
-        m_vertex_positions_buf = FloatStorage::copy(tmp_vertices.data(), m_vertex_count * 3);
-        m_vertex_normals_buf = FloatStorage::copy(tmp_normals.data(), m_vertex_count * 3);
+        m_vertex_positions_buf = ek::load_unaligned<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
+        m_vertex_normals_buf = ek::load_unaligned<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
 
         if (has_uvs)
-            m_vertex_texcoords_buf = FloatStorage::copy(tmp_uvs.data(), m_vertex_count * 2);
+            m_vertex_texcoords_buf = ek::load_unaligned<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
         if (has_cols) {
             for (size_t p = 0; p < cols.size(); p++) {
                 add_attribute(
                     cols[p].first, 3,
-                    FloatStorage::copy(tmp_cols[p].data(), m_vertex_count * 3));
+                    ek::load_unaligned<FloatStorage>(tmp_cols[p].data(), m_vertex_count * 3));
             }
         }
 
-        m_faces_buf.managed();
-        m_vertex_positions_buf.managed();
-        m_vertex_normals_buf.managed();
-        if (has_uvs)
-            m_vertex_texcoords_buf.managed();
 
-        if constexpr (ek::is_cuda_array_v<Float>)
-            cuda_sync();
+        // TODO refactoring
+        // m_faces_buf.managed();
+        // m_vertex_positions_buf.managed();
+        // m_vertex_normals_buf.managed();
+        // if (has_uvs)
+        //     m_vertex_texcoords_buf.managed();
+
+        // if constexpr (ek::is_cuda_array_v<Float>)
+            // cuda_sync();
 
         set_children();
     }

@@ -156,7 +156,7 @@ __device__ void write_output_si_params(OptixParams &params,
                 Transform4f to_object(inv, m);
 
                 // Determine the length of the transformed normal before it was re-normalized
-                Vector3f tn = to_world.transform_normal(normalize(to_object.transform_normal(ns)));
+                Vector3f tn = to_world.transform_normal(ek::normalize(to_object.transform_normal(ns)));
                 float inv_len = 1.f / norm(tn);
                 tn *= inv_len;
 

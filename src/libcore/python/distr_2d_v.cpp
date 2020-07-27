@@ -16,7 +16,7 @@ template <typename Warp> auto bind_warp(py::module &m,
     using Mask                 = ek::mask_t<Float>;
     using NumPyArray           = py::array_t<ScalarFloat, py::array::c_style | py::array::forcecast>;
 
-    py::object zero = py::cast(ek::::zero<Array<ScalarFloat, Warp::Dimension>>());
+    py::object zero = py::cast(ek::zero<Array<ScalarFloat, Warp::Dimension>>());
 
     auto constructor =
         py::init([](const NumPyArray &data,

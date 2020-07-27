@@ -50,12 +50,12 @@ add_library(mitsuba-render-obj OBJECT
                    ${INC_DIR}/interaction.h
   kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
-#   mesh.cpp         ${INC_DIR}/mesh.h
+  mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h
                    ${INC_DIR}/mueller.h
   phase.cpp        ${INC_DIR}/phase.h
   sampler.cpp      ${INC_DIR}/sampler.h
-#   scene.cpp        ${INC_DIR}/scene.h
+  scene.cpp        ${INC_DIR}/scene.h
   sensor.cpp       ${INC_DIR}/sensor.h
   shape.cpp        ${INC_DIR}/shape.h
   texture.cpp      ${INC_DIR}/texture.h
@@ -63,7 +63,7 @@ add_library(mitsuba-render-obj OBJECT
   srgb.cpp         ${INC_DIR}/srgb.h
                    ${INC_DIR}/optix/common.h
   optix_api.cpp    ${INC_DIR}/optix_api.h
-#   shapegroup.cpp   ${INC_DIR}/shapegroup.h
+  shapegroup.cpp   ${INC_DIR}/shapegroup.h
   ${LIBRENDER_EXTRA_SRC}
 )
 

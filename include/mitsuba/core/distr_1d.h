@@ -42,7 +42,7 @@ public:
 
     /// Initialize from a given floating point array
     DiscreteDistribution(const ScalarFloat *values, size_t size)
-        : DiscreteDistribution(FloatStorage::copy(values, size)) {
+        : DiscreteDistribution(ek::load_unaligned<FloatStorage>(values, size)) {
     }
 
     /// Update the internal state. Must be invoked when changing the pmf.
@@ -146,7 +146,7 @@ public:
 
         value *= m_sum;
 
-        return ek::binary_search(
+        return ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_cdf, index, active) < value;

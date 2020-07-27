@@ -237,14 +237,14 @@ public:
                         if (unlikely(!all(ek::isfinite(p))))
                             fail("mesh contains invalid vertex positions/normal data");
                         m_bbox.expand(p);
-                        store_unaligned(position_ptr, p);
+                        ek::store_unaligned(position_ptr, p);
                         position_ptr += 3;
 
                         if (has_vertex_normals) {
                             InputNormal3f n = ek::load<InputNormal3f>(
                                 target + sizeof(InputFloat) * 3);
                             n = ek::normalize(m_to_world.transform_affine(n));
-                            store_unaligned(normal_ptr, n);
+                            ek::store_unaligned(normal_ptr, n);
                             normal_ptr += 3;
                         }
 
@@ -253,7 +253,7 @@ public:
                                 target + (m_disable_vertex_normals
                                               ? sizeof(InputFloat) * 3
                                               : sizeof(InputFloat) * 6));
-                            store_unaligned(texcoord_ptr, uv);
+                            ek::store_unaligned(texcoord_ptr, uv);
                             texcoord_ptr += 2;
                         }
 
@@ -341,7 +341,7 @@ public:
 
                     for (size_t j = 0; j < count; ++j) {
                         ScalarIndex3 fi = ek::load<ScalarIndex3>(target);
-                        store_unaligned(face_ptr, fi);
+                        ek::store_unaligned(face_ptr, fi);
                         face_ptr += 3;
 
                         size_t target_offset = sizeof(InputFloat) * 3;

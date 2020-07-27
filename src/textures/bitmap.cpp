@@ -169,17 +169,17 @@ public:
         if (m_bitmap->channel_count() == 3) {
             if (is_spectral_v<Spectrum> && !m_raw) {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    ScalarColor3f value = ek::load_unaligned<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
                         bad = true;
                     value = srgb_model_fetch(value);
                     mean += (double) srgb_model_mean(value);
-                    store_unaligned(ptr, value);
+                    ek::store_unaligned(ptr, value);
                     ptr += 3;
                 }
             } else {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                    ScalarColor3f value = ek::load_unaligned<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
                         bad = true;
                     mean += (double) luminance(value);
@@ -613,7 +613,7 @@ protected:
                 init_distr ? new ScalarFloat[pixel_count] : nullptr);
 
             for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarColor3f value = load_unaligned<ScalarColor3f>(ptr);
+                ScalarColor3f value = ek::load_unaligned<ScalarColor3f>(ptr);
                 ScalarFloat tmp;
                 if constexpr (is_spectral_v<Spectrum> && !Raw) {
                     tmp = srgb_model_mean(value);

@@ -73,8 +73,7 @@ struct Interaction {
     //! @}
     // =============================================================
 
-    // TODO refactoring
-    // ENOKI_STRUCT(Interaction, t, time, wavelengths, p);
+    ENOKI_STRUCT(Interaction, t, time, wavelengths, p);
 };
 
 // -----------------------------------------------------------------------------
@@ -340,14 +339,14 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     bool has_uv_partials() const {
         if constexpr (ek::is_dynamic_v<Float>)
-            return slices(duv_dx) > 0 || slices(duv_dy) > 0;
+            return ek::width(duv_dx) > 0 || ek::width(duv_dy) > 0;
         else
             return ek::any_nested(ek::neq(duv_dx, 0.f) || ek::neq(duv_dy, 0.f));
     }
 
     bool has_n_partials() const {
         if constexpr (ek::is_dynamic_v<Float>)
-            return slices(dn_du) > 0 || slices(dn_dv) > 0;
+            return ek::width(dn_du) > 0 || ek::width(dn_dv) > 0;
         else
             return ek::any_nested(ek::neq(dn_du, 0.f) || ek::neq(dn_dv, 0.f));
     }
@@ -355,9 +354,9 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    // ENOKI_DERIVED_STRUCT(SurfaceInteraction, t, time, wavelengths, p, shape, uv,
-    //                      n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-    //                      duv_dy, wi, prim_index, instance)
+    ENOKI_DERIVED_STRUCT(SurfaceInteraction, t, time, wavelengths, p, shape, uv,
+                         n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+                         duv_dy, wi, prim_index, instance)
 };
 
 // -----------------------------------------------------------------------------
@@ -420,9 +419,9 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    // ENOKI_DERIVED_STRUCT(MediumInteraction, t, time, wavelengths, p, medium,
-    //                      sh_frame, wi, sigma_s, sigma_n, sigma_t,
-    //                      combined_extinction, mint)
+    ENOKI_DERIVED_STRUCT(MediumInteraction, t, time, wavelengths, p, medium,
+                         sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                         combined_extinction, mint)
 };
 
 // -----------------------------------------------------------------------------
@@ -595,8 +594,7 @@ struct PreliminaryIntersection {
     //! @}
     // =============================================================
 
-    // TODO refactoring
-    // ENOKI_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index, shape, instance);
+    ENOKI_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index, shape, instance);
 };
 
 // -----------------------------------------------------------------------------
@@ -692,16 +690,16 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 // TODO refactoring
-// ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p)
+ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p)
 
-// ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
-//                      shape, uv, n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx, duv_dy, wi,
-//                      prim_index, instance)
+ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
+                     shape, uv, n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx, duv_dy, wi,
+                     prim_index, instance)
 
-// ENOKI_STRUCT_SUPPORT(mitsuba::MediumInteraction, t, time, wavelengths, p,
-//                      medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction, mint)
+ENOKI_STRUCT_SUPPORT(mitsuba::MediumInteraction, t, time, wavelengths, p,
+                     medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction, mint)
 
-// ENOKI_STRUCT_SUPPORT(mitsuba::PreliminaryIntersection, t, prim_uv, prim_index, shape_index, shape, instance)
+ENOKI_STRUCT_SUPPORT(mitsuba::PreliminaryIntersection, t, prim_uv, prim_index, shape_index, shape, instance)
 
 //! @}
 // -----------------------------------------------------------------------

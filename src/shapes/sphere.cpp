@@ -107,7 +107,7 @@ public:
 
     void update() {
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = transform_decompose(m_to_world.matrix, 25);
+        auto [S, Q, T] = ek::transform_decompose(m_to_world.matrix, 25);
 
         if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
             ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
@@ -120,12 +120,12 @@ public:
         m_radius = S[0][0];
 
         if (m_radius <= 0.f) {
-            m_radius = std::abs(m_radius);
+            m_radius = ek::abs(m_radius);
             m_flip_normals = !m_flip_normals;
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = transform_compose(ScalarMatrix3f(m_radius), Q, T);
+        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(m_radius), Q, T);
         m_to_object = m_to_world.inverse();
 
         m_inv_surface_area = ek::rcp(surface_area());
@@ -219,10 +219,10 @@ public:
             ds.pdf      = warp::square_to_uniform_cone_pdf(ek::zero<Vector3f>(), cos_theta_max);
             ek::masked(ds.pdf, ds.dist == 0.f) = 0.f;
 
-            result[outside_mask] = ds;
+            ek::masked(result, outside_mask) = ds;
         }
 
-        Mask inside_mask = andnot(active, outside_mask);
+        Mask inside_mask = ek::andnot(active, outside_mask);
         if (unlikely(ek::any(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
@@ -235,7 +235,7 @@ public:
             ds.d        = ds.d / ds.dist;
             ds.pdf      = m_inv_surface_area * dist2 / ek::abs_dot(ds.d, ds.n);
 
-            result[inside_mask] = ds;
+            ek::masked(result, inside_mask) = ds;
         }
 
         result.time = it.time;
@@ -253,7 +253,7 @@ public:
 
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
         Float sin_alpha = m_radius * ek::rcp(ek::norm(m_center - it.p)),
-              cos_alpha = ek::::safe_sqrt(1.f - sin_alpha * sin_alpha);
+              cos_alpha = ek::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
         return ek::select(sin_alpha < ek::OneMinusEpsilon<Float>,
             // Reference point lies outside the sphere
@@ -284,7 +284,7 @@ public:
 
         Double A = ek::squared_norm(d);
         Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
-        Double C = ek::squared_norm(o) - ek::sqr((scalar_t<Double>) m_radius);
+        Double C = ek::squared_norm(o) - ek::sqr((ek::scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -319,7 +319,7 @@ public:
 
         Double A = ek::squared_norm(d);
         Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
-        Double C = ek::squared_norm(o) - ek::sqr((scalar_t<Double>) m_radius);
+        Double C = ek::squared_norm(o) - ek::sqr((ek::scalar_t<Double>) m_radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 

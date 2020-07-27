@@ -359,7 +359,7 @@ void launch_optix_kernel(const OptixState &s,
 }
 
 /// Helper function to bind CUDAArray data pointer to fields in the OptixParams struct
-template <typename T> void bind_data(scalar_t<T> **field, T &value) {
+template <typename T> void bind_data(ek::scalar_t<T> **field, T &value) {
     if constexpr (is_static_array_v<T>) {
         for (size_t i = 0; i < ek::array_size_v<T>; ++i)
             field[i] = value[i].data();

@@ -165,7 +165,7 @@ private:
                uint32_t j, // dimension
                UInt32 p,   // pseudo-random permutation seed
                Mask active = true) {
-        uint32_t N = ek::pow(m_resolution, int(m_strength));
+        uint32_t N = ek::pow(m_resolution, m_strength);
         uint32_t stm = m_resolution_div(N);
 
         // Convert the permuted sample index to base strength

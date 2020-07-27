@@ -52,7 +52,7 @@ public:
                 Throw("Only one of the parameters 'direction' and 'to_world' "
                       "can be specified at the same time!'");
 
-            ScalarVector3f direction(normalize(props.vector3f("direction")));
+            ScalarVector3f direction(ek::normalize(props.vector3f("direction")));
             auto [up, unused] = coordinate_system(direction);
 
             m_world_transform =

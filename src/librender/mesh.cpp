@@ -10,6 +10,8 @@
 #include <mitsuba/render/scene.h>
 #include <mutex>
 
+#include<enoki/packet.h>
+
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
@@ -44,13 +46,15 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     if (has_vertex_texcoords)
         m_vertex_texcoords_buf = ek::zero<FloatStorage>(m_vertex_count * 2);
 
-    m_faces_buf.managed();
-    m_vertex_positions_buf.managed();
-    m_vertex_normals_buf.managed();
-    m_vertex_texcoords_buf.managed();
+    // TODO refactoring
+    // m_faces_buf.managed();
+    // m_vertex_positions_buf.managed();
+    // m_vertex_normals_buf.managed();
+    // m_vertex_texcoords_buf.managed();
 
-    if constexpr (ek::is_cuda_array_v<Float>)
-        cuda_sync();
+    // TODO refactoring
+    // if constexpr (ek::is_cuda_array_v<Float>)
+        // cuda_sync();
 
     set_children();
 }
@@ -227,9 +231,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                 n *= ek::rsqrt(length_sqr);
 
                 // Use Enoki to compute the face angles at the same time
-                auto side1 = transpose(Array<Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
-                auto side2 = transpose(Array<Packet<InputFloat, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
-                InputVector3f face_angles = unit_angle(normalize(side1), ek::normalize(side2));
+                auto side1 = transpose(ek::Array<ek::Packet<InputFloat, 3>, 3>{ side_0, v[2] - v[1], v[0] - v[2] });
+                auto side2 = transpose(ek::Array<ek::Packet<InputFloat, 3>, 3>{ side_1, v[0] - v[1], v[1] - v[2] });
+                InputVector3f face_angles = unit_angle(ek::normalize(side1), ek::normalize(side2));
 
                 for (size_t j = 0; j < 3; ++j)
                     normals[fi[j]] += n * face_angles[j];
@@ -409,7 +413,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     PreliminaryIntersection3f pi = m_parameterization->ray_intersect_preliminary(ray, active);
 
     if (ek::none_or<false>(pi.is_valid()))
-        return SurfaceInteraction3f();
+        return ek::zero<SurfaceInteraction3f>();
 
     pi.shape = this;
 
@@ -566,7 +570,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
             size_t count = is_vertex_attr ? m_vertex_count : m_face_count;
             InputFloat *ptr = (InputFloat *) buffer.data();
             for (size_t i = 0; i < count; ++i) {
-                store_unaligned(ptr, srgb_model_fetch(load_unaligned<Color<InputFloat, 3>>(ptr)));
+                ek::store_unaligned(ptr, srgb_model_fetch(ek::load_unaligned<Color<InputFloat, 3>>(ptr)));
                 ptr += 3;
             }
         }
@@ -850,10 +854,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions_buf")) {
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            cuda_eval();
-            cuda_sync();
-        }
+        // TODO refactoring
+        // if constexpr (ek::is_cuda_array_v<Float>) {
+        //     cuda_eval();
+        //     cuda_sync();
+        // }
 
         recompute_bbox();
 
@@ -871,11 +876,12 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    if constexpr (ek::is_diff_array_v<Float>)
-        return requires_gradient(m_vertex_positions_buf) ||
-               requires_gradient(m_vertex_normals_buf) ||
-               requires_gradient(m_vertex_texcoords_buf);
-    }
+    // TODO refactoring
+    // if constexpr (ek::is_diff_array_v<Float>)
+    //     return requires_gradient(m_vertex_positions_buf) ||
+    //            requires_gradient(m_vertex_normals_buf) ||
+    //            requires_gradient(m_vertex_texcoords_buf);
+    // }
 
     return false;
 }

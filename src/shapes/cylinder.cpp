@@ -112,7 +112,7 @@ public:
         m_length = S[2][2];
 
         if (m_radius <= 0.f) {
-            m_radius = std::abs(m_radius);
+            m_radius = ek::abs(m_radius);
             m_flip_normals = !m_flip_normals;
         }
 
@@ -367,7 +367,7 @@ public:
         Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
         si.dp_du = m_to_world.transform_affine(dp_du);
         si.dp_dv = m_to_world.transform_affine(dp_dv);
-        si.n = Normal3f(normalize(ek::cross(si.dp_du, si.dp_dv)));
+        si.n = Normal3f(ek::normalize(ek::cross(si.dp_du, si.dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */

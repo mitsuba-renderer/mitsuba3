@@ -2197,7 +2197,7 @@ void Bitmap::read_pfm(Stream *stream) {
     }
     stream->set_byte_order(byte_order);
 
-    float scale = std::abs(scale_and_order);
+    float scale = ek::abs(scale_and_order);
     if (scale != 1) {
         for (size_t i = 0; i < size; ++i)
             data[i] *= scale;
@@ -2290,7 +2290,7 @@ void Bitmap::read_bmp(Stream *stream) {
         if (compression_type != 0)
             Throw("read_bmp(): Compressed files are currently not supported!");
 
-        m_size = Vector2u(width, std::abs(height));
+        m_size = Vector2u(width, ek::abs(height));
         m_component_format = Struct::Type::UInt8;
         m_srgb_gamma = true;
         m_premultiplied_alpha = true;

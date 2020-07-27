@@ -26,6 +26,10 @@ template <typename Float_> struct Frame {
         std::tie(s, t) = coordinate_system(v);
     }
 
+    /// Construct a new coordinate frame from three vectors
+    Frame(const Vector3f &s, const Vector3f &t, const Normal3f &n)
+        : s(s), t(t), n(n) {}
+
     /// Convert from world coordinates to local coordinates
     Vector3f to_local(const Vector3f &v) const {
         return Vector3f(ek::dot(v, s), ek::dot(v, t), ek::dot(v, n));

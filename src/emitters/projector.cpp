@@ -144,7 +144,7 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
         ray.o = trafo.translation();
-        ray.d = trafo * Vector3f(normalize(near_p));
+        ray.d = trafo * Vector3f(ek::normalize(near_p));
         ray.update();
 
         return std::make_pair(

@@ -286,10 +286,11 @@ public:
             m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
         // TODO this is needed for the bbox(..) methods, but is it slower?
-        m_faces_buf.managed();
-        m_vertex_positions_buf.managed();
-        m_vertex_normals_buf.managed();
-        m_vertex_texcoords_buf.managed();
+        // TODO refactoring
+        // m_faces_buf.managed();
+        // m_vertex_positions_buf.managed();
+        // m_vertex_normals_buf.managed();
+        // m_vertex_texcoords_buf.managed();
 
         if constexpr (ek::is_cuda_array_v<Float>)
             cuda_sync();
@@ -303,20 +304,20 @@ public:
                 InputFloat* texcoord_ptr = m_vertex_texcoords_buf.data() + v->value * 2;
                 auto key = v->key;
 
-                store_unaligned(position_ptr, vertices[key[0] - 1]);
+                ek::store_unaligned(position_ptr, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index >= texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    store_unaligned(texcoord_ptr, texcoords[map_index]);
+                    ek::store_unaligned(texcoord_ptr, texcoords[map_index]);
                 }
 
                 if (!m_disable_vertex_normals && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index >= normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    store_unaligned(normal_ptr, normals[key[2] - 1]);
+                    ek::store_unaligned(normal_ptr, normals[key[2] - 1]);
                 }
 
                 v = v->next;

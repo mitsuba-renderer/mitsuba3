@@ -117,10 +117,10 @@ public:
     }
 
     /// Does this mesh have per-vertex normals?
-    bool has_vertex_normals() const { return slices(m_vertex_normals_buf) != 0; }
+    bool has_vertex_normals() const { return ek::width(m_vertex_normals_buf) != 0; }
 
     /// Does this mesh have per-vertex texture coordinates?
-    bool has_vertex_texcoords() const { return slices(m_vertex_texcoords_buf) != 0; }
+    bool has_vertex_texcoords() const { return ek::width(m_vertex_texcoords_buf) != 0; }
 
     /// @}
     // =========================================================================

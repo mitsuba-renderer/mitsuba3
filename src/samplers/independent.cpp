@@ -59,7 +59,7 @@ public:
     IndependentSampler(const Properties &props = Properties()) : Base(props) {
         /* Can't seed yet on the GPU because we don't know yet
            how many entries will be needed. */
-        if (!is_dynamic_array_v<Float>)
+        if (!ek::is_dynamic_array_v<Float>)
             seed(PCG32_DEFAULT_STATE);
     }
 
