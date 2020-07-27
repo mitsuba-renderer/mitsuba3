@@ -28,9 +28,9 @@ MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
 }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
+    Assert(m_sample_index < (m_sample_count / m_samples_per_wavefront));
     m_dimension_index = 0u;
     m_sample_index++;
-    Assert(m_sample_index < (m_sample_count / m_samples_per_wavefront));
 }
 
 MTS_VARIANT Float Sampler<Float, Spectrum>::next_1d(Mask) {
