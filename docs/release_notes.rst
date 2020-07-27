@@ -11,6 +11,13 @@ Incoming release
 
 - TBA
 
+Mitsuba 2.2.1
+-------------
+
+*July 27, 2020*
+
+- Fix warnings, build and tests on Windows (MSVC)
+
 Mitsuba 2.2.0
 -------------
 

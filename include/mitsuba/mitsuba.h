@@ -10,7 +10,7 @@
 
 #define MTS_VERSION_MAJOR 2
 #define MTS_VERSION_MINOR 2
-#define MTS_VERSION_PATCH 0
+#define MTS_VERSION_PATCH 1
 
 #define MTS_STRINGIFY(x) #x
 #define MTS_TOSTRING(x)  MTS_STRINGIFY(x)
