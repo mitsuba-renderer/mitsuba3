@@ -79,7 +79,9 @@ public:
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
                 mean += (double) (srgb_model_mean(coeff) * scale);
                 max = std::max(max, scale);
-                ek::store_unaligned(scaled_data_ptr, concat(coeff, scale));
+                ek::store_unaligned(
+                    scaled_data_ptr,
+                    ek::concat(coeff, ek::Array<ScalarFloat, 1>(scale)));
                 ptr += 3;
                 scaled_data_ptr += 4;
             }
@@ -395,11 +397,10 @@ public:
             m_size = (ScalarUInt32) new_size;
         }
 
-        auto sum = ek::hsum(ek::hsum(detach(m_data)));
-        m_metadata.mean = (double) ek::slice(sum, 0) / (double) (m_size * 3);
+        auto sum = ek::hsum(ek::hsum(ek::detach(m_data)));
+        m_metadata.mean = (double) sum / (double) (m_size * 3);
         if (!m_fixed_max) {
-            auto maximum = ek::hmax(hmax(m_data));
-            m_metadata.max = slice(maximum, 0);
+            m_metadata.max = ek::hmax(ek::hmax(m_data));
         }
     }
 

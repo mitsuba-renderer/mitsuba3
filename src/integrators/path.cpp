@@ -134,7 +134,7 @@ public:
                index boundaries. Stop with at least some probability to avoid
                getting stuck (e.g. due to total internal reflection) */
             if (depth > m_rr_depth) {
-                Float q = ek::min(hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
+                Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
                 active &= sampler->next_1d(active) < q;
                 throughput *= ek::rcp(q);
             }

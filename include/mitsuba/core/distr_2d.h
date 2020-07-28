@@ -380,7 +380,7 @@ public:
         ScalarVector2u n_patches = size - 1;
 
         // Keep track of the dependence on additional parameters (optional)
-        uint32_t max_level = math::log2i_ceil(hmax(n_patches));
+        uint32_t max_level = math::log2i_ceil(ek::hmax(n_patches));
 
         m_max_patch_index = n_patches - 1;
 

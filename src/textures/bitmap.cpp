@@ -325,7 +325,7 @@ public:
                 Point2f uv = m_transform.transform_affine(si.uv);
 
                 // Scale to bitmap resolution and apply shift
-                uv = ek::fmadd(uv, m_resolution, -.5f);
+                uv = ek::fmadd(uv, m_resolution, -0.5f);
 
                 // Integer pixel positions for bilinear interpolation
                 Vector2i uv_i = ek::floor2int<Vector2i>(uv);
@@ -356,13 +356,13 @@ public:
                                 ek::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10)) };
 
                 // Partials w.r.t. u and v (include uv transform by transpose multiply)
-                Matrix uv_tm = m_transform.matrix;
-                Vector2f df_uv{ uv_tm.coeff(0, 0) * df_xy.x() + uv_tm.coeff(1, 0) * df_xy.y(),
-                                uv_tm.coeff(0, 1) * df_xy.x() + uv_tm.coeff(1, 1) * df_xy.y() };
+                Matrix3f uv_tm = m_transform.matrix;
+                Vector2f df_uv{ uv_tm.entry(0, 0) * df_xy.x() + uv_tm.entry(1, 0) * df_xy.y(),
+                                uv_tm.entry(0, 1) * df_xy.x() + uv_tm.entry(1, 1) * df_xy.y() };
                 return m_resolution * df_uv;
             }
             // else if (m_filter_type == FilterType::Nearest)
-            return Vector2f(.0f, .0f);
+            return Vector2f(0.f);
         }
     }
 
@@ -601,7 +601,7 @@ protected:
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
         // Recompute the mean texture value following an update
-        m_data = m_data.managed();
+        // m_data = m_data.managed(); // TODO refactoring
         const ScalarFloat *ptr = m_data.data();
 
         double mean = 0.0;

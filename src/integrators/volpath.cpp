@@ -76,7 +76,7 @@ public:
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
 
             active &= ek::any(ek::neq(depolarize(throughput), 0.f));
-            Float q = ek::min(hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
+            Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
             ek::masked(throughput, perform_rr) *= ek::rcp(detach(q));

@@ -134,7 +134,7 @@ public:
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
             // Spectrum mis_throughput = mis_weight(p_over_f);
             // active &= ek::any(ek::neq(depolarize(mis_throughput), 0.f));
-            // Float q = ek::min(hmax(depolarize(mis_throughput)) * ek::sqr(eta), .95f);
+            // Float q = ek::min(ek::hmax(depolarize(mis_throughput)) * ek::sqr(eta), .95f);
             // Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             // active &= !(sampler->next_1d(active) >= q && perform_rr);
             // update_weights(p_over_f, detach(q), 1.0f, perform_rr);
