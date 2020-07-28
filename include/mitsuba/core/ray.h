@@ -36,6 +36,9 @@ template <typename Point_, typename Spectrum_> struct Ray {
     Float time = 0.f;                     ///< Time value associated with this ray
     Wavelength wavelengths;               ///< Wavelength packet associated with the ray
 
+    // Default empty constructor
+    Ray() = default;
+
     /// Construct a new ray (o, d) at time 'time'
     Ray(const Point &o, const Vector &d, Float time,
         const Wavelength &wavelengths)

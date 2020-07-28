@@ -99,7 +99,7 @@ public:
                 if constexpr (is_monochromatic_v<Spectrum>) {
                     coeff = ScalarVector4f(lum, lum, lum, 1.f);
                 } else if constexpr (is_rgb_v<Spectrum>) {
-                    coeff = concat(rgb, ScalarFloat(1.f));
+                    coeff = ek::concat(rgb, ek::Array<ScalarFloat, 1>(1.f));
                 } else {
                     static_assert(is_spectral_v<Spectrum>);
                     /* Evaluate the spectral upsampling model. This requires a
@@ -108,7 +108,8 @@ public:
                        which generally yields a fairly smooth spectrum. */
                     ScalarFloat scale = ek::hmax(rgb) * 2.f;
                     ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
-                    coeff = concat((ScalarColor3f) srgb_model_fetch(rgb_norm), scale);
+                    coeff = concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
+                                   ek::Array<ScalarFloat, 1>(scale));
                 }
 
                 *lum_ptr++ = lum * sin_theta;
@@ -141,7 +142,7 @@ public:
 
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
-                             safe_acos(v.y()) * ek::InvPi<Float>);
+                             ek::safe_acos(v.y()) * ek::InvPi<Float>);
         uv -= ek::floor(uv);
 
         return unpolarized<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
@@ -169,7 +170,7 @@ public:
         Float dist = 2.f * m_bsphere.radius;
 
         Float inv_sin_theta =
-            safe_ek::rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+            ek::safe_rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
 
         d = m_world_transform->eval(it.time, active).transform_affine(d);
 
@@ -200,11 +201,11 @@ public:
 
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,
-                             safe_acos(d.y()) * ek::InvPi<Float>);
+                             ek::safe_acos(d.y()) * ek::InvPi<Float>);
         uv -= ek::floor(uv);
 
         Float inv_sin_theta =
-            safe_ek::rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+            ek::safe_rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
         return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
     }
 
@@ -222,7 +223,8 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            m_data.managed();
+            // TODO refactoring
+            // m_data.managed();
 
             std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
 
@@ -235,7 +237,7 @@ public:
                     std::sin(y / ScalarFloat(m_resolution.y() - 1) * ek::Pi<ScalarFloat>);
 
                 for (size_t x = 0; x < m_resolution.x(); ++x) {
-                    ScalarVector4f coeff = load<ScalarVector4f>(ptr);
+                    ScalarVector4f coeff = ek::load<ScalarVector4f>(ptr);
                     ScalarFloat lum;
 
                     if constexpr (is_monochromatic_v<Spectrum>) {

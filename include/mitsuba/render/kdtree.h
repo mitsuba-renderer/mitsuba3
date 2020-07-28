@@ -731,7 +731,7 @@ protected:
             IndexArray index_min = IndexArray(rel_min);
             IndexArray index_max = IndexArray(rel_max);
 
-            Assert(all(index_min <= index_max));
+            Assert(ek::all(index_min <= index_max));
             index_min = index_min + index_min + offset_min;
             index_max = index_max + index_max + offset_max;
 
@@ -2272,7 +2272,7 @@ public:
                         ek::masked(pi, prim_pi.is_valid()) = prim_pi;
 
                         if constexpr (!ShadowRay) {
-                            Assert(all(!prim_pi.is_valid() ||
+                            Assert(ek::all(!prim_pi.is_valid() ||
                                        (prim_pi.t >= ray.mint &&
                                         prim_pi.t <= ray.maxt)));
                             ek::masked(ray.maxt, prim_pi.is_valid()) = prim_pi.t;

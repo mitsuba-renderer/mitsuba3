@@ -236,7 +236,7 @@ public:
            To compute the solid angle density of a sampled point P on
            the rectangle, we can apply the usual measure conversion term:
 
-              d_omega = 1/A' * distance(P, origin)^2 / cos(theta)
+              d_omega = 1/A' * distance(P, origin)^2 / ek::cos(theta)
 
            where theta is the angle that the unit direction vector from
            the origin to P makes with the rectangle. Since
@@ -245,7 +245,7 @@ public:
 
            and
 
-              cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
+              ek::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
 
            we have
 

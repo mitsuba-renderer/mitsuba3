@@ -44,7 +44,7 @@ std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
     Vector2i size = ek::min((int) m_block_size, m_size - offset);
     offset += m_offset;
 
-    Assert(all(size > 0));
+    Assert(ek::all(size > 0));
 
     ++m_block_counter;
 

@@ -80,7 +80,7 @@ template <typename Point_> struct BoundingSphere {
 template <typename Point>
 std::ostream &operator<<(std::ostream &os, const BoundingSphere<Point> &bsphere) {
     os << "BoundingSphere" << type_suffix<Point>();
-    if (all(bsphere.empty()))
+    if (ek::all(bsphere.empty()))
         os << "[empty]";
     else
         os << "[" << std::endl

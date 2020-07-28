@@ -172,7 +172,7 @@ public:
 
             // ----------------------- BSDF sampling ----------------------
 
-            // Sample BSDF * cos(theta)
+            // Sample BSDF * ek::cos(theta)
             auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active),
                                                sampler->next_2d(active), active);
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);

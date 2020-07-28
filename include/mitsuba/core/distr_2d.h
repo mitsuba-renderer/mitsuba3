@@ -3,6 +3,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/util.h>
 #include <enoki/dynamic.h>
+#include <array>
 
 NAMESPACE_BEGIN(mitsuba)
 

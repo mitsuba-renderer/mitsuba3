@@ -88,8 +88,8 @@ public:
         m_cutoff_angle = ek::deg_to_rad(m_cutoff_angle);
         m_beam_width = ek::deg_to_rad(m_beam_width);
         m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
-        m_cos_cutoff_angle = cos(m_cutoff_angle);
-        m_cos_beam_width = cos(m_beam_width);
+        m_cos_cutoff_angle = ek::cos(m_cutoff_angle);
+        m_cos_beam_width = ek::cos(m_beam_width);
         Assert(m_cutoff_angle >= m_beam_width);
         m_uv_factor = ek::tan(m_cutoff_angle);
     }
@@ -103,13 +103,13 @@ public:
         Float cos_theta = local_dir.z();
 
         if (m_texture->is_spatially_varying()) {
-            si.uv = Point2f(.5f + .5f * local_dir.x() / (local_dir.z() * m_uv_factor),
-                            .5f + .5f * local_dir.y() / (local_dir.z() * m_uv_factor));
+            si.uv = Point2f(0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
+                            0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor));
             result *= m_texture->eval(si, active);
         }
 
         UnpolarizedSpectrum beam_res = ek::select(cos_theta >= m_cos_beam_width, result,
-                               result * ((m_cutoff_angle - acos(cos_theta)) * m_inv_transition_width));
+                               result * ((m_cutoff_angle - ek::acos(cos_theta)) * m_inv_transition_width));
 
         return ek::select(cos_theta <= m_cos_cutoff_angle, UnpolarizedSpectrum(0.0f), beam_res);
     }

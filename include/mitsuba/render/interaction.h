@@ -49,6 +49,10 @@ struct Interaction {
     //! @{ \name Methods
     // =============================================================
 
+    /// Constructor
+    Interaction(Float t, Float time, const Wavelength &w, const Point3f &p)
+        : t(t), time(time), wavelengths(w), p(p) { }
+
     /// Is the current interaction valid?
     Mask is_valid() const {
         return ek::neq(t, ek::Infinity<Float>);
