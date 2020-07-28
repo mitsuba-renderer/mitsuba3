@@ -162,7 +162,7 @@ public:
     }
 
     MTS_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {
-        return clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
+        return ek::clamp(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
     void traverse(TraversalCallback *callback) override {

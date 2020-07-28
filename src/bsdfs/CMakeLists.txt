@@ -1,11 +1,11 @@
 set(MTS_PLUGIN_PREFIX "bsdfs")
 
-# add_plugin(blendbsdf       blendbsdf.cpp)
+add_plugin(blendbsdf       blendbsdf.cpp)
 add_plugin(bumpmap         bumpmap.cpp)
 add_plugin(conductor       conductor.cpp)
 add_plugin(dielectric      dielectric.cpp)
 add_plugin(diffuse         diffuse.cpp)
-# add_plugin(mask            mask.cpp)
+add_plugin(mask            mask.cpp)
 add_plugin(measured        measured.cpp)
 add_plugin(normalmap       normalmap.cpp)
 add_plugin(null            null.cpp)
@@ -15,7 +15,7 @@ add_plugin(roughdielectric roughdielectric.cpp)
 # TODO refactoring
 # add_plugin(roughplastic    roughplastic.cpp)
 add_plugin(thindielectric  thindielectric.cpp)
-# add_plugin(twosided        twosided.cpp)
+add_plugin(twosided        twosided.cpp)
 add_plugin(polarizer       polarizer.cpp)
 add_plugin(retarder        retarder.cpp)
 
