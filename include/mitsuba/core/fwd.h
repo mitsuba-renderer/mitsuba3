@@ -310,11 +310,11 @@ namespace fs = filesystem;
 
 NAMESPACE_END(mitsuba)
 
-// extern "C" {
-// #if defined(MTS_ENABLE_EMBREE)
-//     // Forward declarations for Embree
-//     typedef struct RTCDeviceTy* RTCDevice;
-//     typedef struct RTCSceneTy* RTCScene;
-//     typedef struct RTCGeometryTy* RTCGeometry;
-// #endif
-// };
+extern "C" {
+#if defined(MTS_ENABLE_EMBREE)
+    // Forward declarations for Embree
+    typedef struct RTCDeviceTy* RTCDevice;
+    typedef struct RTCSceneTy* RTCScene;
+    typedef struct RTCGeometryTy* RTCGeometry;
+#endif
+};

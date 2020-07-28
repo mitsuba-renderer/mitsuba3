@@ -54,7 +54,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 }
 
 #if defined(MTS_ENABLE_EMBREE)
-MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice device) override {
+MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice device) {
     if constexpr (!ek::is_cuda_array_v<Float>) {
         // Construct the BVH only once
         if (m_embree_scene == nullptr) {
@@ -107,7 +107,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Assert(pi.shape_index < m_shapes.size());
             pi.shape = m_shapes[pi.shape_index];
         } else {
-            using ShapePtr = replace_scalar_t<Float, const Base *>;
+            using ShapePtr = ek::replace_scalar_t<Float, const Base *>;
             Assert(ek::all(pi.shape_index < m_shapes.size()));
             pi.shape = ek::gather<ShapePtr>(m_shapes.data(), pi.shape_index, active);
         }

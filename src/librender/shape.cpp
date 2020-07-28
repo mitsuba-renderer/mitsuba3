@@ -16,14 +16,15 @@
 NAMESPACE_BEGIN(mitsuba)
 
 #if defined(MTS_ENABLE_EMBREE)
-#if defined(ENOKI_X86_AVX512F)
+#if defined(ENOKI_X86_AVX512)
 #  define MTS_RAY_WIDTH 16
 #elif defined(ENOKI_X86_AVX2)
 #  define MTS_RAY_WIDTH 8
 #elif defined(ENOKI_X86_SSE42)
 #  define MTS_RAY_WIDTH 4
 #else
-#  error Expected to use vectorization
+#  define MTS_RAY_WIDTH 4 // TODO refactoring
+// #  error Expected to use vectorization
 #endif
 
 #define JOIN(x, y)        JOIN_AGAIN(x, y)
@@ -173,36 +174,36 @@ void embree_intersect_packet(int* valid,
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 
-    Mask active = ek::neq(load<Int>(valid), 0);
+    Mask active = ek::neq(ek::load<Int>(valid), 0);
     if (ek::none(active))
         return;
 
     // Create Mitsuba ray
     Ray3f ray;
-    ray.o.x() = load<Float>(rays->org_x);
-    ray.o.y() = load<Float>(rays->org_y);
-    ray.o.z() = load<Float>(rays->org_z);
-    ray.d.x() = load<Float>(rays->dir_x);
-    ray.d.y() = load<Float>(rays->dir_y);
-    ray.d.z() = load<Float>(rays->dir_z);
-    ray.mint  = load<Float>(rays->tnear);
-    ray.maxt  = load<Float>(rays->tfar);
-    ray.time  = load<Float>(rays->time);
+    ray.o.x() = ek::load<Float>(rays->org_x);
+    ray.o.y() = ek::load<Float>(rays->org_y);
+    ray.o.z() = ek::load<Float>(rays->org_z);
+    ray.d.x() = ek::load<Float>(rays->dir_x);
+    ray.d.y() = ek::load<Float>(rays->dir_y);
+    ray.d.z() = ek::load<Float>(rays->dir_z);
+    ray.mint  = ek::load<Float>(rays->tnear);
+    ray.maxt  = ek::load<Float>(rays->tfar);
+    ray.time  = ek::load<Float>(rays->time);
     ray.update();
 
     // Check whether this is a shadow ray or not
     if (hits) {
         auto pi = shape->ray_intersect_preliminary(ray, active);
         active &= pi.is_valid();
-        store(rays->tfar,   pi.t, active);
-        store(hits->u,      pi.prim_uv.x(), active);
-        store(hits->v,      pi.prim_uv.y(), active);
-        store(hits->geomID, Int(geomID), active);
-        store(hits->primID, Int(0), active);
-        store(hits->instID[0], Int(instID), active);
+        ek::store(rays->tfar,   pi.t, active);
+        ek::store(hits->u,      pi.prim_uv.x(), active);
+        ek::store(hits->v,      pi.prim_uv.y(), active);
+        ek::store(hits->geomID, Int(geomID), active);
+        ek::store(hits->primID, Int(0), active);
+        ek::store(hits->instID[0], Int(instID), active);
     } else {
         active &= shape->ray_test(ray);
-        store(rays->tfar, Float(-ek::Infinity<Float>), active);
+        ek::store(rays->tfar, Float(-ek::Infinity<Float>), active);
     }
 }
 
@@ -248,14 +249,6 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
     } else {
         Throw("embree_geometry() should only be called in CPU mode.");
     }
-}
-
-MTS_VARIANT void Shape<Float, Spectrum>::init_embree_scene(RTCDevice /*device*/){
-   NotImplementedError("init_embree_scene");
-}
-
-MTS_VARIANT void Shape<Float, Spectrum>::release_embree_scene(){
-   NotImplementedError("release_embree_scene");
 }
 #endif
 

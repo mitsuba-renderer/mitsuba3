@@ -2,14 +2,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-#if defined(ENOKI_X86_AVX512F)
+#if defined(ENOKI_X86_AVX512)
 #  define MTS_RAY_WIDTH 16
 #elif defined(ENOKI_X86_AVX2)
 #  define MTS_RAY_WIDTH 8
 #elif defined(ENOKI_X86_SSE42)
 #  define MTS_RAY_WIDTH 4
 #else
-#  error Expected to use vectorization
+#  define MTS_RAY_WIDTH 4
+// #  error Expected to use vectorization
 #endif
 
 #define JOIN(x, y)        JOIN_AGAIN(x, y)
@@ -22,7 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
 static RTCDevice __embree_device = nullptr;
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
-    static_assert(is_float_v<ek::scalar_t<Float>>, "Embree is not supported in double precision mode.");
+    static_assert(std::is_same_v<ek::scalar_t<Float>, float>, "Embree is not supported in double precision mode.");
     if (!__embree_device)
         __embree_device = rtcNewDevice("");
 
@@ -39,8 +40,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    for (Shape *shapegroup : m_shapegroups)
-        shapegroup->release_embree_scene();
     rtcReleaseScene((RTCScene) m_accel);
 }
 
@@ -112,20 +111,20 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
 
             rtcIntersectW(valid, (RTCScene) m_accel, &context, &rh);
 
-            Float t = load<Float>(rh.ray.tfar);
-            Mask hit = active && neq(t, ray.maxt);
+            Float t = ek::load<Float>(rh.ray.tfar);
+            Mask hit = active && ek::neq(t, ray.maxt);
 
             if (likely(ek::any(hit))) {
-                using ShapePtr = replace_scalar_t<Float, const Shape *>;
+                using ShapePtr = ek::replace_scalar_t<Float, const Shape *>;
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-                UInt32 shape_index = load<UInt32>(rh.hit.geomID);
-                UInt32 prim_index  = load<UInt32>(rh.hit.primID);
+                UInt32 shape_index = ek::load<UInt32>(rh.hit.geomID);
+                UInt32 prim_index  = ek::load<UInt32>(rh.hit.primID);
 
                 // We get level 0 because we only support one level of instancing
-                UInt32 inst_index = load<UInt32>(rh.hit.instID[0]);
+                UInt32 inst_index = ek::load<UInt32>(rh.hit.instID[0]);
 
-                Mask hit_not_inst = hit &&  eq(inst_index, RTC_INVALID_GEOMETRY_ID);
-                Mask hit_inst     = hit && neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
 
                 PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
                 pi.t = ek::select(hit, t, ek::Infinity<Float>);
@@ -137,7 +136,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
                 ek::masked(pi.shape, hit_not_inst) = shape;
 
                 pi.prim_index = prim_index;
-                pi.prim_uv = Point2f(load<Float>(rh.hit.u), load<Float>(rh.hit.v));
+                pi.prim_uv = Point2f(ek::load<Float>(rh.hit.u), ek::load<Float>(rh.hit.v));
             }
         }
         return pi;
@@ -222,20 +221,20 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
 
             rtcIntersectW(valid, (RTCScene) m_accel, &context, &rh);
 
-            Float t = load<Float>(rh.ray.tfar);
-            Mask hit = active && neq(t, ray.maxt);
+            Float t = ek::load<Float>(rh.ray.tfar);
+            Mask hit = active && ek::neq(t, ray.maxt);
 
             if (likely(ek::any(hit))) {
-                using ShapePtr = replace_scalar_t<Float, const Shape *>;
+                using ShapePtr = ek::replace_scalar_t<Float, const Shape *>;
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-                UInt32 shape_index = load<UInt32>(rh.hit.geomID);
-                UInt32 prim_index  = load<UInt32>(rh.hit.primID);
+                UInt32 shape_index = ek::load<UInt32>(rh.hit.geomID);
+                UInt32 prim_index  = ek::load<UInt32>(rh.hit.primID);
 
                 // We get level 0 because we only support one level of instancing
-                UInt32 inst_index = load<UInt32>(rh.hit.instID[0]);
+                UInt32 inst_index = ek::load<UInt32>(rh.hit.instID[0]);
 
-                Mask hit_not_inst = hit &&  eq(inst_index, RTC_INVALID_GEOMETRY_ID);
-                Mask hit_inst     = hit && neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
 
                 PreliminaryIntersection3f pi;
                 pi.t = ek::select(hit, t, ek::Infinity<Float>);
@@ -248,7 +247,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
 
                 pi.prim_index = prim_index;
                 pi.shape_index = shape_index;
-                pi.prim_uv = Point2f(load<Float>(rh.hit.u), load<Float>(rh.hit.v));
+                pi.prim_uv = Point2f(ek::load<Float>(rh.hit.u), ek::load<Float>(rh.hit.v));
 
                 si = pi.compute_surface_interaction(ray, flags, active);
             } else {
@@ -306,7 +305,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
             store(ray2.id, UInt32(0));
             store(ray2.flags, UInt32(0));
             rtcOccludedW(valid, (RTCScene) m_accel, &context, &ray2);
-            return active && neq(load<Float>(ray2.tfar), ray.maxt);
+            return active && ek::neq(ek::load<Float>(ray2.tfar), ray.maxt);
         }
     } else {
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
