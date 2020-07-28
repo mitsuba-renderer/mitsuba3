@@ -14,8 +14,8 @@ NAMESPACE_BEGIN(math)
 //! @{ \name Useful constants in various precisions
 // -----------------------------------------------------------------------
 
-template <typename T> constexpr auto RayEpsilon      = ek::Epsilon<T> * 1500;
-template <typename T> constexpr auto ShadowEpsilon   = RayEpsilon<T> * 10;
+template <typename T> constexpr auto RayEpsilon    = ek::Epsilon<T> * 1500;
+template <typename T> constexpr auto ShadowEpsilon = RayEpsilon<T> * 10;
 
 //! @}
 // -----------------------------------------------------------------------
@@ -245,6 +245,8 @@ MTS_INLINE Index find_interval(ek::scalar_t<Index> size,
  * input interval. The number of iterations is roughly bounded by the number of
  * bits of the underlying floating point representation.
  */
+
+
 template <typename Scalar, typename Predicate>
 Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
     int it = 0;
@@ -253,8 +255,11 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
 
         /* Paranoid stopping criterion */
         if (middle <= left || middle >= right) {
-            // middle = std::nextafter(left, right); TODO refactoring
-            middle = left + ek::sign(right - left) * ek::Epsilon<Scalar>;
+            if constexpr (std::is_same_v<ek::scalar_t<Scalar>, float>)
+                middle = __builtin_nextafterf(left, right);
+            else
+                middle = __builtin_nextafterl(left, right);
+
             if (middle == right)
                 break;
         }
