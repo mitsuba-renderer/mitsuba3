@@ -391,12 +391,11 @@ public:
 
     virtual ~AnimatedTransform();
 
-    // TODO refactoring
-    // /// Append a keyframe to the current animated transform
-    // void append(Float time, const Transform4f &trafo);
+    /// Append a keyframe to the current animated transform
+    void append(Float time, const Transform4f &trafo);
 
-    // /// Append a keyframe to the current animated transform
-    // void append(const Keyframe &keyframe);
+    /// Append a keyframe to the current animated transform
+    void append(const Keyframe &keyframe);
 
     // TODO move this method definition to transform.cpp
     /// Compatibility wrapper, which strips the mask argument and invokes \ref eval()
@@ -501,8 +500,8 @@ public:
         return !operator==(t);
     }
 
-//     /// Return a human-readable summary of this bitmap
-//     virtual std::string to_string() const override;
+    /// Return a human-readable summary of this bitmap
+    virtual std::string to_string() const override;
 
     MTS_DECLARE_CLASS()
 private:
@@ -520,9 +519,9 @@ std::ostream &operator<<(std::ostream &os, const Transform<Point> &t) {
     return os;
 }
 
-// std::ostream &operator<<(std::ostream &os, const AnimatedTransform::Keyframe &frame);
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform::Keyframe &frame);
 
-// std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t);
+std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t);
 
 //! @}
 // -----------------------------------------------------------------------
