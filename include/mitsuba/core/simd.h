@@ -4,6 +4,8 @@
 #include <enoki/array_traits.h>
 #include <string>
 
+#include <enoki-jit/jit.h>
+
 #if defined(MTS_ENABLE_OPTIX)
 #  include <enoki/cuda.h>
 #  include <enoki/autodiff.h>

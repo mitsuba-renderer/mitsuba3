@@ -288,12 +288,12 @@ public:
             m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
         // TODO this is needed for the bbox(..) methods, but is it slower?
-        // TODO refactoring
-        // m_faces_buf.managed();
-        // m_vertex_positions_buf.managed();
-        // m_vertex_normals_buf.managed();
-        // m_vertex_texcoords_buf.managed();
+        ek::migrate(m_faces_buf, AllocType::Managed);
+        ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+        ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+        ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
+        // TODO refactorig
         // if constexpr (ek::is_cuda_array_v<Float>)
             // cuda_sync();
 

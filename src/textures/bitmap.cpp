@@ -601,7 +601,7 @@ protected:
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
         // Recompute the mean texture value following an update
-        // m_data = m_data.managed(); // TODO refactoring
+        ek::migrate(m_data, AllocType::Managed);
         const ScalarFloat *ptr = m_data.data();
 
         double mean = 0.0;

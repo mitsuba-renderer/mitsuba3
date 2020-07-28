@@ -46,11 +46,10 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     if (has_vertex_texcoords)
         m_vertex_texcoords_buf = ek::zero<FloatStorage>(m_vertex_count * 2);
 
-    // TODO refactoring
-    // m_faces_buf.managed();
-    // m_vertex_positions_buf.managed();
-    // m_vertex_normals_buf.managed();
-    // m_vertex_texcoords_buf.managed();
+    ek::migrate(m_faces_buf, AllocType::Managed);
+    ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+    ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+    ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
     // TODO refactoring
     // if constexpr (ek::is_cuda_array_v<Float>)
@@ -876,12 +875,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    // TODO refactoring
-    // if constexpr (ek::is_diff_array_v<Float>)
-    //     return requires_gradient(m_vertex_positions_buf) ||
-    //            requires_gradient(m_vertex_normals_buf) ||
-    //            requires_gradient(m_vertex_texcoords_buf);
-    // }
+    if constexpr (ek::is_diff_array_v<Float>) {
+        return ek::grad_enabled(m_vertex_positions_buf) ||
+               ek::grad_enabled(m_vertex_normals_buf) ||
+               ek::grad_enabled(m_vertex_texcoords_buf);
+    }
 
     return false;
 }

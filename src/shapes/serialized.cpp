@@ -271,12 +271,12 @@ public:
 
         m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
 
-        // TODO refactorigin
-        // m_vertex_positions_buf.managed();
-        // m_vertex_normals_buf.managed();
-        // m_vertex_texcoords_buf.managed();
-        // m_faces_buf.managed();
+        ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+        ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+        ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+        ek::migrate(m_faces_buf, AllocType::Managed);
 
+        // TODO refactorig
         // if constexpr (ek::is_cuda_array_v<Float>)
         //     cuda_sync();
 

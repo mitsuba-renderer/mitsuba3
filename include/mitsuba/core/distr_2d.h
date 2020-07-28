@@ -85,9 +85,10 @@ public:
         : m_size(size) {
 
         m_cond_cdf = ek::empty<FloatStorage>(ek::hprod(m_size));
-        // m_cond_cdf TODO refactoring
         m_marg_cdf = ek::empty<FloatStorage>(m_size.y());
-        // m_marg_cdf TODO refactoring
+
+        ek::migrate(m_cond_cdf, AllocType::Managed);
+        ek::migrate(m_marg_cdf, AllocType::Managed);
 
         ScalarFloat *cond_cdf = m_cond_cdf.data(),
                     *marg_cdf = m_marg_cdf.data();
@@ -234,7 +235,6 @@ protected:
             if (param_res[i] < 1)
                 Throw("Distribution2D(): parameter resolution must be >= 1!");
 
-            // TODO refactoring: check this!
             m_param_values[i] = ek::load_unaligned<FloatStorage>(param_values[i], param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? m_slices : 0;
             m_slices *= param_res[i];
@@ -723,7 +723,7 @@ protected:
         Level(ScalarVector2u res, uint32_t slices)
             : size(ek::hprod(res)), width(res.x()),
               data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
-            // data TODO refactoring
+            ek::migrate(data, AllocType::Managed);
             data_ptr = data.data();
         }
 
@@ -865,14 +865,14 @@ public:
                scale_y = .5 / (h - 1);
 
         m_data = ek::empty<FloatStorage>(m_slices * n_data);
-        // m_data TODO refactoring
+        ek::migrate(m_data, AllocType::Managed);
 
         if (enable_sampling) {
             m_marg_cdf = ek::empty<FloatStorage>(m_slices * n_marg);
-            // m_marg_cdf TODO refactoring
-
             m_cond_cdf = ek::empty<FloatStorage>(m_slices * n_cond);
-            // m_cond_cdf TODO refactoring
+
+            ek::migrate(m_marg_cdf, AllocType::Managed);
+            ek::migrate(m_cond_cdf, AllocType::Managed);
 
             ScalarFloat *marg_cdf = m_marg_cdf.data(),
                         *cond_cdf = m_cond_cdf.data(),

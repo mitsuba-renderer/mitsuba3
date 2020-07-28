@@ -693,7 +693,6 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki accessors for dynamic vectorization
 // -----------------------------------------------------------------------
 
-// TODO refactoring
 ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p)
 
 ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,

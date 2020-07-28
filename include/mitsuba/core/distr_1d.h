@@ -55,9 +55,9 @@ public:
         if (m_cdf.size() != size)
             m_cdf = ek::empty<FloatStorage>(size);
 
-        // Ensure that we can access these arrays on the CPU
-        // m_pmf.managed();
-        // m_cdf.managed();
+        // Ensure that we can access these arrays on the GPU
+        ek::migrate(m_pmf, AllocType::Managed);
+        ek::migrate(m_cdf, AllocType::Managed);
 
         ScalarFloat *pmf_ptr = m_pmf.data(),
                     *cdf_ptr = m_cdf.data();
@@ -302,9 +302,9 @@ public:
         if (m_cdf.size() != size - 1)
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
-        // Ensure that we can access these arrays on the CPU
-        // m_pdf.managed();
-        // m_cdf.managed();
+        // Ensure that we can access these arrays on the GPU
+        ek::migrate(m_pdf, AllocType::Managed);
+        ek::migrate(m_cdf, AllocType::Managed);
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
                     *cdf_ptr = m_cdf.data();
@@ -570,11 +570,10 @@ public:
         if (m_cdf.size() != size - 1)
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
-        // Ensure that we can access these arrays on the CPU
-        // TODO refactoring
-        // m_pdf.managed();
-        // m_cdf.managed();
-        // m_nodes.managed();
+        // Ensure that we can access these arrays on the GPU
+        ek::migrate(m_pdf,   AllocType::Managed);
+        ek::migrate(m_cdf,   AllocType::Managed);
+        ek::migrate(m_nodes, AllocType::Managed);
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
                     *cdf_ptr = m_cdf.data(),

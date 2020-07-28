@@ -309,13 +309,12 @@ public:
             }
         }
 
+        ek::migrate(m_faces_buf, AllocType::Managed);
+        ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+        ek::migrate(m_vertex_normals_buf, AllocType::Managed);
 
-        // TODO refactoring
-        // m_faces_buf.managed();
-        // m_vertex_positions_buf.managed();
-        // m_vertex_normals_buf.managed();
-        // if (has_uvs)
-        //     m_vertex_texcoords_buf.managed();
+        if (has_uvs)
+            ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
         // if constexpr (ek::is_cuda_array_v<Float>)
             // cuda_sync();

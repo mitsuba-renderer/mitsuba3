@@ -198,16 +198,16 @@ public:
                 if (has_vertex_texcoords)
                     m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
-                // TODO refactoring
-                // for (auto& descr: vertex_attributes_descriptors) {
-                //     descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
-                //     descr.buf.managed();
-                // }
+                for (auto& descr: vertex_attributes_descriptors) {
+                    descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
+                    ek::migrate(descr.buf, AllocType::Managed);
+                }
 
-                // m_vertex_positions_buf.managed();
-                // m_vertex_normals_buf.managed();
-                // m_vertex_texcoords_buf.managed();
+                ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+                ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+                ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
+                // TODO refactorig
                 // if constexpr (ek::is_cuda_array_v<Float>)
                     // cuda_sync();
 
@@ -311,14 +311,13 @@ public:
                     fail(e.what());
                 }
 
-                // TODO refactoring
                 m_face_count = (ScalarSize) el.count;
                 m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
-                // m_faces_buf.managed();
+                ek::migrate(m_faces_buf, AllocType::Managed);
 
                 for (auto& descr: face_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_face_count * descr.dim);
-                    // descr.buf.managed();
+                    ek::migrate(descr.buf, AllocType::Managed);
                 }
 
                 ScalarIndex* face_ptr = m_faces_buf.data();

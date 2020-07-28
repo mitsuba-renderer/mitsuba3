@@ -223,8 +223,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            // TODO refactoring
-            // m_data.managed();
+            ek::migrate(m_data, AllocType::Managed);
 
             std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
 

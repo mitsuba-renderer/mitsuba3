@@ -212,7 +212,6 @@ template <typename Float_> struct CoreAliases {
 
 #define MTS_VARIANT template <typename Float, typename Spectrum>
 
-// TODO refactoring:
 #define MTS_IMPORT_CORE_TYPES_PREFIX(Float_, prefix)                                               \
     using prefix ## CoreAliases          = mitsuba::CoreAliases<Float_>;                           \
     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
@@ -279,12 +278,13 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;
 
-// TODO refactoring: comment this
-#define MTS_USING_TYPES_MACRO(x) using typename Base::x;
-#define MTS_USING_MEMBERS_MACRO(x) using Base::x;
+// Variadic macro to import a set of types from the base class
+#define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;
+#define MTS_USING_TYPES(...) ENOKI_MAP(__MTS_USING_TYPES_MACRO__, __VA_ARGS__)
 
-#define MTS_USING_TYPES(...) ENOKI_MAP(MTS_USING_TYPES_MACRO, __VA_ARGS__)
-#define MTS_USING_MEMBERS(...) ENOKI_MAP(MTS_USING_MEMBERS_MACRO, __VA_ARGS__)
+// Variadic macro to import a set of variables from the base class
+#define __MTS_USING_MEMBERS_MACRO__(x) using Base::x;
+#define MTS_USING_MEMBERS(...) ENOKI_MAP(__MTS_USING_MEMBERS_MACRO__, __VA_ARGS__)
 
 #define MTS_IMPORT_CORE_TYPES()                                                                    \
     MTS_IMPORT_CORE_TYPES_PREFIX(Float, )                                                          \
