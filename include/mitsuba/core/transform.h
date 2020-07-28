@@ -247,7 +247,31 @@ template <typename Point_> struct Transform {
     static Transform look_at(const Point<Float, 3> &origin,
                              const Point<Float, 3> &target,
                              const Vector<Float, 3> &up) {
-        return Transform(ek::look_at<Matrix>(origin, target, up));
+        using Vector1 = ek::Array<Scalar, 1>;
+        using Vector3 = Vector<Float, 3>;
+
+        Vector3 dir    = ek::normalize(target - origin);
+        Vector3 left   = ek::normalize(ek::cross(up, dir));
+        Vector3 new_up = ek::cross(dir, left);
+
+        Vector1 z(0);
+        Matrix result = Matrix(
+            ek::concat(left, z),
+            ek::concat(new_up, z),
+            ek::concat(dir, z),
+            ek::concat(origin, Vector1(1))
+        );
+
+        Matrix inverse = ek::transpose(Matrix(
+            ek::concat(left, z),
+            ek::concat(new_up, z),
+            ek::concat(dir, z),
+            Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
+        ));
+
+        inverse[3] = inverse * ek::concat(-origin, Vector1(1));
+
+        return Transform(result, ek::transpose(inverse));
     }
 
     /// Creates a transformation that converts from the standard basis to 'frame'

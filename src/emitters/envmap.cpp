@@ -185,10 +185,10 @@ public:
         ds.d      = d;
         ds.dist   = dist;
 
-        return std::make_pair(
+        return {
             ds,
             unpolarized<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf
-        );
+        };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
