@@ -8,6 +8,8 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
+#include <enoki/packet.h>
+
 #if defined(MTS_ENABLE_OPTIX)
     #include "optix/cylinder.cuh"
 #endif
@@ -117,7 +119,7 @@ public:
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = transform_compose(ScalarMatrix3f(1.f), Q, T);
+        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(1.f), Q, T);
         m_to_object = m_to_world.inverse();
 
         m_inv_surface_area = ek::rcp(surface_area());
@@ -137,7 +139,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
-        using FloatP8         = Packet<ScalarFloat, 8>;
+        using FloatP8         = ek::Packet<ScalarFloat, 8>;
         using MaskP8          = ek::mask_t<FloatP8>;
         using Point3fP8       = Point<FloatP8, 3>;
         using Vector3fP8      = Vector<FloatP8, 3>;
@@ -158,10 +160,10 @@ public:
         Vector3fP8 face_n = ek::zero<Vector3fP8>();
 
         for (size_t i = 0; i < 3; ++i) {
-            face_p.coeff(i,  i * 2 + 0) = bbox.min.coeff(i);
-            face_p.coeff(i,  i * 2 + 1) = bbox.max.coeff(i);
-            face_n.coeff(i,  i * 2 + 0) = -1.f;
-            face_n.coeff(i,  i * 2 + 1) = 1.f;
+            face_p.entry(i,  i * 2 + 0) = bbox.min.entry(i);
+            face_p.entry(i,  i * 2 + 1) = bbox.max.entry(i);
+            face_n.entry(i,  i * 2 + 0) = -1.f;
+            face_n.entry(i,  i * 2 + 1) = 1.f;
         }
 
         // Project the cylinder direction onto the plane

@@ -49,7 +49,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         OptixState &s = *(OptixState *) m_accel;
 
         // Copy shapes pointers to the GPU
-        s.shapes_ptr = ek::CUDAArray<const void*>::copy((void**)m_shapes.data(), m_shapes.size());
+        s.shapes_ptr = ek::load_unaligned<ek::CUDAArray<const void*>>((void**)m_shapes.data(), m_shapes.size());
 
         // ------------------------
         //  OptiX context creation

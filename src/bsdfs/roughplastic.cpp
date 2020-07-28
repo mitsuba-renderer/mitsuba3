@@ -389,8 +389,8 @@ public:
             }
 
             auto external_transmittance = eval_transmittance(distr_p, wi, m_eta);
-            m_external_transmittance = DynamicBuffer<Float>::copy(external_transmittance.data(),
-                                                                  slices(external_transmittance));
+            m_external_transmittance = ek::load_unaligned<DynamicBuffer<Float>>(external_transmittance.data(),
+                                                                                ek::width(external_transmittance));
             m_internal_reflectance =
                 ek::hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }

@@ -5,6 +5,8 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
 
+#include <array>
+
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -278,7 +280,7 @@ public:
         m_vertex_count = vertex_ctr;
         m_face_count = (ScalarSize) triangles.size();
 
-        m_faces_buf = DynamicBuffer<UInt32>::copy(triangles.data(), m_face_count * 3);
+        m_faces_buf = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
         m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!m_disable_vertex_normals)
             m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
@@ -292,8 +294,8 @@ public:
         // m_vertex_normals_buf.managed();
         // m_vertex_texcoords_buf.managed();
 
-        if constexpr (ek::is_cuda_array_v<Float>)
-            cuda_sync();
+        // if constexpr (ek::is_cuda_array_v<Float>)
+            // cuda_sync();
 
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;

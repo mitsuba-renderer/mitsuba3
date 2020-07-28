@@ -118,7 +118,7 @@ public:
         }
 
         m_resolution = bitmap->size();
-        m_data = DynamicBuffer<Float>::copy(bitmap->data(), ek::hprod(m_resolution) * 4);
+        m_data = ek::load_unaligned<DynamicBuffer<Float>>(bitmap->data(), ek::hprod(m_resolution) * 4);
 
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(luminance.get(), m_resolution);

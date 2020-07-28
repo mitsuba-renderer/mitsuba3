@@ -1,5 +1,6 @@
 #include <mitsuba/render/mesh.h>
 #include <enoki/color.h>
+#include <array>
 
 // Blender Mesh format types for the exporter
 NAMESPACE_BEGIN(blender)
@@ -275,9 +276,9 @@ public:
                             const blender::MLoopCol &loop_col = cols[p].second[loop_index];
                             // Blender stores vertex colors in sRGB space
                             tmp_cols[p].push_back({
-                                srgb_to_linear(loop_col.r * color_factor),
-                                srgb_to_linear(loop_col.g * color_factor),
-                                srgb_to_linear(loop_col.b * color_factor)
+                                ek::srgb_to_linear(loop_col.r * color_factor),
+                                ek::srgb_to_linear(loop_col.g * color_factor),
+                                ek::srgb_to_linear(loop_col.b * color_factor)
                             });
                         }
                     }

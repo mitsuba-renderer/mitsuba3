@@ -254,7 +254,7 @@ template <typename Point_> struct Transform {
     template <typename Value, size_t N = Size, ek::enable_if_t<N == 4> = 0>
     static Transform to_frame(const Frame<Value> &frame) {
         ek::Array<Scalar, 1> z(0);
-        Matrix result = Matrix::from_cols(
+        Matrix result = Matrix(
             concat(frame.s, z),
             concat(frame.t, z),
             concat(frame.n, z),
@@ -268,12 +268,12 @@ template <typename Point_> struct Transform {
     template <typename Value, size_t N = Size, ek::enable_if_t<N == 4> = 0>
     static Transform from_frame(const Frame<Value> &frame) {
         ek::Array<Scalar, 1> z(0);
-        Matrix result = Matrix::from_rows(
+        Matrix result = ek::transpose(Matrix(
             concat(frame.s, z),
             concat(frame.t, z),
             concat(frame.n, z),
             Vector<Float, 4>(0.f, 0.f, 0.f, 1.f)
-        );
+        ));
 
         return Transform(result, result);
     }

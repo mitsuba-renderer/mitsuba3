@@ -1591,7 +1591,7 @@ void StructConverter::linearize(Value &value) const {
             value.f = (Float) value.d;
     }
     if (has_flag(value.flags, Struct::Flags::Gamma)) {
-        value.f = srgb_to_linear(value.f);
+        value.f = ek::srgb_to_linear(value.f);
         value.flags = value.flags & ~Struct::Flags::Gamma;
     }
 

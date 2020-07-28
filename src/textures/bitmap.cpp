@@ -261,7 +261,7 @@ public:
           m_inv_resolution_y((int) bitmap->height()),
           m_name(name), m_transform(transform), m_mean(mean),
           m_filter_type(filter_type), m_wrap_mode(wrap_mode){
-        m_data = DynamicBuffer<Float>::copy(bitmap->data(),
+        m_data = ek::load_unaligned<DynamicBuffer<Float>>(bitmap->data(),
             ek::hprod(m_resolution) * Channels);
     }
 
