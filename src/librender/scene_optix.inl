@@ -386,7 +386,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         // is used to tag IAS that are not related to instancing (e.g. custom
         // shape tree).
         uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32 instance_index = full<UInt32>(max_inst_index, ray_count);
+        UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         // Ensure pi and instance_index are allocated before binding the data pointers
         cuda_eval();
@@ -473,7 +473,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // `si.is_valid()==true`, this makes it easier to catch bugs in the
         // masking logic implemented in the integrator.
 #if !defined(NDEBUG)
-        #define SET_NAN(name) name = full<decltype(name)>(std::numeric_limits<ek::scalar_t<Float>>::quiet_NaN(), ray_count);
+        #define SET_NAN(name) name = ek::full<decltype(name)>(std::numeric_limits<ek::scalar_t<Float>>::quiet_NaN(), ray_count);
         SET_NAN(si.t); SET_NAN(si.time); SET_NAN(si.p); SET_NAN(si.uv); SET_NAN(si.n);
         SET_NAN(si.sh_frame.n); SET_NAN(si.dp_du); SET_NAN(si.dp_dv);
         #undef SET_NAN
@@ -484,7 +484,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // is used to tag IAS that are not related to instancing (e.g. custom
         // shape tree).
         uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32 instance_index = full<UInt32>(max_inst_index, ray_count);
+        UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         // Ensure si and instance_index are allocated before binding the
         // data pointers

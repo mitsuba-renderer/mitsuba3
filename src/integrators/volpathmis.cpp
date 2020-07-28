@@ -65,7 +65,7 @@ public:
                      Medium, MediumPtr, PhaseFunctionContext)
 
     using WeightMatrix =
-        std::conditional_t<SpectralMis, Matrix<Float, ek::array_size_v<UnpolarizedSpectrum>>,
+        std::conditional_t<SpectralMis, ek::Matrix<Float, ek::array_size_v<UnpolarizedSpectrum>>,
                            UnpolarizedSpectrum>;
 
     VolpathMisIntegratorImpl(const Properties &props) : Base(props) {}
@@ -111,8 +111,8 @@ public:
 
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
-        WeightMatrix p_over_f = full<WeightMatrix>(1.f);
-        WeightMatrix p_over_f_nee = full<WeightMatrix>(1.f);
+        WeightMatrix p_over_f = ek::full<WeightMatrix>(1.f);
+        WeightMatrix p_over_f_nee = ek::full<WeightMatrix>(1.f);
 
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
@@ -451,7 +451,7 @@ public:
         if constexpr (SpectralMis) {
             ENOKI_MARK_USED(channel);
             for (size_t i = 0; i < ek::array_size_v<Spectrum>; ++i) {
-                UnpolarizedSpectrum ratio = p_over_f[i] * (p / f.coeff(i));
+                UnpolarizedSpectrum ratio = p_over_f[i] * (p / f.entry(i));
                 ek::masked(p_over_f[i], active) = ek::select(ek::isfinite(ratio), ratio, 0.f);
             }
         } else {

@@ -79,7 +79,7 @@ public:
             Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
-            ek::masked(throughput, perform_rr) *= ek::rcp(detach(q));
+            ek::masked(throughput, perform_rr) *= ek::rcp(ek::detach(q));
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
             if (ek::none(active) || ek::all(exceeded_max_depth))
