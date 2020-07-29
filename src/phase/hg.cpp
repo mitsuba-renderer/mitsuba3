@@ -46,6 +46,7 @@ public:
             Log(Error, "The asymmetry parameter must lie in the interval (-1, 1)!");
 
         m_flags = +PhaseFunctionFlags::Anisotropic;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     MTS_INLINE Float eval_hg(Float cos_theta) const {

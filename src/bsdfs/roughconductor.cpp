@@ -188,6 +188,7 @@ public:
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         if (m_alpha_u != m_alpha_v)
             m_flags = m_flags | BSDFFlags::Anisotropic;
+        ek::set_attr(this, "flags", m_flags);
 
         m_components.clear();
         m_components.push_back(m_flags);

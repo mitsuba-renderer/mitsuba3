@@ -222,9 +222,6 @@ public:
     //! @}
     // =============================================================
 
-    // TODO refactoring
-    // ENOKI_PINNED_OPERATOR_NEW(Float)
-
     MTS_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);

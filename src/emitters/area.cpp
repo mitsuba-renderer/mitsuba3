@@ -58,6 +58,7 @@ public:
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

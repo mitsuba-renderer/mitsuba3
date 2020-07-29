@@ -61,6 +61,7 @@ public:
         }
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
+        ek::set_attr(this, "flags", m_flags);
         m_irradiance = props.texture<Texture>("irradiance", Texture::D65(1.f));
         m_needs_sample_3 = false;
     }

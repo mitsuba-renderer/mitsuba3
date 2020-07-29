@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/render/fwd.h>
+#include <enoki/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -92,6 +93,8 @@ public:
 
     // TODO refactoring
     // ENOKI_PINNED_OPERATOR_NEW(Float)
+
+    ENOKI_VCALL_REGISTER_IF(Medium, ek::is_jit_array_v<Float>)
     MTS_DECLARE_CLASS()
 protected:
     Medium();
@@ -113,19 +116,17 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for packets of Medium pointers
 // -----------------------------------------------------------------------
 
-// TODO refactoring
-// // Enable usage of array pointers for our types
-// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Medium)
-//     ENOKI_CALL_SUPPORT_METHOD(phase_function)
-//     ENOKI_CALL_SUPPORT_METHOD(use_emitter_sampling)
-//     ENOKI_CALL_SUPPORT_METHOD(is_homogeneous)
-//     ENOKI_CALL_SUPPORT_METHOD(has_spectral_extinction)
-//     ENOKI_CALL_SUPPORT_METHOD(get_combined_extinction)
-//     ENOKI_CALL_SUPPORT_METHOD(intersect_aabb)
-//     ENOKI_CALL_SUPPORT_METHOD(sample_interaction)
-//     ENOKI_CALL_SUPPORT_METHOD(eval_tr_and_pdf)
-//     ENOKI_CALL_SUPPORT_METHOD(get_scattering_coefficients)
-// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Medium)
+ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
+    ENOKI_VCALL_METHOD(phase_function)
+    ENOKI_VCALL_METHOD(use_emitter_sampling)
+    ENOKI_VCALL_METHOD(is_homogeneous)
+    ENOKI_VCALL_METHOD(has_spectral_extinction)
+    ENOKI_VCALL_METHOD(get_combined_extinction)
+    ENOKI_VCALL_METHOD(intersect_aabb)
+    ENOKI_VCALL_METHOD(sample_interaction)
+    ENOKI_VCALL_METHOD(eval_tr_and_pdf)
+    ENOKI_VCALL_METHOD(get_scattering_coefficients)
+ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}
 // -----------------------------------------------------------------------

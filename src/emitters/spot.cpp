@@ -82,6 +82,7 @@ public:
                 Throw("The parameter 'texture' must be spatially varying (e.g. bitmap type)!");
             m_flags |= +EmitterFlags::SpatiallyVarying;
         }
+        ek::set_attr(this, "flags", m_flags);
 
         m_cutoff_angle = props.float_("cutoff_angle", 20.0f);
         m_beam_width = props.float_("beam_width", m_cutoff_angle * 3.0f / 4.0f);

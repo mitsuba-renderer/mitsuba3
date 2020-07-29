@@ -25,6 +25,7 @@ public:
 
     IsotropicPhaseFunction(const Properties & props) : Base(props) {
         m_flags = +PhaseFunctionFlags::Isotropic;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,

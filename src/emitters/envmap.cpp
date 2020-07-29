@@ -125,6 +125,7 @@ public:
         m_warp = Warp(luminance.get(), m_resolution);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     void set_scene(const Scene *scene) override {

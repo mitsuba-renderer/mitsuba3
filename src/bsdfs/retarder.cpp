@@ -61,6 +61,7 @@ public:
         m_delta = props.texture<Texture>("delta", 90.f);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
+        ek::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 

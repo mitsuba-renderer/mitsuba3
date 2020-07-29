@@ -48,23 +48,28 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
             if (m_emitter)
                 Throw("Only a single Emitter child object can be specified per shape.");
             m_emitter = emitter;
+            ek::set_attr(this, "emitter", m_emitter);
         } else if (sensor) {
             if (m_sensor)
                 Throw("Only a single Sensor child object can be specified per shape.");
             m_sensor = sensor;
+            ek::set_attr(this, "sensor", m_sensor);
         } else if (bsdf) {
             if (m_bsdf)
                 Throw("Only a single BSDF child object can be specified per shape.");
             m_bsdf = bsdf;
+            ek::set_attr(this, "bsdf", m_bsdf);
         } else if (medium) {
             if (name == "interior") {
                 if (m_interior_medium)
                     Throw("Only a single interior medium can be specified per shape.");
                 m_interior_medium = medium;
+                ek::set_attr(this, "interior_medium", m_interior_medium);
             } else if (name == "exterior") {
                 if (m_exterior_medium)
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
+                ek::set_attr(this, "exterior_medium", m_exterior_medium);
             }
         } else {
             continue;

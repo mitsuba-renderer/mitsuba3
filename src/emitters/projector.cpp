@@ -102,6 +102,7 @@ public:
         m_sample_to_camera = m_camera_to_sample.inverse();
 
         m_flags = +EmitterFlags::DeltaPosition;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &,

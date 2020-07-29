@@ -192,6 +192,7 @@ public:
         m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | BSDFFlags::NonSymmetric | extra);
         m_flags = m_components[0] | m_components[1];
+        ek::set_attr(this, "flags", m_flags);
 
         parameters_changed();
     }

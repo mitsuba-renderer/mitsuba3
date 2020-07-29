@@ -55,6 +55,7 @@ public:
         m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
         m_needs_sample_3 = false;
         m_flags = +EmitterFlags::DeltaPosition;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,

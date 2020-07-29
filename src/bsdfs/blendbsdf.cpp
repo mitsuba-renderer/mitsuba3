@@ -78,6 +78,7 @@ public:
                 m_components.push_back(m_nested_bsdf[i]->flags(j));
 
         m_flags = m_nested_bsdf[0]->flags() | m_nested_bsdf[1]->flags();
+        ek::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

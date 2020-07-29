@@ -10,6 +10,7 @@
 
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/render/interaction.h>
+#include <enoki/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -441,9 +442,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    // TODO refactoring
-    // ENOKI_CALL_SUPPORT_FRIEND()
-    // ENOKI_PINNED_OPERATOR_NEW(Float)
+    ENOKI_VCALL_REGISTER_IF(BSDF, ek::is_jit_array_v<Float>)
 
     MTS_DECLARE_CLASS()
 protected:
@@ -520,17 +519,16 @@ ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::BSDF)
-//     ENOKI_CALL_SUPPORT_METHOD(sample)
-//     ENOKI_CALL_SUPPORT_METHOD(eval)
-//     ENOKI_CALL_SUPPORT_METHOD(eval_null_transmission)
-//     ENOKI_CALL_SUPPORT_METHOD(pdf)
-//     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
-
-//     auto needs_differentials() const {
-//         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
-//     }
-// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::BSDF)
+ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
+    ENOKI_VCALL_METHOD(sample)
+    ENOKI_VCALL_METHOD(eval)
+    ENOKI_VCALL_METHOD(eval_null_transmission)
+    ENOKI_VCALL_METHOD(pdf)
+    ENOKI_VCALL_GETTER(flags, uint32_t)
+    auto needs_differentials() const {
+        return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
+    }
+ENOKI_VCALL_TEMPLATE_END(mitsuba::BSDF)
 
 //! @}
 // -----------------------------------------------------------------------

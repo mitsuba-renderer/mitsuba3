@@ -42,6 +42,7 @@ public:
 
         m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
         m_flags = +EmitterFlags::Infinite;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     void set_scene(const Scene *scene) override {

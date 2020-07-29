@@ -4,6 +4,7 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/sampler.h>
+#include <enoki/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -165,9 +166,8 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    // TODO refactoring
-    // ENOKI_CALL_SUPPORT_FRIEND()
-    // ENOKI_PINNED_OPERATOR_NEW(Float)
+    ENOKI_VCALL_REGISTER_IF(PhaseFunction, ek::is_jit_array_v<Float>)
+
     MTS_DECLARE_CLASS()
 protected:
     PhaseFunction(const Properties &props);
@@ -198,14 +198,13 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-// TODO refactoring
-// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
-//     ENOKI_CALL_SUPPORT_METHOD(sample)
-//     ENOKI_CALL_SUPPORT_METHOD(eval)
-//     ENOKI_CALL_SUPPORT_METHOD(projected_area)
-//     ENOKI_CALL_SUPPORT_METHOD(max_projected_area)
-//     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
-// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::PhaseFunction)
+ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
+    ENOKI_VCALL_METHOD(sample)
+    ENOKI_VCALL_METHOD(eval)
+    ENOKI_VCALL_METHOD(projected_area)
+    ENOKI_VCALL_METHOD(max_projected_area)
+    ENOKI_VCALL_GETTER(flags, uint32_t)
+ENOKI_VCALL_TEMPLATE_END(mitsuba::PhaseFunction)
 
 //! @}
 // -----------------------------------------------------------------------

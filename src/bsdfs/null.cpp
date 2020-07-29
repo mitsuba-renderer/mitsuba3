@@ -36,6 +36,7 @@ public:
     Null(const Properties &props) : Base(props) {
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_components.back();
+        ek::set_attr(this, "flags", m_flags);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,

@@ -69,6 +69,7 @@ public:
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
+        ek::set_attr(this, "flags", m_flags);
         m_components.push_back(m_flags);
     }
 

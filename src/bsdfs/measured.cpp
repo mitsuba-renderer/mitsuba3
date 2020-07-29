@@ -30,6 +30,7 @@ public:
 
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide);
         m_flags = m_components[0];
+        ek::set_attr(this, "flags", m_flags);
 
         auto fs            = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));

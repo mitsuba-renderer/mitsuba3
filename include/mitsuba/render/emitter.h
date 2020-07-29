@@ -4,6 +4,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
 #include <mitsuba/render/fwd.h>
+#include <enoki/vcall.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -71,8 +72,8 @@ public:
     uint32_t flags(ek::mask_t<Float> /*active*/ = true) const { return m_flags; }
 
 
-    // TODO refactoring
-    // ENOKI_CALL_SUPPORT_FRIEND()
+    ENOKI_VCALL_REGISTER_IF(Emitter, ek::is_jit_array_v<Float>)
+
     MTS_DECLARE_CLASS()
 protected:
     Emitter(const Properties &props);
@@ -91,16 +92,14 @@ NAMESPACE_END(mitsuba)
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 
-// TODO refactoring
-// // Enable usage of array pointers for our types
-// ENOKI_CALL_SUPPORT_TEMPLATE_BEGIN(mitsuba::Emitter)
-//     ENOKI_CALL_SUPPORT_METHOD(sample_ray)
-//     ENOKI_CALL_SUPPORT_METHOD(eval)
-//     ENOKI_CALL_SUPPORT_METHOD(sample_direction)
-//     ENOKI_CALL_SUPPORT_METHOD(pdf_direction)
-//     ENOKI_CALL_SUPPORT_METHOD(is_environment)
-//     ENOKI_CALL_SUPPORT_GETTER(flags, m_flags)
-// ENOKI_CALL_SUPPORT_TEMPLATE_END(mitsuba::Emitter)
+ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Emitter)
+    ENOKI_VCALL_METHOD(sample_ray)
+    ENOKI_VCALL_METHOD(eval)
+    ENOKI_VCALL_METHOD(sample_direction)
+    ENOKI_VCALL_METHOD(pdf_direction)
+    ENOKI_VCALL_METHOD(is_environment)
+    ENOKI_VCALL_GETTER(flags, uint32_t)
+ENOKI_VCALL_TEMPLATE_END(mitsuba::Emitter)
 
 //! @}
 // -----------------------------------------------------------------------
