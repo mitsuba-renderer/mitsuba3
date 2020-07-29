@@ -69,48 +69,45 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         // py::module::import("enoki.dynamic");
 
     // Basic type aliases in the Enoki module (scalar + vectorized)
-    m.attr("Float32") = enoki.attr("Float32");
-    m.attr("Float64") = enoki.attr("Float64");
-    m.attr("Mask")    = enoki.attr("Mask");
-    m.attr("Int32")   = enoki.attr("Int32");
-    m.attr("Int64")   = enoki.attr("Int64");
-    m.attr("UInt32")  = enoki.attr("UInt32");
-    m.attr("UInt64")  = enoki.attr("UInt64");
+    m.attr("Float32") = enoki.attr("Array1f");
+    m.attr("Float64") = enoki.attr("Array1f64");
+    m.attr("Mask")    = enoki.attr("Array1b");
+    m.attr("Int32")   = enoki.attr("Array1i");
+    m.attr("Int64")   = enoki.attr("Array1i64");
+    m.attr("UInt32")  = enoki.attr("Array1u");
+    m.attr("UInt64")  = enoki.attr("Array1u64");
 
-    m.attr("ScalarFloat32") = enoki_scalar.attr("Float32");
-    m.attr("ScalarFloat64") = enoki_scalar.attr("Float64");
-    m.attr("ScalarMask")    = enoki_scalar.attr("Mask");
-    m.attr("ScalarInt32")   = enoki_scalar.attr("Int32");
-    m.attr("ScalarInt64")   = enoki_scalar.attr("Int64");
-    m.attr("ScalarUInt32")  = enoki_scalar.attr("UInt32");
-    m.attr("ScalarUInt64")  = enoki_scalar.attr("UInt64");
+    m.attr("ScalarFloat32") = enoki_scalar.attr("Array1f");
+    m.attr("ScalarFloat64") = enoki_scalar.attr("Array1f64");
+    m.attr("ScalarMask")    = enoki_scalar.attr("Array1b");
+    m.attr("ScalarInt32")   = enoki_scalar.attr("Array1i");
+    m.attr("ScalarInt64")   = enoki_scalar.attr("Array1i64");
+    m.attr("ScalarUInt32")  = enoki_scalar.attr("Array1u");
+    m.attr("ScalarUInt64")  = enoki_scalar.attr("Array1u64");
 
     if constexpr (std::is_same_v<float, ScalarFloat>) {
-        m.attr("Float") = enoki.attr("Float32");
-        m.attr("ScalarFloat") = enoki_scalar.attr("Float32");
+        m.attr("Float") = enoki.attr("Array1f");
+        m.attr("ScalarFloat") = enoki_scalar.attr("Array1f");
     } else {
-        m.attr("Float") = enoki.attr("Float64");
-        m.attr("ScalarFloat") = enoki_scalar.attr("Float64");
+        m.attr("Float") = enoki.attr("Array1f64");
+        m.attr("ScalarFloat") = enoki_scalar.attr("Array1f64");
     }
 
     // Vector type aliases
     for (int dim = 0; dim < 4; ++dim) {
         for (int i = 0; i < 3; ++i) {
-            std::string name, mts_v_name, mts_p_name;
+            std::string ek_name = "Array" + std::to_string(dim) + "fiu"[i];
+            if constexpr (std::is_same_v<double, ScalarFloat>)
+                ek_name += "64";
 
-            if constexpr (std::is_same_v<float, ScalarFloat>)
-                name = "Vector" + std::to_string(dim) + "fiu"[i];
-            else
-                name = "Vector" + std::to_string(dim) + "diu"[i];
+            std::string mts_v_name = "Vector" + std::to_string(dim) + "fiu"[i];
+            std::string mts_p_name = "Point" + std::to_string(dim) + "fiu"[i];
 
-            mts_v_name = "Vector" + std::to_string(dim) + "fiu"[i];
-            mts_p_name = "Point" + std::to_string(dim) + "fiu"[i];
-
-            py::handle h = enoki.attr(name.c_str());
+            py::handle h = enoki.attr(ek_name.c_str());
             m.attr(mts_v_name.c_str()) = h;
             m.attr(mts_p_name.c_str()) = h;
 
-            h = enoki_scalar.attr(name.c_str());
+            h = enoki_scalar.attr(ek_name.c_str());
             m.attr(("Scalar" + mts_v_name).c_str()) = h;
             m.attr(("Scalar" + mts_p_name).c_str()) = h;
         }
@@ -118,19 +115,16 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     // Matrix type aliases
     for (int dim = 2; dim < 5; ++dim) {
-        std::string name, mts_d_name;
+        std::string ek_name = "Matrix" + std::to_string(dim) + "f";
+        if constexpr (std::is_same_v<double, ScalarFloat>)
+            ek_name += "64";
 
-        if constexpr (std::is_same_v<float, ScalarFloat>)
-            name = "Matrix" + std::to_string(dim) + "f";
-        else
-            name = "Matrix" + std::to_string(dim) + "d";
+        std::string mts_d_name = "Matrix" + std::to_string(dim) + "f";
 
-        mts_d_name = "Matrix" + std::to_string(dim) + "f";
-
-        py::handle h = enoki.attr(name.c_str());
+        py::handle h = enoki.attr(ek_name.c_str());
         m.attr(mts_d_name.c_str()) = h;
 
-        h = enoki_scalar.attr(name.c_str());
+        h = enoki_scalar.attr(ek_name.c_str());
         m.attr(("Scalar" + mts_d_name).c_str()) = h;
     }
 
