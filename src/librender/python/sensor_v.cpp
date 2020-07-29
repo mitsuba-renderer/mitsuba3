@@ -58,7 +58,7 @@ MTS_PY_EXPORT(Sensor) {
 
     py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
         .def(py::init<const Properties&>())
-        .def("sample_ray_differential", vectorize(&Sensor::sample_ray_differential),
+        .def("sample_ray_differential", &Sensor::sample_ray_differential,
             "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)

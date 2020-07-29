@@ -157,16 +157,15 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
 template <typename T> T ulpdiff(T ref, T val) {
     constexpr T eps = ek::Epsilon<T> / 2;
 
-    /* Express mantissa wrt. same exponent */
-    int e_ref, e_val;
-    T m_ref = ek::frexp(ref, &e_ref);
-    T m_val = ek::frexp(val, &e_val);
+    // Express mantissa wrt. same exponent
+    auto [m_ref, e_ref] = ek::frexp(ref);
+    auto [m_val, e_val] = ek::frexp(val);
 
     T diff;
     if (e_ref == e_val)
         diff = m_ref - m_val;
     else
-        diff = m_ref - ek::ldexp(m_val, e_val-e_ref);
+        diff = m_ref - ek::ldexp(m_val, e_val - e_ref);
 
     return ek::abs(diff) / eps;
 }

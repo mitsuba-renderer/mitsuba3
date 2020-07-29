@@ -8,7 +8,7 @@
 
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(filesystem);
-MTS_PY_DECLARE(quad);
+// MTS_PY_DECLARE(quad);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(Cast);
 MTS_PY_DECLARE(Struct);
@@ -90,17 +90,17 @@ PYBIND11_MODULE(core_ext, m) {
         "execution of Mitsuba code. Defaults to -1 (automatic).");
 
     py::module enoki_scalar = py::module::import("enoki.scalar");
-    pybind11_type_alias<Array<uint32_t, 2>, Vector<uint32_t, 2>>();
-    pybind11_type_alias<Array<uint32_t, 2>, Point<uint32_t, 2>>();
-    pybind11_type_alias<Array<int32_t, 2>, Vector<int32_t, 2>>();
-    pybind11_type_alias<Array<int32_t, 2>, Point<int32_t, 2>>();
-    pybind11_type_alias<Array<float, 3>, Vector<float, 3>>();
-    pybind11_type_alias<Array<float, 3>, Point<float, 3>>();
+    pybind11_type_alias<ek::Array<uint32_t, 2>, Vector<uint32_t, 2>>();
+    pybind11_type_alias<ek::Array<uint32_t, 2>, Point<uint32_t, 2>>();
+    pybind11_type_alias<ek::Array<int32_t, 2>, Vector<int32_t, 2>>();
+    pybind11_type_alias<ek::Array<int32_t, 2>, Point<int32_t, 2>>();
+    pybind11_type_alias<ek::Array<float, 3>, Vector<float, 3>>();
+    pybind11_type_alias<ek::Array<float, 3>, Point<float, 3>>();
 
     // Register python modules
     MTS_PY_IMPORT(atomic);
     MTS_PY_IMPORT(filesystem);
-    MTS_PY_IMPORT(quad);
+    // MTS_PY_IMPORT(quad); // TODO refactoring
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Cast);
     MTS_PY_IMPORT(Struct);

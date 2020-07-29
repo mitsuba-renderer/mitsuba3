@@ -1,4 +1,5 @@
 #include <mitsuba/core/appender.h>
+#include <mitsuba/core/logger.h>
 #include <mitsuba/python/python.h>
 
 // Trampoline for derived types implemented in Python

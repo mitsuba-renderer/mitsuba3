@@ -3,7 +3,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(BoundingSphere) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
 
     MTS_PY_CHECK_ALIAS(BoundingSphere3f, "BoundingSphere3f") {
         py::class_<BoundingSphere3f>(m, "BoundingSphere3f", D(BoundingSphere))

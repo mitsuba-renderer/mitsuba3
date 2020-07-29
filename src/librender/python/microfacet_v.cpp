@@ -26,25 +26,26 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
         .def_method(MicrofacetDistribution, is_anisotropic)
         .def_method(MicrofacetDistribution, is_isotropic)
         .def_method(MicrofacetDistribution, scale_alpha, "value"_a)
-        .def("eval", vectorize(&MicrofacetDistribution::eval), "m"_a,
+        .def("eval", &MicrofacetDistribution::eval, "m"_a,
             D(MicrofacetDistribution, eval))
-        .def("pdf", vectorize(&MicrofacetDistribution::pdf), "wi"_a, "m"_a,
+        .def("pdf", &MicrofacetDistribution::pdf, "wi"_a, "m"_a,
             D(MicrofacetDistribution, pdf))
-        .def("smith_g1", vectorize(&MicrofacetDistribution::smith_g1), "v"_a, "m"_a,
+        .def("smith_g1", &MicrofacetDistribution::smith_g1, "v"_a, "m"_a,
             D(MicrofacetDistribution, smith_g1))
-        .def("sample", vectorize(&MicrofacetDistribution::sample), "wi"_a, "sample"_a,
+        .def("sample", &MicrofacetDistribution::sample, "wi"_a, "sample"_a,
             D(MicrofacetDistribution, sample))
-        .def("G", vectorize(&MicrofacetDistribution::G), "wi"_a, "wo"_a, "m"_a,
+        .def("G", &MicrofacetDistribution::G, "wi"_a, "wo"_a, "m"_a,
             D(MicrofacetDistribution, G))
-        .def("sample_visible_11", vectorize(&MicrofacetDistribution::sample_visible_11),
+        .def("sample_visible_11", &MicrofacetDistribution::sample_visible_11,
             "cos_theta_i"_a, "sample"_a, D(MicrofacetDistribution, sample_visible_11))
         .def_repr(MicrofacetDistribution);
 
-    m.def("eval_reflectance",
-        [](MicrofacetType type, float alpha_u, float alpha_v,
-           const Vector<DynamicArray<Packet<float>>, 3> &wi_,
-           float eta) {
-            mitsuba::MicrofacetDistribution<Packet<float>, Spectrum> d(type, alpha_u, alpha_v);
-            return eval_reflectance(d, wi_, eta);
-        }, "type"_a, "alpha_u"_a, "alpha_v"_a, "wi"_a, "eta"_a);
+    // TODO refactoring
+    // m.def("eval_reflectance",
+    //     [](MicrofacetType type, float alpha_u, float alpha_v,
+    //        const Vector<DynamicArray<Packet<float>>, 3> &wi_,
+    //        float eta) {
+    //         mitsuba::MicrofacetDistribution<Packet<float>, Spectrum> d(type, alpha_u, alpha_v);
+    //         return eval_reflectance(d, wi_, eta);
+    //     }, "type"_a, "alpha_u"_a, "alpha_v"_a, "wi"_a, "eta"_a);
 }

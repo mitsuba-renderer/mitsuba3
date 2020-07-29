@@ -4,7 +4,6 @@
 
 MTS_PY_EXPORT(vector) {
     MTS_PY_IMPORT_TYPES()
-    m.def("coordinate_system",
-          vectorize(&coordinate_system<Vector<Float, 3>>),
-          "n"_a, D(coordinate_system));
+    m.def("coordinate_system", &coordinate_system<Vector<Float, 3>>, "n"_a,
+          D(coordinate_system));
 }

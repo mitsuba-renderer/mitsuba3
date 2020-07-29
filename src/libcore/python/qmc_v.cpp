@@ -11,10 +11,10 @@ MTS_PY_EXPORT(qmc) {
         .def("base", &RadicalInverse::base, D(RadicalInverse, base))
         .def("bases", &RadicalInverse::bases, D(RadicalInverse, bases))
         .def("scramble", &RadicalInverse::scramble, D(RadicalInverse, scramble))
-        .def("eval", vectorize(&RadicalInverse::eval<Float>), "base_index"_a, "index"_a,
+        .def("eval", &RadicalInverse::eval<Float>, "base_index"_a, "index"_a,
              D(RadicalInverse, eval))
-        .def("eval_scrambled", vectorize(&RadicalInverse::eval_scrambled<Float>), "base_index"_a,
-             "index"_a, D(RadicalInverse, eval_scrambled))
+        // .def("eval_scrambled", &RadicalInverse::eval_scrambled<Float>, "base_index"_a,
+            //  "index"_a, D(RadicalInverse, eval_scrambled)) // TODO refactoring
         .def("permutation",
              [](py::object self, uint32_t index) {
                  const RadicalInverse &s = py::cast<const RadicalInverse &>(self);
@@ -24,9 +24,9 @@ MTS_PY_EXPORT(qmc) {
         .def("inverse_permutation", &RadicalInverse::inverse_permutation,
              D(RadicalInverse, inverse_permutation));
 
-    m.def("radical_inverse_2", vectorize(radical_inverse_2<UInt32>),
+    m.def("radical_inverse_2", radical_inverse_2<UInt32>,
           "index"_a, "scramble"_a, D(radical_inverse_2));
 
-    m.def("sobol_2", vectorize(sobol_2<UInt32>),
+    m.def("sobol_2", sobol_2<UInt32>,
           "index"_a, "scramble"_a, D(sobol_2));
 }

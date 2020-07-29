@@ -10,26 +10,26 @@ MTS_PY_EXPORT(Texture) {
         .def("is_spatially_varying", &Texture::is_spatially_varying,
              D(Texture, is_spatially_varying))
         .def("eval",
-            vectorize(&Texture::eval),
+            &Texture::eval,
             "si"_a, "active"_a = true, D(Texture, eval))
         .def("eval_1",
-            vectorize(&Texture::eval_1),
+            &Texture::eval_1,
             "si"_a, "active"_a = true, D(Texture, eval_1))
         .def("eval_1_grad",
-            vectorize(&Texture::eval_1_grad),
+            &Texture::eval_1_grad,
             "si"_a, "active"_a = true, D(Texture, eval_1_grad))
         .def("eval_3",
-            vectorize(&Texture::eval_3),
+            &Texture::eval_3,
             "si"_a, "active"_a = true, D(Texture, eval_3))
         .def("sample_spectrum",
-            vectorize(&Texture::sample_spectrum),
+            &Texture::sample_spectrum,
             "si"_a, "sample"_a, "active"_a = true, D(Texture, sample_spectrum))
         .def("pdf_spectrum", &Texture::pdf_spectrum,
             "si"_a, "active"_a = true, D(Texture, pdf_spectrum))
         .def("sample_position",
-            vectorize(&Texture::sample_position),
+            &Texture::sample_position,
             "sample"_a, "active"_a = true, D(Texture, sample_position))
         .def("pdf_position",
-            vectorize(&Texture::pdf_position),
+            &Texture::pdf_position,
             "p"_a, "active"_a = true, D(Texture, pdf_position));
 }

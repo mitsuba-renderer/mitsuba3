@@ -4,7 +4,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(BSDFSample) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
 
     m.def("has_flag", [](UInt32 flags, BSDFFlags f) { return has_flag(flags, f); });
 
@@ -63,13 +63,13 @@ MTS_PY_EXPORT(BSDF) {
 
     auto bsdf = py::class_<BSDF, PyBSDF, Object, ref<BSDF>>(m, "BSDF", D(BSDF))
         .def(py::init<const Properties&>(), "props"_a)
-        .def("sample", vectorize(&BSDF::sample),
+        .def("sample", &BSDF::sample,
             "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
-        .def("eval", vectorize(&BSDF::eval),
+        .def("eval", &BSDF::eval,
             "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
-        .def("pdf", vectorize(&BSDF::pdf),
+        .def("pdf", &BSDF::pdf,
             "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
-        .def("eval_null_transmission", vectorize(&BSDF::eval_null_transmission),
+        .def("eval_null_transmission", &BSDF::eval_null_transmission,
             "si"_a, "active"_a = true, D(BSDF, eval_null_transmission))
         .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
             "active"_a = true, D(BSDF, flags))
@@ -91,31 +91,29 @@ MTS_PY_EXPORT(BSDF) {
     if constexpr (ek::is_array_v<Float>) {
         bsdf.def_static(
             "sample_vec",
-            vectorize([](const BSDFPtr &ptr, const BSDFContext &ctx,
+            [](const BSDFPtr &ptr, const BSDFContext &ctx,
                                 const SurfaceInteraction3f &si, Float s1, const Point2f &s2,
-                                Mask active) { return ptr->sample(ctx, si, s1, s2, active); }),
+                                Mask active) { return ptr->sample(ctx, si, s1, s2, active); },
             "ptr"_a, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true,
             D(BSDF, sample));
         bsdf.def_static(
             "eval_vec",
-            vectorize([](const BSDFPtr &ptr, const BSDFContext &ctx,
+            [](const BSDFPtr &ptr, const BSDFContext &ctx,
                                 const SurfaceInteraction3f &si, const Vector3f &wo,
-                                Mask active) { return ptr->eval(ctx, si, wo, active); }),
+                                Mask active) { return ptr->eval(ctx, si, wo, active); },
             "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
             D(BSDF, eval));
         bsdf.def_static(
             "pdf_vec",
-            vectorize([](const BSDFPtr &ptr, const BSDFContext &ctx,
+            [](const BSDFPtr &ptr, const BSDFContext &ctx,
                                 const SurfaceInteraction3f &si, const Vector3f &wo,
-                                Mask active) { return ptr->pdf(ctx, si, wo, active); }),
+                                Mask active) { return ptr->pdf(ctx, si, wo, active); },
             "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
             D(BSDF, pdf));
         bsdf.def_static(
             "flags_vec",
-            vectorize([](const BSDFPtr &ptr, Mask active) {
-                return ptr->flags(active); }),
-            "ptr"_a, "active"_a = true,
-            D(BSDF, flags));
+            [](const BSDFPtr &ptr, Mask active) { return ptr->flags(active); },
+            "ptr"_a, "active"_a = true, D(BSDF, flags));
     }
 
     MTS_PY_REGISTER_OBJECT("register_bsdf", BSDF)

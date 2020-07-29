@@ -13,21 +13,21 @@ MTS_PY_EXPORT(Shape) {
     MTS_PY_IMPORT_TYPES(Shape, Mesh)
 
     MTS_PY_CLASS(Shape, Object)
-        .def("sample_position", vectorize(&Shape::sample_position),
+        .def("sample_position", &Shape::sample_position,
             "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
-        .def("pdf_position", vectorize(&Shape::pdf_position),
+        .def("pdf_position", &Shape::pdf_position,
             "ps"_a, "active"_a = true, D(Shape, pdf_position))
-        .def("sample_direction", vectorize(&Shape::sample_direction),
+        .def("sample_direction", &Shape::sample_direction,
             "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
-        .def("pdf_direction", vectorize(&Shape::pdf_direction),
+        .def("pdf_direction", &Shape::pdf_direction,
             "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
-        .def("ray_intersect_preliminary", vectorize(&Shape::ray_intersect_preliminary),
+        .def("ray_intersect_preliminary", &Shape::ray_intersect_preliminary,
              "ray"_a, "active"_a = true,
              D(Shape, ray_intersect_preliminary))
-        .def("ray_intersect", vectorize(&Shape::ray_intersect),
+        .def("ray_intersect", &Shape::ray_intersect,
              "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true,
              D(Shape, ray_intersect))
-        .def("ray_test", vectorize(&Shape::ray_test), "ray"_a, "active"_a = true)
+        .def("ray_test", &Shape::ray_test, "ray"_a, "active"_a = true)
         .def("compute_surface_interaction", &Shape::compute_surface_interaction,
                 "ray"_a, "pi"_a, "flags"_a = HitComputeFlags::All, "active"_a = true)
         .def("bbox", py::overload_cast<>(
@@ -44,7 +44,7 @@ MTS_PY_EXPORT(Shape) {
         .def_method(Shape, exterior_medium)
         .def_method(Shape, is_emitter)
         .def_method(Shape, is_sensor)
-        .def("emitter", vectorize(py::overload_cast<Mask>(&Shape::emitter, py::const_)),
+        .def("emitter", py::overload_cast<Mask>(&Shape::emitter, py::const_),
                 "active"_a = true)
         .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
         .def("bsdf", py::overload_cast<>(&Shape::bsdf, py::const_))
@@ -85,9 +85,9 @@ MTS_PY_EXPORT(Shape) {
              D(Mesh, attribute_buffer), py::return_value_policy::reference_internal)
         .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
              D(Mesh, add_attribute), py::return_value_policy::reference_internal)
-        .def("ray_intersect_triangle", vectorize(&Mesh::ray_intersect_triangle),
+        .def("ray_intersect_triangle", &Mesh::ray_intersect_triangle,
              "index"_a, "ray"_a, "active"_a = true,
              D(Mesh, ray_intersect_triangle))
-        .def("eval_parameterization", vectorize(&Mesh::eval_parameterization),
+        .def("eval_parameterization", &Mesh::eval_parameterization,
              "uv"_a, "active"_a = true, D(Mesh, eval_parameterization));
 }

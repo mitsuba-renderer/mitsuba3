@@ -178,7 +178,7 @@ MTS_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
 /// Sample a point on a 2D standard normal distribution. Internally uses the Box-Muller transformation
 template <typename Value>
 MTS_INLINE Point<Value, 2> square_to_std_normal(const Point<Value, 2> &sample) {
-    Value r   = ek::sqrt(-2.f * log(1.f - sample.x())),
+    Value r   = ek::sqrt(-2.f * ek::log(1.f - sample.x())),
           phi = 2.f * ek::Pi<Value> * sample.y();
 
     auto [s, c] = ek::sincos(phi);
@@ -494,7 +494,7 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
     // Approach 1: warping method based on standard disk mapping
     auto [s, c] = ek::sincos(ek::TwoPi<Value> * sample.x());
 
-    Value tan_theta_m_sqr = -ek::sqr(alpha) * log(1.f - sample.y());
+    Value tan_theta_m_sqr = -ek::sqr(alpha) * ek::log(1.f - sample.y());
     Value cos_theta_m = ek::rsqrt(1 + tan_theta_m_sqr),
           sin_theta_m = circ(cos_theta_m);
 
@@ -504,7 +504,7 @@ MTS_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
     Point<Value, 2> p = square_to_uniform_disk_concentric(sample);
     Value r2 = ek::squared_norm(p);
 
-    Value tan_theta_m_sqr = -ek::sqr(alpha) * log(1.f - r2);
+    Value tan_theta_m_sqr = -ek::sqr(alpha) * ek::log(1.f - r2);
     Value cos_theta_m = ek::rsqrt(1.f + tan_theta_m_sqr);
     p *= ek::safe_sqrt(ek::fnmadd(cos_theta_m, cos_theta_m, 1.f) / r2);
 
@@ -551,13 +551,13 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
     #if 0
         /* Approach 1.1: standard inversion method algorithm for sampling the
            von Mises Fisher distribution (numerically unstable!) */
-        Value cos_theta = log(ek::exp(-kappa) + 2.f *
+        Value cos_theta = ek::log(ek::exp(-kappa) + 2.f *
                               sample.y() * ek::sinh(kappa)) / kappa;
 #else
         /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
            distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
         Value sy = ek::max(1.f - sample.y(), 1e-6f);
-        Value cos_theta = 1.f + log(sy + (1.f - sy)
+        Value cos_theta = 1.f + ek::log(sy + (1.f - sy)
             * ek::exp(-2.f * kappa)) / kappa;
     #endif
 
@@ -570,7 +570,7 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
 
     Value r2 = ek::squared_norm(p),
           sy = ek::max(1.f - r2, 1e-6f),
-          cos_theta = 1.f + log(sy + (1.f - sy) * ek::exp(-2.f * kappa)) / kappa;
+          cos_theta = 1.f + ek::log(sy + (1.f - sy) * ek::exp(-2.f * kappa)) / kappa;
 
     p *= ek::safe_sqrt((1.f - ek::sqr(cos_theta)) / r2);
 
@@ -663,8 +663,8 @@ namespace detail {
     template <typename Value>
     Value log_i0(Value x) {
         return ek::select(x > 12.f,
-                      x + 0.5f * (log(ek::rcp(ek::TwoPi<Value> * x)) + ek::rcp(8.f * x)),
-                      log(i0(x)));
+                      x + 0.5f * (ek::log(ek::rcp(ek::TwoPi<Value> * x)) + ek::rcp(8.f * x)),
+                      ek::log(i0(x)));
     }
 }
 
@@ -689,7 +689,7 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
           s = sin_theta_i * sin_theta_o * kappa;
 
     if (kappa > 10.f)
-        return ek::exp(-c + detail::log_i0(s) - kappa + 0.6931f + log(.5f * kappa)) * ek::InvTwoPi<Value>;
+        return ek::exp(-c + detail::log_i0(s) - kappa + 0.6931f + ek::log(.5f * kappa)) * ek::InvTwoPi<Value>;
     else
         return ek::exp(-c) * detail::i0(s) * kappa / (2.f * ek::sinh(kappa)) * ek::InvTwoPi<Value>;
 }

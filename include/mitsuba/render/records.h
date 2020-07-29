@@ -88,6 +88,12 @@ struct PositionSample {
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
           delta(false), object(ek::reinterpret_array<ObjectPtr>(si.shape)) { }
 
+    /// Basic field constructor
+    PositionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
+                   Float time, Float pdf, Mask delta, ObjectPtr object)
+        : p(p), n(n), uv(uv), time(time), pdf(pdf), delta(delta),
+          object(object) {}
+
     //! @}
     // =============================================================
 

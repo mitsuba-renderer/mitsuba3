@@ -22,7 +22,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     interaction_v.cpp
     integrator_v.cpp
     medium_v.cpp
-    mueller_v.cpp
+    # mueller_v.cpp // TODO refactoring
     microfacet_v.cpp
     phase_v.cpp
     records_v.cpp
@@ -32,7 +32,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     shape_v.cpp
     srgb_v.cpp
     texture_v.cpp
-    # volume_v.cpp
+    # texture3d_v.cpp
   )
 
   target_compile_definitions(${TARGET_NAME}-obj PRIVATE

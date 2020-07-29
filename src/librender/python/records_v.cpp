@@ -6,7 +6,7 @@
 template<typename Class, typename PyClass>
 void bind_set_object(PyClass &cl) {
     using Float = typename Class::Float;
-    using UInt64  =  uint64_array_t<Float>;
+    using UInt64  =  ek::uint64_array_t<Float>;
     using ObjectPtr = ek::replace_scalar_t<Float, const Object *>;
 
     if constexpr (ek::is_array_v<Float>)
@@ -14,7 +14,7 @@ void bind_set_object(PyClass &cl) {
 }
 
 MTS_PY_EXPORT(PositionSample) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC(ObjectPtr)
+    MTS_PY_IMPORT_TYPES(ObjectPtr)
     auto pos = py::class_<PositionSample3f>(m, "PositionSample3f", D(PositionSample))
         .def(py::init<>(), "Construct an unitialized position sample")
         .def(py::init<const PositionSample3f &>(), "Copy constructor", "other"_a)
@@ -31,11 +31,12 @@ MTS_PY_EXPORT(PositionSample) {
 
     bind_set_object<PositionSample3f>(pos);
 
-    bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
+    // TODO refactoring
+    // bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
 }
 
 MTS_PY_EXPORT(DirectionSample) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC(ObjectPtr)
+    MTS_PY_IMPORT_TYPES(ObjectPtr)
     auto pos = py::class_<DirectionSample3f, PositionSample3f>(m, "DirectionSample3f", D(DirectionSample))
         .def(py::init<>(), "Construct an unitialized direct sample")
         .def(py::init<const PositionSample3f &>(), "Construct from a position sample", "other"_a)
@@ -51,5 +52,7 @@ MTS_PY_EXPORT(DirectionSample) {
         .def_readwrite("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_repr(DirectionSample3f);
-    bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
+
+    // TODO refactoring
+    // bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
 }

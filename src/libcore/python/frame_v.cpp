@@ -2,7 +2,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Frame) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
     MTS_PY_CHECK_ALIAS(Frame3f, "Frame3f") {
         auto f = py::class_<Frame3f>(m, "Frame3f", D(Frame))
             .def(py::init<>(), D(Frame, Frame))
@@ -30,6 +30,8 @@ MTS_PY_EXPORT(Frame) {
             .def_field(Frame3f, t)
             .def_field(Frame3f, n)
             .def_repr(Frame3f);
-        bind_slicing_operators<Frame3f, ScalarFrame3f>(f);
+
+        // TODO refactoring
+        // bind_slicing_operators<Frame3f, ScalarFrame3f>(f);
     }
 }

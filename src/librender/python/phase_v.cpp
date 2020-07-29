@@ -51,9 +51,9 @@ MTS_PY_EXPORT(PhaseFunction) {
     auto phase = py::class_<PhaseFunction, PyPhaseFunction, Object, ref<PhaseFunction>>(
                         m, "PhaseFunction", D(PhaseFunction))
                         .def(py::init<const Properties &>())
-                        .def("sample", vectorize(&PhaseFunction::sample), "ctx"_a, "mi"_a,
+                        .def("sample", &PhaseFunction::sample, "ctx"_a, "mi"_a,
                             "sample1"_a, "active"_a = true, D(PhaseFunction, sample))
-                        .def("eval", vectorize(&PhaseFunction::eval), "ctx"_a, "mi"_a, "wo"_a,
+                        .def("eval", &PhaseFunction::eval, "ctx"_a, "mi"_a, "wo"_a,
                             "active"_a = true, D(PhaseFunction, eval))
                         .def_method(PhaseFunction, id)
                         .def("__repr__", &PhaseFunction::to_string);
@@ -65,21 +65,24 @@ MTS_PY_EXPORT(PhaseFunction) {
     if constexpr (ek::is_array_v<Float>) {
         phase.def_static(
             "sample_vec",
-            vectorize([](const PhaseFunctionPtr &ptr, const PhaseFunctionContext &ctx,
-                         const MediumInteraction3f &mi, const Point2f &s,
-                         Mask active) { return ptr->sample(ctx, mi, s, active); }),
-            "ptr"_a, "ctx"_a, "mi"_a, "sample"_a, "active"_a = true, D(PhaseFunction, sample));
+            [](const PhaseFunctionPtr &ptr, const PhaseFunctionContext &ctx,
+               const MediumInteraction3f &mi, const Point2f &s,
+               Mask active) { return ptr->sample(ctx, mi, s, active); },
+            "ptr"_a, "ctx"_a, "mi"_a, "sample"_a, "active"_a = true,
+            D(PhaseFunction, sample));
         phase.def_static(
             "eval_vec",
-            vectorize([](const PhaseFunctionPtr &ptr, const PhaseFunctionContext &ctx,
-                         const MediumInteraction3f &mi, const Vector3f &wo,
-                         Mask active) { return ptr->eval(ctx, mi, wo, active); }),
-            "ptr"_a, "ctx"_a, "mi"_a, "wo"_a, "active"_a = true, D(PhaseFunction, eval));
+            [](const PhaseFunctionPtr &ptr, const PhaseFunctionContext &ctx,
+               const MediumInteraction3f &mi, const Vector3f &wo,
+               Mask active) { return ptr->eval(ctx, mi, wo, active); },
+            "ptr"_a, "ctx"_a, "mi"_a, "wo"_a, "active"_a = true,
+            D(PhaseFunction, eval));
         phase.def_static(
             "projected_area_vec",
-            vectorize([](const PhaseFunctionPtr &ptr, const MediumInteraction3f &mi,
-                         Mask active) { return ptr->projected_area(mi, active); }),
-            "ptr"_a, "mi"_a, "active"_a = true, D(PhaseFunction, projected_area));
+            [](const PhaseFunctionPtr &ptr, const MediumInteraction3f &mi,
+               Mask active) { return ptr->projected_area(mi, active); },
+            "ptr"_a, "mi"_a, "active"_a = true,
+            D(PhaseFunction, projected_area));
     }
     MTS_PY_REGISTER_OBJECT("register_phasefunction", PhaseFunction)
 }

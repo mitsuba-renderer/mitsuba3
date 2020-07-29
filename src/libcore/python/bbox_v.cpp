@@ -78,7 +78,7 @@ template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char 
 }
 
 MTS_PY_EXPORT(BoundingBox) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
 
     bind_bbox<BoundingBox2f, Ray3f>(m, "BoundingBox2f");
     bind_bbox<BoundingBox3f, Ray3f>(m, "BoundingBox3f");

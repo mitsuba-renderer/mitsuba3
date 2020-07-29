@@ -1,4 +1,5 @@
 #include <mitsuba/core/vector.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_DECLARE(Object);
@@ -17,7 +18,7 @@ MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(sample_tea);
-MTS_PY_DECLARE(spline);
+// MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(Transform);
 MTS_PY_DECLARE(AnimatedTransform);
@@ -34,7 +35,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.core";
 
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
 
     // Create sub-modules
     py::module math   = create_submodule(m, "math"),
@@ -52,20 +53,20 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     const char *enoki_pkg = nullptr;
     if constexpr (ek::is_cuda_array_v<Float> &&
                   ek::is_diff_array_v<Float>)
-        enoki_pkg = "enoki.cuda_autodiff";
+        enoki_pkg = "enoki.cuda.ad";
     else if constexpr (ek::is_cuda_array_v<Float>)
         enoki_pkg = "enoki.cuda";
-    else if constexpr (ek::is_array_v<Float>)
-        enoki_pkg = "enoki.dynamic";
     else
         enoki_pkg = "enoki.scalar";
+
+    // TODO refactoring: handle all the other cases
 
     py::module enoki        = py::module::import(enoki_pkg);
     py::module enoki_scalar = py::module::import("enoki.scalar");
 
     // Ensure that 'enoki.dynamic' is loaded in CPU mode (needed for DynamicArray<> casts)
-    if constexpr (!ek::is_cuda_array_v<Float>)
-        py::module::import("enoki.dynamic");
+    // if constexpr (!ek::is_cuda_array_v<Float>)
+        // py::module::import("enoki.dynamic");
 
     // Basic type aliases in the Enoki module (scalar + vectorized)
     m.attr("Float32") = enoki.attr("Float32");
@@ -158,70 +159,70 @@ PYBIND11_MODULE(MODULE_NAME, m) {
        identical. The following lines set up these equivalencies.
      */
 
-    pybind11_type_alias<Array<Float, 1>,  Vector1f>();
-    pybind11_type_alias<Array<Float, 1>,  Point1f>();
-    pybind11_type_alias<Array<Float, 1>,  Color1f>();
-    pybind11_type_alias<Array<Float, 0>,  Color<Float, 0>>();
+    pybind11_type_alias<ek::Array<Float, 1>,  Vector1f>();
+    pybind11_type_alias<ek::Array<Float, 1>,  Point1f>();
+    pybind11_type_alias<ek::Array<Float, 1>,  Color1f>();
+    pybind11_type_alias<ek::Array<Float, 0>,  Color<Float, 0>>();
 
-    pybind11_type_alias<Array<Float, 2>,  Vector2f>();
-    pybind11_type_alias<Array<Float, 2>,  Point2f>();
-    pybind11_type_alias<Array<Int32, 2>,  Vector2i>();
-    pybind11_type_alias<Array<Int32, 2>,  Point2i>();
-    pybind11_type_alias<Array<UInt32, 2>, Vector2u>();
-    pybind11_type_alias<Array<UInt32, 2>, Point2u>();
+    pybind11_type_alias<ek::Array<Float, 2>,  Vector2f>();
+    pybind11_type_alias<ek::Array<Float, 2>,  Point2f>();
+    pybind11_type_alias<ek::Array<Int32, 2>,  Vector2i>();
+    pybind11_type_alias<ek::Array<Int32, 2>,  Point2i>();
+    pybind11_type_alias<ek::Array<UInt32, 2>, Vector2u>();
+    pybind11_type_alias<ek::Array<UInt32, 2>, Point2u>();
 
-    pybind11_type_alias<Array<Float, 3>,  Vector3f>();
-    pybind11_type_alias<Array<Float, 3>,  Color3f>();
-    pybind11_type_alias<Array<Float, 3>,  Point3f>();
-    pybind11_type_alias<Array<Float, 3>,  Normal3f>();
-    pybind11_type_alias<Array<Int32, 3>,  Vector3i>();
-    pybind11_type_alias<Array<Int32, 3>,  Point3i>();
-    pybind11_type_alias<Array<UInt32, 3>, Vector3u>();
-    pybind11_type_alias<Array<UInt32, 3>, Point3u>();
+    pybind11_type_alias<ek::Array<Float, 3>,  Vector3f>();
+    pybind11_type_alias<ek::Array<Float, 3>,  Color3f>();
+    pybind11_type_alias<ek::Array<Float, 3>,  Point3f>();
+    pybind11_type_alias<ek::Array<Float, 3>,  Normal3f>();
+    pybind11_type_alias<ek::Array<Int32, 3>,  Vector3i>();
+    pybind11_type_alias<ek::Array<Int32, 3>,  Point3i>();
+    pybind11_type_alias<ek::Array<UInt32, 3>, Vector3u>();
+    pybind11_type_alias<ek::Array<UInt32, 3>, Point3u>();
 
-    pybind11_type_alias<Array<Float, 4>,  Vector4f>();
-    pybind11_type_alias<Array<Float, 4>,  Point4f>();
-    pybind11_type_alias<Array<Int32, 4>,  Vector4i>();
-    pybind11_type_alias<Array<Int32, 4>,  Point4i>();
-    pybind11_type_alias<Array<UInt32, 4>, Vector4u>();
-    pybind11_type_alias<Array<UInt32, 4>, Point4u>();
+    pybind11_type_alias<ek::Array<Float, 4>,  Vector4f>();
+    pybind11_type_alias<ek::Array<Float, 4>,  Point4f>();
+    pybind11_type_alias<ek::Array<Int32, 4>,  Vector4i>();
+    pybind11_type_alias<ek::Array<Int32, 4>,  Point4i>();
+    pybind11_type_alias<ek::Array<UInt32, 4>, Vector4u>();
+    pybind11_type_alias<ek::Array<UInt32, 4>, Point4u>();
 
     if constexpr (ek::is_array_v<Float>) {
-        pybind11_type_alias<Array<ScalarFloat, 1>,  ScalarVector1f>();
-        pybind11_type_alias<Array<ScalarFloat, 1>,  ScalarPoint1f>();
-        pybind11_type_alias<Array<ScalarFloat, 1>,  ScalarColor1f>();
-        pybind11_type_alias<Array<ScalarFloat, 0>,  Color<ScalarFloat, 0>>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 1>,  ScalarVector1f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 1>,  ScalarPoint1f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 1>,  ScalarColor1f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 0>,  Color<ScalarFloat, 0>>();
 
-        pybind11_type_alias<Array<ScalarFloat, 2>,  ScalarVector2f>();
-        pybind11_type_alias<Array<ScalarFloat, 2>,  ScalarPoint2f>();
-        pybind11_type_alias<Array<ScalarInt32, 2>,  ScalarVector2i>();
-        pybind11_type_alias<Array<ScalarInt32, 2>,  ScalarPoint2i>();
-        pybind11_type_alias<Array<ScalarUInt32, 2>, ScalarVector2u>();
-        pybind11_type_alias<Array<ScalarUInt32, 2>, ScalarPoint2u>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 2>,  ScalarVector2f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 2>,  ScalarPoint2f>();
+        pybind11_type_alias<ek::Array<ScalarInt32, 2>,  ScalarVector2i>();
+        pybind11_type_alias<ek::Array<ScalarInt32, 2>,  ScalarPoint2i>();
+        pybind11_type_alias<ek::Array<ScalarUInt32, 2>, ScalarVector2u>();
+        pybind11_type_alias<ek::Array<ScalarUInt32, 2>, ScalarPoint2u>();
 
-        pybind11_type_alias<Array<ScalarFloat, 3>,  ScalarVector3f>();
-        pybind11_type_alias<Array<ScalarFloat, 3>,  ScalarColor3f>();
-        pybind11_type_alias<Array<ScalarFloat, 3>,  ScalarPoint3f>();
-        pybind11_type_alias<Array<ScalarFloat, 3>,  ScalarNormal3f>();
-        pybind11_type_alias<Array<ScalarInt32, 3>,  ScalarVector3i>();
-        pybind11_type_alias<Array<ScalarInt32, 3>,  ScalarPoint3i>();
-        pybind11_type_alias<Array<ScalarUInt32, 3>, ScalarVector3u>();
-        pybind11_type_alias<Array<ScalarUInt32, 3>, ScalarPoint3u>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarVector3f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarColor3f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarPoint3f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarNormal3f>();
+        pybind11_type_alias<ek::Array<ScalarInt32, 3>,  ScalarVector3i>();
+        pybind11_type_alias<ek::Array<ScalarInt32, 3>,  ScalarPoint3i>();
+        pybind11_type_alias<ek::Array<ScalarUInt32, 3>, ScalarVector3u>();
+        pybind11_type_alias<ek::Array<ScalarUInt32, 3>, ScalarPoint3u>();
 
-        pybind11_type_alias<Array<ScalarFloat, 4>,  ScalarVector4f>();
-        pybind11_type_alias<Array<ScalarFloat, 4>,  ScalarPoint4f>();
-        pybind11_type_alias<Array<ScalarInt32, 4>,  ScalarVector4i>();
-        pybind11_type_alias<Array<ScalarInt32, 4>,  ScalarPoint4i>();
-        pybind11_type_alias<Array<ScalarUInt32, 4>, ScalarVector4u>();
-        pybind11_type_alias<Array<ScalarUInt32, 4>, ScalarPoint4u>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 4>,  ScalarVector4f>();
+        pybind11_type_alias<ek::Array<ScalarFloat, 4>,  ScalarPoint4f>();
+        pybind11_type_alias<ek::Array<ScalarInt32, 4>,  ScalarVector4i>();
+        pybind11_type_alias<ek::Array<ScalarInt32, 4>,  ScalarPoint4i>();
+        pybind11_type_alias<ek::Array<ScalarUInt32, 4>, ScalarVector4u>();
+        pybind11_type_alias<ek::Array<ScalarUInt32, 4>, ScalarPoint4u>();
     }
 
     if constexpr (is_spectral_v<UnpolarizedSpectrum>)
-        pybind11_type_alias<Array<Float, UnpolarizedSpectrum::Size>,
+        pybind11_type_alias<ek::Array<Float, UnpolarizedSpectrum::Size>,
                             UnpolarizedSpectrum>();
 
     if constexpr (is_polarized_v<Spectrum>)
-        pybind11_type_alias<ek::Matrix<Array<Float, UnpolarizedSpectrum::Size>, 4>,
+        pybind11_type_alias<ek::Matrix<ek::Array<Float, UnpolarizedSpectrum::Size>, 4>,
                             Spectrum>();
 
     if constexpr (ek::is_array_v<Float>)
@@ -230,7 +231,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
     m.attr("Spectrum") = get_type_handle<Spectrum>();
 
-    m.attr("float_dtype") = is_float_v<ScalarFloat> ? "f" : "d";
+    m.attr("float_dtype") = std::is_same_v<ScalarFloat, float> ? "f" : "d";
 
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
     m.attr("is_rgb") = is_rgb_v<Spectrum>;
@@ -262,7 +263,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Properties);
     MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(sample_tea);
-    MTS_PY_IMPORT_SUBMODULE(spline);
+    // MTS_PY_IMPORT_SUBMODULE(spline); // TODO refactoring
     MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(Transform);
     MTS_PY_IMPORT(AnimatedTransform);

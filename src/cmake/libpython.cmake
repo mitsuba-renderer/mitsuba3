@@ -94,31 +94,38 @@ if (MTS_ENABLE_GUI)
 endif()
 
 # Copy enoki python library to 'dist' folder
-set(ENOKI_LIBS core scalar dynamic)
-if (MTS_ENABLE_OPTIX)
-  set(ENOKI_LIBS ${ENOKI_LIBS} cuda cuda-autodiff)
+add_dist(python/enoki/enoki-python)
+if (APPLE)
+    set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "@loader_path/../..")
+elseif(UNIX)
+    set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
 endif()
+set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
-foreach(SUFFIX IN ITEMS ${ENOKI_LIBS})
-  add_dist(python/enoki/enoki-python-${SUFFIX})
-  if (APPLE)
-    set_target_properties(enoki-python-${SUFFIX} PROPERTIES INSTALL_RPATH "@loader_path/../..")
-  elseif(UNIX)
-    set_target_properties(enoki-python-${SUFFIX} PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
-  endif()
-  set_target_properties(enoki-python-${SUFFIX} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
-endforeach()
-
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/dist/python/enoki/__init__.py
-  COMMAND ${CMAKE_COMMAND} -E copy
-  ${PROJECT_SOURCE_DIR}/ext/enoki/resources/__init__.py
-  ${CMAKE_BINARY_DIR}/dist/python/enoki/__init__.py
+set(ENOKI_PYTHON_FILES
+   __init__.py
+   const.py
+   detail.py
+   generic.py
+   matrix.py
+   router.py
+   traits.py
 )
+
+set(ENOKI_PYTHON_OUTPUT "")
+foreach(file ${ENOKI_PYTHON_FILES})
+    add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/dist/python/enoki/${file}
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${PROJECT_SOURCE_DIR}/ext/enoki/enoki/${file}
+        ${CMAKE_BINARY_DIR}/dist/python/enoki/${file}
+    )
+    set(ENOKI_PYTHON_OUTPUT ${ENOKI_PYTHON_OUTPUT} ${CMAKE_BINARY_DIR}/dist/python/enoki/${file})
+endforeach(file)
 
 add_custom_target(
   mitsuba-enoki-python-init
-  ALL DEPENDS ${CMAKE_BINARY_DIR}/dist/python/enoki/__init__.py
+  ALL DEPENDS ${ENOKI_PYTHON_OUTPUT}
 )
 
 # docstring generation support

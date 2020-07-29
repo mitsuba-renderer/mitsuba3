@@ -440,7 +440,7 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search(
+        Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_cdf, index, active) < value;
@@ -478,7 +478,7 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search(
+        Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_cdf, index, active) < value;
@@ -657,7 +657,7 @@ public:
 
         active &= x >= m_range.x() && x <= m_range.y();
 
-        Index index = ek::binary_search(
+        Index index = ek::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_nodes, index, active) < x;
@@ -687,7 +687,7 @@ public:
     Float eval_cdf(Float x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
-        Index index = ek::binary_search(
+        Index index = ek::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_nodes, index, active) < x;
@@ -731,7 +731,7 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search(
+        Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_cdf, index, active) < value;
@@ -772,7 +772,7 @@ public:
 
         value *= m_integral;
 
-        Index index = ek::binary_search(
+        Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
                 return ek::gather<Float>(m_cdf, index, active) < value;

@@ -413,7 +413,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
     Value out_of_bounds_value =
         ek::select(in_bounds_high, Value(min), Value(max));
 
-    if (unlikely(ek::ek::none(in_bounds)))
+    if (unlikely(ek::none(in_bounds)))
         return out_of_bounds_value;
 
     /* Map y to a spline interval by searching through the
@@ -502,7 +502,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
     Value out_of_bounds_value =
         ek::select(in_bounds_high, Value(nodes[0]), Value(nodes[size - 1]));
 
-    if (unlikely(ek::ek::none(in_bounds)))
+    if (unlikely(ek::none(in_bounds)))
         return out_of_bounds_value;
 
     Value result;
@@ -995,7 +995,7 @@ Value eval_2d(const Float *nodes1, uint32_t size1, const Float *nodes2,
         eval_spline_weights<Extrapolate>(nodes2, size2, y, weights[1]);
 
     /* Compute interpolation weights separately for each dimension */
-    if (unlikely(ek::ek::none(valid_x && valid_y)))
+    if (unlikely(ek::none(valid_x && valid_y)))
         return ek::zero<Value>();
 
     Index index = offset[1] * size1 + offset[0];

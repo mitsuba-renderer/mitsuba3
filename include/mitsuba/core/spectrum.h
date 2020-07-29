@@ -288,7 +288,7 @@ std::pair<Value, Value> sample_rgb_spectrum(const Value &sample) {
  */
 template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
-        Value tmp = sech(0.0072f * (wavelengths - 538.f));
+        Value tmp = ek::sech(0.0072f * (wavelengths - 538.f));
         return ek::select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
                       0.003939804229326285f * tmp * tmp, ek::zero<Value>());
     } else {

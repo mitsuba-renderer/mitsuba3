@@ -38,27 +38,27 @@ MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
         .def("ray_intersect_preliminary",
-             vectorize(&Scene::ray_intersect_preliminary),
+             &Scene::ray_intersect_preliminary,
              "ray"_a, "active"_a = true, D(Scene, ray_intersect_preliminary))
         .def("ray_intersect",
-             vectorize(py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, py::const_)),
+             py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, py::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_intersect",
-             vectorize(py::overload_cast<const Ray3f &, HitComputeFlags, Mask>(&Scene::ray_intersect, py::const_)),
+             py::overload_cast<const Ray3f &, HitComputeFlags, Mask>(&Scene::ray_intersect, py::const_),
              "ray"_a, "flags"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_test",
-            vectorize(&Scene::ray_test),
+            &Scene::ray_test,
             "ray"_a, "active"_a = true)
 #if !defined(MTS_ENABLE_EMBREE)
         .def("ray_intersect_naive",
-            vectorize(&Scene::ray_intersect_naive),
+            &Scene::ray_intersect_naive,
             "ray"_a, "active"_a = true)
 #endif
         .def("sample_emitter_direction",
-            vectorize(&Scene::sample_emitter_direction),
+            &Scene::sample_emitter_direction,
             "ref"_a, "sample"_a, "test_visibility"_a = true, "mask"_a = true)
         .def("pdf_emitter_direction",
-            vectorize(&Scene::pdf_emitter_direction),
+            &Scene::pdf_emitter_direction,
             "ref"_a, "ds"_a, "active"_a = true)
         // Accessors
         .def_method(Scene, bbox)

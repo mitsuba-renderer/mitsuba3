@@ -76,7 +76,7 @@ public:
         Float factor = Float(1.f),
               recip(base.recip);
 
-        auto active = ek::neq(index, 0);
+        auto active = ek::neq(index, 0u);
 
         while (ek::any(active)) {
             auto active_f = ek::reinterpret_array<ek::mask_t<Float>>(active);
@@ -84,7 +84,7 @@ public:
             ek::masked(factor, active_f) = factor * recip;
             ek::masked(value, active) = (value - next) * divisor + index;
             index = next;
-            active = ek::neq(index, 0);
+            active = ek::neq(index, 0u);
         }
 
         return ek::min(ek::OneMinusEpsilon<Float>, Float(value) * factor);

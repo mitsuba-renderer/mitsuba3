@@ -100,7 +100,7 @@ template <typename Float, typename Spectrum>
 ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &instances) {
 
     MTS_IMPORT_CORE_TYPES()
-    using ScalarArray3f = Array<ScalarFloat, 3>;
+    using ScalarArray3f = ek::Array<ScalarFloat, 3>;
 
     std::string type = get_type(dict);
     bool is_scene = (type == "scene");

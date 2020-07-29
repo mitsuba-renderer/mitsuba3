@@ -7,7 +7,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Interaction) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
     auto inter = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction))
         // Members
         .def_field(Interaction3f, t,           D(Interaction, t))
@@ -20,7 +20,8 @@ MTS_PY_EXPORT(Interaction) {
         .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def_repr(Interaction3f);
-    bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
+    // TODO refactoring
+    // bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
 }
 
 
@@ -93,7 +94,7 @@ void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
 }
 
 MTS_PY_EXPORT(SurfaceInteraction) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
     auto inter =
         py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f",
                                                         D(SurfaceInteraction))
@@ -203,7 +204,7 @@ void bind_slicing_operator_mediuminteraction(PyClass &cl) {
 }
 
 MTS_PY_EXPORT(MediumInteraction) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
     auto inter =
         py::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
                                                         D(MediumInteraction))
@@ -235,7 +236,7 @@ void bind_method_preliminaryintersection(PyClass &pi) {
 }
 
 MTS_PY_EXPORT(PreliminaryIntersection) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
 
     m.def("has_flag", [](HitComputeFlags f0, HitComputeFlags f1) { return has_flag(f0, f1); });
 

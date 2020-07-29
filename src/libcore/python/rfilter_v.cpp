@@ -8,10 +8,10 @@ MTS_PY_EXPORT(rfilter) {
         .def_method(ReconstructionFilter, border_size)
         .def_method(ReconstructionFilter, radius)
         .def("eval",
-            vectorize(&ReconstructionFilter::eval),
+            &ReconstructionFilter::eval,
             D(ReconstructionFilter, eval), "x"_a, "active"_a = true)
         .def("eval_discretized",
-            vectorize(&ReconstructionFilter::eval_discretized),
+            &ReconstructionFilter::eval_discretized,
             D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
         ;
 }

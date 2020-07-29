@@ -194,7 +194,7 @@ if (MTS_ENABLE_GUI)
     set(NANOGUI_EXTRA_DEFS ${NANOGUI_EXTRA_DEFS} PARENT_SCOPE)
 
     if (MTS_ENABLE_PYTHON)
-    set_target_properties(nanogui-python nanogui-python-obj PROPERTIES FOLDER "dependencies")
+        set_target_properties(nanogui-python nanogui-python-obj PROPERTIES FOLDER "dependencies")
     endif()
 endif()
 

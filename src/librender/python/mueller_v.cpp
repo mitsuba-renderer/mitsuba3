@@ -44,9 +44,9 @@ MTS_PY_EXPORT(mueller) {
     m.def("reverse", &mueller::reverse<UnpolarizedSpectrum>,
           "M"_a, D(mueller, reverse));
 
-    m.def("specular_reflection", &mueller::specular_reflection<Float, Complex<Float>>,
+    m.def("specular_reflection", &mueller::specular_reflection<Float, ek::Complex<Float>>,
           "cos_theta_i"_a, "eta"_a, D(mueller, specular_reflection));
-    m.def("specular_reflection", &mueller::specular_reflection<UnpolarizedSpectrum, Complex<UnpolarizedSpectrum>>,
+    m.def("specular_reflection", &mueller::specular_reflection<UnpolarizedSpectrum, ek::Complex<UnpolarizedSpectrum>>,
           "cos_theta_i"_a, "eta"_a, D(mueller, specular_reflection));
 
     m.def("specular_transmission", &mueller::specular_transmission<Float>,
@@ -80,6 +80,6 @@ MTS_PY_EXPORT(mueller) {
           "M"_a, "forward"_a, "basis_current"_a, "basis_target"_a,
           D(mueller, rotate_mueller_basis_collinear));
 
-    m.def("unit_angle", [](const Vector3f &a, const Vector3f &b) { return unit_angle(a, b); },
+    m.def("unit_angle", [](const Vector3f &a, const Vector3f &b) { return ek::unit_angle(a, b); },
           "a"_a, "b"_a);
 }

@@ -1,6 +1,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
+#include <enoki/dynamic.h>
 
 #define GET_ATTR(T)                                                                                \
     if (strcmp(type.name(), typeid(T).name()) == 0)                                                \
@@ -13,7 +14,7 @@
     }
 
 MTS_PY_EXPORT(Object) {
-    MTS_PY_IMPORT_TYPES_DYNAMIC()
+    MTS_PY_IMPORT_TYPES()
 
     m.def("get_property", [](const void *ptr, void *type_, py::handle parent) -> py::object {
         const std::type_info &type = *(const std::type_info *) type_;
