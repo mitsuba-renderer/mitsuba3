@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.dynamic import Float32 as Float
+from enoki.scalar import ArrayXf as Float
 
 
 def test01_fresnel(variant_scalar_rgb):

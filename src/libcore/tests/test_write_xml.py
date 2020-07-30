@@ -307,8 +307,10 @@ def test09_xml_decompose_transform(variant_scalar_rgb):
     ]
     tr1 = s1.sensors()[0].world_transform().eval(0)
     tr2 = s2.sensors()[0].world_transform().eval(0)
+
     for vec in vects:
-        assert tr1.transform_point(vec) == tr2.transform_point(vec)
+        assert ek.allclose(tr1.transform_point(vec), tr2.transform_point(vec))
+
     rmtree(os.path.split(filepath)[0])
 
 @fresolver_append_path

@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.dynamic import Float32 as Float
+from enoki.scalar import ArrayXf as Float
 import numpy as np
 
 

@@ -1,4 +1,5 @@
 #include <mitsuba/core/quad.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(quad)
@@ -9,9 +10,8 @@ std::pair<FloatX, FloatX> gauss_legendre(int n) {
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
 
-    FloatX nodes, weights;
-    set_slices(nodes, n);
-    set_slices(weights, n);
+    FloatX nodes   = ek::empty<FloatX>(n);
+    FloatX weights = ek::empty<FloatX>(n);
 
     n--;
 
@@ -68,9 +68,8 @@ std::pair<FloatX, FloatX> gauss_lobatto(int n) {
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
 
-    FloatX nodes, weights;
-    set_slices(nodes, n);
-    set_slices(weights, n);
+    FloatX nodes   = ek::empty<FloatX>(n);
+    FloatX weights = ek::empty<FloatX>(n);
 
     n--;
     nodes[0] = -1;
@@ -124,9 +123,8 @@ std::pair<FloatX, FloatX> composite_simpson(int n) {
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
 
-    FloatX nodes, weights;
-    set_slices(nodes, n);
-    set_slices(weights, n);
+    FloatX nodes   = ek::empty<FloatX>(n);
+    FloatX weights = ek::empty<FloatX>(n);
 
     n = (n - 1) / 2;
 
@@ -152,9 +150,8 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
 
-    FloatX nodes, weights;
-    set_slices(nodes, n);
-    set_slices(weights, n);
+    FloatX nodes   = ek::empty<FloatX>(n);
+    FloatX weights = ek::empty<FloatX>(n);
 
     n = (n - 1) / 3;
 
@@ -176,18 +173,12 @@ std::pair<FloatX, FloatX> composite_simpson_38(int n) {
     return { nodes, weights };
 }
 
-// using Float32X = DynamicArray<Packet<float>>;
-// using Float64X = DynamicArray<Packet<double>>;
+using Float32X = ek::DynamicArray<float>;
 
-// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_legendre<Float32X>(int n);
-// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_lobatto<Float32X>(int n);
-// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson<Float32X>(int n);
-// template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson_38<Float32X>(int n);
-
-// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_legendre<Float64X>(int n);
-// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> gauss_lobatto<Float64X>(int n);
-// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson<Float64X>(int n);
-// template MTS_EXPORT_CORE std::pair<Float64X, Float64X> composite_simpson_38<Float64X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_legendre<Float32X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> gauss_lobatto<Float32X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson<Float32X>(int n);
+template MTS_EXPORT_CORE std::pair<Float32X, Float32X> composite_simpson_38<Float32X>(int n);
 
 NAMESPACE_END(quad)
 NAMESPACE_END(mitsuba)

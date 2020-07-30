@@ -1,7 +1,7 @@
 import numpy as np
 
 import enoki as ek
-from enoki.dynamic import Float32 as Float
+from enoki.scalar import ArrayXf as Float
 import pytest
 import mitsuba
 
@@ -20,7 +20,7 @@ def check_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)) , resolut
     try:
         mitsuba.set_variant('packet_rgb')
     except:
-        pytest.skip("packet_rgb mode not enabled")
+        return
 
     func_vec     = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str))
     pdf_func_vec = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str + "_pdf"))
@@ -46,7 +46,7 @@ def check_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)) , resolut
 def check_inverse(func, inverse):
     for x in ek.linspace(Float, 1e-6, 1-1e-6, 10):
         for y in ek.linspace(Float, 1e-6, 1-1e-6, 10):
-            p1 = np.array([x, y])
+            p1 = ek.scalar.Array2f(x, y)
             p2 = func(p1)
             p3 = inverse(p2)
             assert(ek.allclose(p1, p3, atol=1e-5))

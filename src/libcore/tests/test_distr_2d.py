@@ -95,6 +95,7 @@ all_warps = [w + str(i) for w in
 @pytest.mark.parametrize("normalize", [True, False])
 @pytest.mark.parametrize("warp", all_warps)
 def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
+    from mitsuba.core import Vector2f
     # Check that forward + inverse give the identity. Test for
     # all supported variants of N-dimensional warps (N = 0..3)
 
@@ -113,7 +114,7 @@ def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
         instance = cls(values, param_res, normalize=normalize)
 
         for j in range(10):
-            p_i = np.random.rand(2)
+            p_i = Vector2f(np.random.rand(2))
             p_o, pdf = instance.sample(p_i)
             assert ek.allclose(pdf, instance.eval(p_o), atol=1e-4)
             p_i_2, pdf2 = instance.invert(p_o)
@@ -177,12 +178,12 @@ def test05_discrete_distribution_2d(variant_scalar_rgb):
     d = DiscreteDistribution2D(np.array([[1, 2, 3], [0, 1, 3]],
                                         dtype=np.float32))
 
-    def ac(a, b):
+    def allclose(a, b):
         return ek.allclose(a, b, atol=1e-6)
 
-    assert ac(d.sample([0, 0]), ([0, 0], .1, [0, 0]))
-    assert ac(d.sample([1.0 / 6.0 - 1e-7, 0]), ([0, 0], .1, [1, 0]))
-    assert ac(d.sample([1.0 / 6.0 + 1e-7, 0]), ([1, 0], .2, [0, 0]))
-    assert ac(d.sample([1, 0]), ([2, 0], .3, [1, 0]))
-    assert ac(d.sample([0, 6 / 10 - 1e-7]), ([0, 0], .1, [0, 1]))
-    assert ac(d.sample([0, 6 / 10 + 1e-7]), ([1, 1], .1, [0, 0]))
+    assert allclose(d.sample([0, 0]), ([0, 0], .1, [0, 0]))
+    assert allclose(d.sample([1.0 / 6.0 - 1e-7, 0]), ([0, 0], .1, [1, 0]))
+    assert allclose(d.sample([1.0 / 6.0 + 1e-7, 0]), ([1, 0], .2, [0, 0]))
+    assert allclose(d.sample([1, 0]), ([2, 0], .3, [1, 0]))
+    assert allclose(d.sample([0, 6 / 10 - 1e-7]), ([0, 0], .1, [0, 1]))
+    assert allclose(d.sample([0, 6 / 10 + 1e-7]), ([1, 1], .1, [0, 0]))

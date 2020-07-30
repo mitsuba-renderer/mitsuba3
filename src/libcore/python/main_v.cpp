@@ -64,26 +64,28 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     py::module enoki        = py::module::import(enoki_pkg);
     py::module enoki_scalar = py::module::import("enoki.scalar");
 
-    // Ensure that 'enoki.dynamic' is loaded in CPU mode (needed for DynamicArray<> casts)
-    // if constexpr (!ek::is_cuda_array_v<Float>)
-        // py::module::import("enoki.dynamic");
-
     // Basic type aliases in the Enoki module (scalar + vectorized)
-    m.attr("Float32") = enoki.attr("Array1f");
-    m.attr("Float64") = enoki.attr("Array1f64");
-    m.attr("Mask")    = enoki.attr("Array1b");
-    m.attr("Int32")   = enoki.attr("Array1i");
-    m.attr("Int64")   = enoki.attr("Array1i64");
-    m.attr("UInt32")  = enoki.attr("Array1u");
-    m.attr("UInt64")  = enoki.attr("Array1u64");
+    m.attr("Float32") = enoki.attr("Float32");
+    m.attr("Float64") = enoki.attr("Float64");
+    m.attr("Mask")    = enoki.attr("Mask");
+    m.attr("Int32")   = enoki.attr("Int32");
+    m.attr("Int64")   = enoki.attr("Int64");
+    m.attr("UInt32")  = enoki.attr("UInt32");
+    m.attr("UInt64")  = enoki.attr("UInt64");
+    m.attr("Float")   = enoki.attr("Float");
+    m.attr("Int")     = enoki.attr("Int");
+    m.attr("UInt")    = enoki.attr("UInt");
 
-    m.attr("ScalarFloat32") = enoki_scalar.attr("Array1f");
-    m.attr("ScalarFloat64") = enoki_scalar.attr("Array1f64");
-    m.attr("ScalarMask")    = enoki_scalar.attr("Array1b");
-    m.attr("ScalarInt32")   = enoki_scalar.attr("Array1i");
-    m.attr("ScalarInt64")   = enoki_scalar.attr("Array1i64");
-    m.attr("ScalarUInt32")  = enoki_scalar.attr("Array1u");
-    m.attr("ScalarUInt64")  = enoki_scalar.attr("Array1u64");
+    m.attr("ScalarFloat32") = enoki_scalar.attr("Float32");
+    m.attr("ScalarFloat64") = enoki_scalar.attr("Float64");
+    m.attr("ScalarMask")    = enoki_scalar.attr("Mask");
+    m.attr("ScalarInt32")   = enoki_scalar.attr("Int32");
+    m.attr("ScalarInt64")   = enoki_scalar.attr("Int64");
+    m.attr("ScalarUInt32")  = enoki_scalar.attr("UInt32");
+    m.attr("ScalarUInt64")  = enoki_scalar.attr("UInt64");
+    m.attr("ScalarFloat")   = enoki_scalar.attr("Float");
+    m.attr("ScalarInt")     = enoki_scalar.attr("Int");
+    m.attr("ScalarUInt")    = enoki_scalar.attr("UInt");
 
     if constexpr (std::is_same_v<float, ScalarFloat>) {
         m.attr("Float") = enoki.attr("Array1f");

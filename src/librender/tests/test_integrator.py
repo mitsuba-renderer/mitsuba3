@@ -4,7 +4,7 @@ import mitsuba
 import pytest
 import enoki as ek
 import numpy as np
-from enoki.dynamic import Float32 as Float
+from enoki.scalar import ArrayXf as Float
 
 from mitsuba.python.test.scenes import SCENES
 

@@ -29,8 +29,8 @@ def test01_construction(variant_scalar_rgb):
 def test02_unit_frame(variant_scalar_rgb):
     from mitsuba.core import Frame3f, Vector2f, Vector3f
 
-    for theta in [30 * mitsuba.core.math.Pi / 180, 95 * mitsuba.core.math.Pi / 180]:
-        phi = 73 * mitsuba.core.math.Pi / 180
+    for theta in [30 * ek.Pi / 180, 95 * ek.Pi / 180]:
+        phi = 73 * ek.Pi / 180
         sin_theta, cos_theta = ek.sin(theta), ek.cos(theta)
         sin_phi, cos_phi = ek.sin(phi), ek.cos(phi)
 

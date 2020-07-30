@@ -54,11 +54,8 @@ def check_conversion(conv, src_fmt, dst_fmt, data_in,
     print(binascii.hexlify(converted).decode('utf8'))
     dst_data = struct.unpack(dst_fmt, converted)
     ref = data_out if data_out is not None else data_in
-    print(ref)
-    print(dst_data)
     for i in range(len(dst_data)):
         abs_err = float(dst_data[i]) - float(ref[i])
-        print(abs_err)
         assert np.abs(abs_err / (ref[i] + 1e-6)) < err_thresh
 
 
@@ -121,7 +118,7 @@ def test03_convert(param):
     values = list(range(10))
     if Struct.is_signed(p1[1]) and Struct.is_signed(p2[1]):
         values += list(range(-10, 0))
-    max_range = int(ek::min(Struct.range(p1[1])[1], Struct.range(p2[1])[1]))
+    max_range = int(min(Struct.range(p1[1])[1], Struct.range(p2[1])[1]))
     if max_range > 1024:
         values += list(range(1000, 1024))
 
