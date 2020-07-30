@@ -152,7 +152,7 @@ def test04_sample_specific_component(variant_scalar_rgb):
 def test05_spot_check(variant_scalar_rgb):
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
 
-    angle = 80 * ek.pi / 180
+    angle = 80 * ek.Pi / 180
     ctx = BSDFContext()
     si = SurfaceInteraction3f()
     wi = [ek.sin(angle), 0, ek.cos(angle)]
@@ -164,7 +164,7 @@ def test05_spot_check(variant_scalar_rgb):
     assert ek.allclose(bs.wo, [-ek.sin(angle), 0, ek.cos(angle)])
 
     bs, spec = bsdf.sample(ctx, si, 1, [0, 0])
-    angle = 41.03641052520335 * ek.pi / 180
+    angle = 41.03641052520335 * ek.Pi / 180
     assert ek.allclose(bs.pdf, 1 - 0.387704354691473)
     assert ek.allclose(bs.wo, [-ek.sin(angle), 0, -ek.cos(angle)])
 

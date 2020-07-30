@@ -49,7 +49,7 @@ def test_construct(variant_scalar_rgb):
     [([2.0, 5.0, 8.3], 2.0), ([0.0, 0.0, 0.0], 1.0), ([1.0, 4.0, 0.0], 5.0)]
 )
 def test_sampling(variant_scalar_rgb, center, radius):
-    """We construct an irradiance meter attached to a sphere and assert that 
+    """We construct an irradiance meter attached to a sphere and assert that
     sampled rays originate at the sphere's surface
     """
     from mitsuba.core import ScalarVector3f
@@ -120,7 +120,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
             intersection.emitter(scene).eval(intersection)
     power_density_avg = power_density_cum / float(num_samples)
 
-    assert ek.allclose(power_density_avg, Spectrum(ek.pi * radiance))
+    assert ek.allclose(power_density_avg, Spectrum(ek.Pi * radiance))
 
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
@@ -155,4 +155,4 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
                                         Struct.Type.Float32, srgb_gamma=False)
     image_np = np.array(img)
 
-    ek.allclose(image_np, (radiance * ek.pi))
+    assert ek.allclose(image_np, (radiance * ek.Pi))

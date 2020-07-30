@@ -16,7 +16,7 @@ def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.
         "aperture_radius": aperture,
         "fov": fov,
         "fov_axis": fov_axis,
-        "shutter_open": s_open, 
+        "shutter_open": s_open,
         "shutter_close": s_close,
         "to_world": ScalarTransform4f.look_at(
             origin=o,
@@ -198,7 +198,7 @@ def test04_fov_axis(variant_packet_spectral, origin, direction, fov):
         # aperture position at the center
         ray, _ = camera.sample_ray(0, 0, sample, [0.5, 0.5])
         assert ek.allclose(ek.acos(ek.dot(ray.d, direction))
-                           * 180 / ek.pi, fov / 2)
+                           * 180 / ek.Pi, fov / 2)
 
     # In the configuration, aspect==1.5, so 'larger' should give the 'x'-axis
     for fov_axis in ['x', 'larger']:

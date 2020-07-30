@@ -14,9 +14,9 @@ def test02_rotator(variant_scalar_rgb):
 
     # Start with horizontally linear polarized light [1,1,0,0] and ..
     # .. rotate the Stokes frame by +45˚
-    assert ek.allclose(rotator( 45 * ek.pi/180) @ [1, 1, 0, 0], [1, 0, -1, 0], atol=1e-5)
+    assert ek.allclose(rotator( 45 * ek.Pi/180) @ [1, 1, 0, 0], [1, 0, -1, 0], atol=1e-5)
     # .. rotate the Stokes frame by -45˚
-    assert ek.allclose(rotator(-45 * ek.pi/180) @ [1, 1, 0, 0], [1, 0, +1, 0], atol=1e-5)
+    assert ek.allclose(rotator(-45 * ek.Pi/180) @ [1, 1, 0, 0], [1, 0, +1, 0], atol=1e-5)
 
 
 
@@ -24,7 +24,7 @@ def test03_linear_polarizer(variant_scalar_rgb):
     from mitsuba.render.mueller import rotated_element, linear_polarizer
 
     # Malus' law
-    angle = 30 * ek.pi/180
+    angle = 30 * ek.Pi/180
     value_malus = ek.cos(angle)**2
     polarizer = rotated_element(angle, linear_polarizer(1.0))
 
@@ -39,7 +39,7 @@ def test04_linear_polarizer_rotated(variant_scalar_rgb):
     # The closed-form expression for a rotated linear polarizer is available
     # in many textbooks and should match the behavior of manually rotating the
     # optical element.
-    angle = 33 * ek.pi/180
+    angle = 33 * ek.Pi/180
     s, c = ek.sin(2*angle), ek.cos(2*angle)
     M_ref = ek.scalar.Matrix4f([[1, c, s, 0],
                                 [c, c*c, s*c, 0],
@@ -166,7 +166,7 @@ def test08_rotate_mueller_basis(variant_scalar_rgb):
         return Transform4f.rotate(axis, angle).transform_vector(v)
 
     # As reference, rotate the element directly by -45˚
-    M_rotated_element = rotated_element(-45 * ek.pi/180, M)
+    M_rotated_element = rotated_element(-45 * ek.Pi/180, M)
 
     # Now rotate the two reference bases by 45˚ instead and make sure results are
     # equivalent.

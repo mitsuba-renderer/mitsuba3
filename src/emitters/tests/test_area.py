@@ -99,7 +99,7 @@ def test03_sample_ray(variant_packet_spectral, spectrum_key):
     # Sample a position on the shape
     ps = shape.sample_position(time, pos_sample)
 
-    assert ek.allclose(res, spec * shape.surface_area() * ek.pi)
+    assert ek.allclose(res, spec * shape.surface_area() * ek.Pi)
     assert ek.allclose(ray.time, time)
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(ray.o, ps.p)

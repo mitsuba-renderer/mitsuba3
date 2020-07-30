@@ -92,7 +92,7 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
 
     n0 = Vector3f(0.0, 0.0, -1.0)
     n1 = Vector3f(0.0, 1.0, 0.0)
-    angle_0 = ek.pi / 2.0
+    angle_0 = ek.Pi / 2.0
     angle_1 = ek.acos(3.0 / 5.0)
     n2 = n0 * angle_0 + n1 * angle_1
     n2 /= ek.norm(n2)
@@ -524,7 +524,7 @@ def test15_differentiable_surface_interaction_params_forward(variant_gpu_autodif
     apply_transformation(lambda v : Transform4f.rotate([0, 0, 1], v.x))
     si = pi.compute_surface_interaction(ray)
     ek.forward(diff_vector.x)
-    du = 0.5 * ek.sin(2 * ek.pi / 360.0)
+    du = 0.5 * ek.sin(2 * ek.Pi / 360.0)
     assert ek.allclose(ek.gradient(si.uv), [-du, du], atol=1e-6)
 
 

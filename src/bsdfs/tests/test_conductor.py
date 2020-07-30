@@ -37,7 +37,7 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
                               <spectrum name="k" value="{}"/>
                           </bsdf>""".format(eta.real, eta.imag))
 
-    theta_i = 45 * ek.pi/180
+    theta_i = 45 * ek.Pi/180
     wi = Vector3f([-ek.sin(theta_i), 0, ek.cos(theta_i)])
 
     ctx = BSDFContext()

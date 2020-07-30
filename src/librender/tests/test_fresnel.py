@@ -17,23 +17,23 @@ def test01_fresnel(variant_scalar_rgb):
 
     # Spot check at 45 deg (1 -> 1.5)
     # Source: http://hyperphysics.phy-astr.gsu.edu/hbase/phyopt/freseq.html
-    F, cos_theta_t, _, scale = fresnel(ek.cos(45 * ek.pi / 180), 1.5)
-    cos_theta_t_ref = -ek.cos(28.1255057020557 * ek.pi / 180)
+    F, cos_theta_t, _, scale = fresnel(ek.cos(45 * ek.Pi / 180), 1.5)
+    cos_theta_t_ref = -ek.cos(28.1255057020557 * ek.Pi / 180)
     F_ref = 0.5 * (0.09201336304552442**2 + 0.3033370452904235**2)
-    L = (scale * ek.sqrt(1 - ek.cos(45 * ek.pi / 180)**2))**2 + cos_theta_t**2
+    L = (scale * ek.sqrt(1 - ek.cos(45 * ek.Pi / 180)**2))**2 + cos_theta_t**2
     assert ek.allclose(L, 1)
     assert ek.allclose(cos_theta_t, cos_theta_t_ref)
     assert ek.allclose(F, F_ref)
 
     # 1.5 -> 1
-    F, cos_theta_t, _, _ = fresnel(ek.cos(45 * ek.pi / 180), 1 / 1.5)
+    F, cos_theta_t, _, _ = fresnel(ek.cos(45 * ek.Pi / 180), 1 / 1.5)
     assert ek.allclose(F, 1)
     assert ek.allclose(cos_theta_t, 0)
 
-    F, cos_theta_t, _, scale = fresnel(ek.cos(10 * ek.pi / 180), 1 / 1.5)
-    cos_theta_t_ref = -ek.cos(15.098086605159006 * ek.pi / 180)
+    F, cos_theta_t, _, scale = fresnel(ek.cos(10 * ek.Pi / 180), 1 / 1.5)
+    cos_theta_t_ref = -ek.cos(15.098086605159006 * ek.Pi / 180)
     F_ref = 0.5 * (0.19046797197779405**2 + 0.20949431963852014**2)
-    L = (scale * ek.sqrt(1 - ek.cos(10 * ek.pi / 180)**2))**2 + cos_theta_t**2
+    L = (scale * ek.sqrt(1 - ek.cos(10 * ek.Pi / 180)**2))**2 + cos_theta_t**2
     assert ek.allclose(L, 1)
     assert ek.allclose(cos_theta_t, cos_theta_t_ref)
     assert ek.allclose(F, F_ref)
@@ -43,7 +43,7 @@ def test02_fresnel_polarized(variant_scalar_rgb):
     from mitsuba.render import fresnel_polarized
 
     # Brewster's angle
-    angle = ek.cos(56.3099 * ek.pi / 180)
+    angle = ek.cos(56.3099 * ek.Pi / 180)
 
     a_s, a_p, cos_theta_t, _, scale = fresnel_polarized(angle, 1.5)
 
@@ -64,7 +64,7 @@ def test03_fresnel_conductor(variant_packet_rgb):
     from mitsuba.render import fresnel, fresnel_conductor
 
     # The conductive and diel. variants should agree given a real-valued IOR
-    cos_theta_i = ek.cos(ek.linspace(Float, 0, ek.pi / 2, 20))
+    cos_theta_i = ek.cos(ek.linspace(Float, 0, ek.Pi / 2, 20))
 
     r, cos_theta_t, _, scale = fresnel(cos_theta_i, 1.5)
     r_2 = fresnel_conductor(cos_theta_i, 1.5)
@@ -79,7 +79,7 @@ def test04_snell(variant_packet_rgb):
     from mitsuba.render import fresnel
 
     # Snell's law
-    theta_i = ek.linspace(Float, 0, ek.pi / 2, 20)
+    theta_i = ek.linspace(Float, 0, ek.Pi / 2, 20)
     F, cos_theta_t, _, _ = fresnel(ek.cos(theta_i), 1.5)
     theta_t = ek.acos(cos_theta_t)
 
@@ -117,12 +117,12 @@ def test06_phase_tir(variant_scalar_rgb):
     a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(crit), eta)
 
     assert ek.allclose(ek.arg(a_s), 0.0)
-    assert ek.allclose(ek.arg(a_p), ek.pi) or ek.allclose(ek.arg(a_p), -ek.pi)
+    assert ek.allclose(ek.arg(a_p), ek.Pi) or ek.allclose(ek.arg(a_p), -ek.Pi)
 
     # Check phase shift at grazing angle (total internal reflection case)
     a_s, a_p, _, _, _ = fresnel_polarized(0.0, eta)
 
-    assert ek.allclose(ek.arg(a_s), ek.pi) or ek.allclose(ek.arg(a_s), -ek.pi)
+    assert ek.allclose(ek.arg(a_s), ek.Pi) or ek.allclose(ek.arg(a_s), -ek.Pi)
     assert ek.allclose(ek.arg(a_p), 0.0)
 
     # Location of minimum phase difference

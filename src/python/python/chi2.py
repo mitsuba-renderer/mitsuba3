@@ -411,7 +411,7 @@ class SphericalDomain:
 
     def bounds(self):
         from mitsuba.core import ScalarBoundingBox2f
-        return ScalarBoundingBox2f([-ek.pi, -1], [ek.pi, 1])
+        return ScalarBoundingBox2f([-ek.Pi, -1], [ek.Pi, 1])
 
     def aspect(self):
         return 2
@@ -539,7 +539,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     def instantiate(args):
         wi = [0, 0, 1]
         if len(args) == 1:
-            angle = args[0] * ek.pi / 180
+            angle = args[0] * ek.Pi / 180
             wi = [ek.sin(angle), 0, ek.cos(angle)]
         return MicrofacetDistribution(md_type, alpha, sample_visible), wi
 

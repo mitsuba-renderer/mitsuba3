@@ -26,13 +26,13 @@ bsdf = load_string("""<bsdf version='2.0.0' type='roughconductor'>
 si = SurfaceInteraction3f()
 
 # Specify an incident direction with 45 degrees elevation
-si.wi = sph_dir(ek.pi * 45 / 180, 0.0)
+si.wi = sph_dir(ek.Pi * 45 / 180, 0.0)
 
 # Create grid in spherical coordinates and map it onto the sphere
 res = 300
 theta_o, phi_o = ek.meshgrid(
-    ek.linspace(Float, 0,     ek.pi,     res),
-    ek.linspace(Float, 0, 2 * ek.pi, 2 * res)
+    ek.linspace(Float, 0,     ek.Pi,     res),
+    ek.linspace(Float, 0, 2 * ek.Pi, 2 * res)
 )
 wo = sph_dir(theta_o, phi_o)
 

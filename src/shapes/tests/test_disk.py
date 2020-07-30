@@ -10,7 +10,7 @@ def test01_create(variant_scalar_rgb):
     s = xml.load_dict({"type" : "disk"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert ek.allclose(s.surface_area(), ek.pi)
+    assert ek.allclose(s.surface_area(), ek.Pi)
 
 
 def test02_bbox(variant_scalar_rgb):
@@ -26,7 +26,7 @@ def test02_bbox(variant_scalar_rgb):
             })
             b = s.bbox()
 
-            assert ek.allclose(s.surface_area(), sx * sy * ek.pi)
+            assert ek.allclose(s.surface_area(), sx * sy * ek.Pi)
 
             assert b.valid()
             assert ek.allclose(b.center(), translate)
@@ -128,7 +128,7 @@ def test04_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_r
     # If the ray origin is shifted tangent to the disk, si.uv.y moves by 1 / (2pi)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.y)
-    assert ek.allclose(ek.gradient(si.uv), [0, 0.5 / ek.pi], atol=1e-5)
+    assert ek.allclose(ek.gradient(si.uv), [0, 0.5 / ek.Pi], atol=1e-5)
 
     # If the ray origin is shifted tangent to the disk, si.dp_dv will also have a component is x
     si = shape.ray_intersect(ray)

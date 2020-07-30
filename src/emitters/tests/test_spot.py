@@ -48,7 +48,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     from mitsuba.core import sample_shifted, Transform4f
     from mitsuba.render import SurfaceInteraction3f
 
-    cutoff_angle_rad = cutoff_angle / 180 * ek.pi
+    cutoff_angle_rad = cutoff_angle / 180 * ek.Pi
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
     emitter, spectrum = create_emitter_and_spectrum(lookat, cutoff_angle, spectrum_key)
@@ -103,7 +103,7 @@ def test_sample_ray(variant_packet_spectral, spectrum_key, wavelength_sample, po
     from mitsuba.core import warp, sample_shifted, Transform4f
     from mitsuba.render import SurfaceInteraction3f
 
-    cutoff_angle_rad = cutoff_angle / 180 * ek.pi
+    cutoff_angle_rad = cutoff_angle / 180 * ek.Pi
     cos_cutoff_angle_rad = ek.cos(cutoff_angle_rad)
     beam_width_rad = cutoff_angle_rad * 0.75
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)

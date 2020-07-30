@@ -10,7 +10,7 @@ def test01_create(variant_scalar_rgb):
     s = xml.load_dict({"type" : "cylinder"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert ek.allclose(s.surface_area(), 2*ek.pi)
+    assert ek.allclose(s.surface_area(), 2*ek.Pi)
 
     # Test transforms order in constructor
 
@@ -43,7 +43,7 @@ def test02_bbox(variant_scalar_rgb):
             })
             b = s.bbox()
 
-            assert ek.allclose(s.surface_area(), 2*ek.pi*r*l)
+            assert ek.allclose(s.surface_area(), 2*ek.Pi*r*l)
             assert b.valid()
             assert ek.allclose(b.min, -Vector3f([r, r, 0.0]))
             assert ek.allclose(b.max,  Vector3f([r, r, l]))
@@ -133,7 +133,7 @@ def test04_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_r
     # If the ray origin is shifted tangent to the cylinder section, si.uv.x move by 1 / 2pi
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.uv), [1 / (2 * ek.pi), 0])
+    assert ek.allclose(ek.gradient(si.uv), [1 / (2 * ek.Pi), 0])
 
     # If the ray origin is shifted along the cylinder length, si.uv.y move by 1
     si = pi.compute_surface_interaction(ray)

@@ -52,7 +52,7 @@ def test01_point_sample_ray(variant_packet_spectral, spectrum_key):
     it = SurfaceInteraction3f.zero(3)
     wav, spec = spectrum.sample(it, sample_shifted(wavelength_sample))
 
-    assert ek.allclose(res, spec * 4 * ek.pi)
+    assert ek.allclose(res, spec * 4 * ek.Pi)
     assert ek.allclose(ray.time, time)
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(ray.d, warp.square_to_uniform_sphere(dir_sample))

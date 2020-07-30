@@ -29,13 +29,13 @@ def test02_eval_pdf(variant_scalar_rgb):
     ctx = BSDFContext()
 
     for i in range(20):
-        theta = i / 19.0 * (ek.pi / 2)
+        theta = i / 19.0 * (ek.Pi / 2)
         wo = [ek.sin(theta), 0, ek.cos(theta)]
 
         v_pdf  = bsdf.pdf(ctx, si, wo=wo)
         v_eval = bsdf.eval(ctx, si, wo=wo)[0]
-        assert ek.allclose(v_pdf, wo[2] / ek.pi)
-        assert ek.allclose(v_eval, 0.5 * wo[2] / ek.pi)
+        assert ek.allclose(v_pdf, wo[2] / ek.Pi)
+        assert ek.allclose(v_eval, 0.5 * wo[2] / ek.Pi)
 
 
 def test03_chi2(variant_packet_rgb):

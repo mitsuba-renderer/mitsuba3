@@ -11,7 +11,7 @@ def test01_create(variant_scalar_rgb):
     s = xml.load_dict({"type" : "sphere"})
     assert s is not None
     assert s.primitive_count() == 1
-    assert ek.allclose(s.surface_area(), 4 * ek.pi)
+    assert ek.allclose(s.surface_area(), 4 * ek.Pi)
 
     # Test transforms order in constructor
 
@@ -101,7 +101,7 @@ def test04_sample_direct(variant_scalar_rgb):
     def sample_cone(sample, cos_theta_max):
         cos_theta = (1 - sample[1]) + sample[1] * cos_theta_max
         sin_theta = ek.sqrt(1 - cos_theta * cos_theta)
-        phi = 2 * ek.pi * sample[0]
+        phi = 2 * ek.Pi * sample[0]
         s, c = ek.sin(phi), ek.cos(phi)
         return [c * sin_theta, s * sin_theta, cos_theta]
 
@@ -157,13 +157,13 @@ def test05_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_r
     ek.set_requires_gradient(ray.o)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.uv), [1 / (2.0 * ek.pi), 0])
+    assert ek.allclose(ek.gradient(si.uv), [1 / (2.0 * ek.Pi), 0])
 
     # If the ray origin is shifted tangent to the sphere (inclination), so si.uv.y move by 2 / 2pi
     ek.set_requires_gradient(ray.o)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.z)
-    assert ek.allclose(ek.gradient(si.uv), [0, -2 / (2.0 * ek.pi)])
+    assert ek.allclose(ek.gradient(si.uv), [0, -2 / (2.0 * ek.Pi)])
 
     # # If the ray origin is shifted along the x-axis, so does si.n
     ek.set_requires_gradient(ray.o)

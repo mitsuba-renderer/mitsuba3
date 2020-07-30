@@ -216,7 +216,7 @@ def test13_cont_func(variant_packet_rgb):
     y = ek.exp(-ek.sqr(x))
 
     d = ContinuousDistribution([-2, 2], y)
-    assert ek.allclose(d.integral(), ek.sqrt(ek.pi) * ek.erf(2.0))
+    assert ek.allclose(d.integral(), ek.sqrt(ek.Pi) * ek.erf(2.0))
     assert ek.allclose(d.eval_pdf([1]), [ek.exp(-1)])
     assert ek.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])
 
