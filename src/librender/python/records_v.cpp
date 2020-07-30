@@ -31,8 +31,7 @@ MTS_PY_EXPORT(PositionSample) {
 
     bind_set_object<PositionSample3f>(pos);
 
-    // TODO refactoring
-    // bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
+    bind_slicing_operators<PositionSample3f, PositionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
 }
 
 MTS_PY_EXPORT(DirectionSample) {
@@ -53,6 +52,5 @@ MTS_PY_EXPORT(DirectionSample) {
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_repr(DirectionSample3f);
 
-    // TODO refactoring
-    // bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
+    bind_slicing_operators<DirectionSample3f, DirectionSample<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pos);
 }

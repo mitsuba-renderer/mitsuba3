@@ -20,78 +20,77 @@ MTS_PY_EXPORT(Interaction) {
         .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def_repr(Interaction3f);
-    // TODO refactoring
-    // bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
+    bind_slicing_operators<Interaction3f, Interaction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
 }
 
+// TODO refactoring: remove this
+// template<typename Class, typename PyClass>
+// void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
+//     using Float = typename Class::Float;
+//     if constexpr (ek::is_dynamic_v<Float> && !ek::is_cuda_array_v<Float>) { // TODO could we enable this for CUDA?
+//         cl.def("__getitem__", [](Class &si, size_t i) {
+//             if (i >= slices(si))
+//                 throw py::index_error();
 
-template<typename Class, typename PyClass>
-void bind_slicing_operator_surfaceinteraction(PyClass &cl) {
-    using Float = typename Class::Float;
-    if constexpr (ek::is_dynamic_v<Float> && !ek::is_cuda_array_v<Float>) { // TODO could we enable this for CUDA?
-        cl.def("__getitem__", [](Class &si, size_t i) {
-            if (i >= slices(si))
-                throw py::index_error();
+//             Class res = ek::zero<Class>(1);
+//             res.t           = slice(si.t, i);
+//             res.time        = slice(si.time, i);
+//             res.wavelengths = slice(si.wavelengths, i);
+//             res.p           = slice(si.p, i);
+//             res.shape       = si.shape[i];
+//             res.uv          = slice(si.uv, i);
+//             res.n           = slice(si.n, i);
+//             res.sh_frame    = slice(si.sh_frame, i);
+//             res.dp_du       = slice(si.dp_du, i);
+//             res.dp_dv       = slice(si.dp_dv, i);
+//             res.dn_du       = slice(si.dn_du, i);
+//             res.dn_dv       = slice(si.dn_dv, i);
+//             res.duv_dx      = slice(si.duv_dx, i);
+//             res.duv_dy      = slice(si.duv_dy, i);
+//             res.wi          = slice(si.wi, i);
+//             res.prim_index  = slice(si.prim_index, i);
+//             res.instance    = si.instance[i];
+//             return res;
+//         })
+//         .def("__setitem__", [](Class &r, size_t i,
+//                                 const Class &r2) {
+//             if (i >= slices(r))
+//                 throw py::index_error();
 
-            Class res = ek::zero<Class>(1);
-            res.t           = slice(si.t, i);
-            res.time        = slice(si.time, i);
-            res.wavelengths = slice(si.wavelengths, i);
-            res.p           = slice(si.p, i);
-            res.shape       = si.shape[i];
-            res.uv          = slice(si.uv, i);
-            res.n           = slice(si.n, i);
-            res.sh_frame    = slice(si.sh_frame, i);
-            res.dp_du       = slice(si.dp_du, i);
-            res.dp_dv       = slice(si.dp_dv, i);
-            res.dn_du       = slice(si.dn_du, i);
-            res.dn_dv       = slice(si.dn_dv, i);
-            res.duv_dx      = slice(si.duv_dx, i);
-            res.duv_dy      = slice(si.duv_dy, i);
-            res.wi          = slice(si.wi, i);
-            res.prim_index  = slice(si.prim_index, i);
-            res.instance    = si.instance[i];
-            return res;
-        })
-        .def("__setitem__", [](Class &r, size_t i,
-                                const Class &r2) {
-            if (i >= slices(r))
-                throw py::index_error();
+//             if (slices(r2) != 1)
+//                 throw py::index_error();
 
-            if (slices(r2) != 1)
-                throw py::index_error();
-
-            slice(r.t, i)           = slice(r2.t, 0);
-            slice(r.time, i)        = slice(r2.time, 0);
-            slice(r.wavelengths, i) = slice(r2.wavelengths, 0);
-            slice(r.p, i)           = slice(r2.p, 0);
-            r.shape[i]                     = slice(r2.shape, 0);
-            slice(r.uv, i)          = slice(r2.uv, 0);
-            slice(r.n, i)           = slice(r2.n, 0);
-            slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
-            slice(r.dp_du, i)       = slice(r2.dp_du, 0);
-            slice(r.dp_dv, i)       = slice(r2.dp_dv, 0);
-            slice(r.dn_du, i)       = slice(r2.dn_du, 0);
-            slice(r.dn_dv, i)       = slice(r2.dn_dv, 0);
-            slice(r.duv_dx, i)      = slice(r2.duv_dx, 0);
-            slice(r.duv_dy, i)      = slice(r2.duv_dy, 0);
-            slice(r.wi, i)          = slice(r2.wi, 0);
-            slice(r.prim_index, i)  = slice(r2.prim_index, 0);
-            r.instance[i]                  = slice(r2.instance, 0);
-        })
-        .def("__len__", [](const Class &r) {
-            return slices(r);
-        });
-    }
-    cl.def_static("zero", [](size_t size) {
-            if constexpr (!ek::is_dynamic_v<Float>) {
-                if (size != 1)
-                    throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
-            }
-            return ek::zero<Class>(size);
-        }, "size"_a = 1
-    );
-}
+//             slice(r.t, i)           = slice(r2.t, 0);
+//             slice(r.time, i)        = slice(r2.time, 0);
+//             slice(r.wavelengths, i) = slice(r2.wavelengths, 0);
+//             slice(r.p, i)           = slice(r2.p, 0);
+//             r.shape[i]                     = slice(r2.shape, 0);
+//             slice(r.uv, i)          = slice(r2.uv, 0);
+//             slice(r.n, i)           = slice(r2.n, 0);
+//             slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
+//             slice(r.dp_du, i)       = slice(r2.dp_du, 0);
+//             slice(r.dp_dv, i)       = slice(r2.dp_dv, 0);
+//             slice(r.dn_du, i)       = slice(r2.dn_du, 0);
+//             slice(r.dn_dv, i)       = slice(r2.dn_dv, 0);
+//             slice(r.duv_dx, i)      = slice(r2.duv_dx, 0);
+//             slice(r.duv_dy, i)      = slice(r2.duv_dy, 0);
+//             slice(r.wi, i)          = slice(r2.wi, 0);
+//             slice(r.prim_index, i)  = slice(r2.prim_index, 0);
+//             r.instance[i]                  = slice(r2.instance, 0);
+//         })
+//         .def("__len__", [](const Class &r) {
+//             return slices(r);
+//         });
+//     }
+//     cl.def_static("zero", [](size_t size) {
+//             if constexpr (!ek::is_dynamic_v<Float>) {
+//                 if (size != 1)
+//                     throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
+//             }
+//             return ek::zero<Class>(size);
+//         }, "size"_a = 1
+//     );
+// }
 
 MTS_PY_EXPORT(SurfaceInteraction) {
     MTS_PY_IMPORT_TYPES()
@@ -150,58 +149,60 @@ MTS_PY_EXPORT(SurfaceInteraction) {
         .def_repr(SurfaceInteraction3f);
 
     // Manually bind the slicing operators to handle ShapePtr properly
-    bind_slicing_operator_surfaceinteraction<SurfaceInteraction3f>(inter);
+    // bind_slicing_operator_surfaceinteraction<SurfaceInteraction3f>(inter);
+    bind_slicing_operators<SurfaceInteraction3f, SurfaceInteraction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
 }
 
-template<typename Class, typename PyClass>
-void bind_slicing_operator_mediuminteraction(PyClass &cl) {
-    using Float = typename Class::Float;
-    if constexpr (ek::is_dynamic_v<Float> && !ek::is_cuda_array_v<Float>) { // TODO could we enable this for CUDA?
-        cl.def("__getitem__", [](Class &mi, size_t i) {
-            if (i >= slices(mi))
-                throw py::index_error();
+// TODO refactoring: remove this
+// template<typename Class, typename PyClass>
+// void bind_slicing_operator_mediuminteraction(PyClass &cl) {
+//     using Float = typename Class::Float;
+//     if constexpr (ek::is_dynamic_v<Float> && !ek::is_cuda_array_v<Float>) { // TODO could we enable this for CUDA?
+//         cl.def("__getitem__", [](Class &mi, size_t i) {
+//             if (i >= slices(mi))
+//                 throw py::index_error();
 
-            Class res = ek::zero<Class>(1);
-            res.t           = slice(mi.t, i);
-            res.time        = slice(mi.time, i);
-            res.wavelengths = slice(mi.wavelengths, i);
-            res.p           = slice(mi.p, i);
-            res.medium      = mi.medium[i];
-            res.sh_frame    = slice(mi.sh_frame, i);
-            res.wi          = slice(mi.wi, i);
-            res.mint        = slice(mi.mint, i);
-            return res;
-        })
-        .def("__setitem__", [](Class &r, size_t i,
-                                const Class &r2) {
-            if (i >= slices(r))
-                throw py::index_error();
+//             Class res = ek::zero<Class>(1);
+//             res.t           = slice(mi.t, i);
+//             res.time        = slice(mi.time, i);
+//             res.wavelengths = slice(mi.wavelengths, i);
+//             res.p           = slice(mi.p, i);
+//             res.medium      = mi.medium[i];
+//             res.sh_frame    = slice(mi.sh_frame, i);
+//             res.wi          = slice(mi.wi, i);
+//             res.mint        = slice(mi.mint, i);
+//             return res;
+//         })
+//         .def("__setitem__", [](Class &r, size_t i,
+//                                 const Class &r2) {
+//             if (i >= slices(r))
+//                 throw py::index_error();
 
-            if (slices(r2) != 1)
-                throw py::index_error();
+//             if (slices(r2) != 1)
+//                 throw py::index_error();
 
-            slice(r.t, i)           = slice(r2.t, 0);
-            slice(r.time, i)        = slice(r2.time, 0);
-            slice(r.wavelengths, i) = slice(r2.wavelengths, 0);
-            slice(r.p, i)           = slice(r2.p, 0);
-            r.medium[i]             = slice(r2.medium, 0);
-            slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
-            slice(r.wi, i)          = slice(r2.wi, 0);
-            slice(r.mint, i)        = slice(r2.mint, 0);
-        })
-        .def("__len__", [](const Class &r) {
-            return slices(r);
-        });
-    }
-    cl.def_static("zero", [](size_t size) {
-            if constexpr (!ek::is_dynamic_v<Float>) {
-                if (size != 1)
-                    throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
-            }
-            return ek::zero<Class>(size);
-        }, "size"_a = 1
-    );
-}
+//             slice(r.t, i)           = slice(r2.t, 0);
+//             slice(r.time, i)        = slice(r2.time, 0);
+//             slice(r.wavelengths, i) = slice(r2.wavelengths, 0);
+//             slice(r.p, i)           = slice(r2.p, 0);
+//             r.medium[i]             = slice(r2.medium, 0);
+//             slice(r.sh_frame, i)    = slice(r2.sh_frame, 0);
+//             slice(r.wi, i)          = slice(r2.wi, 0);
+//             slice(r.mint, i)        = slice(r2.mint, 0);
+//         })
+//         .def("__len__", [](const Class &r) {
+//             return slices(r);
+//         });
+//     }
+//     cl.def_static("zero", [](size_t size) {
+//             if constexpr (!ek::is_dynamic_v<Float>) {
+//                 if (size != 1)
+//                     throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
+//             }
+//             return ek::zero<Class>(size);
+//         }, "size"_a = 1
+//     );
+// }
 
 MTS_PY_EXPORT(MediumInteraction) {
     MTS_PY_IMPORT_TYPES()
@@ -220,7 +221,8 @@ MTS_PY_EXPORT(MediumInteraction) {
         .def_repr(MediumInteraction3f);
 
     // Manually bind the slicing operators to handle ShapePtr properly
-    bind_slicing_operator_mediuminteraction<MediumInteraction3f>(inter);
+    // bind_slicing_operator_mediuminteraction<MediumInteraction3f>(inter);
+    bind_slicing_operators<MediumInteraction3f, MediumInteraction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
 }
 
 // MSVC hack to force non compilation for packet variants
@@ -257,6 +259,7 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def_repr(PreliminaryIntersection3f);
 
     bind_method_preliminaryintersection<PreliminaryIntersection3f>(pi);
-
-    // TODO bind slicing operator
+    bind_slicing_operators<
+        PreliminaryIntersection3f,
+        PreliminaryIntersection<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pi);
 }

@@ -143,10 +143,10 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
 ]"""
 
     # Construct from two interactions: ds.d should start from the reference its.
-    its = ek.zero(SurfaceInteraction3f)
+    its = SurfaceInteraction3f.zero()
     its.p = [20, 3, 40.02]
     its.t = 1
-    ref = ek.zero(Interaction3f)
+    ref = Interaction3f.zero()
     ref.p = [1.6, -2, 35]
     record = DirectionSample3f(its, ref)
     d = (its.p - ref.p) / ek.norm(its.p - ref.p)
@@ -184,7 +184,7 @@ def test05_direction_sample_construction_dynamic_and_slicing(variant_packet_rgb)
         # Needs to be a "valid" (surface) interaction, otherwise interaction
         # will be assumed to have happened on an environment emitter.
         it.t = 0.1
-        ref = ek.zero(Interaction3f)
+        ref = Interaction3f.zero()
         ref.p = refs[i, :]
 
         r = DirectionSample3f(it, ref)

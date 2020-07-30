@@ -57,8 +57,7 @@ void bind_transform3f(py::module &m, const char *name) {
     if constexpr (ek::is_dynamic_v<Float>)
         trans3.def(py::init<const ScalarTransform3f &>(), "Broadcast constructor");
 
-    // TODO refactoring
-    // bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3);
+    bind_slicing_operators<Transform3f, ScalarTransform3f>(trans3);
 }
 
 template <typename Float>
@@ -126,8 +125,7 @@ void bind_transform4f(py::module &m, const char *name) {
     if constexpr (ek::is_dynamic_v<Float>)
         trans4.def(py::init<const ScalarTransform4f &>(), "Broadcast constructor");
 
-    // TODO refactoring
-    // bind_slicing_operators<Transform4f, ScalarTransform4f>(trans4);
+    bind_slicing_operators<Transform4f, ScalarTransform4f>(trans4);
 }
 
 MTS_PY_EXPORT(Transform) {

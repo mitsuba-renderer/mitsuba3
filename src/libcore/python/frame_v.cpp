@@ -31,7 +31,6 @@ MTS_PY_EXPORT(Frame) {
             .def_field(Frame3f, n)
             .def_repr(Frame3f);
 
-        // TODO refactoring
-        // bind_slicing_operators<Frame3f, ScalarFrame3f>(f);
+        bind_slicing_operators<Frame3f, ScalarFrame3f>(f);
     }
 }

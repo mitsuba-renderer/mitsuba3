@@ -11,6 +11,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
+#include <enoki/array.h>
 
 #if MTS_VARIANT_VECTORIZE == 1
 #  include <enoki/dynamic.h>
@@ -71,39 +72,40 @@ namespace py = pybind11;
 
 using namespace py::literals;
 
-// template <typename Class, typename ScalarClass, typename PyClass>
-// void bind_slicing_operators(PyClass &cl) {
-//     using Float = typename Class::Float;
+// TODO refactoring
+template <typename Class, typename ScalarClass, typename PyClass>
+void bind_slicing_operators(PyClass &cl) {
+    using Float = typename Class::Float;
 
-//     if constexpr (ek::is_dynamic_v<Float>) {
-//         cl.def("__getitem__", [](Class &c, size_t i) -> ScalarClass {
-//               if (i >= slices(c))
-//                   throw py::index_error();
-//               return slice(c, i);
-//           })
-//           .def("__setitem__", [](Class &c, size_t i, const ScalarClass &c2) {
-//               if (i >= slices(c))
-//                   throw py::index_error();
-//               slice(c, i) = c2;
-//           })
-//           // TODO enabled this when ENOKI_STRUCT_SUPPORT is fixed for structs containing Matrix
-//           // .def("__setitem__", [](Class &c, const ek::mask_t<Float> &mask, const Class &c2) {
-//           //     ek::masked(c, mask) = c2;
-//           // })
-//           .def("__len__", [](const Class &c) {
-//               return slices(c);
-//           });
-//     }
+    if constexpr (ek::is_dynamic_v<Float>) {
+        // cl.def("__getitem__", [](Class &c, size_t i) -> ScalarClass {
+        //       if (i >= ek::width(c))
+        //           throw py::index_error();
+        //       return slice(c, i);
+        //   })
+        //   .def("__setitem__", [](Class &c, size_t i, const ScalarClass &c2) {
+        //       if (i >= ek::width(c))
+        //           throw py::index_error();
+        //       slice(c, i) = c2;
+        //   })
+          // TODO enabled this when ENOKI_STRUCT_SUPPORT is fixed for structs containing Matrix
+          // .def("__setitem__", [](Class &c, const ek::mask_t<Float> &mask, const Class &c2) {
+          //     ek::masked(c, mask) = c2;
+          // })
+          cl.def("__len__", [](const Class &c) {
+              return ek::width(c);
+          });
+    }
 
-//     cl.def_static("zero", [](size_t size) {
-//             if constexpr (!ek::is_dynamic_v<Float>) {
-//                 if (size != 1)
-//                     throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
-//             }
-//             return ek::zero<Class>(size);
-//         }, "size"_a = 1
-//     );
-// }
+    cl.def_static("zero", [](size_t size) {
+            if constexpr (!ek::is_dynamic_v<Float>) {
+                if (size != 1)
+                    throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
+            }
+            return ek::zero<Class>(size);
+        }, "size"_a = 1
+    );
+}
 
 template <typename Source, typename Target> void pybind11_type_alias() {
     auto &types = pybind11::detail::get_internals().registered_types_cpp;

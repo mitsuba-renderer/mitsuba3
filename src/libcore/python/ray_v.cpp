@@ -24,11 +24,10 @@ MTS_PY_EXPORT(Ray) {
         .def_field(Ray3f, wavelengths, D(Ray, wavelengths))
         .def_repr(Ray3f);
 
-    // TODO refactoring
-    // using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
-    // bind_slicing_operators<Ray3f, mitsuba::Ray<ScalarPoint3f, ScalarSpectrum>>(ray);
+    using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
+    bind_slicing_operators<Ray3f, mitsuba::Ray<ScalarPoint3f, ScalarSpectrum>>(ray);
 
-    py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
+    auto raydiff = py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
         .def(py::init<const Ray3f &>(), "ray"_a)
         .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
              "Initialize without differentials.",
@@ -40,4 +39,8 @@ MTS_PY_EXPORT(Ray) {
         .def_field(RayDifferential3f, d_x, D(RayDifferential, d_x))
         .def_field(RayDifferential3f, d_y, D(RayDifferential, d_y))
         .def_field(RayDifferential3f, has_differentials, D(RayDifferential, has_differentials));
+
+    bind_slicing_operators<
+        RayDifferential3f,
+        mitsuba::RayDifferential<ScalarPoint3f, ScalarSpectrum>>(raydiff);
 }
