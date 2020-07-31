@@ -1,7 +1,6 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.dynamic import UInt32
 
 
 def test01_create(variant_scalar_rgb):
@@ -35,7 +34,6 @@ def test02_eval_all(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
-    from mitsuba.core.math import InvPi
 
     weight = 0.2
 
@@ -60,7 +58,7 @@ def test02_eval_all(variant_scalar_rgb):
     ctx = BSDFContext()
 
     # Evaluate the blend of both components
-    expected = (1 - weight) * 0.0 * InvPi + weight * 1.0 * InvPi
+    expected = (1 - weight) * 0.0 * ek.InvPi + weight * 1.0 * ek.InvPi
     value    = bsdf.eval(ctx, si, wo)
     assert ek.allclose(value, expected)
 
@@ -69,7 +67,6 @@ def test03_eval_components(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
-    from mitsuba.core.math import InvPi
 
     weight = 0.2
 
@@ -97,12 +94,12 @@ def test03_eval_components(variant_scalar_rgb):
 
     ctx.component = 0
     value0 = bsdf.eval(ctx, si, wo)
-    expected0 = (1-weight) * 0.0*InvPi
+    expected0 = (1-weight) * 0.0*ek.InvPi
     assert ek.allclose(value0, expected0)
 
     ctx.component = 1
     value1 = bsdf.eval(ctx, si, wo)
-    expected1 = weight * 1.0*InvPi
+    expected1 = weight * 1.0*ek.InvPi
     assert ek.allclose(value1, expected1)
 
 
@@ -110,7 +107,6 @@ def test04_sample_all(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
-    from mitsuba.core.math import InvPi
 
     weight = 0.2
 
@@ -149,7 +145,6 @@ def test05_sample_components(variant_scalar_rgb):
     from mitsuba.core import Frame3f
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
     from mitsuba.core.xml import load_string
-    from mitsuba.core.math import InvPi
 
     weight = 0.2
 

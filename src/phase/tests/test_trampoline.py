@@ -5,7 +5,6 @@ import pytest
 import mitsuba
 mitsuba.set_variant("scalar_rgb")
 from mitsuba.core import math, warp, Bitmap, Struct
-from mitsuba.core.math import Pi
 from mitsuba.core.xml import load_string
 from mitsuba.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
                             MediumInteraction3f, register_phasefunction, has_flag)
@@ -84,7 +83,7 @@ def test01_create_and_eval(create_phasefunction):
         for ph in np.linspace(0, np.pi, 4):
             wo = [np.sin(theta), 0, np.cos(theta)]
             v_eval = p.eval(ctx, mi, wo)
-            assert np.allclose(v_eval, 1.0 / (4 * Pi))
+            assert np.allclose(v_eval, 1.0 / (4 * ek.Pi))
 
 
 def test02_render_scene(create_phasefunction):

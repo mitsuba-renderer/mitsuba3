@@ -1,7 +1,7 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.dynamic import UInt32
+from enoki.scalar import ArrayXu as UInt32
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +41,6 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_pdf(variant_scalar_rgb, interaction):
-    from mitsuba.core.math import InvPi
     from mitsuba.render import BSDFContext
     from mitsuba.core.xml import load_string
 
@@ -53,14 +52,13 @@ def test02_pdf(variant_scalar_rgb, interaction):
     interaction.wi = [0, 0, 1]
     ctx = BSDFContext()
     p_pdf = bsdf.pdf(ctx, interaction, [0, 0, 1])
-    assert ek.allclose(p_pdf, InvPi)
+    assert ek.allclose(p_pdf, ek.InvPi)
 
     p_pdf = bsdf.pdf(ctx, interaction, [0, 0, -1])
     assert ek.allclose(p_pdf, 0.0)
 
 
 def test03_sample_eval_pdf(variant_scalar_rgb, interaction):
-    from mitsuba.core.math import InvPi
     from mitsuba.core.warp import square_to_uniform_sphere
     from mitsuba.render import BSDFContext
     from mitsuba.core.xml import load_string
@@ -89,7 +87,7 @@ def test03_sample_eval_pdf(variant_scalar_rgb, interaction):
 
                     if ek.any(s_value > 0):
                         # Multiply by square_to_cosine_hemisphere_theta
-                        s_value *= bs.wo[2] * InvPi
+                        s_value *= bs.wo[2] * ek.InvPi
                         if not up:
                             s_value *= -1
 
