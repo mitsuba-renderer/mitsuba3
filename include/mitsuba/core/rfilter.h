@@ -194,7 +194,7 @@ template <typename Scalar_> struct Resampler {
             }
             m_fast_start = std::min(half_taps, m_target_res - 1);
             m_fast_end   = (uint32_t) std::max(
-                (ssize_t) m_target_res - (ssize_t) half_taps - 1, (ssize_t) 0);
+                (ek::ssize_t) m_target_res - (ek::ssize_t) half_taps - 1, (ek::ssize_t) 0);
         }
 
         /* Avoid overlapping fast start/end intervals when the

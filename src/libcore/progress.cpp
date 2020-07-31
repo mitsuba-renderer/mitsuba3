@@ -9,8 +9,8 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
       m_bar_start(label.length() + 3), m_bar_size(0), m_payload(payload) {
     m_line[0] = '\r'; // Carriage return
 
-    ssize_t bar_size = (ssize_t) m_line.length()
-        - (ssize_t) m_bar_start /* CR, Label, space, leading bracket */
+    ek::ssize_t bar_size = (ek::ssize_t) m_line.length()
+        - (ek::ssize_t) m_bar_start /* CR, Label, space, leading bracket */
         - 2 /* Trailing bracket and space */
         - 22 /* Max length for ETA string */;
 

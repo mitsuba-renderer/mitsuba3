@@ -50,7 +50,6 @@ typename AnimatedTransform::BoundingBox3f AnimatedTransform::translation_bounds(
     }
     Throw("AnimatedTransform::translation_bounds() not implemented for"
           " non-constant animation.");
-    return BoundingBox3f();
 }
 
 std::string AnimatedTransform::to_string() const {

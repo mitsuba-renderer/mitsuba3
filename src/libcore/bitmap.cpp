@@ -1616,7 +1616,6 @@ static void png_write_data(png_structp png_ptr, png_bytep data, png_size_t lengt
 
 static void png_error_func(png_structp, png_const_charp msg) {
     Throw("Fatal libpng error: %s\n", msg);
-    exit(-1);
 }
 
 static void png_warn_func(png_structp, png_const_charp msg) {
@@ -2314,9 +2313,8 @@ void Bitmap::read_bmp(Stream *stream) {
         Log(Debug, "Loading BMP file \"%s\" (%ix%i, %s, %s) ..",
             fs ? fs->path().string() : "<stream>", m_size.x(), m_size.y(),
             m_pixel_format, m_component_format);
-
         size_t row_size = size / m_size.y();
-        size_t padding = (size_t) (-(ssize_t) row_size & 3);
+        size_t padding = (size_t) (-(ek::ssize_t) row_size & 3);
         bool do_vflip = height > 0;
         uint8_t *ptr = uint8_data();
 
