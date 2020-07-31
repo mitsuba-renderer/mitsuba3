@@ -65,7 +65,7 @@ MTS_PY_DECLARE(SurfaceInteraction);
 MTS_PY_DECLARE(MediumInteraction);
 MTS_PY_DECLARE(PreliminaryIntersection);
 MTS_PY_DECLARE(Medium);
-// MTS_PY_DECLARE(mueller); // TODO refactoring
+MTS_PY_DECLARE(mueller);
 MTS_PY_DECLARE(MicrofacetDistribution);
 MTS_PY_DECLARE(PositionSample);
 MTS_PY_DECLARE(PhaseFunction);
@@ -110,7 +110,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(fresnel);
     MTS_PY_IMPORT(ImageBlock);
     MTS_PY_IMPORT(Integrator);
-    // MTS_PY_IMPORT_SUBMODULE(mueller);
+    MTS_PY_IMPORT_SUBMODULE(mueller);
     MTS_PY_IMPORT(MicrofacetDistribution);
     MTS_PY_IMPORT(PhaseFunction);
     MTS_PY_IMPORT(Sampler);

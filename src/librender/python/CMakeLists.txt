@@ -22,7 +22,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     interaction_v.cpp
     integrator_v.cpp
     medium_v.cpp
-    # mueller_v.cpp // TODO refactoring
+    mueller_v.cpp
     microfacet_v.cpp
     phase_v.cpp
     records_v.cpp

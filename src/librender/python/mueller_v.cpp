@@ -1,5 +1,6 @@
 #include <mitsuba/render/mueller.h>
 #include <mitsuba/python/python.h>
+#include <enoki/sphere.h>
 
 MTS_PY_EXPORT(mueller) {
     MTS_PY_IMPORT_TYPES()

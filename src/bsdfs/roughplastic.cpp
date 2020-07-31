@@ -380,12 +380,12 @@ public:
         // Precompute rough reflectance (vectorized)
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
             using FloatP    = Packet<ScalarFloat>;
-            using Vector3fX = Vector<DynamicArray<FloatP>, 3>;
+            using Vector3fX = Vector<DynamicBuffer<Float>, 3>;
 
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);
             Vector3fX wi = ek::zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
-            for (size_t i = 0; i < slices(wi); ++i) {
-                ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(slices(wi) - 1));
+            for (size_t i = 0; i < ek::width(wi); ++i) {
+                ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(ek::width(wi) - 1));
                 slice(wi, i) = ScalarVector3f(ek::sqrt(1 - mu * mu), 0.f, mu);
             }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/fresnel.h>
 #include <enoki/matrix.h>
