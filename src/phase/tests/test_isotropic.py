@@ -13,7 +13,6 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_eval(variant_scalar_rgb):
-    from mitsuba.core.math import Pi
     from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
     from mitsuba.core.xml import load_string
 
@@ -24,7 +23,7 @@ def test02_eval(variant_scalar_rgb):
         for ph in np.linspace(0, np.pi, 4):
             wo = [np.sin(theta), 0, np.cos(theta)]
             v_eval = p.eval(ctx, mi, wo)
-            assert np.allclose(v_eval, 1.0 / (4 * Pi))
+            assert np.allclose(v_eval, 1.0 / (4 * ek.Pi))
 
 def test03_chi2(variant_packet_rgb):
     from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain

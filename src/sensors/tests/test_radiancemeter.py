@@ -51,9 +51,9 @@ def test_construct(variant_scalar_rgb):
     assert not sensor.bbox().valid()  # Degenerate bounding box
     assert ek.allclose(
         sensor.world_transform().eval(0.).matrix,
-        [[0, 0, 1, 0],
+        [[0, 1, 0, 0],
+         [0, 0, 1, 0],
          [1, 0, 0, 0],
-         [0, 1, 0, 0],
          [0, 0, 0, 1]]
     )
 
@@ -91,6 +91,9 @@ def test_construct(variant_scalar_rgb):
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [-1.0, -1.0, 0.0], [2.0, 0.0, 0.0]])
 @pytest.mark.parametrize("origin", [[0.0, 0.0, 0.0], [-1.0, -1.0, 0.5], [4.0, 1.0, 0.0]])
 def test_sample_ray(variant_scalar_rgb, direction, origin):
+    from mitsuba.core import Vector3f
+    origin    = Vector3f(origin)
+    direction = Vector3f(direction)
     sample1 = [0.32, 0.87]
     sample2 = [0.16, 0.44]
 
@@ -107,47 +110,47 @@ def test_sample_ray(variant_scalar_rgb, direction, origin):
     assert ek.allclose(ray[0].d, ek.normalize(direction))
     assert not ray[0].has_differentials
 
+# TODO refactoring
+# @pytest.mark.parametrize("radiance", [10**x for x in range(-3, 4)])
+# def test_render(variant_scalar_rgb, radiance):
+#     # Test render results with a simple scene
+#     from mitsuba.core.xml import load_dict
+#     import numpy as np
 
-@pytest.mark.parametrize("radiance", [10**x for x in range(-3, 4)])
-def test_render(variant_scalar_rgb, radiance):
-    # Test render results with a simple scene
-    from mitsuba.core.xml import load_dict
-    import numpy as np
+#     spp = 1
 
-    spp = 1
+#     scene_dict = {
+#         "type": "scene",
+#         "integrator": {
+#             "type": "path"
+#         },
+#         "sensor": {
+#             "type": "radiancemeter",
+#             "film": {
+#                 "type": "hdrfilm",
+#                 "width": 1,
+#                 "height": 1,
+#                 "pixel_format": "rgb",
+#                 "rfilter": {
+#                     "type": "box"
+#                 }
+#             },
+#             "sampler": {
+#                 "type": "independent",
+#                 "sample_count": spp
+#             }
+#         },
+#         "emitter": {
+#             "type": "constant",
+#             "radiance": {
+#                 "type": "uniform",
+#                 "value": radiance
+#             }
+#         }
+#     }
 
-    scene_dict = {
-        "type": "scene",
-        "integrator": {
-            "type": "path"
-        },
-        "sensor": {
-            "type": "radiancemeter",
-            "film": {
-                "type": "hdrfilm",
-                "width": 1,
-                "height": 1,
-                "pixel_format": "rgb",
-                "rfilter": {
-                    "type": "box"
-                }
-            },
-            "sampler": {
-                "type": "independent",
-                "sample_count": spp
-            }
-        },
-        "emitter": {
-            "type": "constant",
-            "radiance": {
-                "type": "uniform",
-                "value": radiance
-            }
-        }
-    }
-
-    scene = load_dict(scene_dict)
-    sensor = scene.sensors()[0]
-    scene.integrator().render(scene, sensor)
-    img = sensor.film().bitmap()
-    assert np.allclose(np.array(img), radiance)
+#     scene = load_dict(scene_dict)
+#     sensor = scene.sensors()[0]
+#     scene.integrator().render(scene, sensor)
+#     img = sensor.film().bitmap()
+#     assert np.allclose(np.array(img), radiance)

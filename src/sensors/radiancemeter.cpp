@@ -69,7 +69,7 @@ public:
                 ScalarPoint3f origin     = props.point3f("origin");
                 ScalarVector3f direction = props.vector3f("direction");
                 ScalarPoint3f target     = origin + direction;
-                auto [up, unused]        = coordinate_system(direction);
+                auto [up, unused]        = coordinate_system(ek::normalize(direction));
 
                 m_world_transform = new AnimatedTransform(
                     ScalarTransform4f::look_at(origin, target, up));
