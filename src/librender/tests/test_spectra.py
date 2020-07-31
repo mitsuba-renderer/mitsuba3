@@ -27,7 +27,7 @@ def test02_d65(variant_scalar_spectral):
     ps = PositionSample3f()
 
     assert ek.allclose(d65.eval(SurfaceInteraction3f(ps, [350, 456, 700, 840])),
-                       ek.scalar.Vector4f([0, 117.49, 71.6091, 0]) / 10568.0)
+                       ek.scalar.Array4f([0, 117.49, 71.6091, 0]) / 10568.0)
 
 
 def test03_blackbody(variant_scalar_spectral):
