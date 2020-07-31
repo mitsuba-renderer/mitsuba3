@@ -462,13 +462,13 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        si = SurfaceInteraction3f.zero(ek.slices(sample))
+        si = SurfaceInteraction3f.zero(ek.width(sample))
         wavelength, weight = plugin.sample(si, sample_shifted(sample[0]))
         return Vector1f(wavelength[0])
 
     def pdf_functor(w, *args):
         plugin = instantiate(args)
-        si = SurfaceInteraction3f.zero(ek.slices(w))
+        si = SurfaceInteraction3f.zero(ek.width(w))
         si.wavelengths = w
         return plugin.pdf(si)[0]
 
@@ -510,17 +510,17 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         return load_string(xml % args)
 
     def sample_functor(sample, *args):
-        n = ek.slices(sample)
+        n = ek.width(sample)
         plugin = instantiate(args)
         (si, ctx) = make_context(n)
         bs, weight = plugin.sample(ctx, si, sample[0], [sample[1], sample[2]])
 
-        w = Float.full(1.0, ek.slices(weight))
+        w = Float.full(1.0, ek.width(weight))
         w[ek.all(ek.eq(weight, 0))] = 0
         return bs.wo, w
 
     def pdf_functor(wo, *args):
-        n = ek.slices(wo)
+        n = ek.width(wo)
         plugin = instantiate(args)
         (si, ctx) = make_context(n)
         return plugin.pdf(ctx, si, wo)
@@ -588,16 +588,16 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
         return load_string(xml % args)
 
     def sample_functor(sample, *args):
-        n = ek.slices(sample)
+        n = ek.width(sample)
         plugin = instantiate(args)
         mi, ctx = make_context(n)
         wo, pdf = plugin.sample(ctx, mi, [sample[0], sample[1]])
-        w = Float.full(1.0, ek.slices(pdf))
+        w = Float.full(1.0, ek.width(pdf))
         w[ek.eq(pdf, 0)] = 0
         return wo, w
 
     def pdf_functor(wo, *args):
-        n = ek.slices(wo)
+        n = ek.width(wo)
         plugin = instantiate(args)
         mi, ctx = make_context(n)
         return plugin.eval(ctx, mi, wo)

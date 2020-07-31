@@ -47,11 +47,11 @@ def test02_ply_triangle(variant_scalar_rgb):
     faces = m.faces_buffer()
 
     assert not m.has_vertex_normals()
-    assert ek.slices(positions) == 9
+    assert ek.width(positions) == 9
     assert ek.allclose(positions[0:3], [0, 0, 0])
     assert ek.allclose(positions[3:6], [0, 0, 1])
     assert ek.allclose(positions[6:9], [0, 1, 0])
-    assert ek.slices(faces) == 3
+    assert ek.width(faces) == 3
     assert faces[0] == UInt32(0)
     assert faces[1] == UInt32(1)
     assert faces[2] == UInt32(2)
@@ -121,8 +121,8 @@ def test05_load_simple_mesh(variant_scalar_rgb):
         faces = shape.faces_buffer()
 
         assert shape.has_vertex_normals()
-        assert ek.slices(positions) == 72
-        assert ek.slices(faces) == 36
+        assert ek.width(positions) == 72
+        assert ek.width(faces) == 36
         assert ek.allclose(faces[6:9], [4, 5, 6])
         assert ek.allclose(positions[:5], [130, 165, 65, 82, 165])
 
@@ -447,7 +447,7 @@ def test15_differentiable_surface_interaction_params_forward(variant_gpu_autodif
 
     # Convert flat array into a vector of arrays (will be included in next enoki release)
     def ravel(buf, dim = 3):
-        idx = dim * UInt32.arange(ek.slices(buf) // dim)
+        idx = dim * UInt32.arange(ek.width(buf) // dim)
         if dim == 2:
             return Vector2f(ek.gather(buf, idx), ek.gather(buf, idx + 1))
         elif dim == 3:
@@ -455,7 +455,7 @@ def test15_differentiable_surface_interaction_params_forward(variant_gpu_autodif
 
     # Return contiguous flattened array (will be included in next enoki release)
     def unravel(source, target, dim = 3):
-        idx = UInt32.arange(ek.slices(source))
+        idx = UInt32.arange(ek.width(source))
         for i in range(dim):
             ek.scatter(target, source[i], dim * idx + i)
 

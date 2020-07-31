@@ -274,12 +274,12 @@ class SGD(Optimizer):
         """ Take a gradient step """
         for k, p in self.params.items():
             g_p = ek.gradient(p)
-            size = ek.slices(g_p)
+            size = ek.width(g_p)
             if size == 0:
                 continue
 
             if self.momentum != 0:
-                if size != ek.slices(self.state[k]):
+                if size != ek.width(self.state[k]):
                     # Reset state if data size has changed
                     self._reset(k)
 
@@ -298,7 +298,7 @@ class SGD(Optimizer):
         if self.momentum == 0:
             return
         p = self.params[key]
-        size = ek.slices(p)
+        size = ek.width(p)
         self.state[key] = ek.detach(type(p).zero(size))
 
     def __repr__(self):
@@ -344,11 +344,11 @@ class Adam(Optimizer):
 
         for k, p in self.params.items():
             g_p = ek.gradient(p)
-            size = ek.slices(g_p)
+            size = ek.width(g_p)
 
             if size == 0:
                 continue
-            elif size != ek.slices(self.state[k][0]):
+            elif size != ek.width(self.state[k][0]):
                 # Reset state if data size has changed
                 self._reset(k)
 
@@ -365,7 +365,7 @@ class Adam(Optimizer):
     def _reset(self, key):
         """ Zero-initializes the internal state associated with a parameter """
         p = self.params[key]
-        size = ek.slices(p)
+        size = ek.width(p)
         self.state[key] = (ek.detach(type(p).zero(size)),
                            ek.detach(type(p).zero(size)))
 
