@@ -179,7 +179,7 @@ public:
                 active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
 
                 // Stop the iteration if converged
-                if (none_nested(active))
+                if (ek::none_nested(active))
                     break;
 
                 // Update the bisection bounds

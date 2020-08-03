@@ -282,7 +282,7 @@ Value eval_1d(const Float *nodes, const Float *values,
         return ek::zero<Value>();
 
     /* Find the index of the left node in the queried subinterval */
-    Index idx = math::find_interval(size,
+    Index idx = math::find_interval<Index>(size,
         [&](Index idx) {
             return ek::gather<Value>(nodes, idx, mask_valid) <= x;
         }
@@ -328,14 +328,14 @@ void integrate_1d(Value min, Value max, const Value *values,
                   uint32_t size, Value *out) {
     const Value width = (max - min) / (size - 1);
     Value sum = 0;
-    store(out, sum);
+    ek::store(out, sum);
     for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_UNIFORM(idx);
 
         sum += ((d0 - d1) * (Value) (1.0 / 12.0) +
                 (f0 + f1) * (Value) 0.5) * width;
 
-        store(out + idx + 1, sum);
+        ek::store(out + idx + 1, sum);
     }
 }
 
@@ -367,14 +367,14 @@ template <typename Value>
 void integrate_1d(const Value *nodes, const Value *values,
                   uint32_t size, Value *out) {
     Value sum = 0;
-    store(out, sum);
+    ek::store(out, sum);
     for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_NONUNIFORM(idx);
 
         sum += ((d0 - d1) * (Value) (1.0 / 12.0) +
                 (f0 + f1) * (Value) 0.5) * width;
 
-        store(out + idx + 1, sum);
+        ek::store(out + idx + 1, sum);
     }
 }
 
@@ -418,7 +418,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
 
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
-    Index idx = math::find_interval(size,
+    Index idx = math::find_interval<Index>(size,
         [&](Index idx) {
             return ek::gather<Value>(values, idx, in_bounds) <= y;
         }
@@ -450,7 +450,7 @@ Value invert_1d(Float min, Float max, const Float *values, uint32_t size,
         active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
-        if (none_nested(active))
+        if (ek::none_nested(active))
             break;
 
         /* Update the bisection bounds */
@@ -509,7 +509,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
 
     /* Map y to a spline interval by searching through the
        'values' array (which is assumed to be monotonic) */
-    Index idx = math::find_interval(size,
+    Index idx = math::find_interval<Index>(size,
         [&](Index idx) {
             return ek::gather<Value>(values, idx, in_bounds) <= y;
         }
@@ -539,7 +539,7 @@ Value invert_1d(const Float *nodes, const Float *values, uint32_t size,
         active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
-        if (none_nested(active))
+        if (ek::none_nested(active))
             break;
 
         /* Update the bisection bounds */
@@ -603,7 +603,7 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
 
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
-    Index idx = math::find_interval(size,
+    Index idx = math::find_interval<Index>(size,
         [&](Index idx) {
             return ek::gather<Value>(cdf, idx) <= sample;
         }
@@ -636,7 +636,7 @@ sample_1d(Float min, Float max, const Float *values, const Float *cdf,
         active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
-        if (none_nested(active))
+        if (ek::none_nested(active))
             break;
 
         /* Update the bisection bounds */
@@ -698,7 +698,7 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
 
     /* Map y to a spline interval by searching through the
        monotonic 'cdf' array */
-    Index idx = math::find_interval(size,
+    Index idx = math::find_interval<Index>(size,
         [&](Index idx) {
             return ek::gather<Value>(cdf, idx) <= sample;
         }
@@ -731,7 +731,7 @@ sample_1d(const Float *nodes, const Float *values, const Float *cdf,
         active = active && (ek::abs(value) > eps_value) && (b - a > eps_domain);
 
         /* Stop the iteration if converged */
-        if (none_nested(active))
+        if (ek::none_nested(active))
             break;
 
         /* Update the bisection bounds */
@@ -825,10 +825,10 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     w2 = ek::select(valid_boundary_right, w2, w2 + d1);
     w3 = ek::select(valid_boundary_right, w3 + d1 * .5f, w3);
 
-    store(weights,     w0);
-    store(weights + 1, w1);
-    store(weights + 2, w2);
-    store(weights + 3, w3);
+    ek::store(weights,     w0);
+    ek::store(weights + 1, w1);
+    ek::store(weights + 2, w2);
+    ek::store(weights + 3, w3);
 
     if (!Extrapolate)
         return std::make_pair(mask_valid, offset);
@@ -883,7 +883,7 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
         return std::make_pair(Mask(false), ek::zero<Int32>());
 
     /* Find the index of the left node in the queried subinterval */
-    Index idx = math::find_interval(size,
+    Index idx = math::find_interval<Index>(size,
         [&](Index idx) {
             return ek::gather<Value>(nodes, idx, mask_valid) <= x;
         }
@@ -931,10 +931,10 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
     w2 = ek::select(valid_boundary_right, w2, w2 + d1);
     w3 = ek::select(valid_boundary_right, w3 + d1 * factor, w3);
 
-    store(weights,     w0);
-    store(weights + 1, w1);
-    store(weights + 2, w2);
-    store(weights + 3, w3);
+    ek::store(weights,     w0);
+    ek::store(weights + 1, w1);
+    ek::store(weights + 2, w2);
+    ek::store(weights + 3, w3);
 
     if (!Extrapolate)
         return std::make_pair(mask_valid, offset);

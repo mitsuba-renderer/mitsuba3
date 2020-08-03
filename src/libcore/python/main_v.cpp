@@ -18,7 +18,7 @@ MTS_PY_DECLARE(qmc);
 MTS_PY_DECLARE(Properties);
 MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(sample_tea);
-// MTS_PY_DECLARE(spline);
+MTS_PY_DECLARE(spline);
 MTS_PY_DECLARE(Spectrum);
 MTS_PY_DECLARE(Transform);
 MTS_PY_DECLARE(AnimatedTransform);
@@ -259,7 +259,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(Properties);
     MTS_PY_IMPORT(rfilter);
     MTS_PY_IMPORT(sample_tea);
-    // MTS_PY_IMPORT_SUBMODULE(spline); // TODO refactoring
+    MTS_PY_IMPORT_SUBMODULE(spline);
     MTS_PY_IMPORT(Spectrum);
     MTS_PY_IMPORT(Transform);
     MTS_PY_IMPORT(AnimatedTransform);
