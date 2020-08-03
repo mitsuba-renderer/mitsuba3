@@ -1545,7 +1545,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint32_t val = *((const uint32_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.s = memcpy_cast<float>(val);
+                value.s = ek::memcpy_cast<float>(val);
             }
             break;
 
@@ -1553,7 +1553,7 @@ bool StructConverter::load(const uint8_t *src, const Struct::Field &f, Value &va
                 uint64_t val = *((const uint64_t *) src);
                 if (source_swap)
                     val = detail::swap(val);
-                value.d = memcpy_cast<double>(val);
+                value.d = ek::memcpy_cast<double>(val);
             }
             break;
 
@@ -1702,7 +1702,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float32: {
-                uint32_t val = (uint32_t) memcpy_cast<uint32_t>(value.s);
+                uint32_t val = (uint32_t) ek::memcpy_cast<uint32_t>(value.s);
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint32_t *) dst) = val;
@@ -1710,7 +1710,7 @@ void StructConverter::save(uint8_t *dst, const Struct::Field &f, Value value, si
             break;
 
         case Struct::Type::Float64: {
-                uint64_t val = (uint64_t) memcpy_cast<uint64_t>(value.d);
+                uint64_t val = (uint64_t) ek::memcpy_cast<uint64_t>(value.d);
                 if (target_swap)
                     val = detail::swap(val);
                 *((uint64_t *) dst) = val;

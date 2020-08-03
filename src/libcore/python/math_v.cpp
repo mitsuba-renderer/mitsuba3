@@ -1,5 +1,6 @@
 #include <mitsuba/core/math.h>
 #include <enoki/color.h>
+#include <enoki/dynamic.h>
 #include <enoki/morton.h>
 #include <bitset>
 #include <mitsuba/python/python.h>
@@ -41,13 +42,12 @@ MTS_PY_EXPORT(math) {
           [](Float &c) { return ek::srgb_to_linear(c); },
           "Applies the inverse sRGB gamma curve to the given argument.");
 
-    // TODO refactoring
-    // m.def("chi2",
-    //       [](const DynamicBuffer<double> &obs, const DynamicBuffer<double> &exp, double thresh) {
-    //           if (exp.size() != obs.size())
-    //               throw std::runtime_error("Unsupported input dimensions");
-    //           return math::chi2(obs.data(), exp.data(), thresh, obs.size());
-    //       }, D(math, chi2));
+    m.def("chi2",
+          [](const DynamicBuffer<double> &obs, const DynamicBuffer<double> &exp, double thresh) {
+              if (exp.size() != obs.size())
+                  throw std::runtime_error("Unsupported input dimensions");
+              return math::chi2(obs.data(), exp.data(), thresh, obs.size());
+          }, D(math, chi2));
 
     m.def("solve_quadratic",
           &math::solve_quadratic<Float>,

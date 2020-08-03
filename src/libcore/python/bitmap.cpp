@@ -174,7 +174,7 @@ MTS_PY_EXPORT(Bitmap) {
             auto field = bitmap.struct_()->operator[](0);
             py::dict result;
             result["shape"] = py::make_tuple(bitmap.height(), bitmap.width(),
-                                            bitmap.channel_count());
+                                             bitmap.channel_count());
 
             std::string code(3, '\0');
             #if defined(LITTLE_ENDIAN)
