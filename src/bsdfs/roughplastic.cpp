@@ -300,7 +300,7 @@ public:
 
     Float lerp_gather(const ek::scalar_t<Float> *data, Float x, size_t size,
                       Mask active = true) const {
-        using UInt = uint_array_t<Float>;
+        using UInt = ek::uint_array_t<Float>;
         x *= Float(size - 1);
 
         UInt index = ek::min(UInt(x), ek::scalar_t<UInt>(size - 2));
@@ -379,21 +379,23 @@ public:
 
         // Precompute rough reflectance (vectorized)
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
-            using FloatP    = Packet<ScalarFloat>;
-            using Vector3fX = Vector<DynamicBuffer<Float>, 3>;
+            using FloatX = DynamicBuffer<Float>;
+            using UIntX  = ek::uint_array_t<FloatX>;
+            using Vector3fX = Vector<FloatX, 3>;
 
-            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr_p(m_type, m_alpha);
-            Vector3fX wi = ek::zero<Vector3fX>(MTS_ROUGH_TRANSMITTANCE_RES);
-            for (size_t i = 0; i < ek::width(wi); ++i) {
-                ScalarFloat mu    = std::max((ScalarFloat) 1e-6f, ScalarFloat(i) / ScalarFloat(ek::width(wi) - 1));
-                slice(wi, i) = ScalarVector3f(ek::sqrt(1 - mu * mu), 0.f, mu);
-            }
+            mitsuba::MicrofacetDistribution<FloatX, Spectrum> distr(m_type, m_alpha);
 
-            auto external_transmittance = eval_transmittance(distr_p, wi, m_eta);
-            m_external_transmittance = ek::load_unaligned<DynamicBuffer<Float>>(external_transmittance.data(),
-                                                                                ek::width(external_transmittance));
+            FloatX mu = ek::max(
+                1e-6f, ek::arange<UIntX>(MTS_ROUGH_TRANSMITTANCE_RES) /
+                           ScalarFloat(MTS_ROUGH_TRANSMITTANCE_RES - 1));
+            Vector3fX wi = Vector3fX(ek::sqrt(1 - mu * mu), 0.f, mu);
+
+            auto external_transmittance = eval_transmittance(distr, wi, m_eta);
+            m_external_transmittance =
+                ek::load_unaligned<FloatX>(external_transmittance.data(),
+                                           ek::width(external_transmittance));
             m_internal_reflectance =
-                ek::hmean(eval_reflectance(distr_p, wi, 1.f / m_eta) * wi.z()) * 2.f;
+                ek::hmean(eval_reflectance(distr, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
     }
 

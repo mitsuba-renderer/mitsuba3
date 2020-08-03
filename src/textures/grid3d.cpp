@@ -75,10 +75,10 @@ public:
                 ScalarColor3f rgb = ek::load_unaligned<ScalarColor3f>(ptr);
                 // TODO: Make this scaling optional if the RGB values are between 0 and 1
                 ScalarFloat scale = ek::hmax(rgb) * 2.f;
-                ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
+                ScalarColor3f rgb_norm = rgb / ek::max((ScalarFloat) 1e-8, scale);
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
                 mean += (double) (srgb_model_mean(coeff) * scale);
-                max = std::max(max, scale);
+                max = ek::max(max, scale);
                 ek::store_unaligned(
                     scaled_data_ptr,
                     ek::concat(coeff, ek::Array<ScalarFloat, 1>(scale)));

@@ -107,7 +107,7 @@ public:
                        scaling. We use a color where the highest component is 50%,
                        which generally yields a fairly smooth spectrum. */
                     ScalarFloat scale = ek::hmax(rgb) * 2.f;
-                    ScalarColor3f rgb_norm = rgb / std::max((ScalarFloat) 1e-8, scale);
+                    ScalarColor3f rgb_norm = rgb / ek::max((ScalarFloat) 1e-8, scale);
                     coeff = ek::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
                                        ek::Array<ScalarFloat, 1>(scale));
                 }

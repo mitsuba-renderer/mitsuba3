@@ -450,105 +450,68 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
     return os;
 }
 
-// TODO refactoring
-// template <typename FloatP, typename Spectrum>
-// DynamicArray<FloatP> eval_reflectance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
-//                                       const Vector<DynamicArray<FloatP>, 3> &wi_,
-//                                       ek::scalar_t<FloatP> eta) {
-//     using Float     = ek::scalar_t<FloatP>;
-//     using FloatX    = DynamicArray<FloatP>;
-//     using Vector2fP = Vector<FloatP, 2>;
-//     using Vector3fP = Vector<FloatP, 3>;
-//     using Normal3fP = Normal<FloatP, 3>;
-//     using Vector2fX = Vector<FloatX, 2>;
-//     using Vector3fX = Vector<FloatX, 3>;
+template <typename Float, typename Spectrum>
+Float eval_reflectance(const MicrofacetDistribution<Float, Spectrum> &distr,
+                       const Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
+    MTS_IMPORT_CORE_TYPES()
 
-//     if (!distr.sample_visible())
-//         Throw("eval_reflectance(): requires visible normal sampling!");
+    if (!distr.sample_visible())
+        Throw("eval_reflectance(): requires visible normal sampling!");
 
-//     int res = 128;
-//     if (eta > 1)
-//         res = 32;
-//     while (res % FloatP::Size != 0)
-//         ++res;
+    int res = eta > 1 ? 32 : 128;
 
-//     FloatX nodes, weights, result;
-//     std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
-//     set_slices(result, slices(wi_));
+    auto [nodes, weights] = quad::gauss_legendre<Float>(res);
+    Float result = ek::empty<Float>(ek::width(wi));
 
-//     Vector2fX nodes_2    = ek::meshgrid(nodes, nodes),
-//               weights_2  = ek::meshgrid(weights, weights);
+    auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
+    auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
 
-//     for (size_t i = 0; i < slices(wi_); ++i) {
-//         auto wi      = slice(wi_, i);
-//         FloatP accum = ek::zero<FloatP>();
+    for (size_t i = 0; i < ek::width(nodes_x); ++i) {
+        ScalarVector2f node = { nodes_x[i], nodes_y[i] };
+        ScalarVector2f weight = { weights_x[i], weights_y[i] };
+        node = ek::fmadd(node, 0.5f, 0.5f);
 
-//         for (size_t j = 0; j < packets(nodes_2); ++j) {
-//             Vector2fP node(packet(nodes_2, j)),
-//                       weight(packet(weights_2, j));
-//             node = ek::fmadd(node, 0.5f, 0.5f);
+        Normal3f m = std::get<0>(distr.sample(wi, node));
+        Vector3f wo = reflect(wi, m);
+        Float f = std::get<0>(fresnel(ek::dot(wi, m), Float(eta)));
+        Float smith = distr.smith_g1(wo, m) * f;
+        ek::masked(smith, wo.z() <= 0.f || wi.z() <= 0.f) = 0.f;
+        result += smith * ek::hprod(weight) * 0.25f;
+    }
 
-//             Normal3fP m = std::get<0>(distr.sample(wi, node));
-//             Vector3fP wo = reflect(Vector3fP(wi), m);
-//             FloatP f = std::get<0>(fresnel(ek::dot(wi, m), FloatP(eta)));
-//             FloatP smith = distr.smith_g1(wo, m) * f;
-//             smith[wo.z() <= 0.f || wi.z() <= 0.f] = 0.f;
+    return result;
+}
 
-//             accum += smith * ek::hprod(weight);
-//         }
-//         slice(result, i) = ek::hsum(accum) * 0.25f;
-//     }
-//     return result;
-// }
+template <typename Float, typename Spectrum>
+Float eval_transmittance(const MicrofacetDistribution<Float, Spectrum> &distr,
+                         const Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
+    MTS_IMPORT_CORE_TYPES()
 
-// template <typename FloatP, typename Spectrum>
-// DynamicArray<FloatP> eval_transmittance(const MicrofacetDistribution<FloatP, Spectrum> &distr,
-//                                         const Vector<DynamicArray<FloatP>, 3> &wi_,
-//                                         ek::scalar_t<FloatP> eta) {
-//     using Float     = ek::scalar_t<FloatP>;
-//     using FloatX    = DynamicArray<FloatP>;
-//     using Vector2fP = Vector<FloatP, 2>;
-//     using Vector3fP = Vector<FloatP, 3>;
-//     using Normal3fP = Normal<FloatP, 3>;
-//     using Vector2fX = Vector<FloatX, 2>;
-//     using Vector3fX = Vector<FloatX, 3>;
+    if (!distr.sample_visible())
+        Throw("eval_transmittance(): requires visible normal sampling!");
 
-//     if (!distr.sample_visible())
-//         Throw("eval_transmittance(): requires visible normal sampling!");
+    int res = eta > 1 ? 32 : 128;
 
-//     int res = 128;
-//     if (eta > 1)
-//         res = 32;
-//     while (res % FloatP::Size != 0)
-//         ++res;
+    auto [nodes, weights] = quad::gauss_legendre<Float>(res);
+    Float result = ek::zero<Float>(ek::width(wi));
 
-//     FloatX nodes, weights, result;
-//     std::tie(nodes, weights) = quad::gauss_legendre<FloatX>(res);
-//     set_slices(result, slices(wi_));
+    auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
+    auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
 
-//     Vector2fX nodes_2    = ek::meshgrid(nodes, nodes),
-//               weights_2  = ek::meshgrid(weights, weights);
+    for (size_t i = 0; i < ek::width(nodes_x); ++i) {
+        ScalarVector2f node = { nodes_x[i], nodes_y[i] };
+        ScalarVector2f weight = { weights_x[i], weights_y[i] };
+        node = ek::fmadd(node, 0.5f, 0.5f);
 
-//     for (size_t i = 0; i < slices(wi_); ++i) {
-//         auto wi      = slice(wi_, i);
-//         FloatP accum = ek::zero<FloatP>();
+        Normal3f m = std::get<0>(distr.sample(wi, node));
+        auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi, m), Float(eta));
+        Vector3f wo = refract(wi, m, cos_theta_t, eta_ti);
+        Float smith = distr.smith_g1(wo, m) * (1.f - f);
+        ek::masked(smith, wo.z() * wi.z() >= 0.f) = 0.f;
+        result += smith * ek::hprod(weight) * 0.25f;
+    }
 
-//         for (size_t j = 0; j < packets(nodes_2); ++j) {
-//             Vector2fP node(packet(nodes_2, j)),
-//                       weight(packet(weights_2, j));
-//             node = ek::fmadd(node, 0.5f, 0.5f);
-
-//             Normal3fP m = std::get<0>(distr.sample(wi, node));
-//             auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi, m), FloatP(eta));
-//             Vector3fP wo = refract(Vector3fP(wi), m, cos_theta_t, eta_ti);
-//             FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
-//             smith[wo.z() * wi.z() >= 0.f] = 0.f;
-
-//             accum += smith * ek::hprod(weight);
-//         }
-//         slice(result, i) = ek::hsum(accum) * 0.25f;
-//     }
-//     return result;
-// }
+    return result;
+}
 
 NAMESPACE_END(mitsuba)

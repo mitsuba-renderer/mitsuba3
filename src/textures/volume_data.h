@@ -89,7 +89,7 @@ read_binary_volume_data(const std::string &filename) {
             auto val    = detail::read<float>(f);
             raw_data[k] = val;
             meta.mean += (double) val;
-            meta.max = std::max(meta.max, val);
+            meta.max = ek::max(meta.max, val);
             ++k;
         }
     }
