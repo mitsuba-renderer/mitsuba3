@@ -192,23 +192,26 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
             shapegroup->optix_fill_hitgroup_records(hg_sbts, s.program_groups);
 
         size_t shapes_count = hg_sbts.size();
-        void* records = cuda_malloc(sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord) + sizeof(HitGroupSbtRecord) * shapes_count);
+
+        void *records = jitc_malloc(AllocType::Device,
+                                    sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord) +
+                                    sizeof(HitGroupSbtRecord) * shapes_count);
 
         RayGenSbtRecord raygen_sbt;
         rt_check(optixSbtRecordPackHeader(s.program_groups[0], &raygen_sbt));
         void* raygen_record = records;
-        cuda_memcpy_to_device(raygen_record, &raygen_sbt, sizeof(RayGenSbtRecord));
+        jitc_memcpy(raygen_record, &raygen_sbt, sizeof(RayGenSbtRecord));
 
         MissSbtRecord miss_sbt;
         rt_check(optixSbtRecordPackHeader(s.program_groups[1], &miss_sbt));
         void* miss_record = (char*)records + sizeof(RayGenSbtRecord);
-        cuda_memcpy_to_device(miss_record, &miss_sbt, sizeof(MissSbtRecord));
+        jitc_memcpy(miss_record, &miss_sbt, sizeof(MissSbtRecord));
 
         // Allocate hitgroup records array
         void* hitgroup_records = (char*)records + sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord);
 
         // Copy HitGroupRecords to the GPU
-        cuda_memcpy_to_device(hitgroup_records, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
+        jitc_memcpy(hitgroup_records, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
 
         s.sbt.raygenRecord                = (CUdeviceptr)raygen_record;
         s.sbt.missRecordBase              = (CUdeviceptr)miss_record;
@@ -226,10 +229,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         accel_parameters_changed_gpu();
 
         // Allocate launch-varying OptixParams data structure
-        s.params = cuda_malloc(sizeof(OptixParams));
+        s.params = jitc_malloc(AllocType::Device, sizeof(OptixParams));
 
         // This will trigger the scatter calls to upload geometry to the device
-        cuda_eval();
+        jitc_sync_stream();
     }
 }
 
@@ -264,8 +267,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
 
-        void* d_ias = cuda_malloc(ias.size() * sizeof(OptixInstance));
-        cuda_memcpy_to_device(d_ias, ias.data(), ias.size() * sizeof(OptixInstance));
+        void* d_ias = jitc_malloc(AllocType::Device, ias.size() * sizeof(OptixInstance));
+        jitc_memcpy(d_ias, ias.data(), ias.size() * sizeof(OptixInstance));
 
         OptixBuildInput build_input;
         build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
@@ -276,8 +279,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
         OptixAccelBufferSizes buffer_sizes;
         rt_check(optixAccelComputeMemoryUsage(s.context, &accel_options, &build_input, 1, &buffer_sizes));
-        void* d_temp_buffer = cuda_malloc(buffer_sizes.tempSizeInBytes);
-        s.ias_buffer    = cuda_malloc(buffer_sizes.outputSizeInBytes);
+        void* d_temp_buffer = jitc_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+        s.ias_buffer    = jitc_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
         rt_check(optixAccelBuild(
             s.context,
@@ -294,17 +297,17 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             0  // num emitted properties
         ));
 
-        cuda_free(d_temp_buffer);
-        cuda_free(d_ias);
+        jitc_free(d_temp_buffer);
+        jitc_free(d_ias);
     }
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
         OptixState &s = *(OptixState *) m_accel;
-        cuda_free((void*)s.sbt.raygenRecord);
-        cuda_free((void*)s.params);
-        cuda_free(s.ias_buffer);
+        jitc_free((void*)s.sbt.raygenRecord);
+        jitc_free((void*)s.params);
+        jitc_free(s.ias_buffer);
         rt_check(optixPipelineDestroy(s.pipeline));
         for (size_t i = 0; i < ProgramGroupCount; i++)
             rt_check(optixProgramGroupDestroy(s.program_groups[i]));
@@ -323,7 +326,7 @@ void launch_optix_kernel(const OptixState &s,
                          const OptixParams &params,
                          size_t ray_count) {
 
-    cuda_memcpy_to_device(s.params, &params, sizeof(OptixParams));
+    jitc_memcpy(s.params, &params, sizeof(OptixParams));
 
     unsigned int width = 1, height = (unsigned int) ray_count;
     while (!(height & 1) && width < height) {
@@ -342,7 +345,7 @@ void launch_optix_kernel(const OptixState &s,
         1u // depth
     );
     if (rt == OPTIX_ERROR_HOST_OUT_OF_MEMORY) {
-        cuda_malloc_trim();
+        jitc_malloc_trim();
         rt = optixLaunch(
             s.pipeline,
             0, // default cuda stream
@@ -360,7 +363,7 @@ void launch_optix_kernel(const OptixState &s,
 
 /// Helper function to bind CUDAArray data pointer to fields in the OptixParams struct
 template <typename T> void bind_data(ek::scalar_t<T> **field, T &value) {
-    if constexpr (is_static_array_v<T>) {
+    if constexpr (ek::is_static_array_v<T>) {
         for (size_t i = 0; i < ek::array_size_v<T>; ++i)
             field[i] = value[i].data();
     } else {
@@ -375,9 +378,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         OptixState &s = *(OptixState *) m_accel;
 
         Ray3f ray(ray_);
-        size_t ray_count = std::max(slices(ray.o), slices(ray.d));
-        set_slices(ray, ray_count);
-        set_slices(active, ray_count);
+        size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
+        // set_slices(ray, ray_count); // TODO refactoring
+        // set_slices(active, ray_count);
 
         PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(ray_count);
 
@@ -389,7 +392,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         // Ensure pi and instance_index are allocated before binding the data pointers
-        cuda_eval();
+        jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
@@ -412,7 +415,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < max_inst_index;
         pi.instance =
-            ek::gather<ShapePtr>(reinterpret_array<ShapePtr>(s.shapes_ptr),
+            ek::gather<ShapePtr>(ek::reinterpret_array<ShapePtr>(s.shapes_ptr),
                              instance_index, active & valid_instances);
 
         return pi;
@@ -439,9 +442,9 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         }
 
         Ray3f ray(ray_);
-        size_t ray_count = std::max(slices(ray.o), slices(ray.d));
-        set_slices(ray, ray_count);
-        set_slices(active, ray_count);
+        size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
+        // set_slices(ray, ray_count);
+        // set_slices(active, ray_count); // TODO refactoring
 
         // Allocate only the required fields of the SurfaceInteraction struct
         SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
@@ -473,7 +476,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // `si.is_valid()==true`, this makes it easier to catch bugs in the
         // masking logic implemented in the integrator.
 #if !defined(NDEBUG)
-        #define SET_NAN(name) name = ek::full<decltype(name)>(std::numeric_limits<ek::scalar_t<Float>>::quiet_NaN(), ray_count);
+        #define SET_NAN(name) name = ek::full<decltype(name)>(ek::NaN<Float>, ray_count);
         SET_NAN(si.t); SET_NAN(si.time); SET_NAN(si.p); SET_NAN(si.uv); SET_NAN(si.n);
         SET_NAN(si.sh_frame.n); SET_NAN(si.dp_du); SET_NAN(si.dp_dv);
         #undef SET_NAN
@@ -488,7 +491,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         // Ensure si and instance_index are allocated before binding the
         // data pointers
-        cuda_eval();
+        jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g.
         // nullptr)
@@ -536,7 +539,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < m_shapes.size();
         si.instance =
-            ek::gather<ShapePtr>(reinterpret_array<ShapePtr>(s.shapes_ptr),
+            ek::gather<ShapePtr>(ek::reinterpret_array<ShapePtr>(s.shapes_ptr),
                              instance_index, active & valid_instances);
 
         // Incident direction in local coordinates
@@ -556,13 +559,13 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
-        size_t ray_count = std::max(slices(ray.o), slices(ray.d));
+        size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
         Mask hit = ek::empty<Mask>(ray_count);
 
-        set_slices(ray, ray_count);
-        set_slices(active, ray_count);
+        // set_slices(ray, ray_count); // TODO refactoring
+        // set_slices(active, ray_count);
 
-        cuda_eval();
+        jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};

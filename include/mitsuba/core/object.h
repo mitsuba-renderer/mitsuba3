@@ -300,3 +300,11 @@ static_assert(sizeof(ref<Object>) == sizeof(Object *),
               "ref<T> must be reinterpretable as a T*.");
 
 NAMESPACE_END(mitsuba)
+
+// Necessary when printing jit arrays of pointers to mitsuba::Object
+namespace enoki {
+    template <typename Array>
+    struct call_support<mitsuba::Object, Array> {
+        static constexpr const char *Domain = "mitsuba::Object";
+    };
+}

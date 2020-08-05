@@ -2072,7 +2072,7 @@ public:
         if constexpr (!ek::is_array_v<Float>)
             return ray_intersect_scalar<ShadowRay>(ray);
         else
-            return ray_intersect_packet<ShadowRay>(ray, active);
+            Throw("kdtree should only be used in scalar mode");
     }
 
     template <bool ShadowRay>
@@ -2170,6 +2170,7 @@ public:
         return pi;
     }
 
+#if 0
     template <bool ShadowRay>
     MTS_INLINE PreliminaryIntersection3f ray_intersect_packet(Ray3f ray,
                                                               Mask active) const {
@@ -2295,6 +2296,7 @@ public:
 
         return pi;
     }
+#endif
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>

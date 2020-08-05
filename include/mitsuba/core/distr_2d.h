@@ -137,8 +137,7 @@ public:
         Point2f sample(sample_);
 
         // Avoid degeneracies on the domain boundary
-        sample = ek::clamp(sample, std::numeric_limits<ScalarFloat>::min(),
-                       ek::OneMinusEpsilon<Float>);
+        sample = ek::clamp(sample, ek::Smallest<Float>, ek::OneMinusEpsilon<Float>);
 
         // Scale sample Y range
         sample.y() *= m_inv_normalization;

@@ -53,7 +53,7 @@ bool optix_initialize() {
     optix_init_attempted = true;
 
 #if !defined(MTS_USE_OPTIX_HEADERS)
-    log(LogLevel::Info, "Dynamic loading of the Optix library ..");
+    Log(LogLevel::Info, "Dynamic loading of the Optix library ..");
 
     optix_handle = nullptr;
 
@@ -140,7 +140,7 @@ bool optix_initialize() {
 #  endif
 
     if (!optix_handle) {
-        log(LogLevel::Error,
+        Log(LogLevel::Error,
             "optix_initialize(): %s could not be loaded.", optix_fname);
         return false;
     }
@@ -150,7 +150,7 @@ bool optix_initialize() {
         dlsym(optix_handle, "optixQueryFunctionTable"));
 
     if (!optixQueryFunctionTable) {
-        log(LogLevel::Error,
+        Log(LogLevel::Error,
             "optix_initialize(): could not find symbol optixQueryFunctionTable");
         return false;
     }

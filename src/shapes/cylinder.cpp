@@ -410,12 +410,12 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
-                m_optix_data_ptr = cuda_malloc(sizeof(OptixCylinderData));
+                m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
             OptixCylinderData data = { bbox(), m_to_world, m_to_object,
                                        m_length, m_radius, m_flip_normals };
 
-            cuda_memcpy_to_device(m_optix_data_ptr, &data, sizeof(OptixCylinderData));
+            jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }
     }
 #endif

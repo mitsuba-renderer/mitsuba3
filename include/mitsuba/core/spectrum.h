@@ -302,7 +302,10 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     if constexpr (!is_spectral_v<Spectrum>) {
         ENOKI_MARK_USED(sample);
         // Note: wavelengths should not be used when rendering in RGB mode.
-        return { std::numeric_limits<ek::scalar_t<Float>>::quiet_NaN(), 1.f };
+        if constexpr (is_rgb_v<Spectrum>)
+            return { {}, 1.f };
+        else
+            return { ek::NaN<Float>, 1.f };
     } else {
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
         return sample_rgb_spectrum(wav_sample);

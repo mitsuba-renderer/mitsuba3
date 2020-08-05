@@ -44,8 +44,8 @@ struct OptixAccelData {
     HandleData others;
 
     ~OptixAccelData() {
-        if (meshes.buffer) cuda_free(meshes.buffer);
-        if (others.buffer) cuda_free(others.buffer);
+        if (meshes.buffer) jitc_free(meshes.buffer);
+        if (others.buffer) jitc_free(others.buffer);
     }
 };
 
@@ -91,7 +91,7 @@ void build_gas(const OptixDeviceContext &context,
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
         if (handle.buffer) {
-            cuda_free(handle.buffer);
+            jitc_free(handle.buffer);
             handle.handle = 0ull;
             handle.buffer = nullptr;
             handle.count = 0;
@@ -115,8 +115,8 @@ void build_gas(const OptixDeviceContext &context,
             &buffer_sizes
         ));
 
-        void* d_temp_buffer = cuda_malloc(buffer_sizes.tempSizeInBytes);
-        void* output_buffer = cuda_malloc(buffer_sizes.outputSizeInBytes + 8);
+        void* d_temp_buffer = jitc_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+        void* output_buffer = jitc_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes + 8);
 
         OptixAccelEmitDesc emit_property = {};
         emit_property.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -138,12 +138,12 @@ void build_gas(const OptixDeviceContext &context,
             1                // num emitted properties
         ));
 
-        cuda_free(d_temp_buffer);
+        jitc_free(d_temp_buffer);
 
         size_t compact_size;
-        cuda_memcpy_from_device(&compact_size, (void*)emit_property.result, sizeof(size_t));
+        jitc_memcpy(&compact_size, (void*)emit_property.result, sizeof(size_t));
         if (compact_size < buffer_sizes.outputSizeInBytes) {
-            void* compact_buffer = cuda_malloc(compact_size);
+            void* compact_buffer = jitc_malloc(AllocType::Device, compact_size);
             // Use handle as input and output
             rt_check(optixAccelCompact(
                 context,
@@ -153,7 +153,7 @@ void build_gas(const OptixDeviceContext &context,
                 compact_size,
                 &accel
             ));
-            cuda_free(output_buffer);
+            jitc_free(output_buffer);
             output_buffer = compact_buffer;
         }
 

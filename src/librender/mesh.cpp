@@ -269,7 +269,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
             auto d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
             auto d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
             auto face_angle = safe_acos(ek::dot(d0, d1));
-            ek::scatter_add(normals, n * face_angle, fi[i]);
+            ek::scatter_add(normals.data(), n * face_angle, fi[i]);
         }
         normals = ek::normalize(normals);
 
@@ -305,7 +305,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
             m_face_count
         );
     } else {
-        Float table = face_area(ek::arange<UInt32>(m_face_count)).managed();
+        Float table = face_area(ek::arange<UInt32>(m_face_count));
+        ek::migrate(table, AllocType::Managed);
 
         m_area_pmf = DiscreteDistribution<Float>(
             table.data(),
@@ -407,7 +408,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     if (!m_parameterization)
         const_cast<Mesh *>(this)->build_parameterization();
 
-    Ray3f ray(Point3f(uv.x(), uv.y(), -1), Vector3f(0, 0, 1), 0, 0);
+    Ray3f ray(Point3f(uv.x(), uv.y(), -1), Vector3f(0, 0, 1), 0, Wavelength(0));
 
     PreliminaryIntersection3f pi = m_parameterization->ray_intersect_preliminary(ray, active);
 
@@ -811,7 +812,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
         m_vertex_buffer_ptr = (void*) m_vertex_positions_buf.data();
 
         if (!m_optix_data_ptr)
-            m_optix_data_ptr = cuda_malloc(sizeof(OptixMeshData));
+            m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixMeshData));
 
         OptixMeshData data = {
             (const optix::Vector3u *) m_faces_buf.data(),
@@ -820,7 +821,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
             (const optix::Vector2f *) m_vertex_texcoords_buf.data()
         };
 
-        cuda_memcpy_to_device(m_optix_data_ptr, &data, sizeof(OptixMeshData));
+        jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixMeshData));
     }
 }
 

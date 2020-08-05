@@ -3,6 +3,10 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/spectrum.h>
 
+#if defined(MTS_ENABLE_OPTIX)
+# include<enoki/cuda.h>
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 
@@ -195,13 +199,14 @@ void cie_alloc() {
     static bool cie_alloc_done = false;
     if (cie_alloc_done)
         return;
-    const size_t size = MTS_CIE_SAMPLES * 3 * sizeof(Float);
-    Float *src = (Float *) cuda_managed_malloc(size);
-    memcpy(src, cie1931_tbl, size);
 
-    cie1931_x_data = src;
-    cie1931_y_data = src + MTS_CIE_SAMPLES;
-    cie1931_z_data = src + MTS_CIE_SAMPLES * 2;
+    using FloatC = ek::CUDAArray<Float>;
+    FloatC src = ek::load_unaligned<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
+    ek::migrate(src, AllocType::Managed);
+
+    cie1931_x_data = src.data();
+    cie1931_y_data = src.data() + MTS_CIE_SAMPLES;
+    cie1931_z_data = src.data() + MTS_CIE_SAMPLES * 2;
     cie_alloc_done = true;
 #endif
 }
