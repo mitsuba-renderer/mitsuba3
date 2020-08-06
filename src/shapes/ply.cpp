@@ -205,11 +205,13 @@ public:
                 }
 
                 ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-                ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+                ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
                 ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
                 if constexpr (ek::is_cuda_array_v<Float>) {
-                    ek::eval(m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf);
+                    ek::schedule(m_vertex_positions_buf, m_vertex_normals_buf,
+                                 m_vertex_texcoords_buf);
+                    jitc_eval();
                     jitc_sync_stream();
                 }
 
@@ -223,8 +225,8 @@ public:
                 std::unique_ptr<uint8_t[]> buf_o(new uint8_t[o_packet_size]);
 
                 InputFloat* position_ptr = m_vertex_positions_buf.data();
-                InputFloat* normal_ptr   = m_vertex_normals_buf.data();
-                InputFloat* texcoord_ptr = m_vertex_texcoords_buf.data();
+                InputFloat *normal_ptr   = m_vertex_normals_buf.data();
+                InputFloat *texcoord_ptr = m_vertex_texcoords_buf.data();
 
                 for (size_t i = 0; i <= packet_count; ++i) {
                     uint8_t *target = (uint8_t *) buf_o.get();
@@ -278,9 +280,8 @@ public:
                     }
                 }
 
-                for (auto& descr: vertex_attributes_descriptors) {
+                for (auto& descr: vertex_attributes_descriptors)
                     add_attribute(descr.name, descr.dim, descr.buf);
-                }
             } else if (el.name == "face") {
                 std::string field_name;
                 if (el.struct_->has_field("vertex_index.count"))
@@ -324,7 +325,8 @@ public:
                 }
 
                 if constexpr (ek::is_cuda_array_v<Float>) {
-                    ek::eval(m_faces_buf);
+                    ek::schedule(m_faces_buf);
+                    jitc_eval();
                     jitc_sync_stream();
                 }
 

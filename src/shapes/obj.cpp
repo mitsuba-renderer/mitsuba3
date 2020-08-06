@@ -290,11 +290,15 @@ public:
         // TODO this is needed for the bbox(..) methods, but is it slower?
         ek::migrate(m_faces_buf, AllocType::Managed);
         ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-        ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+        ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
         ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
-        if constexpr (ek::is_cuda_array_v<Float>)
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::schedule(m_faces_buf, m_vertex_positions_buf,
+                         m_vertex_normals_buf, m_vertex_texcoords_buf);
+            jitc_eval();
             jitc_sync_stream();
+        }
 
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;
