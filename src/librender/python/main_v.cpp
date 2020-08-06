@@ -132,6 +132,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         py::cpp_function cleanup_callback(
             [](py::handle weakref) {
                 optix_shutdown();
+                jitc_shutdown();
                 weakref.dec_ref();
             }
         );

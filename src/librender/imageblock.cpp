@@ -160,10 +160,10 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             }
         }
     } else {
-        Point2u lo = ek::ceil2int<Point2i>(pos - .5f);
+        Point2i lo = ek::ceil2int<Point2i>(pos - .5f);
         UInt32 offset = m_channel_count * (lo.y() * size.x() + lo.x());
 
-        Mask enabled = active && ek::all(lo >= 0u && lo < size);
+        Mask enabled = active && ek::all(lo >= 0 && lo < size);
         ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
             ek::scatter_add(m_data, value[k], offset + k, enabled);
     }

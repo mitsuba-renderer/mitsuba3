@@ -39,7 +39,7 @@ struct OptixState {
     void* params;
     char *custom_optix_shapes_program_names[2 * custom_optix_shapes_count];
 
-    ek::CUDAArray<const void*> shapes_ptr;
+    ek::CUDAArray<uint32_t> shapes_registry_ids;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
@@ -48,14 +48,19 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         m_accel = new OptixState();
         OptixState &s = *(OptixState *) m_accel;
 
-        // Copy shapes pointers to the GPU
-        s.shapes_ptr = ek::load_unaligned<ek::CUDAArray<const void*>>((void**)m_shapes.data(), m_shapes.size());
+        // Copy shapes registry ids to the GPU
+        std::vector<uint32_t> ids(m_shapes.size());
+        for (size_t i = 0; i < m_shapes.size(); i++)
+            ids[i] = jitc_registry_get_id(m_shapes[i]);
+        s.shapes_registry_ids = ek::load_unaligned<ek::CUDAArray<uint32_t>>(ids.data(), ids.size());
 
         // ------------------------
         //  OptiX context creation
         // ------------------------
 
         CUcontext cuCtx = 0;  // zero means take the current context
+        cuCtx = (CUcontext) jitc_device_context(jitc_device());
+
         OptixDeviceContextOptions options = {};
         options.logCallbackFunction       = &context_log_cb;
     #if !defined(MTS_OPTIX_DEBUG)
@@ -379,8 +384,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 
         Ray3f ray(ray_);
         size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
-        // set_slices(ray, ray_count); // TODO refactoring
-        // set_slices(active, ray_count);
 
         PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(ray_count);
 
@@ -392,31 +395,39 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         // Ensure pi and instance_index are allocated before binding the data pointers
+        ek::schedule(pi, instance_index, active, ray);
+        jitc_eval();
         jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
+        // Inputs
         bind_data(&params.in_mask, active);
+        params.in_mask_width = ek::width(active);
         bind_data(params.in_o, ray.o);
+        params.in_o_width = ek::width(ray.o);
         bind_data(params.in_d, ray.d);
+        params.in_d_width = ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
+        params.in_mint_width = ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);
+        params.in_maxt_width = ek::width(ray.maxt);
+        // Outputs
         bind_data(&params.out_t, pi.t);
         bind_data(params.out_prim_uv, pi.prim_uv);
         bind_data(&params.out_prim_index, pi.prim_index);
         bind_data(&params.out_inst_index, instance_index);
-        params.out_shape_ptr = (unsigned long long*)pi.shape.data();
+        params.out_shape_ptr = (uint32_t *)pi.shape.data();
         params.handle = s.ias_handle;
 
         launch_optix_kernel(s, params, ray_count);
 
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < max_inst_index;
-        pi.instance =
-            ek::gather<ShapePtr>(ek::reinterpret_array<ShapePtr>(s.shapes_ptr),
-                             instance_index, active & valid_instances);
+        pi.instance = ek::gather<ShapePtr>(
+            s.shapes_registry_ids, instance_index, active & valid_instances);
 
         return pi;
     } else {
@@ -443,8 +454,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         Ray3f ray(ray_);
         size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
-        // set_slices(ray, ray_count);
-        // set_slices(active, ray_count); // TODO refactoring
 
         // Allocate only the required fields of the SurfaceInteraction struct
         SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
@@ -491,6 +500,8 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         // Ensure si and instance_index are allocated before binding the
         // data pointers
+        ek::schedule(si, instance_index, active, ray);
+        jitc_eval();
         jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g.
@@ -498,11 +509,18 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
+        // Inputs
         bind_data(&params.in_mask, active);
+        params.in_mask_width = ek::width(active);
         bind_data(params.in_o, ray.o);
+        params.in_o_width = ek::width(ray.o);
         bind_data(params.in_d, ray.d);
+        params.in_d_width = ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
+        params.in_mint_width = ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);
+        params.in_maxt_width = ek::width(ray.maxt);
+        // Outputs
         bind_data(&params.out_t, si.t);
         if (has_flag(flags, HitComputeFlags::UV))
             bind_data(params.out_uv, si.uv);
@@ -524,10 +542,11 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         }
         bind_data(&params.out_prim_index, si.prim_index);
         bind_data(&params.out_inst_index, instance_index);
-        params.out_shape_ptr = (unsigned long long*)si.shape.data();
+        params.out_shape_ptr = (uint32_t *)si.shape.data();
         params.handle = s.ias_handle;
 
         launch_optix_kernel(s, params, ray_count);
+        jitc_sync_stream();
 
         si.time = ray.time;
         si.wavelengths = ray.wavelengths;
@@ -536,11 +555,12 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         if (has_flag(flags, HitComputeFlags::ShadingFrame))
             si.initialize_sh_frame();
 
+
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < m_shapes.size();
-        si.instance =
-            ek::gather<ShapePtr>(ek::reinterpret_array<ShapePtr>(s.shapes_ptr),
-                             instance_index, active & valid_instances);
+
+        si.instance = ek::gather<ShapePtr>(
+            s.shapes_registry_ids, instance_index, active & valid_instances);
 
         // Incident direction in local coordinates
         si.wi = ek::select(si.is_valid(), si.to_local(-ray.d), -ray.d);
@@ -562,20 +582,26 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
         Mask hit = ek::empty<Mask>(ray_count);
 
-        // set_slices(ray, ray_count); // TODO refactoring
-        // set_slices(active, ray_count);
-
+        ek::schedule(hit, active, ray);
+        jitc_eval();
         jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
+        // Inputs
         bind_data(&params.in_mask, active);
+        params.in_mask_width = ek::width(active);
         bind_data(params.in_o, ray.o);
+        params.in_o_width = ek::width(ray.o);
         bind_data(params.in_d, ray.d);
+        params.in_d_width = ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
+        params.in_mint_width = ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);
+        params.in_maxt_width = ek::width(ray.maxt);
+        // Outputs
         bind_data(&params.out_hit, hit);
         params.handle = s.ias_handle;
 

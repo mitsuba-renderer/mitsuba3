@@ -460,7 +460,8 @@ Float eval_reflectance(const MicrofacetDistribution<Float, Spectrum> &distr,
 
     int res = eta > 1 ? 32 : 128;
 
-    auto [nodes, weights] = quad::gauss_legendre<Float>(res);
+    using FloatX = ek::DynamicArray<ek::scalar_t<Float>>;
+    auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
     Float result = ek::empty<Float>(ek::width(wi));
 
     auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
@@ -492,7 +493,8 @@ Float eval_transmittance(const MicrofacetDistribution<Float, Spectrum> &distr,
 
     int res = eta > 1 ? 32 : 128;
 
-    auto [nodes, weights] = quad::gauss_legendre<Float>(res);
+    using FloatX = ek::DynamicArray<ek::scalar_t<Float>>;
+    auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
     Float result = ek::zero<Float>(ek::width(wi));
 
     auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);

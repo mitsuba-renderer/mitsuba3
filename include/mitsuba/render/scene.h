@@ -5,8 +5,46 @@
 #include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
+#include <enoki-jit/jit.h>
 
 NAMESPACE_BEGIN(mitsuba)
+
+// TODO refactoring: move this somewhere else?
+// =============================================================
+//! @{ \name Platform agnostic vector types
+// =============================================================
+
+template <typename T> class cuda_host_pinned_allocator {
+public:
+    using value_type = T;
+    using reference = T &;
+    using const_reference = const T &;
+
+    cuda_host_pinned_allocator() = default;
+
+    template <typename T2>
+    cuda_host_pinned_allocator(const cuda_host_pinned_allocator<T2> &) { }
+
+    value_type *allocate(size_t n) {
+        return (value_type *) jitc_malloc(AllocType::HostPinned, n * sizeof(T));
+    }
+
+    void deallocate(value_type *ptr, size_t) {
+        jitc_free(ptr);
+    }
+
+    bool operator==(const cuda_host_pinned_allocator &) { return true; }
+    bool operator!=(const cuda_host_pinned_allocator &) { return false; }
+};
+
+template <typename T, typename Type = T>
+using host_vector =
+    std::vector<ek::scalar_t<T>,
+                std::conditional_t<ek::is_cuda_array_v<Type>, cuda_host_pinned_allocator<ek::scalar_t<T>>,
+                                   std::allocator<ek::scalar_t<T>>>>;
+//! @}
+// =============================================================
+
 
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {

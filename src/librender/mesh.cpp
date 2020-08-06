@@ -51,9 +51,8 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     ek::migrate(m_vertex_normals_buf, AllocType::Managed);
     ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
-    // TODO refactoring
-    // if constexpr (ek::is_cuda_array_v<Float>)
-        // cuda_sync();
+    if constexpr (ek::is_cuda_array_v<Float>)
+        jitc_sync_stream();
 
     set_children();
 }
@@ -854,11 +853,10 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions_buf")) {
-        // TODO refactoring
-        // if constexpr (ek::is_cuda_array_v<Float>) {
-        //     cuda_eval();
-        //     cuda_sync();
-        // }
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            jitc_eval();
+            jitc_sync_stream();
+        }
 
         recompute_bbox();
 

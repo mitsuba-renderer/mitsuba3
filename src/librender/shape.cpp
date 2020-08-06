@@ -48,28 +48,23 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
             if (m_emitter)
                 Throw("Only a single Emitter child object can be specified per shape.");
             m_emitter = emitter;
-            ek::set_attr(this, "emitter", m_emitter);
         } else if (sensor) {
             if (m_sensor)
                 Throw("Only a single Sensor child object can be specified per shape.");
             m_sensor = sensor;
-            ek::set_attr(this, "sensor", m_sensor);
         } else if (bsdf) {
             if (m_bsdf)
                 Throw("Only a single BSDF child object can be specified per shape.");
             m_bsdf = bsdf;
-            ek::set_attr(this, "bsdf", m_bsdf);
         } else if (medium) {
             if (name == "interior") {
                 if (m_interior_medium)
                     Throw("Only a single interior medium can be specified per shape.");
                 m_interior_medium = medium;
-                ek::set_attr(this, "interior_medium", m_interior_medium);
             } else if (name == "exterior") {
                 if (m_exterior_medium)
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
-                ek::set_attr(this, "exterior_medium", m_exterior_medium);
             }
         } else {
             continue;
@@ -85,6 +80,12 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
             props2.set_float("reflectance", 0.f);
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
+
+    ek::set_attr(this, "emitter", m_emitter.get());
+    ek::set_attr(this, "sensor", m_sensor.get());
+    ek::set_attr(this, "bsdf", m_bsdf.get());
+    ek::set_attr(this, "interior_medium", m_interior_medium.get());
+    ek::set_attr(this, "exterior_medium", m_exterior_medium.get());
 }
 
 MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
@@ -270,7 +271,7 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
     optix_prepare_geometry();
     // Set hitgroup record data
     hitgroup_records.push_back(HitGroupSbtRecord());
-    hitgroup_records.back().data = { (uintptr_t) this, m_optix_data_ptr };
+    hitgroup_records.back().data = { jitc_registry_get_id(this), m_optix_data_ptr };
 
     size_t program_group_idx = (is_mesh() ? 2 : 3 + get_shape_descr_idx(this));
     // Setup the hitgroup record and copy it to the hitgroup records array

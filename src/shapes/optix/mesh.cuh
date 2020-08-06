@@ -39,7 +39,9 @@ extern "C" __global__ void __closesthit__mesh() {
 
         // Early return for ray_intersect_preliminary call
         if (params.is_ray_intersect_preliminary()) {
-            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, prim_index, prim_uv, t);
+            write_output_pi_params(params, launch_index,
+                                   sbt_data->shape_registry_id, prim_index,
+                                   prim_uv, t);
             return;
         }
 
@@ -62,7 +64,7 @@ extern "C" __global__ void __closesthit__mesh() {
         Vector3f dp0 = p1 - p0,
                  dp1 = p2 - p0;
 
-        Vector3f ng = ek::normalize(cross(dp0, dp1));
+        Vector3f ng = normalize(cross(dp0, dp1));
 
         Vector3f ns = ng;
 
@@ -73,7 +75,7 @@ extern "C" __global__ void __closesthit__mesh() {
                      n1 =  load_3d(mesh->vertex_normals, face.y()),
                      n2 =  load_3d(mesh->vertex_normals, face.z());
 
-            ns = ek::normalize(n0 * b0 + n1 * b1 + n2 * b2);
+            ns = normalize(n0 * b0 + n1 * b1 + n2 * b2);
 
             if (params.has_dns_duv()) {
                 Vector3f N = b0 * n1 + b1 * n2 + b2 * n0;
@@ -111,7 +113,7 @@ extern "C" __global__ void __closesthit__mesh() {
             }
         }
 
-        write_output_si_params(params, launch_index, sbt_data->shape_ptr,
+        write_output_si_params(params, launch_index, sbt_data->shape_registry_id,
                                prim_index, p, uv, ns, ng, dp_du, dp_dv, dn_du, dn_dv, t);
     }
 }

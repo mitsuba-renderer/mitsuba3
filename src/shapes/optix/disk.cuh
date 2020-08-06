@@ -51,7 +51,8 @@ extern "C" __global__ void __closesthit__disk() {
 
         // Early return for ray_intersect_preliminary call
         if (params.is_ray_intersect_preliminary()) {
-            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, prim_uv, t);
+            write_output_pi_params(params, launch_index,
+                                   sbt_data->shape_registry_id, 0, prim_uv, t);
             return;
         }
 
@@ -60,7 +61,7 @@ extern "C" __global__ void __closesthit__disk() {
 
         Vector3f p = ray_(t);
 
-        Vector3f ns = ek::normalize(disk->to_world.transform_normal(Vector3f(0.f, 0.f, 1.f)));
+        Vector3f ns = normalize(disk->to_world.transform_normal(Vector3f(0.f, 0.f, 1.f)));
         Vector3f ng = ns;
 
         Vector2f uv;
@@ -84,8 +85,9 @@ extern "C" __global__ void __closesthit__disk() {
             }
         }
 
-        write_output_si_params(params, launch_index, sbt_data->shape_ptr, 0, p,
-                               uv, ns, ng, dp_du, dp_dv, Vector3f(0.f), Vector3f(0.f), t);
+        write_output_si_params(params, launch_index,
+                               sbt_data->shape_registry_id, 0, p, uv, ns, ng,
+                               dp_du, dp_dv, Vector3f(0.f), Vector3f(0.f), t);
     }
 }
 #endif

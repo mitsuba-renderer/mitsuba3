@@ -316,8 +316,8 @@ public:
         if (has_uvs)
             ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
-        // if constexpr (ek::is_cuda_array_v<Float>)
-            // cuda_sync();
+        if constexpr (ek::is_cuda_array_v<Float>)
+            jitc_sync_stream();
 
         set_children();
     }

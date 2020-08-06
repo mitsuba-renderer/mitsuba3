@@ -67,7 +67,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     // Basic type aliases in the Enoki module (scalar + vectorized)
     m.attr("Float32") = enoki.attr("Float32");
     m.attr("Float64") = enoki.attr("Float64");
-    m.attr("Mask")    = enoki.attr("Mask");
+    m.attr("Mask")    = enoki.attr("Bool");
+    m.attr("Bool")    = enoki.attr("Bool");
     m.attr("Int32")   = enoki.attr("Int32");
     m.attr("Int64")   = enoki.attr("Int64");
     m.attr("UInt32")  = enoki.attr("UInt32");
@@ -78,7 +79,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     m.attr("ScalarFloat32") = enoki_scalar.attr("Float32");
     m.attr("ScalarFloat64") = enoki_scalar.attr("Float64");
-    m.attr("ScalarMask")    = enoki_scalar.attr("Mask");
+    m.attr("ScalarMask")    = enoki_scalar.attr("Bool");
+    m.attr("ScalarBool")    = enoki_scalar.attr("Bool");
     m.attr("ScalarInt32")   = enoki_scalar.attr("Int32");
     m.attr("ScalarInt64")   = enoki_scalar.attr("Int64");
     m.attr("ScalarUInt32")  = enoki_scalar.attr("UInt32");
@@ -242,8 +244,16 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         m.attr("USE_EMBREE")  = false;
     #endif
 
-    if constexpr (ek::is_cuda_array_v<Float>)
+    if constexpr (ek::is_jit_array_v<Float>)
+        jitc_init();
+
+    if constexpr (ek::is_llvm_array_v<Float>)
+        jitc_set_device(-1);
+
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        jitc_set_device(0);
         cie_alloc();
+    }
 
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Ray);

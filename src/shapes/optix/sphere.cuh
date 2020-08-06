@@ -59,14 +59,16 @@ extern "C" __global__ void __closesthit__sphere() {
 
         // Early return for ray_intersect_preliminary call
         if (params.is_ray_intersect_preliminary()) {
-            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, Vector2f(), ray.maxt);
+            write_output_pi_params(params, launch_index,
+                                   sbt_data->shape_registry_id, 0, Vector2f(),
+                                   ray.maxt);
             return;
         }
 
         /* Compute and store information describing the intersection. This is
            very similar to Sphere::compute_surface_interaction() */
 
-        Vector3f ns = ek::normalize(ray(ray.maxt) - sphere->center);
+        Vector3f ns = normalize(ray(ray.maxt) - sphere->center);
 
         if (sphere->flip_normals)
             ns = -ns;
@@ -115,8 +117,9 @@ extern "C" __global__ void __closesthit__sphere() {
         Vector3f dn_du = dp_du * inv_radius;
         Vector3f dn_dv = dp_dv * inv_radius;
 
-        write_output_si_params(params, launch_index, sbt_data->shape_ptr,
-                               0, p, uv, ns, ng, dp_du, dp_dv, dn_du, dn_dv, ray.maxt);
+        write_output_si_params(params, launch_index,
+                               sbt_data->shape_registry_id, 0, p, uv, ns, ng,
+                               dp_du, dp_dv, dn_du, dn_dv, ray.maxt);
     }
 }
 #endif

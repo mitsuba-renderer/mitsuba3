@@ -276,9 +276,8 @@ public:
         ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
         ek::migrate(m_faces_buf, AllocType::Managed);
 
-        // TODO refactorig
-        // if constexpr (ek::is_cuda_array_v<Float>)
-        //     cuda_sync();
+        if constexpr (ek::is_cuda_array_v<Float>)
+            jitc_sync_stream();
 
         bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
 

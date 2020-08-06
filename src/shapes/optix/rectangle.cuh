@@ -49,7 +49,8 @@ extern "C" __global__ void __closesthit__rectangle() {
 
         // Early return for ray_intersect_preliminary call
         if (params.is_ray_intersect_preliminary()) {
-            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, prim_uv, t);
+            write_output_pi_params(params, launch_index,
+                                   sbt_data->shape_registry_id, 0, prim_uv, t);
             return;
         }
 
@@ -63,8 +64,9 @@ extern "C" __global__ void __closesthit__rectangle() {
         Vector3f dp_du = rect->dp_du;
         Vector3f dp_dv = rect->dp_dv;
 
-        write_output_si_params(params, launch_index, sbt_data->shape_ptr,
-                               0, p, uv, ns, ng, dp_du, dp_dv, Vector3f(0.f), Vector3f(0.f), t);
+        write_output_si_params(params, launch_index,
+                               sbt_data->shape_registry_id, 0, p, uv, ns, ng,
+                               dp_du, dp_dv, Vector3f(0.f), Vector3f(0.f), t);
     }
 }
 #endif

@@ -78,7 +78,6 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 //! @{ \name Buffer types
 // =============================================================
 
-// TODO refactoring:
 template <typename Value,
           typename T = std::conditional_t<ek::is_static_array_v<Value>, ek::value_t<Value>, Value>>
 using DynamicBuffer = std::conditional_t<
@@ -86,28 +85,6 @@ using DynamicBuffer = std::conditional_t<
     T,
     ek::DynamicArray<T>
 >;
-
-//! @}
-// =============================================================
-
-// =============================================================
-//! @{ \name Platform agnostic vector types
-// =============================================================
-
-// TODO refactoring:
-// template <typename T, typename Type = T>
-// using host_vector =
-//     std::vector<ek::scalar_t<T>,
-//                 std::conditional_t<ek::is_cuda_array_v<Type>, cuda_host_allocator<ek::scalar_t<T>>,
-//                                    std::allocator<ek::scalar_t<T>>>>;
-template <typename T, typename Type = T>
-using host_vector = std::vector<ek::scalar_t<T>>;
-
-// template <typename T>
-// using managed_vector =
-//     std::vector<ek::scalar_t<T>,
-//                 std::conditional_t<ek::is_cuda_array_v<T>, cuda_managed_allocator<ek::scalar_t<T>>,
-//                                    std::allocator<ek::scalar_t<T>>>>;
 
 //! @}
 // =============================================================

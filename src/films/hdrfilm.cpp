@@ -250,15 +250,16 @@ public:
 
     ref<Bitmap> bitmap(bool raw = false) override {
         if constexpr (ek::is_cuda_array_v<Float>) {
-            // cuda_eval(); TODO refactoring
-            // cuda_sync();
+            jitc_eval();
+            jitc_sync_stream();
         }
+
+        ek::migrate(m_storage->data(), AllocType::Managed);
 
         ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
                                                                : Bitmap::PixelFormat::XYZAW,
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
                           (uint8_t *) m_storage->data().data());
-                        //   (uint8_t *) m_storage->data().managed().data()); TODO refactoring
 
         if (raw)
             return source;

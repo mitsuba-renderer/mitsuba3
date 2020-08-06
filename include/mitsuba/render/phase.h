@@ -166,7 +166,7 @@ public:
     //! @}
     // -----------------------------------------------------------------------
 
-    ENOKI_VCALL_REGISTER_IF(PhaseFunction, ek::is_jit_array_v<Float>)
+    ENOKI_VCALL_REGISTER_IF(mitsuba::PhaseFunction, ek::is_jit_array_v<Float>)
 
     MTS_DECLARE_CLASS()
 protected:

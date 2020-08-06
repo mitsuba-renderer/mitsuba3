@@ -201,15 +201,17 @@ public:
                 for (auto& descr: vertex_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
                     ek::migrate(descr.buf, AllocType::Managed);
+                    ek::schedule(descr.buf);
                 }
 
                 ek::migrate(m_vertex_positions_buf, AllocType::Managed);
                 ek::migrate(m_vertex_normals_buf, AllocType::Managed);
                 ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
-                // TODO refactorig
-                // if constexpr (ek::is_cuda_array_v<Float>)
-                    // cuda_sync();
+                if constexpr (ek::is_cuda_array_v<Float>) {
+                    ek::eval(m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf);
+                    jitc_sync_stream();
+                }
 
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;
@@ -318,6 +320,12 @@ public:
                 for (auto& descr: face_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_face_count * descr.dim);
                     ek::migrate(descr.buf, AllocType::Managed);
+                    ek::schedule(descr.buf);
+                }
+
+                if constexpr (ek::is_cuda_array_v<Float>) {
+                    ek::eval(m_faces_buf);
+                    jitc_sync_stream();
                 }
 
                 ScalarIndex* face_ptr = m_faces_buf.data();

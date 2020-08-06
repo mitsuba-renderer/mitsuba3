@@ -11,8 +11,8 @@
 
 /// Stores information about a Shape on the Optix side
 struct OptixHitGroupData {
-    /// Pointer to the associated shape
-    unsigned long long shape_ptr;
+    /// Shape id in Enoki's pointer registry
+    uint32_t shape_registry_id;
     /// Pointer to the memory region of Shape data (e.g. \c OptixMeshData )
     void* data;
 };
@@ -39,6 +39,8 @@ struct OptixParams {
     float   *in_o[3],
             *in_d[3],
             *in_mint, *in_maxt;
+    unsigned int in_mask_width, in_o_width, in_d_width,
+                 in_mint_width, in_maxt_width;
     /// Output surface interaction data pointers
     float   *out_t,
             *out_prim_uv[2],
@@ -52,7 +54,7 @@ struct OptixParams {
             *out_dng_dv[3],
             *out_dns_du[3],
             *out_dns_dv[3];
-    unsigned long long *out_shape_ptr;
+    uint32_t *out_shape_ptr;
     unsigned int *out_prim_index;
     unsigned int *out_inst_index;
     /// Output boolean data pointer for ray_test
@@ -95,11 +97,11 @@ using namespace optix;
 /// Write PreliminaryIntersection fields to the data pointers stored in the OptixParams
 __device__ void write_output_pi_params(OptixParams &params,
                                        unsigned int launch_index,
-                                       unsigned long long shape_ptr,
+                                       uint32_t shape_registry_id,
                                        unsigned int prim_index,
                                        const Vector2f &prim_uv,
                                        float t) {
-    params.out_shape_ptr[launch_index]  = shape_ptr;
+    params.out_shape_ptr[launch_index]  = shape_registry_id;
     params.out_prim_index[launch_index] = prim_index;
 
     // Instance index is initialized to 0 when there is no instancing in the scene
@@ -119,7 +121,7 @@ __device__ void write_output_pi_params(OptixParams &params,
 /// Write SurfaceInteraction fields to the data pointers stored in the OptixParams
 __device__ void write_output_si_params(OptixParams &params,
                                        unsigned int launch_index,
-                                       unsigned long long shape_ptr,
+                                       uint32_t shape_registry_id,
                                        unsigned int prim_index,
                                        Vector3f p,
                                        Vector2f uv,
@@ -156,7 +158,8 @@ __device__ void write_output_si_params(OptixParams &params,
                 Transform4f to_object(inv, m);
 
                 // Determine the length of the transformed normal before it was re-normalized
-                Vector3f tn = to_world.transform_normal(ek::normalize(to_object.transform_normal(ns)));
+                Vector3f tn = to_world.transform_normal(
+                    normalize(to_object.transform_normal(ns)));
                 float inv_len = 1.f / norm(tn);
                 tn *= inv_len;
 
@@ -172,7 +175,7 @@ __device__ void write_output_si_params(OptixParams &params,
         }
     }
 
-    params.out_shape_ptr[launch_index]  = shape_ptr;
+    params.out_shape_ptr[launch_index]  = shape_registry_id;
     params.out_prim_index[launch_index] = prim_index;
 
     params.out_p[0][launch_index] = p.x();

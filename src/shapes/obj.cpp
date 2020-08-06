@@ -293,9 +293,8 @@ public:
         ek::migrate(m_vertex_normals_buf, AllocType::Managed);
         ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
 
-        // TODO refactorig
-        // if constexpr (ek::is_cuda_array_v<Float>)
-            // cuda_sync();
+        if constexpr (ek::is_cuda_array_v<Float>)
+            jitc_sync_stream();
 
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;

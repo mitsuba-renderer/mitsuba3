@@ -71,7 +71,9 @@ extern "C" __global__ void __closesthit__cylinder() {
 
         // Early return for ray_intersect_preliminary call
         if (params.is_ray_intersect_preliminary()) {
-            write_output_pi_params(params, launch_index, sbt_data->shape_ptr, 0, Vector2f(), ray.maxt);
+            write_output_pi_params(params, launch_index,
+                                   sbt_data->shape_registry_id, 0, Vector2f(),
+                                   ray.maxt);
             return;
         }
 
@@ -108,8 +110,9 @@ extern "C" __global__ void __closesthit__cylinder() {
         dn_du = dp_du / (cylinder->radius * (cylinder->flip_normals ? -1.f : 1.f));
         dn_dv = Vector3f(0.f);
 
-        write_output_si_params(params, launch_index, sbt_data->shape_ptr,
-                               0, p, uv, ns, ng, dp_du, dp_dv, dn_du, dn_dv, ray.maxt);
+        write_output_si_params(params, launch_index,
+                               sbt_data->shape_registry_id, 0, p, uv, ns, ng,
+                               dp_du, dp_dv, dn_du, dn_dv, ray.maxt);
     }
 }
 #endif

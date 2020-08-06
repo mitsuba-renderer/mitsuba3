@@ -91,7 +91,7 @@ public:
     /// Return a human-readable representation of the Medium
     std::string to_string() const override = 0;
 
-    ENOKI_VCALL_REGISTER_IF(Medium, ek::is_jit_array_v<Float>)
+    ENOKI_VCALL_REGISTER_IF(mitsuba::Medium, ek::is_jit_array_v<Float>)
     MTS_DECLARE_CLASS()
 protected:
     Medium();

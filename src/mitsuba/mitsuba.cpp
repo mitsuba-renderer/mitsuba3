@@ -182,6 +182,8 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_OPTIX)
         if (string::starts_with(mode, "gpu")) {
+            jitc_init();
+            jitc_set_device(0);
             cie_alloc();
             optix_initialize();
         }
@@ -289,6 +291,7 @@ int main(int argc, char *argv[]) {
     Jit::static_shutdown();
 #if defined(MTS_ENABLE_OPTIX)
     optix_shutdown();
+    jitc_shutdown();
 #endif
     return error_msg.empty() ? 0 : -1;
 }
