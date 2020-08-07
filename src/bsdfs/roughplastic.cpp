@@ -379,7 +379,8 @@ public:
 
         // Precompute rough reflectance (vectorized)
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
-            using FloatX = DynamicBuffer<Float>;
+            // TODO refactoring: this is very slow now!
+            using FloatX = DynamicBuffer<ScalarFloat>;
             using UIntX  = ek::uint_array_t<FloatX>;
             using Vector3fX = Vector<FloatX, 3>;
 
@@ -391,9 +392,9 @@ public:
             Vector3fX wi = Vector3fX(ek::sqrt(1 - mu * mu), 0.f, mu);
 
             auto external_transmittance = eval_transmittance(distr, wi, m_eta);
-            m_external_transmittance =
-                ek::load_unaligned<FloatX>(external_transmittance.data(),
-                                           ek::width(external_transmittance));
+            m_external_transmittance = ek::load_unaligned<DynamicBuffer<Float>>(
+                external_transmittance.data(),
+                ek::width(external_transmittance));
             m_internal_reflectance =
                 ek::hmean(eval_reflectance(distr, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
