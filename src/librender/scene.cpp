@@ -107,7 +107,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             tmp[i] = jitc_registry_get_id(emitters[i]);
         m_emitters = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
     } else {
-        m_emitters = ek::load_unaligned<EmitterPtr>(emitters.data(), emitters.size());
+        m_emitters = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(emitters.data(), emitters.size());
     }
 
     m_shapes_grad_enabled = false;
