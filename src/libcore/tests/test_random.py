@@ -83,7 +83,7 @@ def test06_permute_kensler_bijection(variant_scalar_rgb, variant_gpu_rgb):
     """ Check that the resulting permutation vectors are bijections """
     from mitsuba.core import permute_kensler
 
-    for p in range(4):
+    for p in range(3):
         sample_count = 2**(p+1) + p
         for seed in range(500):
             perm = [permute_kensler(i, sample_count, seed) for i in range(sample_count)]
