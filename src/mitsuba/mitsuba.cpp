@@ -163,10 +163,15 @@ int main(int argc, char *argv[]) {
 
         if (*arg_verbose) {
             auto logger = Thread::thread()->logger();
-            if (arg_verbose->next())
+            if (arg_verbose->next()) {
                 logger->set_log_level(Trace);
-            else
+                jitc_set_log_level_stderr(::LogLevel::Trace);
+            } else {
                 logger->set_log_level(Debug);
+                jitc_set_log_level_stderr(::LogLevel::Info);
+            }
+        } else {
+            jitc_set_log_level_stderr(::LogLevel::Warn);
         }
 
         while (arg_define && *arg_define) {
