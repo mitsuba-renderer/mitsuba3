@@ -19,6 +19,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
+    std::vector<ref<Emitter>> emitters;
     for (auto &kv : props.objects()) {
         m_children.push_back(kv.second.get());
 
@@ -29,7 +30,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
         if (shape) {
             if (shape->is_emitter())
-                m_emitters.push_back(shape->emitter());
+                emitters.push_back(shape->emitter());
             if (shape->is_sensor())
                 m_sensors.push_back(shape->sensor());
             if (shape->is_shapegroup()) {
@@ -41,7 +42,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
             if (!has_flag(emitter->flags(), EmitterFlags::Surface))
-                m_emitters.push_back(emitter);
+                emitters.push_back(emitter);
 
             if (emitter->is_environment()) {
                 if (m_environment)
@@ -96,8 +97,18 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         accel_init_cpu(props);
 
     // Create emitters' shapes (environment luminaires)
-    for (Emitter *emitter: m_emitters)
+    for (Emitter *emitter: emitters)
         emitter->set_scene(this);
+
+    // For gpu_* modes, convert the emitters pointers to enoki registry ids
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        std::vector<uint32_t> tmp(emitters.size());
+        for (uint32_t i = 0; i < emitters.size(); i++)
+            tmp[i] = jitc_registry_get_id(emitters[i]);
+        m_emitters = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
+    } else {
+        m_emitters = ek::load_unaligned<EmitterPtr>(emitters.data(), emitters.size());
+    }
 
     m_shapes_grad_enabled = false;
 }
@@ -171,20 +182,22 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     DirectionSample3f ds;
     Spectrum spec;
 
-    if (likely(!m_emitters.empty())) {
-        if (m_emitters.size() == 1) {
+    size_t emitters_size = ek::width(m_emitters);
+
+    if (likely(emitters_size > 0)) {
+        if (emitters_size == 1) {
             // Fast path if there is only one emitter
-            std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
+            std::tie(ds, spec) = m_emitters.entry(0)->sample_direction(ref, sample, active);
         } else {
-            ScalarFloat emitter_pdf = 1.f / m_emitters.size();
+            ScalarFloat emitter_pdf = 1.f / emitters_size;
 
             // Randomly pick an emitter
             UInt32 index =
-                ek::min(UInt32(sample.x() * (ScalarFloat) m_emitters.size()),
-                    (uint32_t) m_emitters.size() - 1);
+                ek::min(UInt32(sample.x() * (ScalarFloat) emitters_size),
+                    (uint32_t) emitters_size - 1);
 
             // Rescale sample.x() to lie in [0,1) again
-            sample.x() = (sample.x() - index*emitter_pdf) * m_emitters.size();
+            sample.x() = (sample.x() - index*emitter_pdf) * emitters_size;
 
             EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters.data(), index, active);
 
@@ -219,13 +232,13 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
     MTS_MASK_ARGUMENT(active);
     using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
 
-
-    if (m_emitters.size() == 1) {
+    size_t emitters_size = ek::width(m_emitters);
+    if (emitters_size == 1) {
         // Fast path if there is only one emitter
-        return m_emitters[0]->pdf_direction(ref, ds, active);
+        return m_emitters.entry(0)->pdf_direction(ref, ds, active);
     } else {
         return ek::reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
-            (1.f / m_emitters.size());
+            (1.f / emitters_size);
     }
 }
 

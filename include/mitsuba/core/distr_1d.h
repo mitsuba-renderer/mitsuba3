@@ -59,6 +59,12 @@ public:
         ek::migrate(m_pmf, AllocType::Managed);
         ek::migrate(m_cdf, AllocType::Managed);
 
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::schedule(m_pmf, m_cdf);
+            jitc_eval();
+            jitc_sync_stream();
+        }
+
         ScalarFloat *pmf_ptr = m_pmf.data(),
                     *cdf_ptr = m_cdf.data();
 

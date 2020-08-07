@@ -90,6 +90,12 @@ public:
         ek::migrate(m_cond_cdf, AllocType::Managed);
         ek::migrate(m_marg_cdf, AllocType::Managed);
 
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::schedule(m_cond_cdf, m_marg_cdf);
+            jitc_eval();
+            jitc_sync_stream();
+        }
+
         ScalarFloat *cond_cdf = m_cond_cdf.data(),
                     *marg_cdf = m_marg_cdf.data();
 
@@ -723,6 +729,13 @@ protected:
             : size(ek::hprod(res)), width(res.x()),
               data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
             ek::migrate(data, AllocType::Managed);
+
+            if constexpr (ek::is_cuda_array_v<Float>) {
+                ek::schedule(data);
+                jitc_eval();
+                jitc_sync_stream();
+            }
+
             data_ptr = data.data();
         }
 
@@ -872,6 +885,12 @@ public:
 
             ek::migrate(m_marg_cdf, AllocType::Managed);
             ek::migrate(m_cond_cdf, AllocType::Managed);
+
+            if constexpr (ek::is_cuda_array_v<Float>) {
+                ek::schedule(m_cond_cdf, m_marg_cdf);
+                jitc_eval();
+                jitc_sync_stream();
+            }
 
             ScalarFloat *marg_cdf = m_marg_cdf.data(),
                         *cond_cdf = m_cond_cdf.data(),

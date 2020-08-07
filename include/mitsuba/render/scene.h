@@ -9,43 +9,6 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-// TODO refactoring: move this somewhere else?
-// =============================================================
-//! @{ \name Platform agnostic vector types
-// =============================================================
-
-template <typename T> class cuda_host_pinned_allocator {
-public:
-    using value_type = T;
-    using reference = T &;
-    using const_reference = const T &;
-
-    cuda_host_pinned_allocator() = default;
-
-    template <typename T2>
-    cuda_host_pinned_allocator(const cuda_host_pinned_allocator<T2> &) { }
-
-    value_type *allocate(size_t n) {
-        return (value_type *) jitc_malloc(AllocType::HostPinned, n * sizeof(T));
-    }
-
-    void deallocate(value_type *ptr, size_t) {
-        jitc_free(ptr);
-    }
-
-    bool operator==(const cuda_host_pinned_allocator &) { return true; }
-    bool operator!=(const cuda_host_pinned_allocator &) { return false; }
-};
-
-template <typename T, typename Type = T>
-using host_vector =
-    std::vector<ek::scalar_t<T>,
-                std::conditional_t<ek::is_cuda_array_v<Type>, cuda_host_pinned_allocator<ek::scalar_t<T>>,
-                                   std::allocator<ek::scalar_t<T>>>>;
-//! @}
-// =============================================================
-
-
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
@@ -181,9 +144,9 @@ public:
     const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
 
     /// Return the list of emitters
-    host_vector<ref<Emitter>, Float> &emitters() { return m_emitters; }
+    DynamicBuffer<EmitterPtr> &emitters() { return m_emitters; }
     /// Return the list of emitters (const version)
-    const host_vector<ref<Emitter>, Float> &emitters() const { return m_emitters; }
+    const DynamicBuffer<EmitterPtr> &emitters() const { return m_emitters; }
 
     /// Return the environment emitter (if any)
     const Emitter *environment() const { return m_environment.get(); }
@@ -250,7 +213,7 @@ protected:
 
     ScalarBoundingBox3f m_bbox;
 
-    host_vector<ref<Emitter>, Float> m_emitters;
+    DynamicBuffer<EmitterPtr> m_emitters;
     std::vector<ref<Shape>> m_shapes;
     std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
