@@ -249,12 +249,12 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
+        ek::migrate(m_storage->data(), AllocType::Managed);
+
         if constexpr (ek::is_cuda_array_v<Float>) {
             jitc_eval();
             jitc_sync_stream();
         }
-
-        ek::migrate(m_storage->data(), AllocType::Managed);
 
         ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
                                                                : Bitmap::PixelFormat::XYZAW,

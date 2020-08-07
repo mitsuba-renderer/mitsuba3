@@ -555,7 +555,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         if (has_flag(flags, HitComputeFlags::ShadingFrame))
             si.initialize_sh_frame();
 
-
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < m_shapes.size();
 
