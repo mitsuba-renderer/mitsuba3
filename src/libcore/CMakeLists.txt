@@ -132,6 +132,15 @@ if (WIN32 OR APPLE)
 endif()
 
 if (MTS_ENABLE_OPTIX)
-  add_dist(enoki-autodiff enoki-jit)
-  target_link_libraries(mitsuba-core PUBLIC enoki-autodiff enoki-jit cuda)
+    target_link_libraries(mitsuba-core PUBLIC cuda)
+endif()
+
+if (MTS_ENABLE_JIT)
+  add_dist(enoki-jit)
+  target_link_libraries(mitsuba-core PUBLIC enoki-jit cuda)
+endif()
+
+if (MTS_ENABLE_AUTODIFF)
+  add_dist(enoki-autodiff)
+  target_link_libraries(mitsuba-core PUBLIC enoki-autodiff cuda)
 endif()

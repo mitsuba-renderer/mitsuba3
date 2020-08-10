@@ -274,12 +274,13 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
+        using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
         Double mint = Double(ray.mint);
         Double maxt = Double(ray.maxt);
 
-        Double3 o = Double3(ray.o) - Double3(m_center);
+        Double3 o = Double3(ray.o) - ScalarDouble3(m_center);
         Double3 d(ray.d);
 
         Double A = ek::squared_norm(d);
@@ -309,12 +310,13 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
+        using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
         Double mint = Double(ray.mint);
         Double maxt = Double(ray.maxt);
 
-        Double3 o = Double3(ray.o) - Double3(m_center);
+        Double3 o = Double3(ray.o) - ScalarDouble3(m_center);
         Double3 d(ray.d);
 
         Double A = ek::squared_norm(d);

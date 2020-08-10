@@ -12,13 +12,14 @@
     #      preferred mode for fixing compilation errors (there is
     #      relatively little templating) and debugging the renderer.
     #
-    #    - 'packet': Computation is done using packets of floating
-    #      point numbers, exploiting vectorized instruction set
-    #      extensions such as SSE4.2, AVX, AVX2, AVX512, NEON, etc.
-    #      Not that this is not a magic bullet, rendering won't
-    #      automatically be 8 or 16x faster. You will likely want to
-    #      enable Embree in this mode and run specialized vectorized
-    #      integrators for maximum benefit in this mode.
+    #    - 'llvm': Computation is done on the CPU using Enoki's
+    #      Just-in-time compiler to generate LLVM kernels on the fly.
+    #      In this case, Mitsuba becomes a wavefront path tracer.
+    #
+    #    - 'llvm_autodiff': building on the properties of the 'llvm'
+    #      variant, computation additionally keeps track of derivatives,
+    #      enabling the use of Mitsuba 2 for optimization and the
+    #      solution of challenging inverse problems.
     #
     #    - 'gpu': Computation is done on the GPU using Enoki's
     #      Just-in-time compiler to generate CUDA kernels on the fly.
@@ -152,65 +153,66 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    # Packet variant definitions
 
-    "packet_mono": {
-        "float": "Packet<float>",
+    # LLVM variants
+
+    "llvm_mono": {
+        "float": "ek::LLVMArray<float>",
         "spectrum": "Color<Float, 1>"
     },
 
-    "packet_mono_double": {
-        "float": "Packet<double>",
-        "spectrum": "Color<Float, 1>"
-    },
-
-    "packet_mono_polarized": {
-        "float": "Packet<float>",
+    "llvm_mono_polarized": {
+        "float": "ek::LLVMArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
-    "packet_mono_polarized_double": {
-        "float": "Packet<double>",
-        "spectrum": "MuellerMatrix<Color<Float, 1>>"
-    },
-
-    "packet_rgb": {
-        "float": "Packet<float>",
+    "llvm_rgb": {
+        "float": "ek::LLVMArray<float>",
         "spectrum": "Color<Float, 3>"
     },
 
-    "packet_rgb_double": {
-        "float": "Packet<double>",
-        "spectrum": "Color<Float, 3>"
-    },
-
-    "packet_rgb_polarized": {
-        "float": "Packet<float>",
+    "llvm_rgb_polarized": {
+        "float": "ek::LLVMArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
-    "packet_rgb_polarized_double": {
-        "float": "Packet<double>",
-        "spectrum": "MuellerMatrix<Color<Float, 3>>"
-    },
-
-    "packet_spectral": {
-        "float": "Packet<float>",
+    "llvm_spectral": {
+        "float": "ek::LLVMArray<float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
-    "packet_spectral_double": {
-        "float": "Packet<double>",
-        "spectrum": "Spectrum<Float, 4>"
-    },
-
-    "packet_spectral_polarized": {
-        "float": "Packet<float>",
+    "llvm_spectral_polarized": {
+        "float": "ek::LLVMArray<float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    "packet_spectral_polarized_double": {
-        "float": "Packet<double>",
+    "llvm_autodiff_mono": {
+        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "Color<Float, 1>"
+    },
+
+    "llvm_autodiff_mono_polarized": {
+        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "llvm_autodiff_rgb": {
+        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "Color<Float, 3>"
+    },
+
+    "llvm_autodiff_rgb_polarized": {
+        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
+    "llvm_autodiff_spectral": {
+        "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
+    "llvm_autodiff_spectral_polarized": {
+        "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
@@ -218,62 +220,62 @@
     # double precision ray tracing is not supported by OptiX)
 
     "gpu_mono": {
-        "float": "CUDAArray<float>",
+        "float": "ek::CUDAArray<float>",
         "spectrum": "Color<Float, 1>"
     },
 
     "gpu_mono_polarized": {
-        "float": "CUDAArray<float>",
+        "float": "ek::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "gpu_rgb": {
-        "float": "CUDAArray<float>",
+        "float": "ek::CUDAArray<float>",
         "spectrum": "Color<Float, 3>"
     },
 
     "gpu_rgb_polarized": {
-        "float": "CUDAArray<float>",
+        "float": "ek::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "gpu_spectral": {
-        "float": "CUDAArray<float>",
+        "float": "ek::CUDAArray<float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "gpu_spectral_polarized": {
-        "float": "CUDAArray<float>",
+        "float": "ek::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
     "gpu_autodiff_mono": {
-        "float": "DiffArray<CUDAArray<float>>",
+        "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Color<Float, 1>"
     },
 
     "gpu_autodiff_mono_polarized": {
-        "float": "DiffArray<CUDAArray<float>>",
+        "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
     "gpu_autodiff_rgb": {
-        "float": "DiffArray<CUDAArray<float>>",
+        "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Color<Float, 3>"
     },
 
     "gpu_autodiff_rgb_polarized": {
-        "float": "DiffArray<CUDAArray<float>>",
+        "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
     "gpu_autodiff_spectral": {
-        "float": "DiffArray<CUDAArray<float>>",
+        "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
     "gpu_autodiff_spectral_polarized": {
-        "float": "DiffArray<CUDAArray<float>>",
+        "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }
 }

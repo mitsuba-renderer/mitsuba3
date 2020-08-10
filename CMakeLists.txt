@@ -62,6 +62,21 @@ if (MTS_VARIANTS MATCHES "gpu_")
   set(MTS_ENABLE_OPTIX ON)
 endif()
 
+if (MTS_VARIANTS MATCHES "llvm_")
+  set(MTS_ENABLE_LLVM ON)
+  add_definitions(-DMTS_ENABLE_LLVM=1)
+endif()
+
+if (MTS_ENABLE_OPTIX OR MTS_ENABLE_LLVM)
+  set(MTS_ENABLE_JIT ON)
+endif()
+
+if (MTS_VARIANTS MATCHES "gpu_autodiff_" OR MTS_VARIANTS MATCHES "llvm_autodiff_")
+  set(MTS_ENABLE_AUTODIFF ON)
+  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
+endif()
+
+
 # ----------------------------------
 
 # ---------- User options ----------

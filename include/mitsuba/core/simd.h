@@ -8,6 +8,13 @@
 
 #if defined(MTS_ENABLE_OPTIX)
 #  include <enoki/cuda.h>
+#endif
+
+#if defined(MTS_ENABLE_LLVM)
+#  include <enoki/llvm.h>
+#endif
+
+#if defined(MTS_ENABLE_AUTODIFF)
 #  include <enoki/autodiff.h>
 #endif
 
