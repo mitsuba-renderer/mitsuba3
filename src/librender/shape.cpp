@@ -174,7 +174,8 @@ void embree_intersect_packet(int* valid,
                              unsigned int geomID,
                              unsigned int instID,
                              RTCRayW* rays,
-                             RTCHitW* hits) {
+                             RTCHitW* hits,
+                             size_t N) {
     MTS_IMPORT_TYPES(Shape)
     using Int = ek::replace_scalar_t<Float, int>;
 
@@ -186,30 +187,32 @@ void embree_intersect_packet(int* valid,
 
     // Create Mitsuba ray
     Ray3f ray;
-    ray.o.x() = ek::load<Float>(rays->org_x);
-    ray.o.y() = ek::load<Float>(rays->org_y);
-    ray.o.z() = ek::load<Float>(rays->org_z);
-    ray.d.x() = ek::load<Float>(rays->dir_x);
-    ray.d.y() = ek::load<Float>(rays->dir_y);
-    ray.d.z() = ek::load<Float>(rays->dir_z);
-    ray.mint  = ek::load<Float>(rays->tnear);
-    ray.maxt  = ek::load<Float>(rays->tfar);
-    ray.time  = ek::load<Float>(rays->time);
+    ray.o.x() = ek::load<Float>(rays->org_x, N);
+    ray.o.y() = ek::load<Float>(rays->org_y, N);
+    ray.o.z() = ek::load<Float>(rays->org_z, N);
+    ray.d.x() = ek::load<Float>(rays->dir_x, N);
+    ray.d.y() = ek::load<Float>(rays->dir_y, N);
+    ray.d.z() = ek::load<Float>(rays->dir_z, N);
+    ray.mint  = ek::load<Float>(rays->tnear, N);
+    ray.maxt  = ek::load<Float>(rays->tfar, N);
+    ray.time  = ek::load<Float>(rays->time, N);
     ray.update();
 
+    // TODO refactoring: this is definitely killing performances!
     // Check whether this is a shadow ray or not
     if (hits) {
         auto pi = shape->ray_intersect_preliminary(ray, active);
         active &= pi.is_valid();
-        ek::store(rays->tfar,   pi.t, active);
-        ek::store(hits->u,      pi.prim_uv.x(), active);
-        ek::store(hits->v,      pi.prim_uv.y(), active);
-        ek::store(hits->geomID, Int(geomID), active);
-        ek::store(hits->primID, Int(0), active);
-        ek::store(hits->instID[0], Int(instID), active);
+        ek::store(rays->tfar,      ek::select(active, pi.t,           ek::load<Float>(rays->tfar, N)));
+        ek::store(hits->u,         ek::select(active, pi.prim_uv.x(), ek::load<Float>(hits->u, N)));
+        ek::store(hits->v,         ek::select(active, pi.prim_uv.y(), ek::load<Float>(hits->v, N)));
+        ek::store(hits->geomID,    ek::select(active, Int(geomID),    ek::load<Int>(hits->geomID, N)));
+        ek::store(hits->primID,    ek::select(active, Int(0),         ek::load<Int>(hits->primID, N)));
+        ek::store(hits->instID[0], ek::select(active, Int(instID),    ek::load<Int>(hits->instID[0], N)));
     } else {
         active &= shape->ray_test(ray);
-        ek::store(rays->tfar, Float(-ek::Infinity<Float>), active);
+        Float t = ek::select(active, ray.maxt, -ek::Infinity<Float>);
+        ek::store(rays->tfar, t.data());
     }
 }
 
@@ -225,7 +228,7 @@ void embree_intersect(const RTCIntersectFunctionNArguments* args) {
         embree_intersect_packet<Float, Spectrum>(
             args->valid, args->geometryUserPtr, args->geomID,
             args->context->instID[0], (RTCRayW *) &rh->ray,
-            (RTCHitW *) &rh->hit);
+            (RTCHitW *) &rh->hit, args->N);
     }
 }
 
@@ -238,7 +241,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
     } else {
         embree_intersect_packet<Float, Spectrum>(
             args->valid, args->geometryUserPtr, args->geomID,
-            args->context->instID[0], (RTCRayW *) args->ray, nullptr);
+            args->context->instID[0], (RTCRayW *) args->ray, nullptr, args->N);
     }
 }
 

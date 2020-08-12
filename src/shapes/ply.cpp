@@ -200,15 +200,19 @@ public:
 
                 for (auto& descr: vertex_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
-                    ek::migrate(descr.buf, AllocType::Managed);
-                    ek::schedule(descr.buf);
+                    if constexpr (ek::is_cuda_array_v<Float>)
+                        ek::migrate(descr.buf, AllocType::Managed);
+                    if constexpr (ek::is_jit_array_v<Float>)
+                        ek::schedule(descr.buf);
                 }
 
-                ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-                ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
-                ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
-
                 if constexpr (ek::is_cuda_array_v<Float>) {
+                    ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+                    ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
+                    ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+                }
+
+                if constexpr (ek::is_jit_array_v<Float>) {
                     ek::schedule(m_vertex_positions_buf, m_vertex_normals_buf,
                                  m_vertex_texcoords_buf);
                     jitc_eval();
@@ -316,15 +320,20 @@ public:
 
                 m_face_count = (ScalarSize) el.count;
                 m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
-                ek::migrate(m_faces_buf, AllocType::Managed);
 
                 for (auto& descr: face_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_face_count * descr.dim);
-                    ek::migrate(descr.buf, AllocType::Managed);
-                    ek::schedule(descr.buf);
+                    if constexpr (ek::is_cuda_array_v<Float>)
+                        ek::migrate(descr.buf, AllocType::Managed);
+
+                    if constexpr (ek::is_jit_array_v<Float>)
+                        ek::schedule(descr.buf);
                 }
 
-                if constexpr (ek::is_cuda_array_v<Float>) {
+                if constexpr (ek::is_cuda_array_v<Float>)
+                    ek::migrate(m_faces_buf, AllocType::Managed);
+
+                if constexpr (ek::is_jit_array_v<Float>) {
                     ek::schedule(m_faces_buf);
                     jitc_eval();
                     jitc_sync_stream();

@@ -22,6 +22,14 @@ NAMESPACE_BEGIN(mitsuba)
 
 static RTCDevice __embree_device = nullptr;
 
+template <typename Float>
+struct EmbreeState {
+    RTCScene accel;
+    std::vector<uint32_t> shapes_registry_ids;
+    uint8_t* buffer = nullptr;
+    size_t wavefront_size = 0;
+};
+
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
     static_assert(std::is_same_v<ek::scalar_t<Float>, float>, "Embree is not supported in double precision mode.");
     if (!__embree_device)
@@ -30,21 +38,109 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
     Timer timer;
     RTCScene embree_scene = rtcNewScene(__embree_device);
     rtcSetSceneFlags(embree_scene, RTC_SCENE_FLAG_DYNAMIC);
-    m_accel = embree_scene;
+
+    m_accel = new EmbreeState<Float>();
+    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    s.accel = embree_scene;
 
     for (Shape *shape : m_shapes)
          rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));
+
+    if constexpr (ek::is_llvm_array_v<Float>) {
+        // Copy shapes registry ids to the GPU
+        s.shapes_registry_ids.resize(m_shapes.size());
+        for (size_t i = 0; i < m_shapes.size(); i++)
+            s.shapes_registry_ids[i] = jitc_registry_get_id(m_shapes[i]);
+    }
 
     rtcCommitScene(embree_scene);
     Log(Info, "Embree ready. (took %s)", util::time_string(timer.value()));
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    rtcReleaseScene((RTCScene) m_accel);
+    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    rtcReleaseScene((RTCScene) s.accel);
+    std::free(s.buffer);
+}
+
+template <typename State>
+void check_buffer_allocation(State& s, size_t N) {
+    if (!s.buffer || s.wavefront_size < N) {
+        s.wavefront_size = N;
+
+        if (s.buffer)
+            std::free(s.buffer);
+
+        s.buffer = (uint8_t *) std::aligned_alloc(
+            16, N * (14 * sizeof(float) + 6 * sizeof(unsigned int)));
+    }
+}
+
+template <typename State, typename Ray>
+RTCRayNp bind_ray_buffer_and_copy(const State& s, const Ray& ray) {
+    size_t size_f = sizeof(float) * s.wavefront_size;
+    size_t size_u = sizeof(unsigned int) * s.wavefront_size;
+
+    size_t offset_f = 0;
+    size_t offset_u = 0;
+
+    RTCRayNp r;
+    r.org_x = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.org_y = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.org_z = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.dir_x = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.dir_y = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.dir_z = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.tnear = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.tfar  = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.time  = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    r.mask  = (unsigned int*) (s.buffer + offset_f * size_f + offset_u++ * size_u);
+    r.id    = (unsigned int*) (s.buffer + offset_f * size_f + offset_u++ * size_u);
+    r.flags = (unsigned int*) (s.buffer + offset_f * size_f + offset_u++ * size_u);
+
+    ek::store(r.org_x, ray.o.x());
+    ek::store(r.org_y, ray.o.y());
+    ek::store(r.org_z, ray.o.z());
+    ek::store(r.dir_x, ray.d.x());
+    ek::store(r.dir_y, ray.d.y());
+    ek::store(r.dir_z, ray.d.z());
+    ek::store(r.tnear, ray.mint);
+    ek::store(r.tfar,  ray.maxt);
+    ek::store(r.time,  ray.time);
+    std::memset(r.mask,  0, size_u);
+    std::memset(r.id,    0, size_u);
+    std::memset(r.flags, 0, size_u);
+
+    return r;
+}
+
+template <typename State>
+RTCHitNp bind_hit_buffer(const State& s) {
+    size_t size_f = sizeof(float) * s.wavefront_size;
+    size_t size_u = sizeof(unsigned int) * s.wavefront_size;
+
+    // Already account for the ray offset
+    size_t offset_f = 9;
+    size_t offset_u = 3;
+
+    RTCHitNp hit;
+    hit.Ng_x = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    hit.Ng_y = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    hit.Ng_z = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    hit.u    = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    hit.v    = (float*) (s.buffer + offset_f++ * size_f + offset_u * size_u);
+    hit.geomID    = (unsigned int*) (s.buffer + offset_f * size_f + offset_u++ * size_u);
+    hit.primID    = (unsigned int*) (s.buffer + offset_f * size_f + offset_u++ * size_u);
+    hit.instID[0] = (unsigned int*) (s.buffer + offset_f * size_f + offset_u++ * size_u);
+    return hit;
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
+    Ray3f ray = ray_;
+
+    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+
     if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -65,7 +161,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
             rh.ray.mask = 0;
             rh.ray.id = 0;
             rh.ray.flags = 0;
-            rtcIntersect1((RTCScene) m_accel, &context, &rh);
+            rtcIntersect1(s.accel, &context, &rh);
 
             if (rh.ray.tfar != ray.maxt) {
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
@@ -90,38 +186,55 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
             }
         } else {
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+            // TODO refactoring: is this necessary?
+            // context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
-            alignas(alignof(Float)) int valid[MTS_RAY_WIDTH];
-            store(valid, ek::select(active, Int32(-1), Int32(0)));
+            size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
 
-            RTCRayHitW rh;
-            store(rh.ray.org_x, ray.o.x());
-            store(rh.ray.org_y, ray.o.y());
-            store(rh.ray.org_z, ray.o.z());
-            store(rh.ray.tnear, ray.mint);
-            store(rh.ray.dir_x, ray.d.x());
-            store(rh.ray.dir_y, ray.d.y());
-            store(rh.ray.dir_z, ray.d.z());
-            store(rh.ray.time, Float(0));
-            store(rh.ray.tfar, ray.maxt);
-            store(rh.ray.mask, UInt32(0));
-            store(rh.ray.id, UInt32(0));
-            store(rh.ray.flags, UInt32(0));
+            if (ek::width(ray.o) < N) {
+                ray.o.x().resize(N);
+                ray.o.y().resize(N);
+                ray.o.z().resize(N);
+            }
 
-            rtcIntersectW(valid, (RTCScene) m_accel, &context, &rh);
+            if (ek::width(ray.d) < N) {
+                ray.d.x().resize(N);
+                ray.d.y().resize(N);
+                ray.d.z().resize(N);
+            }
+            if (ek::width(ray.time) < N)
+                ray.time.resize(N);
+            if (ek::width(ray.mint) < N)
+                ray.mint.resize(N);
+            if (ek::width(ray.maxt) < N)
+                ray.maxt.resize(N);
 
-            Float t = ek::load<Float>(rh.ray.tfar);
+            // A ray is considered inactive if its tnear value is larger than its tfar value
+            ek::masked(ray.maxt, !active) = ray.mint - 1.f;
+
+            ek::schedule(ray);
+            jitc_eval();
+            jitc_sync_device();
+
+            check_buffer_allocation(s, N);
+
+            RTCRayHitNp rh;
+            rh.ray = bind_ray_buffer_and_copy(s, ray);
+            rh.hit = bind_hit_buffer(s);
+
+            rtcIntersectNp(s.accel, &context, &rh, N);
+
+            Float t = ek::load_unaligned<Float>(rh.ray.tfar, N);
             Mask hit = active && ek::neq(t, ray.maxt);
 
             if (likely(ek::any(hit))) {
-                using ShapePtr = ek::replace_scalar_t<Float, const Shape *>;
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-                UInt32 shape_index = ek::load<UInt32>(rh.hit.geomID);
-                UInt32 prim_index  = ek::load<UInt32>(rh.hit.primID);
+
+                UInt32 shape_index = ek::load_unaligned<UInt32>(rh.hit.geomID, N);
+                UInt32 prim_index  = ek::load_unaligned<UInt32>(rh.hit.primID, N);
 
                 // We get level 0 because we only support one level of instancing
-                UInt32 inst_index = ek::load<UInt32>(rh.hit.instID[0]);
+                UInt32 inst_index  = ek::load_unaligned<UInt32>(rh.hit.instID[0], N);
 
                 Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
                 Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
@@ -131,12 +244,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
 
                 // Set si.instance and si.shape
                 UInt32 index   = ek::select(hit_inst, inst_index, shape_index);
-                ShapePtr shape = ek::gather<ShapePtr>(m_shapes.data(), index, hit);
+                ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
                 ek::masked(pi.instance, hit_inst)  = shape;
                 ek::masked(pi.shape, hit_not_inst) = shape;
 
                 pi.prim_index = prim_index;
-                pi.prim_uv = Point2f(ek::load<Float>(rh.hit.u), ek::load<Float>(rh.hit.v));
+
+                Float u = ek::load_unaligned<Float>(rh.hit.u, N);
+                Float v = ek::load_unaligned<Float>(rh.hit.v, N);
+                pi.prim_uv = { u, v };
             }
         }
         return pi;
@@ -146,7 +262,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags flags, Mask active) const {
+    Ray3f ray = ray_;
+
+    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+
     if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -166,7 +286,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
             rh.ray.mask = 0;
             rh.ray.id = 0;
             rh.ray.flags = 0;
-            rtcIntersect1((RTCScene) m_accel, &context, &rh);
+            rtcIntersect1(s.accel, &context, &rh);
 
             if (rh.ray.tfar != ray.maxt) {
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
@@ -200,38 +320,55 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 si.t = ek::Infinity<Float>;
             }
         } else {
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+            size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
 
-            alignas(alignof(Float)) int valid[MTS_RAY_WIDTH];
-            store(valid, ek::select(active, Int32(-1), Int32(0)));
+            // TODO refactoring: add this to array_router.h and struct.h
+            if (ek::width(ray.o) < N) {
+                ray.o.x().resize(N);
+                ray.o.y().resize(N);
+                ray.o.z().resize(N);
+            }
 
-            RTCRayHitW rh;
-            store(rh.ray.org_x, ray.o.x());
-            store(rh.ray.org_y, ray.o.y());
-            store(rh.ray.org_z, ray.o.z());
-            store(rh.ray.tnear, ray.mint);
-            store(rh.ray.dir_x, ray.d.x());
-            store(rh.ray.dir_y, ray.d.y());
-            store(rh.ray.dir_z, ray.d.z());
-            store(rh.ray.time, Float(0));
-            store(rh.ray.tfar, ray.maxt);
-            store(rh.ray.mask, UInt32(0));
-            store(rh.ray.id, UInt32(0));
-            store(rh.ray.flags, UInt32(0));
+            if (ek::width(ray.d) < N) {
+                ray.d.x().resize(N);
+                ray.d.y().resize(N);
+                ray.d.z().resize(N);
+            }
 
-            rtcIntersectW(valid, (RTCScene) m_accel, &context, &rh);
+            if (ek::width(ray.time) < N)
+                ray.time.resize(N);
+            if (ek::width(ray.mint) < N)
+                ray.mint.resize(N);
+            if (ek::width(ray.maxt) < N)
+                ray.maxt.resize(N);
 
-            Float t = ek::load<Float>(rh.ray.tfar);
+            // A ray is considered inactive if its tnear value is larger than its tfar value
+            ek::masked(ray.maxt, !active) = ray.mint - 1.f;
+
+            ek::schedule(ray);
+            jitc_eval();
+            jitc_sync_device();
+
+            check_buffer_allocation(s, N);
+
+            RTCRayHitNp rh;
+            rh.ray = bind_ray_buffer_and_copy(s, ray);
+            rh.hit = bind_hit_buffer(s);
+
+            rtcIntersectNp(s.accel, &context, &rh, N);
+
+            Float t = ek::load_unaligned<Float>(rh.ray.tfar, N);
             Mask hit = active && ek::neq(t, ray.maxt);
 
+            // TODO refactoring: remove this horizontal reduction
             if (likely(ek::any(hit))) {
                 using ShapePtr = ek::replace_scalar_t<Float, const Shape *>;
                 ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-                UInt32 shape_index = ek::load<UInt32>(rh.hit.geomID);
-                UInt32 prim_index  = ek::load<UInt32>(rh.hit.primID);
 
+                UInt32 shape_index = ek::load_unaligned<UInt32>(rh.hit.geomID, N);
+                UInt32 prim_index  = ek::load_unaligned<UInt32>(rh.hit.primID, N);
                 // We get level 0 because we only support one level of instancing
-                UInt32 inst_index = ek::load<UInt32>(rh.hit.instID[0]);
+                UInt32 inst_index  = ek::load_unaligned<UInt32>(rh.hit.instID[0], N);
 
                 Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
                 Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
@@ -241,15 +378,18 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
 
                 // Set si.instance and si.shape
                 UInt32 index   = ek::select(hit_inst, inst_index, shape_index);
-                ShapePtr shape = ek::gather<ShapePtr>(m_shapes.data(), index, hit);
+                ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
                 ek::masked(pi.instance, hit_inst)  = shape;
                 ek::masked(pi.shape, hit_not_inst) = shape;
 
                 pi.prim_index = prim_index;
                 pi.shape_index = shape_index;
-                pi.prim_uv = Point2f(ek::load<Float>(rh.hit.u), ek::load<Float>(rh.hit.v));
 
-                si = pi.compute_surface_interaction(ray, flags, active);
+                Float u = ek::load_unaligned<Float>(rh.hit.u, N);
+                Float v = ek::load_unaligned<Float>(rh.hit.v, N);
+                pi.prim_uv = { u, v };
+
+                si = pi.compute_surface_interaction(ray, flags, hit);
             } else {
                 si.wavelengths = ray.wavelengths;
                 si.time = ray.time;
@@ -257,6 +397,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
                 si.t = ek::Infinity<Float>;
             }
         }
+
         return si;
     } else {
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
@@ -264,7 +405,9 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
+    Ray3f ray = ray_;
+    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -283,32 +426,48 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, Mask active) const {
             ray2.mask = 0;
             ray2.id = 0;
             ray2.flags = 0;
-            rtcOccluded1((RTCScene) m_accel, &context, &ray2);
+            rtcOccluded1(s.accel, &context, &ray2);
             return ray2.tfar != ray.maxt;
         } else {
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+            size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
 
-            alignas(alignof(Float)) int valid[MTS_RAY_WIDTH];
-            store(valid, ek::select(active, Int32(-1), Int32(0)));
+            if (ek::width(ray.o) < N) {
+                ray.o.x().resize(N);
+                ray.o.y().resize(N);
+                ray.o.z().resize(N);
+            }
 
-            RTCRayW ray2;
-            store(ray2.org_x, ray.o.x());
-            store(ray2.org_y, ray.o.y());
-            store(ray2.org_z, ray.o.z());
-            store(ray2.tnear, ray.mint);
-            store(ray2.dir_x, ray.d.x());
-            store(ray2.dir_y, ray.d.y());
-            store(ray2.dir_z, ray.d.z());
-            store(ray2.time, Float(0));
-            store(ray2.tfar, ray.maxt);
-            store(ray2.mask, UInt32(0));
-            store(ray2.id, UInt32(0));
-            store(ray2.flags, UInt32(0));
-            rtcOccludedW(valid, (RTCScene) m_accel, &context, &ray2);
-            return active && ek::neq(ek::load<Float>(ray2.tfar), ray.maxt);
+            if (ek::width(ray.d) < N) {
+                ray.d.x().resize(N);
+                ray.d.y().resize(N);
+                ray.d.z().resize(N);
+            }
+
+            if (ek::width(ray.time) < N)
+                ray.time.resize(N);
+            if (ek::width(ray.mint) < N)
+                ray.mint.resize(N);
+            if (ek::width(ray.maxt) < N)
+                ray.maxt.resize(N);
+
+            // A ray is considered inactive if its tnear value is larger than its tfar value
+            ek::masked(ray.maxt, !active) = ray.mint - 1.f;
+
+            ek::schedule(ray);
+            jitc_eval();
+            jitc_sync_device();
+
+            check_buffer_allocation(s, N);
+
+            RTCRayNp ray2 = bind_ray_buffer_and_copy(s, ray);
+
+            rtcOccludedNp(s.accel, &context, &ray2, N);
+
+            Float t = ek::load_unaligned<Float>(ray2.tfar, N);
+            return active && ek::neq(t, ray.maxt);
         }
     } else {
-        Throw("ray_intersect_cpu() should only be called in CPU mode.");
+        Throw("ray_test_cpu() should only be called in CPU mode.");
     }
 }
 

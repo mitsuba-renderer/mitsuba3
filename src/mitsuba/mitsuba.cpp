@@ -187,10 +187,17 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_OPTIX)
         if (string::starts_with(mode, "gpu")) {
-            jitc_init();
+            jitc_init(0, 1);
             jitc_set_device(0);
             cie_alloc();
             optix_initialize();
+        }
+#endif
+
+#if defined(MTS_ENABLE_LLVM)
+        if (string::starts_with(mode, "llvm")) {
+            jitc_init(1, 0);
+            jitc_set_device(-1);
         }
 #endif
 
@@ -296,6 +303,8 @@ int main(int argc, char *argv[]) {
     Jit::static_shutdown();
 #if defined(MTS_ENABLE_OPTIX)
     optix_shutdown();
+#endif
+#if defined(MTS_ENABLE_OPTIX) || defined(MTS_ENABLE_LLVM)
     jitc_shutdown();
 #endif
     return error_msg.empty() ? 0 : -1;

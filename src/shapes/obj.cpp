@@ -287,13 +287,15 @@ public:
         if (!texcoords.empty())
             m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
 
-        // TODO this is needed for the bbox(..) methods, but is it slower?
-        ek::migrate(m_faces_buf, AllocType::Managed);
-        ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-        ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
-        ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
-
         if constexpr (ek::is_cuda_array_v<Float>) {
+            // TODO this is needed for the bbox(..) methods, but is it slower?
+            ek::migrate(m_faces_buf, AllocType::Managed);
+            ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+            ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
+            ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+        }
+
+        if constexpr (ek::is_jit_array_v<Float>) {
             ek::schedule(m_faces_buf, m_vertex_positions_buf,
                          m_vertex_normals_buf, m_vertex_texcoords_buf);
             jitc_eval();

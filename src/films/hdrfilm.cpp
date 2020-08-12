@@ -249,9 +249,9 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
-        ek::migrate(m_storage->data(), AllocType::Managed);
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if constexpr (ek::is_cuda_array_v<Float>)
+                ek::migrate(m_storage->data(), AllocType::Managed);
             jitc_eval();
             jitc_sync_stream();
         }

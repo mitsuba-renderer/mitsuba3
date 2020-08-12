@@ -74,7 +74,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
     film->prepare(channels);
 
     m_render_timer.reset();
-    if constexpr (!ek::is_cuda_array_v<Float>) {
+    if constexpr (!ek::is_jit_array_v<Float>) {
         /// Render on the CPU using a spiral pattern
         size_t n_threads = __global_thread_count;
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
