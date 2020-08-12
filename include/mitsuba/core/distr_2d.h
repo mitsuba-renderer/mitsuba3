@@ -87,10 +87,12 @@ public:
         m_cond_cdf = ek::empty<FloatStorage>(ek::hprod(m_size));
         m_marg_cdf = ek::empty<FloatStorage>(m_size.y());
 
-        ek::migrate(m_cond_cdf, AllocType::Managed);
-        ek::migrate(m_marg_cdf, AllocType::Managed);
-
         if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::migrate(m_cond_cdf, AllocType::Managed);
+            ek::migrate(m_marg_cdf, AllocType::Managed);
+        }
+
+        if constexpr (ek::is_jit_array_v<Float>) {
             ek::schedule(m_cond_cdf, m_marg_cdf);
             jitc_eval();
             jitc_sync_stream();
@@ -728,9 +730,10 @@ protected:
         Level(ScalarVector2u res, uint32_t slices)
             : size(ek::hprod(res)), width(res.x()),
               data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
-            ek::migrate(data, AllocType::Managed);
+            if constexpr (ek::is_cuda_array_v<Float>)
+                ek::migrate(data, AllocType::Managed);
 
-            if constexpr (ek::is_cuda_array_v<Float>) {
+            if constexpr (ek::is_jit_array_v<Float>) {
                 ek::schedule(data);
                 jitc_eval();
                 jitc_sync_stream();
@@ -877,16 +880,19 @@ public:
                scale_y = .5 / (h - 1);
 
         m_data = ek::empty<FloatStorage>(m_slices * n_data);
-        ek::migrate(m_data, AllocType::Managed);
+        if constexpr (ek::is_cuda_array_v<Float>)
+            ek::migrate(m_data, AllocType::Managed);
 
         if (enable_sampling) {
             m_marg_cdf = ek::empty<FloatStorage>(m_slices * n_marg);
             m_cond_cdf = ek::empty<FloatStorage>(m_slices * n_cond);
 
-            ek::migrate(m_marg_cdf, AllocType::Managed);
-            ek::migrate(m_cond_cdf, AllocType::Managed);
-
             if constexpr (ek::is_cuda_array_v<Float>) {
+                ek::migrate(m_marg_cdf, AllocType::Managed);
+                ek::migrate(m_cond_cdf, AllocType::Managed);
+            }
+
+            if constexpr (ek::is_jit_array_v<Float>) {
                 ek::schedule(m_cond_cdf, m_marg_cdf);
                 jitc_eval();
                 jitc_sync_stream();

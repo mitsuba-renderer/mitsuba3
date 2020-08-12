@@ -206,7 +206,7 @@ public:
             si = std::move(si_bsdf);
 
             // TODO refactoring do we need this? Trying to prevent very large kernels
-            if constexpr (ek::is_cuda_array_v<Float>) {
+            if constexpr (ek::is_jit_array_v<Float>) {
                 ek::schedule(result);
                 jitc_eval();
             }

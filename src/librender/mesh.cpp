@@ -46,12 +46,14 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     if (has_vertex_texcoords)
         m_vertex_texcoords_buf = ek::zero<FloatStorage>(m_vertex_count * 2);
 
-    ek::migrate(m_faces_buf, AllocType::Managed);
-    ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-    ek::migrate(m_vertex_normals_buf, AllocType::Managed);
-    ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
-
     if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::migrate(m_faces_buf, AllocType::Managed);
+        ek::migrate(m_vertex_positions_buf, AllocType::Managed);
+        ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+        ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+    }
+
+    if constexpr (ek::is_jit_array_v<Float>) {
         ek::schedule(m_faces_buf, m_vertex_positions_buf, m_vertex_normals_buf,
                      m_vertex_texcoords_buf);
         jitc_eval();
@@ -312,7 +314,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
         );
     } else {
         Float table = face_area(ek::arange<UInt32>(m_face_count));
-        ek::migrate(table, AllocType::Managed);
+
+        if constexpr (ek::is_cuda_array_v<Float>)
+            ek::migrate(table, AllocType::Managed);
+
+        ek::schedule(table);
+        ek::eval();
+        jitc_sync_device();
 
         m_area_pmf = DiscreteDistribution<Float>(
             table.data(),

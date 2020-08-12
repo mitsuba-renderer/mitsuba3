@@ -56,10 +56,12 @@ public:
             m_cdf = ek::empty<FloatStorage>(size);
 
         // Ensure that we can access these arrays on the GPU
-        ek::migrate(m_pmf, AllocType::Managed);
-        ek::migrate(m_cdf, AllocType::Managed);
-
         if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::migrate(m_pmf, AllocType::Managed);
+            ek::migrate(m_cdf, AllocType::Managed);
+        }
+
+        if constexpr (ek::is_jit_array_v<Float>) {
             ek::schedule(m_pmf, m_cdf);
             jitc_eval();
             jitc_sync_stream();
@@ -309,8 +311,10 @@ public:
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
         // Ensure that we can access these arrays on the GPU
-        ek::migrate(m_pdf, AllocType::Managed);
-        ek::migrate(m_cdf, AllocType::Managed);
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::migrate(m_pdf, AllocType::Managed);
+            ek::migrate(m_cdf, AllocType::Managed);
+        }
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
                     *cdf_ptr = m_cdf.data();
@@ -577,9 +581,11 @@ public:
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
         // Ensure that we can access these arrays on the GPU
-        ek::migrate(m_pdf,   AllocType::Managed);
-        ek::migrate(m_cdf,   AllocType::Managed);
-        ek::migrate(m_nodes, AllocType::Managed);
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::migrate(m_pdf,   AllocType::Managed);
+            ek::migrate(m_cdf,   AllocType::Managed);
+            ek::migrate(m_nodes, AllocType::Managed);
+        }
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
                     *cdf_ptr = m_cdf.data(),

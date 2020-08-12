@@ -224,7 +224,8 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            ek::migrate(m_data, AllocType::Managed);
+            if constexpr (ek::is_cuda_array_v<Float>)
+                ek::migrate(m_data, AllocType::Managed);
 
             std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
 

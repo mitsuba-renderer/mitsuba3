@@ -601,7 +601,8 @@ protected:
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
         // Recompute the mean texture value following an update
-        ek::migrate(m_data, AllocType::Managed);
+        if constexpr (ek::is_cuda_array_v<Float>)
+            ek::migrate(m_data, AllocType::Managed);
         const ScalarFloat *ptr = m_data.data();
 
         double mean = 0.0;
