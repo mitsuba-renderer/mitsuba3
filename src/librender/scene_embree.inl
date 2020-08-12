@@ -212,8 +212,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
 
-            ek::schedule(ray);
-            jitc_eval();
+            ek::eval(ray);
             jitc_sync_device();
 
             check_buffer_allocation(s, N);
@@ -345,8 +344,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
 
-            ek::schedule(ray);
-            jitc_eval();
+            ek::eval(ray);
             jitc_sync_device();
 
             check_buffer_allocation(s, N);
@@ -453,8 +451,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
 
-            ek::schedule(ray);
-            jitc_eval();
+            ek::eval(ray);
             jitc_sync_device();
 
             check_buffer_allocation(s, N);

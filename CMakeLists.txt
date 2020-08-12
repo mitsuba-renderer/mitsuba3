@@ -69,6 +69,8 @@ endif()
 
 if (MTS_ENABLE_OPTIX OR MTS_ENABLE_LLVM)
   set(MTS_ENABLE_JIT ON)
+  # TODO refactoring: this shouldn't be necessary, but librender doesn't depend on enoki-jit unfortunately
+  add_definitions(-DENOKI_ENABLE_JIT=1)
 endif()
 
 if (MTS_VARIANTS MATCHES "gpu_autodiff_" OR MTS_VARIANTS MATCHES "llvm_autodiff_")

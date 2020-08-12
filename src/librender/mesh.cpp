@@ -271,7 +271,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         for (int i = 0; i < 3; ++i) {
             auto d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
             auto d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
-            auto face_angle = safe_acos(ek::dot(d0, d1));
+            auto face_angle = ek::safe_acos(ek::dot(d0, d1));
 
             auto nn =  n * face_angle;
             for (int j = 0; j < 3; ++j)
@@ -551,6 +551,12 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         }
     } else {
         si.sh_frame.n = si.n;
+    }
+
+    // TODO refactoring: not sure why this is needed
+    if constexpr (ek::is_llvm_array_v<Float>) {
+        ek::eval(si);
+        jitc_sync_device();
     }
 
     return si;

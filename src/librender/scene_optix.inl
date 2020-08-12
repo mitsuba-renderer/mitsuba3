@@ -395,8 +395,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         // Ensure pi and instance_index are allocated before binding the data pointers
-        ek::schedule(pi, instance_index, active, ray);
-        jitc_eval();
+        ek::eval(pi, instance_index, active, ray);
         jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
@@ -500,8 +499,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         // Ensure si and instance_index are allocated before binding the
         // data pointers
-        ek::schedule(si, instance_index, active, ray);
-        jitc_eval();
+        ek::eval(si, instance_index, active, ray);
         jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g.
@@ -581,8 +579,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
         Mask hit = ek::empty<Mask>(ray_count);
 
-        ek::schedule(hit, active, ray);
-        jitc_eval();
+        ek::eval(hit, active, ray);
         jitc_sync_stream();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)

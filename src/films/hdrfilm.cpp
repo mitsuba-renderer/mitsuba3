@@ -207,6 +207,13 @@ public:
     void put(const ImageBlock *block) override {
         Assert(m_storage != nullptr);
         std::lock_guard<std::mutex> lock(m_mutex);
+
+        // TODO refactoring: why do we need this?
+        if constexpr (ek::is_llvm_array_v<Float>) {
+            ek::eval();
+            jitc_sync_device();
+        }
+
         m_storage->put(block);
     }
 
@@ -252,7 +259,7 @@ public:
         if constexpr (ek::is_jit_array_v<Float>) {
             if constexpr (ek::is_cuda_array_v<Float>)
                 ek::migrate(m_storage->data(), AllocType::Managed);
-            jitc_eval();
+            ek::eval();
             jitc_sync_stream();
         }
 
