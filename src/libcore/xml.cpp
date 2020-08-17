@@ -254,8 +254,8 @@ ColorMode variant_to_color_mode() {
 }
 
 template <typename Float, typename Spectrum>
-bool check_cuda() {
-    if constexpr (ek::is_cuda_array_v<Float>)
+bool check_jit() {
+    if constexpr (ek::is_jit_array_v<Float>)
         return true;
     else
         return false;
@@ -272,9 +272,9 @@ struct XMLParseContext {
     XMLParseContext(const std::string &variant) : variant(variant) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
 
-        /* Don't load the scene in parallel when running in GPU mode
+        /* Don't load the scene in parallel when running in JIT mode
            (The Enoki CUDA backend is currently not multi-threaded) */
-        parallelize = !MTS_INVOKE_VARIANT(variant, check_cuda);
+        parallelize = !MTS_INVOKE_VARIANT(variant, check_jit);
     }
 
     std::string variant;
