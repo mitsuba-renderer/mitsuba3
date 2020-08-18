@@ -20,6 +20,8 @@ NAMESPACE_BEGIN(mitsuba)
 #define rtcIntersectW     JOIN(rtcIntersect, MTS_RAY_WIDTH)
 #define rtcOccludedW      JOIN(rtcOccluded,  MTS_RAY_WIDTH)
 
+#define PARALLEL_LLVM_RAY_INTERSECT 1
+
 static RTCDevice __embree_device = nullptr;
 
 template <typename Float>
@@ -135,6 +137,36 @@ RTCHitNp bind_hit_buffer(const State& s) {
     return hit;
 }
 
+RTCRayNp offset_rtc_ray(const RTCRayNp& r, size_t offset) {
+    RTCRayNp ray;
+    ray.org_x = r.org_x + offset;
+    ray.org_y = r.org_y + offset;
+    ray.org_z = r.org_z + offset;
+    ray.dir_x = r.dir_x + offset;
+    ray.dir_y = r.dir_y + offset;
+    ray.dir_z = r.dir_z + offset;
+    ray.tnear = r.tnear + offset;
+    ray.tfar  = r.tfar + offset;
+    ray.time  = r.time + offset;
+    ray.mask  = r.mask + offset;
+    ray.id    = r.id + offset;
+    ray.flags = r.flags + offset;
+    return ray;
+}
+
+RTCHitNp offset_rtc_hit(const RTCHitNp& h, size_t offset) {
+    RTCHitNp hit;
+    hit.Ng_x      = h.Ng_x + offset;
+    hit.Ng_y      = h.Ng_y + offset;
+    hit.Ng_z      = h.Ng_z + offset;
+    hit.u         = h.u + offset;
+    hit.v         = h.v + offset;
+    hit.geomID    = h.geomID + offset;
+    hit.primID    = h.primID + offset;
+    hit.instID[0] = h.instID[0] + offset;
+    return hit;
+}
+
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
     Ray3f ray = ray_;
@@ -204,7 +236,21 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             rh.ray = bind_ray_buffer_and_copy(s, ray);
             rh.hit = bind_hit_buffer(s);
 
+#ifndef PARALLEL_LLVM_RAY_INTERSECT
             rtcIntersectNp(s.accel, &context, &rh, N);
+#else
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, N, 1),
+                [&](const tbb::blocked_range<size_t> &range) {
+                    size_t offset = range.begin();
+                    size_t size   = range.end() - offset;
+                    RTCRayHitNp rh_;
+                    rh_.ray = offset_rtc_ray(rh.ray, offset);
+                    rh_.hit = offset_rtc_hit(rh.hit, offset);
+                    rtcIntersectNp(s.accel, &context, &rh_, size);
+                }
+            );
+#endif
 
             Float t = ek::load_unaligned<Float>(rh.ray.tfar, N);
             Mask hit = active && ek::neq(t, ray.maxt);
@@ -305,8 +351,6 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
             ek::resize(ray, N);
 
-
-
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
 
@@ -319,7 +363,21 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             rh.ray = bind_ray_buffer_and_copy(s, ray);
             rh.hit = bind_hit_buffer(s);
 
+#ifndef PARALLEL_LLVM_RAY_INTERSECT
             rtcIntersectNp(s.accel, &context, &rh, N);
+#else
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, N, 1),
+                [&](const tbb::blocked_range<size_t> &range) {
+                    size_t offset = range.begin();
+                    size_t size   = range.end() - offset;
+                    RTCRayHitNp rh_;
+                    rh_.ray = offset_rtc_ray(rh.ray, offset);
+                    rh_.hit = offset_rtc_hit(rh.hit, offset);
+                    rtcIntersectNp(s.accel, &context, &rh_, size);
+                }
+            );
+#endif
 
             Float t = ek::load_unaligned<Float>(rh.ray.tfar, N);
             Mask hit = active && ek::neq(t, ray.maxt);
@@ -406,7 +464,19 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
 
             RTCRayNp ray2 = bind_ray_buffer_and_copy(s, ray);
 
-            rtcOccludedNp(s.accel, &context, &ray2, N);
+#ifndef PARALLEL_LLVM_RAY_INTERSECT
+            rtcOccludedNp(s.accel, &context, &rh, N);
+#else
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>(0, N, 1),
+                [&](const tbb::blocked_range<size_t> &range) {
+                    size_t offset = range.begin();
+                    size_t size   = range.end() - offset;
+                    RTCRayNp ray_ = offset_rtc_ray(ray2, offset);
+                    rtcOccludedNp(s.accel, &context, &ray_, size);
+                }
+            );
+#endif
 
             Float t = ek::load_unaligned<Float>(ray2.tfar, N);
             return active && ek::neq(t, ray.maxt);
