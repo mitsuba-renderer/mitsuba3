@@ -32,10 +32,7 @@ MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() {
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
     size_t size = m_channel_count * ek::hprod(m_size + 2 * m_border_size);
-    if constexpr (!ek::is_cuda_array_v<Float>)
-        memset(m_data.data(), 0, size * sizeof(ScalarFloat));
-    else
-        m_data = ek::zero<DynamicBuffer<Float>>(size);
+    m_data = ek::zero<DynamicBuffer<Float>>(size);
 }
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &size) {
@@ -59,7 +56,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
     ScalarPoint2i  source_offset = block->offset() - block->border_size(),
                    target_offset =        offset() -        border_size();
 
-    if constexpr (ek::is_cuda_array_v<Float> || ek::is_diff_array_v<Float>) {
+    if constexpr (ek::is_jit_array_v<Float>) {
         accumulate_2d<Float &, const Float &>(
             block->data(), source_size,
             data(), target_size,

@@ -141,10 +141,10 @@ public:
 
             // Stop if we've exceeded the number of requested bounces, or
             // if there are no more active lanes. Only do this latter check
-            // in GPU mode when the number of requested bounces is infinite
+            // in JIT mode when the number of requested bounces is infinite
             // since it causes a costly synchronization.
             if ((uint32_t) depth >= (uint32_t) m_max_depth ||
-                ((!ek::is_cuda_array_v<Float> || m_max_depth < 0) && ek::none(active)))
+                ((!ek::is_jit_array_v<Float> || m_max_depth < 0) && ek::none(active)))
                 break;
 
             // --------------------- Emitter sampling ---------------------
@@ -205,11 +205,8 @@ public:
 
             si = std::move(si_bsdf);
 
-            // TODO refactoring do we need this? Trying to prevent very large kernels
-            if constexpr (ek::is_jit_array_v<Float>) {
-                ek::schedule(result);
-                jitc_eval();
-            }
+            if constexpr (ek::is_jit_array_v<Float>)
+                ek::eval(result, eta, ray, emission_weight, throughput);
         }
 
         return { result, valid_ray };

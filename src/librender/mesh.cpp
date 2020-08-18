@@ -561,12 +561,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         si.sh_frame.n = si.n;
     }
 
-    // TODO refactoring: not sure why this is needed
-    if constexpr (ek::is_llvm_array_v<Float>) {
-        ek::eval(si);
-        jitc_sync_device();
-    }
-
     return si;
 }
 
@@ -874,9 +868,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions_buf")) {
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::schedule(m_vertex_positions_buf);
-            jitc_eval();
+        if constexpr (ek::is_jit_array_v<Float>) {
+            ek::eval(m_vertex_positions_buf);
             jitc_sync_stream();
         }
 
