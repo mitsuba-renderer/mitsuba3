@@ -59,7 +59,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // ------------------------
 
         CUcontext cuCtx = 0;  // zero means take the current context
-        cuCtx = (CUcontext) jitc_cuda_device_context(jitc_device());
+        cuCtx = (CUcontext) jitc_cuda_device_context();
 
         OptixDeviceContextOptions options = {};
         options.logCallbackFunction       = &context_log_cb;
