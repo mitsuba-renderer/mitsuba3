@@ -32,8 +32,9 @@ public:
             auto active_w = (si.wavelengths >= MTS_WAVELENGTH_MIN) &&
                             (si.wavelengths <= MTS_WAVELENGTH_MAX);
 
-            return ek::select(active_w, UnpolarizedSpectrum(m_value),
-                                    UnpolarizedSpectrum(0.f));
+            return ek::select(active_w,
+                              UnpolarizedSpectrum(m_value),
+                              UnpolarizedSpectrum(0.f));
         } else {
             return m_value;
         }

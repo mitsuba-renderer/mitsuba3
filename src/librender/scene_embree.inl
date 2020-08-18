@@ -190,24 +190,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             // context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
             size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
-
-            if (ek::width(ray.o) < N) {
-                ray.o.x().resize(N);
-                ray.o.y().resize(N);
-                ray.o.z().resize(N);
-            }
-
-            if (ek::width(ray.d) < N) {
-                ray.d.x().resize(N);
-                ray.d.y().resize(N);
-                ray.d.z().resize(N);
-            }
-            if (ek::width(ray.time) < N)
-                ray.time.resize(N);
-            if (ek::width(ray.mint) < N)
-                ray.mint.resize(N);
-            if (ek::width(ray.maxt) < N)
-                ray.maxt.resize(N);
+            ek::resize(ray, N);
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
@@ -320,26 +303,9 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             }
         } else {
             size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
+            ek::resize(ray, N);
 
-            // TODO refactoring: add this to array_router.h and struct.h
-            if (ek::width(ray.o) < N) {
-                ray.o.x().resize(N);
-                ray.o.y().resize(N);
-                ray.o.z().resize(N);
-            }
 
-            if (ek::width(ray.d) < N) {
-                ray.d.x().resize(N);
-                ray.d.y().resize(N);
-                ray.d.z().resize(N);
-            }
-
-            if (ek::width(ray.time) < N)
-                ray.time.resize(N);
-            if (ek::width(ray.mint) < N)
-                ray.mint.resize(N);
-            if (ek::width(ray.maxt) < N)
-                ray.maxt.resize(N);
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
@@ -428,25 +394,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             return ray2.tfar != ray.maxt;
         } else {
             size_t N = ek::max(ek::width(ray.o), ek::width(ray.d));
-
-            if (ek::width(ray.o) < N) {
-                ray.o.x().resize(N);
-                ray.o.y().resize(N);
-                ray.o.z().resize(N);
-            }
-
-            if (ek::width(ray.d) < N) {
-                ray.d.x().resize(N);
-                ray.d.y().resize(N);
-                ray.d.z().resize(N);
-            }
-
-            if (ek::width(ray.time) < N)
-                ray.time.resize(N);
-            if (ek::width(ray.mint) < N)
-                ray.mint.resize(N);
-            if (ek::width(ray.maxt) < N)
-                ray.maxt.resize(N);
+            ek::resize(ray, N);
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             ek::masked(ray.maxt, !active) = ray.mint - 1.f;
