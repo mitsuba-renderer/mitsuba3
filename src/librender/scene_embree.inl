@@ -465,7 +465,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             RTCRayNp ray2 = bind_ray_buffer_and_copy(s, ray);
 
 #ifndef PARALLEL_LLVM_RAY_INTERSECT
-            rtcOccludedNp(s.accel, &context, &rh, N);
+            rtcOccludedNp(s.accel, &context, &ray2, N);
 #else
             tbb::parallel_for(
                 tbb::blocked_range<size_t>(0, N, 1),

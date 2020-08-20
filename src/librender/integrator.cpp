@@ -115,8 +115,6 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                 ref<ImageBlock> block = new ImageBlock(m_block_size, channels.size(),
                                                        film->reconstruction_filter(),
                                                        !has_aovs);
-                // TODO refactoring: do we still need this?
-                // scoped_flush_denormals flush_denormals(true);
                 std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
 
                 // For each block

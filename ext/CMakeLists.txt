@@ -29,6 +29,19 @@ if (MTS_ENABLE_GUI)
     add_subdirectory(nanogui)
 endif()
 
+# Build Thread Building Blocks (main shared libraries only)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
+set(TBB_BUILD_STATIC          OFF CACHE BOOL " " FORCE)
+set(TBB_BUILD_TESTS           OFF CACHE BOOL " " FORCE)
+set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
+set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
+add_subdirectory(tbb)
+set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
+set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
+set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
 # Run the Enoki CMake script
 set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
@@ -49,6 +62,7 @@ if (MTS_ENABLE_EMBREE)
   set(EMBREE_GEOMETRY_SUBDIVISION   OFF CACHE BOOL " " FORCE)
   set(EMBREE_GEOMETRY_INSTANCE      ON  CACHE BOOL " " FORCE)
   set(EMBREE_GEOMETRY_USER          ON  CACHE BOOL " " FORCE)
+  set(EMBREE_IGNORE_INVALID_RAYS    ON  CACHE BOOL " " FORCE)
 
   string(TOUPPER "${ENOKI_ARCH_FLAGS}" ENOKI_ARCH_FLAGS_UPPER)
 
@@ -172,17 +186,6 @@ set(OPENEXR_INCLUDE_DIRS
 
 # Use install rpath from this point onwards
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-
-# Build Thread Building Blocks (main shared libraries only)
-set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
-set(TBB_BUILD_STATIC          OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TESTS           OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
-add_subdirectory(tbb)
-set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
-set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
-set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
 
 if (MTS_ENABLE_GUI)
     set_property(TARGET glfw glfw_objects nanogui nanogui-obj PROPERTY FOLDER "dependencies")
