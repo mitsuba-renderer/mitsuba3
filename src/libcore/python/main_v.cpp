@@ -73,7 +73,6 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("Int64")   = enoki.attr("Int64");
     m.attr("UInt32")  = enoki.attr("UInt32");
     m.attr("UInt64")  = enoki.attr("UInt64");
-    m.attr("Float")   = enoki.attr("Float");
     m.attr("Int")     = enoki.attr("Int");
     m.attr("UInt")    = enoki.attr("UInt");
 
@@ -85,16 +84,15 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("ScalarInt64")   = enoki_scalar.attr("Int64");
     m.attr("ScalarUInt32")  = enoki_scalar.attr("UInt32");
     m.attr("ScalarUInt64")  = enoki_scalar.attr("UInt64");
-    m.attr("ScalarFloat")   = enoki_scalar.attr("Float");
     m.attr("ScalarInt")     = enoki_scalar.attr("Int");
     m.attr("ScalarUInt")    = enoki_scalar.attr("UInt");
 
     if constexpr (std::is_same_v<float, ScalarFloat>) {
-        m.attr("Float") = enoki.attr("Array1f");
-        m.attr("ScalarFloat") = enoki_scalar.attr("Array1f");
+        m.attr("Float")       = enoki.attr("Float32");
+        m.attr("ScalarFloat") = enoki_scalar.attr("Float32");
     } else {
-        m.attr("Float") = enoki.attr("Array1f64");
-        m.attr("ScalarFloat") = enoki_scalar.attr("Array1f64");
+        m.attr("Float")       = enoki.attr("Float64");
+        m.attr("ScalarFloat") = enoki_scalar.attr("Float64");
     }
 
     // Vector type aliases
