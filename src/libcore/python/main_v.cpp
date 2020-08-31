@@ -51,15 +51,16 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     // Import the right variant of Enoki
     const char *enoki_pkg = nullptr;
-    if constexpr (ek::is_cuda_array_v<Float> &&
-                  ek::is_diff_array_v<Float>)
+    if constexpr (ek::is_cuda_array_v<Float> && ek::is_diff_array_v<Float>)
         enoki_pkg = "enoki.cuda.ad";
     else if constexpr (ek::is_cuda_array_v<Float>)
         enoki_pkg = "enoki.cuda";
+    else if constexpr (ek::is_llvm_array_v<Float> && ek::is_diff_array_v<Float>)
+        enoki_pkg = "enoki.llvm.ad";
+    else if constexpr (ek::is_llvm_array_v<Float>)
+        enoki_pkg = "enoki.llvm";
     else
         enoki_pkg = "enoki.scalar";
-
-    // TODO refactoring: handle all the other cases
 
     py::module enoki        = py::module::import(enoki_pkg);
     py::module enoki_scalar = py::module::import("enoki.scalar");
