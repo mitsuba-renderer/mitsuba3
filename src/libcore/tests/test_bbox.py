@@ -94,3 +94,50 @@ def test03_distance(variant_scalar_rgb):
     assert BBox([1, 2, 3], [2, 3, 5]).distance([1.5, 2.5, 3.5]) == 0
 
     assert BBox([1, 2, 3], [2, 3, 5]).distance([3, 2.5, 3.5]) == 1
+
+
+def test04_ray_intersect(variant_scalar_rgb):
+    from mitsuba.core import BoundingBox3f as BBox, Vector3f
+    from mitsuba.core import Ray3f
+
+    bbox = BBox([-1, -1, -1], [1, 1, 1])
+
+    hit, mint, maxt = bbox.ray_intersect(Ray3f([-5, 0, 0], [1, 0, 0], 0, []))
+    assert hit and ek.allclose(mint, 4.0) and ek.allclose(maxt, 6.0)
+
+    hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, -2, -2], ek.normalize(Vector3f(1)), 0, []))
+    assert hit and ek.allclose(mint, ek.sqrt(3)) and ek.allclose(maxt, 3 * ek.sqrt(3))
+
+    hit, mint, maxt = bbox.ray_intersect(Ray3f([-2, 0, 0], [0, 1, 0], 0, []))
+    assert not hit
+
+
+def test05_surface_area_vec(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
+
+    def kernel(min, max, p):
+        from mitsuba.core import BoundingBox3f as BBox
+
+        bbox = BBox(-min, max)
+        bbox.expand(p)
+        return bbox.surface_area()
+
+    check_vectorization(kernel, arg_dims = [3, 3, 3])
+
+
+def test06_ray_intersect_vec(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
+
+    def kernel(o, min, max):
+        from mitsuba.core import BoundingBox3f as BBox
+        from mitsuba.core import Ray3f
+
+        bbox = BBox(-min, max)
+        hit, mint, maxt = bbox.ray_intersect(Ray3f(o, ek.normalize(-o), 0, []))
+
+        mint = ek.select(hit, mint, -1.0)
+        maxt = ek.select(hit, maxt, -1.0)
+
+        return mint, maxt
+
+    check_vectorization(kernel, arg_dims = [3, 3, 3])

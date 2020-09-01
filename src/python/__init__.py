@@ -4,6 +4,7 @@ import types
 import sys
 import threading
 from importlib import import_module as _import
+import enoki as ek
 
 if sys.version_info < (3, 6):
     raise ImportError("Mitsuba requires Python 3.6 or greater.")
@@ -174,6 +175,10 @@ def set_variant(value):
     _tls.modules = modules
     _tls.variant = value
 
+    if value.startswith("gpu"):
+        ek.set_device(0)
+    elif value.startswith("llvm"):
+        ek.set_device(-1)
 
 def variant():
     'Returns the currently active variant'

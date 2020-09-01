@@ -5,10 +5,12 @@ test decorators, etc).
 
 import os
 from functools import wraps
-from inspect import getframeinfo, stack
+from inspect import getframeinfo, stack, signature, _empty
 
 import pytest
 import mitsuba
+import enoki as ek
+import numpy as np
 
 def fresolver_append_path(func):
     """Function decorator that adds the mitsuba project root
@@ -80,3 +82,82 @@ def make_tmpfile(request, tmpdir_factory):
     path_value = str(my_dir.join('tmpfile'))
     open(path_value, 'a').close()
     return path_value
+
+
+def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6):
+    """
+    Helper routine which compares evaluations of the vectorized and
+    non-vectorized version of a kernel using available variants (e.g. LLVM, GPU).
+
+    Parameter ``kernel`` (function):
+        Function to be evaluated. It's arguments should be annotated if
+        ``arg_dims`` is not specified. A kernel can return any enoki supported array
+        types (e.g. Float, Vector3f, ...) or a tuple of such arrays.
+
+    Parameter ``arg_dims`` (list(int)):
+        Dimentionalities of the function arguments. If not specified, those will be
+        deduced from the function arguemetn annotations (if available).
+
+    Parameter ``width`` (int):
+       Number of elements to be evaluated at a time for the vectorized call.
+
+    Parameter ``atol`` (float):
+       Absolute tolerance for the comparison of the returned values.
+    """
+
+    # Ensure scalar variant is enabled when calling this kernel
+    assert mitsuba.variant().startswith('scalar_')
+
+    # List available variants with similar spectral variant
+    spectral_variant = mitsuba.variant().replace("scalar", "")
+    variants = list(set(mitsuba.variants()) & set([m + spectral_variant for m in ['llvm', 'gpu']]))
+
+    # If argument dimensions not provided, look at kernel argument annotations
+    if arg_dims == []:
+        params = signature(kernel).parameters
+        args_types = [params[name].annotation for name in params]
+        assert not _empty in args_types, \
+               "`kernel` arguments should be annotated, or `arg_dims` should be set."
+        arg_dims = [1 if t == float else t.Size for t in args_types]
+
+    # Construct random argument arrays
+    np.random.seed(0)
+    args_np = [np.random.random(width) if d == 1 else np.random.random((width, d)) for d in arg_dims]
+
+    # Evaluate non-vectorized kernel
+    from mitsuba.core import Float, Vector2f, Vector3f
+    types = [Float, Vector2f, Vector3f]
+    results_scalar = []
+    for i in range(width):
+        args = [types[arg_dims[j]-1](args_np[j][i]) for j in range(len(args_np))]
+        res = kernel(*args)
+
+        if not type(res) in [list, tuple]:
+            res = [res]
+
+        if results_scalar == []:
+            results_scalar = [[] for i in range(len(res))]
+
+        for i in range(len(res)):
+            results_scalar[i].append(res[i])
+
+    results_scalar = [np.array(res) for res in results_scalar]
+
+    # Evaluate and compate vectorized kernel
+    for variant in variants:
+        # Set variant
+        mitsuba.set_variant(variant)
+        from mitsuba.core import Float, Vector2f, Vector3f
+        types = [Float, Vector2f, Vector3f]
+
+        # Cast arguments
+        args = [types[arg_dims[i]-1](args_np[i]) for i in range(len(args_np))]
+
+        # Evaluate vectorized kernel
+        results_vec = kernel(*args)
+        if not type(results_vec) in [list, tuple]:
+            results_vec = [results_vec]
+
+        # Compare results
+        for i in range(len(results_scalar)):
+            assert ek.allclose(results_vec[i], results_scalar[i], atol=atol)

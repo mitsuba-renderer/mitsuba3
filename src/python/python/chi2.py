@@ -146,9 +146,9 @@ class ChiSquareTest:
         self.histogram = ek.zero(Float, ek.hprod(self.res))
 
         ek.scatter_add(
-            target=self.histogram,
-            index=xy.x + xy.y * self.res.x,
-            source=weights_out
+            self.histogram,
+            weights_out,
+            xy.x + xy.y * self.res.x,
         )
 
         self.pdf_end = time.time()
@@ -239,7 +239,7 @@ class ChiSquareTest:
 
         """
 
-        from mitsuba.core import UInt32, Float64
+        from mitsuba.core import UInt32, Float, Float64
         from mitsuba.core.math import chi2
         from mitsuba.python.math import rlgamma
 
@@ -253,8 +253,8 @@ class ChiSquareTest:
                                              key=lambda x: x[1])])
 
         # Sort entries by expected frequency (increasing)
-        pdf = Float64(ek.gather(self.pdf, index))
-        histogram = Float64(ek.gather(self.histogram, index))
+        pdf = Float64(ek.gather(Float, self.pdf, index))
+        histogram = Float64(ek.gather(Float, self.histogram, index))
 
         # Compute chi^2 statistic and pool low-valued cells
         chi2val, dof, pooled_in, pooled_out = \

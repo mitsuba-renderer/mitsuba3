@@ -6,12 +6,17 @@ import mitsuba
 import numpy as np
 import numpy.linalg as la
 
-def test01_basics(variant_scalar_rgb):
+from mitsuba.python.test.util import check_vectorization
+
+
+def test01_basics(variants_all_rgb):
     from mitsuba.core import Transform4f, Matrix4f
 
+    # Check that default constructor give identity transform
     assert ek.allclose(Transform4f().matrix, ek.identity(Matrix4f))
     assert ek.allclose(Transform4f().inverse_transpose, ek.identity(Matrix4f))
 
+    # Check Matrix and Transfrom construction from Python array and Numpy array
     m1 = [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
     m2 = np.array(m1)
     m3 = Matrix4f(m1)
@@ -25,10 +30,16 @@ def test01_basics(variant_scalar_rgb):
     assert ek.allclose(Transform4f(m2).matrix, m2)
     assert ek.allclose(Transform4f(m3).matrix, m3)
 
-    assert(
-        repr(Transform4f(Matrix4f(m1))) ==
-        "[[1, 2, 3, 4],\n [5, 6, 7, 8],\n [9, 10, 11, 12],\n [13, 14, 15, 16]]"
-    )
+    if ek.is_jit_array_v(Matrix4f):
+        assert(
+            repr(Transform4f(Matrix4f(m1))) ==
+            "[[[1, 2, 3, 4],\n  [5, 6, 7, 8],\n  [9, 10, 11, 12],\n  [13, 14, 15, 16]]]"
+        )
+    else:
+        assert(
+            repr(Transform4f(Matrix4f(m1))) ==
+            "[[1, 2, 3, 4],\n [5, 6, 7, 8],\n [9, 10, 11, 12],\n [13, 14, 15, 16]]"
+        )
 
 
 def test02_inverse(variant_scalar_rgb):
@@ -46,13 +57,12 @@ def test02_inverse(variant_scalar_rgb):
 
     # --- Scale
     trafo = Transform4f.scale([1.0, 10.0, 500.0])
-    assert ek.all(trafo.matrix == np.array([
-        [1,    0,    0,    0],
-        [0,   10,    0,    0],
-        [0,    0,  500,    0],
-        [0,    0,    0,    1]
-    ]))
-    assert ek.all(trafo.transform_point(p) == np.array([1, 20, 1500]))
+    assert ek.allclose(trafo.matrix,
+                       [[1, 0, 0, 0],
+                        [0, 10, 0, 0],
+                        [0, 0, 500, 0],
+                        [0, 0, 0, 1]])
+    assert ek.allclose(trafo.transform_point(p), [1, 20, 1500])
     check_inverse(trafo, [
         [1,      0,       0,    0],
         [0, 1/10.0,       0,    0],
@@ -62,13 +72,12 @@ def test02_inverse(variant_scalar_rgb):
 
     # --- Translation
     trafo = Transform4f.translate([1, 0, 1.5])
-    assert ek.all(trafo.matrix == np.array([
-        [1, 0, 0,    1],
-        [0, 1, 0,    0],
-        [0, 0, 1,  1.5],
-        [0, 0, 0,    1],
-    ]))
-    assert ek.all(trafo.transform_point(p) == np.array([2, 2, 4.5]))
+    assert ek.allclose(trafo.matrix,
+                       [[1, 0, 0, 1],
+                        [0, 1, 0, 0],
+                        [0, 0, 1, 1.5],
+                        [0, 0, 0, 1]])
+    assert ek.allclose(trafo.transform_point(p), [2, 2, 4.5])
     check_inverse(trafo, [
         [1, 0, 0,   -1],
         [0, 1, 0,    0],
@@ -79,12 +88,12 @@ def test02_inverse(variant_scalar_rgb):
     # --- Perspective                x_fov, near clip, far clip
     trafo = Transform4f.perspective(34.022,         1,     1000)
     # Spot-checked against a known transform from Mitsuba1.
-    expected = np.array([
+    expected = [
         [3.26860189,          0,        0,         0],
         [         0, 3.26860189,        0,         0],
         [         0,          0, 1.001001, -1.001001],
         [         0,          0,        1,         0]
-    ])
+    ]
     assert ek.allclose(trafo.matrix, expected)
     check_inverse(trafo, la.inv(expected))
 
@@ -115,95 +124,64 @@ def test03_matmul(variant_scalar_rgb):
 
 
 def test04_transform_point(variant_scalar_rgb):
-    from mitsuba.core import Transform4f
+    from mitsuba.core import Matrix4f, Transform4f, Point3f
 
-    A = np.eye(4)
+    A = Matrix4f(1)
     A[3, 3] = 2
     assert ek.allclose(Transform4f(A).transform_point([2, 4, 6]), [1, 2, 3])
+    assert ek.allclose(Transform4f(A).transform_point([4, 6, 8]), [2, 3, 4])
 
-    try:
-        mitsuba.set_variant("packet_rgb")
-        from mitsuba.core import Transform4f as Transform4fX
-    except:
-        return
+    def kernel(p : Point3f):
+        from mitsuba.core import Transform4f
+        return Transform4f(A).transform_point(p)
 
-    assert ek.allclose(Transform4fX(A).transform_point([[2, 4], [4, 6], [6, 8]]), [[1, 2], [2, 3], [3, 4]])
+    check_vectorization(kernel)
 
 
 def test05_transform_vector(variant_scalar_rgb):
-    from mitsuba.core import Transform4f
+    from mitsuba.core import Matrix4f, Transform4f, Vector3f
 
-    A = np.eye(4)
+    A = Matrix4f(1)
     A[3, 3] = 2
     A[1, 1] = .5
     assert ek.allclose(Transform4f(A).transform_vector([2, 4, 6]), [2, 2, 6])
 
-    try:
-        mitsuba.set_variant("packet_rgb")
-        from mitsuba.core import Transform4f as Transform4fX
-    except:
-        return
+    def kernel(v : Vector3f):
+        from mitsuba.core import Transform4f
+        return Transform4f(A).transform_vector(v)
 
-    assert ek.allclose(
-        Transform4fX(A).transform_vector([[2, 4], [4, 6], [6, 8]]), [[2, 4], [2, 3], [6, 8]])
+    check_vectorization(kernel)
 
 
 def test06_transform_normal(variant_scalar_rgb):
-    from mitsuba.core import Transform4f
+    from mitsuba.core import Matrix4f, Transform4f, Normal3f
 
-    A = np.eye(4)
+    A = Matrix4f(1)
     A[3, 3] = 2
     A[1, 2] = .5
     A[1, 1] = .5
     assert ek.allclose(Transform4f(A).transform_normal([2, 4, 6]), [2, 8, 2])
 
-    try:
-        mitsuba.set_variant("packet_rgb")
-        from mitsuba.core import Transform4f as Transform4fX
-    except:
-        return
+    def kernel(n : Normal3f):
+        from mitsuba.core import Transform4f
+        return Transform4f(A).transform_normal(n)
 
-    assert ek.allclose(
-        Transform4fX(A).transform_normal([[2, 4], [4, 6], [6, 8]]), [[2, 4], [8, 12], [2, 2]])
+    check_vectorization(kernel)
 
 
 def test07_transform_has_scale(variant_scalar_rgb):
-    try:
-        from mitsuba.packet_rgb.core import Transform4f as Transform4fX
-    except:
-        pytest.skip("packet_rgb mode not enabled")
+    from mitsuba.core import Transform4f
 
-    t = Transform4fX(11)
-    t[0] = Transform4f.rotate([1, 0, 0], 0.5)
-    t[1] = Transform4f.rotate([0, 1, 0], 50)
-    t[2] = Transform4f.rotate([0, 0, 1], 1e3)
-    t[3] = Transform4f.translate([41, 1e3, 0])
-    t[4] = Transform4f.scale([1, 1, 1])
-    t[5] = Transform4f.scale([1, 1, 1.1])
-    t[6] = Transform4f.perspective(90, 0.1, 100)
-    t[7] = Transform4f.orthographic(0.01, 200)
-    t[8] = Transform4f.look_at(origin=[10, -1, 3], target=[1, 1, 2], up=[0, 1, 0])
-    t[9] = Transform4f()
-    t[10] = AnimatedTransform(Transform4f()).eval(0)
-
-    # Vectorized
-    expected = [
-        False, False, False, False, False,
-        True, True, True, False, False, False
-    ]
-    assert np.all(t.has_scale() == expected)
-
-    # Single
-    for i in range(11):
-        assert t[i].has_scale() == expected[i]
-
-    # Spot
-    assert la.norm(np.all(t[3].inverse_transpose - np.array([
-        [ 1,   0, 0,   0],
-        [ 0,   1, 0,   0],
-        [ 0,   0, 1,   0],
-        [41, 1e3, 0,   1]
-    ]))) < 1e-5
+    assert not Transform4f.rotate([1, 0, 0], 0.5).has_scale()
+    assert not Transform4f.rotate([0, 1, 0], 50).has_scale()
+    assert not Transform4f.rotate([0, 0, 1], 1e3).has_scale()
+    assert not Transform4f.translate([41, 1e3, 0]).has_scale()
+    assert not Transform4f.scale([1, 1, 1]).has_scale()
+    assert Transform4f.scale([1, 1, 1.1]).has_scale() == True
+    assert Transform4f.perspective(90, 0.1, 100).has_scale()
+    assert Transform4f.orthographic(0.01, 200).has_scale()
+    assert not Transform4f.look_at(origin=[10, -1, 3], target=[1, 1, 2], up=[0, 1, 0]).has_scale()
+    assert not Transform4f().has_scale()
 
 
 # def test08_atransform_construct(variant_scalar_rgb):

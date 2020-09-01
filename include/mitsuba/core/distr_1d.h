@@ -62,9 +62,8 @@ public:
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_pmf, m_cdf);
-            jitc_eval();
-            jitc_sync_stream();
+            ek::eval(m_pmf, m_cdf);
+            jitc_sync_device();
         }
 
         ScalarFloat *pmf_ptr = m_pmf.data(),
@@ -314,6 +313,11 @@ public:
         if constexpr (ek::is_cuda_array_v<Float>) {
             ek::migrate(m_pdf, AllocType::Managed);
             ek::migrate(m_cdf, AllocType::Managed);
+        }
+
+        if constexpr (ek::is_jit_array_v<Float>) {
+            ek::eval(m_pdf, m_cdf);
+            jitc_sync_device();
         }
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
@@ -585,6 +589,11 @@ public:
             ek::migrate(m_pdf,   AllocType::Managed);
             ek::migrate(m_cdf,   AllocType::Managed);
             ek::migrate(m_nodes, AllocType::Managed);
+        }
+
+        if constexpr (ek::is_jit_array_v<Float>) {
+            ek::eval(m_pdf, m_cdf, m_nodes);
+            jitc_sync_device();
         }
 
         ScalarFloat *pdf_ptr = m_pdf.data(),

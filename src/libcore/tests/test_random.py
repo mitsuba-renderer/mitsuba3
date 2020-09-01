@@ -29,31 +29,27 @@ def test02_tea_float64(variant_scalar_rgb):
     assert sample_tea_float64(4, 1, 4) == 0.48973647949223253
 
 
-def test03_tea_vectorized(variant_packet_rgb):
-    from mitsuba.core import sample_tea_float32, sample_tea_float64, UInt32
+def test03_tea_vectorized(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
 
-    count = 100
+    width = 125
 
-    result = sample_tea_float32(
-        UInt32.full(1, count),
-        UInt32.arange(count), 4)
-    for i in range(count):
-        assert result[i] == sample_tea_float32(1, i, 4)
+    def kernel(x : float):
+        from mitsuba.core import sample_tea_float32, sample_tea_float64, UInt32
 
-    result = sample_tea_float64(
-        UInt32.full(1, count),
-        UInt32.arange(count), 4)
-    for i in range(count):
-        assert result[i] == sample_tea_float64(1, i, 4)
+        i = UInt32(width * x)
+        return sample_tea_float32(1, i, 4), sample_tea_float64(1, i, 4)
+
+    check_vectorization(kernel, width=width)
 
 
-def test04_permute_bijection(variant_scalar_rgb):
+def test04_permute_bijection(variants_all_rgb):
     """ Check that the resulting permutation vectors are bijections """
     from mitsuba.core import permute
 
-    for p in range(4):
+    for p in range(3):
         sample_count = 2**(p+1)
-        for seed in range(500):
+        for seed in range(75):
             perm = [permute(i, sample_count, seed) for i in range(sample_count)]
             assert len(set(perm)) == len(perm)
 
@@ -79,13 +75,13 @@ def test05_permute_uniform(variant_scalar_rgb):
         assert ek.allclose(1.0 / sample_count, mean)
 
 
-def test06_permute_kensler_bijection(variant_scalar_rgb, variant_gpu_rgb):
+def test06_permute_kensler_bijection(variants_all_rgb):
     """ Check that the resulting permutation vectors are bijections """
     from mitsuba.core import permute_kensler
 
     for p in range(3):
         sample_count = 2**(p+1) + p
-        for seed in range(500):
+        for seed in range(75):
             perm = [permute_kensler(i, sample_count, seed) for i in range(sample_count)]
             assert len(set(perm)) == len(perm)
 

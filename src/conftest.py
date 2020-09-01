@@ -44,13 +44,13 @@ def generate_fixture(variant):
 
 
 for variant in ['scalar_rgb', 'scalar_spectral',
-                'scalar_mono_polarized', 'packet_rgb',
-                'packet_spectral', 'gpu_rgb', 'gpu_autodiff_rgb']:
+                'scalar_mono_polarized', 'llvm_rgb',
+                'llvm_spectral', 'gpu_rgb', 'gpu_autodiff_rgb']:
     generate_fixture(variant)
 del generate_fixture
 
 
-@pytest.fixture(params=['packet_rgb', 'gpu_rgb'])
+@pytest.fixture(params=['llvm_rgb', 'gpu_rgb'])
 def variants_vec_rgb(request):
     try:
         import mitsuba
@@ -60,7 +60,7 @@ def variants_vec_rgb(request):
     return request.param
 
 
-@pytest.fixture(params=['scalar_rgb', 'packet_rgb'])
+@pytest.fixture(params=['scalar_rgb', 'llvm_rgb'])
 def variants_cpu_rgb(request):
     try:
         import mitsuba
@@ -80,7 +80,7 @@ def variants_scalar_all(request):
     return request.param
 
 
-@pytest.fixture(params=['scalar_rgb', 'packet_rgb', 'gpu_rgb'])
+@pytest.fixture(params=['scalar_rgb', 'llvm_rgb', 'gpu_rgb'])
 def variants_all_rgb(request):
     try:
         import mitsuba

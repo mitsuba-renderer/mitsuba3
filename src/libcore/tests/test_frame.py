@@ -69,3 +69,24 @@ def test03_frame_equality(variant_scalar_rgb):
     assert f2 == f1
     assert not f1 == f3
     assert not f2 == f3
+
+
+def test05_coord_convertion_vec(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
+
+    def kernel(theta, phi, d):
+        from mitsuba.core import Frame3f, Vector3f
+        sin_theta, cos_theta = ek.sincos(theta)
+        sin_phi, cos_phi = ek.sincos(phi)
+
+        v = Vector3f(
+            cos_phi * sin_theta,
+            sin_phi * sin_theta,
+            cos_theta
+        )
+
+        f = Frame3f(ek.normalize(d))
+
+        return f.to_local(v), f.to_world(v)
+
+    check_vectorization(kernel, arg_dims = [1, 1, 3])

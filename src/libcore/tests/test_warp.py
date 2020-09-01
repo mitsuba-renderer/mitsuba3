@@ -6,41 +6,26 @@ import pytest
 import mitsuba
 
 
-def check_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)) , resolution = 2):
+def check_warp_vectorization(func_str, wrapper = (lambda f: lambda x: f(x)), atol=1e-6):
     """
     Helper routine which compares evaluations of the vectorized and
-    non-vectorized version of a warping routine
+    non-vectorized version of a warping routine.
     """
 
-    import importlib
-    mitsuba.set_variant('scalar_rgb')
-    func     = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str))
-    pdf_func = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str + "_pdf"))
+    from importlib import import_module
+    from mitsuba.python.test.util import check_vectorization
 
-    try:
-        mitsuba.set_variant('packet_rgb')
-    except:
-        return
+    def kernel(u : float, v : float):
+        mitsuba_core_pkg = import_module('mitsuba.core')
+        func_vec     = wrapper(getattr(mitsuba_core_pkg.warp, func_str))
+        pdf_func_vec = wrapper(getattr(mitsuba_core_pkg.warp, func_str + "_pdf"))
 
-    func_vec     = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str))
-    pdf_func_vec = wrapper(getattr(importlib.import_module('mitsuba.core').warp, func_str + "_pdf"))
-    from mitsuba.core import Vector2f
+        result = func_vec([u, v])
+        pdf = pdf_func_vec(result)
 
-    # Generate resolution^2 test points on a 2D grid
-    t = ek.linspace(Float, 1e-3, 1, resolution)
-    x, y = ek.meshgrid(t, t)
-    samples = Vector2f(x, y)
+        return result
 
-    # Run the sampling routine
-    result = func_vec(samples)
-
-    # Evaluate the PDF
-    pdf = pdf_func_vec(result)
-
-    # Check against the scalar version
-    for i in range(resolution):
-        assert ek.allclose(result.numpy()[i, :], func(samples.numpy()[i, :]), atol=1e-4)
-        assert ek.allclose(pdf.numpy()[i], pdf_func(result.numpy()[i, :]), atol=1e-6)
+    check_vectorization(kernel, atol=atol)
 
 
 def check_inverse(func, inverse):
@@ -62,7 +47,7 @@ def test_square_to_uniform_disk(variant_scalar_rgb):
 
     check_inverse(warp.square_to_uniform_disk, warp.uniform_disk_to_square)
 
-    check_vectorization("square_to_uniform_disk")
+    check_warp_vectorization("square_to_uniform_disk")
 
 
 def test_square_to_uniform_disk_concentric(variant_scalar_rgb):
@@ -74,7 +59,7 @@ def test_square_to_uniform_disk_concentric(variant_scalar_rgb):
 
     check_inverse(warp.square_to_uniform_disk_concentric, warp.uniform_disk_to_square_concentric)
 
-    check_vectorization("square_to_uniform_disk_concentric")
+    check_warp_vectorization("square_to_uniform_disk_concentric")
 
 
 def test_square_to_uniform_triangle(variant_scalar_rgb):
@@ -88,7 +73,7 @@ def test_square_to_uniform_triangle(variant_scalar_rgb):
     assert(ek.allclose(warp.square_to_uniform_triangle([1, 1]),   [1, 0]))
 
     check_inverse(warp.square_to_uniform_triangle, warp.uniform_triangle_to_square)
-    check_vectorization("square_to_uniform_triangle")
+    check_warp_vectorization("square_to_uniform_triangle")
 
 
 def test_interval_to_tent(variant_scalar_rgb):
@@ -115,7 +100,7 @@ def test_square_to_tent(variant_scalar_rgb):
     assert(ek.allclose(warp.square_to_tent([1, 0]), [1, -1]))
 
     check_inverse(warp.square_to_tent, warp.tent_to_square)
-    check_vectorization("square_to_tent")
+    check_warp_vectorization("square_to_tent")
 
 
 def test_square_to_uniform_sphere_vec(variant_scalar_rgb):
@@ -126,7 +111,7 @@ def test_square_to_uniform_sphere_vec(variant_scalar_rgb):
     assert(ek.allclose(warp.square_to_uniform_sphere([0.5, 0.5]), [-1, 0, 0], atol=1e-7))
 
     check_inverse(warp.square_to_uniform_sphere, warp.uniform_sphere_to_square)
-    check_vectorization("square_to_uniform_sphere")
+    check_warp_vectorization("square_to_uniform_sphere")
 
 
 def test_square_to_uniform_hemisphere(variant_scalar_rgb):
@@ -136,7 +121,7 @@ def test_square_to_uniform_hemisphere(variant_scalar_rgb):
     assert(ek.allclose(warp.square_to_uniform_hemisphere([0, 0.5]), [-1, 0, 0]))
 
     check_inverse(warp.square_to_uniform_hemisphere, warp.uniform_hemisphere_to_square)
-    check_vectorization("square_to_uniform_hemisphere")
+    check_warp_vectorization("square_to_uniform_hemisphere")
 
 
 def test_square_to_cosine_hemisphere(variant_scalar_rgb):
@@ -146,7 +131,7 @@ def test_square_to_cosine_hemisphere(variant_scalar_rgb):
     assert(ek.allclose(warp.square_to_cosine_hemisphere([0.5,   0]), [0, -1, 0], atol=1e-7))
 
     check_inverse(warp.square_to_cosine_hemisphere, warp.cosine_hemisphere_to_square)
-    check_vectorization("square_to_cosine_hemisphere")
+    check_warp_vectorization("square_to_cosine_hemisphere", atol=1e-5)
 
 
 def test_square_to_uniform_cone(variant_scalar_rgb):
@@ -163,7 +148,7 @@ def test_square_to_uniform_cone(variant_scalar_rgb):
 
     wrapper = lambda f: lambda x: f(x, 0.3)
 
-    check_vectorization("square_to_uniform_cone", wrapper)
+    check_warp_vectorization("square_to_uniform_cone", wrapper)
 
 
 def test_square_to_beckmann(variant_scalar_rgb):
@@ -177,7 +162,7 @@ def test_square_to_beckmann(variant_scalar_rgb):
 
     wrapper = lambda f: lambda x: f(x, 0.3)
 
-    check_vectorization("square_to_beckmann", wrapper)
+    check_warp_vectorization("square_to_beckmann", wrapper, atol=1e-5)
 
 
 def test_square_to_von_mises_fisher(variant_scalar_rgb):
@@ -191,7 +176,7 @@ def test_square_to_von_mises_fisher(variant_scalar_rgb):
 
     wrapper = lambda f: lambda x: f(x, 10)
 
-    check_vectorization("square_to_von_mises_fisher", wrapper)
+    check_warp_vectorization("square_to_von_mises_fisher", wrapper)
 
 
 def test_square_to_std_normal_pdf(variant_scalar_rgb):

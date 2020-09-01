@@ -54,13 +54,9 @@ def test_eval_1d_uniform(variant_scalar_rgb):
 input1 = Float([0, 0.5, 1,   0.5, 0, 0.5, 1,   0.5])
 input2 = Float([0, 0.5, 0.8, 0.5, 0, 0.5, 0.8, 0.5])
 
-def test_eval_1d_uniform_vec(variant_packet_rgb):
-    from mitsuba.core import spline
-    assert ek.allclose(spline.eval_1d(0, 1, values1, input1), input1)
-    assert ek.allclose(spline.eval_1d(0, 1, values2, input2), input2)
-
 nodes1 = Float([0.0, 0.25, 0.5, 0.75, 1])
 nodes2 = Float([0.0, 0.5,  1.0, 1.5,  2])
+
 
 def test_eval_1d_non_uniform(variant_scalar_rgb):
     from mitsuba.core import spline
@@ -72,15 +68,6 @@ def test_eval_1d_non_uniform(variant_scalar_rgb):
     assert ek.allclose(spline.eval_1d(nodes2, values2, 0), 0)
     assert ek.allclose(spline.eval_1d(nodes2, values2, 1), 0.5)
     assert ek.allclose(spline.eval_1d(nodes2, values2, 2), 1)
-
-
-def test_eval_1d_non_uniform_vec(variant_packet_rgb):
-    from mitsuba.core import spline
-
-    assert ek.allclose(spline.eval_1d(nodes1, values2, input1), input1)
-    assert ek.allclose(spline.eval_1d(nodes1, values2, input2), input2)
-    assert ek.allclose(spline.eval_1d(nodes2, values2, 2*input1), input1)
-    assert ek.allclose(spline.eval_1d(nodes2, values2, 2*input2), input2)
 
 
 def test_integrate_1d_uniform(variant_scalar_rgb):

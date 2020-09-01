@@ -2,7 +2,7 @@ import pytest
 import enoki as ek
 
 
-def test01_discr_empty(variant_packet_rgb):
+def test01_discr_empty(variants_all_rgb):
     # Test that operations involving the empty distribution throw
     from mitsuba.core import DiscreteDistribution
 
@@ -14,7 +14,7 @@ def test01_discr_empty(variant_packet_rgb):
     assert 'empty distribution' in str(excinfo.value)
 
 
-def test02_discr_zero_prob(variant_packet_rgb):
+def test02_discr_zero_prob(variants_all_rgb):
     # Test that operations involving zero probability mass throw
     from mitsuba.core import DiscreteDistribution
 
@@ -23,7 +23,7 @@ def test02_discr_zero_prob(variant_packet_rgb):
     assert "no probability mass found" in str(excinfo.value)
 
 
-def test03_discr_neg_prob(variant_packet_rgb):
+def test03_discr_neg_prob(variants_all_rgb):
     # Test that operations involving negative probability mass throw
     from mitsuba.core import DiscreteDistribution
 
@@ -32,7 +32,7 @@ def test03_discr_neg_prob(variant_packet_rgb):
     assert "entries must be non-negative" in str(excinfo.value)
 
 
-def test04_discr_basic(variant_packet_rgb):
+def test04_discr_basic(variants_vec_rgb):
     # Validate discrete distribution cdf/pmf against hand-computed reference
     from mitsuba.core import DiscreteDistribution, Float
 
@@ -64,7 +64,7 @@ def test04_discr_basic(variant_packet_rgb):
     assert ek.allclose(x.normalization(), 1.0 / 3.0)
 
 
-def test05_discr_sample(variant_packet_rgb):
+def test05_discr_sample(variants_vec_rgb):
     # Validate discrete distribution sampling against hand-computed reference
     from mitsuba.core import DiscreteDistribution, Float
     eps = 1e-7
@@ -102,14 +102,14 @@ def test05_discr_sample(variant_packet_rgb):
     )
 
 
-def test06_discr_bruteforce(variant_packet_rgb):
+def test06_discr_bruteforce(variants_vec_rgb):
     # Brute force validation of discrete distribution sampling
     from mitsuba.core import DiscreteDistribution, Float, PCG32, UInt64
 
-    rng = PCG32(initseq=UInt64.arange(50))
+    rng = PCG32(initseq=ek.arange(UInt64, 50))
 
-    for size in range(2, 20):
-        for i in range(2, 50):
+    for size in range(2, 20, 5):
+        for i in range(2, 50, 5):
             density = Float(rng.next_uint32_bounded(i)[0:size])
             if ek.hsum(density) == 0:
                 continue
@@ -117,14 +117,14 @@ def test06_discr_bruteforce(variant_packet_rgb):
 
             x = ek.linspace(Float, 0, 1, 20)
             y = ddistr.sample(x)
-            z = ek.gather(ddistr.cdf(), y - 1, y > 0)
+            z = ek.gather(Float, ddistr.cdf(), y - 1, y > 0)
             x *= ddistr.sum()
 
             # Did we sample the right interval?
             assert ek.all((x > z) | (ek.eq(x, 0) & (x >= z)))
 
 
-def test07_discr_leading_trailing_zeros(variant_packet_rgb):
+def test07_discr_leading_trailing_zeros(variants_vec_rgb):
     # Check that sampling still works when there are zero-valued buckets
     from mitsuba.core import DiscreteDistribution
     x = DiscreteDistribution([0, 0, 1, 0, 1, 0, 0, 0])
@@ -133,7 +133,7 @@ def test07_discr_leading_trailing_zeros(variant_packet_rgb):
     assert pmf == [.5] * 6
 
 
-def test08_cont_empty(variant_packet_rgb):
+def test08_cont_empty(variants_all_rgb):
     # Test that operations involving the empty distribution throw
     from mitsuba.core import ContinuousDistribution
 
@@ -150,7 +150,7 @@ def test08_cont_empty(variant_packet_rgb):
     assert 'needs at least two entries' in str(excinfo.value)
 
 
-def test09_cont_empty_invalid_range(variant_packet_rgb):
+def test09_cont_empty_invalid_range(variants_all_rgb):
     # Test that invalid range specifications throw an exception
     from mitsuba.core import ContinuousDistribution
 
@@ -163,7 +163,7 @@ def test09_cont_empty_invalid_range(variant_packet_rgb):
     assert 'invalid range' in str(excinfo.value)
 
 
-def test10_cont_zero_prob(variant_packet_rgb):
+def test10_cont_zero_prob(variants_all_rgb):
     # Test that operations involving zero probability mass throw
     from mitsuba.core import ContinuousDistribution
 
@@ -172,7 +172,7 @@ def test10_cont_zero_prob(variant_packet_rgb):
     assert "no probability mass found" in str(excinfo.value)
 
 
-def test11_cont_neg_prob(variant_packet_rgb):
+def test11_cont_neg_prob(variants_all_rgb):
     # Test that operations involving negative probability mass throw
     from mitsuba.core import ContinuousDistribution
 
@@ -181,7 +181,7 @@ def test11_cont_neg_prob(variant_packet_rgb):
     assert "entries must be non-negative" in str(excinfo.value)
 
 
-def test12_cont_eval(variant_packet_rgb):
+def test12_cont_eval(variants_vec_rgb):
     # Test continuous 1D distribution pdf/cdf against hand-computed reference
     from mitsuba.core import ContinuousDistribution
     d = ContinuousDistribution([2, 3], [1, 2])
@@ -208,7 +208,7 @@ def test12_cont_eval(variant_packet_rgb):
     )
 
 
-def test13_cont_func(variant_packet_rgb):
+def test13_cont_func(variants_vec_rgb):
     # Test continuous 1D distribution integral against analytic result
     from mitsuba.core import ContinuousDistribution, Float
 
@@ -221,28 +221,23 @@ def test13_cont_func(variant_packet_rgb):
     assert ek.allclose(d.sample([0, 0.5, 1]), [-2, 0, 2])
 
 
-def test14_irrcont_empty(variant_packet_rgb):
+def test14_irrcont_empty(variants_all_rgb):
     # Test that operations involving the empty distribution throw
     from mitsuba.core import IrregularContinuousDistribution
 
     d = IrregularContinuousDistribution()
     assert d.empty()
-    d.nodes()[:] = [1]
-    d.pdf()[:] = [1]
 
     with pytest.raises(RuntimeError) as excinfo:
-        d.update()
+        IrregularContinuousDistribution([1], [1])
     assert 'needs at least two entries' in str(excinfo.value)
 
-    d.nodes()[:] = [1, 2]
-    d.pdf()[:] = [1]
-
     with pytest.raises(RuntimeError) as excinfo:
-        d.update()
+        IrregularContinuousDistribution([1, 2], [1])
     assert 'size mismatch' in str(excinfo.value)
 
 
-def test15_irrcont_empty_invalid_range(variant_packet_rgb):
+def test15_irrcont_empty_invalid_range(variants_all_rgb):
     # Test that invalid range specifications throw an exception
     from mitsuba.core import IrregularContinuousDistribution
 
@@ -255,7 +250,7 @@ def test15_irrcont_empty_invalid_range(variant_packet_rgb):
     assert 'strictly increasing' in str(excinfo.value)
 
 
-def test16_irrcont_zero_prob(variant_packet_rgb):
+def test16_irrcont_zero_prob(variants_all_rgb):
     # Test that operations involving the empty distribution throw
     from mitsuba.core import IrregularContinuousDistribution
 
@@ -264,7 +259,7 @@ def test16_irrcont_zero_prob(variant_packet_rgb):
     assert "no probability mass found" in str(excinfo.value)
 
 
-def test17_irrcont_neg_prob(variant_packet_rgb):
+def test17_irrcont_neg_prob(variants_all_rgb):
     # Test that operations involving negative probability mass throw
     from mitsuba.core import IrregularContinuousDistribution
 
@@ -273,7 +268,7 @@ def test17_irrcont_neg_prob(variant_packet_rgb):
     assert "entries must be non-negative" in str(excinfo.value)
 
 
-def test18_irrcont_simple_function(variant_packet_rgb):
+def test18_irrcont_simple_function(variants_vec_rgb):
     # Reference from Mathematica
     from mitsuba.core import IrregularContinuousDistribution, Float
 

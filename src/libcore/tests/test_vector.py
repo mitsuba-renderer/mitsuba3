@@ -35,3 +35,14 @@ def test01_coordinate_system(variant_scalar_rgb):
             s2, t2 = coordinate_system(n)
             assert ek.allclose(s1, s2, atol=1e-6)
             assert ek.allclose(t1, t2, atol=1e-6)
+
+
+def test02_coordinate_system_vec(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
+
+    def kernel(u : float, v : float):
+        from mitsuba.core import coordinate_system, warp
+        n = warp.square_to_uniform_sphere([u, v])
+        return coordinate_system(n)
+
+    check_vectorization(kernel)
