@@ -2,6 +2,7 @@ import enoki as ek
 import mitsuba
 
 # Set the desired mitsuba variant
+# TODO refactoring
 mitsuba.set_variant('packet_rgb')
 
 from mitsuba.core import Float, Vector3f

@@ -6,7 +6,7 @@ Introduction
 Mitsuba 2 provides extremely fine-grained Python bindings to essentially every
 function in the system. This makes it possible to import the renderer into a
 Jupyter notebook and develop new algorithms interactively while visualizing
-their behavior using plots. 
+their behavior using plots.
 
 Ray intersections, BSDF evaluations and emitters, and numerous other system
 components can be queried and sampled through an efficient vectorized
@@ -32,7 +32,7 @@ Importing the renderer
 
 Mitsuba 2 ships with many different system variants, each of which provides its
 own set of Python bindings that are necessarily different from others due to
-the replacement of types in function signatures. 
+the replacement of types in function signatures.
 
 To import Mitsuba into Python, you will first have to import the central
 ``mitsuba`` module and set the desired variant. Following this, specific
@@ -128,6 +128,7 @@ into derived array types like vectors or matrices.
 
 .. code-block:: python
 
+    # TODO refactoring
     mitsuba.set_variant('packet_rgb')
     from mitsuba.core import Float, Vector3f
     # Float    = enoki.dynamic.Float32  (a.k.a. enoki::DynamicArray<Packet<float>>)
@@ -206,6 +207,7 @@ variant.
     import mitsuba
 
     # Choose the variant
+    # TODO refactoring
     mitsuba.set_variant('packet_rgb') # also works on the GPU, e.g. with 'gpu_rgb'
 
     from mitsuba.core import Float, UInt64, Vector2f, PCG32
