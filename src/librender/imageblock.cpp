@@ -121,7 +121,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
         Point2f base = lo - pos;
         for (uint32_t i = 0; i < n; ++i) {
             Point2f p = base + i;
-            if constexpr (!ek::is_cuda_array_v<Float>) {
+            if constexpr (!ek::is_jit_array_v<Float>) {
                 m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
                 m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
             } else {

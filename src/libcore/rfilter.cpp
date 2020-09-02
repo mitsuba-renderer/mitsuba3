@@ -8,13 +8,17 @@ MTS_VARIANT ReconstructionFilter<Float, Spectrum>::~ReconstructionFilter() { }
 
 MTS_VARIANT void ReconstructionFilter<Float, Spectrum>::init_discretization() {
     Assert(m_radius > 0);
-    m_values.resize(MTS_FILTER_RESOLUTION + 1);
 
-    // Evaluate and store the filter values
-    for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
-        m_values[i] = ek::hmax(eval((m_radius * i) / MTS_FILTER_RESOLUTION));
+    if constexpr (!ek::is_jit_array_v<Float>) {
+        m_values.resize(MTS_FILTER_RESOLUTION + 1);
 
-    m_values[MTS_FILTER_RESOLUTION] = 0;
+        // Evaluate and store the filter values
+        for (size_t i = 0; i < MTS_FILTER_RESOLUTION; ++i)
+            m_values[i] = eval((m_radius * i) / MTS_FILTER_RESOLUTION);
+
+        m_values[MTS_FILTER_RESOLUTION] = 0;
+    }
+
     m_scale_factor = MTS_FILTER_RESOLUTION / m_radius;
     m_border_size = (int) ek::ceil(m_radius - .5f - 2.f * math::RayEpsilon<ScalarFloat>);
 }
