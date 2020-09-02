@@ -174,6 +174,13 @@ int main(int argc, char *argv[]) {
             jitc_set_log_level_stderr(::LogLevel::Warn);
         }
 
+        // Initialize Intel Thread Building Blocks with the requested number of threads
+        if (*arg_threads)
+            __global_thread_count = arg_threads->as_int();
+        if (__global_thread_count < 1)
+            Throw("Thread count must be >= 1!");
+        tbb::task_scheduler_init init((int) __global_thread_count);
+
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
             auto sep = value.find('=');
@@ -202,13 +209,6 @@ int main(int argc, char *argv[]) {
 #endif
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
-
-        // Initialize Intel Thread Building Blocks with the requested number of threads
-        if (*arg_threads)
-            __global_thread_count = arg_threads->as_int();
-        if (__global_thread_count < 1)
-            Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init init((int) __global_thread_count);
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
