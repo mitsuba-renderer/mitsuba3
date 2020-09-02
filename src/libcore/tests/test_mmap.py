@@ -1,11 +1,9 @@
 import numpy as np
 import os
-
 import mitsuba
-mitsuba.set_variant('scalar_rgb')
-from mitsuba.core import MemoryMappedFile
 
-def test01_open_read_only(tmpdir):
+def test01_open_read_only(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import MemoryMappedFile
     tmp_file = os.path.join(str(tmpdir), "mmap_test")
     with open(tmp_file, "w") as f:
         f.write('hello!')
@@ -19,7 +17,8 @@ def test01_open_read_only(tmpdir):
     os.remove(tmp_file)
 
 
-def test02_open_read_write(tmpdir):
+def test02_open_read_write(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import MemoryMappedFile
     tmp_file = os.path.join(str(tmpdir), "mmap_test")
     with open(tmp_file, "w") as f:
         f.write('hello!')
@@ -35,7 +34,8 @@ def test02_open_read_write(tmpdir):
     os.remove(tmp_file)
 
 
-def test03_create_resize(tmpdir):
+def test03_create_resize(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import MemoryMappedFile
     tmp_file = os.path.join(str(tmpdir), "mmap_test")
     mmap = MemoryMappedFile(tmp_file, 8192)
     assert mmap.size() == 8192
@@ -59,7 +59,8 @@ def test03_create_resize(tmpdir):
     os.remove(tmp_file)
 
 
-def test04_create_temp():
+def test04_create_temp(variant_scalar_rgb):
+    from mitsuba.core import MemoryMappedFile
     mmap = MemoryMappedFile.create_temporary(123)
     fname = str(mmap.filename())
     assert os.path.exists(fname)

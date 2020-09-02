@@ -5,9 +5,6 @@ import mitsuba
 import pytest
 import enoki as ek
 
-mitsuba.set_variant('scalar_rgb')
-
-from mitsuba.core import Bitmap, Struct, ReconstructionFilter, float_dtype, FilterBoundaryCondition
 
 def find_resource(fname):
     path = os.path.dirname(os.path.realpath(__file__))
@@ -20,7 +17,8 @@ def find_resource(fname):
         path = os.path.dirname(path)
 
 
-def test_read_convert_yc(tmpdir):
+def test_read_convert_yc(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct, FilterBoundaryCondition
     # Tests reading & upsampling a luminance/chroma image
     b = Bitmap(find_resource('resources/data/tests/bitmap/XYZ_YC.exr'))
     # Tests float16 XYZ -> float32 RGBA conversion
@@ -39,7 +37,8 @@ def test_read_convert_yc(tmpdir):
     assert np.allclose(np.mean(b, axis=(0, 1)), ref, atol=1e-3)
 
 
-def test_read_write_complex_exr(tmpdir):
+def test_read_write_complex_exr(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct, float_dtype
     # Tests reading and writing of complex multi-channel images with custom properties
     b1 = Bitmap(Bitmap.PixelFormat.MultiChannel, Struct.Type.Float32, [4, 5], 6)
     a = b1.struct_()
@@ -76,7 +75,8 @@ def test_read_write_complex_exr(tmpdir):
     assert str(b3) != str(b1)
 
 
-def test_convert_rgb_y(tmpdir):
+def test_convert_rgb_y(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     # Tests RGBA(float64) -> Y (float32) conversion
     b1 = Bitmap(Bitmap.PixelFormat.RGBA, Struct.Type.Float64, [3, 1])
     b2 = np.array(b1, copy=False)
@@ -85,7 +85,8 @@ def test_convert_rgb_y(tmpdir):
     assert np.allclose(b3, [0.212671, 0.715160, 0.072169])
 
 
-def test_convert_rgb_y_gamma(tmpdir):
+def test_convert_rgb_y_gamma(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     def to_srgb(value):
         if value <= 0.0031308:
             return 12.92 * value
@@ -106,7 +107,8 @@ def test_convert_rgb_y_gamma(tmpdir):
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
 # TODO refactoring: this should be fixed by fixing the struct.cpp inv_alpha issue
-# def test_premultiply_alpha(tmpdir):
+# def test_premultiply_alpha(variant_scalar_rgb, tmpdir):
+#     from mitsuba.core import Bitmap, Struct
 #     # Tests RGBA(float64) -> Y (float32) conversion
 #     b1 = Bitmap(Bitmap.PixelFormat.RGBA, Struct.Type.Float64, [3, 1])
 #     assert b1.premultiplied_alpha()
@@ -127,7 +129,8 @@ def test_convert_rgb_y_gamma(tmpdir):
 
 
 
-def test_read_write_jpeg(tmpdir):
+def test_read_write_jpeg(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     np.random.seed(12345)
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
 
@@ -148,7 +151,8 @@ def test_read_write_jpeg(tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_png(tmpdir):
+def test_read_write_png(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     np.random.seed(12345)
     tmp_file = os.path.join(str(tmpdir), "out.png")
 
@@ -169,7 +173,8 @@ def test_read_write_png(tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_hdr(tmpdir):
+def test_read_write_hdr(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     np.random.seed(12345)
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
@@ -182,7 +187,8 @@ def test_read_write_hdr(tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_pfm(tmpdir):
+def test_read_write_pfm(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     np.random.seed(12345)
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
@@ -195,7 +201,8 @@ def test_read_write_pfm(tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_ppm(tmpdir):
+def test_read_write_ppm(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
     np.random.seed(12345)
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 20])
@@ -208,19 +215,22 @@ def test_read_write_ppm(tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_bmp():
+def test_read_bmp(variant_scalar_rgb):
+    from mitsuba.core import Bitmap, Struct
     b = Bitmap(find_resource('resources/data/common/textures/flower.bmp'))
     ref = [ 136.50910448, 134.07641791,  85.67253731 ]
     assert np.allclose(np.mean(b, axis=(0, 1)), ref)
 
 
-def test_read_tga():
+def test_read_tga(variant_scalar_rgb):
+    from mitsuba.core import Bitmap, Struct
     b1 = Bitmap(find_resource('resources/data/tests/bitmap/tga_uncompressed.tga'))
     b2 = Bitmap(find_resource('resources/data/tests/bitmap/tga_compressed.tga'))
     assert b1 == b2
 
 
-def test_accumulate():
+def test_accumulate(variant_scalar_rgb):
+    from mitsuba.core import Bitmap, Struct
     # ----- Accumulate the whole bitmap
     b1 = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 10])
     n = b1.height() * b1.width()
