@@ -33,7 +33,7 @@
     url = https://github.com/mitsuba-renderer/mitsuba-data
 [submodule "ext/embree"]
     path = ext/embree
-    url = https://github.com/wjakob/embree
+    url = https://github.com/mitsuba-renderer/embree
 [submodule "ext/enoki"]
 	path = ext/enoki
 	url = https://github.com/wjakob/enoki

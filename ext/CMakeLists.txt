@@ -40,7 +40,6 @@ add_subdirectory(tbb)
 set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
 set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
 set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 # Run the Enoki CMake script
 set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
@@ -81,7 +80,7 @@ if (MTS_ENABLE_EMBREE)
     set(EMBREE_MAX_ISA "DEFAULT" CACHE STRING " " FORCE)
   endif()
 
-  set(EMBREE_TASKING_SYSTEM "INTERNAL" CACHE STRING " " FORCE)
+  set(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING " " FORCE)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
   endif()
@@ -184,9 +183,6 @@ set(OPENEXR_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}/openexr/IlmBase/config
   PARENT_SCOPE
 )
-
-# Use install rpath from this point onwards
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 if (MTS_ENABLE_GUI)
     set_property(TARGET glfw glfw_objects nanogui nanogui-obj PROPERTY FOLDER "dependencies")
