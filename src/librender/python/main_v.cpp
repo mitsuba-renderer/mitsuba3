@@ -131,6 +131,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
            the 'mitsuba::BSDF' Python type is garbage collected */
         py::cpp_function cleanup_callback(
             [](py::handle weakref) {
+                cie_shutdown();
                 optix_shutdown();
                 jitc_shutdown();
                 weakref.dec_ref();

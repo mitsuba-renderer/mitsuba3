@@ -204,7 +204,7 @@ int main(int argc, char *argv[]) {
         if (string::starts_with(mode, "cuda_")) {
             jitc_init(0, 1);
             jitc_set_device(0);
-            cie_alloc();
+            cie_initialize();
             optix_initialize();
         }
 #endif
@@ -301,6 +301,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
+    cie_shutdown();
     Profiler::static_shutdown();
     if (print_profile)
         Profiler::print_report();

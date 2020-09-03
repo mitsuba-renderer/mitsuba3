@@ -194,20 +194,34 @@ const Float *cie1931_y_data = cie1931_tbl + MTS_CIE_SAMPLES;
 const Float *cie1931_z_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
 
-void cie_alloc() {
 #if defined(MTS_ENABLE_CUDA)
-    static bool cie_alloc_done = false;
-    if (cie_alloc_done)
+FloatC cie_cuda_data;
+#endif
+
+
+void cie_initialize() {
+#if defined(MTS_ENABLE_CUDA)
+    if (cie_cuda_data.index() != 0)
         return;
 
-    using FloatC = ek::CUDAArray<Float>;
-    FloatC src = ek::load_unaligned<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
-    ek::migrate(src, AllocType::Managed);
+    cie_cuda_data = ek::load_unaligned<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
+    ek::migrate(cie_cuda_data, AllocType::Managed);
+    ek::eval(cie_cuda_data);
+    jitc_sync_device();
 
-    cie1931_x_data = src.data();
-    cie1931_y_data = src.data() + MTS_CIE_SAMPLES;
-    cie1931_z_data = src.data() + MTS_CIE_SAMPLES * 2;
-    cie_alloc_done = true;
+    cie1931_x_data = cie_cuda_data.data();
+    cie1931_y_data = cie_cuda_data.data() + MTS_CIE_SAMPLES;
+    cie1931_z_data = cie_cuda_data.data() + MTS_CIE_SAMPLES * 2;
+#endif
+}
+
+
+void cie_shutdown() {
+#if defined(MTS_ENABLE_CUDA)
+    if (cie_cuda_data.index() == 0)
+        return;
+
+    cie_cuda_data = FloatC();
 #endif
 }
 

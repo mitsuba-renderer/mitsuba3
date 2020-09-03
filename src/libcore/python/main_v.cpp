@@ -251,7 +251,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 
     if constexpr (ek::is_cuda_array_v<Float>) {
         jitc_set_device(0);
-        cie_alloc();
+        cie_initialize();
     }
 
     MTS_PY_IMPORT(Object);

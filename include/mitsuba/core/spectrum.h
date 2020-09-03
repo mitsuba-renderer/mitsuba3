@@ -133,8 +133,14 @@ extern MTS_EXPORT_CORE const float *cie1931_x_data;
 extern MTS_EXPORT_CORE const float *cie1931_y_data;
 extern MTS_EXPORT_CORE const float *cie1931_z_data;
 
+#if defined(MTS_ENABLE_OPTIX)
+using FloatC = ek::CUDAArray<float>;
+extern MTS_EXPORT_CORE FloatC cie_cuda_data;
+#endif
+
 /// Allocate GPU memory for the CIE 1931 tables
-extern MTS_EXPORT_CORE void cie_alloc();
+extern MTS_EXPORT_CORE void cie_initialize();
+extern MTS_EXPORT_CORE void cie_shutdown();
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
