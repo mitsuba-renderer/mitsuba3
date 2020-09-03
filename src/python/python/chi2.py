@@ -206,6 +206,9 @@ class ChiSquareTest:
         self.pdf = integral * (ek.hprod(extents / ScalarVector2f(self.res))
                                * self.sample_count)
 
+        if len(self.pdf) == 1:
+            ek.resize(self.pdf, ek.width(xy))
+
         # A few sanity checks
         pdf_min = ek.hmin(self.pdf) / self.sample_count
         if not pdf_min >= 0:
@@ -554,7 +557,7 @@ def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     return sample_functor, pdf_functor
 
 
-def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
+def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     """
     Adapter to test phase function sampling using the Chi^2 test.
 
@@ -571,12 +574,14 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
     from mitsuba.core import Float, Frame3f
     from mitsuba.core.xml import load_string
 
+    if ctx is None:
+        ctx = PhaseFunctionContext(None)
+
     def make_context(n):
         mi = MediumInteraction3f.zero(n)
         mi.wi = wi
         mi.sh_frame = Frame3f(-mi.wi)
         mi.wavelengths = []
-        ctx = PhaseFunctionContext(None)
         return mi, ctx
 
     def instantiate(args):
