@@ -96,18 +96,20 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     else
         accel_init_cpu(props);
 
-    // Create emitters' shapes (environment luminaires)
-    for (Emitter *emitter: emitters)
-        emitter->set_scene(this);
+    if (!emitters.empty()) {
+        // Create emitters' shapes (environment luminaires)
+        for (Emitter *emitter: emitters)
+            emitter->set_scene(this);
 
-    // For gpu_* modes, convert the emitters pointers to enoki registry ids
-    if constexpr (ek::is_jit_array_v<Float>) {
-        std::vector<uint32_t> tmp(emitters.size());
-        for (uint32_t i = 0; i < emitters.size(); i++)
-            tmp[i] = jitc_registry_get_id(emitters[i]);
-        m_emitters = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
-    } else {
-        m_emitters = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(emitters.data(), emitters.size());
+        // For gpu_* modes, convert the emitters pointers to enoki registry ids
+        if constexpr (ek::is_jit_array_v<Float>) {
+            std::vector<uint32_t> tmp(emitters.size());
+            for (uint32_t i = 0; i < emitters.size(); i++)
+                tmp[i] = jitc_registry_get_id(emitters[i]);
+            m_emitters = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
+        } else {
+            m_emitters = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(emitters.data(), emitters.size());
+        }
     }
 
     m_shapes_grad_enabled = false;

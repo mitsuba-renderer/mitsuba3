@@ -431,7 +431,7 @@ class SphericalDomain:
 
     def map_backward(self, p):
         from mitsuba.core import Vector2f
-        return Vector2f(ek.atan2(y=p.y, x=p.x), -p.z)
+        return Vector2f(ek.atan2(p.y, p.x), -p.z)
 
 
 # --------------------------------------

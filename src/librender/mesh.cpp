@@ -426,8 +426,11 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     PreliminaryIntersection3f pi = m_parameterization->ray_intersect_preliminary(ray, active);
 
-    if (ek::none_or<false>(pi.is_valid()))
-        return ek::zero<SurfaceInteraction3f>();
+    if (ek::none_or<false>(pi.is_valid())) {
+        auto si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::Infinity<Float>;
+        return si;
+    }
 
     pi.shape = this;
 

@@ -142,6 +142,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 
     if constexpr (!ek::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        pi.t = ek::Infinity<Float>;
         if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;
             rh.ray.org_x = ray.o.x();
@@ -193,14 +194,16 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             ek::eval(ray);
 
             pi = ek::zero<PreliminaryIntersection3f>(N);
+
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
+            ek::eval(pi);
 
             Vector3f ng = ek::empty<Vector3f>(N);
             UInt32 inst_index = ek::zero<UInt32>(N);
             Vector3u extra = ek::zero<Vector3u>(N);
 
-            ek::eval(extra, pi, ng, inst_index);
+            ek::eval(extra, ng, inst_index);
             jitc_sync_device();
 
             RTCRayHitNp rh;
@@ -252,6 +255,8 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
 
     if constexpr (!ek::is_cuda_array_v<Float>) {
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t = ek::Infinity<Float>;
+
         if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;
             rh.ray.org_x = ray.o.x();
@@ -311,12 +316,13 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>(N);
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
+            ek::eval(pi);
 
             Vector3f ng = ek::empty<Vector3f>(N);
             UInt32 inst_index = ek::zero<UInt32>(N);
             Vector3u extra = ek::zero<Vector3u>(N);
 
-            ek::eval(extra, pi, ng, inst_index);
+            ek::eval(extra, ng, inst_index);
             jitc_sync_device();
 
             RTCRayHitNp rh;

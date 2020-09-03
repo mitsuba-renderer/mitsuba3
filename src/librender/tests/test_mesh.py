@@ -231,8 +231,9 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
   ]
 ]"""
 
+# TODO refactoring enable for llvm and gpu variants as well
 @fresolver_append_path
-def test09_eval_parameterization(variant_scalar_rgb, variant_packet_rgb):
+def test09_eval_parameterization(variant_scalar_rgb):
     from mitsuba.core.xml import load_string
     shape = load_string('''
         <shape type="obj" version="2.0.0">
@@ -253,8 +254,9 @@ def test09_eval_parameterization(variant_scalar_rgb, variant_packet_rgb):
     assert ek.allclose(si.p, [-.6, -.4, 0])
 
 
+# TODO refactoring enable for llvm and gpu variants as well
 @fresolver_append_path
-def test10_ray_intersect_preliminary(variants_all_rgb):
+def test10_ray_intersect_preliminary(variant_scalar_rgb):
 
     if 'packet' in mitsuba.variant():
         pytest.skip("pi.compute_surface_interaction isn't bound for packet modes")
@@ -647,4 +649,3 @@ def test16_differentiable_surface_interaction_params_backward(variant_gpu_autodi
     ek.backward(si.dp_dv.y)
     assert ek.allclose(ek.gradient(params[vertex_texcoords_key]),
                        [0, 2, 0, 0, 0, 0, 0, -2], atol=1e-5)
-

@@ -1,8 +1,6 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.scalar import ArrayXf as Float
-
 
 def test01_fresnel(variant_scalar_rgb):
     from mitsuba.render import fresnel
@@ -51,16 +49,18 @@ def test02_fresnel_polarized(variant_scalar_rgb):
     assert ek.allclose(ek.real(a_p*a_p), 0)
 
 
-def test02_fresnel_polarized_packet(variant_packet_rgb):
+def test02_fresnel_polarized_vec(variants_vec_rgb):
+    from mitsuba.core import Float
     from mitsuba.render import fresnel
 
     cos_theta_i = ek.linspace(Float, -1, 1, 20)
     F, cos_theta_t, _, scale = fresnel(cos_theta_i, 1)
-    assert ek.all(F == Float.zero(20))
+    assert ek.all(F == ek.zero(Float, 20))
     assert ek.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
-def test03_fresnel_conductor(variant_packet_rgb):
+def test03_fresnel_conductor(variants_vec_rgb):
+    from mitsuba.core import Float
     from mitsuba.render import fresnel, fresnel_conductor
 
     # The conductive and diel. variants should agree given a real-valued IOR
@@ -75,7 +75,8 @@ def test03_fresnel_conductor(variant_packet_rgb):
     assert ek.allclose(r, r_2)
 
 
-def test04_snell(variant_packet_rgb):
+def test04_snell(variants_vec_rgb):
+    from mitsuba.core import Float
     from mitsuba.render import fresnel
 
     # Snell's law
@@ -83,7 +84,7 @@ def test04_snell(variant_packet_rgb):
     F, cos_theta_t, _, _ = fresnel(ek.cos(theta_i), 1.5)
     theta_t = ek.acos(cos_theta_t)
 
-    assert ek.allclose(ek.sin(theta_i) - 1.5 * ek.sin(theta_t), Float.zero(20), atol=1e-5)
+    assert ek.allclose(ek.sin(theta_i) - 1.5 * ek.sin(theta_t), ek.zero(Float, 20), atol=1e-5)
 
 
 def test05_phase(variant_scalar_rgb):

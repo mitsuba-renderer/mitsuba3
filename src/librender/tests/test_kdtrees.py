@@ -96,38 +96,3 @@ def test02_depth_scalar_bunny(variant_scalar_rgb):
             res_shadow = scene.ray_test(r)
             assert ek.all(res_shadow == res_naive.is_valid())
             compare_results(res_naive, res)
-
-
-def test03_depth_packet_stairs(variant_packet_rgb):
-    from mitsuba.core import Ray3f as Ray3fX, Properties
-    from mitsuba.render import Scene
-
-    if mitsuba.core.MTS_ENABLE_EMBREE:
-        pytest.skip("EMBREE enabled")
-
-    props = Properties("scene")
-    props["_unnamed_0"] = create_stairs(11)
-    scene = Scene(props)
-
-    mitsuba.set_variant("scalar_rgb")
-    from mitsuba.core import Ray3f, Vector3f
-
-    n = 4
-    inv_n = 1.0 / (n - 1)
-    rays = Ray3fX.zero(n * n)
-    d = [0, 0, -1]
-    wavelengths = []
-
-    for x in range(n):
-        for y in range(n):
-            o = Vector3f(x * inv_n, y * inv_n, 2)
-            o = o * 0.999 + 0.0005
-            rays[x * n + y] = Ray3f(o, d, 0, 100, 0.5, wavelengths)
-
-    res_naive  = scene.ray_intersect_naive(rays)
-    res        = scene.ray_intersect(rays)
-    res_shadow = scene.ray_test(rays)
-
-    # TODO: spot-check (here, we only check consistency)
-    assert ek.all(res_shadow == res.is_valid())
-    compare_results(res_naive, res, atol=1e-6)
