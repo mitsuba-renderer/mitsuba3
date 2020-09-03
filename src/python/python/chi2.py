@@ -499,7 +499,6 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     def make_context(n):
         si = SurfaceInteraction3f.zero(n)
         si.wi = wi
-        ek.set_slices(si.wi, n)
         si.wavelengths = []
         return (si, ctx)
 
@@ -515,7 +514,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         (si, ctx) = make_context(n)
         bs, weight = plugin.sample(ctx, si, sample[0], [sample[1], sample[2]])
 
-        w = Float.full(1.0, ek.width(weight))
+        w = ek.full(Float, 1.0, ek.width(weight))
         w[ek.all(ek.eq(weight, 0))] = 0
         return bs.wo, w
 
@@ -575,7 +574,6 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
     def make_context(n):
         mi = MediumInteraction3f.zero(n)
         mi.wi = wi
-        ek.set_slices(mi.wi, n)
         mi.sh_frame = Frame3f(-mi.wi)
         mi.wavelengths = []
         ctx = PhaseFunctionContext(None)
@@ -592,7 +590,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
         plugin = instantiate(args)
         mi, ctx = make_context(n)
         wo, pdf = plugin.sample(ctx, mi, [sample[0], sample[1]])
-        w = Float.full(1.0, ek.width(pdf))
+        w = ek.full(Float, 1.0, ek.width(pdf))
         w[ek.eq(pdf, 0)] = 0
         return wo, w
 
@@ -606,7 +604,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1]):
 
 
 if __name__ == '__main__':
-    mitsuba.set_variant('packet_rgb')
+    mitsuba.set_variant('llvm_rgb')
 
     from mitsuba.core.warp import square_to_cosine_hemisphere
     from mitsuba.core.warp import square_to_cosine_hemisphere_pdf

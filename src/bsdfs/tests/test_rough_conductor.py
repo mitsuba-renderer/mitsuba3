@@ -3,9 +3,10 @@ import enoki as ek
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 
-def test01_chi2_smooth(variant_packet_rgb):
+def test01_chi2_smooth(variants_vec_rgb):
+    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.05"/>"""
-    wi = ek.normalize([1.0, 1.0, 1.0])
+    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -20,12 +21,13 @@ def test01_chi2_smooth(variant_packet_rgb):
     assert chi2.run()
 
 
-def test02_chi2_aniso_beckmann_all(variant_packet_rgb):
+def test02_chi2_aniso_beckmann_all(variants_vec_rgb):
+    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="beckmann"/>
              <boolean name="sample_visible" value="false"/>"""
-    wi = ek.normalize([1.0, 1.0, 1.0])
+    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -40,12 +42,13 @@ def test02_chi2_aniso_beckmann_all(variant_packet_rgb):
     assert chi2.run()
 
 
-def test03_chi2_aniso_beckmann_visible(variant_packet_rgb):
+def test03_chi2_aniso_beckmann_visible(variants_vec_rgb):
+    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="beckmann"/>
              <boolean name="sample_visible" value="true"/>"""
-    wi = ek.normalize([1.0, 1.0, 1.0])
+    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -59,12 +62,13 @@ def test03_chi2_aniso_beckmann_visible(variant_packet_rgb):
     assert chi2.run()
 
 
-def test04_chi2_aniso_ggx_all(variant_packet_rgb):
+def test04_chi2_aniso_ggx_all(variants_vec_rgb):
+    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="ggx"/>
              <boolean name="sample_visible" value="false"/>"""
-    wi = ek.normalize([1.0, 1.0, 1.0])
+    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(
@@ -78,12 +82,13 @@ def test04_chi2_aniso_ggx_all(variant_packet_rgb):
     assert chi2.run()
 
 
-def test05_chi2_aniso_ggx_visible(variant_packet_rgb):
+def test05_chi2_aniso_ggx_visible(variants_vec_rgb):
+    from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
              <string name="distribution" value="ggx"/>
              <boolean name="sample_visible" value="true"/>"""
-    wi = ek.normalize([1.0, 1.0, 1.0])
+    wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
     sample_func, pdf_func = BSDFAdapter("roughconductor", xml, wi=wi)
 
     chi2 = ChiSquareTest(

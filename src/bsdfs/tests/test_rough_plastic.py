@@ -1,7 +1,7 @@
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 
-def test01_chi2_smooth(variant_packet_rgb):
+def test01_chi2_smooth(variants_vec_rgb):
     xml = """<float name="alpha" value="0.05"/>
              <spectrum name="specular_reflectance" value="0.7"/>
              <spectrum name="diffuse_reflectance" value="0.1"/>"""
@@ -18,7 +18,7 @@ def test01_chi2_smooth(variant_packet_rgb):
     assert chi2.run()
 
 
-def test02_chi2_rough(variant_packet_rgb):
+def test02_chi2_rough(variants_vec_rgb):
     xml = """<float name="alpha" value="0.25"/>
              <spectrum name="specular_reflectance" value="0.7"/>
              <spectrum name="diffuse_reflectance" value="0.1"/>"""
