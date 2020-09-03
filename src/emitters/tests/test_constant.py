@@ -1,7 +1,6 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.scalar import ArrayXf as Float
 
 
 spectrum_strings = {
@@ -30,11 +29,10 @@ def create_emitter_and_spectrum(s_key='d65'):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test01_eval(variant_packet_spectral, spectrum_key):
+def test01_eval(variants_vec_spectral, spectrum_key):
     # Check the correctness of the eval() method
 
     from mitsuba.core import warp
-    from mitsuba.core.math import InvFourPi
     from mitsuba.render import SurfaceInteraction3f
 
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)
@@ -44,7 +42,7 @@ def test01_eval(variant_packet_spectral, spectrum_key):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test02_sample_ray(variant_packet_spectral, spectrum_key):
+def test02_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
 
     from mitsuba.core import Frame3f, warp, sample_shifted
@@ -62,7 +60,7 @@ def test02_sample_ray(variant_packet_spectral, spectrum_key):
 
     # Sample wavelengths on the spectrum
     it = SurfaceInteraction3f.zero(3)
-    wav, spec = spectrum.sample(it, sample_shifted(wavelength_sample))
+    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     assert ek.allclose(res, spec * 4 * ek.Pi * ek.Pi)
     assert ek.allclose(ray.time, time)
@@ -72,11 +70,10 @@ def test02_sample_ray(variant_packet_spectral, spectrum_key):
         ray.d, Frame3f(-ray.o).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
 
 
-def test03_sample_direction(variant_packet_spectral):
+def test03_sample_direction(variants_vec_spectral):
     # Check the correctness of the sample_direction() and pdf_direction() methods
 
     from mitsuba.core import warp
-    from mitsuba.core.math import InvFourPi
     from mitsuba.render import SurfaceInteraction3f
 
     emitter, spectrum = create_emitter_and_spectrum()
@@ -90,9 +87,9 @@ def test03_sample_direction(variant_packet_spectral):
     samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
     ds, res = emitter.sample_direction(it, samples)
 
-    assert ek.allclose(ds.pdf, InvFourPi)
+    assert ek.allclose(ds.pdf, ek.InvFourPi)
     assert ek.allclose(ds.d, warp.square_to_uniform_sphere(samples))
-    assert ek.allclose(emitter.pdf_direction(it, ds), InvFourPi)
+    assert ek.allclose(emitter.pdf_direction(it, ds), ek.InvFourPi)
     assert ek.allclose(ds.time, it.time)
 
     # Evaluate the spectrum (divide by the pdf)

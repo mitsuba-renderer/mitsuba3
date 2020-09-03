@@ -97,7 +97,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 @pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
-def test_sample_ray(variant_packet_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
+def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
     # Check the correctness of the sample_ray() method
 
     from mitsuba.core import warp, sample_shifted, Transform4f
@@ -127,7 +127,7 @@ def test_sample_ray(variant_packet_spectral, spectrum_key, wavelength_sample, po
 
     # Sample wavelengths on the spectrum
     it = SurfaceInteraction3f.zero()
-    wav, spec = spectrum.sample(it, sample_shifted(wavelength_sample))
+    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
     it.wavelengths = wav
     spec = spectrum.eval(it)
     spec = ek.select(angle <= beam_width_rad, spec, spec *
@@ -146,7 +146,7 @@ def test_sample_ray(variant_packet_spectral, spectrum_key, wavelength_sample, po
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
 @pytest.mark.parametrize("cutoff_angle", [20, 60])
 @pytest.mark.parametrize("lookat", lookat_transforms)
-def test_eval(variant_packet_spectral, spectrum_key, lookat, cutoff_angle):
+def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
     # Check the correctness of the eval() method
 
     from mitsuba.render import SurfaceInteraction3f

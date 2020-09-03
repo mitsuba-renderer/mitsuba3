@@ -56,9 +56,9 @@ def test01_constructor(variant_scalar_rgb):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test02_eval(variant_packet_spectral, spectrum_key):
+def test02_eval(variants_vec_spectral, spectrum_key):
     # Check that eval() return the same values as the 'radiance' spectrum
-
+    from mitsuba.core import ScalarVector3f
     from mitsuba.render import SurfaceInteraction3f
 
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
@@ -69,12 +69,12 @@ def test02_eval(variant_packet_spectral, spectrum_key):
 
     # Check that eval return 0.0 when direction points inside the shape
 
-    it.wi = ek.normalize([0.2, 0.2, -0.5])
+    it.wi = ek.normalize(ScalarVector3f(0.2, 0.2, -0.5))
     assert ek.allclose(emitter.eval(it), 0.0)
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test03_sample_ray(variant_packet_spectral, spectrum_key):
+def test03_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
 
     from mitsuba.core import warp, Frame3f, sample_shifted
@@ -94,7 +94,7 @@ def test03_sample_ray(variant_packet_spectral, spectrum_key):
 
     # Sample wavelengths on the spectrum
     it = SurfaceInteraction3f.zero(3)
-    wav, spec = spectrum.sample(it, sample_shifted(wavelength_sample))
+    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     # Sample a position on the shape
     ps = shape.sample_position(time, pos_sample)
@@ -108,7 +108,7 @@ def test03_sample_ray(variant_packet_spectral, spectrum_key):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test04_sample_direction(variant_packet_spectral, spectrum_key):
+def test04_sample_direction(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_direction() and pdf_direction() methods
 
     from mitsuba.render import SurfaceInteraction3f

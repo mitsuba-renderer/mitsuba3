@@ -31,7 +31,7 @@ def create_emitter_and_spectrum(pos, s_key='d65'):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test01_point_sample_ray(variant_packet_spectral, spectrum_key):
+def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     # Check the correctness of the sample_ray() method
 
     from mitsuba.core import Vector3f, warp, sample_shifted
@@ -50,7 +50,7 @@ def test01_point_sample_ray(variant_packet_spectral, spectrum_key):
 
     # Sample wavelengths on the spectrum
     it = SurfaceInteraction3f.zero(3)
-    wav, spec = spectrum.sample(it, sample_shifted(wavelength_sample))
+    wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     assert ek.allclose(res, spec * 4 * ek.Pi)
     assert ek.allclose(ray.time, time)
@@ -93,10 +93,10 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-def test03_point_sample_direction_vec(variant_packet_spectral, spectrum_key):
+def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     from mitsuba.render import SurfaceInteraction3f
 
-    emitter_pos = [10, -1, 2]
+    emitter_pos = [50, -1, 2]
     emitter, spectrum = create_emitter_and_spectrum(emitter_pos, spectrum_key)
 
     # Direction sampling
@@ -117,7 +117,7 @@ def test03_point_sample_direction_vec(variant_packet_spectral, spectrum_key):
     assert ek.all(ds.time == it.time)
     assert ek.all(ds.pdf == 1.0)
     assert ek.all(ds.delta)
-    assert ek.allclose(ds.d, d / ek.norm(d))
+    assert ek.allclose(ds.d, d, atol=1e-3)
 
     # Evalutate the spectrum
     spec = spectrum.eval(it) / (dist**2)

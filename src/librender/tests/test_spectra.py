@@ -1,17 +1,15 @@
 import mitsuba
 import pytest
 import enoki as ek
-from enoki.scalar import ArrayXf as Float
 
 
 def test01_cie1931(variant_scalar_rgb):
+    from mitsuba.core import cie1931_xyz, cie1931_y
     """CIE 1931 observer"""
-    XYZw = mitsuba.core.cie1931_xyz(600)
-    assert ek.allclose(XYZw[0], 1.0622)
-    assert ek.allclose(XYZw[1], 0.631)
-    assert ek.allclose(XYZw[2], 0.0008)
+    XYZw = cie1931_xyz(600)
+    assert ek.allclose(XYZw, [1.0622, 0.631, 0.000], atol=1e-3)
 
-    Y = mitsuba.core.cie1931_y(600)
+    Y = cie1931_y(600)
     assert ek.allclose(Y, 0.631)
 
 
