@@ -60,6 +60,16 @@ def variants_vec_rgb(request):
     return request.param
 
 
+@pytest.fixture(params=['llvm_spectral', 'gpu_spectral'])
+def variants_vec_spectral(request):
+    try:
+        import mitsuba
+        mitsuba.set_variant(request.param)
+    except Exception:
+        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
+    return request.param
+
+
 @pytest.fixture(params=['scalar_rgb', 'llvm_rgb'])
 def variants_cpu_rgb(request):
     try:

@@ -61,15 +61,15 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
 @pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
-@pytest.mark.parametrize("focus_dist", [1, 15, 25])
-def test02_sample_ray(variant_packet_spectral, origin, direction, aperture_rad, focus_dist):
+@pytest.mark.parametrize("focus_dist", [15, 25])
+def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
     # Check the correctness of the sample_ray() method
 
     from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f
 
     cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist)
 
-    time = 0.5
+    time = 0.0
     wav_sample = [0.5, 0.33, 0.1]
     pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
     aperture_sample = [0.5, 0.5]
@@ -100,21 +100,21 @@ def test02_sample_ray(variant_packet_spectral, origin, direction, aperture_rad, 
 
     ray_centered, _ = cam.sample_ray(time, wav_sample, pos_sample, [0.5, 0.5])
 
-    trafo = Transform4f(cam.world_transform().eval(time).matrix.numpy())
-    tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
-    aperture_v = trafo.transform_vector(aperture_rad * Vector3f(tmp.x, tmp.y, 0))
+    trafo = Transform4f.look_at(origin, Vector3f(origin) + Vector3f(direction), [0, 1, 0])
+    tmp = aperture_rad * warp.square_to_uniform_disk_concentric(aperture_sample)
+    aperture_v = trafo.transform_vector(Vector3f(tmp.x, tmp.y, 0))
 
     # NOTE: here we assume near_clip = 1.0
 
     assert ek.allclose(ray.o, ray_centered.o + aperture_v)
-    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v))
+    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
 @pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
-@pytest.mark.parametrize("focus_dist", [1, 15, 25])
-def test03_sample_ray_diff(variant_packet_spectral, origin, direction, aperture_rad, focus_dist):
+@pytest.mark.parametrize("focus_dist", [15, 25])
+def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
     # Check the correctness of the sample_ray_differential() method
 
     from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f
@@ -174,20 +174,20 @@ def test03_sample_ray_diff(variant_packet_spectral, origin, direction, aperture_
 
     ray_centered, _ = cam.sample_ray(time, wav_sample, pos_sample, [0.5, 0.5])
 
-    trafo = Transform4f(cam.world_transform().eval(time).matrix.numpy())
+    trafo = Transform4f.look_at(origin, Vector3f(origin) + Vector3f(direction), [0, 1, 0])
     tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo.transform_vector(aperture_rad * Vector3f(tmp.x, tmp.y, 0))
 
     # NOTE: here we assume near_clip = 1.0
 
     assert ek.allclose(ray.o, ray_centered.o + aperture_v)
-    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v))
+    assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
 
 @pytest.mark.parametrize("origin", [[1.0, 0.0, 1.5]])
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])
 @pytest.mark.parametrize("fov", [34, 80])
-def test04_fov_axis(variant_packet_spectral, origin, direction, fov):
+def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     # Check that sampling position_sample at the extremities of the unit square
     # along the fov_axis should generate a ray direction that make angle of fov/2
     # with the camera direction.

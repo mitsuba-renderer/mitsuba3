@@ -58,7 +58,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test02_sample_ray(variant_packet_spectral, origin, direction):
+def test02_sample_ray(variants_vec_spectral, origin, direction):
     # Check the correctness of the sample_ray() method
     from mitsuba.core import sample_shifted, sample_rgb_spectrum
 
@@ -88,7 +88,7 @@ def test02_sample_ray(variant_packet_spectral, origin, direction):
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test03_sample_ray_differential(variant_packet_spectral, origin, direction):
+def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     # Check the correctness of the sample_ray_differential() method
     from mitsuba.core import sample_shifted, sample_rgb_spectrum
 
@@ -133,7 +133,7 @@ def test03_sample_ray_differential(variant_packet_spectral, origin, direction):
 @pytest.mark.parametrize("origin", [[1.0, 0.0, 1.5]])
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])
 @pytest.mark.parametrize("fov", [34, 80])
-def test04_fov_axis(variant_packet_spectral, origin, direction, fov):
+def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     # Check that sampling position_sample at the extrimities of the unit square
     # along the fov_axis should generate a ray direction that make angle of fov/2
     # with the camera direction.
