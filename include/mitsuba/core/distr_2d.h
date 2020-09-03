@@ -93,8 +93,7 @@ public:
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_cond_cdf, m_marg_cdf);
-            jitc_eval();
+            ek::eval(m_cond_cdf, m_marg_cdf);
             jitc_sync_stream();
         }
 
@@ -123,7 +122,7 @@ public:
         UInt32 index = pos.x() + pos.y() * m_size.x();
 
         return ek::gather<Float>(m_cond_cdf, index, active) -
-               ek::gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0);
+               ek::gather<Float>(m_cond_cdf, index - 1, active && pos.x() > 0.f);
     }
 
     /// Evaluate the normalized function value at the given integer position

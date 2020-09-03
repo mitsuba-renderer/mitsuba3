@@ -3,7 +3,7 @@ import pytest
 import enoki as ek
 
 
-def test01_chi2(variant_packet_spectral):
+def test01_chi2(variants_vec_spectral):
     from mitsuba.python.chi2 import SpectrumAdapter, ChiSquareTest, LineDomain
 
     sample_func, pdf_func = SpectrumAdapter(

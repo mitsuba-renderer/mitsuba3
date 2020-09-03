@@ -466,14 +466,14 @@ def SpectrumAdapter(value):
     def sample_functor(sample, *args):
         plugin = instantiate(args)
         si = SurfaceInteraction3f.zero(ek.width(sample))
-        wavelength, weight = plugin.sample(si, sample_shifted(sample[0]))
+        wavelength, weight = plugin.sample_spectrum(si, sample_shifted(sample[0]))
         return Vector1f(wavelength[0])
 
     def pdf_functor(w, *args):
         plugin = instantiate(args)
         si = SurfaceInteraction3f.zero(ek.width(w))
         si.wavelengths = w
-        return plugin.pdf(si)[0]
+        return plugin.pdf_spectrum(si)[0]
 
     return sample_functor, pdf_functor
 

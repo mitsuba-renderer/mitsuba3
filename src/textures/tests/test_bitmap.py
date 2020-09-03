@@ -7,7 +7,7 @@ from mitsuba.python.test.util import fresolver_append_path
 @fresolver_append_path
 @pytest.mark.parametrize('filter_type', ['nearest', 'bilinear'])
 @pytest.mark.parametrize('wrap_mode', ['repeat', 'clamp', 'mirror'])
-def test01_sample_position(variant_packet_rgb, filter_type, wrap_mode):
+def test01_sample_position(variants_vec_spectral, filter_type, wrap_mode):
     from mitsuba.core.xml import load_string
     from mitsuba.python.chi2 import ChiSquareTest, PlanarDomain
     from mitsuba.core import ScalarBoundingBox2f

@@ -45,7 +45,8 @@ def generate_fixture(variant):
 
 for variant in ['scalar_rgb', 'scalar_spectral',
                 'scalar_mono_polarized', 'llvm_rgb',
-                'llvm_spectral', 'cuda_rgb', 'cuda_autodiff_rgb']:
+                'llvm_spectral', 'cuda_rgb', 'cuda_spectral',
+                'cuda_autodiff_rgb']:
     generate_fixture(variant)
 del generate_fixture
 
