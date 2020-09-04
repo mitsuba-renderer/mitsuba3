@@ -263,54 +263,63 @@ public:
         stream->read(face_count);
 
         m_vertex_count = (ScalarSize) vertex_count;
-        m_face_count = (ScalarSize) face_count;
+        m_face_count   = (ScalarSize) face_count;
 
-        m_vertex_positions = ek::empty<FloatStorage>(m_vertex_count * 3);
-        if (!m_disable_vertex_normals)
-            m_vertex_normals = ek::empty<FloatStorage>(m_vertex_count * 3);
-        if (has_flag(flags, TriMeshFlags::HasTexcoords))
-            m_vertex_texcoords = ek::empty<FloatStorage>(m_vertex_count * 2);
-
-        m_faces = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_vertex_positions, AllocType::Managed);
-            ek::migrate(m_vertex_normals, AllocType::Managed);
-            ek::migrate(m_vertex_texcoords, AllocType::Managed);
-            ek::migrate(m_faces, AllocType::Managed);
-        }
-
-        if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_faces, m_vertex_positions,
-                         m_vertex_normals, m_vertex_texcoords);
-            jitc_eval();
-            jitc_sync_stream();
-        }
+        std::unique_ptr<uint32_t[]> faces(new uint32_t[m_face_count * 3]);
+        std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
+        std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
+        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 3]);
 
         bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
+        bool has_normals      = has_flag(flags, TriMeshFlags::HasNormals);
+        bool has_texcoords    = has_flag(flags, TriMeshFlags::HasTexcoords);
+        bool has_colors       = has_flag(flags, TriMeshFlags::HasColors);
 
-        read_helper(stream, double_precision, m_vertex_positions.data(), 3);
+        read_helper(stream, double_precision, vertex_positions.get(), 3);
 
-        if (has_flag(flags, TriMeshFlags::HasNormals)) {
+        if (has_normals) {
             if (m_disable_vertex_normals)
                 // Skip over vertex normals provided in the file.
                 advance_helper(stream, double_precision, 3);
             else
-                read_helper(stream, double_precision, m_vertex_normals.data(), 3);
+                read_helper(stream, double_precision, vertex_normals.get(), 3);
         }
 
-        if (has_flag(flags, TriMeshFlags::HasTexcoords))
-            read_helper(stream, double_precision, m_vertex_texcoords.data(), 2);
+        if (has_texcoords)
+            read_helper(stream, double_precision, vertex_texcoords.get(), 2);
 
-        if (has_flag(flags, TriMeshFlags::HasColors))
+        if (has_colors)
             advance_helper(stream, double_precision, 3); // TODO
 
-        stream->read(m_faces.data(), m_face_count * sizeof(ScalarIndex) * 3);
+        stream->read(faces.get(), m_face_count * sizeof(ScalarIndex) * 3);
+
+        // Post-processing
+        InputFloat* position_ptr = vertex_positions.get();
+        InputFloat* normal_ptr   = vertex_normals.get();
+        for (ScalarSize i = 0; i < m_vertex_count; ++i) {
+            InputPoint3f p = ek::load<InputPoint3f>(position_ptr);
+            ek::store_unaligned(position_ptr, m_to_world.transform_affine(p));
+            position_ptr += 3;
+            m_bbox.expand(p);
+
+            if (has_normals) {
+                InputNormal3f n = ek::load<InputNormal3f>(normal_ptr);
+                ek::store_unaligned(normal_ptr, ek::normalize(m_to_world.transform_affine(n)));
+                normal_ptr += 3;
+            }
+        }
+
+        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
+        m_vertex_positions = ek::load_unaligned<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+        if (!m_disable_vertex_normals)
+            m_vertex_normals = ek::load_unaligned<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+        if (has_texcoords)
+            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 3);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
-        if (has_vertex_normals())
+        if (!m_disable_vertex_normals)
             vertex_data_bytes += 3 * sizeof(InputFloat);
-        if (has_vertex_texcoords())
+        if (has_texcoords)
             vertex_data_bytes += 2 * sizeof(InputFloat);
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
@@ -320,23 +329,7 @@ public:
             util::time_string(timer.value())
         );
 
-        // Post-processing
-        InputFloat* position_ptr = m_vertex_positions.data();
-        InputFloat* normal_ptr   = m_vertex_normals.data();
-        for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            InputPoint3f p = m_to_world.transform_affine(vertex_position(i));
-            ek::store_unaligned(position_ptr, p);
-            position_ptr += 3;
-            m_bbox.expand(p);
-
-            if (has_vertex_normals()) {
-                InputNormal3f n = ek::normalize(m_to_world.transform_affine(vertex_normal(i)));
-                ek::store_unaligned(normal_ptr, n);
-                normal_ptr += 3;
-            }
-        }
-
-        if (!m_disable_vertex_normals && !has_flag(flags, TriMeshFlags::HasNormals)) {
+        if (!m_disable_vertex_normals && !has_normals) {
             Timer timer2;
             recompute_vertex_normals();
             Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,

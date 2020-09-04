@@ -733,8 +733,7 @@ protected:
                 ek::migrate(data, AllocType::Managed);
 
             if constexpr (ek::is_jit_array_v<Float>) {
-                ek::schedule(data);
-                jitc_eval();
+                ek::eval(data);
                 jitc_sync_stream();
             }
 
@@ -892,8 +891,7 @@ public:
             }
 
             if constexpr (ek::is_jit_array_v<Float>) {
-                ek::schedule(m_cond_cdf, m_marg_cdf);
-                jitc_eval();
+                ek::eval(m_cond_cdf, m_marg_cdf);
                 jitc_sync_stream();
             }
 

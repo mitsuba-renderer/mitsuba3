@@ -99,7 +99,7 @@ public:
     struct PLYAttributeDescriptor {
         std::string name;
         size_t dim;
-        FloatStorage buf;
+        std::vector<InputFloat> buf;
     };
 
     PLYMesh(const Properties &props) : Base(props) {
@@ -194,32 +194,17 @@ public:
                 }
 
                 m_vertex_count = (ScalarSize) el.count;
-                m_vertex_positions = ek::empty<FloatStorage>(m_vertex_count * 3);
-                if (!m_disable_vertex_normals)
-                    m_vertex_normals = ek::empty<FloatStorage>(m_vertex_count * 3);
-                if (has_vertex_texcoords)
-                    m_vertex_texcoords = ek::empty<FloatStorage>(m_vertex_count * 2);
 
-                for (auto& descr: vertex_attributes_descriptors) {
-                    descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
-                    if constexpr (ek::is_cuda_array_v<Float>)
-                        ek::migrate(descr.buf, AllocType::Managed);
-                    if constexpr (ek::is_jit_array_v<Float>)
-                        ek::schedule(descr.buf);
-                }
+                for (auto& descr: vertex_attributes_descriptors)
+                    descr.buf.resize(m_vertex_count * descr.dim);
 
-                if constexpr (ek::is_cuda_array_v<Float>) {
-                    ek::migrate(m_vertex_positions, AllocType::Managed);
-                    ek::migrate(m_vertex_normals,   AllocType::Managed);
-                    ek::migrate(m_vertex_texcoords, AllocType::Managed);
-                }
+                std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
+                std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
+                std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 3]);
 
-                if constexpr (ek::is_jit_array_v<Float>) {
-                    ek::schedule(m_vertex_positions, m_vertex_normals,
-                                 m_vertex_texcoords);
-                    jitc_eval();
-                    jitc_sync_stream();
-                }
+                InputFloat* position_ptr = vertex_positions.get();
+                InputFloat *normal_ptr   = vertex_normals.get();
+                InputFloat *texcoord_ptr = vertex_texcoords.get();
 
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;
@@ -229,10 +214,6 @@ public:
 
                 std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 std::unique_ptr<uint8_t[]> buf_o(new uint8_t[o_packet_size]);
-
-                InputFloat* position_ptr = m_vertex_positions.data();
-                InputFloat *normal_ptr   = m_vertex_normals.data();
-                InputFloat *texcoord_ptr = m_vertex_texcoords.data();
 
                 for (size_t i = 0; i <= packet_count; ++i) {
                     uint8_t *target = (uint8_t *) buf_o.get();
@@ -288,6 +269,13 @@ public:
 
                 for (auto& descr: vertex_attributes_descriptors)
                     add_attribute(descr.name, descr.dim, descr.buf);
+
+                m_vertex_positions = ek::load_unaligned<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+                if (!m_disable_vertex_normals)
+                    m_vertex_normals = ek::load_unaligned<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+                if (has_vertex_texcoords)
+                    m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 3);
+
             } else if (el.name == "face") {
                 std::string field_name;
                 if (el.struct_->has_field("vertex_index.count"))
@@ -321,27 +309,12 @@ public:
                 }
 
                 m_face_count = (ScalarSize) el.count;
-                m_faces = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
 
-                for (auto& descr: face_attributes_descriptors) {
-                    descr.buf = ek::empty<FloatStorage>(m_face_count * descr.dim);
-                    if constexpr (ek::is_cuda_array_v<Float>)
-                        ek::migrate(descr.buf, AllocType::Managed);
+                for (auto& descr: face_attributes_descriptors)
+                    descr.buf.resize(m_face_count * descr.dim);
 
-                    if constexpr (ek::is_jit_array_v<Float>)
-                        ek::schedule(descr.buf);
-                }
-
-                if constexpr (ek::is_cuda_array_v<Float>)
-                    ek::migrate(m_faces, AllocType::Managed);
-
-                if constexpr (ek::is_jit_array_v<Float>) {
-                    ek::schedule(m_faces);
-                    jitc_eval();
-                    jitc_sync_stream();
-                }
-
-                ScalarIndex* face_ptr = m_faces.data();
+                std::unique_ptr<uint32_t[]> faces(new uint32_t[m_face_count * 3]);
+                ScalarIndex* face_ptr = faces.get();
 
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;
@@ -379,9 +352,10 @@ public:
                     }
                 }
 
-                for (auto& descr: face_attributes_descriptors) {
+                for (auto& descr: face_attributes_descriptors)
                     add_attribute(descr.name, descr.dim, descr.buf);
-                }
+
+                m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
             } else {
                 Log(Warn, "\"%s\": Skipping unknown element \"%s\"", m_name, el.name);
                 stream->seek(stream->tell() + el.struct_->size() * el.count);
@@ -670,7 +644,7 @@ private:
                 target_struct->append("a", struct_type_v<InputFloat>);
                 ++field_count;
             }
-            vertex_attributes_descriptors.push_back({ type + "color", field_count, FloatStorage() });
+            vertex_attributes_descriptors.push_back({ type + "color", field_count, std::vector<InputFloat>() });
 
             if (!ref_struct->field("r").is_float())
                 Log(Warn, "Mesh attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
@@ -724,7 +698,7 @@ private:
             std::string color_postfix = (current_postfix_index == 1) ? "_color" : "";
             vertex_attributes_descriptors.push_back(
                 { type + current_prefix + color_postfix,
-                  current_postfix_level_index, FloatStorage() });
+                  current_postfix_level_index, std::vector<InputFloat>() });
 
             prefixes_encountered.insert(current_prefix);
             // Reset state

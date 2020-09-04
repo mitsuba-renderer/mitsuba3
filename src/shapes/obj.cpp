@@ -280,35 +280,17 @@ public:
         m_vertex_count = vertex_ctr;
         m_face_count = (ScalarSize) triangles.size();
 
-        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
-        m_vertex_positions = ek::empty<FloatStorage>(m_vertex_count * 3);
-        if (!m_disable_vertex_normals)
-            m_vertex_normals = ek::empty<FloatStorage>(m_vertex_count * 3);
-        if (!texcoords.empty())
-            m_vertex_texcoords = ek::empty<FloatStorage>(m_vertex_count * 2);
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            // TODO this is needed for the bbox(..) methods, but is it slower?
-            ek::migrate(m_faces, AllocType::Managed);
-            ek::migrate(m_vertex_positions, AllocType::Managed);
-            ek::migrate(m_vertex_normals,   AllocType::Managed);
-            ek::migrate(m_vertex_texcoords, AllocType::Managed);
-        }
-
-        if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_faces, m_vertex_positions,
-                         m_vertex_normals, m_vertex_texcoords);
-            jitc_eval();
-            jitc_sync_stream();
-        }
+        std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
+        std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
+        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 3]);
 
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;
 
             while (v && v->key != ScalarIndex3{{0, 0, 0}}) {
-                InputFloat* position_ptr   = m_vertex_positions.data() + v->value * 3;
-                InputFloat* normal_ptr   = m_vertex_normals.data() + v->value * 3;
-                InputFloat* texcoord_ptr = m_vertex_texcoords.data() + v->value * 2;
+                InputFloat* position_ptr = vertex_positions.get() + v->value * 3;
+                InputFloat* normal_ptr   = vertex_normals.get() + v->value * 3;
+                InputFloat* texcoord_ptr = vertex_texcoords.get() + v->value * 2;
                 auto key = v->key;
 
                 ek::store_unaligned(position_ptr, vertices[key[0] - 1]);
@@ -330,6 +312,13 @@ public:
                 v = v->next;
             }
         }
+
+        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
+        m_vertex_positions = ek::load_unaligned<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+        if (has_vertex_normals())
+            m_vertex_normals   = ek::load_unaligned<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+        if (!texcoords.empty())
+            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 3);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (has_vertex_normals())

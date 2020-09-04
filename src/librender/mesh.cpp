@@ -46,20 +46,6 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
     if (has_vertex_texcoords)
         m_vertex_texcoords = ek::zero<FloatStorage>(m_vertex_count * 2);
 
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        ek::migrate(m_faces, AllocType::Managed);
-        ek::migrate(m_vertex_positions, AllocType::Managed);
-        ek::migrate(m_vertex_normals, AllocType::Managed);
-        ek::migrate(m_vertex_texcoords, AllocType::Managed);
-    }
-
-    if constexpr (ek::is_jit_array_v<Float>) {
-        ek::schedule(m_faces, m_vertex_positions, m_vertex_normals,
-                     m_vertex_texcoords);
-        jitc_eval();
-        jitc_sync_stream();
-    }
-
     set_children();
 }
 
@@ -569,7 +555,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
 MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
                                                       size_t dim,
-                                                      const FloatStorage& buffer) {
+                                                      const std::vector<InputFloat>& data) {
     auto attribute = m_mesh_attributes.find(name);
     if (attribute != m_mesh_attributes.end())
         Throw("add_attribute(): attribute %s already exists.", name.c_str());
@@ -580,12 +566,12 @@ MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
         Throw("add_attribute(): attribute name must start with either \"vertex_\" of \"face_\".");
 
     MeshAttributeType type = is_vertex_attr ? MeshAttributeType::Vertex : MeshAttributeType::Face;
+    size_t count = is_vertex_attr ? m_vertex_count : m_face_count;
 
     // In spectral modes, convert RGB color to srgb model coefs if attribute name contains 'color'
     if constexpr (is_spectral_v<Spectrum>) {
         if (dim == 3 && name.find("color") != std::string::npos) {
-            size_t count = is_vertex_attr ? m_vertex_count : m_face_count;
-            InputFloat *ptr = (InputFloat *) buffer.data();
+            InputFloat *ptr = (InputFloat *) data.data();
             for (size_t i = 0; i < count; ++i) {
                 ek::store_unaligned(ptr, srgb_model_fetch(ek::load_unaligned<Color<InputFloat, 3>>(ptr)));
                 ptr += 3;
@@ -593,6 +579,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
         }
     }
 
+    FloatStorage buffer = ek::load_unaligned<FloatStorage>(data.data(), count * dim);
     m_mesh_attributes.insert({ name, { dim, type, buffer } });
 }
 

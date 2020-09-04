@@ -74,7 +74,7 @@ public:
     }
 
     /// Add an attribute buffer with the given \c name and \c dim
-    void add_attribute(const std::string& name, size_t dim, const FloatStorage& buf);
+    void add_attribute(const std::string& name, size_t dim, const std::vector<InputFloat>& buf);
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>

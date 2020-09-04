@@ -132,7 +132,7 @@ public:
         std::vector<std::array<InputFloat, 3>> tmp_vertices; // Store as vector for alignement issues
         std::vector<std::array<InputFloat, 3>> tmp_normals; // Same here
         std::vector<InputVector2f> tmp_uvs;
-        std::vector<std::vector<std::array<InputFloat, 3>>> tmp_cols; // And same here
+        std::vector<std::vector<InputFloat>> tmp_cols; // And same here
         std::vector<ScalarIndex3> tmp_triangles;
 
         tmp_vertices.reserve(vertex_count);
@@ -144,8 +144,8 @@ public:
         if (has_cols) {
             tmp_cols.reserve(cols.size());
             for (size_t p = 0; p < cols.size(); p++) {
-                tmp_cols.push_back(std::vector<std::array<InputFloat, 3>>());
-                tmp_cols[p].reserve(vertex_count);
+                tmp_cols.push_back(std::vector<InputFloat>());
+                tmp_cols[p].reserve(3 * vertex_count);
             }
         }
 
@@ -275,11 +275,9 @@ public:
                         for (size_t p = 0; p < cols.size(); p++) {
                             const blender::MLoopCol &loop_col = cols[p].second[loop_index];
                             // Blender stores vertex colors in sRGB space
-                            tmp_cols[p].push_back({
-                                ek::srgb_to_linear(loop_col.r * color_factor),
-                                ek::srgb_to_linear(loop_col.g * color_factor),
-                                ek::srgb_to_linear(loop_col.b * color_factor)
-                            });
+                            tmp_cols[p].push_back(ek::srgb_to_linear(loop_col.r * color_factor));
+                            tmp_cols[p].push_back(ek::srgb_to_linear(loop_col.g * color_factor));
+                            tmp_cols[p].push_back(ek::srgb_to_linear(loop_col.b * color_factor));
                         }
                     }
                     triangle[i] = vert_id;
@@ -301,27 +299,10 @@ public:
 
         if (has_uvs)
             m_vertex_texcoords = ek::load_unaligned<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
+
         if (has_cols) {
-            for (size_t p = 0; p < cols.size(); p++) {
-                add_attribute(
-                    cols[p].first, 3,
-                    ek::load_unaligned<FloatStorage>(tmp_cols[p].data(), m_vertex_count * 3));
-            }
-        }
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_faces, AllocType::Managed);
-            ek::migrate(m_vertex_positions, AllocType::Managed);
-            ek::migrate(m_vertex_normals, AllocType::Managed);
-            if (has_uvs)
-                ek::migrate(m_vertex_texcoords, AllocType::Managed);
-        }
-
-        if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_faces, m_vertex_positions,
-                         m_vertex_normals, m_vertex_texcoords);
-            jitc_eval();
-            jitc_sync_stream();
+            for (size_t p = 0; p < cols.size(); p++)
+                add_attribute(cols[p].first, 3, tmp_cols[p]);
         }
 
         set_children();
