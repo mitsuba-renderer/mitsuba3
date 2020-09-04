@@ -5,7 +5,7 @@ import mitsuba
 
 # Set the desired mitsuba variant
 # TODO refactoring
-mitsuba.set_variant('packet_rgb')
+mitsuba.set_variant('llvm_rgb')
 
 from mitsuba.core import Float, UInt32, UInt64, Vector2f, Vector3f
 from mitsuba.core import Bitmap, Struct, Thread

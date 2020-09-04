@@ -24,5 +24,5 @@ The documentation is split into three-submodules:
     renderer. Other variants will use different types in many function and
     attribute signatures. Such changes should mostly be "obvious" from the
     context. For example, ``scalar_spectral`` will replace all RGB types by
-    color spectra, and ``gpu_rgb`` will replace scalar floating point values
+    color spectra, and ``cuda_rgb`` will replace scalar floating point values
     with Enoki CUDA arrays, etc.

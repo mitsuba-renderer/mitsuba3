@@ -106,7 +106,7 @@
 
 # @pytest.mark.parametrize(*integrators)
 # def test02_render_empty_scene(variants_all_rgb, int_name):
-#     if not mitsuba.variant().startswith('gpu'):
+#     if not mitsuba.variant().startswith('cuda'):
 #         check_scene(int_name, 'empty', is_empty=True)
 
 

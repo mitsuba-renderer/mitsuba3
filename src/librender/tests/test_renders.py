@@ -61,6 +61,7 @@ def bitmap_extract(bmp):
 
 
 def z_test(mean, sample_count, reference, reference_var):
+
     # Sanitize the variance images
     reference_var = np.maximum(reference_var, 1e-4)
 
@@ -70,7 +71,7 @@ def z_test(mean, sample_count, reference, reference_var):
     # Cumulative distribution function of the standard normal distribution
     def stdnormal_cdf(x):
         shape = x.shape
-        cdf = (1.0 - ek.erf(-x.flatten() / ek.sqrt(2.0))) * 0.5
+        cdf = (1.0 - ek.erf(-Float(x.flatten()) / ek.sqrt(2.0))) * 0.5
         return np.array(cdf).reshape(shape)
 
     # Compute p-value
@@ -89,7 +90,7 @@ def test_render(variants_all, scene_fname):
     if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
         pytest.skip(f"Skip rendering scene {scene_fname}")
 
-    if 'gpu' in mitsuba.variant() and os.path.split(scene_dir)[1] in GPU_EXCLUDE_FOLDERS:
+    if 'cuda' in mitsuba.variant() and os.path.split(scene_dir)[1] in GPU_EXCLUDE_FOLDERS:
         pytest.skip(f"Skip rendering scene {scene_fname} in GPU mode")
 
     Thread.thread().file_resolver().prepend(scene_dir)

@@ -34,30 +34,30 @@ which of these are relevant for your intended application.
       - :monosp:`scalar_spectral_double`
       - :monosp:`scalar_spectral_polarized`
       - :monosp:`scalar_spectral_polarized_double`
-      - :monosp:`packet_mono`
-      - :monosp:`packet_mono_double`
-      - :monosp:`packet_mono_polarized`
-      - :monosp:`packet_mono_polarized_double`
-      - :monosp:`packet_rgb`
-      - :monosp:`packet_rgb_double`
-      - :monosp:`packet_rgb_polarized`
-      - :monosp:`packet_rgb_polarized_double`
-      - :monosp:`packet_spectral`
-      - :monosp:`packet_spectral_double`
-      - :monosp:`packet_spectral_polarized`
-      - :monosp:`packet_spectral_polarized_double`
-      - :monosp:`gpu_mono`
-      - :monosp:`gpu_mono_polarized`
-      - :monosp:`gpu_rgb`
-      - :monosp:`gpu_rgb_polarized`
-      - :monosp:`gpu_spectral`
-      - :monosp:`gpu_spectral_polarized`
-      - :monosp:`gpu_autodiff_mono`
-      - :monosp:`gpu_autodiff_mono_polarized`
-      - :monosp:`gpu_autodiff_rgb`
-      - :monosp:`gpu_autodiff_rgb_polarized`
-      - :monosp:`gpu_autodiff_spectral`
-      - :monosp:`gpu_autodiff_spectral_polarized`
+      - :monosp:`llvm_mono`
+      - :monosp:`llvm_mono_double`
+      - :monosp:`llvm_mono_polarized`
+      - :monosp:`llvm_mono_polarized_double`
+      - :monosp:`llvm_rgb`
+      - :monosp:`llvm_rgb_double`
+      - :monosp:`llvm_rgb_polarized`
+      - :monosp:`llvm_rgb_polarized_double`
+      - :monosp:`llvm_spectral`
+      - :monosp:`llvm_spectral_double`
+      - :monosp:`llvm_spectral_polarized`
+      - :monosp:`llvm_spectral_polarized_double`
+      - :monosp:`cuda_mono`
+      - :monosp:`cuda_mono_polarized`
+      - :monosp:`cuda_rgb`
+      - :monosp:`cuda_rgb_polarized`
+      - :monosp:`cuda_spectral`
+      - :monosp:`cuda_spectral_polarized`
+      - :monosp:`cuda_autodiff_mono`
+      - :monosp:`cuda_autodiff_mono_polarized`
+      - :monosp:`cuda_autodiff_rgb`
+      - :monosp:`cuda_autodiff_rgb_polarized`
+      - :monosp:`cuda_autodiff_spectral`
+      - :monosp:`cuda_autodiff_spectral_polarized`
 
 
 Note that compilation time and compilation memory usage is roughly proportional
@@ -111,7 +111,7 @@ are available:
   architecture is also supported but tends to be slower because it lacks ray
   tracing hardware acceleration.
 
-- Building on the ``gpu`` backend, ``gpu_autodiff`` furthermore propagates
+- Building on the ``gpu`` backend, ``cuda_autodiff`` furthermore propagates
   derivative information through the simulation, which is a crucial ingredient
   for solving *inverse problems* using rendering algorithms.
 
@@ -124,7 +124,7 @@ are available:
       :width: 100%
       :align: center
 
-  The main use case of the ``gpu_autodiff`` backend is *differentiable
+  The main use case of the ``cuda_autodiff`` backend is *differentiable
   rendering*, which interprets the rendering algorithm as a function
   :math:`f(\mathbf{x})` that converts an input :math:`\mathbf{x}` (the scene
   description) into an output :math:`\mathbf{y}` (the rendering). This function
@@ -145,7 +145,7 @@ are available:
   The documentations provides several applied examples on :ref:`differentiable
   and inverse rendering <sec-inverse-rendering>`.
 
-An appealing aspect of ``packet``, ``gpu``, and ``gpu_autodiff`` modes, is that
+An appealing aspect of ``llvm``, ``cuda``, and ``cuda_autodiff`` modes, is that
 they expose *vectorized* Python interfaces that operate on arbitrarily large
 set of inputs (even in the case of ``packet`` mode that works with smaller
 arrays. The C++ implementation sweeps over larger inputs in this case). This
@@ -157,7 +157,7 @@ How to choose?
 ^^^^^^^^^^^^^^
 
 We generally recommend compiling ``scalar`` variants for command line
-rendering, and ``packet`` or ``gpu_autodiff`` variants for Python
+rendering, and ``packet`` or ``cuda_autodiff`` variants for Python
 development---the latter only if differentiable rendering is desired.
 
 Part 2: Color representation
@@ -278,7 +278,7 @@ Mitsuba 2 normally relies on single precision (32 bit) arithmetic, but double
 precision (64 bit) is optionally available. We find this particularly helpful
 for debugging: whether or not an observed problem arises due to floating point
 imprecisions can normally be determined after switching to double precision.
-Note that double precision currently not available for ``gpu_*`` variants. This
+Note that double precision currently not available for ``cuda_*`` variants. This
 is because OptiX performs ray tracing in single precision.
 
 Configuring :monosp:`mitsuba.conf`
@@ -322,8 +322,8 @@ The remainder of this file lists the C++ types defining the available variants
 and can safely be ignored.
 
 TLDR: If you plan to use Mitsuba from Python, we recommend adding one of
-``packet_rgb`` or ``packet_spectral`` for CPU rendering, or one of
-``gpu_autodiff_rgb`` or ``gpu_autodiff_spectral`` for differentiable GPU
+``llvm_rgb`` or ``llvm_spectral`` for CPU rendering, or one of
+``cuda_autodiff_rgb`` or ``cuda_autodiff_spectral`` for differentiable GPU
 rendering.
 
 Once you are finished with :monosp:`mitsuba.conf`, proceed to the next section

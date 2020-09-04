@@ -70,7 +70,7 @@ function, we are then able to use other templated Mitsuba types (e.g.
         std::cout << ray << std::endl;
     }
 
-.. note:: 
+.. note::
 
     The ``MTS_VARIANT`` macro is often used as a shorthand notation instead of
     the somewhat verbose ``template <typename Float, typename Spectum>``.
@@ -83,9 +83,9 @@ Those macros are described in more detail in the next chapter:
 Branching and masking
 ---------------------
 
-When dealing with vectorized computational backends (e.g. ``packet_*``,
-``gpu_*``), additional scrutiny is needed to adapt C++ branching logic (in
-particular, ``if`` statements). 
+When dealing with vectorized computational backends (e.g. ``llvm_*``,
+``cuda_*``), additional scrutiny is needed to adapt C++ branching logic (in
+particular, ``if`` statements).
 
 Consider the result of a ray intersection in scalar mode. The resulting
 :py:class:`~mitsuba.render.SurfaceInteraction3f` record holds information
@@ -93,9 +93,9 @@ concerning a single surface intersection. In this case, conditional logic works
 fine using normal ``if`` statements.
 
 On the other hand, the same data structure in a vectorized backend (e.g.
-``gpu_rgb``) holds information concerning *many* surface intersections. Since
+``cuda_rgb``) holds information concerning *many* surface intersections. Since
 any condition may only be |true| for a subset of the elements, conditionals
-logic can no longer be carried out using ordinary ``if`` statements. 
+logic can no longer be carried out using ordinary ``if`` statements.
 
 The alternative operation ``enoki::select(mask, arg1, arg2)`` takes a *mask*
 argument (typically the result of a comparison) and evaluates ``(mask ? arg1 :
@@ -149,7 +149,7 @@ CUDA backend synchronization point
 
 As described in Enoki's documentation on `GPU arrays
 <https://enoki.readthedocs.io/en/master/gpu.html#suggestions-regarding-horizontal-operations>`_,
-the ``gpu_*`` computational backends rely on a JIT compiler that dynamically
+the ``cuda_*`` computational backends rely on a JIT compiler that dynamically
 generates kernels using NVIDIA's PTX intermediate language. This JIT compiler
 is highly efficient for *vertical* operations (additions, multiplications,
 gathers, scatters, etc.).  However, applying a *horizontal* operations (e.g.
@@ -160,7 +160,7 @@ amount of parallelism.
 In many cases, horizontal mask-related operations can safely be skipped if this
 yields a performance benefit. For this reason, the Mitsuba 2 codebase makes
 frequent use of alternative reduction operations (``any_or<>()``,
-``all_or<>()``, ...) that skip evaluation on GPU targets. 
+``all_or<>()``, ...) that skip evaluation on GPU targets.
 
 For example, the code ``...`` in the example below will
 only be executed if ``condition`` is ``true`` in ``scalar_*`` variants.
@@ -172,12 +172,13 @@ only be executed if ``condition`` is ``true`` in ``scalar_*`` variants.
         ...
     }
 
-In the case of ``packet_*`` variants, it will be executed if *at least one
-element* of ``condition`` is ``true``. In ``gpu_*`` variants, we are typically
+# TODO refactoring
+In the case of ``llvm_*`` variants, it will be executed if *at least one
+element* of ``condition`` is ``true``. In ``cuda_*`` variants, we are typically
 working with arrays containing millions of elements, and it is quite likely
 that at least of one of the array entries will in any case trigger execution of the
 ``...``. The ``any_or<true>(condition)`` then skips the costly horizontal reduction
-and always assumes the condition to be true. 
+and always assumes the condition to be true.
 
 Pointer types
 -------------
@@ -185,8 +186,8 @@ Pointer types
 The ``MTS_IMPORT_TYPES`` macro also imports variant-specific type aliases for
 pointer types. This is important: for example, consider the ``BSDF`` associated
 with a surface intersection. In a scalar variant , this is nicely represented
-using a ``const BSDF *`` pointer. However, on a vectorized variants (``gpu_*``,
-``packet_*``), the intersection is in fact an array of many intersections, and
+using a ``const BSDF *`` pointer. However, on a vectorized variants (``cuda_*``,
+``llvm_*``), the intersection is in fact an array of many intersections, and
 the simple pointer is therefore replaced by an *array of pointers**. These
 pointer aliases are used as follows:
 

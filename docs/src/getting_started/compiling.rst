@@ -194,8 +194,8 @@ about the various possible command line options.
 GPU variants
 ------------
 
-Variants of Mitsuba that run on the GPU (e.g. :monosp:`gpu_rgb`,
-:monosp:`gpu_autodiff_spectral`, etc.) additionally depend on the `NVIDIA CUDA
+Variants of Mitsuba that run on the GPU (e.g. :monosp:`cuda_rgb`,
+:monosp:`cuda_autodiff_spectral`, etc.) additionally depend on the `NVIDIA CUDA
 Toolkit <https://developer.nvidia.com/cuda-downloads>`_ and `NVIDIA OptiX
 <https://developer.nvidia.com/designworks/optix/download>`_. CUDA needs to be installed
 manually while OptiX 7 ships natively with the latest GPU driver. Make sure to have an

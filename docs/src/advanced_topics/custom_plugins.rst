@@ -16,7 +16,7 @@ in the XML scene language like any other C++ plugin.
 
 .. warning::
 
-    Only ``gpu_*`` variants will produce reasonable performance
+    Only ``cuda_*`` variants will produce reasonable performance
     when using such Python implementations of core system components (since
     they can be JIT-compiled along with other system components). We plan to
     extend this feature to further variant types in the future.

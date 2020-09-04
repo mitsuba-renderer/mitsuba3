@@ -46,7 +46,7 @@ It is possible to test your own sampling code in the following way:
 
     # TODO refactoring
     import mitsuba
-    mitsuba.set_variant('packet_rgb')
+    mitsuba.set_variant('llvm_rgb')
 
     from mitsuba.python.chi2 import ChiSquareTest, SphericalDomain
 
@@ -85,7 +85,7 @@ in order to test them:
     import enoki as ek
 
     # TODO refactoring
-    mitsuba.set_variant('packet_rgb')
+    mitsuba.set_variant('llvm_rgb')
 
     from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
@@ -146,7 +146,7 @@ Those tests are really useful to reveal bugs at the interaction between the indi
 components of the renderer.
 
 The test scenes are rendered using all the different enabled variants of the renderer, ensuring for
-instance that the ``scalar_rgb`` renders match the ``gpu_rgb`` renders.
+instance that the ``scalar_rgb`` renders match the ``cuda_rgb`` renders.
 
 To only run the rendering test suite, use the following command:
 

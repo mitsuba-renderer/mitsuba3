@@ -4,7 +4,7 @@
 
 import enoki as ek
 import mitsuba
-mitsuba.set_variant('gpu_autodiff_rgb')
+mitsuba.set_variant('cuda_autodiff_rgb')
 
 from mitsuba.core import Float, Thread
 from mitsuba.core.xml import load_file

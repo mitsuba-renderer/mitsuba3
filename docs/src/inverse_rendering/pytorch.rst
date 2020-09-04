@@ -22,7 +22,7 @@ relevant differentiable parameters.
 .. code-block:: python
 
     import mitsuba
-    mitsuba.set_variant('gpu_autodiff_rgb')
+    mitsuba.set_variant('cuda_autodiff_rgb')
 
     import enoki as ek
     from mitsuba.core import Thread, Vector3f

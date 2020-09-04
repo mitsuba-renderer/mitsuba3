@@ -160,13 +160,6 @@ def test05_put_with_filter(variant_cuda_rgb):
 #     it essentially had no effect. In this test, we use a more realistic
 #     Gaussian reconstruction filter, with non-zero radius."""
 
-#     try:
-#         mitsuba.set_variant("packet_rgb")
-#         from mitsuba.core.xml import load_string as load_string_vec
-#         from mitsuba.render import ImageBlock as ImageBlockV
-#     except ImportError:
-#         pytest.skip("packet_rgb mode not enabled")
-
     rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="0.25"/>
         </rfilter>""")

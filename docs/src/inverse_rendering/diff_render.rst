@@ -44,7 +44,7 @@ differentiated:
 
     import enoki as ek
     import mitsuba
-    mitsuba.set_variant('gpu_autodiff_rgb')
+    mitsuba.set_variant('cuda_autodiff_rgb')
 
     from mitsuba.core import Thread
     from mitsuba.core.xml import load_file
@@ -122,7 +122,7 @@ We can also query the :py:class:`~mitsuba.python.util.ParameterMap` to see the a
     # [[0.569717, 0.0430141, 0.0443234]]
 
 Here, we can see how Mitsuba converted the original spectral curve from the
-above XML fragment into an RGB value due to the ``gpu_autodiff_rgb`` variant
+above XML fragment into an RGB value due to the ``cuda_autodiff_rgb`` variant
 being used to run this example.
 
 In most cases, we will only be interested in differentiating a small subset of

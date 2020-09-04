@@ -1,10 +1,10 @@
-# Simple inverse rendering example: render a cornell box reference image, 
+# Simple inverse rendering example: render a cornell box reference image,
 # then replace one of the scene parameters and try to recover it using
 # differentiable rendering and gradient-based optimization. (PyTorch)
 
 import enoki as ek
 import mitsuba
-mitsuba.set_variant('gpu_autodiff_rgb')
+mitsuba.set_variant('cuda_autodiff_rgb')
 
 from mitsuba.core import Thread, Vector3f
 from mitsuba.core.xml import load_file

@@ -4,7 +4,7 @@ import enoki as ek
 import mitsuba
 
 # Set the desired mitsuba variant
-mitsuba.set_variant('gpu_rgb')
+mitsuba.set_variant('cuda_rgb')
 
 from mitsuba.core import Thread, math, Properties, Frame3f, Float, Vector3f, warp
 from mitsuba.core.xml import load_file, load_string

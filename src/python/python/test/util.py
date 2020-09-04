@@ -84,7 +84,7 @@ def make_tmpfile(request, tmpdir_factory):
     return path_value
 
 
-def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6):
+def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['llvm', 'cuda']):
     """
     Helper routine which compares evaluations of the vectorized and
     non-vectorized version of a kernel using available variants (e.g. LLVM, GPU).
@@ -110,7 +110,7 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6):
 
     # List available variants with similar spectral variant
     spectral_variant = mitsuba.variant().replace("scalar", "")
-    variants = list(set(mitsuba.variants()) & set([m + spectral_variant for m in ['llvm', 'gpu']]))
+    variants = list(set(mitsuba.variants()) & set([m + spectral_variant for m in modes]))
 
     # If argument dimensions not provided, look at kernel argument annotations
     if arg_dims == []:

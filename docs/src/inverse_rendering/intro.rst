@@ -24,7 +24,7 @@ In pictures:
     :align: center
 
 Differentiable rendering in Mitsuba is based on variants that use the
-``gpu_autodiff`` backend. Note that differentiable rendering on the CPU is
+``cuda_autodiff`` backend. Note that differentiable rendering on the CPU is
 currently not supported for performance reasons, but we have some ideas on
 making this faster and plan to incorporate them in the future.
 
@@ -46,7 +46,7 @@ derivatives in forward or reverse mode. We recommend that you familiarize
 yourself with both of these documents.
 
 Enoki's differentiable types are automatically imported when variant starting
-with ``gpu_autodiff_*`` is specified. They are used in both C++ and Python,
+with ``cuda_autodiff_*`` is specified. They are used in both C++ and Python,
 hence it is possible to differentiate larger computations that are partly
 implemented in each language. The following program shows a simple example
 calculation conducted in Python, which differentiates the function
@@ -55,7 +55,7 @@ calculation conducted in Python, which differentiates the function
 .. code-block:: python
 
     import mitsuba
-    mitsuba.set_variant('gpu_autodiff_rgb')
+    mitsuba.set_variant('cuda_autodiff_rgb')
 
     # The C++ type associated with 'Float' is enoki::DiffArray<enoki::CUDAArray<float>>
     from mitsuba.core import Float

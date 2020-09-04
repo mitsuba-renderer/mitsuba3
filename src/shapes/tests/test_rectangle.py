@@ -63,35 +63,30 @@ def test03_ray_intersect(variant_scalar_rgb):
 
     assert valid_count == 7
 
-    try:
-        mitsuba.set_variant('packet_rgb')
-        from mitsuba.core import xml, Ray3f as Ray3fX
-    except ImportError:
-        pytest.skip("packet_rgb mode not enabled")
+# TODO refactoring : fix this for cuda mode and at this test to other shapes
+def test04_ray_intersect_vec(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
 
-    # Packet
-    scene_p = xml.load_dict({
-        "type" : "scene",
-        "foo" : {
-            "type" : "rectangle",
-            "to_world" : Transform4f.scale((2.0, 0.5, 1.0))
-        }
-    })
+    def kernel(o):
+        from mitsuba.core import xml, ScalarTransform4f
+        from mitsuba.core import Ray3f
 
-    packet = Ray3fX.zero(n)
-    for i in range(n):
-        packet[i] = rays[i]
+        scene = xml.load_dict({
+            "type" : "scene",
+            "foo" : {
+                "type" : "rectangle",
+                "to_world" : ScalarTransform4f.scale((2.0, 0.5, 1.0))
+            }
+        })
 
-    si_p = scene_p.ray_intersect(packet)
-    its_found_p = scene_p.ray_test(packet)
+        o = 2.0 * o - 1.0
+        o.z = 5.0
+        return scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
 
-    assert ek.all(si_p.is_valid() == its_found_p)
-
-    for i in range(n):
-        assert ek.allclose(si_p.t[i], si_scalar[i].t)
+    check_vectorization(kernel, arg_dims = [3], atol=1e-5, width=5, modes=['llvm'])
 
 
-def test04_surface_area(variant_scalar_rgb):
+def test05_surface_area(variant_scalar_rgb):
     from mitsuba.core import xml, Transform4f
 
     # Unifomly-scaled rectangle
@@ -125,7 +120,7 @@ def test04_surface_area(variant_scalar_rgb):
     assert ek.allclose(rect.surface_area(), 2.0 * 2.0)
 
 
-def test05_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'rectangle'})
@@ -162,7 +157,7 @@ def test05_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_
     assert ek.allclose(ek.gradient(si.p), [10, 0, 0])
 
 
-def test06_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
+def test07_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'rectangle'})

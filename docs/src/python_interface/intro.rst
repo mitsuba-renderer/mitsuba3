@@ -42,7 +42,7 @@ classes can be imported.
 
     import mitsuba
 
-    mitsuba.set_variant('gpu_autodiff_spectral')
+    mitsuba.set_variant('cuda_autodiff_spectral')
 
     # set_variant() call must precede the following two lines
     from mitsuba.core import FileStream
@@ -60,10 +60,10 @@ available variants:
 .. code-block:: python
 
     # Returns the list of available system variants
-    mitsuba.variants() # e.g. ['scalar_rgb', 'gpu_autodiff_spectral']
+    mitsuba.variants() # e.g. ['scalar_rgb', 'cuda_autodiff_spectral']
 
     # Returns the name of the current variant
-    mitsuba.variant() # e.g. 'gpu_autodiff_spectral'
+    mitsuba.variant() # e.g. 'cuda_autodiff_spectral'
 
 It is also possible to set a *default* variant that is automatically activated
 when importing the ``mitsuba`` Python module. This can be done by setting the
@@ -123,18 +123,18 @@ to these types for convenience. For instance, consider the following snippet
 
 The imported ``Float`` type is simply a builtin Python ``float`` because the
 renderer is operating in scalar mode. But more complex types would be used in
-the vectorized ``packet_*`` or ``gpu_*`` backends, and these also propagate
+the vectorized ``llvm_*`` or ``cuda_*`` backends, and these also propagate
 into derived array types like vectors or matrices.
 
 .. code-block:: python
 
     # TODO refactoring
-    mitsuba.set_variant('packet_rgb')
+    mitsuba.set_variant('llvm_rgb')
     from mitsuba.core import Float, Vector3f
     # Float    = enoki.dynamic.Float32  (a.k.a. enoki::DynamicArray<Packet<float>>)
     # Vector3f = enoki.dynamic.Vector3f (a.k.a. enoki::Array<DynamicArray<Packet<float>, 3>>)
 
-    mitsuba.set_variant('gpu_rgb')
+    mitsuba.set_variant('cuda_rgb')
     from mitsuba.core import Float, Vector3f
     # Float    = enoki.cuda.Float32  (a.k.a. enoki::CUDAArray<float>)
     # Vector3f = enoki.cuda.Vector3f (a.k.a. enoki::Array<enoki::CUDAArray<float>, 3>>)
@@ -145,7 +145,7 @@ case.
 
 .. code-block:: python
 
-    mitsuba.set_variant('gpu_rgb')
+    mitsuba.set_variant('cuda_rgb')
     from mitsuba.core import ScalarFloat, ScalarVector3f
     # ScalarFloat    = float
     # ScalarVector3f = enoki.scalar.Vector3f (a.k.a. enoki::Array<float, 3>>)
@@ -208,7 +208,7 @@ variant.
 
     # Choose the variant
     # TODO refactoring
-    mitsuba.set_variant('packet_rgb') # also works on the GPU, e.g. with 'gpu_rgb'
+    mitsuba.set_variant('llvm_rgb') # also works on the GPU, e.g. with 'cuda_rgb'
 
     from mitsuba.core import Float, UInt64, Vector2f, PCG32
 

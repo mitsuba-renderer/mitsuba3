@@ -16,7 +16,7 @@ Fixes # (issue)
 
 - [ ] My code follows the [style guidelines](https://mitsuba2.readthedocs.io/en/latest/src/developer_guide/intro.html#introduction) of this project
 - [ ] My changes generate no new warnings
-- [ ] My code also compiles for `gpu_*` and `packet_*` variants. If you can't test this, please leave below
+- [ ] My code also compiles for `cuda_*` and `llvm_*` variants. If you can't test this, please leave below
 - [ ] I have commented my code
 - [ ] I have made corresponding changes to the documentation
 - [ ] I have added tests that prove my fix is effective or that my feature works

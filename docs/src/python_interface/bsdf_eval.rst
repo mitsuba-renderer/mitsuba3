@@ -13,7 +13,7 @@ combinations of incident and outgoing directions.
 
     # Set the desired mitsuba variant
     # TODO refactoring
-    mitsuba.set_variant('packet_rgb')
+    mitsuba.set_variant('llvm_rgb')
 
     from mitsuba.core import Float, Vector3f
     from mitsuba.core.xml import load_string

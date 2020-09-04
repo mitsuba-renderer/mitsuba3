@@ -61,7 +61,7 @@ def variants_vec_rgb(request):
     return request.param
 
 
-@pytest.fixture(params=['llvm_spectral', 'gpu_spectral'])
+@pytest.fixture(params=['llvm_spectral', 'cuda_spectral'])
 def variants_vec_spectral(request):
     try:
         import mitsuba
