@@ -315,13 +315,13 @@ public:
 
         m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
         m_vertex_positions = ek::load_unaligned<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-        if (has_vertex_normals())
+        if (!m_disable_vertex_normals)
             m_vertex_normals   = ek::load_unaligned<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (!texcoords.empty())
             m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 3);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
-        if (has_vertex_normals())
+        if (!m_disable_vertex_normals)
             vertex_data_bytes += 3 * sizeof(InputFloat);
         if (!texcoords.empty())
             vertex_data_bytes += 2 * sizeof(InputFloat);
