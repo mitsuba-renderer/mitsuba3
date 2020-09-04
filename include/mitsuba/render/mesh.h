@@ -46,24 +46,24 @@ public:
     ScalarSize face_count() const { return m_face_count; }
 
     /// Return vertex positions buffer
-    FloatStorage& vertex_positions_buffer() { return m_vertex_positions_buf; }
+    FloatStorage& vertex_positions_buffer() { return m_vertex_positions; }
     /// Const variant of \ref vertex_positions_buffer.
-    const FloatStorage& vertex_positions_buffer() const { return m_vertex_positions_buf; }
+    const FloatStorage& vertex_positions_buffer() const { return m_vertex_positions; }
 
     /// Return vertex normals buffer
-    FloatStorage& vertex_normals_buffer() { return m_vertex_normals_buf; }
+    FloatStorage& vertex_normals_buffer() { return m_vertex_normals; }
     /// Const variant of \ref vertex_normals_buffer.
-    const FloatStorage& vertex_normals_buffer() const { return m_vertex_normals_buf; }
+    const FloatStorage& vertex_normals_buffer() const { return m_vertex_normals; }
 
     /// Return vertex texcoords buffer
-    FloatStorage& vertex_texcoords_buffer() { return m_vertex_texcoords_buf; }
+    FloatStorage& vertex_texcoords_buffer() { return m_vertex_texcoords; }
     /// Const variant of \ref vertex_texcoords_buffer.
-    const FloatStorage& vertex_texcoords_buffer() const { return m_vertex_texcoords_buf; }
+    const FloatStorage& vertex_texcoords_buffer() const { return m_vertex_texcoords; }
 
     /// Return face indices buffer
-    DynamicBuffer<UInt32>& faces_buffer() { return m_faces_buf; }
+    DynamicBuffer<UInt32>& faces_buffer() { return m_faces; }
     /// Const variant of \ref faces_buffer.
-    const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces_buf; }
+    const DynamicBuffer<UInt32>& faces_buffer() const { return m_faces; }
 
     /// Return the mesh attribute associated with \c name
     FloatStorage& attribute_buffer(const std::string& name) {
@@ -80,28 +80,28 @@ public:
     template <typename Index>
     MTS_INLINE auto face_indices(Index index, ek::mask_t<Index> active = true) const {
         using Result = ek::Array<ek::uint32_array_t<Index>, 3>;
-        return ek::gather<Result>(m_faces_buf, index, active);
+        return ek::gather<Result>(m_faces, index, active);
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_position(Index index, ek::mask_t<Index> active = true) const {
         using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 3>;
-        return ek::gather<Result>(m_vertex_positions_buf, index, active);
+        return ek::gather<Result>(m_vertex_positions, index, active);
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_normal(Index index, ek::mask_t<Index> active = true) const {
         using Result = Normal<ek::replace_scalar_t<Index, InputFloat>, 3>;
-        return ek::gather<Result>(m_vertex_normals_buf, index, active);
+        return ek::gather<Result>(m_vertex_normals, index, active);
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
     MTS_INLINE auto vertex_texcoord(Index index, ek::mask_t<Index> active = true) const {
         using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 2>;
-        return ek::gather<Result>(m_vertex_texcoords_buf, index, active);
+        return ek::gather<Result>(m_vertex_texcoords, index, active);
     }
 
     /// Returns the surface area of the face with index \c index
@@ -117,10 +117,10 @@ public:
     }
 
     /// Does this mesh have per-vertex normals?
-    bool has_vertex_normals() const { return ek::width(m_vertex_normals_buf) != 0; }
+    bool has_vertex_normals() const { return ek::width(m_vertex_normals) != 0; }
 
     /// Does this mesh have per-vertex texture coordinates?
-    bool has_vertex_texcoords() const { return ek::width(m_vertex_texcoords_buf) != 0; }
+    bool has_vertex_texcoords() const { return ek::width(m_vertex_texcoords) != 0; }
 
     /// @}
     // =========================================================================
@@ -342,11 +342,11 @@ protected:
     ScalarSize m_vertex_count = 0;
     ScalarSize m_face_count = 0;
 
-    FloatStorage m_vertex_positions_buf;
-    FloatStorage m_vertex_normals_buf;
-    FloatStorage m_vertex_texcoords_buf;
+    FloatStorage m_vertex_positions;
+    FloatStorage m_vertex_normals;
+    FloatStorage m_vertex_texcoords;
 
-    DynamicBuffer<UInt32> m_faces_buf;
+    DynamicBuffer<UInt32> m_faces;
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
 

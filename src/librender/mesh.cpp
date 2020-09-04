@@ -39,23 +39,23 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
                             bool has_vertex_normals, bool has_vertex_texcoords)
     : Base(props), m_name(name), m_vertex_count(vertex_count), m_face_count(face_count) {
 
-    m_faces_buf = ek::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
-    m_vertex_positions_buf = ek::zero<FloatStorage>(m_vertex_count * 3);
+    m_faces = ek::zero<DynamicBuffer<UInt32>>(m_face_count * 3);
+    m_vertex_positions = ek::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_normals)
-        m_vertex_normals_buf = ek::zero<FloatStorage>(m_vertex_count * 3);
+        m_vertex_normals = ek::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
-        m_vertex_texcoords_buf = ek::zero<FloatStorage>(m_vertex_count * 2);
+        m_vertex_texcoords = ek::zero<FloatStorage>(m_vertex_count * 2);
 
     if constexpr (ek::is_cuda_array_v<Float>) {
-        ek::migrate(m_faces_buf, AllocType::Managed);
-        ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-        ek::migrate(m_vertex_normals_buf, AllocType::Managed);
-        ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+        ek::migrate(m_faces, AllocType::Managed);
+        ek::migrate(m_vertex_positions, AllocType::Managed);
+        ek::migrate(m_vertex_normals, AllocType::Managed);
+        ek::migrate(m_vertex_texcoords, AllocType::Managed);
     }
 
     if constexpr (ek::is_jit_array_v<Float>) {
-        ek::schedule(m_faces_buf, m_vertex_positions_buf, m_vertex_normals_buf,
-                     m_vertex_texcoords_buf);
+        ek::schedule(m_faces, m_vertex_positions, m_vertex_normals,
+                     m_vertex_texcoords);
         jitc_eval();
         jitc_sync_stream();
     }
@@ -144,9 +144,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
     stream->write_line("end_header");
 
     // Write vertices data
-    const InputFloat* position_ptr = m_vertex_positions_buf.data();
-    const InputFloat* normal_ptr   = m_vertex_normals_buf.data();
-    const InputFloat* texcoord_ptr = m_vertex_texcoords_buf.data();
+    const InputFloat* position_ptr = m_vertex_positions.data();
+    const InputFloat* normal_ptr   = m_vertex_normals.data();
+    const InputFloat* texcoord_ptr = m_vertex_texcoords.data();
 
     std::vector<const InputFloat*> vertex_attributes_ptr;
     for (const auto&[name, attribute]: vertex_attributes)
@@ -174,7 +174,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         }
     }
 
-    const ScalarIndex* face_ptr = m_faces_buf.data();
+    const ScalarIndex* face_ptr = m_faces.data();
 
     std::vector<const InputFloat*> face_attributes_ptr;
     for (const auto&[name, attribute]: face_attributes)
@@ -254,7 +254,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                 invalid_counter++;
             }
 
-            store_unaligned(m_vertex_normals_buf.data() + 3 * i, n);
+            store_unaligned(m_vertex_normals.data() + 3 * i, n);
         }
 
         if (invalid_counter > 0)
@@ -283,7 +283,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
         for (size_t i = 0; i < 3; ++i)
-            ek::scatter(m_vertex_normals_buf, normals[i], ni + i);
+            ek::scatter(m_vertex_normals, normals[i], ni + i);
     }
 }
 
@@ -341,9 +341,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     ref<Mesh> mesh =
         new Mesh(m_name + "_param", m_vertex_count, m_face_count,
                  props, false, false);
-    mesh->m_faces_buf = m_faces_buf;
+    mesh->m_faces = m_faces;
 
-    ScalarFloat *pos_out = mesh->m_vertex_positions_buf.data();
+    ScalarFloat *pos_out = mesh->m_vertex_positions.data();
     for (size_t i = 0; i < m_vertex_count; ++i) {
         ScalarPoint2f uv_i = vertex_texcoord(i);
         pos_out[i*3 + 0] = uv_i.x();
@@ -478,7 +478,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     bool differentiable = false;
     if constexpr (ek::is_diff_array_v<Float>)
-        differentiable = requires_gradient(m_vertex_positions_buf) ||
+        differentiable = requires_gradient(m_vertex_positions) ||
                          requires_gradient(ray.o) || requires_gradient(ray.d);
 
     // Recompute ray intersection to get differentiable prim_uv and t
@@ -810,10 +810,10 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3,
-                               m_vertex_positions_buf.data(), 0, 3 * sizeof(InputFloat),
+                               m_vertex_positions.data(), 0, 3 * sizeof(InputFloat),
                                m_vertex_count);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3,
-                               m_faces_buf.data(), 0, 3 * sizeof(ScalarIndex),
+                               m_faces.data(), 0, 3 * sizeof(ScalarIndex),
                                m_face_count);
 
     rtcCommitGeometry(geom);
@@ -826,16 +826,16 @@ static const uint32_t triangle_input_flags =  OPTIX_GEOMETRY_FLAG_NONE;
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        m_vertex_buffer_ptr = (void*) m_vertex_positions_buf.data();
+        m_vertex_buffer_ptr = (void*) m_vertex_positions.data();
 
         if (!m_optix_data_ptr)
             m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixMeshData));
 
         OptixMeshData data = {
-            (const optix::Vector3u *) m_faces_buf.data(),
-            (const optix::Vector3f *) m_vertex_positions_buf.data(),
-            (const optix::Vector3f *) m_vertex_normals_buf.data(),
-            (const optix::Vector2f *) m_vertex_texcoords_buf.data()
+            (const optix::Vector3u *) m_faces.data(),
+            (const optix::Vector3f *) m_vertex_positions.data(),
+            (const optix::Vector3f *) m_vertex_normals.data(),
+            (const optix::Vector2f *) m_vertex_texcoords.data()
         };
 
         jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixMeshData));
@@ -849,7 +849,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build
     build_input.triangleArray.numVertices      = m_vertex_count;
     build_input.triangleArray.vertexBuffers    = (CUdeviceptr*) &m_vertex_buffer_ptr;
     build_input.triangleArray.numIndexTriplets = m_face_count;
-    build_input.triangleArray.indexBuffer      = (CUdeviceptr)m_faces_buf.data();
+    build_input.triangleArray.indexBuffer      = (CUdeviceptr)m_faces.data();
     build_input.triangleArray.flags            = &triangle_input_flags;
     build_input.triangleArray.numSbtRecords    = 1;
 }
@@ -858,21 +858,21 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build
 MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
     Base::traverse(callback);
 
-    callback->put_parameter("vertex_count",         m_vertex_count);
-    callback->put_parameter("face_count",           m_face_count);
-    callback->put_parameter("faces_buf",            m_faces_buf);
-    callback->put_parameter("vertex_positions_buf", m_vertex_positions_buf);
-    callback->put_parameter("vertex_normals_buf",   m_vertex_normals_buf);
-    callback->put_parameter("vertex_texcoords_buf", m_vertex_texcoords_buf);
+    callback->put_parameter("vertex_count",     m_vertex_count);
+    callback->put_parameter("face_count",       m_face_count);
+    callback->put_parameter("faces",            m_faces);
+    callback->put_parameter("vertex_positions", m_vertex_positions);
+    callback->put_parameter("vertex_normals",   m_vertex_normals);
+    callback->put_parameter("vertex_texcoords", m_vertex_texcoords);
 
     for(auto &[name, attribute]: m_mesh_attributes)
-        callback->put_parameter(tfm::format("%s_buf", name.c_str()), attribute.buf);
+        callback->put_parameter(name, attribute.buf);
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    if (keys.empty() || string::contains(keys, "vertex_positions_buf")) {
+    if (keys.empty() || string::contains(keys, "vertex_positions")) {
         if constexpr (ek::is_jit_array_v<Float>) {
-            ek::eval(m_vertex_positions_buf);
+            ek::eval(m_vertex_positions);
             jitc_sync_stream();
         }
 
@@ -893,9 +893,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     if constexpr (ek::is_diff_array_v<Float>) {
-        return ek::grad_enabled(m_vertex_positions_buf) ||
-               ek::grad_enabled(m_vertex_normals_buf) ||
-               ek::grad_enabled(m_vertex_texcoords_buf);
+        return ek::grad_enabled(m_vertex_positions) ||
+               ek::grad_enabled(m_vertex_normals) ||
+               ek::grad_enabled(m_vertex_texcoords);
     }
 
     return false;

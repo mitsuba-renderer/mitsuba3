@@ -76,10 +76,10 @@ void advance(const char **start_, const char *end, const char (&delim)[N]) {
 template <typename Float, typename Spectrum>
 class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
-                    m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
-                    m_faces_buf, m_disable_vertex_normals, recompute_vertex_normals,
-                    has_vertex_normals, set_children)
+    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+                    m_face_count, m_vertex_positions, m_vertex_normals,
+                    m_vertex_texcoords, m_faces, m_disable_vertex_normals,
+                    recompute_vertex_normals, has_vertex_normals, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -280,24 +280,24 @@ public:
         m_vertex_count = vertex_ctr;
         m_face_count = (ScalarSize) triangles.size();
 
-        m_faces_buf = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
-        m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
+        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
+        m_vertex_positions = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!m_disable_vertex_normals)
-            m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
+            m_vertex_normals = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!texcoords.empty())
-            m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
+            m_vertex_texcoords = ek::empty<FloatStorage>(m_vertex_count * 2);
 
         if constexpr (ek::is_cuda_array_v<Float>) {
             // TODO this is needed for the bbox(..) methods, but is it slower?
-            ek::migrate(m_faces_buf, AllocType::Managed);
-            ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-            ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
-            ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+            ek::migrate(m_faces, AllocType::Managed);
+            ek::migrate(m_vertex_positions, AllocType::Managed);
+            ek::migrate(m_vertex_normals,   AllocType::Managed);
+            ek::migrate(m_vertex_texcoords, AllocType::Managed);
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_faces_buf, m_vertex_positions_buf,
-                         m_vertex_normals_buf, m_vertex_texcoords_buf);
+            ek::schedule(m_faces, m_vertex_positions,
+                         m_vertex_normals, m_vertex_texcoords);
             jitc_eval();
             jitc_sync_stream();
         }
@@ -306,9 +306,9 @@ public:
             const VertexBinding *v = &v_;
 
             while (v && v->key != ScalarIndex3{{0, 0, 0}}) {
-                InputFloat* position_ptr   = m_vertex_positions_buf.data() + v->value * 3;
-                InputFloat* normal_ptr   = m_vertex_normals_buf.data() + v->value * 3;
-                InputFloat* texcoord_ptr = m_vertex_texcoords_buf.data() + v->value * 2;
+                InputFloat* position_ptr   = m_vertex_positions.data() + v->value * 3;
+                InputFloat* normal_ptr   = m_vertex_normals.data() + v->value * 3;
+                InputFloat* texcoord_ptr = m_vertex_texcoords.data() + v->value * 2;
                 auto key = v->key;
 
                 ek::store_unaligned(position_ptr, vertices[key[0] - 1]);

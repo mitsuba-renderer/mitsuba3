@@ -66,10 +66,12 @@ multidimentional attribute named ``{vertex|face}_color``.
 template <typename Float, typename Spectrum>
 class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
-                    m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
-                    m_faces_buf, add_attribute, m_disable_vertex_normals, has_vertex_normals,
-                    has_vertex_texcoords, recompute_vertex_normals, set_children)
+    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+                    m_face_count, m_vertex_positions, m_vertex_normals,
+                    m_vertex_texcoords, m_faces, add_attribute,
+                    m_disable_vertex_normals, has_vertex_normals,
+                    has_vertex_texcoords, recompute_vertex_normals,
+                    set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -192,11 +194,11 @@ public:
                 }
 
                 m_vertex_count = (ScalarSize) el.count;
-                m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
+                m_vertex_positions = ek::empty<FloatStorage>(m_vertex_count * 3);
                 if (!m_disable_vertex_normals)
-                    m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
+                    m_vertex_normals = ek::empty<FloatStorage>(m_vertex_count * 3);
                 if (has_vertex_texcoords)
-                    m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
+                    m_vertex_texcoords = ek::empty<FloatStorage>(m_vertex_count * 2);
 
                 for (auto& descr: vertex_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_vertex_count * descr.dim);
@@ -207,14 +209,14 @@ public:
                 }
 
                 if constexpr (ek::is_cuda_array_v<Float>) {
-                    ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-                    ek::migrate(m_vertex_normals_buf,   AllocType::Managed);
-                    ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+                    ek::migrate(m_vertex_positions, AllocType::Managed);
+                    ek::migrate(m_vertex_normals,   AllocType::Managed);
+                    ek::migrate(m_vertex_texcoords, AllocType::Managed);
                 }
 
                 if constexpr (ek::is_jit_array_v<Float>) {
-                    ek::schedule(m_vertex_positions_buf, m_vertex_normals_buf,
-                                 m_vertex_texcoords_buf);
+                    ek::schedule(m_vertex_positions, m_vertex_normals,
+                                 m_vertex_texcoords);
                     jitc_eval();
                     jitc_sync_stream();
                 }
@@ -228,9 +230,9 @@ public:
                 std::unique_ptr<uint8_t[]> buf(new uint8_t[i_packet_size]);
                 std::unique_ptr<uint8_t[]> buf_o(new uint8_t[o_packet_size]);
 
-                InputFloat* position_ptr = m_vertex_positions_buf.data();
-                InputFloat *normal_ptr   = m_vertex_normals_buf.data();
-                InputFloat *texcoord_ptr = m_vertex_texcoords_buf.data();
+                InputFloat* position_ptr = m_vertex_positions.data();
+                InputFloat *normal_ptr   = m_vertex_normals.data();
+                InputFloat *texcoord_ptr = m_vertex_texcoords.data();
 
                 for (size_t i = 0; i <= packet_count; ++i) {
                     uint8_t *target = (uint8_t *) buf_o.get();
@@ -319,7 +321,7 @@ public:
                 }
 
                 m_face_count = (ScalarSize) el.count;
-                m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
+                m_faces = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
 
                 for (auto& descr: face_attributes_descriptors) {
                     descr.buf = ek::empty<FloatStorage>(m_face_count * descr.dim);
@@ -331,15 +333,15 @@ public:
                 }
 
                 if constexpr (ek::is_cuda_array_v<Float>)
-                    ek::migrate(m_faces_buf, AllocType::Managed);
+                    ek::migrate(m_faces, AllocType::Managed);
 
                 if constexpr (ek::is_jit_array_v<Float>) {
-                    ek::schedule(m_faces_buf);
+                    ek::schedule(m_faces);
                     jitc_eval();
                     jitc_sync_stream();
                 }
 
-                ScalarIndex* face_ptr = m_faces_buf.data();
+                ScalarIndex* face_ptr = m_faces.data();
 
                 size_t packet_count     = el.count / elements_per_packet;
                 size_t remainder_count  = el.count % elements_per_packet;

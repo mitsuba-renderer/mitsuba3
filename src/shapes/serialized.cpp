@@ -141,10 +141,12 @@ at the end of the file, which specifies the starting position of each sub-mesh:
 template <typename Float, typename Spectrum>
 class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh,m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
-                    m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
-                    m_faces_buf, m_disable_vertex_normals, has_vertex_normals, has_vertex_texcoords,
-                    recompute_vertex_normals, vertex_position, vertex_normal, set_children)
+    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+                    m_face_count, m_vertex_positions, m_vertex_normals,
+                    m_vertex_texcoords, m_faces, m_disable_vertex_normals,
+                    has_vertex_normals, has_vertex_texcoords,
+                    recompute_vertex_normals, vertex_position, vertex_normal,
+                    set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -263,47 +265,47 @@ public:
         m_vertex_count = (ScalarSize) vertex_count;
         m_face_count = (ScalarSize) face_count;
 
-        m_vertex_positions_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
+        m_vertex_positions = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (!m_disable_vertex_normals)
-            m_vertex_normals_buf = ek::empty<FloatStorage>(m_vertex_count * 3);
+            m_vertex_normals = ek::empty<FloatStorage>(m_vertex_count * 3);
         if (has_flag(flags, TriMeshFlags::HasTexcoords))
-            m_vertex_texcoords_buf = ek::empty<FloatStorage>(m_vertex_count * 2);
+            m_vertex_texcoords = ek::empty<FloatStorage>(m_vertex_count * 2);
 
-        m_faces_buf = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
+        m_faces = ek::empty<DynamicBuffer<UInt32>>(m_face_count * 3);
 
         if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-            ek::migrate(m_vertex_normals_buf, AllocType::Managed);
-            ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
-            ek::migrate(m_faces_buf, AllocType::Managed);
+            ek::migrate(m_vertex_positions, AllocType::Managed);
+            ek::migrate(m_vertex_normals, AllocType::Managed);
+            ek::migrate(m_vertex_texcoords, AllocType::Managed);
+            ek::migrate(m_faces, AllocType::Managed);
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_faces_buf, m_vertex_positions_buf,
-                         m_vertex_normals_buf, m_vertex_texcoords_buf);
+            ek::schedule(m_faces, m_vertex_positions,
+                         m_vertex_normals, m_vertex_texcoords);
             jitc_eval();
             jitc_sync_stream();
         }
 
         bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
 
-        read_helper(stream, double_precision, m_vertex_positions_buf.data(), 3);
+        read_helper(stream, double_precision, m_vertex_positions.data(), 3);
 
         if (has_flag(flags, TriMeshFlags::HasNormals)) {
             if (m_disable_vertex_normals)
                 // Skip over vertex normals provided in the file.
                 advance_helper(stream, double_precision, 3);
             else
-                read_helper(stream, double_precision, m_vertex_normals_buf.data(), 3);
+                read_helper(stream, double_precision, m_vertex_normals.data(), 3);
         }
 
         if (has_flag(flags, TriMeshFlags::HasTexcoords))
-            read_helper(stream, double_precision, m_vertex_texcoords_buf.data(), 2);
+            read_helper(stream, double_precision, m_vertex_texcoords.data(), 2);
 
         if (has_flag(flags, TriMeshFlags::HasColors))
             advance_helper(stream, double_precision, 3); // TODO
 
-        stream->read(m_faces_buf.data(), m_face_count * sizeof(ScalarIndex) * 3);
+        stream->read(m_faces.data(), m_face_count * sizeof(ScalarIndex) * 3);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (has_vertex_normals())
@@ -319,8 +321,8 @@ public:
         );
 
         // Post-processing
-        InputFloat* position_ptr = m_vertex_positions_buf.data();
-        InputFloat* normal_ptr   = m_vertex_normals_buf.data();
+        InputFloat* position_ptr = m_vertex_positions.data();
+        InputFloat* normal_ptr   = m_vertex_normals.data();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
             InputPoint3f p = m_to_world.transform_affine(vertex_position(i));
             ek::store_unaligned(position_ptr, p);

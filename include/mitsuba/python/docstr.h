@@ -3547,7 +3547,7 @@ vertex normals)doc";
 
 static const char *__doc_mitsuba_Mesh_m_face_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_faces_buf = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_mesh_attributes = R"doc()doc";
 
@@ -3559,11 +3559,11 @@ static const char *__doc_mitsuba_Mesh_m_parameterization = R"doc(Optional: used 
 
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_normals_buf = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_vertex_normals = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_positions_buf = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_vertex_positions = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_texcoords_buf = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_vertex_texcoords = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 

@@ -62,9 +62,9 @@ in the mitsuba2-blender addon for an example.
 template <typename Float, typename Spectrum>
 class BlenderMesh final : public Mesh<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count, m_face_count,
-                    m_vertex_positions_buf, m_vertex_normals_buf, m_vertex_texcoords_buf,
-                    m_faces_buf, add_attribute, set_children)
+    MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
+                    m_face_count, m_vertex_positions, m_vertex_normals,
+                    m_vertex_texcoords, m_faces, add_attribute, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::MeshAttributeType;
@@ -293,14 +293,14 @@ public:
             return;
 
         m_face_count = (ScalarSize) tmp_triangles.size();
-        m_faces_buf = ek::load_unaligned<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
+        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
 
         m_vertex_count = vertex_ctr;
-        m_vertex_positions_buf = ek::load_unaligned<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
-        m_vertex_normals_buf = ek::load_unaligned<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
+        m_vertex_positions = ek::load_unaligned<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
+        m_vertex_normals = ek::load_unaligned<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
 
         if (has_uvs)
-            m_vertex_texcoords_buf = ek::load_unaligned<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
+            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
         if (has_cols) {
             for (size_t p = 0; p < cols.size(); p++) {
                 add_attribute(
@@ -310,16 +310,16 @@ public:
         }
 
         if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_faces_buf, AllocType::Managed);
-            ek::migrate(m_vertex_positions_buf, AllocType::Managed);
-            ek::migrate(m_vertex_normals_buf, AllocType::Managed);
+            ek::migrate(m_faces, AllocType::Managed);
+            ek::migrate(m_vertex_positions, AllocType::Managed);
+            ek::migrate(m_vertex_normals, AllocType::Managed);
             if (has_uvs)
-                ek::migrate(m_vertex_texcoords_buf, AllocType::Managed);
+                ek::migrate(m_vertex_texcoords, AllocType::Managed);
         }
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            ek::schedule(m_faces_buf, m_vertex_positions_buf,
-                         m_vertex_normals_buf, m_vertex_texcoords_buf);
+            ek::schedule(m_faces, m_vertex_positions,
+                         m_vertex_normals, m_vertex_texcoords);
             jitc_eval();
             jitc_sync_stream();
         }
