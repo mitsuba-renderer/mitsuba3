@@ -10,8 +10,6 @@
 #include <mitsuba/render/scene.h>
 #include <mutex>
 
-#include <enoki/packet.h>
-
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif

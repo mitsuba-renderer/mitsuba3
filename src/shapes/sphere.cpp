@@ -269,11 +269,14 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        Mask active) const override {
+    template <typename FloatX, typename Ray3fX>
+    std::pair<FloatX, Point<FloatX, 2>>
+    ray_intersect_preliminary_impl(const Ray3fX &ray,
+                                   ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX>, FloatX,
+                                          ek::float64_array_t<FloatX>>;
         using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
@@ -290,26 +293,27 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatX> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
-        Mask in_bounds = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatX> in_bounds = near_t < mint && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds;
 
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
-        pi.t = ek::select(active,
-                      ek::select(near_t < mint, Float(far_t), Float(near_t)),
-                      ek::Infinity<Float>);
-        pi.shape = this;
+        FloatX t = ek::select(
+            active, ek::select(near_t < mint, FloatX(far_t), FloatX(near_t)),
+            ek::Infinity<FloatX>);
 
-        return pi;
+        return { t, Point<FloatX, 2>() };
     }
 
-    Mask ray_test(const Ray3f &ray, Mask active) const override {
+    template <typename FloatX, typename Ray3fX>
+    ek::mask_t<FloatX> ray_test_impl(const Ray3fX &ray,
+                                     ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX>, FloatX,
+                                          ek::float64_array_t<FloatX>>;
         using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
@@ -326,13 +330,15 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatX> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
-        Mask in_bounds  = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatX> in_bounds  = near_t < mint && far_t > maxt;
 
         return solution_found && !out_bounds && !in_bounds && active;
     }
+
+    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,

@@ -243,13 +243,16 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray_,
-                                                        Mask active) const override {
+    template <typename FloatX, typename Ray3fX>
+    std::pair<FloatX, Point<FloatX, 2>>
+    ray_intersect_preliminary_impl(const Ray3fX &ray_,
+                                   ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX>, FloatX,
+                                          ek::float64_array_t<FloatX>>;
 
-        Ray3f ray = m_to_object.transform_affine(ray_);
+        Ray3fX ray = m_to_object.transform_affine(ray_);
         Double mint = Double(ray.mint),
                maxt = Double(ray.maxt);
 
@@ -261,44 +264,46 @@ public:
                dz = Double(ray.d.z());
 
         ek::scalar_t<Double> radius = ek::scalar_t<Double>(m_radius),
-                         length = ek::scalar_t<Double>(m_length);
+                             length = ek::scalar_t<Double>(m_length);
 
         Double A = ek::sqr(dx) + ek::sqr(dy),
                B = ek::scalar_t<Double>(2.f) * (dx * ox + dy * oy),
                C = ek::sqr(ox) + ek::sqr(oy) - ek::sqr(radius);
 
-        auto [solution_found, near_t, far_t] =
-            math::solve_quadratic(A, B, C);
+        auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Cylinder doesn't intersect with the segment on the ray
-        Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatX> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
         Double z_pos_near = oz + dz*near_t,
                z_pos_far  = oz + dz*far_t;
 
         // Cylinder fully contains the segment of the ray
-        Mask in_bounds = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatX> in_bounds = near_t < mint && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds &&
                   ((z_pos_near >= 0 && z_pos_near <= length && near_t >= mint) ||
                    (z_pos_far  >= 0 && z_pos_far <= length  && far_t <= maxt));
 
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
-        pi.t = ek::select(active,
-                      ek::select(z_pos_near >= 0 && z_pos_near <= length && near_t >= mint,
-                             Float(near_t), Float(far_t)),
-                      ek::Infinity<Float>);
-        pi.shape = this;
+        FloatX t =
+            ek::select(active,
+                       ek::select(z_pos_near >= 0 && z_pos_near <= length &&
+                                      near_t >= mint,
+                                  FloatX(near_t), FloatX(far_t)),
+                       ek::Infinity<FloatX>);
 
-        return pi;
+        return { t, Point<FloatX, 2>() };
     }
 
-    Mask ray_test(const Ray3f &ray_, Mask active) const override {
+    template <typename FloatX, typename Ray3fX>
+    ek::mask_t<FloatX> ray_test_impl(const Ray3fX &ray_,
+                                     ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<Float>, Float, Float64>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX>, FloatX,
+                                          ek::float64_array_t<FloatX>>;
 
-        Ray3f ray = m_to_object.transform_affine(ray_);
+        Ray3fX ray = m_to_object.transform_affine(ray_);
         Double mint = Double(ray.mint);
         Double maxt = Double(ray.maxt);
 
@@ -319,21 +324,23 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Cylinder doesn't intersect with the segment on the ray
-        Mask out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatX> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
         Double z_pos_near = oz + dz * near_t,
                z_pos_far  = oz + dz * far_t;
 
         // Cylinder fully contains the segment of the ray
-        Mask in_bounds = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatX> in_bounds = near_t < mint && far_t > maxt;
 
-        Mask valid_intersection =
+        ek::mask_t<FloatX> valid_intersection =
             active && solution_found && !out_bounds && !in_bounds &&
             ((z_pos_near >= 0 && z_pos_near <= length && near_t >= mint) ||
              (z_pos_far >= 0 && z_pos_far <= length && far_t <= maxt));
 
         return valid_intersection;
     }
+
+    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,

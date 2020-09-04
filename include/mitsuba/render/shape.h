@@ -5,6 +5,7 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 #include <enoki/vcall.h>
+#include <enoki/packet.h>
 
 #if defined(MTS_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -138,6 +139,10 @@ public:
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                 Mask active = true) const;
 
+    // TODO refactoring comment this
+    virtual std::pair<FloatP, Point2fP> ray_intersect_preliminary_packet(const Ray3fP &ray,
+                                                                         MaskP active = true) const;
+
     /**
      * \brief Fast ray shadow test
      *
@@ -154,6 +159,7 @@ public:
      *     The ray to be tested for an intersection
      */
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
+    virtual MaskP ray_test_packet(const Ray3fP &ray, MaskP active = true) const;
 
     /**
      * \brief Compute and return detailed information related to a surface interaction
@@ -516,6 +522,30 @@ protected:
 
 MTS_EXTERN_CLASS_RENDER(Shape)
 NAMESPACE_END(mitsuba)
+
+// TODO refactoring comment this
+#define MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                         \
+    PreliminaryIntersection3f                                                            \
+    ray_intersect_preliminary(const Ray3f &ray, Mask active) const override {            \
+        MTS_MASK_ARGUMENT(active);                                                       \
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();            \
+        std::tie(pi.t, pi.prim_uv) = ray_intersect_preliminary_impl<Float>(ray, active); \
+        pi.shape = this;                                                                 \
+        return pi;                                                                       \
+    }                                                                                    \
+                                                                                         \
+    std::pair<FloatP, Point2fP>                                                          \
+    ray_intersect_preliminary_packet(const Ray3fP &ray, MaskP active) const override {   \
+        return ray_intersect_preliminary_impl<FloatP>(ray, active);                      \
+    }                                                                                    \
+                                                                                         \
+    Mask ray_test(const Ray3f &ray, Mask active) const override {                        \
+        MTS_MASK_ARGUMENT(active);                                                       \
+        return ray_test_impl<Float>(ray, active);                                        \
+    }                                                                                    \
+    MaskP ray_test_packet(const Ray3fP &ray, MaskP active) const override {              \
+        return ray_test_impl<FloatP>(ray, active);                                       \
+    }
 
 // -----------------------------------------------------------------------
 //! @{ \name Enoki support for vectorized function calls

@@ -136,13 +136,13 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray_,
-                                                        Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
-
-        Ray3f ray     = m_to_object.transform_affine(ray_);
-        Float t       = -ray.o.z() * ray.d_rcp.z();
-        Point3f local = ray(t);
+    template <typename FloatX, typename Ray3fX>
+    std::pair<FloatX, Point<FloatX, 2>>
+    ray_intersect_preliminary_impl(const Ray3fX &ray_,
+                                   ek::mask_t<FloatX> active) const {
+        Ray3fX ray = m_to_object.transform_affine(ray_);
+        FloatX t   = -ray.o.z() * ray.d_rcp.z();
+        Point<FloatX, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
         active = active && t >= ray.mint
@@ -150,20 +150,18 @@ public:
                         && ek::abs(local.x()) <= 1.f
                         && ek::abs(local.y()) <= 1.f;
 
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
-        pi.t = ek::select(active, t, ek::Infinity<Float>);
-        pi.prim_uv = Point2f(local.x(), local.y());
-        pi.shape = this;
-
-        return pi;
+        return { ek::select(active, t, ek::Infinity<FloatX>),
+                 Point<FloatX, 2>(local.x(), local.y()) };
     }
 
-    Mask ray_test(const Ray3f &ray_, Mask active) const override {
+    template <typename FloatX, typename Ray3fX>
+    ek::mask_t<FloatX> ray_test_impl(const Ray3fX &ray_,
+                                     ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3f ray     = m_to_object.transform_affine(ray_);
-        Float t       = -ray.o.z() * ray.d_rcp.z();
-        Point3f local = ray(t);
+        Ray3fX ray     = m_to_object.transform_affine(ray_);
+        FloatX t       = -ray.o.z() * ray.d_rcp.z();
+        Point<FloatX, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
         return active && t >= ray.mint
@@ -171,6 +169,8 @@ public:
                       && ek::abs(local.x()) <= 1.f
                       && ek::abs(local.y()) <= 1.f;
     }
+
+    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,

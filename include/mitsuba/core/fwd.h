@@ -79,12 +79,10 @@ template <typename Spectrum> using MuellerMatrix = ek::Matrix<Spectrum, 4>;
 // =============================================================
 
 template <typename Value,
-          typename T = std::conditional_t<ek::is_static_array_v<Value>, ek::value_t<Value>, Value>>
-using DynamicBuffer = std::conditional_t<
-    ek::is_dynamic_array_v<T>,
-    T,
-    ek::DynamicArray<T>
->;
+          typename T = std::conditional_t<ek::is_static_array_v<Value>,
+                                          ek::value_t<Value>, Value>>
+using DynamicBuffer =
+    std::conditional_t<ek::is_dynamic_array_v<T>, T, ek::DynamicArray<T>>;
 
 //! @}
 // =============================================================
@@ -175,6 +173,12 @@ template <typename Float_> struct CoreAliases {
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
 
+    // TODO refactoring: comment this
+    using FloatP   = ek::Packet<ek::scalar_t<Float>, 4>; // TODO should use the default size
+    using MaskP    = ek::mask_t<FloatP>;
+    using Point2fP = Point<FloatP, 2>;
+    using Point3fP = Point<FloatP, 3>;
+
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
      * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
@@ -253,7 +257,11 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
     using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
-    using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;
+    using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
+    using prefix ## FloatP               = typename prefix ## CoreAliases::FloatP;                 \
+    using prefix ## MaskP                = typename prefix ## CoreAliases::MaskP;                  \
+    using prefix ## Point2fP             = typename prefix ## CoreAliases::Point2fP;               \
+    using prefix ## Point3fP             = typename prefix ## CoreAliases::Point3fP;
 
 // Variadic macro to import a set of types from the base class
 #define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;
