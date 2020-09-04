@@ -189,39 +189,40 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
     Float(0.000000000000), Float(0.000000000000), Float(0.000000000000)
 };
 
-const Float *cie1931_x_data = cie1931_tbl;
-const Float *cie1931_y_data = cie1931_tbl + MTS_CIE_SAMPLES;
-const Float *cie1931_z_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
+const Float *cie1931_x_cpu_data = cie1931_tbl;
+const Float *cie1931_y_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES;
+const Float *cie1931_z_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
 
 #if defined(MTS_ENABLE_CUDA)
-FloatC cie_cuda_data;
+FloatC cie_gpu_data;
+const Float *cie1931_x_gpu_data;
+const Float *cie1931_y_gpu_data;
+const Float *cie1931_z_gpu_data;
 #endif
 
 
 void cie_initialize() {
 #if defined(MTS_ENABLE_CUDA)
-    if (cie_cuda_data.index() != 0)
+    if (cie_gpu_data.index() != 0)
         return;
 
-    cie_cuda_data = ek::load_unaligned<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
-    ek::migrate(cie_cuda_data, AllocType::Managed);
-    ek::eval(cie_cuda_data);
-    jitc_sync_device();
+    cie_gpu_data = ek::load_unaligned<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
+    ek::migrate(cie_gpu_data, AllocType::Host);
 
-    cie1931_x_data = cie_cuda_data.data();
-    cie1931_y_data = cie_cuda_data.data() + MTS_CIE_SAMPLES;
-    cie1931_z_data = cie_cuda_data.data() + MTS_CIE_SAMPLES * 2;
+    cie1931_x_gpu_data = cie_gpu_data.data();
+    cie1931_y_gpu_data = cie_gpu_data.data() + MTS_CIE_SAMPLES;
+    cie1931_z_gpu_data = cie_gpu_data.data() + MTS_CIE_SAMPLES * 2;
 #endif
 }
 
 
 void cie_shutdown() {
 #if defined(MTS_ENABLE_CUDA)
-    if (cie_cuda_data.index() == 0)
+    if (cie_gpu_data.index() == 0)
         return;
 
-    cie_cuda_data = FloatC();
+    cie_gpu_data = FloatC();
 #endif
 }
 

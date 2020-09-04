@@ -129,13 +129,16 @@ struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
 #define MTS_CIE_Y_NORMALIZATION float(1.0 / 106.7502593994140625)
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
-extern MTS_EXPORT_CORE const float *cie1931_x_data;
-extern MTS_EXPORT_CORE const float *cie1931_y_data;
-extern MTS_EXPORT_CORE const float *cie1931_z_data;
+extern MTS_EXPORT_CORE const float *cie1931_x_cpu_data;
+extern MTS_EXPORT_CORE const float *cie1931_y_cpu_data;
+extern MTS_EXPORT_CORE const float *cie1931_z_cpu_data;
 
 #if defined(MTS_ENABLE_OPTIX)
 using FloatC = ek::CUDAArray<float>;
-extern MTS_EXPORT_CORE FloatC cie_cuda_data;
+extern MTS_EXPORT_CORE FloatC cie_gpu_data;
+extern MTS_EXPORT_CORE const float *cie1931_x_gpu_data;
+extern MTS_EXPORT_CORE const float *cie1931_y_gpu_data;
+extern MTS_EXPORT_CORE const float *cie1931_z_gpu_data;
 #endif
 
 /// Allocate GPU memory for the CIE 1931 tables
@@ -161,6 +164,11 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
 
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
+
+    bool is_cuda = ek::is_cuda_array_v<Float>;
+    const float* cie1931_x_data = is_cuda ? cie1931_x_gpu_data : cie1931_x_cpu_data;
+    const float* cie1931_y_data = is_cuda ? cie1931_y_gpu_data : cie1931_y_cpu_data;
+    const float* cie1931_z_data = is_cuda ? cie1931_z_gpu_data : cie1931_z_cpu_data;
 
     Float v0_x = (Float) ek::gather<Float32>(cie1931_x_data, i0, active),
           v1_x = (Float) ek::gather<Float32>(cie1931_x_data, i1, active),
@@ -197,6 +205,9 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
 
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
+
+    const float *cie1931_y_data =
+        ek::is_cuda_array_v<Float> ? cie1931_y_gpu_data : cie1931_y_cpu_data;
 
     Float v0 = (Float) ek::gather<Float32>(cie1931_y_data, i0, active),
           v1 = (Float) ek::gather<Float32>(cie1931_y_data, i1, active);
