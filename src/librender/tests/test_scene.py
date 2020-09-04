@@ -49,6 +49,7 @@ def test01_emitter_checks(variant_scalar_rgb):
                 + shape_xml.format('<emitter type="area" id="my_inner_emitter"/>')
                 + shape_xml.format('<ref id="my_emitter"/>'), 4)
 
+
 @fresolver_append_path
 def test02_shapes(variant_scalar_rgb):
     from mitsuba.core.xml import load_string

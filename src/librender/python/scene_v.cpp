@@ -65,7 +65,6 @@ MTS_PY_EXPORT(Scene) {
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
         .def("emitters", [](const Scene &scene) {
             auto emitters = scene.emitters();
-            std::cout << "emitters: " << emitters << std::endl;
             py::list result;
             for (size_t i = 0; i < ek::width(emitters); i++)
                 result.append(py::cast(emitters.entry(i)));
