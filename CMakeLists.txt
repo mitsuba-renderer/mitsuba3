@@ -17,6 +17,14 @@ option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 
 # ----------------------------------------------------------
+#  In-tree builds are not permitted
+# ----------------------------------------------------------
+
+if (PROJECT_SOURCE_DIR STREQUAL "${PROJECT_BINARY_DIR}")
+  message(FATAL_ERROR "In-tree builds are not permitted.")
+endif()
+
+# ----------------------------------------------------------
 #  Copy mitsuba.conf if not found
 # ----------------------------------------------------------
 
