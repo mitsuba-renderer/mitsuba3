@@ -24,7 +24,7 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
   file(COPY resources/mitsuba.conf.template DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
   file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf.template
               ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
-  set(MITSUBA_COPIED_CONFIG_FILE 1)
+  set(MTS_COPIED_CONFIG_FILE 1)
 endif()
 
 # ----------------------------------------------------------
@@ -430,10 +430,10 @@ execute_process(
 # Registers a test directory to be run by the `pytest` command
 function(add_tests)
   file(GLOB TEST_FILES ${ARGV}/test_*)
-  set(MITSUBA_TEST_DIRECTORIES ${MITSUBA_TEST_DIRECTORIES} ${TEST_FILES} CACHE INTERNAL "")
+  set(MTS_TEST_DIRECTORIES ${MTS_TEST_DIRECTORIES} ${TEST_FILES} CACHE INTERNAL "")
 endfunction()
 
-set(MITSUBA_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 # Function for creating Mitsuba plugins
 function(add_plugin)
@@ -443,7 +443,7 @@ function(add_plugin)
   target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render tbb)
   set_target_properties(${TARGET} PROPERTIES
     PREFIX ""
-    LIBRARY_OUTPUT_DIRECTORY "${MITSUBA_BINARY_DIR}/plugins"
+    LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
     FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET}
   )
   install(
@@ -492,7 +492,7 @@ if (NOT WIN32)
 endif()
 
 # Warn if a mitsuba.conf file was newly created
-if (MITSUBA_COPIED_CONFIG_FILE)
+if (MTS_COPIED_CONFIG_FILE)
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
@@ -513,8 +513,8 @@ set_target_properties(tbb pugixml asmjit enoki-jit embree
                       IlmImf IlmThread Half Imath Iex mitsuba
                       mitsuba-core mitsuba-render
   PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${MITSUBA_BINARY_DIR}"
-  LIBRARY_OUTPUT_DIRECTORY "${MITSUBA_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
 )
 
 # Make sure that dynamic libraries still can be found following 'make install'
@@ -524,25 +524,29 @@ elif(UNIX)
   set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "$ORIGIN")
 endif()
 
-# Specify install locations
-set(MTS_DEPENDENCIES
+# Installation targets
+set(MTS_DEPEND
   asmjit IlmImf IlmThread Imath Iex Half tbb pugixml
 )
 
 if (MTS_ENABLE_EMBREE)
-  set(MTS_DEPENDENCIES ${MTS_DEPENDENCIES} embree)
+  list(APPEND MTS_DEPEND embree)
 endif()
 
 if (MTS_ENABLE_JIT)
-  set(MTS_DEPENDENCIES ${MTS_DEPENDENCIES} enoki-jit)
+  list(APPEND MTS_DEPEND enoki-jit)
+  set_target_properties(enoki-jit PROPERTIES
+    INSTALL_RPATH "$ORIGIN")
 endif()
 
 if (MTS_ENABLE_AUTODIFF)
-  set(MTS_DEPENDENCIES ${MTS_DEPENDENCIES} enoki-autodiff)
+  list(APPEND MTS_DEPEND enoki-autodiff)
+  set_target_properties(enoki-autodiff PROPERTIES
+    INSTALL_RPATH "$ORIGIN")
 endif()
 
 install(
-  TARGETS mitsuba mitsuba-render mitsuba-core ${MTS_DEPENCENCIES}
+  TARGETS mitsuba mitsuba-render mitsuba-core ${MTS_DEPEND}
   LIBRARY DESTINATION .
   RUNTIME DESTINATION .
 )
@@ -555,9 +559,4 @@ install(
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/include/mitsuba/core/config.h
   DESTINATION include/mitsuba/core
-)
-
-install(
-  FILES ${CMAKE_CURRENT_BINARY_DIR}/python/mitsuba/config.py
-  DESTINATION python/mitsuba
 )

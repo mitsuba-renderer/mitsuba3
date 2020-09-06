@@ -1,11 +1,13 @@
+# ----------------------------------------------------------
+#   Copy & installation targets for files in 'src/python'
+# ----------------------------------------------------------
+
 file(GLOB_RECURSE PYTHON_FILES RELATIVE
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/*.py
   ${CMAKE_CURRENT_SOURCE_DIR}/*.shader)
 
-foreach(FNAME ${PYTHON_FILES})
-  set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${FNAME})
-  set(OUT_FILE ${CMAKE_BINARY_DIR}/dist/python/mitsuba/${FNAME})
+function (ro_copy IN_FILE OUT_FILE)
   if (UNIX)
     add_custom_command(
       OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
@@ -15,10 +17,53 @@ foreach(FNAME ${PYTHON_FILES})
       OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
       COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE})
   endif()
-  set(PYTHON_OUTPUT ${PYTHON_OUTPUT} ${OUT_FILE})
+endfunction()
+
+foreach(file ${PYTHON_FILES})
+  get_filename_component(IN_FILE_DIR ${file} DIRECTORY)
+  set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${file})
+  set(OUT_FILE ${MTS_BINARY_DIR}/python/mitsuba/${file})
+  ro_copy(${IN_FILE} ${OUT_FILE})
+  install(FILES ${IN_FILE} DESTINATION python/mitsuba/${IN_FILE_DIR})
+  list(APPEND MTS_PYTHON_FILES ${OUT_FILE})
 endforeach()
 
-add_custom_target(python-copy ALL DEPENDS ${PYTHON_OUTPUT})
-set_property(TARGET python-copy PROPERTY FOLDER misc)
+# ----------------------------------------------------------
+#   Installation targets for auto-generated configuration
+# ----------------------------------------------------------
 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/python/mitsuba)
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/../../python/mitsuba/config.py
+  DESTINATION python/mitsuba
+)
+
+# ----------------------------------------------------------
+#   Copy & installation targets for Enoki python bindings
+# ----------------------------------------------------------
+
+set_target_properties(enoki-python
+  PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki
+)
+
+install(TARGETS enoki-python
+  LIBRARY DESTINATION python/enoki
+)
+
+set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
+
+set(ENOKI_PYTHON_FILES
+   __init__.py const.py detail.py generic.py
+   matrix.py router.py traits.py
+)
+
+foreach(file ${ENOKI_PYTHON_FILES})
+  set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/enoki/${file})
+  set(OUT_FILE ${MTS_BINARY_DIR}/python/enoki/${file})
+  ro_copy(${IN_FILE} ${OUT_FILE})
+  install(FILES ${IN_FILE} DESTINATION python/enoki)
+  list(APPEND MTS_PYTHON_FILES ${OUT_FILE})
+endforeach(file)
+
+add_custom_target(python-copy ALL DEPENDS ${MTS_PYTHON_FILES})
+set_property(TARGET python-copy PROPERTY FOLDER misc)

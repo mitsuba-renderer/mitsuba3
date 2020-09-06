@@ -19,31 +19,6 @@
 # endif()
 # set_target_properties(enoki-python PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 #
-# set(ENOKI_PYTHON_FILES
-#    __init__.py
-#    const.py
-#    detail.py
-#    generic.py
-#    matrix.py
-#    router.py
-#    traits.py
-# )
-#
-# set(ENOKI_PYTHON_OUTPUT "")
-# foreach(file ${ENOKI_PYTHON_FILES})
-#     add_custom_command(
-#         OUTPUT ${CMAKE_BINARY_DIR}/dist/python/enoki/${file}
-#         COMMAND ${CMAKE_COMMAND} -E copy
-#         ${PROJECT_SOURCE_DIR}/ext/enoki/enoki/${file}
-#         ${CMAKE_BINARY_DIR}/dist/python/enoki/${file}
-#     )
-#     set(ENOKI_PYTHON_OUTPUT ${ENOKI_PYTHON_OUTPUT} ${CMAKE_BINARY_DIR}/dist/python/enoki/${file})
-# endforeach(file)
-#
-# add_custom_target(
-#   mitsuba-enoki-python-init
-#   ALL DEPENDS ${ENOKI_PYTHON_OUTPUT}
-# )
 
 # docstring generation support
 # include("cmake/docstrings.cmake")

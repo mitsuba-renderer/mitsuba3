@@ -36,11 +36,17 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
   )
 
-  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core mitsuba-render tbb)
+  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-render tbb)
 
-  # if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-  #   target_link_libraries(${TARGET_NAME} PRIVATE asmjit)
-  # endif()
+  set_target_properties(${TARGET_NAME}
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+    INSTALL_RPATH "$ORIGIN/../.."
+  )
+
+  install(TARGETS ${TARGET_NAME}
+    LIBRARY DESTINATION python/mitsuba
+  )
 endforeach()
 
 pybind11_add_module(render_ext
@@ -54,4 +60,14 @@ pybind11_add_module(render_ext
   spiral.cpp
 )
 
-target_link_libraries(render_ext PRIVATE mitsuba-core mitsuba-render tbb)
+target_link_libraries(render_ext PRIVATE mitsuba-render tbb)
+
+set_target_properties(render_ext
+  PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+  INSTALL_RPATH "$ORIGIN/../.."
+)
+
+install(TARGETS render_ext
+  LIBRARY DESTINATION python/mitsuba
+)

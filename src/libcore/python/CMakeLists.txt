@@ -1,10 +1,3 @@
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel"
-    AND NOT U_CMAKE_BUILD_TYPE MATCHES REL)
-  # Default symbol visibility = hidden even in debug mode
-  # (Otherwise module-local pybind11 exports don't work)
-  add_compile_options(${TARGET_NAME} -fvisibility=hidden)
-endif()
-
 foreach (MTS_VARIANT ${MTS_VARIANTS})
   string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
   list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
@@ -46,6 +39,17 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
     target_link_libraries(${TARGET_NAME} PRIVATE asmjit)
   endif()
+
+  set_target_properties(${TARGET_NAME}
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+    INSTALL_RPATH "$ORIGIN/../.."
+  )
+
+  install(TARGETS ${TARGET_NAME}
+    LIBRARY DESTINATION python/mitsuba
+  )
+
 endforeach()
 
 pybind11_add_module(core_ext
@@ -72,3 +76,14 @@ pybind11_add_module(core_ext
 )
 
 target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render tbb asmjit)
+set_target_properties(core_ext PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
+
+set_target_properties(core_ext
+  PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
+  INSTALL_RPATH "$ORIGIN/../.."
+)
+
+install(TARGETS core_ext
+  LIBRARY DESTINATION python/mitsuba
+)

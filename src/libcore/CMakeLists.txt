@@ -9,7 +9,7 @@ include_directories(
 
 set(INC_DIR "../../include/mitsuba/core")
 
-add_library(mitsuba-core-obj OBJECT
+add_library(mitsuba-core SHARED
   ${INC_DIR}/../mitsuba.h
   ${INC_DIR}/atomic.h
   ${INC_DIR}/frame.h
@@ -74,12 +74,13 @@ set_property(
   MTS_BRANCH="${GIT_BRANCH}" MTS_HASH="${GIT_COMMIT_HASH}"
 )
 
-add_library(mitsuba-core SHARED $<TARGET_OBJECTS:mitsuba-core-obj>)
-set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES FOLDER mitsuba-core)
-target_compile_definitions(mitsuba-core-obj PRIVATE ${PNG_DEFINES} -DMTS_BUILD_MODULE=MTS_MODULE_CORE)
+target_compile_definitions(mitsuba-core
+  PRIVATE ${PNG_DEFINES} -DMTS_BUILD_MODULE=MTS_MODULE_CORE)
 
-set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
+set_target_properties(mitsuba-core PROPERTIES
+  INTERPROCEDURAL_OPTIMIZATION ON
+  FOLDER mitsuba-core
+  INSTALL_RPATH "$ORIGIN")
 
 target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
@@ -92,7 +93,16 @@ target_link_libraries(mitsuba-core PRIVATE
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
+  # Treat undefined symbols as errors when linking
   target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
+endif()
+
+if (MTS_ENABLE_JIT)
+  target_link_libraries(mitsuba-core PUBLIC enoki-jit)
+endif()
+
+if (MTS_ENABLE_AUTODIFF)
+  target_link_libraries(mitsuba-core PUBLIC enoki-autodiff)
 endif()
 
 # Python bindings
@@ -102,27 +112,3 @@ endif()
 
 # Register the test directory
 add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
-
-# Windows-only dependencies
-if (WIN32)
-  # add_dist(zlib jpeg png16)
-  add_dependencies(mitsuba-core zlib jpeg png16)
-endif()
-
-# Windows & Mac dependencies
-if (WIN32 OR APPLE)
-  add_dist(jpeg png16)
-  add_dependencies(mitsuba-core jpeg png16)
-endif()
-
-if (MTS_ENABLE_JIT)
-  # add_dist(enoki-jit)
-  set(LINK_LIBRARIES enoki-jit ${LINK_LIBRARIES})
-endif()
-
-if (MTS_ENABLE_AUTODIFF)
-  # add_dist(enoki-autodiff)
-  set(LINK_LIBRARIES enoki-autodiff ${LINK_LIBRARIES})
-endif()
-
-target_link_libraries(mitsuba-core PUBLIC ${LINK_LIBRARIES})
