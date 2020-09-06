@@ -560,3 +560,11 @@ install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/include/mitsuba/core/config.h
   DESTINATION include/mitsuba/core
 )
+
+if (WIN32)
+  install(FILES resources/setpath.bat DESTINATION ".")
+  file(COPY resources/setpath.bat DESTINATION ${MTS_BINARY_DIR})
+else()
+  install(FILES resources/setpath.sh DESTINATION ".")
+  file(COPY resources/setpath.sh DESTINATION ${MTS_BINARY_DIR})
+endif()
