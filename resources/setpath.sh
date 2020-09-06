@@ -21,7 +21,5 @@ if [ -z "$MITSUBA_DIR" ]; then
     exit 0
 fi
 
-echo $MITSUBA_DIR
-
 export PYTHONPATH="$MITSUBA_DIR/python:$PYTHONPATH"
 export PATH="$MITSUBA_DIR:$PATH"

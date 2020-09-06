@@ -7,6 +7,3 @@ add_plugin(envmap      envmap.cpp)
 add_plugin(directional directional.cpp)
 add_plugin(spot        spot.cpp)
 add_plugin(projector   projector.cpp)
-
-# Register the test directory
-add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

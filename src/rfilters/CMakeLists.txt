@@ -6,6 +6,3 @@ add_plugin(lanczos    lanczos.cpp)
 add_plugin(mitchell   mitchell.cpp)
 add_plugin(catmullrom catmullrom.cpp)
 add_plugin(gaussian   gaussian.cpp)
-
-# Register the test directory
-add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)

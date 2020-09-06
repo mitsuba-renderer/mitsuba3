@@ -67,3 +67,18 @@ endforeach(file)
 
 add_custom_target(python-copy ALL DEPENDS ${MTS_PYTHON_FILES})
 set_property(TARGET python-copy PROPERTY FOLDER misc)
+
+# ----------------------------------------------------------
+#   pytest.ini file
+# ----------------------------------------------------------
+
+get_filename_component(MTS_TEST_BASE ..
+    REALPATH BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+file(WRITE
+  ${MTS_BINARY_DIR}/pytest.ini
+  "[pytest]\n"
+  "minversion = 3.0\n"
+  "testpaths = \"${MTS_TEST_BASE}\"\n"
+  "python_paths = ./python\n"
+)

@@ -427,12 +427,6 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# Registers a test directory to be run by the `pytest` command
-function(add_tests)
-  file(GLOB TEST_FILES ${ARGV}/test_*)
-  set(MTS_TEST_DIRECTORIES ${MTS_TEST_DIRECTORIES} ${TEST_FILES} CACHE INTERNAL "")
-endfunction()
-
 set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 # Function for creating Mitsuba plugins

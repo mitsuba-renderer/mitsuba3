@@ -109,6 +109,3 @@ endif()
 if (MTS_ENABLE_PYTHON)
   add_subdirectory(python)
 endif()
-
-# Register the test directory
-add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
