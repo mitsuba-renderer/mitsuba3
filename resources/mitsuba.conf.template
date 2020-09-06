@@ -21,12 +21,12 @@
     #      enabling the use of Mitsuba 2 for optimization and the
     #      solution of challenging inverse problems.
     #
-    #    - 'gpu': Computation is done on the GPU using Enoki's
+    #    - 'cuda': Computation is done on the GPU using Enoki's
     #      Just-in-time compiler to generate CUDA kernels on the fly.
     #      In this case, Mitsuba becomes a wavefront path tracer that
     #      performs ray tracing using NVIDIA's OptiX library.
     #
-    #    - 'gpu_autodiff': building on the properties of the 'gpu'
+    #    - 'cuda_autodiff': building on the properties of the 'cuda'
     #      variant, computation additionally keeps track of derivatives,
     #      enabling the use of Mitsuba 2 for optimization and the
     #      solution of challenging inverse problems.
@@ -219,62 +219,62 @@
     # GPU variants (note: currently no double precision variants since
     # double precision ray tracing is not supported by OptiX)
 
-    "gpu_mono": {
+    "cuda_mono": {
         "float": "ek::CUDAArray<float>",
         "spectrum": "Color<Float, 1>"
     },
 
-    "gpu_mono_polarized": {
+    "cuda_mono_polarized": {
         "float": "ek::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
-    "gpu_rgb": {
+    "cuda_rgb": {
         "float": "ek::CUDAArray<float>",
         "spectrum": "Color<Float, 3>"
     },
 
-    "gpu_rgb_polarized": {
+    "cuda_rgb_polarized": {
         "float": "ek::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
-    "gpu_spectral": {
+    "cuda_spectral": {
         "float": "ek::CUDAArray<float>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
-    "gpu_spectral_polarized": {
+    "cuda_spectral_polarized": {
         "float": "ek::CUDAArray<float>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    "gpu_autodiff_mono": {
+    "cuda_autodiff_mono": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Color<Float, 1>"
     },
 
-    "gpu_autodiff_mono_polarized": {
+    "cuda_autodiff_mono_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
-    "gpu_autodiff_rgb": {
+    "cuda_autodiff_rgb": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Color<Float, 3>"
     },
 
-    "gpu_autodiff_rgb_polarized": {
+    "cuda_autodiff_rgb_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
-    "gpu_autodiff_spectral": {
+    "cuda_autodiff_spectral": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
-    "gpu_autodiff_spectral_polarized": {
+    "cuda_autodiff_spectral_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }
