@@ -485,17 +485,27 @@ if (MSVC)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT mitsuba)
 endif()
 
+if (NOT WIN32)
+  string(ASCII 27 Esc)
+  set(ColorReset "${Esc}[m")
+  set(BoldRed "${Esc}[1;31m")
+endif()
+
 # Warn if a mitsuba.conf file was newly created
 if (MITSUBA_COPIED_CONFIG_FILE)
-  if (NOT WIN32)
-    string(ASCII 27 Esc)
-    set(ColorReset "${Esc}[m")
-    set(BoldRed "${Esc}[1;31m")
-  endif()
-
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
+endif()
+
+# Warn about Unix Makefiles
+if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
+  message(WARNING "\n${BoldRed}You're using CMake's \"Unix Makefiles\" "
+    "generator. Compilation speed is going to be impacted due to its limited "
+    "ability to express build parallelism. We strongly recommend using Ninja "
+    "for development on Linux and macOS. To do so, install \"ninja\" (brew, "
+    "MacPorts, Arch) or \"ninja-build\" elsewhere, and then invoke CMake using "
+    "\"-GNinja\") ${ColorReset}")
 endif()
 
 # Set up location for build products
