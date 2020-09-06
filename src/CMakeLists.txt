@@ -34,7 +34,4 @@ add_subdirectory(textures)
 
 if (MTS_ENABLE_PYTHON)
   add_subdirectory(python)
-
-  # Test support
-  include("cmake/tests.cmake")
 endif()
