@@ -72,7 +72,7 @@
 
 .. autofunction:: mitsuba.core.MTS_ENABLE_EMBREE
 
-.. autofunction:: mitsuba.core.MTS_ENABLE_OPTIX
+.. autofunction:: mitsuba.core.MTS_ENABLE_CUDA
 
 .. autofunction:: mitsuba.core.MTS_FILTER_RESOLUTION
 

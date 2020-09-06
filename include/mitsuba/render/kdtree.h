@@ -14,8 +14,13 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/shape.h>
-#include <tbb/tbb.h>
-#include <cstdlib>
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+#include <tbb/concurrent_vector.h>
+
+#define __TBB_show_deprecation_message_task_H 1
+#include <tbb/task.h>
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u

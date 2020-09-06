@@ -12,7 +12,7 @@
 #  include "scene_native.inl"
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 #  include "scene_optix.inl"
 #endif
 

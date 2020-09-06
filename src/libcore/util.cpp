@@ -310,11 +310,13 @@ std::string info_features() {
 
     oss << "Enabled processor features:";
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     oss << " cuda";
 #endif
 
-    // TODO refactoring: add print for LLVM
+#if defined(MTS_ENABLE_LLVM)
+    oss << " llvm";
+#endif
 
     if (has_avx512)          oss << " avx512";
     if (has_avx2)            oss << " avx2";

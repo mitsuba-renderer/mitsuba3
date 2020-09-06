@@ -1,18 +1,35 @@
-# This is the main CMake build file used to compile Mitsuba
-cmake_minimum_required (VERSION 3.9.0)
-project(mitsuba)
+# ----------------------------------------------------------
+# Top-level Mitsuba 2 CMake file, requires a recent version.
+# ----------------------------------------------------------
+cmake_minimum_required (VERSION 3.13..3.18)
+
+project(mitsuba
+  DESCRIPTION
+    "Mitsuba Renderer 2"
+  LANGUAGES
+    CXX
+)
+
+# A number of Mitsuba 2 features (scripting, differentiable rendering, testing
+# infrastructure, etc.) are only available if Python bindings are built.
+option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 
-# ---------- Setup mitsuba.conf ----------
+# ----------------------------------------------------------
+#  Copy mitsuba.conf if not found
+# ----------------------------------------------------------
 
-if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/mitsuba.conf)
-  file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
-       DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
-  file(RENAME mitsuba.conf.template mitsuba.conf)
+if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
+  file(COPY resources/mitsuba.conf.template DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+  file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf.template
+              ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
   set(MITSUBA_COPIED_CONFIG_FILE 1)
 endif()
 
-# ---------- Check for submodules ----------
+# ----------------------------------------------------------
+#  Check if submodules have been checked out, or fail early
+# ----------------------------------------------------------
 
 if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/OpenEXR")
   message(FATAL_ERROR "The Mitsuba dependencies are missing! "
@@ -20,32 +37,40 @@ if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/OpenEXR")
     "by invoking\n$ git submodule update --init --recursive")
 endif()
 
-# ---------- Detect Python ----------
+# ----------------------------------------------------------
+#  We require Python in the following
+# ----------------------------------------------------------
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ext/pybind11/tools")
-set(Python_ADDITIONAL_VERSIONS 3.9 3.8 3.7 3.6 3.5)
-find_package(PythonLibsNew REQUIRED)
+if (MTS_ENABLE_PYTHON)
+  find_package(Python COMPONENTS Interpreter Development REQUIRED)
+else()
+  find_package(Python COMPONENTS Interpreter REQUIRED)
+endif()
 
+# ----------------------------------------------------------
+#  Re-run CMake when 'mitsuba.conf' changes (we must
+#  dynamically add or remove targets based on this file).
+#  Abuses the 'configure_file' mechanism to achieve this..
+# ----------------------------------------------------------
 
-# ---------- Detect renderer variants ----------
-
-# We want CMake to re-run whenever 'mitsuba.conf' changes because the build
-# system dynamically adds or removes build targets based on this file. There
-# unfortunately isn't a nice way of specifying such dependencies in CMake, but
-# it turns out that one can abuse the 'configure_file' mechanism to this end
-# (we simply ignore the output file created by it.)
-configure_file(mitsuba.conf ${CMAKE_CURRENT_BINARY_DIR}/ext_build/unused)
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf
+               ${CMAKE_CURRENT_BINARY_DIR}/ext/unused)
 
 # Generate the config.h headers from the configuration
 execute_process(
-  COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py ${CMAKE_CXX_COMPILER_ID}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  COMMAND ${Python_EXECUTABLE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py ${CMAKE_CXX_COMPILER_ID}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   OUTPUT_VARIABLE MTS_VARIANTS
   ERROR_VARIABLE MTS_VARIANTS_ERR
 )
 if (MTS_VARIANTS_ERR)
   message(FATAL_ERROR "Could not run resources/configure.py script: ${MTS_VARIANTS_ERR}")
 endif()
+
+# ----------------------------------------------------------
+#  Check desired variants and set relevant feature flags
+# ----------------------------------------------------------
 
 list(LENGTH MTS_VARIANTS MTS_VARIANTS_COUNT)
 
@@ -58,42 +83,58 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   message(STATUS " * ${MTS_VARIANT_NAME}")
 endforeach()
 
-if (MTS_VARIANTS MATCHES "gpu_")
-  set(MTS_ENABLE_OPTIX ON)
+if (MTS_VARIANTS MATCHES "cuda_")
+  set(MTS_ENABLE_CUDA ON)
 endif()
 
 if (MTS_VARIANTS MATCHES "llvm_")
   set(MTS_ENABLE_LLVM ON)
-  add_definitions(-DMTS_ENABLE_LLVM=1)
-  if (NOT MTS_ENABLE_EMBREE)
-    message(FATAL_ERROR "Compiling a LLVM variant also requires that Embree is enabled! (-DMTS_ENABLE_EMBREE=1)")
-  endif()
 endif()
 
-if (MTS_ENABLE_OPTIX OR MTS_ENABLE_LLVM)
-  set(MTS_ENABLE_JIT ON)
-  # TODO refactoring: this shouldn't be necessary, but librender doesn't depend on enoki-jit unfortunately
-  add_definitions(-DENOKI_ENABLE_JIT=1)
-endif()
-
-if (MTS_VARIANTS MATCHES "gpu_autodiff_" OR MTS_VARIANTS MATCHES "llvm_autodiff_")
+if (MTS_VARIANTS MATCHES "autodiff_")
   set(MTS_ENABLE_AUTODIFF ON)
-  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
 endif()
 
+if (MTS_ENABLE_LLVM OR MTS_ENABLE_CUDA)
+  set(MTS_ENABLE_JIT ON)
+endif()
 
-# ----------------------------------
+# ----------------------------------------------------------
+#  Optional features available to users
+# ----------------------------------------------------------
 
-# ---------- User options ----------
+# Compile for the native processor architecture by default. MSVC cannot detect
+# this automatically, and the following assumes a reasonably modern CPU with
+# AVX2 instructions. You may want to overwrite MTS_NATIVE_FLAGS when building
+# binaries that will be distributed to others.
 
-option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
+if (MSVC)
+  set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX2")
+else()
+  set(MTS_NATIVE_FLAGS_DEFAULT "-march=native")
+endif()
+
+set(MTS_NATIVE_FLAGS ${MTS_NATIVE_FLAGS_DEFAULT} CACHE STRING
+    "Compilation flags used to target the host processor architecture.")
+
+# Mitsuba 2 ships with its own ray tracing acceleration data structure. If
+# desired, Embree (which tends to be quite a bit faster) can be used instead.
+# Embree lacks some features provided by Mitsuba 2, like support for double
+# precision arithmetic.
 option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" OFF)
-option(MTS_ENABLE_GUI     "Build GUI" OFF)
-if (MTS_ENABLE_OPTIX)
-  option(MTS_USE_OPTIX_HEADERS "Use OptiX header files instead of resolving GPU ray tracing API ourselves." OFF)
+
+# Build the graphical user interface? (Note that this feature remains incomplete)
+option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
+
+if (MTS_ENABLE_CUDA)
+  # Mitsuba 2 resolves OptiX dynamically and can thus be compiled even if the official headers
+  # aren't installed. In very rare cases, it may be helpful to disable this dynamic behavior.
+  option(MTS_USE_OPTIX_HEADERS "Compile against OptiX headers, instead of resolving API dynamically." OFF)
 endif()
 
 if (UNIX)
+  # Mitsuba 2 ships with a built-in sampling profiler that highlights where
+  # rendering time is spent. Only supported on Linux/macOS at the moment.
   option(MTS_ENABLE_PROFILER "Enable sampling profiler" ON)
 endif()
 
@@ -115,32 +156,11 @@ endif()
 # For developers: ability to disable Link Time Optimization to speed up builds
 option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
 
-if (MTS_ENABLE_OPTIX AND MTS_USE_OPTIX_HEADERS)
+if (MTS_ENABLE_CUDA AND MTS_USE_OPTIX_HEADERS)
   set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
 endif()
 
 # ----------------------------------
-
-if (POLICY CMP0022)
-  cmake_policy(SET CMP0022 NEW) # New-style link interface
-endif()
-
-if (POLICY CMP0056)
-  cmake_policy(SET CMP0056 NEW) # try_compile: pass linker flags to compiler
-endif()
-
-if (POLICY CMP0058)
-  cmake_policy(SET CMP0058 NEW) # Ninja requires custom command byproducts to be explicit.
-endif()
-
-if (POLICY CMP0042)
-  cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default
-endif()
-set(CMAKE_MACOSX_RPATH ON)
-
-if (POLICY CMP0068)
-  cmake_policy(SET CMP0068 NEW) # RPATH settings on macOS don't affect install_name.
-endif()
 
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
@@ -198,9 +218,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdl
   endif()
 endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MTS_NATIVE_FLAGS}")
 
 # Clang/GCC address sanitizer
-if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)"))
+if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND
+    (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)"))
   # Don't optimize too heavily
   if (U_CMAKE_BUILD_TYPE MATCHES REL)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O1")
@@ -232,33 +254,19 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
-if (UNIX AND NOT APPLE)
-  # Fix to point the compiler to a header file (__cxxabi_config.h)
-  # on recent versions of Debian/Ubuntu
-  include_directories(/usr/include/libcxxabi)
-endif()
-
 # Build the dependencies
-add_subdirectory(ext ext_build)
+add_subdirectory(ext)
 
 # Always add the include directories for tinyformat, Enoki and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${ENOKI_INCLUDE_DIRS}
-  ${ENOKI_JIT_INCLUDE_DIRS}
   ${TBB_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
-if (MTS_ENABLE_EMBREE)
-  include_directories(${EMBREE_INCLUDE_DIRS})
-  add_definitions(-DMTS_ENABLE_EMBREE=1)
-  message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
-else()
-  message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
-endif()
-
-if (MTS_ENABLE_OPTIX)
+if (MTS_ENABLE_CUDA)
   if (MTS_USE_OPTIX_HEADERS AND NOT EXISTS "${MTS_OPTIX_PATH}/include/optix.h")
     message(FATAL_ERROR "optix.h not found, run CMake with -DMTS_OPTIX_PATH=...")
   endif()
@@ -271,7 +279,26 @@ if (MTS_ENABLE_OPTIX)
   endif()
 
   message(STATUS "Mitsuba: using OptiX for GPU ray tracing.")
-  add_definitions(-DMTS_ENABLE_OPTIX=1)
+  add_definitions(-DMTS_ENABLE_CUDA=1)
+endif()
+
+if (MTS_ENABLE_LLVM)
+  add_definitions(-DMTS_ENABLE_LLVM=1)
+  if (NOT MTS_ENABLE_EMBREE)
+    message(FATAL_ERROR "Compiling a LLVM variant also requires that Embree is enabled! (-DMTS_ENABLE_EMBREE=1)")
+  endif()
+endif()
+
+if (MTS_ENABLE_AUTODIFF)
+  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
+endif()
+
+if (MTS_ENABLE_EMBREE)
+  include_directories(${EMBREE_INCLUDE_DIRS})
+  add_definitions(-DMTS_ENABLE_EMBREE=1)
+  message(STATUS "Mitsuba: using Embree for CPU ray tracing.")
+else()
+  message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
 endif()
 
 # Compile with compiler warnings turned on
@@ -285,41 +312,18 @@ if (MSVC)
     add_compile_options("/W4")
   endif()
 else()
-  add_compile_options("-Wall" "-Wextra")
-  add_compile_options("-Wno-unused-local-typedefs")
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-    # Quench inlining-related remarks
-    add_compile_options("-wd11074" "-wd11076")
-  endif()
+  add_compile_options(-Wall -Wextra -Wno-unused-local-typedefs)
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 # Language and optimization flags that are used to compile Mitsuba
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
-  CHECK_CXX_COMPILER_FLAG("-std=gnu++17" HAS_GNUPP17_FLAG)
-  CHECK_CXX_COMPILER_FLAG("-std=c++17" HAS_CPP17_FLAG)
-
-  if (HAS_GNUPP17_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
-  elseif (HAS_CPP17_FLAG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-  else()
-    message(FATAL_ERROR "Unsupported compiler -- Mitsuba requires C++17 support!")
-  endif()
-
-  # Set the default symbol visibility to hidden (very important to obtain small binaries)
-  if (U_CMAKE_BUILD_TYPE MATCHES REL)
-    # Increase function size limits for inlining on GCC (useful for templated
-    # code where significant portions can be optimized away during inlining)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-      add_compile_options("-finline-limit=150")
-    endif()
-
-    if (NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-      # Set the default symbol visibility to hidden except on GCC
-      # which has some issues with extern partial template specialization
-      add_compile_options("-fvisibility=hidden")
-    endif()
-  endif()
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang"
+    AND U_CMAKE_BUILD_TYPE MATCHES REL)
+  # Set the default symbol visibility to hidden to reduce binary
+  # size--don't do it on GCC, which seems to have some issues with
+  # extern partial template specialization
+  add_compile_options("-fvisibility=hidden")
 endif()
 
 # Force colored output for the ninja generator
@@ -334,20 +338,19 @@ if (CMAKE_GENERATOR STREQUAL "Ninja")
 endif()
 
 if (MSVC)
-  # Compile in C++17 mode
-  add_compile_options("/std:c++17")
-
-  # Disable annoying MSVC warnings (all targets)
-  add_definitions(/D "_CRT_SECURE_NO_WARNINGS" /D "_SCL_SECURE_NO_WARNINGS" /D "_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING")
-
-  # Disable secure SCL
-  add_definitions(/D "_SECURE_SCL=0")
+  # Disable annoying MSVC security features + warnings
+  add_definitions(
+    -D_SECURE_SCL=0
+    -D_CRT_SECURE_NO_WARNINGS
+    -D_SCL_SECURE_NO_WARNINGS
+    -D_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING
+  )
 
   # Don't issue implicit linking pragmas for TBB
-  add_definitions(/D "__TBB_NO_IMPLICIT_LINKAGE")
+  add_definitions(-D__TBB_NO_IMPLICIT_LINKAGE)
 
   # Disable problematic windows.h min/max macros
-  add_definitions(/D "NOMINMAX")
+  add_definitions(-DNOMINMAX)
 
   # Don't complain about not DLL-exporting STL classes
   add_compile_options("/wd4251")
@@ -379,101 +382,8 @@ if (MSVC)
   # Permit many sections in .obj files
   add_compile_options("/bigobj")
 
-  # Use defines from math.h (M_PI, etc)
-  add_compile_options(/D "_USE_MATH_DEFINES")
-
   # Don't complain about incompatible modifier on explicit instantiations
   add_compile_options("/wd4910")
-endif()
-
-if (U_CMAKE_BUILD_TYPE MATCHES DEBUG AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options("-fno-limit-debug-info")
-endif()
-
-# Enable link time optimization in release mode (if possible)
-if (U_CMAKE_BUILD_TYPE MATCHES REL AND CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
-  if (NOT MTS_ENABLE_LTO)
-    message(STATUS "Mitsuba: LTO support disabled (MTS_ENABLE_LTO=OFF).")
-  elseif (NOT CMAKE_CXX_FLAGS MATCHES "-flto")
-    # Enable link time optimization
-    set(BACKUP_C_FLAGS ${CMAKE_CXX_FLAGS})
-    set(BACKUP_CXX_FLAGS ${CMAKE_C_FLAGS})
-    set(BACKUP_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
-    set(BACKUP_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      set(CMAKE_CXX_FLAGS "-flto=thin ${CMAKE_CXX_FLAGS}")
-      set(CMAKE_C_FLAGS "-flto=thin ${CMAKE_C_FLAGS}")
-
-      file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/.cache)
-      if (APPLE)
-        set(CMAKE_EXE_LINKER_FLAGS    "-flto=thin -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_EXE_LINKER_FLAGS}")
-        set(CMAKE_SHARED_LINKER_FLAGS "-flto=thin -Wl,-cache_path_lto,${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_SHARED_LINKER_FLAGS}")
-      else()
-        set(CMAKE_EXE_LINKER_FLAGS    "-flto=thin -Wl,-plugin-opt,cache-dir=${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_EXE_LINKER_FLAGS}")
-        set(CMAKE_SHARED_LINKER_FLAGS "-flto=thin -Wl,-plugin-opt,cache-dir=${CMAKE_CURRENT_BINARY_DIR}/.cache ${CMAKE_SHARED_LINKER_FLAGS}")
-      endif()
-
-      if (NOT APPLE AND U_CMAKE_BUILD_TYPE MATCHES MINSIZEREL)
-          # Clang Gold plugin does not support -Os
-          set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -O3")
-          set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -O3")
-      endif()
-    else()
-      set(CMAKE_EXE_LINKER_FLAGS "-flto ${CMAKE_EXE_LINKER_FLAGS}")
-      set(CMAKE_SHARED_LINKER_FLAGS "-flto ${CMAKE_SHARED_LINKER_FLAGS}")
-      set(CMAKE_CXX_FLAGS "-flto -fno-fat-lto-objects ${CMAKE_CXX_FLAGS}")
-      set(CMAKE_C_FLAGS "-flto -fno-fat-lto-objects ${CMAKE_C_FLAGS}")
-    endif()
-
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c "int main(int argc, char **argv) { return 0; }")
-    try_compile(HAS_LTO
-      ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp
-      ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeTmp/test.c)
-
-    if (HAS_LTO)
-      message(STATUS "Mitsuba: LTO support enabled.")
-    else()
-      message(STATUS "Mitsuba: LTO not supported by the compiler.")
-      set(CMAKE_C_FLAGS ${BACKUP_CXX_FLAGS})
-      set(CMAKE_CXX_FLAGS ${BACKUP_C_FLAGS})
-      set(CMAKE_EXE_LINKER_FLAGS ${BACKUP_EXE_LINKER_FLAGS})
-      set(CMAKE_SHARED_LINKER_FLAGS ${BACKUP_SHARED_LINKER_FLAGS})
-    endif()
-  endif()
-elseif(MSVC)
-  set(Configurations RELEASE RELWITHDEBINFO MINSIZEREL)
-  set(LinkTypes EXE SHARED MODULE STATIC)
-  foreach(Configuration ${Configurations})
-    set(FLAGS ${CMAKE_CXX_FLAGS_${Configuration}})
-
-    if (NOT FLAGS MATCHES "/GL")
-      set(FLAGS "${FLAGS} /GL")
-    endif()
-
-    set("CMAKE_CXX_FLAGS_${Configuration}" "${FLAGS}" CACHE STRING "" FORCE)
-
-    foreach(LinkType ${LinkTypes})
-      set(FLAGS "${CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}}")
-
-      if (NOT FLAGS MATCHES "/LTCG")
-        set(FLAGS "${FLAGS} /LTCG")
-      endif()
-
-      if ((LinkType STREQUAL "EXE" OR LinkType STREQUAL "SHARED") AND NOT (Configuration MATCHES DEB) AND NOT FLAGS MATCHES "/OPT:REF,ICF")
-        set(FLAGS "${FLAGS} /OPT:REF,ICF")
-      endif()
-
-      set("CMAKE_${LinkType}_LINKER_FLAGS_${Configuration}" "${FLAGS}" CACHE STRING "" FORCE)
-    endforeach()
-  endforeach()
-
-  foreach(LinkType EXE SHARED)
-    string(REGEX REPLACE "\/INCREMENTAL(\:NO)?" "" CMAKE_${LinkType}_LINKER_FLAGS_DEBUG "${CMAKE_${LinkType}_LINKER_FLAGS_DEBUG}")
-    set("CMAKE_${LinkType}_LINKER_FLAGS_DEBUG" "${CMAKE_${LinkType}_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
-  endforeach()
-
-  message(STATUS "Mitsuba: LTO support enabled.")
 endif()
 
 # Set platform-specific flags
@@ -495,7 +405,7 @@ else()
 endif()
 
 if (MTS_ENABLE_PROFILER)
-  add_definitions(-DMTS_ENABLE_PROFILER)
+  add_definitions(-DMTS_ENABLE_PROFILER=1)
   message(STATUS "Mitsuba: sampling profiler enabled.")
 else()
   message(STATUS "Mitsuba: sampling profiler disabled.")
@@ -517,43 +427,30 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# Schedules a file to be copied to the 'dist' directory
-function(add_dist)
-  set(MITSUBA_DIST ${MITSUBA_DIST} ${ARGV} CACHE INTERNAL "")
-endfunction()
-
 # Registers a test directory to be run by the `pytest` command
 function(add_tests)
   file(GLOB TEST_FILES ${ARGV}/test_*)
   set(MITSUBA_TEST_DIRECTORIES ${MITSUBA_TEST_DIRECTORIES} ${TEST_FILES} CACHE INTERNAL "")
 endfunction()
 
+set(MITSUBA_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
 # Function for creating Mitsuba plugins
 function(add_plugin)
   list(GET ARGV 0 TARGET)
   list(REMOVE_AT ARGV 0)
-  add_library(${TARGET}-obj OBJECT ${ARGV})
-  add_library(${TARGET} SHARED $<TARGET_OBJECTS:${TARGET}-obj>)
-  set_property(TARGET ${TARGET} PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_property(TARGET ${TARGET}-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
-  set_target_properties(${TARGET} PROPERTIES PREFIX "")
+  add_library(${TARGET} SHARED ${ARGV})
   target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render tbb)
-  add_dist(plugins/${TARGET})
-  set_target_properties(${TARGET} ${TARGET}-obj PROPERTIES FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET})
+  set_target_properties(${TARGET} PROPERTIES
+    PREFIX ""
+    LIBRARY_OUTPUT_DIRECTORY "${MITSUBA_BINARY_DIR}/plugins"
+    FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET}
+  )
+  install(
+    TARGETS ${TARGET}
+    LIBRARY DESTINATION plugins
+  )
 endfunction(add_plugin)
-
-# Initialize CMake variables
-set(MITSUBA_DIST "" CACHE INTERNAL "")
-set(MITSUBA_TEST_DIRECTORIES "" CACHE INTERNAL "")
-
-# Rpath handling for OSX and Linux
-if (APPLE)
-  set(CMAKE_BUILD_RPATH "@loader_path")
-  SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-elseif (UNIX)
-  SET(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "double")
   # Be extra noisy about unintended float->double conversions
@@ -562,50 +459,6 @@ endif()
 
 # Register the Mitsuba codebase
 add_subdirectory(src)
-
-# Copy dependencies into the 'dist' directory
-foreach(ITEM ${MITSUBA_DIST})
-  get_filename_component(TARGET_NAME ${ITEM} NAME)
-  get_filename_component(TARGET_DIRECTORY ${ITEM} DIRECTORY)
-  get_target_property(TARGET_OUTPUT_NAME ${TARGET_NAME} OUTPUT_NAME)
-  get_target_property(TARGET_SUFFIX ${TARGET_NAME} SUFFIX)
-  get_target_property(TARGET_PREFIX ${TARGET_NAME} PREFIX)
-  if (TARGET_OUTPUT_NAME MATCHES "NOTFOUND")
-    set(TARGET_OUTPUT_NAME ${TARGET_NAME})
-  endif()
-  if (TARGET_PREFIX MATCHES "NOTFOUND")
-    get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
-    set(TARGET_PREFIX ${CMAKE_${TARGET_TYPE}_PREFIX})
-  endif()
-  if (TARGET_SUFFIX MATCHES "NOTFOUND")
-    get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
-    set(TARGET_SUFFIX ${CMAKE_${TARGET_TYPE}_SUFFIX})
-  endif()
-  set(TARGET_FILENAME ${TARGET_PREFIX}${TARGET_OUTPUT_NAME}${TARGET_SUFFIX})
-  if (TARGET_DIRECTORY STREQUAL "")
-    set(TARGET_DIRECTORY ".")
-  endif()
-  set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/dist/${TARGET_DIRECTORY}/${TARGET_FILENAME})
-  add_custom_command(
-    OUTPUT ${OUTPUT_FILE} DEPENDS ${TARGET_NAME}
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_FILE})
-  list(APPEND MITSUBA_DIST_OUT ${OUTPUT_FILE})
-endforeach()
-
-macro (add_file DST SRC)
-  set(OUTPUT_FILE ${CMAKE_BINARY_DIR}/dist/${DST})
-  add_custom_command(
-    OUTPUT ${OUTPUT_FILE} DEPENDS ${SRC} ${ARGN}
-    COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${OUTPUT_FILE})
-  list(APPEND MITSUBA_DIST_OUT ${OUTPUT_FILE})
-endmacro()
-
-add_file(data/srgb.coeff ${CMAKE_BINARY_DIR}/ext_build/rgb2spec/srgb.coeff rgb2spec_opt_run)
-
-file(COPY resources/data/ior DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/dist/data)
-
-add_custom_target(dist-copy ALL DEPENDS ${MITSUBA_DIST_OUT})
-set_property(TARGET dist-copy PROPERTY FOLDER misc)
 
 # Documentation
 find_package(Sphinx)
@@ -632,14 +485,69 @@ if (MSVC)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT mitsuba)
 endif()
 
-if(NOT WIN32)
-  string(ASCII 27 Esc)
-  set(ColorReset "${Esc}[m")
-  set(BoldRed "${Esc}[1;31m")
-endif()
-
+# Warn if a mitsuba.conf file was newly created
 if (MITSUBA_COPIED_CONFIG_FILE)
+  if (NOT WIN32)
+    string(ASCII 27 Esc)
+    set(ColorReset "${Esc}[m")
+    set(BoldRed "${Esc}[1;31m")
+  endif()
+
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
 endif()
+
+# Set up location for build products
+set_target_properties(tbb pugixml asmjit enoki-jit embree
+                      IlmImf IlmThread Half Imath Iex mitsuba
+                      mitsuba-core mitsuba-render
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${MITSUBA_BINARY_DIR}"
+  LIBRARY_OUTPUT_DIRECTORY "${MITSUBA_BINARY_DIR}"
+)
+
+# Make sure that dynamic libraries still can be found following 'make install'
+if (APPLE)
+  # set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "@loader_path")
+elif(UNIX)
+  set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "$ORIGIN")
+endif()
+
+# Specify install locations
+set(MTS_DEPENDENCIES
+  asmjit IlmImf IlmThread Imath Iex Half tbb pugixml
+)
+
+if (MTS_ENABLE_EMBREE)
+  set(MTS_DEPENDENCIES ${MTS_DEPENDENCIES} embree)
+endif()
+
+if (MTS_ENABLE_JIT)
+  set(MTS_DEPENDENCIES ${MTS_DEPENDENCIES} enoki-jit)
+endif()
+
+if (MTS_ENABLE_AUTODIFF)
+  set(MTS_DEPENDENCIES ${MTS_DEPENDENCIES} enoki-autodiff)
+endif()
+
+install(
+  TARGETS mitsuba mitsuba-render mitsuba-core ${MTS_DEPENCENCIES}
+  LIBRARY DESTINATION .
+  RUNTIME DESTINATION .
+)
+
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba
+  DESTINATION include
+)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/include/mitsuba/core/config.h
+  DESTINATION include/mitsuba/core
+)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/python/mitsuba/config.py
+  DESTINATION python/mitsuba
+)

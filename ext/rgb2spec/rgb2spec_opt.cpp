@@ -34,7 +34,7 @@
 
 // Choose a parallelization scheme
 #if defined(RGB2SPEC_USE_TBB)
-#  include <tbb/tbb.h>
+#  include <tbb/parallel_for.h>
 #elif defined(_OPENMP)
 #  define RGB2SPEC_USE_OPENMP 1
 #elif defined(__APPLE__)

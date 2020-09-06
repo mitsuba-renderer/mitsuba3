@@ -3,7 +3,7 @@ import json
 import re
 import sys
 import os
-from os.path import join, dirname, realpath
+import pathlib
 
 try:
     from io import StringIO
@@ -112,6 +112,7 @@ def write_core_config_python(f, enabled, default_variant):
     f.write('MTS_DEFAULT_VARIANT = \'%s\'\n' % default_variant)
     f.write('MTS_VARIANTS = %s\n' % str([v[0] for v in enabled]))
 
+
 def write_to_file_if_changed(filename, contents):
     '''Writes the given contents to file, only if they do not already match.'''
     if os.path.isfile(filename):
@@ -125,9 +126,7 @@ def write_to_file_if_changed(filename, contents):
 
 
 if __name__ == '__main__':
-    root = realpath(dirname(dirname(__file__)))
-
-    with open(join(root, 'mitsuba.conf'), 'r') as conf:
+    with open('mitsuba.conf', 'r') as conf:
         # Strip comments
         s = re.sub(r'(?m)#.*$', '', conf.read())
         # Load JSON
@@ -167,12 +166,14 @@ if __name__ == '__main__':
         raise ValueError('mitsuba.conf: the "python-default" mode is not '
                          'part of the "enabled" list!')
 
-    fname = realpath(join(root, 'include/mitsuba/core/config.h'))
+    pathlib.Path("include/mitsuba/core").mkdir(parents=True, exist_ok=True)
+    fname = 'include/mitsuba/core/config.h'
     output = StringIO()
     write_core_config_cpp(output, enabled, default_variant)
     write_to_file_if_changed(fname, output.getvalue())
 
-    fname = realpath(join(root, 'src/python/config.py'))
+    pathlib.Path("python/mitsuba").mkdir(parents=True, exist_ok=True)
+    fname = 'python/mitsuba/config.py'
     output = StringIO()
     write_core_config_python(output, enabled, default_variant_python)
     write_to_file_if_changed(fname, output.getvalue())

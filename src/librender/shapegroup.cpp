@@ -26,7 +26,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
             if (shape->is_sensor())
                 Throw("Instancing of sensors is not supported");
             else {
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
                 m_shapes.push_back(shape);
                 m_bbox.expand(shape->bbox());
 #endif
@@ -129,7 +129,7 @@ ShapeGroup<Float, Spectrum>::primitive_count() const {
         return m_kdtree->primitive_count();
 #endif
 
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     ScalarSize count = 0;
     for (auto shape : m_shapes)
         count += shape->primitive_count();
@@ -138,7 +138,7 @@ ShapeGroup<Float, Spectrum>::primitive_count() const {
 #endif
 }
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 MTS_VARIANT void ShapeGroup<Float, Spectrum>::optix_prepare_ias(
     const OptixDeviceContext &context, std::vector<OptixInstance> &instances,
     uint32_t instance_id, const ScalarTransform4f &transf) {

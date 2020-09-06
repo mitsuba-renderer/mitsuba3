@@ -13,10 +13,12 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+
+#define __TBB_show_deprecation_message_task_scheduler_init_H 1
 #include <tbb/task_scheduler_init.h>
 
-#if defined(MTS_ENABLE_OPTIX)
-#include <mitsuba/render/optix_api.h>
+#if defined(MTS_ENABLE_CUDA)
+#  include <mitsuba/render/optix_api.h>
 #endif
 
 
@@ -179,7 +181,7 @@ int main(int argc, char *argv[]) {
             __global_thread_count = arg_threads->as_int();
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init init((int) __global_thread_count);
+        tbb::task_scheduler_init scheduler(__global_thread_count);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
@@ -192,8 +194,8 @@ int main(int argc, char *argv[]) {
         }
         std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
 
-#if defined(MTS_ENABLE_OPTIX)
-        if (string::starts_with(mode, "gpu")) {
+#if defined(MTS_ENABLE_CUDA)
+        if (string::starts_with(mode, "gpu_")) {
             jitc_init(0, 1);
             jitc_set_device(0);
             cie_alloc();
@@ -202,7 +204,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
-        if (string::starts_with(mode, "llvm")) {
+        if (string::starts_with(mode, "llvm_")) {
             jitc_init(1, 0);
             jitc_set_device(-1);
         }
@@ -301,10 +303,10 @@ int main(int argc, char *argv[]) {
     Thread::static_shutdown();
     Class::static_shutdown();
     Jit::static_shutdown();
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     optix_shutdown();
 #endif
-#if defined(MTS_ENABLE_OPTIX) || defined(MTS_ENABLE_LLVM)
+#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
     jitc_shutdown();
 #endif
     return error_msg.empty() ? 0 : -1;

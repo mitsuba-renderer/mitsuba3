@@ -191,7 +191,7 @@ public:
     }
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     virtual void optix_prepare_ias(const OptixDeviceContext& context,
                                    std::vector<OptixInstance>& instances,
                                    uint32_t instance_id,

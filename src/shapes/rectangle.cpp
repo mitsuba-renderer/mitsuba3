@@ -8,7 +8,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     #include "optix/rectangle.cuh"
 #endif
 
@@ -214,12 +214,12 @@ public:
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
         update();
         Base::parameters_changed();
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
         optix_prepare_geometry();
 #endif
     }
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
 
     void optix_prepare_geometry() override {

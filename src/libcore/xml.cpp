@@ -19,7 +19,8 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
 #include <pugixml.hpp>
-#include <tbb/tbb.h>
+#include <tbb/spin_mutex.h>
+#include <tbb/parallel_for.h>
 
 /// Linux <sys/sysmacros.h> defines these as macros .. :(
 #if defined(major)

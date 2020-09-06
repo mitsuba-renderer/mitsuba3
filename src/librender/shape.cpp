@@ -9,7 +9,7 @@
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 #  include <mitsuba/render/optix/shapes.h>
 #endif
 
@@ -89,7 +89,7 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
 }
 
 MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>)
         jitc_free(m_optix_data_ptr);
 #endif
@@ -261,7 +261,7 @@ MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device
 }
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 static const uint32_t optix_geometry_flags[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
 MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_geometry() {

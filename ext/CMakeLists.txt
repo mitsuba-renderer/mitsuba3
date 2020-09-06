@@ -1,55 +1,41 @@
-# Add a CMake parameter for choosing a desired Python version
-set(MTS_PYTHON_VERSION "" CACHE STRING "Python version to use for compiling the mitsuba-python library")
-
-# Try to autodetect Python (can be overridden manually if needed)
-if (MTS_ENABLE_PYTHON)
-  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/pybind11/tools")
-  set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7 3.8)
-  find_package(PythonLibsNew ${MTS_PYTHON_VERSION} REQUIRED)
-
-  set(PYBIND11_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pybind11/include ${PYTHON_INCLUDE_DIR} PARENT_SCOPE)
-  set(PYTHONLIBS_FOUND ${PYTHONLIBS_FOUND} PARENT_SCOPE)
-  set(PYTHON_MODULE_PREFIX "${PYTHON_MODULE_PREFIX}" PARENT_SCOPE)
-  set(PYTHON_MODULE_EXTENSION "${PYTHON_MODULE_EXTENSION}" PARENT_SCOPE)
-  set(PYTHON_LIBRARIES "${PYTHON_LIBRARIES}" PARENT_SCOPE)
-
-  message(STATUS "Mitsuba: building the Python plugin.")
-else()
-  set(PYTHON_EXECUTABLE "python" PARENT_SCOPE)
-  message(WARNING "Mitsuba: not building the Python plugin! (won't be able to run the test suite)")
-endif()
-
-# Build nanogui
-if (MTS_ENABLE_GUI)
-    set(NANOGUI_BUILD_EXAMPLES OFF CACHE BOOL " " FORCE)
-    set(NANOGUI_BUILD_SHARED   ON  CACHE BOOL " " FORCE)
-    set(NANOGUI_BUILD_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
-    set(NANOGUI_INSTALL        OFF CACHE BOOL " " FORCE)
-    set(NANOGUI_PYBIND11_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/pybind11")
-    add_subdirectory(nanogui)
-endif()
+# ----------------------------------------------------------
+#  Intel Thread Building Blocks (TBB)
+# ----------------------------------------------------------
 
 # Build Thread Building Blocks (main shared libraries only)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
 set(TBB_BUILD_STATIC          OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TESTS           OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
+set(TBB_INSTALL_TARGETS       OFF CACHE BOOL " " FORCE)
 add_subdirectory(tbb)
 set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
 set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
 set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
 
-# Run the Enoki CMake script
+# ----------------------------------------------------------
+#  Enoki (+ Python bindings, JIT compiler, etc.)
+# ----------------------------------------------------------
+
 set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
-set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11"
-  CACHE STRING "Path containing the 'pybind11' library used to compile Enoki." FORCE)
+set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11" CACHE STRING
+    "Path containing the 'pybind11' library used to compile Enoki." FORCE)
+set(ENOKI_NATIVE_FLAGS "${MTS_NATIVE_FLAGS}" CACHE STRING
+    "Compilation flags used to target the host processor architecture." FORCE)
 add_subdirectory(enoki)
 
-# Build embree
+set(ENOKI_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/enoki/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/include
+    PARENT_SCOPE)
+
+# ----------------------------------------------------------
+#  Intel Embree, optional
+# ----------------------------------------------------------
+
 if (MTS_ENABLE_EMBREE)
   set(EMBREE_ISPC_SUPPORT           OFF CACHE BOOL " " FORCE)
   set(EMBREE_TUTORIALS              OFF CACHE BOOL " " FORCE)
@@ -63,57 +49,57 @@ if (MTS_ENABLE_EMBREE)
   set(EMBREE_GEOMETRY_USER          ON  CACHE BOOL " " FORCE)
   set(EMBREE_IGNORE_INVALID_RAYS    ON  CACHE BOOL " " FORCE)
   set(EMBREE_RAY_MASK               OFF CACHE BOOL " " FORCE)
-
-  string(TOUPPER "${ENOKI_ARCH_FLAGS}" ENOKI_ARCH_FLAGS_UPPER)
-
-  if (${ENOKI_ARCH_FLAGS_UPPER} MATCHES "SSE")
-    set(EMBREE_MAX_ISA "SSE4.2" CACHE STRING " " FORCE)
-  elseif(${ENOKI_ARCH_FLAGS_UPPER} MATCHES "AVX2")
-    set(EMBREE_MAX_ISA "AVX2" CACHE STRING " " FORCE)
-  elseif(${ENOKI_ARCH_FLAGS_UPPER} MATCHES "AVX")
-    set(EMBREE_MAX_ISA "AVX" CACHE STRING " " FORCE)
-  elseif(${ENOKI_ARCH_FLAGS_UPPER} MATCHES "KNL")
-    set(EMBREE_MAX_ISA "AVX512KNL" CACHE STRING " " FORCE)
-  elseif(${ENOKI_ARCH_FLAGS_UPPER} MATCHES "SKX")
-    set(EMBREE_MAX_ISA "AVX512SKX" CACHE STRING " " FORCE)
-  else()
-    set(EMBREE_MAX_ISA "DEFAULT" CACHE STRING " " FORCE)
-  endif()
+  set(EMBREE_MAX_ISA        "AVX512SKX" CACHE STRING " " FORCE)
 
   set(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING " " FORCE)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
   endif()
+
+  # Briefly remove -march=native and let Embree do it's own ISA selection
+  set(MTS_CXX_FLAGS_BACKUP "${CMAKE_CXX_FLAGS}")
+  string(REPLACE "${MTS_NATIVE_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   add_subdirectory(embree)
+  set(CMAKE_CXX_FLAGS "${MTS_CXX_FLAGS_BACKUP}")
   set(EMBREE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/embree/include" PARENT_SCOPE)
 endif()
 
-# Update the compilation flags
-get_directory_property(ENOKI_COMPILE_OPTIONS     COMPILE_OPTIONS)
-get_directory_property(ENOKI_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
-set_property(DIRECTORY .. PROPERTY COMPILE_OPTIONS     ${ENOKI_COMPILE_OPTIONS})
-set_property(DIRECTORY .. PROPERTY COMPILE_DEFINITIONS ${ENOKI_COMPILE_DEFINITIONS})
-set(ENOKI_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/enoki/include PARENT_SCOPE)
-set(ENOKI_JIT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/include PARENT_SCOPE)
-set(CMAKE_CXX_STANDARD_LIBRARIES ${CMAKE_CXX_STANDARD_LIBRARIES} PARENT_SCOPE)
-set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)
-set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} PARENT_SCOPE)
+# ----------------------------------------------------------
+#  OpenEXR (& zlib on Windows)
+# ----------------------------------------------------------
+
+set(ILMBASE_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
+set(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
+set(OPENEXR_INSTALL_HEADER_DEST "include/OpenEXR" CACHE STRING "" FORCE)
+set(OPENEXR_INSTALL_LIB_DEST "." CACHE STRING "" FORCE)
+add_subdirectory(openexr)
+set_property(TARGET
+  IexMath eLut toFloat b44ExpLogTable dwaLookups
+  IlmThread Half Iex Imath IlmImf
+  PROPERTY FOLDER "dependencies")
+
+
+set(OPENEXR_INCLUDE_DIRS
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Iex
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Half
+  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR/IlmImf
+  ${CMAKE_CURRENT_BINARY_DIR}/openexr/OpenEXR/config
+  ${CMAKE_CURRENT_BINARY_DIR}/openexr/IlmBase/config
+  PARENT_SCOPE
+)
 
 if (WIN32)
-  # Build zlib (only on Windows)
-  set(ZLIB_BUILD_STATIC_LIBS OFF CACHE BOOL " " FORCE)
-  set(ZLIB_BUILD_SHARED_LIBS ON CACHE BOOL " " FORCE)
-  add_subdirectory(zlib)
-
-  set(ZLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/zlib;${CMAKE_CURRENT_BINARY_DIR}/zlib" CACHE PATH " " FORCE)
-  set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib/$<CONFIGURATION>/zlib.lib" CACHE FILEPATH " " FORCE)
-
   set_property(TARGET zlib PROPERTY FOLDER "dependencies")
-  include_directories(${ZLIB_INCLUDE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/zlib")
 endif()
 
+# ----------------------------------------------------------
+#  libpng16 (On Windows & MacOS)
+# ----------------------------------------------------------
+
 if (WIN32 OR APPLE)
-  # Build libpng 1.6 (on Windows & MacOS)
   set(PNG_SHARED ON CACHE BOOL " " FORCE)
   set(PNG_STATIC OFF CACHE BOOL " " FORCE)
   set(PNG_TESTS OFF CACHE BOOL " " FORCE)
@@ -128,8 +114,18 @@ if (WIN32 OR APPLE)
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "$<TARGET_LINKER_FILE:png16>" PARENT_SCOPE)
   set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
+else()
+  # Find system libpng
+  find_package(PNG REQUIRED)
+  set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
+  set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
+endif()
 
-  # Build libjpeg 7 (on Windows & MacOS)
+# ----------------------------------------------------------
+#  libjpeg 7 (On Windows & MacOS)
+# ----------------------------------------------------------
+
+if (WIN32 OR APPLE)
   set(LIBJPEG_BUILD_SHARED ON CACHE BOOL " " FORCE)
   set(LIBJPEG_BUILD_EXECUTABLES OFF CACHE BOOL " " FORCE)
   add_subdirectory(libjpeg)
@@ -145,11 +141,6 @@ if (WIN32 OR APPLE)
   set_property(TARGET png16 PROPERTY OUTPUT_NAME "png16-mitsuba")
   set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 else()
-  # Find system libpng
-  find_package(PNG REQUIRED)
-  set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
-  set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
-
   # Find system libjpeg
   find_package(JPEG)
   if (JPEG_FOUND)
@@ -159,46 +150,31 @@ else()
   endif()
 endif()
 
-# Build OpenEXR
-set(ILMBASE_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
-set(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
-add_subdirectory(openexr)
-set_property(TARGET
-  IexMath eLut toFloat b44ExpLogTable dwaLookups
-  CopyIlmBaseLibs IlmThread Half Iex Imath IlmImf IlmImf-obj
-  PROPERTY FOLDER "dependencies")
+# if (MTS_ENABLE_GUI)
+#     set(NANOGUI_BUILD_EXAMPLES OFF CACHE BOOL " " FORCE)
+#     set(NANOGUI_BUILD_SHARED   ON  CACHE BOOL " " FORCE)
+#     set(NANOGUI_BUILD_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
+#     set(NANOGUI_INSTALL        OFF CACHE BOOL " " FORCE)
+#     set(NANOGUI_PYBIND11_DIR   "${CMAKE_CURRENT_SOURCE_DIR}/pybind11")
+#     add_subdirectory(nanogui)
+#
+#     set_property(TARGET glfw glfw_objects nanogui PROPERTY FOLDER "dependencies")
+#     set(EIGEN_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/ext/eigen PARENT_SCOPE)
+#     set(NANOGUI_INCLUDE_DIRS
+#     ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/include
+#     ${NANOGUI_EXTRA_INCS}
+#     PARENT_SCOPE)
+#     set(NANOGUI_EXTRA_DEFS ${NANOGUI_EXTRA_DEFS} PARENT_SCOPE)
+#
+#     if (MTS_ENABLE_PYTHON)
+#         set_target_properties(nanogui-python PROPERTIES FOLDER "dependencies")
+#     endif()
+# endif()
 
-if (WIN32)
-  add_dependencies(IlmImf zlib)
-endif()
+# ----------------------------------------------------------
+#  pugixml XML parser
+# ----------------------------------------------------------
 
-set(OPENEXR_INCLUDE_DIRS
-  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
-  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
-  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
-  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Iex
-  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Half
-  ${CMAKE_CURRENT_SOURCE_DIR}/openexr/OpenEXR/IlmImf
-  ${CMAKE_CURRENT_BINARY_DIR}/openexr/OpenEXR/config
-  ${CMAKE_CURRENT_BINARY_DIR}/openexr/IlmBase/config
-  PARENT_SCOPE
-)
-
-if (MTS_ENABLE_GUI)
-    set_property(TARGET glfw glfw_objects nanogui nanogui-obj PROPERTY FOLDER "dependencies")
-    set(EIGEN_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/ext/eigen PARENT_SCOPE)
-    set(NANOGUI_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/nanogui/include
-    ${NANOGUI_EXTRA_INCS}
-    PARENT_SCOPE)
-    set(NANOGUI_EXTRA_DEFS ${NANOGUI_EXTRA_DEFS} PARENT_SCOPE)
-
-    if (MTS_ENABLE_PYTHON)
-        set_target_properties(nanogui-python nanogui-python-obj PROPERTIES FOLDER "dependencies")
-    endif()
-endif()
-
-# Build the pugixml parser
 add_library(pugixml SHARED pugixml/src/pugixml.cpp)
 set_property(TARGET pugixml PROPERTY
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/pugixml")
@@ -207,20 +183,13 @@ set(PUGIXML_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/pugixml/src PARENT_SCOPE)
 set_property(SOURCE pugixml/src/pugixml.cpp
   APPEND PROPERTY COMPILE_DEFINITIONS PUGIXML_BUILD_DLL)
 
-# Build ZeroMQ
-# set(WITH_SODIUM OFF CACHE BOOL " " FORCE)
-# set(WITH_TWEETNACL OFF CACHE BOOL " " FORCE)
-# set(WITH_DOC OFF  CACHE BOOL " " FORCE)
-# set(ZMQ_BUILD_FRAMEWORK OFF CACHE BOOL " " FORCE)
-# set(ZMQ_BUILD_TESTS OFF CACHE BOOL " " FORCE)
-# set(LIBZMQ_PEDANTIC OFF CACHE BOOL " " FORCE)
-# add_subdirectory(zeromq)
-# set_property(TARGET libzmq PROPERTY FOLDER "dependencies")
-# set(ZMQ_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zeromq/include)
-# set(ZMQ_INCLUDE_DIR ${ZMQ_INCLUDE_DIR} PARENT_SCOPE)
 
 # tinyformat include path
 set(TINYFORMAT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tinyformat PARENT_SCOPE)
+
+# ----------------------------------------------------------
+#  asmjit -- x86/64 JIT compiler
+# ----------------------------------------------------------
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   # Build asmjit
@@ -236,6 +205,10 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   endif()
 endif()
 
+# ----------------------------------------------------------
+#  sRGB spectral upsampling model
+# ----------------------------------------------------------
+
 # Disable annoying MSVC warnings in rgb2spec build
 if (MSVC)
   add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
@@ -247,42 +220,3 @@ set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
 set_property(TARGET rgb2spec         PROPERTY FOLDER "dependencies")
 set_property(TARGET rgb2spec_opt     PROPERTY FOLDER "dependencies")
 set_property(TARGET rgb2spec_opt_run PROPERTY FOLDER "dependencies")
-
-mark_as_advanced(
- ASMJIT_BUILD_ARM ASMJIT_BUILD_TEST ASMJIT_BUILD_X86 ASMJIT_DIR ASMJIT_EMBED
- ASMJIT_STATIC BUILD_SHARED_LIBS CMAKE_BACKWARDS_COMPATIBILITY
- CMAKE_OSX_ARCHITECTURES CMAKE_OSX_DEPLOYMENT_TARGET CMAKE_OSX_SYSROOT
- CMAKE_EXECUTABLE_FORMAT
- cocoa_library corevideo_library EMBREE_ADDRESS_SANITIZER
- EMBREE_BACKFACE_CULLING EMBREE_FILTER_FUNCTION EMBREE_GEOMETRY_CURVE
- EMBREE_GEOMETRY_GRID EMBREE_GEOMETRY_INSTANCE EMBREE_GEOMETRY_QUAD
- EMBREE_GEOMETRY_SUBDIVISION EMBREE_GEOMETRY_TRIANGLE EMBREE_GEOMETRY_USER
- EMBREE_IGNORE_CMAKE_CXX_FLAGS EMBREE_IGNORE_INVALID_RAYS EMBREE_ISPC_SUPPORT
- EMBREE_MAX_ISA EMBREE_RAY_MASK EMBREE_RAY_PACKETS EMBREE_STACK_PROTECTOR
- EMBREE_STAT_COUNTERS EMBREE_STATIC_LIB EMBREE_TASKING_SYSTEM EMBREE_TBB_ROOT
- EMBREE_TESTING_BENCHMARK EMBREE_TESTING_BENCHMARK_DATABASE
- EMBREE_TESTING_INTENSITY EMBREE_TESTING_KLOCWORK EMBREE_TESTING_MEMCHECK
- EMBREE_TESTING_MODEL_DIR EMBREE_TESTING_PACKAGE EMBREE_TESTING_SDE
- EMBREE_TUTORIALS ENABLE_CPACK ENABLE_CURVE ENABLE_DRAFTS ENABLE_EVENTFD
- ENOKI_ENABLE_AUTODIFF ENOKI_ENABLE_JIT ENOKI_ENABLE_PYTHON ENOKI_TEST EXECUTABLE_OUTPUT_PATH
- GLFW_BUILD_DOCS GLFW_BUILD_EXAMPLES GLFW_BUILD_INSTALL GLFW_BUILD_TESTS
- GLFW_DOCUMENT_INTERNALS GLFW_INSTALL GLFW_USE_CHDIR GLFW_USE_MENUBAR
- GLFW_USE_MIR GLFW_USE_RETINA ILMBASE_BUILD_SHARED_LIBS
- ILMBASE_NAMESPACE_VERSIONING ILMIMF_BUILD_TESTS ILMIMF_CREATE_LIBTOOL_FILE
- ILMIMF_INSTALL_PKGCONFIG iokit_library jconfig_dir LIBJPEG_BUILD_EXECUTABLES
- LIBJPEG_BUILD_SHARED LIBRARY_OUTPUT_PATH LIB_SUFFIX LIBZMQ_PEDANTIC
- LIBZMQ_WERROR M_LIBRARY NANOGUI_BUILD_EXAMPLES NANOGUI_BUILD_GLFW
- NANOGUI_BUILD_PYTHON NANOGUI_BUILD_SHARED NANOGUI_INSTALL
- NANOGUI_PYTHON_VERSION NANOGUI_USE_GLAD NANOGUI_USE_GLES2 NANOGUI_USE_OPENGL
- NANOGUI_PYTHON_USE_ENOKI_BINDINGS NANOGUI_BUILD_GLAD
- OPENEXR_BUILD_EXAMPLES OPENEXR_BUILD_SHARED_LIBS OPENEXR_BUILD_TESTS
- OPENEXR_BUILD_UTILS OPENEXR_INSTALL_DOCS OPENEXR_INSTALL_EXAMPLES
- OPENEXR_NAMESPACE_VERSIONING OPENEXR_USE_ZLIB_WINAPI opengl_library PNGARG
- PNG_DEBUG PNG_FRAMEWORK PNG_SHARED PNG_STATIC PNG_TESTS POLLER
- PYBIND11_INSTALL PYBIND11_TEST RT_LIBRARY SODIUM_FOUND TBB_BUILD_SHARED
- TBB_BUILD_STATIC TBB_BUILD_TBBMALLOC TBB_BUILD_TBBMALLOC_PROXY TBB_BUILD_TESTS
- TBB_CI_BUILD TBB_CONFIG_DATE TBB_NO_DATE USE_PYTHON_INCLUDE_DIR WITH_LIBSODIUM
- WITH_MILITANT WITH_OPENPGM WITH_PERF_TOOL WITH_SODIUM WITH_TWEETNACL WITH_VMCI
- ZEROMQ_BUILD_PERTOOLS ZEROMQ_BUILD_STATIC ZEROMQ_CMAKECONFIG_INSTALL_DIR
- ZEROMQ_INSTALL ZEROMQ_LIBRARY ZMQ_BUILD_FRAMEWORK ZMQ_BUILD_TESTS
-)

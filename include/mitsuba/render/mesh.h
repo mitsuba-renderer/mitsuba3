@@ -79,7 +79,7 @@ public:
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
     MTS_INLINE auto face_indices(Index index, ek::mask_t<Index> active = true) const {
-        using Result = ek::Array<ek::replace_scalar_t<Index, uint32_t>, 3>;
+        using Result = ek::Array<ek::uint32_array_t<Index>, 3>;
         return ek::gather<Result>(m_faces_buf, index, active);
     }
 
@@ -231,7 +231,7 @@ public:
     virtual RTCGeometry embree_geometry(RTCDevice device) override;
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
     virtual void optix_prepare_geometry() override;
     virtual void optix_build_input(OptixBuildInput&) const override;
@@ -350,7 +350,7 @@ protected:
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     void* m_vertex_buffer_ptr;
 #endif
 

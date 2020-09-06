@@ -3,7 +3,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/spectrum.h>
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 # include<enoki/cuda.h>
 #endif
 
@@ -195,7 +195,7 @@ const Float *cie1931_z_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
 
 void cie_alloc() {
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     static bool cie_alloc_done = false;
     if (cie_alloc_done)
         return;

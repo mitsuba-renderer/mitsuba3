@@ -1,10 +1,12 @@
-#include <tbb/tbb.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/jit.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/python/python.h>
+
+#define __TBB_show_deprecation_message_task_scheduler_init_H 1
+#include <tbb/task_scheduler_init.h>
 
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(filesystem);
@@ -48,10 +50,10 @@ PYBIND11_MODULE(core_ext, m) {
     m.attr("DEBUG") = true;
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
-    m.attr("MTS_ENABLE_OPTIX") = true;
+#if defined(MTS_ENABLE_CUDA)
+    m.attr("MTS_ENABLE_CUDA") = true;
 #else
-    m.attr("MTS_ENABLE_OPTIX") = false;
+    m.attr("MTS_ENABLE_CUDA") = false;
 #endif
 
 #if defined(MTS_ENABLE_EMBREE)
@@ -75,14 +77,17 @@ PYBIND11_MODULE(core_ext, m) {
     /* Holds a pointer to the current TBB task scheduler to enable
        later changes via set_thread_count(). Cleaned up in
        \ref cleanup_callback. */
-    auto *scheduler_holder = new std::unique_ptr<tbb::task_scheduler_init>(
-        new tbb::task_scheduler_init());
+    std::unique_ptr<tbb::task_scheduler_init> *task_scheduler_holder =
+        new std::unique_ptr<tbb::task_scheduler_init>(
+            new tbb::task_scheduler_init());
     m.def(
         "set_thread_count",
-        [scheduler_holder](int count) {
+        [task_scheduler_holder](int count) {
+            if (count < 0)
+                count = util::core_count();
             // Make sure the previous scheduler is deleted first.
-            scheduler_holder->reset(nullptr);
-            scheduler_holder->reset(new tbb::task_scheduler_init(count));
+            task_scheduler_holder->reset(nullptr);
+            task_scheduler_holder->reset(new tbb::task_scheduler_init(count));
             __global_thread_count = count;
         },
         "count"_a = -1,
@@ -124,8 +129,8 @@ PYBIND11_MODULE(core_ext, m) {
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */
     py::cpp_function cleanup_callback(
-        [scheduler_holder](py::handle weakref) {
-            delete scheduler_holder;
+        [task_scheduler_holder](py::handle weakref) {
+            delete task_scheduler_holder;
 
             Bitmap::static_shutdown();
             Logger::static_shutdown();

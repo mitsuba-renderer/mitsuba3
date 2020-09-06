@@ -10,13 +10,13 @@
 #include <mitsuba/render/scene.h>
 #include <mutex>
 
-#include<enoki/packet.h>
+#include <enoki/packet.h>
 
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 # if defined(MTS_USE_OPTIX_HEADERS)
     #include <optix_function_table_definition.h>
 # endif
@@ -254,7 +254,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                 invalid_counter++;
             }
 
-            store(m_vertex_normals_buf.data() + 3 * i, n);
+            store_unaligned(m_vertex_normals_buf.data() + 3 * i, n);
         }
 
         if (invalid_counter > 0)
@@ -821,7 +821,7 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 }
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 static const uint32_t triangle_input_flags =  OPTIX_GEOMETRY_FLAG_NONE;
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {

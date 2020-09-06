@@ -3418,7 +3418,7 @@
     :type: bool
     :value: False
 
-.. py:data:: mitsuba.core.MTS_ENABLE_OPTIX
+.. py:data:: mitsuba.core.MTS_ENABLE_CUDA
     :type: bool
     :value: True
 

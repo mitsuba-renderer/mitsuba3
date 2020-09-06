@@ -4,7 +4,7 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <rgb2spec.h>
-#include <tbb/tbb.h>
+#include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

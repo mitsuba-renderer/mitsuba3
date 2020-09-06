@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 
 #include <iomanip>
 #include <mitsuba/core/platform.h>
@@ -258,4 +258,4 @@ extern MTS_EXPORT_RENDER void __rt_check_log(OptixResult errval, const char *fil
 
 NAMESPACE_END(mitsuba)
 
-#endif // defined(MTS_ENABLE_OPTIX)
+#endif // defined(MTS_ENABLE_CUDA)

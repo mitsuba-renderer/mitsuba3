@@ -15,7 +15,8 @@ NAMESPACE_BEGIN(mitsuba)
 # define strdup _strdup
 #endif
 
-static void context_log_cb(unsigned int level, const char* tag, const char* message, void* /*cbdata */) {
+static inline void context_log_cb(unsigned int level, const char *tag,
+                                  const char *message, void * /*cbdata */) {
     std::cerr << "[" << std::setw(2) << level << "][" << std::setw(12) << tag
               << "]: " << message << "\n";
 }

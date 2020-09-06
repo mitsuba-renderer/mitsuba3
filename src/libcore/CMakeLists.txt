@@ -79,6 +79,8 @@ set_property(TARGET mitsuba-core-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES FOLDER mitsuba-core)
 target_compile_definitions(mitsuba-core-obj PRIVATE ${PNG_DEFINES} -DMTS_BUILD_MODULE=MTS_MODULE_CORE)
 
+set_target_properties(mitsuba-core-obj mitsuba-core PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
+
 target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
   ${PNG_LIBRARIES}
@@ -88,24 +90,6 @@ target_link_libraries(mitsuba-core PRIVATE
   # Image libraries: link to libjpeg, libpng, OpenEXR
   ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
 )
-#
-if (UNIX AND NOT APPLE)
-  target_link_libraries(mitsuba-core PUBLIC
-    -Wl,-rpath-link=$<TARGET_FILE_DIR:tbb>
-    -Wl,-rpath-link=$<TARGET_FILE_DIR:pugixml>)
-endif()
-
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-  target_link_libraries(mitsuba-core PRIVATE asmjit)
-  if (UNIX AND NOT APPLE)
-    target_link_libraries(mitsuba-core PUBLIC
-      -Wl,-rpath-link=$<TARGET_FILE_DIR:asmjit>)
-  endif()
-  add_dist(asmjit)
-endif()
-
-# Copy to 'dist' directory
-add_dist(mitsuba-core pugixml IlmThread Half Half Imath IlmImf Iex tbb)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
   target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
@@ -121,7 +105,7 @@ add_tests(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
 # Windows-only dependencies
 if (WIN32)
-  add_dist(zlib jpeg png16)
+  # add_dist(zlib jpeg png16)
   add_dependencies(mitsuba-core zlib jpeg png16)
 endif()
 
@@ -131,17 +115,13 @@ if (WIN32 OR APPLE)
   add_dependencies(mitsuba-core jpeg png16)
 endif()
 
-if (MTS_ENABLE_OPTIX)
-  set(LINK_LIBRARIES cuda ${LINK_LIBRARIES})
-endif()
-
 if (MTS_ENABLE_JIT)
-  add_dist(enoki-jit)
+  # add_dist(enoki-jit)
   set(LINK_LIBRARIES enoki-jit ${LINK_LIBRARIES})
 endif()
 
 if (MTS_ENABLE_AUTODIFF)
-  add_dist(enoki-autodiff)
+  # add_dist(enoki-autodiff)
   set(LINK_LIBRARIES enoki-autodiff ${LINK_LIBRARIES})
 endif()
 

@@ -10,7 +10,7 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/python/python.h>
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 # include <mitsuba/render/optix_api.h>
 #endif
 
@@ -84,7 +84,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("__name__") = "mitsuba.render";
 
     using Float = MTS_VARIANT_FLOAT;
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>)
         optix_initialize();
 #endif
@@ -125,7 +125,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         py::module::import("mitsuba.core_ext").attr("casters"));
     casters->push_back((void *) caster);
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>) {
         /* Register a cleanup callback function that is invoked when
            the 'mitsuba::BSDF' Python type is garbage collected */

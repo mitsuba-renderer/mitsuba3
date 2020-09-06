@@ -6,8 +6,12 @@
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/fstream.h>
-#include <tbb/tbb.h>
 #include <unordered_map>
+#include <tbb/parallel_for.h>
+#include <tbb/blocked_range.h>
+
+#define __TBB_show_deprecation_message_task_H 1
+#include <tbb/task.h>
 
 #include <enoki/half.h>
 

@@ -5,7 +5,7 @@
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
 #endif
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     #include <mitsuba/render/optix/shapes.h>
 #endif
 
@@ -46,7 +46,7 @@ public:
 
     std::string to_string() const override;
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     void optix_prepare_ias(const OptixDeviceContext& context,
                            std::vector<OptixInstance>& instances,
                            uint32_t instance_id,
@@ -68,7 +68,7 @@ public:
 private:
     ScalarBoundingBox3f m_bbox;
 
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     std::vector<ref<Base>> m_shapes;
 #endif
 
@@ -78,7 +78,7 @@ private:
     ref<ShapeKDTree> m_kdtree;
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     OptixAccelData m_accel;
     bool optix_accel_ready = false;
     /// OptiX hitgroup sbt offset

@@ -6,7 +6,7 @@
 #include <mitsuba/core/bbox.h>
 #include <enoki/vcall.h>
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
 #endif
 
@@ -393,7 +393,7 @@ public:
     virtual RTCGeometry embree_geometry(RTCDevice device);
 #endif
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     /**
      * \brief Populates the GPU data buffer, used in the Optix Hitgroup sbt records.
      *
@@ -508,7 +508,7 @@ protected:
     ScalarTransform4f m_to_world;
     ScalarTransform4f m_to_object;
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
     /// OptiX hitgroup data buffer
     void* m_optix_data_ptr = nullptr;
 #endif

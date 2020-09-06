@@ -1,5 +1,6 @@
 #include <enoki/transform.h>
-#include <tbb/tbb.h>
+#define __TBB_show_deprecation_message_task_scheduler_init_H 1
+#include <tbb/task_scheduler_init.h>
 
 #include <mitsuba/core/argparser.h>
 #include <mitsuba/core/bitmap.h>
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
             __global_thread_count = arg_threads->as_int();
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init init((int) __global_thread_count);
+        tbb::task_scheduler_init scheduler(__global_thread_count);
 
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();

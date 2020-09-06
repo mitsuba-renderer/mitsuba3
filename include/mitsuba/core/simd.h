@@ -6,7 +6,7 @@
 
 #include <enoki-jit/jit.h>
 
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 #  include <enoki/cuda.h>
 #endif
 

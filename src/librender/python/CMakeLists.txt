@@ -5,13 +5,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
   set(TARGET_NAME render_${MTS_VARIANT_NAME}_ext)
 
-  if (MTS_VARIANT_FLOAT MATCHES "Packet")
-    set(MTS_VARIANT_VECTORIZE 1)
-  else()
-    set(MTS_VARIANT_VECTORIZE 0)
-  endif()
-
-  add_mitsuba_python_library(${TARGET_NAME}
+  pybind11_add_module(${TARGET_NAME}
+    THIN_LTO OPT_SIZE
     main_v.cpp
     bsdf_v.cpp
     emitter_v.cpp
@@ -35,21 +30,21 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     # texture3d_v.cpp
   )
 
-  target_compile_definitions(${TARGET_NAME}-obj PRIVATE
+  target_compile_definitions(${TARGET_NAME} PRIVATE
     "-DMTS_VARIANT_NAME=${MTS_VARIANT_NAME}"
     "-DMTS_VARIANT_FLOAT=${MTS_VARIANT_FLOAT}"
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
-    "-DMTS_VARIANT_VECTORIZE=${MTS_VARIANT_VECTORIZE}"
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core mitsuba-render tbb)
 
-  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
-    target_link_libraries(${TARGET_NAME} PRIVATE asmjit)
-  endif()
+  # if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
+  #   target_link_libraries(${TARGET_NAME} PRIVATE asmjit)
+  # endif()
 endforeach()
 
-add_mitsuba_python_library(render_ext
+pybind11_add_module(render_ext
+  THIN_LTO OPT_SIZE
   emitter.cpp
   main.cpp
   bsdf.cpp

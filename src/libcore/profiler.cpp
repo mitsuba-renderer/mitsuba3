@@ -6,7 +6,6 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <stdio.h>
-#include <tbb/tbb.h>
 #include <array>
 #include <map>
 

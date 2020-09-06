@@ -2,7 +2,7 @@ set(INC_DIR "../../include/mitsuba/render")
 
 set(LIBRENDER_EXTRA_SRC "")
 
-if (MTS_ENABLE_OPTIX)
+if (MTS_ENABLE_CUDA)
   # Glob up PTX files
   file(GLOB resources "${PROJECT_SOURCE_DIR}/resources/ptx/*.ptx")
 
@@ -69,6 +69,7 @@ add_library(mitsuba-render-obj OBJECT
 
 add_library(mitsuba-render SHARED $<TARGET_OBJECTS:mitsuba-render-obj>)
 set_property(TARGET mitsuba-render-obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(mitsuba-render-obj mitsuba-render PROPERTIES INTERPROCEDURAL_OPTIMIZATION ON)
 set_target_properties(mitsuba-render-obj mitsuba-render PROPERTIES FOLDER mitsuba-render)
 target_compile_definitions(mitsuba-render-obj PRIVATE -DMTS_BUILD_MODULE=MTS_MODULE_RENDER)
 
@@ -90,11 +91,7 @@ if (MTS_ENABLE_EMBREE)
   else()
       target_link_libraries(mitsuba-render PRIVATE embree)
   endif()
-  add_dist(embree)
-endif()
-
-if (MTS_ENABLE_OPTIX)
-  target_link_libraries(mitsuba-render PRIVATE cuda)
+  # add_dist(embree)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
@@ -102,7 +99,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
 endif()
 
 # Copy to 'dist' directory
-add_dist(mitsuba-render)
+# add_dist(mitsuba-render)
 
 # Python bindings
 if (MTS_ENABLE_PYTHON)

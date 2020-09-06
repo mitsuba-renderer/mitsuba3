@@ -12,13 +12,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
   set(TARGET_NAME core_${MTS_VARIANT_NAME}_ext)
 
-  if (MTS_VARIANT_FLOAT MATCHES "Packet")
-    set(MTS_VARIANT_VECTORIZE 1)
-  else()
-    set(MTS_VARIANT_VECTORIZE 0)
-  endif()
-
-  add_mitsuba_python_library(${TARGET_NAME}
+  pybind11_add_module(${TARGET_NAME}
+    THIN_LTO OPT_SIZE
     main_v.cpp
     bbox_v.cpp
     bsphere_v.cpp
@@ -40,11 +35,10 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     xml_v.cpp
   )
 
-  target_compile_definitions(${TARGET_NAME}-obj PRIVATE
+  target_compile_definitions(${TARGET_NAME} PRIVATE
     "-DMTS_VARIANT_NAME=${MTS_VARIANT_NAME}"
     "-DMTS_VARIANT_FLOAT=${MTS_VARIANT_FLOAT}"
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
-    "-DMTS_VARIANT_VECTORIZE=${MTS_VARIANT_VECTORIZE}"
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core tbb)
@@ -54,7 +48,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   endif()
 endforeach()
 
-add_mitsuba_python_library(core_ext
+pybind11_add_module(core_ext
+  THIN_LTO OPT_SIZE
   main.cpp
   atomic.cpp
   appender.cpp
@@ -75,9 +70,5 @@ add_mitsuba_python_library(core_ext
   thread.cpp
   util.cpp
 )
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Intel")
-  target_compile_options(core_ext PRIVATE -fvisibility=hidden)
-endif()
 
 target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render tbb asmjit)

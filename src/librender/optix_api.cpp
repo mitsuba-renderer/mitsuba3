@@ -1,4 +1,4 @@
-#if defined(MTS_ENABLE_OPTIX)
+#if defined(MTS_ENABLE_CUDA)
 
 #if defined(_WIN32)
 // Exclude unnecessary headers from the subsequent includes
@@ -236,4 +236,4 @@ void __rt_check_log(OptixResult errval, const char *file, const int line) {
 
 NAMESPACE_END(mitsuba)
 
-#endif // defined(MTS_ENABLE_OPTIX)
+#endif // defined(MTS_ENABLE_CUDA)
