@@ -125,14 +125,16 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         py::module::import("mitsuba.core_ext").attr("casters"));
     casters->push_back((void *) caster);
 
-#if defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_cuda_array_v<Float>) {
+#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
+    if constexpr (ek::is_jit_array_v<Float>) {
         /* Register a cleanup callback function that is invoked when
            the 'mitsuba::BSDF' Python type is garbage collected */
         py::cpp_function cleanup_callback(
             [](py::handle weakref) {
-                cie_shutdown();
-                optix_shutdown();
+                #if defined(MTS_ENABLE_CUDA)
+                    cie_shutdown();
+                    optix_shutdown();
+                #endif
                 jitc_shutdown();
                 weakref.dec_ref();
             }
