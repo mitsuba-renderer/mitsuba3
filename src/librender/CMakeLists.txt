@@ -71,7 +71,6 @@ target_compile_definitions(mitsuba-render
   PRIVATE -DMTS_BUILD_MODULE=MTS_MODULE_RENDER)
 set_target_properties(mitsuba-render PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON
-  FOLDER mitsuba-render
   INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Link to Intel's Thread Building Blocks

@@ -66,7 +66,7 @@ foreach(file ${ENOKI_PYTHON_FILES})
 endforeach(file)
 
 add_custom_target(python-copy ALL DEPENDS ${MTS_PYTHON_FILES})
-set_property(TARGET python-copy PROPERTY FOLDER misc)
+set_property(TARGET python-copy PROPERTY FOLDER mitsuba-python)
 
 # ----------------------------------------------------------
 #   pytest.ini file

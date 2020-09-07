@@ -79,7 +79,6 @@ target_compile_definitions(mitsuba-core
 
 set_target_properties(mitsuba-core PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON
-  FOLDER mitsuba-core
   INSTALL_RPATH "${MTS_ORIGIN}")
 
 target_link_libraries(mitsuba-core PRIVATE
