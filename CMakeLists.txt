@@ -517,9 +517,19 @@ if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
 endif()
 
 # Set up location for build products
-set_target_properties(tbb pugixml asmjit enoki-jit embree
-                      IlmImf IlmThread Half Imath Iex mitsuba
-                      mitsuba-core mitsuba-render
+set(TARGETS tbb pugixml asmjit
+    IlmImf IlmThread Half Imath Iex
+    mitsuba mitsuba-core mitsuba-render)
+
+if (MTS_ENABLE_EMBREE)
+  set(TARGETS ${TARGETS} embree)
+endif()
+
+if (MTS_ENABLE_JIT)
+  set(TARGETS ${TARGETS} enoki-jit)
+endif()
+
+set_target_properties(${TARGETS}
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
