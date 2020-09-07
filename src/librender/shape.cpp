@@ -207,8 +207,8 @@ void embree_intersect_packet(int* valid,
         ek::store(hits->primID,    ek::select(active, IntP(0),      ek::load<IntP>(hits->primID)));
         ek::store(hits->instID[0], ek::select(active, IntP(instID), ek::load<IntP>(hits->instID[0])));
     } else {
-        active &= shape->ray_test_packet(ray);
-        ek::store(rays->tfar, ek::select(active, ray.maxt, -ek::Infinity<Float>));
+        active &= shape->ray_test_packet(ray, active);
+        ek::store(rays->tfar, ek::select(active, ray.maxt, ek::Infinity<Float>));
     }
 }
 
