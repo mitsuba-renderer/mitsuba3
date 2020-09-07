@@ -516,25 +516,6 @@ if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
     "\"-GNinja\") ${ColorReset}")
 endif()
 
-# Set up location for build products
-set(TARGETS tbb pugixml asmjit
-    IlmImf IlmThread Half Imath Iex
-    mitsuba mitsuba-core mitsuba-render)
-
-if (MTS_ENABLE_EMBREE)
-  set(TARGETS ${TARGETS} embree)
-endif()
-
-if (MTS_ENABLE_JIT)
-  set(TARGETS ${TARGETS} enoki-jit)
-endif()
-
-set_target_properties(${TARGETS}
-  PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
-  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
-)
-
 # Make sure that dynamic libraries still can be found following 'make install'
 set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
@@ -566,6 +547,13 @@ if (MTS_ENABLE_AUTODIFF)
   set_target_properties(enoki-autodiff PROPERTIES
     INSTALL_RPATH "$ORIGIN")
 endif()
+
+# Set up location for build products
+set_target_properties(enoki-jit mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
+  PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
+)
 
 install(
   TARGETS mitsuba mitsuba-render mitsuba-core ${MTS_DEPEND}
