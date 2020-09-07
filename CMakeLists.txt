@@ -267,6 +267,12 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 endif()
 
+if (NOT WIN32)
+  string(ASCII 27 Esc)
+  set(ColorReset "${Esc}[m")
+  set(BoldRed "${Esc}[1;31m")
+endif()
+
 # Build the dependencies
 add_subdirectory(ext)
 
@@ -498,12 +504,6 @@ if (MSVC)
   set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT mitsuba)
 endif()
 
-if (NOT WIN32)
-  string(ASCII 27 Esc)
-  set(ColorReset "${Esc}[m")
-  set(BoldRed "${Esc}[1;31m")
-endif()
-
 # Warn if a mitsuba.conf file was newly created
 if (MTS_COPIED_CONFIG_FILE)
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
@@ -533,7 +533,7 @@ if (WIN32 OR APPLE)
   list(APPEND MTS_DEPEND png16 jpeg)
 
   if (WIN32)
-    list(APPEND MTS_DEPEND ${ZLIB_LIBRARY})
+    list(APPEND MTS_DEPEND zlib)
   endif()
 endif()
 
@@ -583,3 +583,19 @@ else()
   install(FILES resources/setpath.sh DESTINATION ".")
   file(COPY resources/setpath.sh DESTINATION ${MTS_BINARY_DIR})
 endif()
+
+
+mark_as_advanced(
+  ZLIB_BUILD_AMD64
+  ZLIB_BUILD_ASM686
+  ZLIB_BUILD_EXAMPLES
+  ZLIB_BUILD_SHARED_LIBS
+  ZLIB_BUILD_STATIC_LIBS
+  ZLIB_LIBRARY
+  EMBREE_STATIC_RUNTIME
+  INSTALL_BIN_DIR
+  INSTALL_MAN_DIR
+  INSTALL_INC_DIR
+  INSTALL_LIB_DIR
+  INSTALL_PKGCONFIG_DIR
+)

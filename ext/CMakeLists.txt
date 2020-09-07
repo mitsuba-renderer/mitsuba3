@@ -69,7 +69,6 @@ endif()
 # ----------------------------------------------------------
 #  OpenEXR (& zlib on Windows)
 # ----------------------------------------------------------
-
 set(ILMBASE_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 set(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 set(OPENEXR_INSTALL_HEADER_DEST "include/OpenEXR" CACHE STRING "" FORCE)
@@ -108,19 +107,23 @@ if (WIN32 OR APPLE)
   set(PNG_SKIP_INSTALL_ALL TRUE)
   add_subdirectory(libpng)
   set_property(TARGET png16 PROPERTY FOLDER "dependencies")
-
-  if (WIN32)
-    add_dependencies(png16 zlib)
-  endif()
+  set_property(TARGET png16 PROPERTY OUTPUT_NAME "png16-mitsuba")
 
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "png16" PARENT_SCOPE)
   set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
 else()
+message(STATUS bsdf)
   # Find system libpng
-  find_package(PNG REQUIRED)
-  set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
-  set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
+  find_package(PNG)
+  if (PNG_FOUND)
+    set(PNG_LIBRARIES    ${PNG_LIBRARIES} PARENT_SCOPE)
+    set(PNG_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} PARENT_SCOPE)
+    set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
+  else()
+    message(WARNING "\n${BoldRed}libpng could not be found: Mitsuba will "
+            "not be able to read/write PNG files!${ColorReset}")
+  endif()
 endif()
 
 # ----------------------------------------------------------
@@ -140,7 +143,6 @@ if (WIN32 OR APPLE)
 
   # Give libpng & libjpeg a name that's guaranteeed not to match other
   # libraries that may already be loaded (e.g. into a Python interpreter)
-  set_property(TARGET png16 PROPERTY OUTPUT_NAME "png16-mitsuba")
   set_property(TARGET jpeg PROPERTY OUTPUT_NAME "jpeg-mitsuba")
 else()
   # Find system libjpeg
@@ -149,6 +151,9 @@ else()
     set(JPEG_LIBRARIES    ${JPEG_LIBRARIES} PARENT_SCOPE)
     set(JPEG_INCLUDE_DIRS ${JPEG_INCLUDE_DIRS} PARENT_SCOPE)
     set(JPEG_DEFINES      -DMTS_HAS_LIBJPEG PARENT_SCOPE)
+  else()
+    message(WARNING "\n${BoldRed}libjpeg could not be found: Mitsuba will "
+            "not be able to read/write JPEG files!${ColorReset}")
   endif()
 endif()
 
@@ -246,5 +251,6 @@ mark_as_advanced(
   PNGARG PNG_DEBUG PNG_FRAMEWORK PNG_SHARED PNG_STATIC PNG_TESTS
   TBB_BUILD_PYTHON TBB_BUILD_SHARED TBB_BUILD_STATIC TBB_BUILD_TBBMALLOC
   TBB_BUILD_TBBMALLOC_PROXY TBB_BUILD_TESTS TBB_CONFIG_DATE TBB_INSTALL_TARGETS
-  TBB_NO_DATE
+  TBB_NO_DATE CMAKE_CONFIGURATION_TYPES
+
 )
