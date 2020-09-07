@@ -94,19 +94,19 @@ def test02_intersection_partials(variant_scalar_rgb):
     px2 -= si.p
     py2 -= si.p
 
-    assert(ek.allclose(px1, px2))
-    assert(ek.allclose(py1, py2))
+    assert ek.allclose(px1, px2, atol=1e-6)
+    assert ek.allclose(py1, py2, atol=1e-6)
 
     si.dp_du = [0, 0, 0]
     si.compute_uv_partials(r)
 
-    assert(ek.allclose(px1, px2))
-    assert(ek.allclose(py1, py2))
+    assert ek.allclose(px1, px2, atol=1e-6)
+    assert ek.allclose(py1, py2, atol=1e-6)
 
     si.compute_uv_partials(r)
 
-    assert(ek.allclose(si.duv_dx, [0, 0]))
-    assert(ek.allclose(si.duv_dy, [0, 0]))
+    assert ek.allclose(si.duv_dx, [0, 0])
+    assert ek.allclose(si.duv_dy, [0, 0])
 
 def test03_mueller_to_world_to_local(variant_scalar_mono_polarized):
     """
