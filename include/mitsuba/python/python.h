@@ -11,7 +11,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
-#include <enoki/array.h>
+#include <enoki/packet.h>
 
 #if MTS_VARIANT_VECTORIZE == 1
 #  include <enoki/dynamic.h>

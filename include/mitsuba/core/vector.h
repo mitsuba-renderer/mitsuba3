@@ -1,6 +1,6 @@
 #pragma once
 
-#include <enoki/array.h>
+#include <enoki/packet.h>
 #include <mitsuba/core/simd.h>
 
 NAMESPACE_BEGIN(mitsuba)
