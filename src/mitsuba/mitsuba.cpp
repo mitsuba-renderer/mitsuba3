@@ -167,13 +167,19 @@ int main(int argc, char *argv[]) {
             auto logger = Thread::thread()->logger();
             if (arg_verbose->next()) {
                 logger->set_log_level(Trace);
+#if defined(ENOKI_ENABLE_JIT)
                 jitc_set_log_level_stderr(::LogLevel::Trace);
+#endif
             } else {
                 logger->set_log_level(Debug);
+#if defined(ENOKI_ENABLE_JIT)
                 jitc_set_log_level_stderr(::LogLevel::Info);
+#endif
             }
         } else {
+#if defined(ENOKI_ENABLE_JIT)
             jitc_set_log_level_stderr(::LogLevel::Warn);
+#endif
         }
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
