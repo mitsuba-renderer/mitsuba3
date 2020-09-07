@@ -80,14 +80,14 @@ target_compile_definitions(mitsuba-core
 set_target_properties(mitsuba-core PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON
   FOLDER mitsuba-core
-  INSTALL_RPATH "$ORIGIN")
+  INSTALL_RPATH "${MTS_ORIGIN}")
 
 target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
   ${PNG_LIBRARIES}
   ${ZLIB_LIBRARY}
   # Link to Intel's Thread Building Blocks and the pugixml parser
-  tbb pugixml
+  tbb pugixml asmjit
   # Image libraries: link to libjpeg, libpng, OpenEXR
   ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
 )

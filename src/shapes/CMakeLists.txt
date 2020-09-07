@@ -9,9 +9,12 @@ add_plugin(cylinder    cylinder.cpp)
 add_plugin(disk        disk.cpp)
 add_plugin(rectangle   rectangle.cpp)
 add_plugin(sphere      sphere.cpp)
-if (MTS_ENABLE_EMBREE)
-    target_link_libraries(sphere PRIVATE $<TARGET_FILE:embree>)
-endif()
 
 add_plugin(shapegroup  shapegroup.cpp)
 add_plugin(instance    instance.cpp)
+
+if (MTS_ENABLE_EMBREE)
+    target_link_libraries(sphere   PRIVATE embree)
+    target_link_libraries(instance PRIVATE embree)
+endif()
+

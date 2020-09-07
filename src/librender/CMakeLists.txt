@@ -72,7 +72,7 @@ target_compile_definitions(mitsuba-render
 set_target_properties(mitsuba-render PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON
   FOLDER mitsuba-render
-  INSTALL_RPATH "$ORIGIN")
+  INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Link to Intel's Thread Building Blocks
 target_link_libraries(mitsuba-render 

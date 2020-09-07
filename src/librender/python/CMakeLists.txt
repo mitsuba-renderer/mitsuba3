@@ -41,7 +41,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   set_target_properties(${TARGET_NAME}
     PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
-    INSTALL_RPATH "$ORIGIN/../.."
+    INSTALL_RPATH "${MTS_ORIGIN}/../.."
   )
 
   install(TARGETS ${TARGET_NAME}
@@ -65,7 +65,7 @@ target_link_libraries(render_ext PRIVATE mitsuba-render tbb)
 set_target_properties(render_ext
   PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
-  INSTALL_RPATH "$ORIGIN/../.."
+  INSTALL_RPATH "${MTS_ORIGIN}/../.."
 )
 
 install(TARGETS render_ext

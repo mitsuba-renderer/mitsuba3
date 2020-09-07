@@ -459,6 +459,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "do
   add_compile_options("-Wdouble-promotion")
 endif()
 
+if (APPLE)
+  set(MTS_ORIGIN "@loader_path")
+elseif(UNIX)
+  set(MTS_ORIGIN "$ORIGIN")
+endif()
+
 # Register the Mitsuba codebase
 add_subdirectory(src)
 
@@ -520,16 +526,20 @@ set_target_properties(tbb pugixml asmjit enoki-jit embree
 )
 
 # Make sure that dynamic libraries still can be found following 'make install'
-if (APPLE)
-  # set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "@loader_path")
-elif(UNIX)
-  set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "$ORIGIN")
-endif()
+set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Installation targets
 set(MTS_DEPEND
   asmjit IlmImf IlmThread Imath Iex Half tbb pugixml
 )
+
+if (WIN32 OR APPLE)
+  list(APPEND MTS_DEPEND png16 jpeg)
+
+  if (WIN32)
+    list(APPEND MTS_DEPEND ${ZLIB_LIBRARY})
+  endif()
+endif()
 
 if (MTS_ENABLE_EMBREE)
   list(APPEND MTS_DEPEND embree)

@@ -50,7 +50,7 @@ install(TARGETS enoki-python
   LIBRARY DESTINATION python/enoki
 )
 
-set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "$ORIGIN/../..")
+set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}/../..")
 
 set(ENOKI_PYTHON_FILES
    __init__.py const.py detail.py generic.py
