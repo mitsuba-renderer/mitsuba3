@@ -14,7 +14,7 @@ project(mitsuba
 # infrastructure, etc.) are only available if Python bindings are built.
 option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/resources")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 
 # ----------------------------------------------------------
 #  In-tree builds are not permitted
@@ -178,9 +178,12 @@ endif()
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
 include(TestBigEndian)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 
-# Set a default build configuration (Release)
+
+# ----------------------------------------------------------
+#  Set a default build configuration (Release)
+# ----------------------------------------------------------
+
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to 'Release' as none was specified.")
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -188,6 +191,32 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     "MinSizeRel" "RelWithDebInfo")
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
+
+# ----------------------------------------------------------
+#  Compiler version check
+# ----------------------------------------------------------
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+     message(FATAL_ERROR "Your version of GCC is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least GCC 8.0)")
+  endif()
+endif()
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
+    message(FATAL_ERROR "Your version of Clang is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least Clang 7.0)")
+  endif()
+endif()
+
+if (MSVC)
+  if (${MSVC_VERSION} LESS 1924)
+    message(FATAL_ERROR "MSVC 1924 or higher is required. You are running version ${MSVC_VERSION}.")
+  endif()
+endif()
+
+# ----------------------------------------------------------
+#  Use libc++ together with Clang
+# ----------------------------------------------------------
 
 macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_FLAGS ${_CXX_FLAGS})
@@ -198,19 +227,6 @@ macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES "")
 endmacro()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
-   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
-     message(FATAL_ERROR "Your version of GCC is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least GCC 8.0)")
-   endif()
-endif()
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
-     message(FATAL_ERROR "Your version of Clang is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least Clang 7.0)")
-   endif()
-endif()
-
-# Prefer libc++ in conjunction with Clang
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdlib=libc\\+\\+")
   CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP "-stdlib=libc++" "-stdlib=libc++")
   if (HAS_LIBCPP)
@@ -320,20 +336,6 @@ else()
   message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
 endif()
 
-# Compile with compiler warnings turned on
-if (MSVC)
-  if (${MSVC_VERSION} LESS 1924)
-    message(FATAL_ERROR "MSVC 1924 or higher is required. You are running version ${MSVC_VERSION}.")
-  endif()
-  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  else()
-    add_compile_options("/W4")
-  endif()
-else()
-  add_compile_options(-Wall -Wextra -Wno-unused-local-typedefs)
-endif()
-
 set(CMAKE_CXX_STANDARD 17)
 
 # Language and optimization flags that are used to compile Mitsuba
@@ -357,13 +359,8 @@ if (CMAKE_GENERATOR STREQUAL "Ninja")
 endif()
 
 if (MSVC)
-  # Disable annoying MSVC security features + warnings
-  add_definitions(
-    -D_SECURE_SCL=0
-    -D_CRT_SECURE_NO_WARNINGS
-    -D_SCL_SECURE_NO_WARNINGS
-    -D_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING
-  )
+  # Disable checked iterators
+  add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
 
   # Don't issue implicit linking pragmas for TBB
   add_definitions(-D__TBB_NO_IMPLICIT_LINKAGE)
@@ -372,37 +369,37 @@ if (MSVC)
   add_definitions(-DNOMINMAX)
 
   # Don't complain about not DLL-exporting STL classes
-  add_compile_options("/wd4251")
+  add_compile_options(/wd4251)
 
   # Function '..' marked as __forceinline not inlined
-  add_compile_options("/wd4714")
+  add_compile_options(/wd4714)
 
   # unreferenced local function has been removed
-  add_compile_options("/wd4505")
+  add_compile_options(/wd4505)
 
   # Declaration of type hides class member
-  add_compile_options("/wd4458" "/wd4459")
+  add_compile_options(/wd4458 /wd4459)
 
   # Check operator precedence for possible error
-  add_compile_options("/wd4554")
+  add_compile_options(/wd4554)
 
   # structure was padded due to alignment specifier
-  add_compile_options("/wd4324")
+  add_compile_options(/wd4324)
 
   # conditional expression is constant
-  add_compile_options("/wd4127")
+  add_compile_options(/wd4127)
 
   # Workaround for MSVC 2017
-  add_compile_options("/wd4244")
+  add_compile_options(/wd4244)
 
   # Parallel build on MSVC
-  add_compile_options("/MP")
+  add_compile_options(/MP)
 
   # Permit many sections in .obj files
-  add_compile_options("/bigobj")
+  add_compile_options(/bigobj)
 
   # Don't complain about incompatible modifier on explicit instantiations
-  add_compile_options("/wd4910")
+  add_compile_options(/wd4910)
 endif()
 
 # Set platform-specific flags
@@ -465,15 +462,34 @@ function(add_plugin)
   )
 endfunction(add_plugin)
 
+# Be extra noisy about unintended float->double conversions
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "double")
-  # Be extra noisy about unintended float->double conversions
   add_compile_options("-Wdouble-promotion")
 endif()
 
+# Adapt to variations in rpath handling on Linux and macOS
 if (APPLE)
   set(MTS_ORIGIN "@loader_path")
 elseif(UNIX)
   set(MTS_ORIGIN "$ORIGIN")
+endif()
+
+# Compile with compiler warnings turned on
+if (MSVC)
+  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
+    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  else()
+    add_compile_options("/W4")
+  endif()
+
+  # Disable annoying MSVC security features + warnings
+  add_definitions(
+    -D_CRT_SECURE_NO_WARNINGS
+    -D_SCL_SECURE_NO_WARNINGS
+    -D_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING
+  )
+else()
+  add_compile_options(-Wall -Wextra -Wno-unused-local-typedefs)
 endif()
 
 # Register the Mitsuba codebase
