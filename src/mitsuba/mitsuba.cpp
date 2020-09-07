@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
         std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
 
 #if defined(MTS_ENABLE_CUDA)
-        if (string::starts_with(mode, "gpu_")) {
+        if (string::starts_with(mode, "cuda_")) {
             jitc_init(0, 1);
             jitc_set_device(0);
             cie_alloc();

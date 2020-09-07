@@ -122,7 +122,7 @@ def test04_sample_direct(variant_scalar_rgb):
 
 
 
-def test05_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_rgb):
+def test05_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'sphere'})
@@ -178,7 +178,7 @@ def test05_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_r
     assert ek.allclose(ek.gradient(si.n), [0, 0, 1])
 
 
-def test06_differentiable_surface_interaction_ray_backward(variant_gpu_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'sphere'})

@@ -145,7 +145,7 @@ def test04_put_vec_basic(variants_vec_rgb):
 
 
 # def test05_put_with_filter(variants_vec_rgb):
-def test05_put_with_filter(variant_gpu_rgb):
+def test05_put_with_filter(variant_cuda_rgb):
     from mitsuba.core.xml import load_string as load_string_vec
     from mitsuba.render import ImageBlock as ImageBlockV
 

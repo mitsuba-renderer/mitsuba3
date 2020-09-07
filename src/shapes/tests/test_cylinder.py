@@ -99,7 +99,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                             assert ek.allclose(dn_dv, si.dn_dv, atol=2e-2)
 
 
-def test04_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_rgb):
+def test04_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'cylinder'})
@@ -141,7 +141,7 @@ def test04_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_r
     assert ek.allclose(ek.gradient(si.uv), [0, 1])
 
 
-def test05_differentiable_surface_interaction_ray_backward(variant_gpu_autodiff_rgb):
+def test05_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'cylinder'})

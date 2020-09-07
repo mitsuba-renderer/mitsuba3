@@ -16,7 +16,7 @@ def test01_stratified_scalar(variant_scalar_rgb):
     check_uniform_scalar_sampler(sampler)
 
 
-def test02_stratified_wavefront(variant_gpu_rgb):
+def test02_stratified_wavefront(variant_cuda_rgb):
     from mitsuba.core import xml
 
     sampler = xml.load_dict({

@@ -101,7 +101,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         for (Emitter *emitter: emitters)
             emitter->set_scene(this);
 
-        // For gpu_* modes, convert the emitters pointers to enoki registry ids
+        // For cuda_* modes, convert the emitters pointers to enoki registry ids
         if constexpr (ek::is_jit_array_v<Float>) {
             std::vector<uint32_t> tmp(emitters.size());
             for (uint32_t i = 0; i < emitters.size(); i++)

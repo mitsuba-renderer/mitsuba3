@@ -301,7 +301,7 @@ def test10_ray_intersect_preliminary(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test11_parameters_grad_enabled(variant_gpu_autodiff_rgb):
+def test11_parameters_grad_enabled(variant_cuda_autodiff_rgb):
     from mitsuba.core.xml import load_string
 
     shape = load_string('''
@@ -331,7 +331,7 @@ def test11_parameters_grad_enabled(variant_gpu_autodiff_rgb):
 
 
 @fresolver_append_path
-def test12_differentiable_surface_interaction_automatic(variant_gpu_autodiff_rgb):
+def test12_differentiable_surface_interaction_automatic(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
 
@@ -377,7 +377,7 @@ def test12_differentiable_surface_interaction_automatic(variant_gpu_autodiff_rgb
 
 
 @fresolver_append_path
-def test13_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_rgb):
+def test13_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     scene = xml.load_string('''
@@ -416,7 +416,7 @@ def test13_differentiable_surface_interaction_ray_forward(variant_gpu_autodiff_r
 
 
 @fresolver_append_path
-def test14_differentiable_surface_interaction_ray_backward(variant_gpu_autodiff_rgb):
+def test14_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     scene = xml.load_string('''
@@ -444,7 +444,7 @@ def test14_differentiable_surface_interaction_ray_backward(variant_gpu_autodiff_
 
 
 @fresolver_append_path
-def test15_differentiable_surface_interaction_params_forward(variant_gpu_autodiff_rgb):
+def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
 
     # Convert flat array into a vector of arrays (will be included in next enoki release)
@@ -531,7 +531,7 @@ def test15_differentiable_surface_interaction_params_forward(variant_gpu_autodif
 
 
 @fresolver_append_path
-def test16_differentiable_surface_interaction_params_backward(variant_gpu_autodiff_rgb):
+def test16_differentiable_surface_interaction_params_backward(variant_cuda_autodiff_rgb):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
 
     scene = xml.load_string('''

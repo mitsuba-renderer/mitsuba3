@@ -70,7 +70,7 @@ def test02_shapes(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test03_shapes_parameters_grad_enabled(variant_gpu_autodiff_rgb):
+def test03_shapes_parameters_grad_enabled(variant_cuda_autodiff_rgb):
     from mitsuba.core.xml import load_string
     from mitsuba.python.util import traverse
 
