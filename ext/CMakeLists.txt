@@ -18,13 +18,15 @@ set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
 #  Enoki (+ Python bindings, JIT compiler, etc.)
 # ----------------------------------------------------------
 
-set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
+set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
+set(ENOKI_JIT_ENABLE_TBB ON CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
 set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11" CACHE STRING
     "Path containing the 'pybind11' library used to compile Enoki." FORCE)
 set(ENOKI_NATIVE_FLAGS "${MTS_NATIVE_FLAGS}" CACHE STRING
     "Compilation flags used to target the host processor architecture." FORCE)
+
 add_subdirectory(enoki)
 
 set(ENOKI_INCLUDE_DIRS

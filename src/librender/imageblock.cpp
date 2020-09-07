@@ -157,7 +157,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             }
         }
     } else {
-        Point2u lo = ek::ceil2int<Point2u>(pos - 0.5f);
+        Point2u lo = ek::ceil2int<Point2u>(pos - .5f);
         UInt32 offset = m_channel_count * (lo.y() * size.x() + lo.x());
 
         Mask enabled = active && ek::all(lo >= 0 && lo < size);
