@@ -193,14 +193,13 @@ const Float *cie1931_x_cpu_data = cie1931_tbl;
 const Float *cie1931_y_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES;
 const Float *cie1931_z_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
-
-#if defined(MTS_ENABLE_CUDA)
-FloatC cie_gpu_data;
 const Float *cie1931_x_gpu_data;
 const Float *cie1931_y_gpu_data;
 const Float *cie1931_z_gpu_data;
-#endif
 
+#if defined(MTS_ENABLE_CUDA)
+FloatC cie_gpu_data;
+#endif
 
 void cie_initialize() {
 #if defined(MTS_ENABLE_CUDA)

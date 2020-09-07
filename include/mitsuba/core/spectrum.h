@@ -133,12 +133,13 @@ extern MTS_EXPORT_CORE const float *cie1931_x_cpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_y_cpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_z_cpu_data;
 
-#if defined(MTS_ENABLE_OPTIX)
-using FloatC = ek::CUDAArray<float>;
-extern MTS_EXPORT_CORE FloatC cie_gpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_x_gpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_y_gpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_z_gpu_data;
+
+#if defined(MTS_ENABLE_CUDA)
+using FloatC = ek::CUDAArray<float>;
+extern MTS_EXPORT_CORE FloatC cie_gpu_data;
 #endif
 
 /// Allocate GPU memory for the CIE 1931 tables
