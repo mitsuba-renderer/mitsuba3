@@ -549,7 +549,7 @@ if (MTS_ENABLE_AUTODIFF)
 endif()
 
 # Set up location for build products
-set_target_properties(enoki-jit mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
+set_target_properties(mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
