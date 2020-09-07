@@ -9,8 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 #elif defined(ENOKI_X86_SSE42)
 #  define MTS_RAY_WIDTH 4
 #else
-#  define MTS_RAY_WIDTH 4
-// #  error Expected to use vectorization
+#  error Expected to use vectorization
 #endif
 
 #define JOIN(x, y)        JOIN_AGAIN(x, y)
@@ -185,8 +184,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
             }
         } else {
-            // TODO refactoring: is this necessary?
-            // context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
             size_t N = compute_ray_width(ray);
             ek::resize(ray, N);
@@ -213,6 +210,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 #ifndef PARALLEL_LLVM_RAY_INTERSECT
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);
+            // Force embree to use maximum packet width when dispatching rays
+            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
             rtcIntersectNp(s.accel, &context, &rh, N);
 #else
             tbb::parallel_for(
@@ -227,6 +226,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 
                     RTCIntersectContext context;
                     rtcInitIntersectContext(&context);
+                    // Force embree to use maximum packet width when dispatching rays
+                    context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
                     rtcIntersectNp(s.accel, &context, &rh_, size);
                 }
             );
@@ -332,6 +333,8 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
 #ifndef PARALLEL_LLVM_RAY_INTERSECT
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);
+            // Force embree to use maximum packet width when dispatching rays
+            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
             rtcIntersectNp(s.accel, &context, &rh, N);
 #else
             tbb::parallel_for(
@@ -346,7 +349,8 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
 
                     RTCIntersectContext context;
                     rtcInitIntersectContext(&context);
-
+                    // Force embree to use maximum packet width when dispatching rays
+                    context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
                     rtcIntersectNp(s.accel, &context, &rh_, size);
                 }
             );
@@ -421,6 +425,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
 #ifndef PARALLEL_LLVM_RAY_INTERSECT
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);
+            // Force embree to use maximum packet width when dispatching rays
+            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
             rtcOccludedNp(s.accel, &context, &ray2, N);
 #else
             tbb::parallel_for(
@@ -432,7 +438,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
 
                     RTCIntersectContext context;
                     rtcInitIntersectContext(&context);
-
+                    // Force embree to use maximum packet width when dispatching rays
+                    context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
                     rtcOccludedNp(s.accel, &context, &ray_, size);
                 }
             );

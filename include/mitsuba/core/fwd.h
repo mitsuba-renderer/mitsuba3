@@ -173,8 +173,8 @@ template <typename Float_> struct CoreAliases {
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
 
-    // TODO refactoring: comment this
-    using FloatP   = ek::Packet<ek::scalar_t<Float>, 4>; // TODO should use the default size
+    // Packet type aliases for packet ray intersection when using LLVM + embree
+    using FloatP   = ek::Packet<ek::scalar_t<Float>>;
     using MaskP    = ek::mask_t<FloatP>;
     using Point2fP = Point<FloatP, 2>;
     using Point3fP = Point<FloatP, 3>;

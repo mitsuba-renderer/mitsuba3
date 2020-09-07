@@ -52,7 +52,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MuellerMatrix4f           = MuellerMatrix<UnpolarizedSpectrum>;
 
     using Ray3f                     = Ray<Point<Float, 3>, Spectrum>;
-    using Ray3fP                    = Ray<Point<ek::Packet<ek::scalar_t<Float>, 4>, 3>, Spectrum>;  // TODO should use the default size
+    using Ray3fP                    = Ray<Point<ek::Packet<ek::scalar_t<Float>>, 3>, Spectrum>;
     using RayDifferential3f         = RayDifferential<Point<Float, 3>, Spectrum>;
 
     using PositionSample3f          = PositionSample<Float, Spectrum>;

@@ -23,8 +23,7 @@ NAMESPACE_BEGIN(mitsuba)
 #elif defined(ENOKI_X86_SSE42)
 #  define MTS_RAY_WIDTH 4
 #else
-#  define MTS_RAY_WIDTH 4 // TODO refactoring
-// #  error Expected to use vectorization
+#  error Expected to use vectorization
 #endif
 
 #define JOIN(x, y)        JOIN_AGAIN(x, y)
