@@ -51,6 +51,11 @@ endif()
 
 if (MTS_ENABLE_PYTHON)
   find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
+  add_subdirectory(ext/pybind11)
+  mark_as_advanced(
+    PYBIND11_FINDPYTHON
+    PYBIND11_NOPYTHON)
 else()
   find_package(Python COMPONENTS Interpreter REQUIRED)
 endif()
