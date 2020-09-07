@@ -129,7 +129,7 @@ set(MTS_NATIVE_FLAGS ${MTS_NATIVE_FLAGS_DEFAULT} CACHE STRING
 # desired, Embree (which tends to be quite a bit faster) can be used instead.
 # Embree lacks some features provided by Mitsuba 2, like support for double
 # precision arithmetic.
-option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" OFF)
+option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 
 # Build the graphical user interface? (Note that this feature remains incomplete)
 option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
