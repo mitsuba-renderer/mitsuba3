@@ -84,21 +84,8 @@ public:
                            const ScalarVector2u &size)
         : m_size(size) {
 
-        m_cond_cdf = ek::empty<FloatStorage>(ek::hprod(m_size));
-        m_marg_cdf = ek::empty<FloatStorage>(m_size.y());
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_cond_cdf, AllocType::Managed);
-            ek::migrate(m_marg_cdf, AllocType::Managed);
-        }
-
-        if constexpr (ek::is_jit_array_v<Float>) {
-            ek::eval(m_cond_cdf, m_marg_cdf);
-            jitc_sync_stream();
-        }
-
-        ScalarFloat *cond_cdf = m_cond_cdf.data(),
-                    *marg_cdf = m_marg_cdf.data();
+        std::unique_ptr<ScalarFloat[]> cond_cdf(new ScalarFloat[ek::hprod(m_size)]);
+        std::unique_ptr<ScalarFloat[]> marg_cdf(new ScalarFloat[m_size.y()]);
 
         // Construct conditional and marginal CDFs
         double accum_marg = 0.0;
@@ -112,6 +99,9 @@ public:
             accum_marg += accum_cond;
             marg_cdf[y] = accum_marg;
         }
+
+        m_cond_cdf = ek::load_unaligned<FloatStorage>(cond_cdf.get(), ek::hprod(m_size));
+        m_marg_cdf = ek::load_unaligned<FloatStorage>(marg_cdf.get(), m_size.y());
 
         m_inv_normalization = (ScalarFloat) accum_marg;
         m_normalization = (ScalarFloat) (1.0 / accum_marg);
@@ -467,6 +457,11 @@ public:
                 }
             }
         }
+
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            for (auto& level : m_levels)
+                ek::migrate(level.data, AllocType::Device);
+        }
     }
 
     /**
@@ -730,7 +725,7 @@ protected:
             : size(ek::hprod(res)), width(res.x()),
               data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
             if constexpr (ek::is_cuda_array_v<Float>)
-                ek::migrate(data, AllocType::Managed);
+                ek::migrate(data, AllocType::HostPinned); // TODO refactoring: replace with Host
 
             if constexpr (ek::is_jit_array_v<Float>) {
                 ek::eval(data);
@@ -877,27 +872,15 @@ public:
         double scale_x = .5 / (w - 1),
                scale_y = .5 / (h - 1);
 
-        m_data = ek::empty<FloatStorage>(m_slices * n_data);
-        if constexpr (ek::is_cuda_array_v<Float>)
-            ek::migrate(m_data, AllocType::Managed);
+        std::unique_ptr<ScalarFloat[]> data_out(new ScalarFloat[m_slices * n_data]);
 
         if (enable_sampling) {
-            m_marg_cdf = ek::empty<FloatStorage>(m_slices * n_marg);
-            m_cond_cdf = ek::empty<FloatStorage>(m_slices * n_cond);
+            std::unique_ptr<ScalarFloat[]> marg_cdf(new ScalarFloat[m_slices * n_marg]);
+            std::unique_ptr<ScalarFloat[]> cond_cdf(new ScalarFloat[m_slices * n_cond]);
 
-            if constexpr (ek::is_cuda_array_v<Float>) {
-                ek::migrate(m_marg_cdf, AllocType::Managed);
-                ek::migrate(m_cond_cdf, AllocType::Managed);
-            }
-
-            if constexpr (ek::is_jit_array_v<Float>) {
-                ek::eval(m_cond_cdf, m_marg_cdf);
-                jitc_sync_stream();
-            }
-
-            ScalarFloat *marg_cdf = m_marg_cdf.data(),
-                        *cond_cdf = m_cond_cdf.data(),
-                        *data_out = m_data.data();
+            ScalarFloat *marg_cdf_ptr = marg_cdf.get(),
+                        *cond_cdf_ptr = cond_cdf.get(),
+                        *data_out_ptr = data_out.get();
 
             std::unique_ptr<double[]> cond_cdf_sum(new double[h]);
 
@@ -914,7 +897,7 @@ public:
                         for (uint32_t x = 0; x < w - 1; ++x, ++i, ++j) {
                             accum += scale_x * ((double) data[i] +
                                                 (double) data[i + 1]);
-                            cond_cdf[j] = (ScalarFloat) accum;
+                            cond_cdf_ptr[j] = (ScalarFloat) accum;
                         }
                         cond_cdf_sum[y] = accum;
                     }
@@ -923,7 +906,7 @@ public:
                     double accum = 0.0;
                     for (uint32_t y = 0; y < h - 1; ++y) {
                         accum += scale_y * (cond_cdf_sum[y] + cond_cdf_sum[y + 1]);
-                        marg_cdf[y] = (ScalarFloat) accum;
+                        marg_cdf_ptr[y] = (ScalarFloat) accum;
                     }
 
                     if (normalize)
@@ -940,7 +923,7 @@ public:
                                               (double) data[i + 1] +
                                               (double) data[i + w] +
                                               (double) data[i + w + 1]);
-                            cond_cdf[j] = (ScalarFloat) accum;
+                            cond_cdf_ptr[j] = (ScalarFloat) accum;
                         }
                         cond_cdf_sum[y] = accum;
                     }
@@ -949,7 +932,7 @@ public:
                     double accum = 0.0;
                     for (uint32_t y = 0; y < h - 1; ++y) {
                         accum += cond_cdf_sum[y];
-                        marg_cdf[y] = (ScalarFloat) accum;
+                        marg_cdf_ptr[y] = (ScalarFloat) accum;
                     }
 
                     if (normalize)
@@ -957,14 +940,17 @@ public:
                 }
 
                 for (size_t i = 0; i < n_cond; ++i)
-                    *cond_cdf++ *= norm;
+                    *cond_cdf_ptr++ *= norm;
                 for (size_t i = 0; i < n_marg; ++i)
-                    *marg_cdf++ *= norm;
+                    *marg_cdf_ptr++ *= norm;
                 for (size_t i = 0; i < n_data; ++i)
-                    *data_out++ = *data++ * norm;
+                    *data_out_ptr++ = *data++ * norm;
             }
+
+            m_marg_cdf = ek::load_unaligned<FloatStorage>(marg_cdf.get(), m_slices * n_marg);
+            m_cond_cdf = ek::load_unaligned<FloatStorage>(cond_cdf.get(), m_slices * n_cond);
         } else {
-            ScalarFloat *data_out = m_data.data();
+            ScalarFloat *data_out_ptr = data_out.get();
 
             for (uint32_t slice = 0; slice < m_slices; ++slice) {
                 ScalarFloat norm = 1.f;
@@ -984,9 +970,11 @@ public:
                 }
 
                 for (uint32_t k = 0; k < n_data; ++k)
-                    *data_out++ = *data++ * norm;
+                    *data_out_ptr++ = *data++ * norm;
             }
         }
+
+        m_data = ek::load_unaligned<FloatStorage>(data_out.get(), m_slices * n_data);
     }
 
     /**

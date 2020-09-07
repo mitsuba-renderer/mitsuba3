@@ -64,9 +64,17 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
            fi[1] < m_vertex_count &&
            fi[2] < m_vertex_count);
 
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::migrate(m_vertex_positions, AllocType::HostPinned);
+        jitc_sync_stream();
+    }
+
     ScalarPoint3f v0 = vertex_position(fi[0]),
                   v1 = vertex_position(fi[1]),
                   v2 = vertex_position(fi[2]);
+
+    if constexpr (ek::is_cuda_array_v<Float>)
+        ek::migrate(m_vertex_positions, AllocType::Device);
 
     return typename Mesh<Float, Spectrum>::ScalarBoundingBox3f(ek::min(min(v0, v1), v2),
                                                                ek::max(ek::max(v0, v1), v2));
@@ -273,8 +281,17 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
     m_bbox.reset();
+
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::migrate(m_vertex_positions, AllocType::HostPinned); // TODO refactoring: replace with Host
+        jitc_sync_stream();
+    }
+
     for (ScalarSize i = 0; i < m_vertex_count; ++i)
         m_bbox.expand(vertex_position(i));
+
+    if constexpr (ek::is_cuda_array_v<Float>)
+        ek::migrate(m_vertex_positions, AllocType::Device);
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
@@ -299,17 +316,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     } else {
         Float table = face_area(ek::arange<UInt32>(m_face_count));
 
-        if constexpr (ek::is_cuda_array_v<Float>)
-            ek::migrate(table, AllocType::Managed);
-
-        ek::schedule(table);
-        ek::eval();
-        jitc_sync_device();
-
-        m_area_pmf = DiscreteDistribution<Float>(
-            table.data(),
-            m_face_count
-        );
+        m_area_pmf = DiscreteDistribution<Float>(table);
     }
 }
 
@@ -327,6 +334,12 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
                  props, false, false);
     mesh->m_faces = m_faces;
 
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::migrate(m_vertex_positions, AllocType::HostPinned);
+        ek::migrate(m_vertex_texcoords, AllocType::HostPinned);
+        jitc_sync_stream();
+    }
+
     ScalarFloat *pos_out = mesh->m_vertex_positions.data();
     for (size_t i = 0; i < m_vertex_count; ++i) {
         ScalarPoint2f uv_i = vertex_texcoord(i);
@@ -335,6 +348,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
         pos_out[i*3 + 2] = 0.f;
     }
     mesh->recompute_bbox();
+
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::migrate(m_vertex_positions, AllocType::Device);
+        ek::migrate(m_vertex_texcoords, AllocType::Device);
+    }
 
     props.set_object("mesh", mesh.get());
     m_parameterization = new Scene<Float, Spectrum>(props);
@@ -701,9 +719,17 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
     Assert(fi[1] < m_vertex_count);
     Assert(fi[2] < m_vertex_count);
 
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::migrate(m_vertex_positions, AllocType::HostPinned);
+        jitc_sync_stream();
+    }
+
     ScalarPoint3f v0 = vertex_position(fi[0]),
                   v1 = vertex_position(fi[1]),
                   v2 = vertex_position(fi[2]);
+
+    if constexpr (ek::is_cuda_array_v<Float>)
+        ek::migrate(m_vertex_positions, AllocType::Device);
 
     /* The kd-tree code will frequently call this function with
        almost-collapsed bounding boxes. It's extremely important not to
