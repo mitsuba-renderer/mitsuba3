@@ -194,13 +194,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
-            ek::eval(pi);
 
             Vector3f ng = ek::empty<Vector3f>(N);
             UInt32 inst_index = ek::zero<UInt32>(N);
             Vector3u extra = ek::zero<Vector3u>(N);
 
-            ek::eval(extra, ng, inst_index);
+            ek::eval(extra, ng, inst_index, pi);
             jitc_sync_device();
 
             RTCRayHitNp rh;
@@ -317,13 +316,12 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>(N);
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
-            ek::eval(pi);
 
             Vector3f ng = ek::empty<Vector3f>(N);
             UInt32 inst_index = ek::zero<UInt32>(N);
             Vector3u extra = ek::zero<Vector3u>(N);
 
-            ek::eval(extra, ng, inst_index);
+            ek::eval(extra, ng, inst_index, pi);
             jitc_sync_device();
 
             RTCRayHitNp rh;
