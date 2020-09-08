@@ -207,7 +207,6 @@ void cie_initialize() {
         return;
 
     cie_gpu_data = ek::load_unaligned<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
-    ek::migrate(cie_gpu_data, AllocType::Device);
 
     cie1931_x_gpu_data = cie_gpu_data.data();
     cie1931_y_gpu_data = cie_gpu_data.data() + MTS_CIE_SAMPLES;

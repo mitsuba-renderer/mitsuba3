@@ -224,16 +224,12 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            if constexpr (ek::is_cuda_array_v<Float>) {
-                ek::migrate(m_data, AllocType::HostPinned); // TODO refactoring: replace with Host
-                jitc_sync_stream();
-            }
+            scoped_migrate_to_cpu scope(m_data);
 
             std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
 
             ScalarFloat *ptr     = (ScalarFloat *) m_data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
-
 
             for (size_t y = 0; y < m_resolution.y(); ++y) {
                 ScalarFloat sin_theta =
@@ -256,9 +252,6 @@ public:
                     ptr += 4;
                 }
             }
-
-            if constexpr (ek::is_cuda_array_v<Float>)
-                ek::migrate(m_data, AllocType::Device);
 
             m_warp = Warp(luminance.get(), m_resolution);
         }

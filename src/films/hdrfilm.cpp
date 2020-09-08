@@ -249,8 +249,7 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
-        if constexpr (ek::is_cuda_array_v<Float>)
-            ek::migrate(m_storage->data(), AllocType::HostPinned); // TODO refactoring: replace with Host
+        scoped_migrate_to_cpu scope(m_storage->data(), false);
 
         if constexpr (ek::is_jit_array_v<Float>) {
             ek::eval();
@@ -261,9 +260,6 @@ public:
                                                                : Bitmap::PixelFormat::XYZAW,
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
                           (uint8_t *) m_storage->data().data());
-
-        if constexpr (ek::is_cuda_array_v<Float>)
-            ek::migrate(m_storage->data(), AllocType::Device);
 
         if (raw)
             return source;

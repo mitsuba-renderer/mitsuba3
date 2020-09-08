@@ -600,11 +600,7 @@ protected:
      * following an update
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
-        // Recompute the mean texture value following an update
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_data, AllocType::HostPinned); // TODO refactoring: replace with Host
-            jitc_sync_stream();
-        }
+        scoped_migrate_to_cpu scope(m_data);
 
         const ScalarFloat *ptr = m_data.data();
 
@@ -647,9 +643,6 @@ protected:
                 m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
                     ptr, m_resolution);
         }
-
-        if constexpr (ek::is_cuda_array_v<Float>)
-            ek::migrate(m_data, AllocType::Device);
 
         if (init_mean)
             m_mean = ScalarFloat(mean / pixel_count);

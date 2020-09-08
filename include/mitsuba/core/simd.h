@@ -63,4 +63,23 @@ inline size_t round_to_packet_size(size_t size) {
     return (size + PacketSize - 1) / PacketSize * PacketSize;
 }
 
+template <typename Array, bool Condition = true>
+struct scoped_migrate_to_cpu {
+    scoped_migrate_to_cpu(Array &array, bool sync = true)
+        : array(array) {
+        if constexpr (ek::is_cuda_array_v<Array> && Condition) {
+            migrate(array, AllocType::HostPinned); // TODO refactoring: replace with Host
+            if (sync)
+                jitc_sync_stream();
+        }
+    }
+    ~scoped_migrate_to_cpu() {
+        if constexpr (ek::is_cuda_array_v<Array> && Condition) {
+            migrate(array, AllocType::Device);
+        }
+    }
+
+    Array array;
+};
+
 NAMESPACE_END(mitsuba)

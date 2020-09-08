@@ -55,14 +55,12 @@ public:
         if (m_cdf.size() != size)
             m_cdf = ek::empty<FloatStorage>(size);
 
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_pmf, AllocType::HostPinned); // TODO refactoring: replace with Host
-            ek::migrate(m_cdf, AllocType::HostPinned);
-        }
+        scoped_migrate_to_cpu scope1(m_pmf, false);
+        scoped_migrate_to_cpu scope2(m_cdf, false);
 
         if constexpr (ek::is_jit_array_v<Float>) {
             ek::eval(m_pmf, m_cdf);
-            jitc_sync_device();
+            jitc_sync_stream();
         }
 
         ScalarFloat *pmf_ptr = m_pmf.data(),
@@ -88,11 +86,6 @@ public:
 
         if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("DiscreteDistribution: no probability mass found!");
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_pmf, AllocType::Device);
-            ek::migrate(m_cdf, AllocType::Device);
-        }
 
         m_sum = ScalarFloat(sum);
         m_normalization = ScalarFloat(1.0 / sum);
@@ -313,15 +306,12 @@ public:
         if (m_cdf.size() != size - 1)
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
-        // Ensure that we can access these arrays on the GPU
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_pdf, AllocType::HostPinned);
-            ek::migrate(m_cdf, AllocType::HostPinned);
-        }
+        scoped_migrate_to_cpu scope1(m_pdf, false);
+        scoped_migrate_to_cpu scope2(m_cdf, false);
 
         if constexpr (ek::is_jit_array_v<Float>) {
             ek::eval(m_pdf, m_cdf);
-            jitc_sync_device();
+            jitc_sync_stream();
         }
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
@@ -355,11 +345,6 @@ public:
 
         if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("ContinuousDistribution: no probability mass found!");
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_pdf, AllocType::Device);
-            ek::migrate(m_cdf, AllocType::Device);
-        }
 
         m_integral = ScalarFloat(integral);
         m_normalization = ScalarFloat(1. / integral);
@@ -593,16 +578,13 @@ public:
         if (m_cdf.size() != size - 1)
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
-        // Ensure that we can access these arrays on the GPU
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_pdf,   AllocType::HostPinned);
-            ek::migrate(m_cdf,   AllocType::HostPinned);
-            ek::migrate(m_nodes, AllocType::HostPinned);
-        }
+        scoped_migrate_to_cpu scope1(m_pdf, false);
+        scoped_migrate_to_cpu scope2(m_cdf, false);
+        scoped_migrate_to_cpu scope3(m_nodes, false);
 
         if constexpr (ek::is_jit_array_v<Float>) {
             ek::eval(m_pdf, m_cdf, m_nodes);
-            jitc_sync_device();
+            jitc_sync_stream();
         }
 
         ScalarFloat *pdf_ptr = m_pdf.data(),
@@ -646,12 +628,6 @@ public:
 
         if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("IrregularContinuousDistribution: no probability mass found!");
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::migrate(m_pdf,   AllocType::Device);
-            ek::migrate(m_cdf,   AllocType::Device);
-            ek::migrate(m_nodes, AllocType::Device);
-        }
 
         m_integral = ScalarFloat(integral);
         m_normalization = ScalarFloat(1. / integral);
