@@ -272,19 +272,17 @@ public:
                David Clarke, Appendix A.2 (A26) */
             weight = mueller::reverse(weight);
 
-            /* The Stokes reference frame vector of this matrix lies in the plane
-               of reflection / refraction. */
+            /* The Stokes reference frame vector of this matrix lies perpendicular
+               to the plane of reflection. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in = ek::normalize(ek::cross(n, -wi_hat)),
-                     p_axis_in = ek::normalize(ek::cross(-wi_hat, s_axis_in)),
-                     s_axis_out = ek::normalize(ek::cross(n, wo_hat)),
-                     p_axis_out = ek::normalize(ek::cross(wo_hat, s_axis_out));
+            Vector3f s_axis_in = normalize(cross(n, -wi_hat)),
+                     s_axis_out = normalize(cross(n, wo_hat));
 
             /* Rotate in/out reference vector of weight s.t. it aligns with the
                implicit Stokes bases of -wi_hat & wo_hat. */
             weight = mueller::rotate_mueller_basis(weight,
-                                                   -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
-                                                    wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
+                                                   -wi_hat, s_axis_in, mueller::stokes_basis(-wi_hat),
+                                                    wo_hat, s_axis_out, mueller::stokes_basis(wo_hat));
 
             if (ek::any_or<true>(selected_r))
                 weight[selected_r] *= mueller::absorber(reflectance);

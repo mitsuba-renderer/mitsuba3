@@ -58,8 +58,8 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
     bo_p = ek.normalize(ek.cross(wo, bi_s))
 
     M_local = rotate_mueller_basis(M_local,
-                                   -wi, stokes_basis(-wi), bi_p,
-                                   wo, stokes_basis(wo), bo_p)
+                                   -wi, stokes_basis(-wi), bi_s,
+                                    wo, stokes_basis( wo), bo_s)
 
     # Apply to unpolarized light and verify that it is equivalent to normal Fresnel
     a0 = M_local @ spectrum_from_stokes([1, 0, 0, 0])
@@ -88,18 +88,18 @@ def test02_sample_pol_local(variant_scalar_mono_polarized):
     # Apply to (positive) diagonally polarized light (linear at +45˚)
     # Test that..
     # 1) The polarization is flipped to -45˚
-    # 2) There is now also some (left) circular polarization
+    # 2) There is now also some (right) circular polarization
     a3 = M_local @ spectrum_from_stokes([1, 0, +1, 0])
     assert ek.all(a3[2, 0] < UnpolarizedSpectrum(0.0))
-    assert ek.all(a3[3, 0] < UnpolarizedSpectrum(0.0))
+    assert ek.all(a3[3, 0] > UnpolarizedSpectrum(0.0))
 
     # Apply to (negative) diagonally polarized light (linear at -45˚)
     # Test that..
     # 1) The polarization is flipped to +45˚
-    # 2) There is now also some (right) circular polarization
+    # 2) There is now also some (left) circular polarization
     a4 = M_local @ spectrum_from_stokes([1, 0, -1, 0])
     assert ek.all(a4[2, 0] > UnpolarizedSpectrum(0.0))
-    assert ek.all(a4[3, 0] > UnpolarizedSpectrum(0.0))
+    assert ek.all(a4[3, 0] < UnpolarizedSpectrum(0.0))
 
     # Apply to right circularly polarized light
     # Test that the polarization is flipped to left circular
