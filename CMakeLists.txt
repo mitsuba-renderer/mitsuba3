@@ -77,6 +77,7 @@ execute_process(
   OUTPUT_VARIABLE MTS_VARIANTS
   ERROR_VARIABLE MTS_VARIANTS_ERR
 )
+
 if (MTS_VARIANTS_ERR)
   message(FATAL_ERROR "Could not run resources/configure.py script: ${MTS_VARIANTS_ERR}")
 endif()
@@ -443,7 +444,11 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+if (MSVC)
+  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+else()
+  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
 # Function for creating Mitsuba plugins
 function(add_plugin)
