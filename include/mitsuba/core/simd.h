@@ -63,20 +63,27 @@ inline size_t round_to_packet_size(size_t size) {
     return (size + PacketSize - 1) / PacketSize * PacketSize;
 }
 
-/// Temporarily migrate variables on the host
-template <typename ...Args> struct scoped_migrate_to_host {
+/// RAII-style class to temporarily migrate variables on the host
+template <bool Condition, typename ...Args>
+struct scoped_migrate_to_host_cond {
     static constexpr bool IsCUDA = (ek::is_cuda_array_v<Args> || ...);
+    static constexpr bool IsLLVM = (ek::is_llvm_array_v<Args> || ...);
+    static constexpr bool IsJIT = IsCUDA || IsLLVM;
+    static_assert (!(IsCUDA && IsLLVM));
 
-    scoped_migrate_to_host(Args&... args) : m_args(args...) {
-        if constexpr (IsCUDA) {
-            ek::schedule(args...);
-            migrate_tuple(AllocType::HostPinned);
+    scoped_migrate_to_host_cond(Args&... args) : m_args(args...) {
+        if constexpr (IsJIT && Condition) {
+            ek::eval(args...);
+
+            if constexpr (IsCUDA)
+                migrate_tuple(AllocType::HostPinned);
+
             jitc_sync_stream();
         }
     }
 
-    ~scoped_migrate_to_host() {
-        if constexpr (IsCUDA)
+    ~scoped_migrate_to_host_cond() {
+        if constexpr (IsCUDA && Condition)
             migrate_tuple(AllocType::Device);
     }
 
@@ -89,6 +96,12 @@ private:
 
 private:
     std::tuple<Args&...> m_args;
+};
+
+template <typename... Args>
+struct scoped_migrate_to_host : public scoped_migrate_to_host_cond<true, Args...> {
+    scoped_migrate_to_host(Args &... args)
+        : scoped_migrate_to_host_cond<true, Args...>(args...){};
 };
 
 NAMESPACE_END(mitsuba)
