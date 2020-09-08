@@ -254,28 +254,14 @@ ColorMode variant_to_color_mode() {
         static_assert(false_v<Float, Spectrum>, "This should never happen!");
 }
 
-template <typename Float, typename Spectrum>
-bool check_jit() {
-    if constexpr (ek::is_jit_array_v<Float>)
-        return true;
-    else
-        return false;
-}
-
-
 struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
-    bool parallelize;
     ColorMode color_mode;
 
     XMLParseContext(const std::string &variant) : variant(variant) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
-
-        /* Don't load the scene in parallel when running in JIT mode
-           (The Enoki CUDA backend is currently not multi-threaded) */
-        parallelize = !MTS_INVOKE_VARIANT(variant, check_jit);
     }
 
     std::string variant;
@@ -295,7 +281,6 @@ static void check_attributes(XMLSource &src, const pugi::xml_node &node,
     if (!attrs.empty() && (!found_one || expect_all))
         src.throw_error(node, "missing attribute \"%s\" in element \"%s\"", *attrs.begin(), node.name());
 }
-
 
 /// Helper function to split the 'value' attribute into X/Y/Z components
 void expand_value_to_xyz(XMLSource &src, pugi::xml_node &node) {
@@ -995,8 +980,21 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
     ThreadEnvironment env;
 
-    auto functor = [&](const tbb::blocked_range<uint32_t> &range) {
+    tbb::parallel_for(
+        tbb::blocked_range<uint32_t>(0u, (uint32_t) named_references.size(), 1),
+        [&](const tbb::blocked_range<uint32_t> &range) {
         ScopedSetThreadEnvironment set_env(env);
+
+#if defined(MTS_ENABLE_CUDA)
+        if (string::starts_with(ctx.variant, "cuda_"))
+            jitc_set_device(0);
+#endif
+
+#if defined(MTS_ENABLE_LLVM)
+        if (string::starts_with(ctx.variant, "llvm_"))
+            jitc_set_device(-1);
+#endif
+
         for (uint32_t i = range.begin(); i != range.end(); ++i) {
             auto &kv = named_references[i];
             try {
@@ -1005,11 +1003,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
                     obj = instantiate_node(ctx, kv.second);
                 };
 
-                // Potentially isolate from parent tasks to prevent deadlocks
-                if (ctx.parallelize)
-                    tbb::this_task_arena::isolate(instantiate_recursively);
-                else
-                    instantiate_recursively();
+                tbb::this_task_arena::isolate(instantiate_recursively);
 
                 // Give the object a chance to recursively expand into sub-objects
                 std::vector<ref<Object>> children = obj->expand();
@@ -1030,14 +1024,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
                     throw;
             }
         }
-    };
-
-    tbb::blocked_range<uint32_t> range(0u, (uint32_t) named_references.size(), 1);
-
-    if (ctx.parallelize)
-        tbb::parallel_for(range, functor);
-    else
-        functor(range);
+    });
 
     try {
         inst.object = PluginManager::instance()->create_object(props, inst.class_);
