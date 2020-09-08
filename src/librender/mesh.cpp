@@ -64,7 +64,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
            fi[1] < m_vertex_count &&
            fi[2] < m_vertex_count);
 
-    scoped_migrate_to_cpu scope(m_vertex_positions);
+    scoped_migrate_to_host scope(m_vertex_positions);
 
     ScalarPoint3f v0 = vertex_position(fi[0]),
                   v1 = vertex_position(fi[1]),
@@ -274,7 +274,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
-    scoped_migrate_to_cpu scope(m_vertex_positions);
+    scoped_migrate_to_host scope(m_vertex_positions);
 
     m_bbox.reset();
 
@@ -322,8 +322,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
                  props, false, false);
     mesh->m_faces = m_faces;
 
-    scoped_migrate_to_cpu scope1(m_vertex_positions, false);
-    scoped_migrate_to_cpu scope2(m_vertex_texcoords);
+    scoped_migrate_to_host scope(m_vertex_positions, m_vertex_texcoords);
 
     ScalarFloat *pos_out = mesh->m_vertex_positions.data();
     for (size_t i = 0; i < m_vertex_count; ++i) {
@@ -699,7 +698,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
     Assert(fi[1] < m_vertex_count);
     Assert(fi[2] < m_vertex_count);
 
-    scoped_migrate_to_cpu scope(m_vertex_positions);
+    scoped_migrate_to_host scope(m_vertex_positions);
 
     ScalarPoint3f v0 = vertex_position(fi[0]),
                   v1 = vertex_position(fi[1]),

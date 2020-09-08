@@ -249,9 +249,9 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
-        scoped_migrate_to_cpu scope(m_storage->data(), false);
+        scoped_migrate_to_host scope(m_storage->data());
 
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (ek::is_llvm_array_v<Float>) {
             ek::eval();
             jitc_sync_stream();
         }

@@ -55,10 +55,9 @@ public:
         if (m_cdf.size() != size)
             m_cdf = ek::empty<FloatStorage>(size);
 
-        scoped_migrate_to_cpu scope1(m_pmf, false);
-        scoped_migrate_to_cpu scope2(m_cdf, false);
+        scoped_migrate_to_host scope(m_pmf, m_cdf);
 
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (ek::is_llvm_array_v<Float>) {
             ek::eval(m_pmf, m_cdf);
             jitc_sync_stream();
         }
@@ -306,10 +305,9 @@ public:
         if (m_cdf.size() != size - 1)
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
-        scoped_migrate_to_cpu scope1(m_pdf, false);
-        scoped_migrate_to_cpu scope2(m_cdf, false);
+        scoped_migrate_to_host scope(m_pdf, m_cdf);
 
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (ek::is_llvm_array_v<Float>) {
             ek::eval(m_pdf, m_cdf);
             jitc_sync_stream();
         }
@@ -578,17 +576,15 @@ public:
         if (m_cdf.size() != size - 1)
             m_cdf = ek::empty<FloatStorage>(size - 1);
 
-        scoped_migrate_to_cpu scope1(m_pdf, false);
-        scoped_migrate_to_cpu scope2(m_cdf, false);
-        scoped_migrate_to_cpu scope3(m_nodes, false);
+        scoped_migrate_to_host scope(m_pdf, m_cdf, m_nodes);
 
-        if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (ek::is_llvm_array_v<Float>) {
             ek::eval(m_pdf, m_cdf, m_nodes);
             jitc_sync_stream();
         }
 
-        ScalarFloat *pdf_ptr = m_pdf.data(),
-                    *cdf_ptr = m_cdf.data(),
+        ScalarFloat *pdf_ptr   = m_pdf.data(),
+                    *cdf_ptr   = m_cdf.data(),
                     *nodes_ptr = m_nodes.data();
 
         m_valid = (uint32_t) -1;

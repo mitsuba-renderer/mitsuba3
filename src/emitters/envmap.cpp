@@ -224,7 +224,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            scoped_migrate_to_cpu scope(m_data);
+            scoped_migrate_to_host scope(m_data);
 
             std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
 

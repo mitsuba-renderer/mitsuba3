@@ -109,11 +109,17 @@ public:
     auto face_area(Index index, ek::mask_t<Index> active = true) const {
         auto fi = face_indices(index, active);
 
-        scoped_migrate_to_cpu<FloatStorage, !ek::is_array_v<Index>> scope(m_vertex_positions);
+        if constexpr (ek::is_cuda_array_v<Float> && !ek::is_array_v<Index>) {
+            ek::migrate(m_vertex_positions, AllocType::HostPinned);
+            jitc_sync_stream();
+        }
 
         auto p0 = vertex_position(fi[0], active),
              p1 = vertex_position(fi[1], active),
              p2 = vertex_position(fi[2], active);
+
+        if constexpr (ek::is_cuda_array_v<Float> && !ek::is_array_v<Index>)
+            ek::migrate(m_vertex_positions, AllocType::Device);
 
         return 0.5f * ek::norm(ek::cross(p1 - p0, p2 - p0));
     }

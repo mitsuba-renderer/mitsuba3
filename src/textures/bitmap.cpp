@@ -600,7 +600,7 @@ protected:
      * following an update
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
-        scoped_migrate_to_cpu scope(m_data);
+        scoped_migrate_to_host scope(m_data);
 
         const ScalarFloat *ptr = m_data.data();
 

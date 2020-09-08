@@ -63,23 +63,32 @@ inline size_t round_to_packet_size(size_t size) {
     return (size + PacketSize - 1) / PacketSize * PacketSize;
 }
 
-template <typename Array, bool Condition = true>
-struct scoped_migrate_to_cpu {
-    scoped_migrate_to_cpu(Array &array, bool sync = true)
-        : array(array) {
-        if constexpr (ek::is_cuda_array_v<Array> && Condition) {
-            migrate(array, AllocType::HostPinned); // TODO refactoring: replace with Host
-            if (sync)
-                jitc_sync_stream();
-        }
-    }
-    ~scoped_migrate_to_cpu() {
-        if constexpr (ek::is_cuda_array_v<Array> && Condition) {
-            migrate(array, AllocType::Device);
+/// Temporarily migrate variables on the host
+template <typename ...Args> struct scoped_migrate_to_host {
+    static constexpr bool IsCUDA = (ek::is_cuda_array_v<Args> || ...);
+
+    scoped_migrate_to_host(Args&... args) : m_args(args...) {
+        if constexpr (IsCUDA) {
+            ek::schedule(args...);
+            migrate_tuple(AllocType::HostPinned);
+            jitc_sync_stream();
         }
     }
 
-    Array array;
+    ~scoped_migrate_to_host() {
+        if constexpr (IsCUDA)
+            migrate_tuple(AllocType::Device);
+    }
+
+private:
+    void migrate_tuple(AllocType dest) {
+        std::apply([dest](auto&&... args) {
+            (ek::migrate(args, dest), ...);
+            }, m_args);
+    }
+
+private:
+    std::tuple<Args&...> m_args;
 };
 
 NAMESPACE_END(mitsuba)

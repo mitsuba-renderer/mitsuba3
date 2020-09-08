@@ -727,10 +727,11 @@ protected:
             if constexpr (ek::is_cuda_array_v<Float>)
                 ek::migrate(data, AllocType::HostPinned); // TODO refactoring: replace with Host
 
-            if constexpr (ek::is_jit_array_v<Float>) {
+            if constexpr (ek::is_llvm_array_v<Float>)
                 ek::eval(data);
+
+            if constexpr (ek::is_jit_array_v<Float>)
                 jitc_sync_stream();
-            }
 
             data_ptr = data.data();
         }
