@@ -254,10 +254,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
 
         /* Paranoid stopping criterion */
         if (middle <= left || middle >= right) {
-            if constexpr (std::is_same_v<ek::scalar_t<Scalar>, float>)
-                middle = __builtin_nextafterf(left, right);
-            else
-                middle = __builtin_nextafterl(left, right);
+            middle = ek::next_float(left);
 
             if (middle == right)
                 break;

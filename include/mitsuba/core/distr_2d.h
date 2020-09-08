@@ -97,7 +97,7 @@ public:
                 cond_cdf[idx] = (ScalarFloat) accum_cond;
             }
             accum_marg += accum_cond;
-            marg_cdf[y] = accum_marg;
+            marg_cdf[y] = (ScalarFloat) accum_marg;
         }
 
         m_cond_cdf = ek::load_unaligned<FloatStorage>(cond_cdf.get(), ek::hprod(m_size));

@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props) {
-    m_sample_count = props.size_("sample_count", 4);
+    m_sample_count = (uint32_t) props.size_("sample_count", 4);
     m_base_seed = props.size_("seed", 0);
 
     m_dimension_index = 0u;
@@ -22,7 +22,7 @@ MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
                                                 size_t wavefront_size) {
-    m_wavefront_size = wavefront_size;
+    m_wavefront_size = (uint32_t) wavefront_size;
     m_dimension_index = 0u;
     m_sample_index = 0;
 }

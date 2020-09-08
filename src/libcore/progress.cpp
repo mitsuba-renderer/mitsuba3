@@ -39,7 +39,8 @@ void ProgressReporter::update(float progress) {
         return; // Don't refresh too often
 
     float remaining = elapsed / progress * (1 - progress);
-    std::string eta = "(" + util::time_string(elapsed) + ", ETA: " + util::time_string(remaining) + ")";
+    std::string eta = "(" + util::time_string((float) elapsed)
+        + ", ETA: " + util::time_string((float) remaining) + ")";
     if (eta.length() > 22)
         eta.resize(22);
 

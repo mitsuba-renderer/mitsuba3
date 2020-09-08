@@ -607,8 +607,8 @@ public:
 
             double value = 0.5 * (x1 - x0) * (y0 + y1);
 
-            m_range.x() = ek::min(m_range.x(), x0);
-            m_range.y() = ek::max(m_range.y(), x1);
+            m_range.x() = ek::min(m_range.x(), (ScalarFloat) x0);
+            m_range.y() = ek::max(m_range.y(), (ScalarFloat) x1);
 
             integral += value;
             *cdf_ptr++ = (ScalarFloat) integral;

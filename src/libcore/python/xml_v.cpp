@@ -249,14 +249,14 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
         try {
             props.set_array3f(key, value.template cast<Properties::Array3f>());
             continue;
-        } catch (const pybind11::cast_error &e) { }
+        } catch (const pybind11::cast_error &) { }
 
         // Try to cast entry to an object
         try {
             auto obj = value.template cast<ref<Object>>();
             expand_and_set_object(props, key, obj);
             continue;
-        } catch (const pybind11::cast_error &e) { }
+        } catch (const pybind11::cast_error &) { }
 
         // Didn't match any of the other types above
         Throw("Unkown value type: %s", value.get_type());

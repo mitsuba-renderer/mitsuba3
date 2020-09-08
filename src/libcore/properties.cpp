@@ -383,7 +383,7 @@ Float Properties::float_(const std::string &name) const {
         Throw("The property \"%s\" has the wrong type (expected <float>).", name);
     it->second.queried = true;
     if (it->second.data.is<int64_t>())
-        return (int64_t) it->second.data;
+        return (Float) (int64_t) it->second.data;
     return (Float) it->second.data;
 }
 
@@ -396,7 +396,7 @@ Float Properties::float_(const std::string &name, const Float &def_val) const {
         Throw("The property \"%s\" has the wrong type (expected <float>).", name);
     it->second.queried = true;
     if (it->second.data.is<int64_t>())
-        return (int64_t) it->second.data;
+        return (Float) (int64_t) it->second.data;
     return (Float) it->second.data;
 }
 

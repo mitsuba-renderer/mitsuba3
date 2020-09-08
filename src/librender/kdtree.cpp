@@ -57,7 +57,7 @@ MTS_VARIANT void ShapeKDTree<Float, Spectrum>::build() {
     Log(Info, "Finished. (%s of storage, took %s)",
         util::mem_string(m_index_count * sizeof(Index) +
                         m_node_count * sizeof(KDNode)),
-        util::time_string(timer.value())
+        util::time_string((float) timer.value())
     );
 }
 

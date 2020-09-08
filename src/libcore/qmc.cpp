@@ -108,7 +108,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
             m_permutations[i] = ptr;  ptr += prime;
         }
     }
-    Log(Debug, "Done (took %s)", util::time_string(timer.value()));
+    Log(Debug, "Done (took %s)", util::time_string((float) timer.value()));
 
     /* Invert the first two permutations */
     m_inv_permutation_storage = std::unique_ptr<uint16_t[]>(new uint16_t[5]);
@@ -144,7 +144,7 @@ void RadicalInverse::compute_faure_permutations(uint32_t max_base, uint16_t **pe
     for (uint32_t b = 2; b <= max_base; ++b) {
         if (b & 1) {
             /* Odd dimension */
-            uint16_t c = (b - 1) /2;
+            uint16_t c = (uint16_t) ((b - 1) / 2);
 
             for (uint16_t i=0; i<b; ++i) {
                 if (i == c) {
@@ -156,7 +156,7 @@ void RadicalInverse::compute_faure_permutations(uint32_t max_base, uint16_t **pe
             }
         } else {
             /* Even dimension */
-            uint16_t c = b / 2;
+            uint16_t c = (uint16_t) (b / 2);
 
             for (uint16_t i=0; i<b; ++i)
                 perm[b][i] = i < c ? 2 * perm[c][i] : 2 * perm[c][i - c] + 1;

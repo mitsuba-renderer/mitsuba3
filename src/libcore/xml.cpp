@@ -368,7 +368,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
                     name = name.substr(0, i + 1) + std::string("_") + name.substr(i + 1);
                     i += 2;
                     while (i < name.length() && std::isupper(name[i])) {
-                        name[i] = std::tolower(name[i]);
+                        name[i] = (char) std::tolower(name[i]);
                         ++i;
                     }
                 }

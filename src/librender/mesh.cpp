@@ -187,7 +187,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         filename, m_face_count, m_vertex_count,
         util::mem_string(m_face_count * face_data_bytes() +
                             m_vertex_count * vertex_data_bytes()),
-        util::time_string(timer.value())
+        util::time_string((float) timer.value())
     );
 }
 

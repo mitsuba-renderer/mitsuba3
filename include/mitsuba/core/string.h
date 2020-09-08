@@ -45,7 +45,8 @@ inline bool ends_with(const std::string &string, const std::string &suffix) {
 inline std::string to_lower(const std::string &s) {
     std::string result;
     result.resize(s.length());
-    std::transform(s.begin(), s.end(), result.begin(), ::tolower);
+    for (size_t i = 0; i < s.length(); ++i)
+        result[i] = (char) std::tolower(s[i]);
     return result;
 }
 
@@ -53,7 +54,8 @@ inline std::string to_lower(const std::string &s) {
 inline std::string to_upper(const std::string &s) {
     std::string result;
     result.resize(s.length());
-    std::transform(s.begin(), s.end(), result.begin(), ::toupper);
+    for (size_t i = 0; i < s.length(); ++i)
+        result[i] = (char) std::toupper(s[i]);
     return result;
 }
 

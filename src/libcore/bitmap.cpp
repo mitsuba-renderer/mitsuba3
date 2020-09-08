@@ -1907,7 +1907,7 @@ namespace {
             rgbe[0] = (uint8_t) (data[0] * max);
             rgbe[1] = (uint8_t) (data[1] * max);
             rgbe[2] = (uint8_t) (data[2] * max);
-            rgbe[3] = e+128; // Exponent value in bias format
+            rgbe[3] = (uint8_t) (e + 128); // Exponent value in bias format
         }
     }
 
@@ -2168,8 +2168,8 @@ void Bitmap::read_pfm(Stream *stream) {
     Float scale_and_order;
 
     try {
-        m_size.x() = std::stoull(stream->read_token());
-        m_size.y() = std::stoull(stream->read_token());
+        m_size.x() = (uint32_t) std::stoul(stream->read_token());
+        m_size.y() = (uint32_t) std::stoul(stream->read_token());
         scale_and_order = Float(std::stod(stream->read_token()));
     } catch (const std::logic_error &) {
         Throw("Could not parse PFM header!");

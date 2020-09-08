@@ -87,7 +87,7 @@ public:
 
     void seed(uint64_t seed_offset, size_t wavefront_size) override {
         Base::seed(seed_offset, wavefront_size);
-        m_scramble_seed = compute_per_sequence_seed(seed_offset);
+        m_scramble_seed = compute_per_sequence_seed((uint32_t) seed_offset);
     }
 
     Float next_1d(Mask /*active*/ = true) override {

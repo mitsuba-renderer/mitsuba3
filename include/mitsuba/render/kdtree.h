@@ -623,7 +623,7 @@ protected:
 
         /// Create a new edge event
         EdgeEvent(Type type, int axis, Scalar pos, Index index)
-         : pos(pos), index(index), type(type), axis(axis) { }
+         : pos(pos), index(index), type(type), axis((uint16_t) axis) { }
 
         /// Return a string representation
         friend std::ostream& operator<<(std::ostream &os, const EdgeEvent &e) {
@@ -682,7 +682,7 @@ protected:
     public:
         MinMaxBins(Size bin_count, const BoundingBox &bbox)
             : m_bins(bin_count * Dimension * 2, Size(0)), m_bin_count(bin_count),
-              m_inv_bin_size(1 / (bbox.extents() / (Scalar) bin_count)),
+              m_inv_bin_size(1.f / (bbox.extents() / (Scalar) bin_count)),
               m_max_bin(bin_count - 1), m_bbox(bbox) {
             Assert(bbox.valid());
         }
@@ -1085,7 +1085,7 @@ protected:
             /* ==================================================================== */
 
             NodeIterator children = m_ctx.node_storage.grow_by(2);
-            Size left_offset(std::distance(m_node, children));
+            Size left_offset((Size) std::distance(m_node, children));
 
             if (!m_node->set_inner_node(best.axis, best.split, left_offset))
                 Throw("Internal error during kd-tree construction: unable to store "
@@ -1521,7 +1521,7 @@ protected:
 
             NodeIterator children = m_ctx.node_storage.grow_by(2);
 
-            Size left_offset(std::distance(node, children));
+            Size left_offset((Size) std::distance(node, children));
 
             if (!node->set_inner_node(best.axis, best.split, left_offset))
                 Throw("Internal error during kd-tree construction: unable "
@@ -1557,7 +1557,7 @@ protected:
                 traverse(node, temp);
 
                 auto it = m_ctx.index_storage.grow_by(temp.begin(), temp.end());
-                Size offset(std::distance(m_ctx.index_storage.begin(), it));
+                Size offset((Size) std::distance(m_ctx.index_storage.begin(), it));
 
                 if (!node->set_leaf_node(offset, temp.size()))
                     Throw("Internal error: could not create leaf node with %i "
@@ -1626,7 +1626,7 @@ protected:
             m_local->ctx = &m_ctx;
 
             Scalar cost = build_nlogn(m_node, final_prim_count, events_start,
-                                     events_end, m_bbox, m_depth, 0);
+                                      events_end, m_bbox, m_depth, 0);
 
             m_local->left_alloc.release(events_start);
 
@@ -1636,7 +1636,7 @@ protected:
         /// Create a leaf node using the given set of indices (called by min-max binning)
         template <typename T> void make_leaf(T &&indices) {
             auto it = m_ctx.index_storage.grow_by(indices.begin(), indices.end());
-            Size offset(std::distance(m_ctx.index_storage.begin(), it));
+            Size offset((Size) std::distance(m_ctx.index_storage.begin(), it));
 
             if (!m_node->set_leaf_node(offset, indices.size()))
                 Throw("Internal error: could not create leaf node with %i "
@@ -1649,7 +1649,7 @@ protected:
         void make_leaf(NodeIterator node, Size prim_count, EdgeEvent *events_start,
                       EdgeEvent *events_end) const {
             auto it = m_ctx.index_storage.grow_by(prim_count);
-            Size offset(std::distance(m_ctx.index_storage.begin(), it));
+            Size offset((Size) std::distance(m_ctx.index_storage.begin(), it));
 
             if (!node->set_leaf_node(offset, prim_count))
                 Throw("Internal error: could not create leaf node with %i "

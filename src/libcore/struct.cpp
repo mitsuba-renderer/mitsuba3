@@ -782,7 +782,7 @@ public:
 
         if (field.is_integer() && !Struct::is_integer(key.type)) {
             auto range_dbl = field.range();
-            std::pair<Float, Float> range = range_dbl;
+            std::pair<Float, Float> range((Float) range_dbl.first, (Float) range_dbl.second);
             if (key.type != struct_type_v<Float>)
                 Throw("Internal error!");
 

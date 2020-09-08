@@ -389,8 +389,8 @@ if (MSVC)
   # conditional expression is constant
   add_compile_options(/wd4127)
 
-  # Workaround for MSVC 2017
-  add_compile_options(/wd4244)
+  # Unreachable code (MSVC frequently warns in functions using "if constexpr")
+  add_compile_options(/wd4702)
 
   # Parallel build on MSVC
   add_compile_options(/MP)

@@ -595,9 +595,9 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         bind_data(params.in_d, ray.d);
         params.in_d_width = ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
-        params.in_mint_width = ek::width(ray.mint);
+        params.in_mint_width = (uint32_t) ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);
-        params.in_maxt_width = ek::width(ray.maxt);
+        params.in_maxt_width = (uint32_t) ek::width(ray.maxt);
         // Outputs
         bind_data(&params.out_hit, hit);
         params.handle = s.ias_handle;
