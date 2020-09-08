@@ -405,15 +405,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         // Bind GPU data pointers to be filled by the OptiX kernel
         // Inputs
         bind_data(&params.in_mask, active);
-        params.in_mask_width = ek::width(active);
+        params.in_mask_width = (uint32_t) ek::width(active);
         bind_data(params.in_o, ray.o);
-        params.in_o_width = ek::width(ray.o);
+        params.in_o_width = (uint32_t) ek::width(ray.o);
         bind_data(params.in_d, ray.d);
-        params.in_d_width = ek::width(ray.d);
+        params.in_d_width = (uint32_t) ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
-        params.in_mint_width = ek::width(ray.mint);
+        params.in_mint_width = (uint32_t) ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);
-        params.in_maxt_width = ek::width(ray.maxt);
+        params.in_maxt_width = (uint32_t) ek::width(ray.maxt);
         // Outputs
         bind_data(&params.out_t, pi.t);
         bind_data(params.out_prim_uv, pi.prim_uv);
@@ -510,15 +510,15 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // Bind GPU data pointers to be filled by the OptiX kernel
         // Inputs
         bind_data(&params.in_mask, active);
-        params.in_mask_width = ek::width(active);
+        params.in_mask_width = (uint32_t) ek::width(active);
         bind_data(params.in_o, ray.o);
-        params.in_o_width = ek::width(ray.o);
+        params.in_o_width = (uint32_t) ek::width(ray.o);
         bind_data(params.in_d, ray.d);
-        params.in_d_width = ek::width(ray.d);
+        params.in_d_width = (uint32_t) ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
-        params.in_mint_width = ek::width(ray.mint);
+        params.in_mint_width = (uint32_t) ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);
-        params.in_maxt_width = ek::width(ray.maxt);
+        params.in_maxt_width = (uint32_t) ek::width(ray.maxt);
         // Outputs
         bind_data(&params.out_t, si.t);
         if (has_flag(flags, HitComputeFlags::UV))
@@ -589,11 +589,11 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         // Bind GPU data pointers to be filled by the OptiX kernel
         // Inputs
         bind_data(&params.in_mask, active);
-        params.in_mask_width = ek::width(active);
+        params.in_mask_width = (uint32_t) ek::width(active);
         bind_data(params.in_o, ray.o);
-        params.in_o_width = ek::width(ray.o);
+        params.in_o_width = (uint32_t) ek::width(ray.o);
         bind_data(params.in_d, ray.d);
-        params.in_d_width = ek::width(ray.d);
+        params.in_d_width = (uint32_t) ek::width(ray.d);
         bind_data(&params.in_mint, ray.mint);
         params.in_mint_width = (uint32_t) ek::width(ray.mint);
         bind_data(&params.in_maxt, ray.maxt);

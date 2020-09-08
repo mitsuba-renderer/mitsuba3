@@ -42,7 +42,7 @@ MTS_PY_EXPORT(Object) {
         .def("get_plugin_class", [](PluginManager &pmgr, const std::string &name, const std::string &variant){
             try {
                 return pmgr.get_plugin_class(name, variant);
-            } catch(std::runtime_error &e){
+            } catch(std::runtime_error &){
                 return static_cast<const Class *>(nullptr);
             }
         }, "name"_a, "variant"_a, py::return_value_policy::reference, D(PluginManager, get_plugin_class));

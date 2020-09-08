@@ -144,7 +144,7 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
                           "('type' and 'value'), got %u.", dict2.size());
                 }
                 // Read info from the dictionary
-                Properties::Color3f color;
+                Properties::Color3f color(0.f);
                 for (auto& [k2, value2] : dict2) {
                     std::string key2 = k2.template cast<std::string>();
                     if (key2 == "value")

@@ -369,14 +369,14 @@ public:
             m_name, m_face_count, m_vertex_count,
             util::mem_string(m_face_count * face_struct->size() +
                              m_vertex_count * vertex_struct->size()),
-            util::time_string(timer.value())
+            util::time_string((float) timer.value())
         );
 
         if (!m_disable_vertex_normals && !has_vertex_normals) {
             Timer timer2;
             recompute_vertex_normals();
             Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
-                util::time_string(timer2.value()));
+                util::time_string((float) timer2.value()));
         }
 
         set_children();

@@ -1162,10 +1162,10 @@ Struct::Field &Struct::field(const std::string &name) {
 std::pair<double, double> Struct::range(Struct::Type type) {
     std::pair<double, double> result;
 
-    #define COMPUTE_RANGE(key, type)                                        \
-        case key:                                                           \
-            result = std::make_pair(std::numeric_limits<type>::min(),       \
-                                    std::numeric_limits<type>::max());      \
+    #define COMPUTE_RANGE(key, type)                                            \
+        case key:                                                               \
+            result = std::make_pair((double) std::numeric_limits<type>::min(),  \
+                                    (double) std::numeric_limits<type>::max()); \
             break;
 
     switch (type) {

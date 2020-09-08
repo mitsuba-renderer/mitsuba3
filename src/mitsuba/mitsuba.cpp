@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
             __global_thread_count = arg_threads->as_int();
         if (__global_thread_count < 1)
             Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init scheduler(__global_thread_count);
+        tbb::task_scheduler_init scheduler((int) __global_thread_count);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();

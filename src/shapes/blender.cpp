@@ -202,7 +202,7 @@ public:
             face_points[1] = InputPoint3f(v1.co[0], v1.co[1], v1.co[2]);
             face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);
 
-            InputNormal3f normal;
+            InputNormal3f normal(0.f);
             if (!(blender::ME_SMOOTH & face.flag)) {
                 // Flat shading, use per face normals
                 const InputVector3f e1 = face_points[1] - face_points[0];
