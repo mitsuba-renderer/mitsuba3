@@ -28,18 +28,20 @@ def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
     # Test polarized implementation. Special case of delta = 90˚, also known
     # as a quarter-wave plate. (In local BSDF coordinates.)
     #
-    # Following "Polarized Light - Fundamentals and Applications" by Edward Collett
-    # Chapter 5.3, equation (30) & (31):
+    # Following  "Polarized Light, Third Edition" by Dennis H. Goldstein,
+    # Chapter 6.3 eq. (6.46) & (6.47).
+    # (Note that the fast and slow axis of retarders were flipped in the first
+    # edition by Edward Collett.)
     #
     # Case 1) Linearly polarized +45˚ light (Stokes vector [1, 0, 1, 0]) yields
-    #         right circularly polarized light (Stokes vector [1, 0, 0, 1]).
-    # Case 2) Linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]) yields
     #         left circularly polarized light (Stokes vector [1, 0, 0, -1]).
+    # Case 2) Linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]) yields
+    #         right circularly polarized light (Stokes vector [1, 0, 0, 1]).
     #
     # Case 3) Right circularly polarized light (Stokes vector [1, 0, 0, 1]) yields
-    #         linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]).
-    # Case 4) Left circularly polarized light (Stokes vector [1, 0, 0, -1]) yields
     #         linearly polarized +45˚ light (Stokes vector [1, 0, 1, 0]).
+    # Case 4) Left circularly polarized light (Stokes vector [1, 0, 0, -1]) yields
+    #         linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]).
 
     linear_pos     = spectrum_from_stokes([1, 0, +1, 0])
     linear_neg     = spectrum_from_stokes([1, 0, -1, 0])
@@ -66,13 +68,13 @@ def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
     bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
     # Case 1)
-    assert ek.allclose(M @ linear_pos, circular_right, atol=1e-3)
+    assert ek.allclose(M @ linear_pos, circular_left, atol=1e-3)
     # Case 2)
-    assert ek.allclose(M @ linear_neg, circular_left , atol=1e-3)
+    assert ek.allclose(M @ linear_neg, circular_right, atol=1e-3)
     # Case 3)
-    assert ek.allclose(M @ circular_right, linear_neg, atol=1e-3)
+    assert ek.allclose(M @ circular_right, linear_pos, atol=1e-3)
     # Case 4)
-    assert ek.allclose(M @ circular_left, linear_pos , atol=1e-3)
+    assert ek.allclose(M @ circular_left, linear_neg , atol=1e-3)
 
 
 def test03_sample_half_wave_local(variant_scalar_mono_polarized):
@@ -145,18 +147,20 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
     # Test polarized implementation. Special case of delta = 90˚, also known
     # as a quarter-wave plate. (World coordinates.)
     #
-    # Following "Polarized Light - Fundamentals and Applications" by Edward Collett
-    # Chapter 5.3, equation (30) & (31):
+    # Following  "Polarized Light, Third Edition" by Dennis H. Goldstein,
+    # Chapter 6.3 eq. (6.46) & (6.47).
+    # (Note that the fast and slow axis of retarders were flipped in the first
+    # edition by Edward Collett.)
     #
     # Case 1) Linearly polarized +45˚ light (Stokes vector [1, 0, 1, 0]) yields
-    #         right circularly polarized light (Stokes vector [1, 0, 0, 1]).
-    # Case 2) Linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]) yields
     #         left circularly polarized light (Stokes vector [1, 0, 0, -1]).
+    # Case 2) Linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]) yields
+    #         right circularly polarized light (Stokes vector [1, 0, 0, 1]).
     #
     # Case 3) Right circularly polarized light (Stokes vector [1, 0, 0, 1]) yields
-    #         linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]).
-    # Case 4) Left circularly polarized light (Stokes vector [1, 0, 0, -1]) yields
     #         linearly polarized +45˚ light (Stokes vector [1, 0, 1, 0]).
+    # Case 4) Left circularly polarized light (Stokes vector [1, 0, 0, -1]) yields
+    #         linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]).
 
     linear_pos     = spectrum_from_stokes([1, 0, +1, 0])
     linear_neg     = spectrum_from_stokes([1, 0, -1, 0])
@@ -196,13 +200,13 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
                                        stokes_basis(forward), [-1, 0, 0])
 
     # Case 1)
-    assert ek.allclose(M @ linear_pos, circular_right, atol=1e-3)
+    assert ek.allclose(M @ linear_pos, circular_left, atol=1e-3)
     # Case 2)
-    assert ek.allclose(M @ linear_neg, circular_left , atol=1e-3)
+    assert ek.allclose(M @ linear_neg, circular_right, atol=1e-3)
     # Case 3)
-    assert ek.allclose(M @ circular_right, linear_neg, atol=1e-3)
+    assert ek.allclose(M @ circular_right, linear_pos, atol=1e-3)
     # Case 4)
-    assert ek.allclose(M @ circular_left, linear_pos , atol=1e-3)
+    assert ek.allclose(M @ circular_left, linear_neg , atol=1e-3)
 
 
 def test05_sample_half_wave_world(variant_scalar_mono_polarized):
@@ -289,13 +293,15 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
     # polarized path tracer.
     # (Serves also as test case for the polarized path tracer itself.)
     #
-    # Following "Polarized Light - Fundamentals and Applications" by Edward Collett
-    # Chapter 5.3, equation (30) & (31):
+    # Following  "Polarized Light, Third Edition" by Dennis H. Goldstein,
+    # Chapter 6.3 eq. (6.46) & (6.47).
+    # (Note that the fast and slow axis of retarders were flipped in the first
+    # edition by Edward Collett.)
     #
     # Case 1) Linearly polarized +45˚ light (Stokes vector [1, 0, 1, 0]) yields
-    #         right circularly polarized light (Stokes vector [1, 0, 0, 1]).
-    # Case 2) Linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]) yields
     #         left circularly polarized light (Stokes vector [1, 0, 0, -1]).
+    # Case 2) Linearly polarized -45˚ light (Stokes vector [1, 0, -1, 0]) yields
+    #         right circularly polarized light (Stokes vector [1, 0, 0, 1]).
     #
     # In this test, a polarizer and quarter-wave plate are placed between light
     # source and camera.
@@ -307,7 +313,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
     circular_left  = spectrum_from_stokes([1, 0, 0, -1])
 
     angles = [+45.0, -45.0]
-    expected = [circular_right, circular_left]
+    expected = [circular_left, circular_right]
     observed = []
 
     for angle in angles:

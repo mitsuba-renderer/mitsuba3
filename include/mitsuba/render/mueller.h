@@ -71,12 +71,14 @@ template <typename Float> MuellerMatrix<Float> linear_polarizer(Float value = 1.
 
 /**
  * \brief Constructs the Mueller matrix of a linear retarder which has its fast
- * aligned vertically.
+ * axis aligned horizontally.
  *
  * This implements the general case with arbitrary phase shift and can be used
  * to construct the common special cases of quarter-wave and half-wave plates.
  *
- * "Polarized Light" by Edward Collett, Ch. 5 eq. (27)
+ * "Polarized Light, Third Edition" by Dennis H. Goldstein, Ch. 6 eq. (6.43)
+ * (Note that the fast and slow axis were flipped in the first edition by Edward
+ * Collett.)
  *
  * \param phase
  *     The phase difference between the fast and slow axis
@@ -88,8 +90,8 @@ template <typename Float> MuellerMatrix<Float> linear_retarder(Float phase) {
     return MuellerMatrix<Float>(
         1, 0, 0, 0,
         0, 1, 0, 0,
-        0, 0, c, -s,
-        0, 0, s, c
+        0, 0, c, s,
+        0, 0, -s, c
     );
 }
 
