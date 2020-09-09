@@ -1,14 +1,12 @@
 import mitsuba
+import enoki as ek
 
 
 """
 Returns whether a parameter's type is a differentiable enoki type.
 """
 def is_differentiable(p):
-    p_type = type(p)
-    return p_type.__module__ == 'enoki.cuda_autodiff' \
-           and not p_type.__name__.endswith('u')      \
-           and not p_type.__name__.endswith('i')
+    return ek.is_diff_array_v(p) and ek.is_floating_point_v(p)
 
 
 class ParameterMap:

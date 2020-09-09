@@ -80,13 +80,13 @@ def _render_helper(scene, spp=None, sensor_index=0):
     data = block.data()
 
     ch = block.channel_count()
-    i = UInt32.arange(ek.hprod(block.size()) * (ch - 1))
+    i = ek.arange(UInt32, ek.hprod(block.size()) * (ch - 1))
 
     weight_idx = i // (ch - 1) * ch
     values_idx = (i * ch) // (ch - 1) + 1
 
-    weight = ek.gather(data, weight_idx)
-    values = ek.gather(data, values_idx)
+    weight = ek.gather(Float, data, weight_idx)
+    values = ek.gather(Float, data, values_idx)
 
     return values / (weight + 1e-8)
 
@@ -184,7 +184,7 @@ def render(scene,
                                    sensor_index=sensor_index)
         image_diff = _render_helper(scene, spp=spp[1],
                                     sensor_index=sensor_index)
-        ek.reattach(image, image_diff)
+        ek.replace_grad(image, image_diff)
     else:
         if type(spp) is tuple:
             raise Exception('render(): unbiased=False requires that spp '
@@ -214,7 +214,7 @@ class Optimizer:
                             'be differentiable!')
         self.state = {}
         for k, p in self.params.items():
-            ek.set_requires_gradient(p)
+            ek.enable_grad(p)
             self._reset(k)
 
     def set_learning_rate(self, lr):
@@ -223,18 +223,18 @@ class Optimizer:
         # Ensure that the JIT compiler does merge 'lr' into the PTX code
         # (this would trigger a recompile every time it is changed)
         self.lr = lr
-        self.lr_v = ek.detach(Float(lr, literal=False))
+        self.lr_v = ek.nondiff_array_t(Float)(lr)
 
     @contextmanager
     def disable_gradients(self):
         """Temporarily disable the generation of gradients."""
         for _, p in self.params.items():
-            ek.set_requires_gradient(p, False)
+            ek.disable_grad(p)
         try:
             yield
         finally:
             for _, p in self.params.items():
-                ek.set_requires_gradient(p, True)
+                ek.enable_grad(p)
 
 
 class SGD(Optimizer):
@@ -273,7 +273,7 @@ class SGD(Optimizer):
     def step(self):
         """ Take a gradient step """
         for k, p in self.params.items():
-            g_p = ek.gradient(p)
+            g_p = ek.grad(p)
             size = ek.width(g_p)
             if size == 0:
                 continue
@@ -289,7 +289,7 @@ class SGD(Optimizer):
                 value = ek.detach(p) - self.lr_v * g_p
 
             value = type(p)(value)
-            ek.set_requires_gradient(value)
+            ek.enable_grad(value)
             self.params[k] = value
         self.params.update()
 
@@ -299,7 +299,7 @@ class SGD(Optimizer):
             return
         p = self.params[key]
         size = ek.width(p)
-        self.state[key] = ek.detach(type(p).zero(size))
+        self.state[key] = ek.zero(ek.nondiff_array_t(p), size)
 
     def __repr__(self):
         return ('SGD[\n  lr = %.2g,\n  momentum = %.2g\n]') % \
@@ -340,10 +340,10 @@ class Adam(Optimizer):
 
         from mitsuba.core import Float
         lr_t = ek.detach(Float(self.lr * ek.sqrt(1 - self.beta_2**self.t) /
-                               (1 - self.beta_1**self.t), literal=False))
+                               (1 - self.beta_1**self.t)))
 
         for k, p in self.params.items():
-            g_p = ek.gradient(p)
+            g_p = ek.grad(p)
             size = ek.width(g_p)
 
             if size == 0:
@@ -359,15 +359,15 @@ class Adam(Optimizer):
 
             u = ek.detach(p) - lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
             u = type(p)(u)
-            ek.set_requires_gradient(u)
+            ek.enable_grad(u)
             self.params[k] = u
 
     def _reset(self, key):
         """ Zero-initializes the internal state associated with a parameter """
         p = self.params[key]
         size = ek.width(p)
-        self.state[key] = (ek.detach(type(p).zero(size)),
-                           ek.detach(type(p).zero(size)))
+        self.state[key] = (ek.zero(ek.nondiff_array_t(p), size),
+                           ek.zero(ek.nondiff_array_t(p), size))
 
     def __repr__(self):
         return ('Adam[\n'
@@ -377,6 +377,7 @@ class Adam(Optimizer):
                 ']' % (self.lr, self.beta_1, self.beta_2, self.epsilon))
 
 
+# TODO refactoring
 def render_torch(scene, params=None, **kwargs):
     from mitsuba.core import Float
     # Delayed import of PyTorch dependency
@@ -436,7 +437,7 @@ def render_torch(scene, params=None, **kwargs):
 
                     for v in ctx.inputs:
                         if v is not None:
-                            ek.set_requires_gradient(v)
+                            ek.enable_grad(v)
 
                     ctx.output = render(scene, spp=spp[1],
                                         sensor_index=sensor_index)
@@ -455,9 +456,9 @@ def render_torch(scene, params=None, **kwargs):
             @staticmethod
             def backward(ctx, grad_output):
                 try:
-                    ek.set_gradient(ctx.output, ek.detach(Float(grad_output)))
+                    ek.set_grad(ctx.output, ek.detach(Float(grad_output)))
                     Float.backward()
-                    result = tuple(ek.gradient(i).torch() if i is not None
+                    result = tuple(ek.grad(i).torch() if i is not None
                                    else None
                                    for i in ctx.inputs)
                     del ctx.output
