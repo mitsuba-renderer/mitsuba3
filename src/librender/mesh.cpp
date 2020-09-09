@@ -459,8 +459,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     bool differentiable = false;
     if constexpr (ek::is_diff_array_v<Float>)
-        differentiable = requires_gradient(m_vertex_positions) ||
-                         requires_gradient(ray.o) || requires_gradient(ray.d);
+        differentiable = ek::grad_enabled(m_vertex_positions) ||
+                         ek::grad_enabled(ray.o) || ek::grad_enabled(ray.d);
 
     // Recompute ray intersection to get differentiable prim_uv and t
     if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))

@@ -27,6 +27,7 @@ static inline void context_log_cb(unsigned int level, const char *tag,
     static constexpr size_t ProgramGroupCount = 3 + custom_optix_shapes_count;
 #endif
 
+template <typename Float>
 struct OptixState {
     OptixDeviceContext context;
     OptixPipeline pipeline = nullptr;
@@ -40,12 +41,14 @@ struct OptixState {
     void* params;
     char *custom_optix_shapes_program_names[2 * custom_optix_shapes_count];
 
-    ek::CUDAArray<uint32_t> shapes_registry_ids;
+    ek::uint32_array_t<Float> shapes_registry_ids;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Log(Info, "Building scene in OptiX ..");
+
+        using OptixState = OptixState<Float>;
         m_accel = new OptixState();
         OptixState &s = *(OptixState *) m_accel;
 
@@ -247,6 +250,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         if (m_shapes.empty())
             return;
 
+        using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
 
         // Build geometry acceleration structures for all the shapes
@@ -310,6 +314,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
         jitc_free((void*)s.sbt.raygenRecord);
         jitc_free((void*)s.params);
@@ -328,6 +333,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 }
 
 /// Helper function to launch the OptiX kernel (try twice if unsuccessful)
+template <typename OptixState>
 void launch_optix_kernel(const OptixState &s,
                          const OptixParams &params,
                          size_t ray_count) {
@@ -381,6 +387,8 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
+
+        using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
 
         Ray3f ray(ray_);
@@ -441,12 +449,14 @@ MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags flags, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
+
+        using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
 
         if constexpr (ek::is_diff_array_v<Float>) {
             // Differentiable SurfaceInteraction needs to be computed outside of the OptiX kernel
             if (!has_flag(flags, HitComputeFlags::NonDifferentiable) &&
-                (requires_gradient(ray_.o) || shapes_grad_enabled())) {
+                (ek::grad_enabled(ray_.o) || shapes_grad_enabled())) {
                 auto pi = ray_intersect_preliminary_gpu(ray_, active);
                 return pi.compute_surface_interaction(ray_, flags, active);
             }
@@ -575,6 +585,9 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        Assert(!m_shapes.empty());
+
+        using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
         size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));

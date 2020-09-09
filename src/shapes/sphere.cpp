@@ -348,8 +348,8 @@ public:
 
         bool differentiable = false;
         if constexpr (ek::is_diff_array_v<Float>)
-            differentiable = requires_gradient(ray.o) ||
-                             requires_gradient(ray.d) ||
+            differentiable = ek::grad_enabled(ray.o) ||
+                             ek::grad_enabled(ray.d) ||
                              parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
