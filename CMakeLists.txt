@@ -61,15 +61,11 @@ else()
 endif()
 
 # ----------------------------------------------------------
-#  Re-run CMake when 'mitsuba.conf' changes (we must
-#  dynamically add or remove targets based on this file).
-#  Abuses the 'configure_file' mechanism to achieve this..
+#  Parse 'mitsuba.conf' and generate derived files:
+#   1. include/core/config.h
+#   2. python/mitsuba/config.py
 # ----------------------------------------------------------
 
-configure_file(${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf
-               ${CMAKE_CURRENT_BINARY_DIR}/ext/unused)
-
-# Generate the config.h headers from the configuration
 execute_process(
   COMMAND ${Python_EXECUTABLE}
   ${CMAKE_CURRENT_SOURCE_DIR}/resources/configure.py ${CMAKE_CXX_COMPILER_ID}
@@ -80,6 +76,58 @@ execute_process(
 
 if (MTS_VARIANTS_ERR)
   message(FATAL_ERROR "Could not run resources/configure.py script: ${MTS_VARIANTS_ERR}")
+endif()
+
+
+# ----------------------------------------------------------
+#  Re-run CMake when 'mitsuba.conf' changes (we must
+#  dynamically add or remove targets based on this file).
+#  Abuses the 'configure_file' mechanism to achieve this
+#  and generates setpath.sh/bat at the same time.
+# ----------------------------------------------------------
+
+string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
+
+# Directory for build products
+if (MSVC)
+  # MSVC: .. with generator expression for build type
+  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+else()
+  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+set(MTS_COPY_FILES "")
+
+# Function to make a read-only copy of a file
+macro (ro_copy IN_FILE OUT_FILE)
+  set(OUT_FILE_1 "${CMAKE_CURRENT_BINARY_DIR}/${OUT_FILE}")
+  set(OUT_FILE_2 "${MTS_BINARY_DIR}/${OUT_FILE}")
+  if (UNIX)
+    add_custom_command(
+      OUTPUT ${OUT_FILE_2} DEPENDS ${IN_FILE} ${ARGN}
+      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_2} && chmod a=r ${OUT_FILE_2})
+    list(APPEND MTS_COPY_FILES ${OUT_FILE_2})
+  else()
+    # add_custom_command does not support generator expressions in OUTPUT argument (grr..)
+    # make a dummy copy and then depend on that
+    add_custom_command(
+      OUTPUT ${OUT_FILE_1} DEPENDS ${IN_FILE} ${ARGN}
+      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_1}
+      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE_2}
+    )
+    list(APPEND MTS_COPY_FILES ${OUT_FILE_1})
+  endif()
+endmacro()
+
+if (NOT MSVC)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
+                   ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
+else()
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.bat
+                   ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat DESTINATION ".")
+    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.sh)
 endif()
 
 # ----------------------------------------------------------
@@ -180,7 +228,6 @@ endif()
 include(CheckCXXCompilerFlag)
 include(CheckCXXSourceRuns)
 include(TestBigEndian)
-
 
 # ----------------------------------------------------------
 #  Set a default build configuration (Release)
@@ -286,6 +333,7 @@ if (CMAKE_GENERATOR MATCHES "Visual Studio")
 endif()
 
 if (NOT WIN32)
+  # Variables for printing colorful CMake warnings
   string(ASCII 27 Esc)
   set(ColorReset "${Esc}[m")
   set(BoldRed "${Esc}[1;31m")
@@ -445,7 +493,9 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
+# Directory for build products
 if (MSVC)
+  # MSVC: .. with generator expression for build type
   set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 else()
   set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -460,6 +510,7 @@ function(add_plugin)
   set_target_properties(${TARGET} PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
+    RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
     FOLDER plugins/${MTS_PLUGIN_PREFIX}/${TARGET}
   )
   install(
@@ -566,13 +617,13 @@ endif()
 if (MTS_ENABLE_JIT)
   list(APPEND MTS_DEPEND enoki-jit)
   set_target_properties(enoki-jit PROPERTIES
-    INSTALL_RPATH "$ORIGIN")
+    INSTALL_RPATH "${MTS_ORIGIN}")
 endif()
 
 if (MTS_ENABLE_AUTODIFF)
   list(APPEND MTS_DEPEND enoki-autodiff)
   set_target_properties(enoki-autodiff PROPERTIES
-    INSTALL_RPATH "$ORIGIN")
+    INSTALL_RPATH "${MTS_ORIGIN}")
 endif()
 
 # Set up location for build products
@@ -580,6 +631,14 @@ set_target_properties(mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
   PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${MTS_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_RELEASE ${MTS_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG ${MTS_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_DEBUG ${MTS_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_RELNODEBINFO ${MTS_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_RELNODEBINFO ${MTS_BINARY_DIR}
+  RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${MTS_BINARY_DIR}
+  LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${MTS_BINARY_DIR}
 )
 
 install(
@@ -598,15 +657,13 @@ install(
   DESTINATION include/mitsuba/core
 )
 
-if (WIN32)
-  install(FILES resources/setpath.bat DESTINATION ".")
-  file(COPY resources/setpath.bat DESTINATION ${MTS_BINARY_DIR})
-else()
-  install(FILES resources/setpath.sh DESTINATION ".")
-  string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
-  configure_file(resources/setpath.sh setpath.sh @ONLY)
-endif()
+ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run) 
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff
+  DESTINATION data
+)
 
+add_custom_target(copy-resources ALL DEPENDS ${MTS_COPY_FILES})
 
 mark_as_advanced(
   ZLIB_BUILD_AMD64

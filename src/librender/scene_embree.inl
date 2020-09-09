@@ -53,7 +53,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
     }
 
     rtcCommitScene(embree_scene);
-    Log(Info, "Embree ready. (took %s)", util::time_string(timer.value()));
+    Log(Info, "Embree ready. (took %s)", util::time_string((float) timer.value()));
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
@@ -184,8 +184,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
             }
         } else {
-
-            size_t N = compute_ray_width(ray);
+            uint32_t N = (uint32_t) compute_ray_width(ray);
             ek::resize(ray, N);
             ray.update();
             ek::eval(ray);
@@ -214,10 +213,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             rtcIntersectNp(s.accel, &context, &rh, N);
 #else
             tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, N, 1024),
-                [&](const tbb::blocked_range<size_t> &range) {
-                    size_t offset = range.begin();
-                    size_t size   = range.end() - offset;
+                tbb::blocked_range<uint32_t>(0, N, 1024),
+                [&](const tbb::blocked_range<uint32_t> &range) {
+                    uint32_t offset = range.begin();
+                    uint32_t size   = range.end() - offset;
 
                     RTCRayHitNp rh_;
                     rh_.ray = offset_rtc_ray(rh.ray, offset);
@@ -308,7 +307,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
                 si.t = ek::Infinity<Float>;
             }
         } else {
-            size_t N = compute_ray_width(ray);
+            uint32_t N = (uint32_t) compute_ray_width(ray);
             ek::resize(ray, N);
             ray.update();
             ek::eval(ray);
@@ -336,10 +335,10 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             rtcIntersectNp(s.accel, &context, &rh, N);
 #else
             tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, N, 1024),
-                [&](const tbb::blocked_range<size_t> &range) {
-                    size_t offset = range.begin();
-                    size_t size   = range.end() - offset;
+                tbb::blocked_range<uint32_t>(0, N, 1024),
+                [&](const tbb::blocked_range<uint32_t> &range) {
+                    uint32_t offset = range.begin();
+                    uint32_t size   = range.end() - offset;
 
                     RTCRayHitNp rh_;
                     rh_.ray = offset_rtc_ray(rh.ray, offset);
@@ -405,7 +404,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
 
             return ray2.tfar != ray.maxt;
         } else {
-            size_t N = compute_ray_width(ray);
+            uint32_t N = (uint32_t) compute_ray_width(ray);
             ek::resize(ray, N);
             ray.update();
             ek::eval(ray);
@@ -428,10 +427,10 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             rtcOccludedNp(s.accel, &context, &ray2, N);
 #else
             tbb::parallel_for(
-                tbb::blocked_range<size_t>(0, N, 1024),
-                [&](const tbb::blocked_range<size_t> &range) {
-                    size_t offset = range.begin();
-                    size_t size   = range.end() - offset;
+                tbb::blocked_range<uint32_t>(0, N, 1024),
+                [&](const tbb::blocked_range<uint32_t> &range) {
+                    uint32_t offset = range.begin();
+                    uint32_t size   = range.end() - offset;
                     RTCRayNp ray_ = offset_rtc_ray(ray2, offset);
 
                     RTCIntersectContext context;

@@ -166,7 +166,7 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    bool is_cuda = ek::is_cuda_array_v<Float>;
+    constexpr bool is_cuda = ek::is_cuda_array_v<Float>;
     const float* cie1931_x_data = is_cuda ? cie1931_x_gpu_data : cie1931_x_cpu_data;
     const float* cie1931_y_data = is_cuda ? cie1931_y_gpu_data : cie1931_y_cpu_data;
     const float* cie1931_z_data = is_cuda ? cie1931_z_gpu_data : cie1931_z_cpu_data;
@@ -183,7 +183,7 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
 
     return Result(ek::fmadd(w0, v0_x, w1 * v1_x),
                   ek::fmadd(w0, v0_y, w1 * v1_y),
-                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active);
+                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active, active, active);
 }
 
 /**

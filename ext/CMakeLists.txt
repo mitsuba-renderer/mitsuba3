@@ -29,6 +29,18 @@ set(ENOKI_NATIVE_FLAGS "${MTS_NATIVE_FLAGS}" CACHE STRING
 
 add_subdirectory(enoki)
 
+if (MTS_ENABLE_JIT)
+  set_target_properties(enoki-jit PROPERTIES FOLDER "enoki")
+endif()
+
+if (MTS_ENABLE_AUTODIFF)
+  set_target_properties(enoki-autodiff PROPERTIES FOLDER "enoki")
+endif()
+
+if (MTS_ENABLE_PYTHON)
+  set_target_properties(enoki-python PROPERTIES FOLDER "enoki")
+endif()
+
 set(ENOKI_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/enoki/include
     ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/include
@@ -52,12 +64,31 @@ if (MTS_ENABLE_EMBREE)
   set(EMBREE_IGNORE_INVALID_RAYS    ON  CACHE BOOL " " FORCE)
   set(EMBREE_RAY_MASK               OFF CACHE BOOL " " FORCE)
   set(EMBREE_MAX_ISA "NONE"         CACHE STRING " " FORCE)
-  set(EMBREE_ISA_SSE42              ON CACHE BOOL " " FORCE)
-  set(EMBREE_ISA_AVX                ON CACHE BOOL " " FORCE)
-  set(EMBREE_ISA_AVX2               ON CACHE BOOL " " FORCE)
 
-  if (UNIX)
-    set(EMBREE_ISA_AVX512SKX      ON CACHE BOOL " " FORCE)
+  if (MSVC)
+    set(EMBREE_ISA_SSE2             OFF CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_SSE42            OFF CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_AVX              OFF CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_AVX2             OFF CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_AVX512SKX        OFF CACHE BOOL " " FORCE)
+
+    if (MTS_NATIVE_FLAGS MATCHES "AVX2")
+      set(EMBREE_ISA_AVX2 ON CACHE BOOL " " FORCE)
+      set(EMBREE_TARGET "embree_avx2")
+    elseif (MTS_NATIVE_FLAGS MATCHES "AVX")
+      set(EMBREE_ISA_AVX ON CACHE BOOL " " FORCE)
+      set(EMBREE_TARGET "embree_avx")
+    else()
+      set(EMBREE_ISA_SSE42 ON CACHE BOOL " " FORCE)
+      set(EMBREE_TARGET "embree_sse42")
+    endif()
+  else()
+    # Conservative: compile kernels for everyhing
+    set(EMBREE_ISA_SSE2             ON CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_SSE42            ON CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_AVX              ON CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_AVX2             ON CACHE BOOL " " FORCE)
+    set(EMBREE_ISA_AVX512SKX        ON CACHE BOOL " " FORCE)
   endif()
 
   set(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING " " FORCE)
@@ -72,6 +103,10 @@ if (MTS_ENABLE_EMBREE)
   add_subdirectory(embree)
   set(CMAKE_CXX_FLAGS "${MTS_CXX_FLAGS_BACKUP}")
   set(EMBREE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/embree/include" PARENT_SCOPE)
+
+  set_property(TARGET
+    algorithms lexers math simd sys tasking embree ${EMBREE_TARGET}
+    PROPERTY FOLDER "dependencies/embree")
 endif()
 
 # ----------------------------------------------------------
@@ -85,7 +120,7 @@ add_subdirectory(openexr)
 set_property(TARGET
   IexMath eLut toFloat b44ExpLogTable dwaLookups
   IlmThread Half Iex Imath IlmImf
-  PROPERTY FOLDER "dependencies")
+  PROPERTY FOLDER "dependencies/openexr")
 
 
 set(OPENEXR_INCLUDE_DIRS
@@ -102,6 +137,10 @@ set(OPENEXR_INCLUDE_DIRS
 
 if (WIN32)
   set_property(TARGET zlib PROPERTY FOLDER "dependencies")
+  set(ZLIB_LIBRARY zlib)
+  set(ZLIB_INCLUDE_DIR 
+      ${CMAKE_CURRENT_SOURCE_DIR}/openexr/zlib
+      ${CMAKE_CURRENT_BINARY_DIR}/openexr/zlib)
 endif()
 
 # ----------------------------------------------------------
@@ -217,6 +256,8 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   if (MSVC)
     target_compile_options(asmjit PRIVATE "/wd4804" "/wd4838")
   endif()
+  # Avoid name clashes with pytorch (which also includes asmjit)
+  set_property(TARGET asmjit PROPERTY OUTPUT_NAME "asmjit-mitsuba")
 endif()
 
 # ----------------------------------------------------------
@@ -231,9 +272,7 @@ endif()
 # build rgb2spec
 add_subdirectory(rgb2spec)
 set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
-set_property(TARGET rgb2spec         PROPERTY FOLDER "dependencies")
-set_property(TARGET rgb2spec_opt     PROPERTY FOLDER "dependencies")
-set_property(TARGET rgb2spec_opt_run PROPERTY FOLDER "dependencies")
+set_target_properties(rgb2spec rgb2spec_opt rgb2spec_opt_run PROPERTIES FOLDER "dependencies/rgb2spec")
 
 mark_as_advanced(
   ASMJIT_BUILD_X86 ASMJIT_BUILD_ARM ASMJIT_BUILD_TEST ASMJIT_DIR ASMJIT_EMBED
@@ -244,6 +283,7 @@ mark_as_advanced(
   EMBREE_GEOMETRY_TRIANGLE EMBREE_GEOMETRY_USER EMBREE_IGNORE_CMAKE_CXX_FLAGS
   EMBREE_IGNORE_INVALID_RAYS EMBREE_ISPC_SUPPORT EMBREE_LIBRARY_NAME
   EMBREE_MAX_INSTANCE_LEVEL_COUNT EMBREE_MAX_ISA EMBREE_RAY_MASK
+  EMBREE_ISA_SSE2 EMBREE_ISA_SSE42 EMBREE_ISA_AVX EMBREE_ISA_AVX2 EMBREE_ISA_AVX512SKX  EMBREE_ISA_AVX512KNL
   EMBREE_STACK_PROTECTOR EMBREE_STATIC_LIB EMBREE_STAT_COUNTERS
   EMBREE_TUTORIALS EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR
   EMBREE_MAX_INSTANCE_LEVEL_COUN EMBREE_MIN_WIDTH EMBREE_RAY_PACKETS
@@ -258,6 +298,6 @@ mark_as_advanced(
   PNGARG PNG_DEBUG PNG_FRAMEWORK PNG_SHARED PNG_STATIC PNG_TESTS
   TBB_BUILD_PYTHON TBB_BUILD_SHARED TBB_BUILD_STATIC TBB_BUILD_TBBMALLOC
   TBB_BUILD_TBBMALLOC_PROXY TBB_BUILD_TESTS TBB_CONFIG_DATE TBB_INSTALL_TARGETS
-  TBB_NO_DATE CMAKE_CONFIGURATION_TYPES
-
+  TBB_NO_DATE TBB_SET_SOVERSION CMAKE_CONFIGURATION_TYPES
+  PYBIND11_INSTALL PYBIND11_TEST ZLIB_LIBRARIES
 )

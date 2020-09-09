@@ -44,7 +44,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
     INSTALL_RPATH "${MTS_ORIGIN}/../.."
-    FOLDER mitsuba-python
+    FOLDER python
   )
 
   install(TARGETS ${TARGET_NAME}
@@ -83,7 +83,7 @@ set_target_properties(core_ext
   PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
   INSTALL_RPATH "${MTS_ORIGIN}/../.."
-  FOLDER mitsuba-python
+  FOLDER python
 )
 
 install(TARGETS core_ext

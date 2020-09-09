@@ -96,7 +96,7 @@ public:
 
     void seed(uint64_t seed_offset, size_t wavefront_size) override {
         Base::seed(seed_offset, wavefront_size);
-        m_permutation_seed = compute_per_sequence_seed(seed_offset);
+        m_permutation_seed = compute_per_sequence_seed((uint32_t) seed_offset);
     }
 
     Float next_1d(Mask active = true) override {
@@ -106,7 +106,7 @@ public:
         UInt32 perm_seed = m_permutation_seed + m_dimension_index++;
 
         // Shuffle the samples order
-        Float p = permute_kensler(sample_indices, m_sample_count, perm_seed * 0x45fbe943, active);
+        Float p = (Float) permute_kensler(sample_indices, m_sample_count, perm_seed * 0x45fbe943, active);
 
         // Add a random perturbation
         Float j = m_jitter ? m_rng.template next_float<Float>(active) : 0.5f;

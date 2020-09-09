@@ -340,7 +340,11 @@ public:
         if (extension != proper_extension)
             filename.replace_extension(proper_extension);
 
-        Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
+        #if !defined(_WIN32)
+            Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
+        #else
+            Log(Info, "Developing \"%s\" ..", filename.string());
+        #endif
 
         bitmap()->write(filename, m_file_format);
     }

@@ -2,30 +2,17 @@
 #   Copy & installation targets for files in 'src/python'
 # ----------------------------------------------------------
 
-file(GLOB_RECURSE PYTHON_FILES RELATIVE
+file(GLOB_RECURSE MTS_PYTHON_FILES RELATIVE
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/*.py
   ${CMAKE_CURRENT_SOURCE_DIR}/*.shader)
 
-function (ro_copy IN_FILE OUT_FILE)
-  if (UNIX)
-    add_custom_command(
-      OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
-      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE} && chmod a=r ${OUT_FILE})
-  else()
-    add_custom_command(
-      OUTPUT ${OUT_FILE} DEPENDS ${IN_FILE}
-      COMMAND ${CMAKE_COMMAND} -E copy ${IN_FILE} ${OUT_FILE})
-  endif()
-endfunction()
-
-foreach(file ${PYTHON_FILES})
+set(MTS_COPY_FILES "")
+foreach(file ${MTS_PYTHON_FILES})
   get_filename_component(IN_FILE_DIR ${file} DIRECTORY)
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${file})
-  set(OUT_FILE ${MTS_BINARY_DIR}/python/mitsuba/${file})
-  ro_copy(${IN_FILE} ${OUT_FILE})
+  ro_copy(${IN_FILE} python/mitsuba/${file})
   install(FILES ${IN_FILE} DESTINATION python/mitsuba/${IN_FILE_DIR})
-  list(APPEND MTS_PYTHON_FILES ${OUT_FILE})
 endforeach()
 
 # ----------------------------------------------------------
@@ -59,14 +46,9 @@ set(ENOKI_PYTHON_FILES
 
 foreach(file ${ENOKI_PYTHON_FILES})
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/enoki/${file})
-  set(OUT_FILE ${MTS_BINARY_DIR}/python/enoki/${file})
-  ro_copy(${IN_FILE} ${OUT_FILE})
+  ro_copy(${IN_FILE} python/enoki/${file})
   install(FILES ${IN_FILE} DESTINATION python/enoki)
-  list(APPEND MTS_PYTHON_FILES ${OUT_FILE})
 endforeach(file)
-
-add_custom_target(python-copy ALL DEPENDS ${MTS_PYTHON_FILES})
-set_property(TARGET python-copy PROPERTY FOLDER mitsuba-python)
 
 # ----------------------------------------------------------
 #   pytest.ini file
@@ -76,9 +58,17 @@ get_filename_component(MTS_TEST_BASE ..
     REALPATH BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 file(WRITE
-  ${MTS_BINARY_DIR}/pytest.ini
+  ${CMAKE_CURRENT_BINARY_DIR}/../../pytest.ini
   "[pytest]\n"
   "minversion = 3.0\n"
   "testpaths = \"${MTS_TEST_BASE}\"\n"
   "python_paths = ./python\n"
 )
+
+if (MSVC)
+  ro_copy(${CMAKE_CURRENT_BINARY_DIR}/../../pytest.ini pytest.ini)
+endif()
+
+
+add_custom_target(copy-python ALL DEPENDS ${MTS_COPY_FILES})
+set_target_properties(copy-python PROPERTIES FOLDER python)

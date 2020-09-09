@@ -2,8 +2,9 @@
 *.sublime-project
 *.sublime-workspace
 
-# VSCode
+# VS & VSCode
 /.vscode
+/.vs
 
 # Jupyter
 /.ipynb_checkpoints
