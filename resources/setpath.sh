@@ -25,20 +25,18 @@ export PYTHONPATH="$MITSUBA_DIR/python:$PYTHONPATH"
 export PATH="$MITSUBA_DIR:$PATH"
 
 if [ "$BASH_VERSION" ]; then
-    _mitsuba()
-    {
-        local cur prev opts
-        COMPREPLY=()
-        cur="${COMP_WORDS[COMP_CWORD]}"
-        prev="${COMP_WORDS[COMP_CWORD-1]}"
-        opts="@MTS_VARIANT_NAMES_STR@"
-
-        if [[ ${prev} == -m ]] ; then
-            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
-            return 0
+    _mitsuba() {
+        local VARIANTS FLAGS
+        VARIANTS="@MTS_VARIANT_NAMES_STR@"
+        FLAGS="-a -h -m -o -s -t -u -v -D"
+        if [[ $2 == -* ]] ; then
+            COMPREPLY=( $(compgen -W "${FLAGS}" -- $2) )
+        elif [[ $3 == -m ]] ; then
+            COMPREPLY=( $(compgen -W "${VARIANTS}" -- $2) )
         else
-            _filedir
+            COMPREPLY=()
         fi
+        return 0
     }
-    complete -F _mitsuba mitsuba
+    complete -F _mitsuba -o default mitsuba
 fi
