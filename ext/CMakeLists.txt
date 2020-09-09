@@ -121,7 +121,6 @@ if (WIN32 OR APPLE)
   set(PNG_LIBRARIES    "png16" PARENT_SCOPE)
   set(PNG_DEFINES      -DMTS_HAS_LIBPNG PARENT_SCOPE)
 else()
-message(STATUS bsdf)
   # Find system libpng
   find_package(PNG)
   if (PNG_FOUND)
