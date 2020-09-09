@@ -94,6 +94,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
   list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
   list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
+  set(MTS_VARIANT_NAMES ${MTS_VARIANT_NAMES} ${MTS_VARIANT_NAME})
   message(STATUS " * ${MTS_VARIANT_NAME}")
 endforeach()
 
@@ -602,7 +603,8 @@ if (WIN32)
   file(COPY resources/setpath.bat DESTINATION ${MTS_BINARY_DIR})
 else()
   install(FILES resources/setpath.sh DESTINATION ".")
-  file(COPY resources/setpath.sh DESTINATION ${MTS_BINARY_DIR})
+  string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
+  configure_file(resources/setpath.sh setpath.sh @ONLY)
 endif()
 
 
