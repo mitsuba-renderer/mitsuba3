@@ -36,6 +36,8 @@ if [ "$BASH_VERSION" ]; then
         if [[ ${prev} == -m ]] ; then
             COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
             return 0
+        else
+            _filedir
         fi
     }
     complete -F _mitsuba mitsuba
