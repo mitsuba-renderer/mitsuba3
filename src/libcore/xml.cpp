@@ -987,12 +987,12 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
 #if defined(MTS_ENABLE_CUDA)
         if (string::starts_with(ctx.variant, "cuda_"))
-            jitc_set_device(0);
+            jitc_set_device(0, range.begin());
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
         if (string::starts_with(ctx.variant, "llvm_"))
-            jitc_set_device(-1);
+            jitc_set_device(-1, range.begin());
 #endif
 
         for (uint32_t i = range.begin(); i != range.end(); ++i) {
