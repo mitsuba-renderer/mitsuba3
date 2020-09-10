@@ -117,6 +117,9 @@ endif()
 #  and generates setpath.sh/bat at the same time.
 # ----------------------------------------------------------
 
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf
+               ${CMAKE_CURRENT_BINARY_DIR}/ext/unused)
+
 string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
 
 # Directory for build products
