@@ -665,6 +665,9 @@ install(
   DESTINATION data
 )
 
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/data)
+
 add_custom_target(copy-resources ALL DEPENDS ${MTS_COPY_FILES})
 
 mark_as_advanced(
