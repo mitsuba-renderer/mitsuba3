@@ -258,13 +258,19 @@ struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
+    bool parallelize;
     ColorMode color_mode;
 
     XMLParseContext(const std::string &variant) : variant(variant) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
+        parallelize = true;
     }
 
     std::string variant;
+
+    bool is_cuda() const { return string::starts_with(variant, "cuda_"); }
+    bool is_llvm() const { return string::starts_with(variant, "llvm_"); }
+    bool is_jit() const { return is_cuda() || is_llvm(); }
 };
 
 /// Helper function to check if attributes are fully specified
@@ -983,16 +989,13 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) named_references.size(), 1),
         [&](const tbb::blocked_range<uint32_t> &range) {
+
+    auto functor = [&](const tbb::blocked_range<uint32_t> &range) {
         ScopedSetThreadEnvironment set_env(env);
 
-#if defined(MTS_ENABLE_CUDA)
-        if (string::starts_with(ctx.variant, "cuda_"))
-            jitc_set_device(0, range.begin());
-#endif
-
-#if defined(MTS_ENABLE_LLVM)
-        if (string::starts_with(ctx.variant, "llvm_"))
-            jitc_set_device(-1, range.begin());
+#if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
+        if (ctx.is_jit())
+            jitc_set_device(ctx.is_cuda() ? 0 : -1, tbb::task_arena::current_thread_index());
 #endif
 
         for (uint32_t i = range.begin(); i != range.end(); ++i) {
@@ -1003,10 +1006,18 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
                     obj = instantiate_node(ctx, kv.second);
                 };
 
-                tbb::this_task_arena::isolate(instantiate_recursively);
+                // Potentially isolate from parent tasks to prevent deadlocks
+                if (ctx.parallelize)
+                    tbb::this_task_arena::isolate(instantiate_recursively);
+                else
+                    instantiate_recursively();
 
                 // Give the object a chance to recursively expand into sub-objects
                 std::vector<ref<Object>> children = obj->expand();
+        #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
+                if (ctx.is_jit())
+                    ek::eval();
+        #endif
                 if (children.empty()) {
                     props.set_object(kv.first, obj, false);
                 } else if (children.size() == 1) {
@@ -1024,7 +1035,14 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
                     throw;
             }
         }
-    });
+    };
+
+    tbb::blocked_range<uint32_t> range(0u, (uint32_t) named_references.size(), 1);
+
+    if (ctx.parallelize)
+        tbb::parallel_for(range, functor);
+    else
+        functor(range);
 
     try {
         inst.object = PluginManager::instance()->create_object(props, inst.class_);
@@ -1191,6 +1209,12 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
                                           param, arg_counter, 0).second;
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
+
+#if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
+        if (ctx.is_jit())
+            jitc_sync_device();
+#endif
+
         Thread::thread()->set_file_resolver(fs_backup.get());
         return obj;
     } catch(...) {
@@ -1260,6 +1284,12 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         }
 
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
+
+#if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
+        if (ctx.is_jit())
+            jitc_sync_device();
+#endif
+
         Thread::thread()->set_file_resolver(fs_backup.get());
         return obj;
     } catch(...) {
