@@ -108,7 +108,7 @@ bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
         film->develop();
     } else {
 #if !defined(_WIN32)
-        Log(Info, Warn, "\U0000274C Rendering failed, result not saved.");
+        Log(Warn, "\U0000274C Rendering failed, result not saved.");
 #else
         Log(Warn, "Rendering failed, result not saved.");
 #endif
