@@ -986,10 +986,6 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
     ThreadEnvironment env;
 
-    tbb::parallel_for(
-        tbb::blocked_range<uint32_t>(0u, (uint32_t) named_references.size(), 1),
-        [&](const tbb::blocked_range<uint32_t> &range) {
-
     auto functor = [&](const tbb::blocked_range<uint32_t> &range) {
         ScopedSetThreadEnvironment set_env(env);
 
