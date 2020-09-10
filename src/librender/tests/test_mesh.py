@@ -299,7 +299,7 @@ def test10_ray_intersect_preliminary(variant_scalar_rgb):
     assert ek.allclose(si.dp_du, [2.0, 0.0, 0.0])
     assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
-
+# TODO refactoring
 @fresolver_append_path
 def test11_parameters_grad_enabled(variant_cuda_autodiff_rgb):
     from mitsuba.core.xml import load_string
@@ -317,14 +317,14 @@ def test11_parameters_grad_enabled(variant_cuda_autodiff_rgb):
 
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'bsdf.reflectance.value'
-    ek.set_requires_gradient(params[bsdf_param_key])
+    ek.enable_grad(params[bsdf_param_key])
     params.set_dirty(bsdf_param_key)
     params.update()
     assert shape.parameters_grad_enabled() == False
 
     # When setting one of the shape's param to require gradient, method should return True
-    shape_param_key = 'vertex_positions_buf'
-    ek.set_requires_gradient(params[shape_param_key])
+    shape_param_key = 'vertex_positions'
+    ek.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
     assert shape.parameters_grad_enabled() == True
@@ -352,25 +352,25 @@ def test12_differentiable_surface_interaction_automatic(variant_cuda_autodiff_rg
     assert not ek.requires_gradient(si.p)
 
     # si should be attached if ray is attached
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray)
     assert ek.requires_gradient(si.t)
     assert ek.requires_gradient(si.p)
 
     # si should not be attached if falgs says so
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray, HitComputeFlags.NonDifferentiable)
     assert not ek.requires_gradient(si.t)
     assert not ek.requires_gradient(si.p)
 
     # si should be attached if shape parameters are attached
     params = traverse(scene)
-    shape_param_key = 'rect.vertex_positions_buf'
-    ek.set_requires_gradient(params[shape_param_key])
+    shape_param_key = 'rect.vertex_positions'
+    ek.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
 
-    ek.set_requires_gradient(ray.o, False)
+    ek.enable_grad(ray.o, False)
     si = pi.compute_surface_interaction(ray)
     assert ek.requires_gradient(si.t)
     assert ek.requires_gradient(si.p)
@@ -391,8 +391,8 @@ def test13_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_
     ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
     pi = scene.ray_intersect_preliminary(ray)
 
-    ek.set_requires_gradient(ray.o)
-    ek.set_requires_gradient(ray.d)
+    ek.enable_grad(ray.o)
+    ek.enable_grad(ray.d)
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
@@ -430,7 +430,7 @@ def test14_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff
     ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
     pi = scene.ray_intersect_preliminary(ray)
 
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
 
     # If si.p is shifted along the x-axis, so does the ray origin
     si = pi.compute_surface_interaction(ray)
@@ -470,13 +470,13 @@ def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodi
     ''')
 
     params = traverse(scene)
-    shape_param_key = 'rect.vertex_positions_buf'
+    shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
     positions_initial = ravel(positions_buf)
 
     # Create differential parameter to be optimized
     diff_vector = Vector3f(0.0)
-    ek.set_requires_gradient(diff_vector)
+    ek.enable_grad(diff_vector)
 
     # Apply the transformation to mesh vertex position and update scene
     def apply_transformation(trasfo):
@@ -543,12 +543,12 @@ def test16_differentiable_surface_interaction_params_backward(variant_cuda_autod
     ''')
 
     params = traverse(scene)
-    vertex_pos_key = 'rect.vertex_positions_buf'
-    vertex_normals_key = 'rect.vertex_normals_buf'
-    vertex_texcoords_key = 'rect.vertex_texcoords_buf'
-    ek.set_requires_gradient(params[vertex_pos_key])
-    ek.set_requires_gradient(params[vertex_normals_key])
-    ek.set_requires_gradient(params[vertex_texcoords_key])
+    vertex_pos_key = 'rect.vertex_positions'
+    vertex_normals_key = 'rect.vertex_normals'
+    vertex_texcoords_key = 'rect.vertex_texcoords'
+    ek.enable_grad(params[vertex_pos_key])
+    ek.enable_grad(params[vertex_normals_key])
+    ek.enable_grad(params[vertex_texcoords_key])
     params.set_dirty(vertex_pos_key)
     params.set_dirty(vertex_normals_key)
     params.set_dirty(vertex_texcoords_key)
