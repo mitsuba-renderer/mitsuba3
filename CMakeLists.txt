@@ -78,6 +78,37 @@ if (MTS_VARIANTS_ERR)
   message(FATAL_ERROR "Could not run resources/configure.py script: ${MTS_VARIANTS_ERR}")
 endif()
 
+# ----------------------------------------------------------
+#  Check desired variants and set relevant feature flags
+# ----------------------------------------------------------
+
+list(LENGTH MTS_VARIANTS MTS_VARIANTS_COUNT)
+
+message(STATUS "Building the following variants of Mitsuba:")
+foreach (MTS_VARIANT ${MTS_VARIANTS})
+  string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
+  list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
+  list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
+  list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
+  set(MTS_VARIANT_NAMES ${MTS_VARIANT_NAMES} ${MTS_VARIANT_NAME})
+  message(STATUS " * ${MTS_VARIANT_NAME}")
+endforeach()
+
+if (MTS_VARIANTS MATCHES "cuda_")
+  set(MTS_ENABLE_CUDA ON)
+endif()
+
+if (MTS_VARIANTS MATCHES "llvm_")
+  set(MTS_ENABLE_LLVM ON)
+endif()
+
+if (MTS_VARIANTS MATCHES "autodiff_")
+  set(MTS_ENABLE_AUTODIFF ON)
+endif()
+
+if (MTS_ENABLE_LLVM OR MTS_ENABLE_CUDA)
+  set(MTS_ENABLE_JIT ON)
+endif()
 
 # ----------------------------------------------------------
 #  Re-run CMake when 'mitsuba.conf' changes (we must
@@ -128,38 +159,6 @@ else()
                    ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat DESTINATION ".")
     ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.sh)
-endif()
-
-# ----------------------------------------------------------
-#  Check desired variants and set relevant feature flags
-# ----------------------------------------------------------
-
-list(LENGTH MTS_VARIANTS MTS_VARIANTS_COUNT)
-
-message(STATUS "Building the following variants of Mitsuba:")
-foreach (MTS_VARIANT ${MTS_VARIANTS})
-  string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
-  list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
-  list(GET MTS_VARIANT 1 MTS_VARIANT_FLOAT)
-  list(GET MTS_VARIANT 2 MTS_VARIANT_SPECTRUM)
-  set(MTS_VARIANT_NAMES ${MTS_VARIANT_NAMES} ${MTS_VARIANT_NAME})
-  message(STATUS " * ${MTS_VARIANT_NAME}")
-endforeach()
-
-if (MTS_VARIANTS MATCHES "cuda_")
-  set(MTS_ENABLE_CUDA ON)
-endif()
-
-if (MTS_VARIANTS MATCHES "llvm_")
-  set(MTS_ENABLE_LLVM ON)
-endif()
-
-if (MTS_VARIANTS MATCHES "autodiff_")
-  set(MTS_ENABLE_AUTODIFF ON)
-endif()
-
-if (MTS_ENABLE_LLVM OR MTS_ENABLE_CUDA)
-  set(MTS_ENABLE_JIT ON)
 endif()
 
 # ----------------------------------------------------------
@@ -657,7 +656,7 @@ install(
   DESTINATION include/mitsuba/core
 )
 
-ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run) 
+ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff
   DESTINATION data
