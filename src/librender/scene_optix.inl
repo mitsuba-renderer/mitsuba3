@@ -241,7 +241,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         s.params = jitc_malloc(AllocType::Device, sizeof(OptixParams));
 
         // This will trigger the scatter calls to upload geometry to the device
-        jitc_sync_stream();
+        jitc_sync_device();
     }
 }
 
@@ -405,7 +405,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 
         // Ensure pi and instance_index are allocated before binding the data pointers
         ek::eval(pi, instance_index, active, ray);
-        jitc_sync_stream();
+        jitc_sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
@@ -511,7 +511,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // Ensure si and instance_index are allocated before binding the
         // data pointers
         ek::eval(si, instance_index, active, ray);
-        jitc_sync_stream();
+        jitc_sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g.
         // nullptr)
@@ -555,7 +555,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         params.handle = s.ias_handle;
 
         launch_optix_kernel(s, params, ray_count);
-        jitc_sync_stream();
+        jitc_sync_device();
 
         si.time = ray.time;
         si.wavelengths = ray.wavelengths;
@@ -594,7 +594,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         Mask hit = ek::empty<Mask>(ray_count);
 
         ek::eval(hit, active, ray);
-        jitc_sync_stream();
+        jitc_sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
