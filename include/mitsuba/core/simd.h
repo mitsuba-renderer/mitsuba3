@@ -76,7 +76,7 @@ struct scoped_migrate_to_host_cond {
             ek::eval(args...);
 
             if constexpr (IsCUDA)
-                migrate_tuple(AllocType::HostPinned);
+                migrate_tuple(AllocType::Host);
 
             jitc_sync_stream();
         }
