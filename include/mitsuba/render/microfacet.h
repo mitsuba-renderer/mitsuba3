@@ -450,8 +450,8 @@ std::ostream &operator<<(std::ostream &os, const MicrofacetDistribution<Float, S
     return os;
 }
 
-template <typename Float, typename Spectrum>
-Float eval_reflectance(const MicrofacetDistribution<Float, Spectrum> &distr,
+template <typename Float, typename MicrofaceDistributionP>
+Float eval_reflectance(const MicrofaceDistributionP &distr,
                        const Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
     MTS_IMPORT_CORE_TYPES()
 
@@ -462,30 +462,48 @@ Float eval_reflectance(const MicrofacetDistribution<Float, Spectrum> &distr,
 
     using FloatX = ek::DynamicArray<ek::scalar_t<Float>>;
     auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
-    Float result = ek::empty<Float>(ek::width(wi));
+    Float result = ek::zero<Float>(ek::width(wi));
 
     auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
     auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
 
-    for (size_t i = 0; i < ek::width(nodes_x); ++i) {
-        ScalarVector2f node = { nodes_x[i], nodes_y[i] };
-        ScalarVector2f weight = { weights_x[i], weights_y[i] };
-        node = ek::fmadd(node, 0.5f, 0.5f);
+    using Normal3fP = Normal<FloatP, 3>;
+    using Vector3fP = Vector<FloatP, 3>;
 
-        Normal3f m = std::get<0>(distr.sample(wi, node));
-        Vector3f wo = reflect(wi, m);
-        Float f = std::get<0>(fresnel(ek::dot(wi, m), Float(eta)));
-        Float smith = distr.smith_g1(wo, m) * f;
-        ek::masked(smith, wo.z() <= 0.f || wi.z() <= 0.f) = 0.f;
-        result += smith * ek::hprod(weight) * 0.25f;
+    size_t packet_count = ek::width(wi) / FloatP::Size;
+
+    Assert(ek::width(wi) % FloatP::Size == 0);
+
+    for (size_t i = 0; i < packet_count; ++i) {
+        Vector3fP wi_p;
+        wi_p.x() = ek::load_unaligned<FloatP>(wi.x().data() + i * FloatP::Size);
+        wi_p.y() = ek::load_unaligned<FloatP>(wi.y().data() + i * FloatP::Size);
+        wi_p.z() = ek::load_unaligned<FloatP>(wi.z().data() + i * FloatP::Size);
+
+        FloatP result_p = 0.f;
+
+        for (size_t i = 0; i < ek::width(nodes_x); ++i) {
+            ScalarVector2f node = { nodes_x[i], nodes_y[i] };
+            ScalarVector2f weight = { weights_x[i], weights_y[i] };
+            node = ek::fmadd(node, 0.5f, 0.5f);
+
+            Normal3fP m = std::get<0>(distr.sample(wi_p, node));
+            Vector3fP wo = reflect(wi_p, m);
+            FloatP f = std::get<0>(fresnel(ek::dot(wi_p, m), FloatP(eta)));
+            FloatP smith = distr.smith_g1(wo, m) * f;
+            ek::masked(smith, wo.z() <= 0.f || wi_p.z() <= 0.f) = 0.f;
+            result_p += smith * ek::hprod(weight) * 0.25f;
+        }
+
+        ek::store_unaligned(result.data() + i * FloatP::Size, result_p);
     }
 
     return result;
 }
 
-template <typename Float, typename Spectrum>
-Float eval_transmittance(const MicrofacetDistribution<Float, Spectrum> &distr,
-                         const Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
+template <typename Float, typename MicrofaceDistributionP>
+Float eval_transmittance(const MicrofaceDistributionP &distr,
+                         Vector<Float, 3> &wi, ek::scalar_t<Float> eta) {
     MTS_IMPORT_CORE_TYPES()
 
     if (!distr.sample_visible())
@@ -493,24 +511,45 @@ Float eval_transmittance(const MicrofacetDistribution<Float, Spectrum> &distr,
 
     int res = eta > 1 ? 32 : 128;
 
-    using FloatX = ek::DynamicArray<ek::scalar_t<Float>>;
+    using ScalarFloat = ek::scalar_t<Float>;
+    using FloatX = ek::DynamicArray<ScalarFloat>;
     auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
     Float result = ek::zero<Float>(ek::width(wi));
 
     auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
     auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
 
-    for (size_t i = 0; i < ek::width(nodes_x); ++i) {
-        ScalarVector2f node = { nodes_x[i], nodes_y[i] };
-        ScalarVector2f weight = { weights_x[i], weights_y[i] };
-        node = ek::fmadd(node, 0.5f, 0.5f);
+    using Normal3fP = Normal<FloatP, 3>;
+    using Vector3fP = Vector<FloatP, 3>;
 
-        Normal3f m = std::get<0>(distr.sample(wi, node));
-        auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi, m), Float(eta));
-        Vector3f wo = refract(wi, m, cos_theta_t, eta_ti);
-        Float smith = distr.smith_g1(wo, m) * (1.f - f);
-        ek::masked(smith, wo.z() * wi.z() >= 0.f) = 0.f;
-        result += smith * ek::hprod(weight) * 0.25f;
+    size_t packet_count = ek::width(wi) / FloatP::Size;
+
+    Assert(ek::width(wi) % FloatP::Size == 0);
+
+    for (size_t i = 0; i < packet_count; ++i) {
+        Vector3fP wi_p;
+        wi_p.x() = ek::load_unaligned<FloatP>(wi.x().data() + i * FloatP::Size);
+        wi_p.y() = ek::load_unaligned<FloatP>(wi.y().data() + i * FloatP::Size);
+        wi_p.z() = ek::load_unaligned<FloatP>(wi.z().data() + i * FloatP::Size);
+
+        FloatP result_p = 0.f;
+
+        for (size_t i = 0; i < ek::width(nodes_x); ++i) {
+            ScalarVector2f node = { nodes_x[i], nodes_y[i] };
+            ScalarVector2f weight = { weights_x[i], weights_y[i] };
+            node = ek::fmadd(node, 0.5f, 0.5f);
+
+            Normal3fP m = std::get<0>(distr.sample(wi_p, node));
+            auto [f, cos_theta_t, eta_it, eta_ti] = fresnel(ek::dot(wi_p, m), FloatP(eta));
+
+            Vector3fP wo = refract(wi_p, m, cos_theta_t, eta_ti);
+            FloatP smith = distr.smith_g1(wo, m) * (1.f - f);
+            ek::masked(smith, wo.z() * wi_p.z() >= 0.f) = 0.f;
+
+            result_p += smith * ek::hprod(weight) * 0.25f;
+        }
+
+        ek::store_unaligned(result.data() + i * FloatP::Size, result_p);
     }
 
     return result;

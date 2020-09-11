@@ -45,7 +45,7 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
         [](MicrofacetType type, float alpha_u, float alpha_v,
            const Vector<DynamicBuffer<Float>, 3> &wi,
            float eta) {
-            mitsuba::MicrofacetDistribution<DynamicBuffer<Float>, Spectrum> d(type, alpha_u, alpha_v);
+            mitsuba::MicrofacetDistribution<FloatP, Spectrum> d(type, alpha_u, alpha_v);
             return eval_reflectance(d, wi, eta);
         }, "type"_a, "alpha_u"_a, "alpha_v"_a, "wi"_a, "eta"_a);
 }

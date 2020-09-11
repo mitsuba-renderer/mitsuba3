@@ -379,22 +379,21 @@ public:
 
         // Precompute rough reflectance (vectorized)
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
-            // TODO refactoring: this is very slow now!
             using FloatX = DynamicBuffer<ScalarFloat>;
-            using UIntX  = ek::uint_array_t<FloatX>;
             using Vector3fX = Vector<FloatX, 3>;
 
-            mitsuba::MicrofacetDistribution<FloatX, Spectrum> distr(m_type, m_alpha);
+            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, m_alpha);
+            FloatX mu = ek::max(1e-6f, ek::linspace<FloatX>(0, 1, MTS_ROUGH_TRANSMITTANCE_RES));
+            FloatX zero = ek::zero<FloatX>(MTS_ROUGH_TRANSMITTANCE_RES);
 
-            FloatX mu = ek::max(
-                1e-6f, ek::arange<UIntX>(MTS_ROUGH_TRANSMITTANCE_RES) /
-                           ScalarFloat(MTS_ROUGH_TRANSMITTANCE_RES - 1));
-            Vector3fX wi = Vector3fX(ek::sqrt(1 - mu * mu), 0.f, mu);
+            Vector3fX wi = Vector3fX(ek::sqrt(1 - mu * mu), zero, mu);
 
             auto external_transmittance = eval_transmittance(distr, wi, m_eta);
+
             m_external_transmittance = ek::load_unaligned<DynamicBuffer<Float>>(
                 external_transmittance.data(),
                 ek::width(external_transmittance));
+
             m_internal_reflectance =
                 ek::hmean(eval_reflectance(distr, wi, 1.f / m_eta) * wi.z()) * 2.f;
         }
