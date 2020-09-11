@@ -44,6 +44,13 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 
     m_bbox = m_kdtree->bbox();
 #endif
+
+    if constexpr (ek::is_jit_array_v<Float>) {
+        // Get shapes registry ids
+        m_shapes_registry_ids.resize(m_shapes.size());
+        for (size_t i = 0; i < m_shapes.size(); i++)
+            m_shapes_registry_ids[i] = jitc_registry_get_id(m_shapes[i]);
+    }
 }
 
 MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -109,7 +116,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         } else {
             using ShapePtr = ek::replace_scalar_t<Float, const Base *>;
             Assert(ek::all(pi.shape_index < m_shapes.size()));
-            pi.shape = ek::gather<ShapePtr>(m_shapes.data(), pi.shape_index, active);
+            pi.shape = ek::gather<ShapePtr>(m_shapes_registry_ids.data(), pi.shape_index, active);
         }
 
         SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, flags, active);

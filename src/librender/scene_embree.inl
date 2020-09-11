@@ -46,7 +46,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
          rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));
 
     if constexpr (ek::is_llvm_array_v<Float>) {
-        // Copy shapes registry ids to the GPU
+        // Get shapes registry ids
         s.shapes_registry_ids.resize(m_shapes.size());
         for (size_t i = 0; i < m_shapes.size(); i++)
             s.shapes_registry_ids[i] = jitc_registry_get_id(m_shapes[i]);
