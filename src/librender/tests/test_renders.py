@@ -29,7 +29,7 @@ EXCLUDE_FOLDERS = []
 
 # Don't test participating media in GPU modes
 # to reduce the time needed to run all tests
-GPU_EXCLUDE_FOLDERS = ['participating_media']
+JIT_EXCLUDE_FOLDERS = ['participating_media']
 
 def get_ref_fname(scene_fname):
     for color_mode in color_modes:
@@ -90,8 +90,9 @@ def test_render(variants_all, scene_fname):
     if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
         pytest.skip(f"Skip rendering scene {scene_fname}")
 
-    if 'cuda' in mitsuba.variant() and os.path.split(scene_dir)[1] in GPU_EXCLUDE_FOLDERS:
-        pytest.skip(f"Skip rendering scene {scene_fname} in GPU mode")
+    is_jit = 'cuda' in mitsuba.variant() or 'llvm' in mitsuba.variant()
+    if is_jit and os.path.split(scene_dir)[1] in JIT_EXCLUDE_FOLDERS:
+        pytest.skip(f"Skip rendering scene {scene_fname} in JIT mode")
 
     Thread.thread().file_resolver().prepend(scene_dir)
 
