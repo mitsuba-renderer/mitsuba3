@@ -4,6 +4,7 @@
 #include <mitsuba/core/mmap.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/profiler.h>
 
 #include <array>
 
@@ -115,6 +116,7 @@ public:
             fail("file not found");
 
         ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
+        ScopedPhase phase(ProfilerPhase::LoadGeometry);
 
         using ScalarIndex3 = std::array<ScalarIndex, 3>;
 

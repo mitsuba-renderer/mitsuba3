@@ -42,6 +42,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     s.accel = embree_scene;
 
+    ScopedPhase phase(ProfilerPhase::InitAccel);
     for (Shape *shape : m_shapes)
          rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));
 

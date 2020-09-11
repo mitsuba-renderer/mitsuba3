@@ -4,6 +4,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/profiler.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -194,6 +195,7 @@ public:
         m_name = tfm::format("%s@%i", file_path.filename(), shape_index);
 
         ref<Stream> stream = new FileStream(file_path);
+        ScopedPhase phase(ProfilerPhase::LoadGeometry);
         Timer timer;
         stream->set_byte_order(Stream::ELittleEndian);
 

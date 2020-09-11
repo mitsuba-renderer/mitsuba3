@@ -6,6 +6,7 @@
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/profiler.h>
 #include <unordered_map>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
@@ -923,6 +924,7 @@ private:
 };
 
 void Bitmap::read_openexr(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     if (Imf::globalThreadCount() == 0)
         Imf::setGlobalThreadCount(std::min(8, util::core_count()));
 
@@ -1285,6 +1287,7 @@ void Bitmap::read_openexr(Stream *stream) {
 }
 
 void Bitmap::write_openexr(Stream *stream, int quality) const {
+    ScopedPhase phase(ProfilerPhase::BitmapWrite);
     if (Imf::globalThreadCount() == 0)
         Imf::setGlobalThreadCount(std::min(8, util::core_count()));
 
@@ -1483,6 +1486,7 @@ extern "C" {
 };
 
 void Bitmap::read_jpeg(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
     jbuf_in_t jbuf;
@@ -1544,6 +1548,7 @@ void Bitmap::read_jpeg(Stream *stream) {
 }
 
 void Bitmap::write_jpeg(Stream *stream, int quality) const {
+    ScopedPhase phase(ProfilerPhase::BitmapWrite);
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
     jbuf_out_t jbuf;
@@ -1629,6 +1634,7 @@ static void png_warn_func(png_structp, png_const_charp msg) {
 }
 
 void Bitmap::read_png(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     png_bytepp rows = nullptr;
 
     // Create buffers
@@ -1730,6 +1736,7 @@ void Bitmap::read_png(Stream *stream) {
 }
 
 void Bitmap::write_png(Stream *stream, int compression) const {
+    ScopedPhase phase(ProfilerPhase::BitmapWrite);
     png_structp png_ptr;
     png_infop info_ptr;
     volatile png_bytepp rows = nullptr;
@@ -1830,6 +1837,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
 // -----------------------------------------------------------------------------
 
 void Bitmap::read_ppm(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     int field = 0, n_chars = 0;
 
     std::string fields[4];
@@ -1878,6 +1886,7 @@ void Bitmap::read_ppm(Stream *stream) {
 }
 
 void Bitmap::write_ppm(Stream *stream) const {
+    ScopedPhase phase(ProfilerPhase::BitmapWrite);
     if (m_pixel_format != PixelFormat::RGB ||
         (m_component_format != Struct::Type::UInt8 && m_component_format != Struct::Type::UInt16))
         Throw("write_ppm(): Only 8 or 16-bit RGB images are supported");
@@ -1980,6 +1989,7 @@ namespace {
 }
 
 void Bitmap::read_rgbe(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     std::string line = stream->read_line();
 
     if (line.length() < 2 || line[0] != '#' || line[1] != '?')
@@ -2088,6 +2098,7 @@ void Bitmap::read_rgbe(Stream *stream) {
 }
 
 void Bitmap::write_rgbe(Stream *stream) const {
+    ScopedPhase phase(ProfilerPhase::BitmapWrite);
     if (m_component_format != Struct::Type::Float32)
         Throw("write_rgbe(): component format must be Float32!");
 
@@ -2154,6 +2165,7 @@ void Bitmap::write_rgbe(Stream *stream) const {
 // -----------------------------------------------------------------------------
 
 void Bitmap::read_pfm(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     char header[3];
     stream->read(header, 3);
     if (header[0] != 'P' || !(header[1] == 'F' || header[1] == 'f'))
@@ -2209,6 +2221,7 @@ void Bitmap::read_pfm(Stream *stream) {
 }
 
 void Bitmap::write_pfm(Stream *stream) const {
+    ScopedPhase phase(ProfilerPhase::BitmapWrite);
     if (m_component_format != Struct::Type::Float32)
         Throw("write_pfm(): component format must be Float32!");
     if (m_pixel_format != PixelFormat::RGB && m_pixel_format != PixelFormat::RGBA &&
@@ -2263,6 +2276,7 @@ void Bitmap::write_pfm(Stream *stream) const {
 // -----------------------------------------------------------------------------
 
 void Bitmap::read_bmp(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     uint32_t bmp_offset, header_size;
     int32_t width, height;
     uint16_t nplanes, bpp;
@@ -2341,6 +2355,7 @@ void Bitmap::read_bmp(Stream *stream) {
 }
 
 void Bitmap::read_tga(Stream *stream) {
+    ScopedPhase phase(ProfilerPhase::BitmapRead);
     auto byte_order = stream->byte_order();
     stream->set_byte_order(Stream::ELittleEndian);
     try {

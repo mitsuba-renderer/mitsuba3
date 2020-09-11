@@ -46,6 +46,7 @@ struct OptixState {
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
 
         using OptixState = OptixState<Float>;

@@ -5,6 +5,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/profiler.h>
 #include <enoki/half.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -119,6 +120,7 @@ public:
             fail("file not found");
 
         ref<Stream> stream = new FileStream(file_path);
+        ScopedPhase phase(ProfilerPhase::LoadGeometry);
         Timer timer;
 
         PLYHeader header;

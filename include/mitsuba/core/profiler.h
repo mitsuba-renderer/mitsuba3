@@ -22,8 +22,9 @@ NAMESPACE_BEGIN(mitsuba)
 enum class ProfilerPhase : int {
     InitScene = 0,              /* Scene initialization */
     LoadGeometry,               /* Geometry loading */
-    LoadTexture,                /* Texture loading */
-    InitKDTree,                 /* kd-tree construction */
+    BitmapRead,                 /* Bitmap loading */
+    BitmapWrite,                /* Bitmap writing */
+    InitAccel,                  /* Acceleration data structure creation */
     Render,                     /* Integrator::render() */
     SamplingIntegratorSample,   /* SamplingIntegrator::sample() */
     SampleEmitterRay,           /* Scene::sample_emitter_ray() */
@@ -51,8 +52,9 @@ constexpr const char
     *profiler_phase_id[int(ProfilerPhase::ProfilerPhaseCount)] = {
         "Scene initialization",
         "Geometry loading",
-        "Texture loading",
-        "kd-tree construction",
+        "Bitmap loading",
+        "Bitmap writing",
+        "Acceleration data structure creation",
         "Integrator::render()",
         "SamplingIntegrator::sample()",
         "Scene::sample_emitter_ray()",
