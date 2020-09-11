@@ -4,6 +4,10 @@
 
 #include <mitsuba/core/object.h>
 
+#if defined(MTS_ITTNOTIFY)
+#  include <ittnotify.h>
+#endif
+
 #if !defined(MTS_PROFILE_HASH_SIZE)
 #  define MTS_PROFILE_HASH_SIZE 256
 #endif
@@ -70,6 +74,11 @@ constexpr const char
         "Texture::eval()"
     };
 
+#if defined(MTS_ITTNOTIFY)
+extern MTS_EXPORT_CORE __itt_domain *mitsuba_itt_domain;
+extern MTS_EXPORT_CORE __itt_string_handle *
+    mitsuba_itt_phase[int(ProfilerPhase::ProfilerPhaseCount)];
+#endif
 
 static_assert(int(ProfilerPhase::ProfilerPhaseCount) <= 64,
               "List of profiler phases is limited to 64 entries");
@@ -94,10 +103,19 @@ struct ScopedPhase {
             *m_target |= m_flag;
         else
             m_flag = 0;
+
+#if defined(MTS_ITTNOTIFY)
+        __itt_task_begin(mitsuba_itt_domain, __itt_null, __itt_null,
+                         mitsuba_itt_phase[(int) phase]);
+#endif
     }
 
     ~ScopedPhase() {
         *m_target &= ~m_flag;
+
+#if defined(MTS_ITTNOTIFY)
+        __itt_task_end(mitsuba_itt_domain);
+#endif
     }
 
     ScopedPhase(const ScopedPhase &) = delete;

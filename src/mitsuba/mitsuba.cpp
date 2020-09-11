@@ -48,7 +48,6 @@ Options:
 
         Available modes:
               )" << string::indent(MTS_VARIANTS, 14) << R"(
-
     -v, --verbose
         Be more verbose. (can be specified multiple times)
 

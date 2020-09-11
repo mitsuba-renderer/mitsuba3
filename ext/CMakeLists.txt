@@ -15,6 +15,18 @@ set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
 set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
 
 # ----------------------------------------------------------
+#  Intel ITT (profiler events for VTune, optional)
+# ----------------------------------------------------------
+
+if (MTS_ENABLE_ITTNOTIFY)
+  add_subdirectory(ittnotify/ittnotify)
+  set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ittnotify/ittnotify/include)
+  set(ITT_INCLUDE_DIRS ${ITT_INCLUDE_DIRS} PARENT_SCOPE)
+  set_property(TARGET ittnotify PROPERTY FOLDER "dependencies")
+  message(STATUS "Mitsuba: emitting profiling events with Intel ITT.")
+endif()
+
+# ----------------------------------------------------------
 #  Enoki (+ Python bindings, JIT compiler, etc.)
 # ----------------------------------------------------------
 
@@ -300,4 +312,5 @@ mark_as_advanced(
   TBB_BUILD_TBBMALLOC_PROXY TBB_BUILD_TESTS TBB_CONFIG_DATE TBB_INSTALL_TARGETS
   TBB_NO_DATE TBB_SET_SOVERSION CMAKE_CONFIGURATION_TYPES
   PYBIND11_INSTALL PYBIND11_TEST ZLIB_LIBRARIES
+  jconfig_dir
 )

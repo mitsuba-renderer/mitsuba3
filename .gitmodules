@@ -37,3 +37,6 @@
 [submodule "ext/enoki"]
 	path = ext/enoki
 	url = https://github.com/wjakob/enoki
+[submodule "ext/ittnotify"]
+	path = ext/ittnotify
+	url = https://github.com/intel/IntelSEAPI

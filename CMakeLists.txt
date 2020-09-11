@@ -7,12 +7,12 @@ project(mitsuba
   DESCRIPTION
     "Mitsuba Renderer 2"
   LANGUAGES
-    CXX
+    CXX C
 )
 
 # A number of Mitsuba 2 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
-option(MTS_ENABLE_PYTHON  "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
+option(MTS_ENABLE_PYTHON    "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 
@@ -218,8 +218,7 @@ if(MTS_THROW_TRAPS_DEBUGGER)
   add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
 endif()
 
-# For developers: ability to disable Link Time Optimization to speed up builds
-option(MTS_ENABLE_LTO "Enable Link Time Optimization (LTO)?" ON)
+option(MTS_ENABLE_ITTNOTIFY "Emit profiler events using Intel ITT (for VTune)?" OFF)
 
 if (MTS_ENABLE_CUDA AND MTS_USE_OPTIX_HEADERS)
   set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
@@ -549,6 +548,12 @@ if (MSVC)
   )
 else()
   add_compile_options(-Wall -Wextra -Wno-unused-local-typedefs)
+endif()
+
+# Enable ittnotify
+if (MTS_ENABLE_ITTNOTIFY)
+  include_directories(${ITT_INCLUDE_DIRS})
+  add_definitions(-DMTS_ITTNOTIFY=1)
 endif()
 
 # Register the Mitsuba codebase
