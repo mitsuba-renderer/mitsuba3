@@ -1,10 +1,10 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
-#include <enoki/array_traits.h>
 #include <string>
 
 #include <enoki-jit/jit.h>
+#include <enoki/array_router.h>
 
 #if defined(MTS_ENABLE_CUDA)
 #  include <enoki/cuda.h>
@@ -78,7 +78,7 @@ struct scoped_migrate_to_host_cond {
             if constexpr (IsCUDA)
                 migrate_tuple(AllocType::Host);
 
-            jitc_sync_stream();
+            ek::sync_stream();
         }
     }
 

@@ -857,7 +857,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
     if (keys.empty() || string::contains(keys, "vertex_positions")) {
         if constexpr (ek::is_jit_array_v<Float>) {
             ek::eval(m_vertex_positions);
-            jitc_sync_stream();
+            ek::sync_stream();
         }
 
         recompute_bbox();

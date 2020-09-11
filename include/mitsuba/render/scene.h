@@ -5,7 +5,6 @@
 #include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/sensor.h>
-#include <enoki-jit/jit.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

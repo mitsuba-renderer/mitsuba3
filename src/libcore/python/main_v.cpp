@@ -247,10 +247,10 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         jitc_init();
 
     if constexpr (ek::is_llvm_array_v<Float>)
-        jitc_set_device(-1);
+        ek::set_device(-1);
 
     if constexpr (ek::is_cuda_array_v<Float>) {
-        jitc_set_device(0);
+        ek::set_device(0);
         cie_initialize();
     }
 

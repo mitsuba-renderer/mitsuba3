@@ -991,7 +991,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
 #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
         if (ctx.is_jit())
-            jitc_set_device(ctx.is_cuda() ? 0 : -1, tbb::task_arena::current_thread_index());
+            ek::set_device(ctx.is_cuda() ? 0 : -1, tbb::task_arena::current_thread_index());
 #endif
 
         for (uint32_t i = range.begin(); i != range.end(); ++i) {
@@ -1208,7 +1208,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 
 #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
         if (ctx.is_jit())
-            jitc_sync_device();
+            ek::sync_device();
 #endif
 
         Thread::thread()->set_file_resolver(fs_backup.get());
@@ -1283,7 +1283,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
 #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
         if (ctx.is_jit())
-            jitc_sync_device();
+            ek::sync_device();
 #endif
 
         Thread::thread()->set_file_resolver(fs_backup.get());

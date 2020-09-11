@@ -731,7 +731,7 @@ protected:
                 ek::eval(data);
 
             if constexpr (ek::is_jit_array_v<Float>)
-                jitc_sync_stream();
+                ek::sync_stream();
 
             data_ptr = data.data();
         }

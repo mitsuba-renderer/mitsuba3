@@ -253,7 +253,7 @@ public:
 
         if constexpr (ek::is_llvm_array_v<Float>) {
             ek::eval();
-            jitc_sync_stream();
+            ek::sync_stream();
         }
 
         ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel

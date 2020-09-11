@@ -188,7 +188,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             Vector3u extra = ek::zero<Vector3u>(N);
 
             ek::eval(extra, ng, inst_index, pi);
-            jitc_sync_device();
+            ek::sync_device();
 
             RTCRayHitNp rh;
             rh.ray = bind_ray(ray, pi.t, extra);
@@ -310,7 +310,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             Vector3u extra = ek::zero<Vector3u>(N);
 
             ek::eval(extra, ng, inst_index, pi);
-            jitc_sync_device();
+            ek::sync_device();
 
             RTCRayHitNp rh;
             rh.ray = bind_ray(ray, pi.t, extra);
@@ -404,7 +404,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             Vector3u extra = ek::zero<Vector3u>(N);
 
             ek::eval(extra, t);
-            jitc_sync_device();
+            ek::sync_device();
 
             RTCRayNp ray2 = bind_ray(ray, t, extra);
 
