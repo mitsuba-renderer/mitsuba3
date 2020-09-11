@@ -287,7 +287,6 @@ public:
             using Int8  = ek::Array<Int32, 8>;
             using Int38 = ek::Array<Int8, 3>;
 
-
             // Scale to bitmap resolution and apply shift
             p = ek::fmadd(p, m_metadata.shape, -.5f);
 
@@ -302,8 +301,7 @@ public:
                                       Int8(0, 0, 1, 1, 0, 0, 1, 1) + p_i.y(),
                                       Int8(0, 0, 0, 0, 1, 1, 1, 1) + p_i.z()));
 
-            // (z * ny + y) * nx + x
-            Int8 index = ek::fmadd(ek::fmadd(pi_i_w.z(), ny, pi_i_w.y()), nx, pi_i_w.x());
+            Int8 index = (pi_i_w.z() * ny + pi_i_w.y()) * nx + pi_i_w.x();
 
             // Load 8 grid positions to perform trilinear interpolation
             auto d000 = ek::gather<StorageType>(m_data, index[0], active),
