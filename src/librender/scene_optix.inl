@@ -392,7 +392,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         OptixState &s = *(OptixState *) m_accel;
 
         Ray3f ray(ray_);
-        size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
+        size_t ray_count = ek::width(ray);
 
         PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(ray_count);
 
@@ -404,7 +404,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         // Ensure pi and instance_index are allocated before binding the data pointers
-        ek::eval(pi, instance_index, active, ray);
+        ek::eval(pi, instance_index, active, ray, ray_);
         jitc_sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
@@ -463,7 +463,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         }
 
         Ray3f ray(ray_);
-        size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
+        size_t ray_count = ek::width(ray);
 
         // Allocate only the required fields of the SurfaceInteraction struct
         SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
@@ -508,13 +508,10 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
         UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
-        // Ensure si and instance_index are allocated before binding the
-        // data pointers
-        ek::eval(si, instance_index, active, ray);
+        ek::eval(si, instance_index, active, ray, ray_);
         jitc_sync_device();
 
-        // Initialize OptixParams with all members initialized to 0 (e.g.
-        // nullptr)
+        // Init OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
@@ -590,10 +587,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
-        size_t ray_count = ek::max(ek::width(ray.o), ek::width(ray.d));
+        size_t ray_count = ek::width(ray);
         Mask hit = ek::empty<Mask>(ray_count);
 
-        ek::eval(hit, active, ray);
+        ek::eval(hit, active, ray, ray_);
         jitc_sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)

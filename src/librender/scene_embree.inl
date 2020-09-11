@@ -123,17 +123,6 @@ RTCHitNp offset_rtc_hit(const RTCHitNp& h, size_t offset) {
     return hit;
 }
 
-template <typename Ray>
-size_t compute_ray_width(const Ray& ray) {
-    size_t res = 0;
-    res = ek::max(res, ek::width(ray.o));
-    res = ek::max(res, ek::width(ray.d));
-    res = ek::max(res, ek::width(ray.mint));
-    res = ek::max(res, ek::width(ray.maxt));
-    res = ek::max(res, ek::width(ray.time));
-    return res;
-}
-
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
     Ray3f ray = ray_;
@@ -184,7 +173,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
             }
         } else {
-            uint32_t N = (uint32_t) compute_ray_width(ray);
+            uint32_t N = (uint32_t) ek::width(ray);
             ek::resize(ray, N);
             ray.update();
             ek::eval(ray);
@@ -307,7 +296,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
                 si.t = ek::Infinity<Float>;
             }
         } else {
-            uint32_t N = (uint32_t) compute_ray_width(ray);
+            uint32_t N = (uint32_t) ek::width(ray);
             ek::resize(ray, N);
             ray.update();
             ek::eval(ray);
@@ -404,7 +393,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
 
             return ray2.tfar != ray.maxt;
         } else {
-            uint32_t N = (uint32_t) compute_ray_width(ray);
+            uint32_t N = (uint32_t) ek::width(ray);
             ek::resize(ray, N);
             ray.update();
             ek::eval(ray);
