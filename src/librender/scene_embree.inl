@@ -204,6 +204,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             tbb::parallel_for(
                 tbb::blocked_range<uint32_t>(0, N, 1024),
                 [&](const tbb::blocked_range<uint32_t> &range) {
+                    ScopedPhase sp(ProfilerPhase::RayIntersect);
                     uint32_t offset = range.begin();
                     uint32_t size   = range.end() - offset;
 
@@ -326,6 +327,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             tbb::parallel_for(
                 tbb::blocked_range<uint32_t>(0, N, 1024),
                 [&](const tbb::blocked_range<uint32_t> &range) {
+                    ScopedPhase sp(ProfilerPhase::RayIntersect);
                     uint32_t offset = range.begin();
                     uint32_t size   = range.end() - offset;
 
@@ -418,6 +420,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             tbb::parallel_for(
                 tbb::blocked_range<uint32_t>(0, N, 1024),
                 [&](const tbb::blocked_range<uint32_t> &range) {
+                    ScopedPhase sp(ProfilerPhase::RayTest);
                     uint32_t offset = range.begin();
                     uint32_t size   = range.end() - offset;
                     RTCRayNp ray_ = offset_rtc_ray(ray2, offset);
