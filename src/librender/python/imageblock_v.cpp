@@ -8,7 +8,8 @@ MTS_PY_EXPORT(ImageBlock) {
         .def(py::init<const ScalarVector2i &, size_t,
                 const ReconstructionFilter *, bool, bool, bool, bool>(),
             "size"_a, "channel_count"_a, "filter"_a = nullptr,
-            "warn_negative"_a = true, "warn_invalid"_a = true,
+            "warn_negative"_a = std::is_scalar_v<Float>,
+            "warn_invalid"_a = std::is_scalar_v<Float>,
             "border"_a = true, "normalize"_a = false)
         .def("put", py::overload_cast<const ImageBlock *>(&ImageBlock::put),
             D(ImageBlock, put), "block"_a)

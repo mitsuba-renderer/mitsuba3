@@ -218,7 +218,8 @@ if(MTS_THROW_TRAPS_DEBUGGER)
   add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
 endif()
 
-option(MTS_ENABLE_ITTNOTIFY "Emit profiler events using Intel ITT (for VTune)?" OFF)
+option(MTS_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
+option(MTS_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 
 if (MTS_ENABLE_CUDA AND MTS_USE_OPTIX_HEADERS)
   set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
@@ -550,10 +551,21 @@ else()
   add_compile_options(-Wall -Wextra -Wno-unused-local-typedefs)
 endif()
 
-# Enable ittnotify
-if (MTS_ENABLE_ITTNOTIFY)
-  include_directories(${ITT_INCLUDE_DIRS})
-  add_definitions(-DMTS_ITTNOTIFY=1)
+# Forwarding of profiler events to external tools
+if (MTS_ENABLE_PROFILER)
+  if (MTS_PROFILER_ITTNOTIFY)
+    include_directories(${ITT_INCLUDE_DIRS})
+    add_definitions(-DMTS_ENABLE_ITTNOTIFY=1)
+  endif()
+
+  if (MTS_PROFILER_NVTX)
+    set(CUDA_TOOLKIT_ROOT_DIR "" CACHE STRING "Path to the CUDA installation root directory.")
+    if (NOT CUDA_TOOLKIT_ROOT_DIR)
+      message(FATAL_ERROR "Specify CUDA_TOOLKIT_ROOT_DIR.")
+    endif()
+    include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+    add_definitions(-DMTS_ENABLE_NVTX=1)
+  endif()
 endif()
 
 # Register the Mitsuba codebase

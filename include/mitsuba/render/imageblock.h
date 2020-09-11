@@ -61,8 +61,8 @@ public:
     ImageBlock(const ScalarVector2i &size,
                size_t channel_count,
                const ReconstructionFilter *filter = nullptr,
-               bool warn_negative = true,
-               bool warn_invalid = true,
+               bool warn_negative = std::is_scalar_v<Float>,
+               bool warn_invalid = std::is_scalar_v<Float>,
                bool border = true,
                bool normalize = false);
 

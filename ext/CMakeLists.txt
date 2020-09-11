@@ -18,7 +18,7 @@ set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
 #  Intel ITT (profiler events for VTune, optional)
 # ----------------------------------------------------------
 
-if (MTS_ENABLE_ITTNOTIFY)
+if (MTS_ENABLE_PROFILER AND MTS_PROFILER_ITTNOTIFY)
   add_subdirectory(ittnotify/ittnotify)
   set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ittnotify/ittnotify/include)
   set(ITT_INCLUDE_DIRS ${ITT_INCLUDE_DIRS} PARENT_SCOPE)
@@ -38,6 +38,10 @@ set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11" CACHE STRING
     "Path containing the 'pybind11' library used to compile Enoki." FORCE)
 set(ENOKI_NATIVE_FLAGS "${MTS_NATIVE_FLAGS}" CACHE STRING
     "Compilation flags used to target the host processor architecture." FORCE)
+if (MTS_ENABLE_PROFILER AND MTS_PROFILER_NVTX)
+    include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+    set(ENOKI_ENABLE_NVTX ON)
+endif()
 
 add_subdirectory(enoki)
 
