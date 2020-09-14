@@ -46,7 +46,7 @@ def generate_fixture(variant):
 for variant in ['scalar_rgb', 'scalar_spectral',
                 'scalar_mono_polarized', 'llvm_rgb',
                 'llvm_spectral', 'cuda_rgb', 'cuda_spectral',
-                'cuda_autodiff_rgb']:
+                'llvm_autodiff_rgb', 'cuda_autodiff_rgb']:
     generate_fixture(variant)
 del generate_fixture
 
@@ -100,6 +100,14 @@ def variants_all_rgb(request):
         pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
     return request.param
 
+@pytest.fixture(params=['llvm_autodiff_rgb', 'cuda_autodiff_rgb'])
+def variants_all_autodiff_rgb(request):
+    try:
+        import mitsuba
+        mitsuba.set_variant(request.param)
+    except Exception:
+        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
+    return request.param
 
 def pytest_configure(config):
     markexpr = config.getoption("markexpr", 'False')
