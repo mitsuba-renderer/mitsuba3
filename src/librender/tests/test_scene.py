@@ -92,14 +92,14 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_autodiff_rgb):
 
     # Only parameters of the shape should affect the result of that method
     bsdf_param_key = 'box.bsdf.reflectance.value'
-    ek.set_requires_gradient(params[bsdf_param_key])
+    ek.enable_grad(params[bsdf_param_key])
     params.set_dirty(bsdf_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == False
 
     # When setting one of the shape's param to require gradient, method should return True
-    shape_param_key = 'box.vertex_positions_buf'
-    ek.set_requires_gradient(params[shape_param_key])
+    shape_param_key = 'box.vertex_positions'
+    ek.enable_grad(params[shape_param_key])
     params.set_dirty(shape_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == True

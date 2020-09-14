@@ -299,9 +299,8 @@ def test10_ray_intersect_preliminary(variant_scalar_rgb):
     assert ek.allclose(si.dp_du, [2.0, 0.0, 0.0])
     assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
-# TODO refactoring
 @fresolver_append_path
-def test11_parameters_grad_enabled(variant_cuda_autodiff_rgb):
+def test11_parameters_grad_enabled(variants_all_autodiff_rgb):
     from mitsuba.core.xml import load_string
 
     shape = load_string('''
@@ -331,7 +330,7 @@ def test11_parameters_grad_enabled(variant_cuda_autodiff_rgb):
 
 
 @fresolver_append_path
-def test12_differentiable_surface_interaction_automatic(variant_cuda_autodiff_rgb):
+def test12_differentiable_surface_interaction_automatic(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
 
@@ -348,20 +347,20 @@ def test12_differentiable_surface_interaction_automatic(variant_cuda_autodiff_rg
 
     # si should not be attached if not necessary
     si = pi.compute_surface_interaction(ray)
-    assert not ek.requires_gradient(si.t)
-    assert not ek.requires_gradient(si.p)
+    assert not ek.grad_enabled(si.t)
+    assert not ek.grad_enabled(si.p)
 
     # si should be attached if ray is attached
     ek.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray)
-    assert ek.requires_gradient(si.t)
-    assert ek.requires_gradient(si.p)
+    assert ek.grad_enabled(si.t)
+    assert ek.grad_enabled(si.p)
 
     # si should not be attached if falgs says so
     ek.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray, HitComputeFlags.NonDifferentiable)
-    assert not ek.requires_gradient(si.t)
-    assert not ek.requires_gradient(si.p)
+    assert not ek.grad_enabled(si.t)
+    assert not ek.grad_enabled(si.p)
 
     # si should be attached if shape parameters are attached
     params = traverse(scene)
@@ -370,14 +369,14 @@ def test12_differentiable_surface_interaction_automatic(variant_cuda_autodiff_rg
     params.set_dirty(shape_param_key)
     params.update()
 
-    ek.enable_grad(ray.o, False)
+    ek.disable_grad(ray.o)
     si = pi.compute_surface_interaction(ray)
-    assert ek.requires_gradient(si.t)
-    assert ek.requires_gradient(si.p)
+    assert ek.grad_enabled(si.t)
+    assert ek.grad_enabled(si.p)
 
 
 @fresolver_append_path
-def test13_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
+def test13_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     scene = xml.load_string('''
@@ -397,26 +396,26 @@ def test13_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.p), [1, 0, 0])
+    assert ek.allclose(ek.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the x-axis, so does si.uv
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.uv), [0.5, 0])
+    assert ek.allclose(ek.grad(si.uv), [0.5, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.t
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.z)
-    assert ek.allclose(ek.gradient(si.t), -1)
+    assert ek.allclose(ek.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.d.x)
-    assert ek.allclose(ek.gradient(si.p), [10, 0, 0])
+    assert ek.allclose(ek.grad(si.p), [10, 0, 0])
 
 
 @fresolver_append_path
-def test14_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
+def test14_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     scene = xml.load_string('''
@@ -435,31 +434,18 @@ def test14_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff
     # If si.p is shifted along the x-axis, so does the ray origin
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.p.x)
-    assert ek.allclose(ek.gradient(ray.o), [1, 0, 0])
+    assert ek.allclose(ek.grad(ray.o), [1, 0, 0])
 
     # If si.t is changed, so does the ray origin along the z-axis
+    ek.set_grad(ray.o, 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.t)
-    assert ek.allclose(ek.gradient(ray.o), [0, 0, -1])
+    assert ek.allclose(ek.grad(ray.o), [0, 0, -1])
 
 
 @fresolver_append_path
-def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodiff_rgb):
+def test15_differentiable_surface_interaction_params_forward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
-
-    # Convert flat array into a vector of arrays (will be included in next enoki release)
-    def ravel(buf, dim = 3):
-        idx = dim * UInt32.arange(ek.width(buf) // dim)
-        if dim == 2:
-            return Vector2f(ek.gather(buf, idx), ek.gather(buf, idx + 1))
-        elif dim == 3:
-            return Vector3f(ek.gather(buf, idx), ek.gather(buf, idx + 1), ek.gather(buf, idx + 2))
-
-    # Return contiguous flattened array (will be included in next enoki release)
-    def unravel(source, target, dim = 3):
-        idx = UInt32.arange(ek.width(source))
-        for i in range(dim):
-            ek.scatter(target, source[i], dim * idx + i)
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -472,7 +458,7 @@ def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodi
     params = traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = ravel(positions_buf)
+    positions_initial = ek.unravel(Vector3f, positions_buf)
 
     # Create differential parameter to be optimized
     diff_vector = Vector3f(0.0)
@@ -482,7 +468,7 @@ def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodi
     def apply_transformation(trasfo):
         trasfo = trasfo(diff_vector)
         new_positions = trasfo.transform_point(positions_initial)
-        unravel(new_positions, params[shape_param_key])
+        params[shape_param_key] = ek.ravel(new_positions)
         params.set_dirty(shape_param_key)
         params.update()
 
@@ -496,25 +482,25 @@ def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodi
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     ek.forward(diff_vector.z)
-    assert ek.allclose(ek.gradient(si.t), 1)
+    assert ek.allclose(ek.grad(si.t), 1)
 
     # If the vertices are shifted along z-axis, so does si.p
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     ek.forward(diff_vector.z)
-    assert ek.allclose(ek.gradient(si.p), [0.0, 0.0, 1.0])
+    assert ek.allclose(ek.grad(si.p), [0.0, 0.0, 1.0])
 
     # If the vertices are shifted along x-axis, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     ek.forward(diff_vector.x)
-    assert ek.allclose(ek.gradient(si.uv), [-0.5, 0.0])
+    assert ek.allclose(ek.grad(si.uv), [-0.5, 0.0])
 
     # If the vertices are shifted along y-axis, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
     ek.forward(diff_vector.y)
-    assert ek.allclose(ek.gradient(si.uv), [0.0, -0.5])
+    assert ek.allclose(ek.grad(si.uv), [0.0, -0.5])
 
     # ---------------------------------------
     # Test rotation
@@ -527,11 +513,11 @@ def test15_differentiable_surface_interaction_params_forward(variant_cuda_autodi
     si = pi.compute_surface_interaction(ray)
     ek.forward(diff_vector.x)
     du = 0.5 * ek.sin(2 * ek.Pi / 360.0)
-    assert ek.allclose(ek.gradient(si.uv), [-du, du], atol=1e-6)
+    assert ek.allclose(ek.grad(si.uv), [-du, du], atol=1e-6)
 
 
 @fresolver_append_path
-def test16_differentiable_surface_interaction_params_backward(variant_cuda_autodiff_rgb):
+def test16_differentiable_surface_interaction_params_backward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
 
     scene = xml.load_string('''
@@ -543,8 +529,8 @@ def test16_differentiable_surface_interaction_params_backward(variant_cuda_autod
     ''')
 
     params = traverse(scene)
-    vertex_pos_key = 'rect.vertex_positions'
-    vertex_normals_key = 'rect.vertex_normals'
+    vertex_pos_key       = 'rect.vertex_positions'
+    vertex_normals_key   = 'rect.vertex_normals'
     vertex_texcoords_key = 'rect.vertex_texcoords'
     ek.enable_grad(params[vertex_pos_key])
     ek.enable_grad(params[vertex_normals_key])
@@ -564,88 +550,101 @@ def test16_differentiable_surface_interaction_params_backward(variant_cuda_autod
     # If si.t changes, so the 4th vertex should move along the z-axis
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.t)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
     # If si.p moves along the z-axis, so does the 4th vertex
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.p.z)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
     # To increase si.dp_du along the x-axis, we need to strech the upper edge of the rectangle
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_du.x)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
 
     # To increase si.dp_du along the y-axis, we need to transform the rectangle into a trapezoid
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_du.y)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.dp_dv along the x-axis, we need to transform the rectangle into a trapezoid
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_dv.x)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [-1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], atol=1e-5)
 
     # To increase si.dp_dv along the y-axis, we need to strech the right edge of the rectangle
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_dv.y)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.n along the x-axis, we need to rotate the right edge around the y axis
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.n.x)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.n along the y-axis, we need to rotate the top edge around the x axis
+    ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.n.y)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.sh_frame.n along the x-axis, we need to rotate the right edge around the y axis
+    ek.set_grad(params[vertex_pos_key], 0.0)
     params.set_dirty(vertex_pos_key); params.update()
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.sh_frame.n.x)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # To increase si.sh_frame.n along the y-axis, we need to rotate the top edge around the x axis
+    ek.set_grad(params[vertex_pos_key], 0.0)
     params.set_dirty(vertex_pos_key); params.update()
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.sh_frame.n.y)
-    assert ek.allclose(ek.gradient(params[vertex_pos_key]),
+    assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, -0.5], atol=1e-5)
 
     # ---------------------------------------
     # Test vertex texcoords
 
     # To increase si.uv along the x-axis, we need to move the uv of the 4th vertex along the x-axis
+    ek.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.uv.x)
-    assert ek.allclose(ek.gradient(params[vertex_texcoords_key]),
+    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
                        [0, 0, 0, 0, 0, 0, 1, 0], atol=1e-5)
 
     # To increase si.uv along the y-axis, we need to move the uv of the 4th vertex along the y-axis
+    ek.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.uv.y)
-    assert ek.allclose(ek.gradient(params[vertex_texcoords_key]),
+    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
                        [0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
     # To increase si.dp_du along the x-axis, we need to shrink the uv along the top edge of the rectangle
+    ek.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_du.x)
-    assert ek.allclose(ek.gradient(params[vertex_texcoords_key]),
+    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
                        [0, 0, 2, 0, 0, 0, -2, 0], atol=1e-5)
 
     # To increase si.dp_du along the y-axis, we need to shrink the uv along the right edge of the rectangle
+    ek.set_grad(params[vertex_texcoords_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_dv.y)
-    assert ek.allclose(ek.gradient(params[vertex_texcoords_key]),
+    assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
                        [0, 2, 0, 0, 0, 0, 0, -2], atol=1e-5)

@@ -66,7 +66,7 @@ calculation conducted in Python, which differentiates the function
 
     # Tell Enoki that we'll later be interested in gradients of
     # an as-of-yet unspecified objective function with respect to 'x'
-    ek.set_requires_gradient(x)
+    ek.enable_grad(x)
 
     # Example objective function: sum of squares
     y = ek.hsum(x * x)
@@ -75,5 +75,5 @@ calculation conducted in Python, which differentiates the function
     ek.backward(y)
 
     # Prints: [2, 4, 6]
-    print(ek.gradient(x))
+    print(ek.grad(x))
 

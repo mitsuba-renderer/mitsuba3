@@ -284,7 +284,7 @@ public:
 
         std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
         std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 3]);
+        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 2]);
 
         for (const auto& v_ : vertex_map) {
             const VertexBinding *v = &v_;
@@ -320,7 +320,7 @@ public:
         if (!m_disable_vertex_normals)
             m_vertex_normals   = ek::load_unaligned<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (!texcoords.empty())
-            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 3);
+            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (!m_disable_vertex_normals)

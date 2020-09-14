@@ -225,18 +225,6 @@ MTS_PY_EXPORT(MediumInteraction) {
     bind_slicing_operators<MediumInteraction3f, MediumInteraction<ScalarFloat, scalar_spectrum_t<Spectrum>>>(inter);
 }
 
-// MSVC hack to force non compilation for packet variants
-template<typename PreliminaryIntersection3f, typename PyClass>
-void bind_method_preliminaryintersection(PyClass &pi) {
-    // Do not binding this method for packet variants
-    if constexpr (!(ek::is_dynamic_v<typename PreliminaryIntersection3f::Float> &&
-                   !ek::is_cuda_array_v<typename PreliminaryIntersection3f::Float>) ) {
-        pi.def("compute_surface_interaction", &PreliminaryIntersection3f::compute_surface_interaction,
-               D(PreliminaryIntersection, compute_surface_interaction),
-               "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true);
-    }
-}
-
 MTS_PY_EXPORT(PreliminaryIntersection) {
     MTS_PY_IMPORT_TYPES()
 
@@ -258,7 +246,11 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("is_valid", &PreliminaryIntersection3f::is_valid, D(PreliminaryIntersection, is_valid))
         .def_repr(PreliminaryIntersection3f);
 
-    bind_method_preliminaryintersection<PreliminaryIntersection3f>(pi);
+    pi.def("compute_surface_interaction",
+           &PreliminaryIntersection3f::compute_surface_interaction,
+           D(PreliminaryIntersection, compute_surface_interaction),
+           "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true);
+
     bind_slicing_operators<
         PreliminaryIntersection3f,
         PreliminaryIntersection<ScalarFloat, scalar_spectrum_t<Spectrum>>>(pi);

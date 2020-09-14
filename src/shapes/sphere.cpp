@@ -275,8 +275,9 @@ public:
                                    ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX>, FloatX,
-                                          ek::float64_array_t<FloatX>>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX> ||
+                                              ek::is_diff_array_v<Float>,
+                                          FloatX, ek::float64_array_t<FloatX>>;
         using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
@@ -312,8 +313,9 @@ public:
                                      ek::mask_t<FloatX> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX>, FloatX,
-                                          ek::float64_array_t<FloatX>>;
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX> ||
+                                              ek::is_diff_array_v<Float>,
+                                          FloatX, ek::float64_array_t<FloatX>>;
         using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 

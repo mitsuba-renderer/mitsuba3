@@ -19,7 +19,7 @@ params = traverse(scene)
 
 # Keep track of derivatives with respect to one parameter
 param_0 = params['red.reflectance.value']
-ek.set_requires_gradient(param_0)
+ek.enable_grad(param_0)
 
 # Differentiable simulation
 image = render(scene, spp=32)
@@ -31,7 +31,7 @@ ek.set_gradient(param_0, [1, 1, 1], backward=False)
 Float.forward()
 
 # The gradients have been propagated to the output image
-image_grad = ek.gradient(image)
+image_grad = ek.grad(image)
 
 # .. write them to a PNG file
 crop_size = scene.sensors()[0].film().crop_size()

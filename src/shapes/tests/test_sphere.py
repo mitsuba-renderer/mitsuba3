@@ -121,8 +121,7 @@ def test04_sample_direct(variant_scalar_rgb):
             assert ek.allclose(its.p, sample.p, atol=1e-5, rtol=1e-5)
 
 
-
-def test05_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_rgb):
+def test05_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'sphere'})
@@ -130,55 +129,55 @@ def test05_differentiable_surface_interaction_ray_forward(variant_cuda_autodiff_
     ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0), 0, [])
     pi = shape.ray_intersect_preliminary(ray)
 
-    ek.set_requires_gradient(ray.o)
-    ek.set_requires_gradient(ray.d)
+    ek.enable_grad(ray.o)
+    ek.enable_grad(ray.d)
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.p), [1, 0, 0])
+    assert ek.allclose(ek.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.z)
-    assert ek.allclose(ek.gradient(si.p), [0, 0, 1])
+    assert ek.allclose(ek.grad(si.p), [0, 0, 1])
 
     # If the ray origin is shifted along the y-axis, so does si.t
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.o.y)
-    assert ek.allclose(ek.gradient(si.t), -1)
+    assert ek.allclose(ek.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
     ek.forward(ray.d.x)
-    assert ek.allclose(ek.gradient(si.p), [9, 0, 0])
+    assert ek.allclose(ek.grad(si.p), [9, 0, 0])
 
     # If the ray origin is shifted tangent to the sphere (azimuth), so si.uv.x move by 1 / 2pi
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.uv), [1 / (2.0 * ek.Pi), 0])
+    assert ek.allclose(ek.grad(si.uv), [1 / (2.0 * ek.Pi), 0])
 
     # If the ray origin is shifted tangent to the sphere (inclination), so si.uv.y move by 2 / 2pi
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.z)
-    assert ek.allclose(ek.gradient(si.uv), [0, -2 / (2.0 * ek.Pi)])
+    assert ek.allclose(ek.grad(si.uv), [0, -2 / (2.0 * ek.Pi)])
 
     # # If the ray origin is shifted along the x-axis, so does si.n
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.gradient(si.n), [1, 0, 0])
+    assert ek.allclose(ek.grad(si.n), [1, 0, 0])
 
     # # If the ray origin is shifted along the z-axis, so does si.n
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
     ek.forward(ray.o.z)
-    assert ek.allclose(ek.gradient(si.n), [0, 0, 1])
+    assert ek.allclose(ek.grad(si.n), [0, 0, 1])
 
 
-def test06_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'sphere'})
@@ -186,14 +185,15 @@ def test06_differentiable_surface_interaction_ray_backward(variant_cuda_autodiff
     ray = Ray3f(Vector3f(0.0, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
     pi = shape.ray_intersect_preliminary(ray)
 
-    ek.set_requires_gradient(ray.o)
+    ek.enable_grad(ray.o)
 
     # If si.p is shifted along the x-axis, so does the ray origin
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.p.x)
-    assert ek.allclose(ek.gradient(ray.o), [1, 0, 0])
+    assert ek.allclose(ek.grad(ray.o), [1, 0, 0])
 
     # If si.t is changed, so does the ray origin along the z-axis
+    ek.set_grad(ray.o, 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.t)
-    assert ek.allclose(ek.gradient(ray.o), [0, 0, -1])
+    assert ek.allclose(ek.grad(ray.o), [0, 0, -1])

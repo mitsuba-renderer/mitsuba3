@@ -376,7 +376,7 @@ disk.
 .. code-block:: python
 
     # The gradients have been propagated to the output image
-    image_grad = ek.gradient(image)
+    image_grad = ek.grad(image)
 
     # .. write them to a PNG file
     crop_size = scene.sensors()[0].film().crop_size()

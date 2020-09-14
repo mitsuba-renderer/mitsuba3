@@ -179,13 +179,13 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             ray.update();
             ek::eval(ray);
 
-            pi = ek::zero<PreliminaryIntersection3f>(N);
+            pi = ek::empty<PreliminaryIntersection3f>(N);
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
 
             Vector3f ng = ek::empty<Vector3f>(N);
-            UInt32 inst_index = ek::zero<UInt32>(N);
+            UInt32 inst_index = ek::empty<UInt32>(N);
             Vector3u extra = ek::zero<Vector3u>(N);
 
             ek::eval(extra, ng, inst_index, pi);
@@ -227,10 +227,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             // Set si.instance and si.shape
             Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
             Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
-            UInt32 index   = ek::select(hit_inst, inst_index, pi.shape_index);
+            UInt32 index      = ek::select(hit_inst, inst_index, pi.shape_index);
+
             ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
-            ek::masked(pi.instance, hit_inst)  = shape;
-            ek::masked(pi.shape, hit_not_inst) = shape;
+            pi.instance = ek::select(hit_inst, shape, nullptr);
+            pi.shape = ek::select(hit_not_inst, shape, nullptr);
         }
         return pi;
     } else {
@@ -290,7 +291,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
 
-                si = pi.compute_surface_interaction(ray, flags, active);
+                si = pi.compute_surface_interaction(ray_, flags, active);
             } else {
                 si.wavelengths = ray.wavelengths;
                 si.time = ray.time;
@@ -303,12 +304,12 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             ray.update();
             ek::eval(ray);
 
-            PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>(N);
+            PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(N);
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
 
             Vector3f ng = ek::empty<Vector3f>(N);
-            UInt32 inst_index = ek::zero<UInt32>(N);
+            UInt32 inst_index = ek::empty<UInt32>(N);
             Vector3u extra = ek::zero<Vector3u>(N);
 
             ek::eval(extra, ng, inst_index, pi);
@@ -357,10 +358,10 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             UInt32 index   = ek::select(hit_inst, inst_index, pi.shape_index);
             ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
 
-            ek::masked(pi.instance, hit_inst)  = shape;
-            ek::masked(pi.shape, hit_not_inst) = shape;
+            pi.instance = ek::select(hit_inst, shape, nullptr);
+            pi.shape = ek::select(hit_not_inst, shape, nullptr);
 
-            si = pi.compute_surface_interaction(ray, flags, hit);
+            si = pi.compute_surface_interaction(ray_, flags, hit);
         }
 
         return si;
