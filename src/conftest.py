@@ -51,63 +51,30 @@ for variant in ['scalar_rgb', 'scalar_spectral',
 del generate_fixture
 
 
-@pytest.fixture(params=['llvm_rgb', 'cuda_rgb'])
-def variants_vec_rgb(request):
-    try:
-        import mitsuba
-        mitsuba.set_variant(request.param)
-    except Exception:
-        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-    return request.param
+def generate_fixture_group(name, variants):
+    @pytest.fixture(params=variants)
+    def fixture(request):
+        try:
+            import mitsuba
+            mitsuba.set_variant(request.param)
+        except Exception:
+            pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
+        return request.param
+    globals()['variants_' + name] = fixture
 
+variant_groups = {
+    'scalar_all' : ['scalar_rgb', 'scalar_spectral', 'scalar_mono', 'scalar_spectral_polarized'],
+    'vec_rgb' : ['llvm_rgb', 'cuda_rgb'],
+    'cpu_rgb' : ['scalar_rgb', 'llvm_rgb'],
+    'all_rgb' : ['scalar_rgb', 'llvm_rgb', 'cuda_rgb'],
+    'vec_spectral' : ['llvm_spectral', 'cuda_spectral'],
+    'all_autodiff_rgb' : ['llvm_autodiff_rgb', 'cuda_autodiff_rgb'],
+}
 
-@pytest.fixture(params=['llvm_spectral', 'cuda_spectral'])
-def variants_vec_spectral(request):
-    try:
-        import mitsuba
-        mitsuba.set_variant(request.param)
-    except Exception:
-        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-    return request.param
+for name, variants in variant_groups.items():
+    generate_fixture_group(name, variants)
+del generate_fixture_group
 
-
-@pytest.fixture(params=['scalar_rgb', 'llvm_rgb'])
-def variants_cpu_rgb(request):
-    try:
-        import mitsuba
-        mitsuba.set_variant(request.param)
-    except Exception:
-        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-    return request.param
-
-
-@pytest.fixture(params=['scalar_rgb', 'scalar_spectral', 'scalar_mono', 'scalar_spectral_polarized'])
-def variants_scalar_all(request):
-    try:
-        import mitsuba
-        mitsuba.set_variant(request.param)
-    except Exception:
-        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-    return request.param
-
-
-@pytest.fixture(params=['scalar_rgb', 'llvm_rgb', 'cuda_rgb'])
-def variants_all_rgb(request):
-    try:
-        import mitsuba
-        mitsuba.set_variant(request.param)
-    except Exception:
-        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-    return request.param
-
-@pytest.fixture(params=['llvm_autodiff_rgb', 'cuda_autodiff_rgb'])
-def variants_all_autodiff_rgb(request):
-    try:
-        import mitsuba
-        mitsuba.set_variant(request.param)
-    except Exception:
-        pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-    return request.param
 
 def pytest_configure(config):
     markexpr = config.getoption("markexpr", 'False')
