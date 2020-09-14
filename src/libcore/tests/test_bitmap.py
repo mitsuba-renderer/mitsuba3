@@ -106,27 +106,26 @@ def test_convert_rgb_y_gamma(variant_scalar_rgb, tmpdir):
     b3 = np.array(b1.convert(Bitmap.PixelFormat.Y, Struct.Type.UInt8, True)).ravel()
     assert np.allclose(b3, [to_srgb(0.212671)*255, to_srgb(0.715160)*255, to_srgb(0.072169)*255], atol=1)
 
-# TODO refactoring: this should be fixed by fixing the struct.cpp inv_alpha issue
-# def test_premultiply_alpha(variant_scalar_rgb, tmpdir):
-#     from mitsuba.core import Bitmap, Struct
-#     # Tests RGBA(float64) -> Y (float32) conversion
-#     b1 = Bitmap(Bitmap.PixelFormat.RGBA, Struct.Type.Float64, [3, 1])
-#     assert b1.premultiplied_alpha()
-#     b1.set_premultiplied_alpha(False)
-#     assert not b1.premultiplied_alpha()
 
-#     b2 = np.array(b1, copy=False)
-#     b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
+def test_premultiply_alpha(variant_scalar_rgb, tmpdir):
+    from mitsuba.core import Bitmap, Struct
+    # Tests RGBA(float64) -> Y (float32) conversion
+    b1 = Bitmap(Bitmap.PixelFormat.RGBA, Struct.Type.Float64, [3, 1])
+    assert b1.premultiplied_alpha()
+    b1.set_premultiplied_alpha(False)
+    assert not b1.premultiplied_alpha()
 
-#     # Premultiply
-#     b3 = np.array(b1.convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False, Bitmap.AlphaTransform.Premultiply)).ravel()
-#     assert np.allclose(b3, [1.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0])
+    b2 = np.array(b1, copy=False)
+    b2[:] = [[[1, 0, 0, 1], [0, 1, 0, 0.5], [0, 0, 1, 0]]]
 
-#     # Unpremultiply
-#     b1.set_premultiplied_alpha(True)
-#     b3 = np.array(b1.convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False, Bitmap.AlphaTransform.Unpremultiply)).ravel()
-#     assert np.allclose(b3, [1.0, 0.0, 0.0, 1.0, 0.0, 2, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0])
+    # Premultiply
+    b3 = np.array(b1.convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False, Bitmap.AlphaTransform.Premultiply)).ravel()
+    assert np.allclose(b3, [1.0, 0.0, 0.0, 1.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0])
 
+    # Unpremultiply
+    b1.set_premultiplied_alpha(True)
+    b3 = np.array(b1.convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False, Bitmap.AlphaTransform.Unpremultiply)).ravel()
+    assert np.allclose(b3, [1.0, 0.0, 0.0, 1.0, 0.0, 2, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0])
 
 
 def test_read_write_jpeg(variant_scalar_rgb, tmpdir):

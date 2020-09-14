@@ -1354,17 +1354,14 @@ StructConverter::StructConverter(const Struct *source, const Struct *target, boo
         sc.movs(inv_alpha, sc.const_(1.0));
         sc.divs(inv_alpha, value);
 
-        // TODO refactoring: this shouldn't be necessary
-        #if defined(ENOKI_X86_AVX)
-            // Check if alpha is zero and set inv_alpha to zero if that is the case
-            X86Xmm zero = cc.newXmm();
-            sc.movs(zero, sc.const_(0.0));
+        // Check if alpha is zero and set inv_alpha to zero if that is the case
+        X86Xmm zero = cc.newXmm();
+        sc.movs(zero, sc.const_(0.0));
 
-            X86Xmm mask = cc.newXmm();
-            sc.movs(mask, value);
-            sc.cmps(mask, zero, 2);
-            sc.blend(inv_alpha, zero, mask);
-        #endif
+        X86Xmm mask = cc.newXmm();
+        sc.movs(mask, value);
+        sc.cmps(mask, zero, 2);
+        sc.blend(inv_alpha, zero, mask);
     }
 
     for (const Struct::Field &f : *target) {
