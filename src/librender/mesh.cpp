@@ -322,7 +322,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
                  props, false, false);
     mesh->m_faces = m_faces;
 
-    scoped_migrate_to_host scope(m_vertex_positions, m_vertex_texcoords);
+    scoped_migrate_to_host scope(mesh->m_vertex_positions, m_vertex_texcoords);
 
     ScalarFloat *pos_out = mesh->m_vertex_positions.data();
     for (size_t i = 0; i < m_vertex_count; ++i) {
