@@ -14,7 +14,7 @@ MTS_PY_EXPORT(qmc) {
         .def("eval", &RadicalInverse::eval<Float>, "base_index"_a, "index"_a,
              D(RadicalInverse, eval))
         // .def("eval_scrambled", &RadicalInverse::eval_scrambled<Float>, "base_index"_a,
-            //  "index"_a, D(RadicalInverse, eval_scrambled)) // TODO refactoring
+            //  "index"_a, D(RadicalInverse, eval_scrambled))
         .def("permutation",
              [](py::object self, uint32_t index) {
                  const RadicalInverse &s = py::cast<const RadicalInverse &>(self);

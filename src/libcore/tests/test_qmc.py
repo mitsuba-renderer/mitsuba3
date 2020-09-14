@@ -112,5 +112,3 @@
 #         result = v_p.eval_scrambled(index, ek.arange(10, dtype=ek.uint64))
 #         for i in range(len(result)):
 #             assert ek.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7
-
-# TODO refactoring

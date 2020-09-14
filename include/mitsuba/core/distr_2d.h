@@ -725,7 +725,7 @@ protected:
             : size(ek::hprod(res)), width(res.x()),
               data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
             if constexpr (ek::is_cuda_array_v<Float>)
-                ek::migrate(data, AllocType::Host); // TODO refactoring: replace with Host
+                ek::migrate(data, AllocType::Host);
 
             if constexpr (ek::is_llvm_array_v<Float>)
                 ek::eval(data);

@@ -72,30 +72,9 @@ namespace py = pybind11;
 
 using namespace py::literals;
 
-// TODO refactoring
-template <typename Class, typename ScalarClass, typename PyClass>
-void bind_slicing_operators(PyClass &cl) {
+template <typename Class, typename PyClass>
+void bind_struct_support(PyClass &cl) {
     using Float = typename Class::Float;
-
-    if constexpr (ek::is_dynamic_v<Float>) {
-        // cl.def("__getitem__", [](Class &c, size_t i) -> ScalarClass {
-        //       if (i >= ek::width(c))
-        //           throw py::index_error();
-        //       return slice(c, i);
-        //   })
-        //   .def("__setitem__", [](Class &c, size_t i, const ScalarClass &c2) {
-        //       if (i >= ek::width(c))
-        //           throw py::index_error();
-        //       slice(c, i) = c2;
-        //   })
-          // TODO enabled this when ENOKI_STRUCT_SUPPORT is fixed for structs containing Matrix
-          // .def("__setitem__", [](Class &c, const ek::mask_t<Float> &mask, const Class &c2) {
-          //     ek::masked(c, mask) = c2;
-          // })
-          cl.def("__len__", [](const Class &c) {
-              return ek::width(c);
-          });
-    }
 
     cl.def_static("zero", [](size_t size) {
             if constexpr (!ek::is_dynamic_v<Float>) {

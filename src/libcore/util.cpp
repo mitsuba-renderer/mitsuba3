@@ -1,4 +1,3 @@
-// TODO refactoring: do we really need to print packet width?
 #include <enoki/packet.h>
 
 #include <mitsuba/core/util.h>

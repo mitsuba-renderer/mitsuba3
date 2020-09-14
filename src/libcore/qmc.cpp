@@ -32,7 +32,6 @@ template <typename T> std::vector<T> sieve(T n) {
 NAMESPACE_END(detail)
 
 RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scramble) {
-    // TODO refactoring
     // static_assert(sizeof(PrimeBase) == 16, "Base data structure is not packed!");
 
     Timer timer;

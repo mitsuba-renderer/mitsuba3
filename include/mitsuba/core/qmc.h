@@ -167,7 +167,7 @@ private:
     struct PrimeBase {
         ek::divisor<uint64_t> divisor;
         uint16_t value;
-        float recip; // TODO refactoring: do we still need this?
+        float recip;
     } ENOKI_PACK;
 
 #if defined(_MSC_VER)

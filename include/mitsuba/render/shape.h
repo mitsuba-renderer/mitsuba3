@@ -131,15 +131,25 @@ public:
      * \param ray
      *     The ray to be tested for an intersection
      *
-     * \param cache
-     *    Temporary space (<tt>(MTS_KD_INTERSECTION_CACHE_SIZE-2) *
-     *    sizeof(Float[P])</tt> bytes) that must be supplied to cache
-     *    information about the intersection.
      */
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                 Mask active = true) const;
 
-    // TODO refactoring comment this
+
+    /**
+     * \brief Fast ray intersection test vectorized using ek::Packet<float>
+     *
+     * This method is used by the Embree ray tracing backend to efficiently
+     * compute "streamed" ray intersections with shapes other than meshes
+     * (e.g. Sphere, Disk, ...).
+     *
+     * \param ray
+     *     The ray to be tested for an intersection
+     *
+     * \return
+     *      Distance traveled along the ray and the 2D coordinates on the
+     *      primitive surface parameterization
+     */
     virtual std::pair<FloatP, Point2fP> ray_intersect_preliminary_packet(const Ray3fP &ray,
                                                                          MaskP active = true) const;
 
@@ -523,7 +533,7 @@ protected:
 MTS_EXTERN_CLASS_RENDER(Shape)
 NAMESPACE_END(mitsuba)
 
-// TODO refactoring comment this
+// Macro to define ray intersection methods given an *_impl() templated implementation
 #define MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                         \
     PreliminaryIntersection3f                                                            \
     ray_intersect_preliminary(const Ray3f &ray, Mask active) const override {            \

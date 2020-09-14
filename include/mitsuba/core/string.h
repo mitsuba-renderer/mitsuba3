@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 #include <ostream>
-#include <algorithm> // TODO refactoring: is this overkill?
+#include <algorithm>
 
 /// Turns a vector of elements into a human-readable representation
 template <typename T, typename Alloc>
