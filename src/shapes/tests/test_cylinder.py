@@ -112,31 +112,37 @@ def test04_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    si.p *= 1.0
     ek.forward(ray.o.x)
     assert ek.allclose(ek.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    si.p *= 1.0
     ek.forward(ray.o.z)
     assert ek.allclose(ek.grad(si.p), [0, 0, 1])
 
     # If the ray origin is shifted along the y-axis, so does si.t
     si = pi.compute_surface_interaction(ray)
+    si.t *= 1.0
     ek.forward(ray.o.y)
     assert ek.allclose(ek.grad(si.t), -1.0)
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    si.p *= 1.0
     ek.forward(ray.d.x)
     assert ek.allclose(ek.grad(si.p), [9, 0, 0])
 
     # If the ray origin is shifted tangent to the cylinder section, si.uv.x move by 1 / 2pi
     si = pi.compute_surface_interaction(ray)
+    si.uv *= 1.0
     ek.forward(ray.o.x)
     assert ek.allclose(ek.grad(si.uv), [1 / (2 * ek.Pi), 0])
 
     # If the ray origin is shifted along the cylinder length, si.uv.y move by 1
     si = pi.compute_surface_interaction(ray)
+    si.uv *= 1.0
     ek.forward(ray.o.z)
     assert ek.allclose(ek.grad(si.uv), [0, 1])
 

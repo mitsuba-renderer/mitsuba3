@@ -100,21 +100,25 @@ def test04_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    si.p *= 1.0
     ek.forward(ray.o.x)
     assert ek.allclose(ek.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the y-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    si.p *= 1.0
     ek.forward(ray.o.y)
     assert ek.allclose(ek.grad(si.p), [0, 1, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.t
     si = pi.compute_surface_interaction(ray)
+    si.t *= 1.0
     ek.forward(ray.o.z)
     assert ek.allclose(ek.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    si.p *= 1.0
     ek.forward(ray.d.x)
     assert ek.allclose(ek.grad(si.p), [10, 0, 0])
 
@@ -122,16 +126,19 @@ def test04_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
     ray = Ray3f(Vector3f(0.9999999, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
     ek.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
+    si.uv *= 1.0
     ek.forward(ray.o.x)
     assert ek.allclose(ek.grad(si.uv), [1, 0])
 
     # If the ray origin is shifted tangent to the disk, si.uv.y moves by 1 / (2pi)
     si = shape.ray_intersect(ray)
+    si.uv *= 1.0
     ek.forward(ray.o.y)
     assert ek.allclose(ek.grad(si.uv), [0, 0.5 / ek.Pi], atol=1e-5)
 
     # If the ray origin is shifted tangent to the disk, si.dp_dv will also have a component is x
     si = shape.ray_intersect(ray)
+    si.dp_dv *= 1.0
     ek.forward(ray.o.y)
     assert ek.allclose(ek.grad(si.dp_dv), [-1, 0, 0])
 
