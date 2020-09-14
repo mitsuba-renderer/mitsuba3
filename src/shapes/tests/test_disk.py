@@ -87,7 +87,29 @@ def test03_ray_intersect(variant_scalar_rgb):
                             assert ek.allclose(dn_dv, si.dn_dv, atol=2e-2)
 
 
-def test04_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
+def test04_ray_intersect_vec(variant_scalar_rgb):
+    from mitsuba.python.test.util import check_vectorization
+
+    def kernel(o):
+        from mitsuba.core import xml, ScalarTransform4f
+        from mitsuba.core import Ray3f
+
+        scene = xml.load_dict({
+            "type" : "scene",
+            "foo" : {
+                "type" : "disk",
+                "to_world" : ScalarTransform4f.scale((2.0, 0.5, 1.0))
+            }
+        })
+
+        o = 2.0 * o - 1.0
+        o.z = 5.0
+        return scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+
+    check_vectorization(kernel, arg_dims = [3], atol=1e-5)
+
+
+def test05_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'disk'})
@@ -143,7 +165,7 @@ def test04_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
     assert ek.allclose(ek.grad(si.dp_dv), [-1, 0, 0])
 
 
-def test05_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'disk'})

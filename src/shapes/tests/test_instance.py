@@ -138,12 +138,10 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                             assert ek.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
 
 
-# TODO refactoring
-# def test03_ray_intersect_instance(variants_all_rgb):
-def test03_ray_intersect_instance(variant_scalar_rgb):
+def test03_ray_intersect_instance(variants_all_rgb):
     from mitsuba.core import xml, Ray3f, ScalarVector3f, ScalarTransform4f as T
 
-    """Check that we can the correct instance pointer when tracing a ray"""
+    """Check that we get the correct instance pointer when tracing a ray"""
 
     scene = xml.load_dict({
         'type' : 'scene',
@@ -190,6 +188,7 @@ def test03_ray_intersect_instance(variant_scalar_rgb):
 
     ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
     pi = scene.ray_intersect_preliminary(ray)
+
     assert '[0.5, 0, 0, -0.5]' in str(pi)
     assert '[0, 0.5, 0, -0.5]' in str(pi)
 

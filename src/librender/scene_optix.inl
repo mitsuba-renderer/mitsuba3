@@ -395,6 +395,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         Ray3f ray(ray_);
         size_t ray_count = ek::width(ray);
 
+        // Ensures all dimensions have the same width
+        ek::resize(ray.o, ek::width(ray.o));
+        ek::resize(ray.d, ek::width(ray.d));
+
         PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(ray_count);
 
         // Initialize instance index with the highest possible index an instance
@@ -465,6 +469,10 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         Ray3f ray(ray_);
         size_t ray_count = ek::width(ray);
+
+        // Ensures all dimensions have the same width
+        ek::resize(ray.o, ek::width(ray.o));
+        ek::resize(ray.d, ek::width(ray.d));
 
         // Allocate only the required fields of the SurfaceInteraction struct
         SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
@@ -589,6 +597,11 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         OptixState &s = *(OptixState *) m_accel;
         Ray3f ray(ray_);
         size_t ray_count = ek::width(ray);
+
+        // Ensures all dimensions have the same width
+        ek::resize(ray.o, ek::width(ray.o));
+        ek::resize(ray.d, ek::width(ray.d));
+
         Mask hit = ek::empty<Mask>(ray_count);
 
         ek::eval(hit, active, ray, ray_);

@@ -23,7 +23,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = ek::array_size_v<Point_>;
 
     using Point      = Point_;
-    // TODO refactoring: this issue here is that ek::value_t<MaskedArray<Point3f>> isn't a masked array
+    // TODO: need this because ek::value_t<MaskedArray<Point3f>> isn't a masked array
     using Float =
         std::conditional_t<ek::is_masked_array_v<Point>,
                            ek::detail::MaskedArray<ek::value_t<Point>>,

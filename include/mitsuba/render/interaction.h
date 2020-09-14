@@ -603,6 +603,23 @@ struct PreliminaryIntersection {
 
 // -----------------------------------------------------------------------------
 
+template <typename Array>
+std::string array_of_pointers(const Array &arr) {
+    std::ostringstream oss;
+    if constexpr (ek::is_array_v<Array> && ek::is_jit_array_v<Array>) {
+        oss << "[";
+        for (size_t i = 0; i < ek::width(arr); i++) {
+            if (i > 0)
+                oss << ", ";
+            oss << arr.entry(i);
+        }
+        oss << "]";
+    } else {
+        oss << arr;
+    }
+    return oss.str();
+}
+
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const Interaction<Float, Spectrum> &it) {
     if (ek::none(it.is_valid())) {
@@ -628,7 +645,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
            << "  time = " << it.time << "," << std::endl
            << "  wavelengths = " << string::indent(it.wavelengths, 16) << "," << std::endl
            << "  p = " << string::indent(it.p, 6) << "," << std::endl
-           << "  shape = " << string::indent(it.shape, 2) << "," << std::endl
+           << "  shape = " << string::indent(array_of_pointers(it.shape), 2) << "," << std::endl
            << "  uv = " << string::indent(it.uv, 7) << "," << std::endl
            << "  n = " << string::indent(it.n, 6) << "," << std::endl
            << "  sh_frame = " << string::indent(it.sh_frame, 2) << "," << std::endl
@@ -645,7 +662,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
-           << "  instance = " << string::indent(it.instance, 13) << std::endl
+           << "  instance = " << string::indent(array_of_pointers(it.instance), 13) << std::endl
            << "]";
     }
     return os;
@@ -662,7 +679,7 @@ std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectr
            << "  time = " << it.time << "," << std::endl
            << "  wavelengths = " << it.wavelengths << "," << std::endl
            << "  p = " << string::indent(it.p, 6) << "," << std::endl
-           << "  medium = " << string::indent(it.medium, 2) << "," << std::endl
+           << "  medium = " << string::indent(array_of_pointers(it.medium), 2) << "," << std::endl
            << "  sh_frame = " << string::indent(it.sh_frame, 2) << "," << std::endl
            << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "]";
@@ -680,8 +697,8 @@ std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, 
         << "  prim_uv = " << pi.prim_uv << "," << std::endl
         << "  prim_index = " << pi.prim_index << "," << std::endl
         << "  shape_index = " << pi.shape_index << "," << std::endl
-        << "  shape = " << string::indent(pi.shape, 6) << "," << std::endl
-        << "  instance = " << string::indent(pi.instance, 6) << "," << std::endl
+        << "  shape = " << string::indent(array_of_pointers(pi.shape), 6) << "," << std::endl
+        << "  instance = " << string::indent(array_of_pointers(pi.instance), 6) << "," << std::endl
         << "]";
     }
     return os;

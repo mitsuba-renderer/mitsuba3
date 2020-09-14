@@ -63,7 +63,7 @@ def test03_ray_intersect(variant_scalar_rgb):
 
     assert valid_count == 7
 
-# TODO refactoring : fix this for cuda mode and at this test to other shapes
+
 def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
 
@@ -83,7 +83,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o.z = 5.0
         return scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
 
-    check_vectorization(kernel, arg_dims = [3], atol=1e-5, width=5, modes=['llvm'])
+    check_vectorization(kernel, arg_dims = [3], atol=1e-5)
 
 
 def test05_surface_area(variant_scalar_rgb):
