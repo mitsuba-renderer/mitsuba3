@@ -4,7 +4,6 @@ import numpy as np
 import mitsuba
 
 # Set the desired mitsuba variant
-# TODO refactoring
 mitsuba.set_variant('llvm_rgb')
 
 from mitsuba.core import Float, UInt32, UInt64, Vector2f, Vector3f

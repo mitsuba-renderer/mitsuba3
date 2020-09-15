@@ -12,7 +12,6 @@ combinations of incident and outgoing directions.
     import mitsuba
 
     # Set the desired mitsuba variant
-    # TODO refactoring
     mitsuba.set_variant('llvm_rgb')
 
     from mitsuba.core import Float, Vector3f

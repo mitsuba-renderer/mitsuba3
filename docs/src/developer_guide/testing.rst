@@ -44,7 +44,6 @@ It is possible to test your own sampling code in the following way:
 
 .. code-block:: python
 
-    # TODO refactoring
     import mitsuba
     mitsuba.set_variant('llvm_rgb')
 
@@ -84,7 +83,6 @@ in order to test them:
     import mitsuba
     import enoki as ek
 
-    # TODO refactoring
     mitsuba.set_variant('llvm_rgb')
 
     from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain

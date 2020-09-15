@@ -436,60 +436,55 @@ public:
                       "AnimatedTransform::eval() should be called with a "
                       "floating point-typed `time` parameter");
 
-        // TODO remove this (fix gather with Stride!=sizeof<float>)
-        if constexpr (ek::is_diff_array_v<T>) {
-            return Transform<Point<T, 4>>(m_transform.matrix);
-        } else {
-            ENOKI_MARK_USED(time);
-            ENOKI_MARK_USED(active);
-            return Transform<Point<T, 4>>(m_transform.matrix);
+        ENOKI_MARK_USED(time);
+        ENOKI_MARK_USED(active);
+        return Transform<Point<T, 4>>(m_transform.matrix);
 
-            // TODO refactoring
-            // // Perhaps the transformation isn't animated
-            // if (likely(size() <= 1))
-            //     return Transform<Point<T, 4>>(m_transform.matrix);
+        // TODO
+        // // Perhaps the transformation isn't animated
+        // if (likely(size() <= 1))
+        //     return Transform<Point<T, 4>>(m_transform.matrix);
 
-            // // Look up the interval containing 'time'
-            // Index idx0 = math::find_interval(
-            //     (uint32_t) size(),
-            //     [&](Index idx) {
-            //         constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr variable in lambda scope :(
-            //         return ek::gather<Value, Stride_>(m_keyframes.data(), idx, active) < time;
-            //     });
+        // // Look up the interval containing 'time'
+        // Index idx0 = math::find_interval(
+        //     (uint32_t) size(),
+        //     [&](Index idx) {
+        //         constexpr size_t Stride_ = sizeof(Keyframe); // MSVC: have to redeclare constexpr variable in lambda scope :(
+        //         return ek::gather<Value, Stride_>(m_keyframes.data(), idx, active) < time;
+        //     });
 
-            // Index idx1 = idx0 + 1;
+        // Index idx1 = idx0 + 1;
 
-            // // Compute constants describing the layout of the 'Keyframe' data structure
-            // constexpr size_t Stride      = sizeof(Keyframe);
-            // constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(Float);
-            // constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(Float);
-            // constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
+        // // Compute constants describing the layout of the 'Keyframe' data structure
+        // constexpr size_t Stride      = sizeof(Keyframe);
+        // constexpr size_t ScaleOffset = offsetof(Keyframe, scale) / sizeof(Float);
+        // constexpr size_t QuatOffset  = offsetof(Keyframe, quat)  / sizeof(Float);
+        // constexpr size_t TransOffset = offsetof(Keyframe, trans) / sizeof(Float);
 
-            // // Compute the relative time value in [0, 1]
-            // Value t0 = ek::gather<Value, Stride, false>(m_keyframes.data(), idx0, active),
-            //       t1 = ek::gather<Value, Stride, false>(m_keyframes.data(), idx1, active),
-            //       t  = ek::min(ek::max((time - t0) / (t1 - t0), 0.f), 1.f);
+        // // Compute the relative time value in [0, 1]
+        // Value t0 = ek::gather<Value, Stride, false>(m_keyframes.data(), idx0, active),
+        //       t1 = ek::gather<Value, Stride, false>(m_keyframes.data(), idx1, active),
+        //       t  = ek::min(ek::max((time - t0) / (t1 - t0), 0.f), 1.f);
 
-            // // Interpolate the scale matrix
-            // Matrix3f scale0 = ek::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
-            //          scale1 = ek::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
-            //          scale  = scale0 * (1 - t) + scale1 * t;
+        // // Interpolate the scale matrix
+        // Matrix3f scale0 = ek::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx0, active),
+        //          scale1 = ek::gather<Matrix3f, Stride, false>((Float *) m_keyframes.data() + ScaleOffset, idx1, active),
+        //          scale  = scale0 * (1 - t) + scale1 * t;
 
-            // // Interpolate the rotation quaternion
-            // Quaternion4f quat0 = ek::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
-            //              quat1 = ek::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
-            //              quat = ek::slerp(quat0, quat1, t);
+        // // Interpolate the rotation quaternion
+        // Quaternion4f quat0 = ek::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx0, active),
+        //              quat1 = ek::gather<Quaternion4f, Stride, false>((Float *) m_keyframes.data() + QuatOffset, idx1, active),
+        //              quat = ek::slerp(quat0, quat1, t);
 
-            // // Interpolate the translation component
-            // Vector3f trans0 = ek::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx0, active),
-            //          trans1 = ek::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
-            //          trans = trans0 * (1 - t) + trans1 * t;
+        // // Interpolate the translation component
+        // Vector3f trans0 = ek::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx0, active),
+        //          trans1 = ek::gather<Vector3f, Stride, false>((Float *) m_keyframes.data() + TransOffset, idx1, active),
+        //          trans = trans0 * (1 - t) + trans1 * t;
 
-            // return Transform<Point<T, 4>>(
-            //     ek::transform_compose<Matrix4f>(scale, quat, trans),
-            //     ek::transform_compose_inverse<Matrix4f>(scale, quat, trans)
-            // );
-        }
+        // return Transform<Point<T, 4>>(
+        //     ek::transform_compose<Matrix4f>(scale, quat, trans),
+        //     ek::transform_compose_inverse<Matrix4f>(scale, quat, trans)
+        // );
     }
 
     /**

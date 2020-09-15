@@ -366,7 +366,7 @@ def process_overload_block(lines, what):
 
 
 def process_signature_callback(app, what, name, obj, options, signature, return_annotation):
-    """ This callback will emitted when autodoc has formatted a signature for an object.
+    """ This callback will be emitted when autodoc has formatted a signature for an object.
         It parses and caches the signature arguments for function and classes so it can
         be used in the process_docstring_callback callback.
     """
@@ -403,7 +403,7 @@ def process_signature_callback(app, what, name, obj, options, signature, return_
 
 
 def process_docstring_callback(app, what, name, obj, options, lines):
-    """ This callback will emitted when autodoc has read and processed a docstring.
+    """ This callback will be emitted when autodoc has read and processed a docstring.
         Using the cached parameter list and signature, this function modifies the docstring
         and extract the resulting RST code into the extracted_rst text list.
     """

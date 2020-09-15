@@ -128,11 +128,10 @@ into derived array types like vectors or matrices.
 
 .. code-block:: python
 
-    # TODO refactoring
     mitsuba.set_variant('llvm_rgb')
     from mitsuba.core import Float, Vector3f
-    # Float    = enoki.dynamic.Float32  (a.k.a. enoki::DynamicArray<Packet<float>>)
-    # Vector3f = enoki.dynamic.Vector3f (a.k.a. enoki::Array<DynamicArray<Packet<float>, 3>>)
+    # Float    = enoki.dynamic.Float32  (a.k.a. enoki::LLVMArray<float>)
+    # Vector3f = enoki.dynamic.Vector3f (a.k.a. enoki::Array<enoki::LLVMArray<float>, 3>>)
 
     mitsuba.set_variant('cuda_rgb')
     from mitsuba.core import Float, Vector3f
@@ -207,7 +206,6 @@ variant.
     import mitsuba
 
     # Choose the variant
-    # TODO refactoring
     mitsuba.set_variant('llvm_rgb') # also works on the GPU, e.g. with 'cuda_rgb'
 
     from mitsuba.core import Float, UInt64, Vector2f, PCG32

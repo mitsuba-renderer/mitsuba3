@@ -457,7 +457,7 @@ def render_torch(scene, params=None, **kwargs):
             def backward(ctx, grad_output):
                 try:
                     ek.set_grad(ctx.output, ek.detach(Float(grad_output)))
-                    Float.backward()
+                    ek.backward(ctx.output)
                     result = tuple(ek.grad(i).torch() if i is not None
                                    else None
                                    for i in ctx.inputs)
