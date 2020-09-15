@@ -424,7 +424,7 @@ public:
             OptixCylinderData data = { bbox(), m_to_world, m_to_object,
                                        m_length, m_radius, m_flip_normals };
 
-            jitc_memcpy_async(m_optix_data_ptr, &data, sizeof(OptixCylinderData));
+            jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }
     }
 #endif
