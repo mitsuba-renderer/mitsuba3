@@ -154,7 +154,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
 
         ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
                                                film->reconstruction_filter(),
-                                               !has_aovs);
+                                               !has_aovs && std::is_scalar_v<Float>);
         block->clear();
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
                                 Float(idx / uint32_t(film_size[0])));
