@@ -143,9 +143,9 @@ public:
     const std::vector<ref<Sensor>> &sensors() const { return m_sensors; }
 
     /// Return the list of emitters
-    DynamicBuffer<EmitterPtr> &emitters() { return m_emitters; }
+    std::vector<ref<Emitter>> &emitters() { return m_emitters; }
     /// Return the list of emitters (const version)
-    const DynamicBuffer<EmitterPtr> &emitters() const { return m_emitters; }
+    const std::vector<ref<Emitter>> &emitters() const { return m_emitters; }
 
     /// Return the environment emitter (if any)
     const Emitter *environment() const { return m_environment.get(); }
@@ -212,7 +212,8 @@ protected:
 
     ScalarBoundingBox3f m_bbox;
 
-    DynamicBuffer<EmitterPtr> m_emitters;
+    std::vector<ref<Emitter>> m_emitters;
+    DynamicBuffer<EmitterPtr> m_emitters_ptr;
     std::vector<ref<Shape>> m_shapes;
     std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;

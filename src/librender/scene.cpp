@@ -19,7 +19,6 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
-    std::vector<ref<Emitter>> emitters;
     for (auto &kv : props.objects()) {
         m_children.push_back(kv.second.get());
 
@@ -30,7 +29,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
         if (shape) {
             if (shape->is_emitter())
-                emitters.push_back(shape->emitter());
+                m_emitters.push_back(shape->emitter());
             if (shape->is_sensor())
                 m_sensors.push_back(shape->sensor());
             if (shape->is_shapegroup()) {
@@ -42,7 +41,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         } else if (emitter) {
             // Surface emitters will be added to the list when attached to a shape
             if (!has_flag(emitter->flags(), EmitterFlags::Surface))
-                emitters.push_back(emitter);
+                m_emitters.push_back(emitter);
 
             if (emitter->is_environment()) {
                 if (m_environment)
@@ -96,19 +95,19 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     else
         accel_init_cpu(props);
 
-    if (!emitters.empty()) {
+    if (!m_emitters.empty()) {
         // Create emitters' shapes (environment luminaires)
-        for (Emitter *emitter: emitters)
+        for (Emitter *emitter: m_emitters)
             emitter->set_scene(this);
 
         // For cuda_* modes, convert the emitters pointers to enoki registry ids
         if constexpr (ek::is_jit_array_v<Float>) {
-            std::vector<uint32_t> tmp(emitters.size());
-            for (uint32_t i = 0; i < emitters.size(); i++)
-                tmp[i] = jitc_registry_get_id(emitters[i]);
-            m_emitters = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
+            std::vector<uint32_t> tmp(m_emitters.size());
+            for (uint32_t i = 0; i < m_emitters.size(); i++)
+                tmp[i] = jitc_registry_get_id(m_emitters[i]);
+            m_emitters_ptr = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
         } else {
-            m_emitters = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(emitters.data(), emitters.size());
+            m_emitters_ptr = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(m_emitters.data(), m_emitters.size());
         }
     }
 
@@ -184,12 +183,12 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     DirectionSample3f ds;
     Spectrum spec;
 
-    size_t emitters_size = ek::width(m_emitters);
+    size_t emitters_size = m_emitters.size();
 
     if (likely(emitters_size > 0)) {
         if (emitters_size == 1) {
             // Fast path if there is only one emitter
-            std::tie(ds, spec) = m_emitters.entry(0)->sample_direction(ref, sample, active);
+            std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
         } else {
             ScalarFloat emitter_pdf = 1.f / emitters_size;
 
@@ -201,7 +200,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
             // Rescale sample.x() to lie in [0,1) again
             sample.x() = (sample.x() - index*emitter_pdf) * emitters_size;
 
-            EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters.data(), index, active);
+            EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ptr.data(), index, active);
 
             // Sample a direction towards the emitter
             std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
@@ -234,10 +233,10 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
     MTS_MASK_ARGUMENT(active);
     using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
 
-    size_t emitters_size = ek::width(m_emitters);
+    size_t emitters_size = m_emitters.size();
     if (emitters_size == 1) {
         // Fast path if there is only one emitter
-        return m_emitters.entry(0)->pdf_direction(ref, ds, active);
+        return m_emitters[0]->pdf_direction(ref, ds, active);
     } else {
         return ek::reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
             (1.f / emitters_size);
