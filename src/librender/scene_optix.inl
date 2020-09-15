@@ -64,7 +64,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // ------------------------
 
         CUcontext cuCtx = 0;  // zero means take the current context
-        cuCtx = (CUcontext) jitc_cuda_device_context();
+        cuCtx = (CUcontext) jitc_cuda_context();
 
         OptixDeviceContextOptions options = {};
         options.logCallbackFunction       = &context_log_cb;
@@ -240,9 +240,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         // Allocate launch-varying OptixParams data structure
         s.params = jitc_malloc(AllocType::Device, sizeof(OptixParams));
-
-        // This will trigger the scatter calls to upload geometry to the device
-        ek::sync_device();
     }
 }
 
@@ -349,8 +346,8 @@ void launch_optix_kernel(const OptixState &s,
 
     OptixResult rt = optixLaunch(
         s.pipeline,
-        0, // default cuda stream
-        (CUdeviceptr)s.params,
+        (CUstream) jitc_cuda_stream(),
+        (CUdeviceptr) s.params,
         sizeof(OptixParams),
         &s.sbt,
         width,
@@ -361,8 +358,8 @@ void launch_optix_kernel(const OptixState &s,
         jitc_malloc_trim();
         rt = optixLaunch(
             s.pipeline,
-            0, // default cuda stream
-            (CUdeviceptr)s.params,
+            (CUstream) jitc_cuda_stream(),
+            (CUdeviceptr) s.params,
             sizeof(OptixParams),
             &s.sbt,
             width,
@@ -410,7 +407,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 
         // Ensure pi and instance_index are allocated before binding the data pointers
         ek::eval(pi, instance_index, active, ray, ray_);
-        ek::sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
@@ -518,7 +514,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
 
         ek::eval(si, instance_index, active, ray, ray_);
-        ek::sync_device();
 
         // Init OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
@@ -561,7 +556,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         params.handle = s.ias_handle;
 
         launch_optix_kernel(s, params, ray_count);
-        ek::sync_device();
 
         si.time = ray.time;
         si.wavelengths = ray.wavelengths;
@@ -605,7 +599,6 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         Mask hit = ek::empty<Mask>(ray_count);
 
         ek::eval(hit, active, ray, ray_);
-        ek::sync_device();
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
