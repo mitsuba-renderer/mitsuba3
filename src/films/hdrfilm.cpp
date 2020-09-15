@@ -251,11 +251,6 @@ public:
     ref<Bitmap> bitmap(bool raw = false) override {
         scoped_migrate_to_host scope(m_storage->data());
 
-        if constexpr (ek::is_llvm_array_v<Float>) {
-            ek::eval();
-            ek::sync_stream();
-        }
-
         ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
                                                                : Bitmap::PixelFormat::XYZAW,
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),

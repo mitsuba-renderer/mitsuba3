@@ -125,7 +125,7 @@ void build_gas(const OptixDeviceContext &context,
         OptixTraversableHandle accel;
         rt_check(optixAccelBuild(
             context,
-            0,              // CUDA stream
+            (CUstream) jitc_cuda_stream(),
             &accel_options,
             build_inputs.data(),
             (unsigned int) shapes_count, // num build inputs
@@ -147,7 +147,7 @@ void build_gas(const OptixDeviceContext &context,
             // Use handle as input and output
             rt_check(optixAccelCompact(
                 context,
-                0, // CUDA stream
+                (CUstream) jitc_cuda_stream(),
                 accel,
                 (CUdeviceptr)compact_buffer,
                 compact_size,

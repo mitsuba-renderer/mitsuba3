@@ -206,7 +206,7 @@ public:
             si = std::move(si_bsdf);
 
             if constexpr (ek::is_jit_array_v<Float>)
-                ek::eval(result, eta, ray, emission_weight, throughput);
+                ek::schedule(result, eta, ray, emission_weight, throughput);
         }
 
         return { result, valid_ray };
