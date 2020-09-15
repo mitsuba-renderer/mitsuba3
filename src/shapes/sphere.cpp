@@ -439,7 +439,7 @@ public:
             OptixSphereData data = { bbox(), m_to_world, m_to_object,
                                      m_center, m_radius, m_flip_normals };
 
-            jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixSphereData));
+            jitc_memcpy_async(m_optix_data_ptr, &data, sizeof(OptixSphereData));
         }
     }
 #endif

@@ -246,7 +246,7 @@ public:
 
             OptixDiskData data = { bbox(), m_to_world, m_to_object };
 
-            jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixDiskData));
+            jitc_memcpy_async(m_optix_data_ptr, &data, sizeof(OptixDiskData));
         }
     }
 #endif

@@ -822,7 +822,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
             (const optix::Vector2f *) m_vertex_texcoords.data()
         };
 
-        jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixMeshData));
+        jitc_memcpy_async(m_optix_data_ptr, &data, sizeof(OptixMeshData));
     }
 }
 
@@ -833,7 +833,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build
     build_input.triangleArray.numVertices      = m_vertex_count;
     build_input.triangleArray.vertexBuffers    = (CUdeviceptr*) &m_vertex_buffer_ptr;
     build_input.triangleArray.numIndexTriplets = m_face_count;
-    build_input.triangleArray.indexBuffer      = (CUdeviceptr)m_faces.data();
+    build_input.triangleArray.indexBuffer      = (CUdeviceptr) m_faces.data();
     build_input.triangleArray.flags            = &triangle_input_flags;
     build_input.triangleArray.numSbtRecords    = 1;
 }

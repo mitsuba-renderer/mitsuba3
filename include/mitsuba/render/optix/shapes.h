@@ -77,10 +77,11 @@ void build_gas(const OptixDeviceContext &context,
     // Separate meshes and custom shapes
     std::vector<ref<Shape>> shape_meshes, shape_others;
     for (auto shape: shapes) {
-        if (shape->is_mesh())           shape_meshes.push_back(shape);
-        else if (!shape->is_instance()) shape_others.push_back(shape);
+        if (shape->is_mesh())
+            shape_meshes.push_back(shape);
+        else if (!shape->is_instance())
+            shape_others.push_back(shape);
     }
-
 
     // Build a GAS given a subset of shape pointers
     auto build_single_gas = [&context](const std::vector<ref<Shape>> &shape_subset,
@@ -149,7 +150,7 @@ void build_gas(const OptixDeviceContext &context,
                 context,
                 (CUstream) jitc_cuda_stream(),
                 accel,
-                (CUdeviceptr)compact_buffer,
+                (CUdeviceptr) compact_buffer,
                 compact_size,
                 &accel
             ));
