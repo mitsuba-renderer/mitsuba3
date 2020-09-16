@@ -12,7 +12,7 @@ project(mitsuba
 
 # A number of Mitsuba 2 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
-option(MTS_ENABLE_PYTHON    "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
+option(MTS_ENABLE_PYTHON "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 
