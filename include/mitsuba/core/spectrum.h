@@ -4,7 +4,7 @@
 #include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
-#include <mitsuba/render/mueller.h>
+#include <enoki/matrix.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

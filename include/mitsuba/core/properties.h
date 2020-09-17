@@ -3,6 +3,7 @@
 #include <mitsuba/mitsuba.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/vector.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
