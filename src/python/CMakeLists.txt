@@ -72,3 +72,37 @@ endif()
 
 add_custom_target(copy-python ALL DEPENDS ${MTS_COPY_FILES})
 set_target_properties(copy-python PROPERTIES FOLDER python)
+
+# ----------------------------------------------------------
+#   docstring target
+# ----------------------------------------------------------
+
+
+if (UNIX)
+  include_directories(
+    ${ASMJIT_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/nanogui/include
+  )
+
+  get_filename_component(MKDOC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../include/mitsuba ABSOLUTE)
+  get_property(MKDOC_INCLUDE_DIRECTORIES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+  get_property(MKDOC_COMPILE_DEFINITIONS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS)
+
+  foreach (value ${MKDOC_INCLUDE_DIRECTORIES})
+    list(APPEND MKDOC_CXXFLAGS -I${value})
+  endforeach()
+  list(APPEND MKDOC_CXXFLAGS -I${ZMQ_INCLUDE_DIR})
+
+  foreach (value ${MKDOC_COMPILE_DEFINITIONS})
+    list(APPEND MKDOC_CXXFLAGS -D${value})
+  endforeach()
+
+  add_custom_target(docstrings USES_TERMINAL COMMAND
+    ${Python_EXECUTABLE} -m pybind11_mkdoc -std=c++17 -stdlib=libc++
+    ${MKDOC_CXXFLAGS}
+    `find ${MKDOC_PATH}/core -name '*.h' ! -name fwd.h -print`
+    `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
+    `find ${MKDOC_PATH}/ui -name '*.h' ! -name fwd.h -print`
+    -o ${MKDOC_PATH}/python/docstr.h
+  )
+endif()
