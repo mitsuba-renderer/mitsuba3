@@ -121,19 +121,18 @@ def test03_mueller_to_world_to_local(variant_scalar_mono_polarized):
     for some arbitrary incident/outgoing directions in world coordinates and
     compute the round trip going to local frame and back again.
     """
-    from mitsuba.core import Frame3f, UnpolarizedSpectrum
+    from mitsuba.core import Frame3f, UnpolarizedSpectrum, Vector3f
     from mitsuba.render import SurfaceInteraction3f
     from mitsuba.render.mueller import linear_polarizer
-    import numpy as np
 
     si = SurfaceInteraction3f()
-    si.sh_frame = Frame3f(ek.normalize([1.0, 1.0, 1.0]))
+    si.sh_frame = Frame3f(ek.normalize(Vector3f(1.0, 1.0, 1.0)))
 
     M = linear_polarizer(UnpolarizedSpectrum(1.0))
 
     # Random incident and outgoing directions
-    wi_world = ek.normalize([0.2, 0.0, 1.0])
-    wo_world = ek.normalize([0.0, -0.8, 1.0])
+    wi_world = ek.normalize(Vector3f(0.2, 0.0, 1.0))
+    wo_world = ek.normalize(Vector3f(0.0, -0.8, 1.0))
 
     wi_local = si.to_local(wi_world)
     wo_local = si.to_local(wo_world)
