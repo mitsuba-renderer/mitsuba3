@@ -87,7 +87,7 @@ public:
         auto result = m_integrator->sample(scene, sampler, ray, medium, aovs + 12, active);
 
         if constexpr (is_polarized_v<Spectrum>) {
-            auto const &stokes = result.first.coeff(0);
+            auto const &stokes = result.first.entry(0);
             for (int i = 0; i < 4; ++i) {
                 Color3f rgb;
                 if constexpr (is_monochromatic_v<Spectrum>) {
