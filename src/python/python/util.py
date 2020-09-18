@@ -2,21 +2,19 @@ import mitsuba
 import enoki as ek
 
 
-"""
-Returns whether a parameter's type is a differentiable enoki type.
-"""
 def is_differentiable(p):
+    """Returns whether a parameter's type is a differentiable enoki type."""
     return ek.is_diff_array_v(p) and ek.is_floating_point_v(p)
 
 
-class ParameterMap:
+class SceneParameters:
     """
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~mitsuba.python.util.ParameterMap.torch()`,
-    :py:meth:`~mitsuba.python.util.ParameterMap.update()`, and
-    :py:meth:`~mitsuba.python.util.ParameterMap.keep()`.
+    specifically :py:meth:`~mitsuba.python.util.SceneParameters.torch()`,
+    :py:meth:`~mitsuba.python.util.SceneParameters.update()`, and
+    :py:meth:`~mitsuba.python.util.SceneParameters.keep()`.
     """
 
     def __init__(self, properties, hierarchy):
@@ -53,13 +51,13 @@ class ParameterMap:
         for k in self.keys():
             param_list += '  %s %s,\n' % (
                 ('*' if is_differentiable(self[k]) else ' '), k)
-        return 'ParameterMap[\n%s]' % param_list
+        return 'SceneParameters[\n%s]' % param_list
 
     def keys(self):
         return self.properties.keys()
 
     def items(self):
-        class ParameterMapItemIterator:
+        class SceneParametersItemIterator:
             def __init__(self, pmap):
                 self.pmap = pmap
                 self.it = pmap.keys().__iter__()
@@ -71,7 +69,7 @@ class ParameterMap:
                 key = next(self.it)
                 return (key, self.pmap[key])
 
-        return ParameterMapItemIterator(self)
+        return SceneParametersItemIterator(self)
 
     def all_differentiable(self):
         for k in self.keys():
@@ -90,9 +88,9 @@ class ParameterMap:
     def set_dirty(self, key: str):
         """
         Marks a specific parameter and its parent objects as dirty. A subsequent call
-        to :py:meth:`~mitsuba.python.util.ParameterMap.update()` will refresh their internal
+        to :py:meth:`~mitsuba.python.util.SceneParameters.update()` will refresh their internal
         state. This function is automatically called when overwriting a parameter using
-        :py:meth:`~mitsuba.python.util.ParameterMap.__setitem__()`.
+        :py:meth:`~mitsuba.python.util.SceneParameters.__setitem__()`.
         """
         item = self.properties[key]
         node = item[2]
@@ -135,12 +133,12 @@ class ParameterMap:
         }
 
 
-def traverse(node: 'mitsuba.core.Object') -> ParameterMap:
+def traverse(node: 'mitsuba.core.Object') -> SceneParameters:
     """
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
-    See also :py:class:`mitsuba.python.util.ParameterMap`.
+    See also :py:class:`mitsuba.python.util.SceneParameters`.
     """
     from mitsuba.core import TraversalCallback
 
@@ -185,4 +183,4 @@ def traverse(node: 'mitsuba.core.Object') -> ParameterMap:
     cb = SceneTraversal(node)
     node.traverse(cb)
 
-    return ParameterMap(cb.properties, cb.hierarchy)
+    return SceneParameters(cb.properties, cb.hierarchy)

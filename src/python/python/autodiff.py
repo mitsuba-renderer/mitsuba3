@@ -172,7 +172,7 @@ def render(scene,
         When the scene contains more than one sensor/camera, this parameter
         can be specified to select the desired sensor.
     """
-    if unbiased:
+    if unbiased: # TODO refactoring
         if optimizer is None:
             raise Exception('render(): unbiased=True requires that an '
                             'optimizer is specified!')
@@ -198,24 +198,115 @@ class Optimizer:
     """
     Base class of all gradient-based optimizers (currently SGD and Adam)
     """
-    def __init__(self, params, lr):
+    def __init__(self, lr, params):
         """
-        Parameter ``params``:
-            dictionary ``(name: variable)`` of differentiable parameters to be
-            optimized.
-
         Parameter ``lr``:
             learning rate
+
+        Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
+            Scene parameters dictionary
         """
         self.set_learning_rate(lr)
+        self.variables = {}
         self.params = params
-        if not params.all_differentiable():
-            raise Exception('Optimizer.__init__(): all parameters should '
-                            'be differentiable!')
         self.state = {}
-        for k, p in self.params.items():
-            ek.enable_grad(p)
-            self._reset(k)
+
+    def __contains__(self, key: str):
+        return self.variables.__contains__(key)
+
+    def __getitem__(self, key: str):
+        return self.variables[key]
+
+    def __setitem__(self, key: str, value):
+        if not (ek.is_diff_array_v(value) and ek.is_floating_point_v(value)):
+            raise Exception('Optimizer.__setitem__(): value should be differentiable!')
+        self.variables[key] = type(value)(ek.detach(value))
+        ek.enable_grad(self.variables[key])
+        self._reset(key)
+
+    def __delitem__(self, key: str) -> None:
+        del self.variables[key]
+
+    def __len__(self) -> int:
+        return len(self.variables)
+
+    def keys(self):
+        return self.variables.keys()
+
+    def items(self):
+        class OptimizerItemIterator:
+            def __init__(self, params):
+                self.params = params
+                self.it = params.keys().__iter__()
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                key = next(self.it)
+                return (key, self.params[key])
+
+        return OptimizerItemIterator(self.variables)
+
+    def __match(regexps, params):
+        """Return subset of keys matching any regex from a list of regex"""
+        if params is None:
+            return []
+
+        if regexps is None:
+            return params.keys()
+
+        if regexps is not list:
+            regexps = [regexps]
+
+        import re
+        regexps = [re.compile(k).match for k in regexps]
+        return [k for k in params.keys() if any (r(k) for r in regexps)]
+
+    def load(self, keys=None):
+        """
+        Load a set of scene parameters to optimize.
+
+        Parameter ``keys`` (``None``, ``str``, ``[str]``):
+            Specifies which parameters should be loaded. Regex are supported to define
+            a subset of parameters at once. If set to ``None``, all differentiable
+            scene parameters will be loaded.
+        """
+
+        if self.params is None:
+            raise Exception('Optimizer.load(): scene parameters dictionary should be'
+                            'passed to the constructor!')
+
+        for k in Optimizer.__match(keys, self.params):
+            value = self.params[k]
+            if ek.is_diff_array_v(value) and ek.is_floating_point_v(value):
+                self[k] = value
+
+    def update(self, keys=None):
+        """
+        Update a set of scene parameters.
+
+        Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
+            Scene parameters dictionary
+
+        Parameter ``keys`` (``None``, ``str``, ``[str]``):
+            Specifies which parameters should be updated. Regex are supported to update
+            a subset of parameters at once. If set to ``None``, all scene parameters will
+            be update.
+        """
+
+        if self.params is None:
+            raise Exception('Optimizer.update(): scene parameters dictionary should be'
+                            'passed to the constructor!')
+
+        for k in Optimizer.__match(keys, self.variables):
+            if k in self.params:
+                self.params[k] = self.variables[k]
+                ek.schedule(self.params[k])
+
+        ek.eval()
+
+        self.params.update()
 
     def set_learning_rate(self, lr):
         """Set the learning rate."""
@@ -223,17 +314,17 @@ class Optimizer:
         # Ensure that the JIT compiler does merge 'lr' into the PTX code
         # (this would trigger a recompile every time it is changed)
         self.lr = lr
-        self.lr_v = ek.nondiff_array_t(Float)(lr)
+        self.lr_v = ek.full(ek.nondiff_array_t(Float), lr, size=1, eval=True)
 
     @contextmanager
     def disable_gradients(self):
         """Temporarily disable the generation of gradients."""
-        for _, p in self.params.items():
+        for _, p in self.variables.items():
             ek.disable_grad(p)
         try:
             yield
         finally:
-            for _, p in self.params.items():
+            for _, p in self.variables.items():
                 ek.enable_grad(p)
 
 
@@ -256,8 +347,7 @@ class SGD(Optimizer):
     :math:`\\varepsilon` is the learning rate, and :math:`\\mu` is
     the momentum parameter.
     """
-
-    def __init__(self, params, lr, momentum=0):
+    def __init__(self, lr, momentum=0, params=None):
         """
         Parameter ``lr``:
             learning rate
@@ -268,11 +358,11 @@ class SGD(Optimizer):
         assert momentum >= 0 and momentum < 1
         assert lr > 0
         self.momentum = momentum
-        super().__init__(params, lr)
+        super().__init__(lr, params)
 
     def step(self):
         """ Take a gradient step """
-        for k, p in self.params.items():
+        for k, p in self.variables.items():
             g_p = ek.grad(p)
             size = ek.width(g_p)
             if size == 0:
@@ -285,25 +375,28 @@ class SGD(Optimizer):
 
                 self.state[k] = self.momentum * self.state[k] + g_p
                 value = ek.detach(p) - self.lr_v * self.state[k]
+                ek.schedule(self.state[k])
             else:
                 value = ek.detach(p) - self.lr_v * g_p
 
+
             value = type(p)(value)
             ek.enable_grad(value)
-            self.params[k] = value
-        self.params.update()
+            self.variables[k] = value
+
+        ek.eval()
 
     def _reset(self, key):
         """ Zero-initializes the internal state associated with a parameter """
         if self.momentum == 0:
             return
-        p = self.params[key]
+        p = self.variables[key]
         size = ek.width(p)
         self.state[key] = ek.zero(ek.nondiff_array_t(p), size)
 
     def __repr__(self):
-        return ('SGD[\n  lr = %.2g,\n  momentum = %.2g\n]') % \
-            (self.lr, self.momentum)
+        return ('SGD[\n  params = %s,\n  lr = %.2g,\n  momentum = %.2g\n]') % \
+            (list(self.keys()), self.lr, self.momentum)
 
 
 class Adam(Optimizer):
@@ -311,7 +404,7 @@ class Adam(Optimizer):
     Implements the Adam optimizer presented in the paper *Adam: A Method for
     Stochastic Optimization* by Kingman and Ba, ICLR 2015.
     """
-    def __init__(self, params, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8):
+    def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8, params=None):
         """
         Parameter ``lr``:
             learning rate
@@ -324,7 +417,7 @@ class Adam(Optimizer):
             controls the exponential averaging of second
             order gradient moments
         """
-        super().__init__(params, lr)
+        super().__init__(lr, params)
 
         assert 0 <= beta_1 < 1 and 0 <= beta_2 < 1 \
             and lr > 0 and epsilon > 0
@@ -339,10 +432,11 @@ class Adam(Optimizer):
         self.t += 1
 
         from mitsuba.core import Float
-        lr_t = ek.detach(Float(self.lr * ek.sqrt(1 - self.beta_2**self.t) /
-                               (1 - self.beta_1**self.t)))
 
-        for k, p in self.params.items():
+        lr_t = self.lr * ek.sqrt(1 - self.beta_2**self.t) / (1 - self.beta_1**self.t)
+        lr_t = ek.full(ek.nondiff_array_t(Float), lr_t, size=1, eval=True)
+
+        for k, p in self.variables.items():
             g_p = ek.grad(p)
             size = ek.width(g_p)
 
@@ -356,25 +450,29 @@ class Adam(Optimizer):
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * ek.sqr(g_p)
             self.state[k] = (m_t, v_t)
+            ek.schedule(self.state[k])
 
             u = ek.detach(p) - lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
             u = type(p)(u)
             ek.enable_grad(u)
-            self.params[k] = u
+            self.variables[k] = u
+
+        ek.eval()
 
     def _reset(self, key):
         """ Zero-initializes the internal state associated with a parameter """
-        p = self.params[key]
+        p = self.variables[key]
         size = ek.width(p)
         self.state[key] = (ek.zero(ek.nondiff_array_t(p), size),
                            ek.zero(ek.nondiff_array_t(p), size))
 
     def __repr__(self):
         return ('Adam[\n'
+                '  params = %s,\n'
                 '  lr = %g,\n'
                 '  betas = (%g, %g),\n'
                 '  eps = %g\n'
-                ']' % (self.lr, self.beta_1, self.beta_2, self.epsilon))
+                ']' % (list(self.keys()), self.lr, self.beta_1, self.beta_2, self.epsilon))
 
 
 # TODO refactoring

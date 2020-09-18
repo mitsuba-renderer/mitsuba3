@@ -59,13 +59,13 @@ differentiated:
     print(params)
 
 The call to :py:func:`~mitsuba.python.util.traverse()` in the second-to-last
-line serves this purpose. It returns a dictionary-like :py:class:`mitsuba.python.util.ParameterMap`
+line serves this purpose. It returns a dictionary-like :py:class:`mitsuba.python.util.SceneParameters`
 instance, which exposes modifiable and differentiable scene parameters. Passing
 it to ``print()`` yields the following summary (abbreviated):
 
 .. code-block:: text
 
-    ParameterMap[
+    SceneParameters[
         ...
       * box.reflectance.value,
       * white.reflectance.value,
@@ -112,7 +112,7 @@ following declaration in the original scene description:
         <spectrum name="reflectance" value="400:0.04, 404:0.046, ..., 696:0.635, 700:0.642"/>
     </bsdf>
 
-We can also query the :py:class:`~mitsuba.python.util.ParameterMap` to see the actual parameter value:
+We can also query the :py:class:`~mitsuba.python.util.SceneParameters` to see the actual parameter value:
 
 .. code-block:: python
 
@@ -126,7 +126,7 @@ above XML fragment into an RGB value due to the ``cuda_autodiff_rgb`` variant
 being used to run this example.
 
 In most cases, we will only be interested in differentiating a small subset of
-the (typically very large) parameter map. Use the :py:meth:`ParameterMap.keep() <mitsuba.python.util.ParameterMap.keep()>`
+the (typically very large) parameter map. Use the :py:meth:`SceneParameters.keep() <mitsuba.python.util.SceneParameters.keep()>`
 method to discard all entries except for the specified list of keys.
 
 .. code-block:: python
@@ -135,7 +135,7 @@ method to discard all entries except for the specified list of keys.
     print(params)
 
     # Prints:
-    # ParameterMap[
+    # SceneParameters[
     #   * red.reflectance.value
     # ]
 
@@ -178,7 +178,7 @@ along with the reference image generated above.
 
 For this, let's first change the current color value: the parameter map enables
 such changes without having to reload the scene. The call to the
-:py:meth:`ParameterMap.update() <mitsuba.python.util.ParameterMap.update()>` method at the end is
+:py:meth:`SceneParameters.update() <mitsuba.python.util.SceneParameters.update()>` method at the end is
 mandatory to inform changed scene objects that they should refresh their
 internal state.
 
@@ -205,7 +205,7 @@ Mitsuba ships with standard optimizers including *Stochastic Gradient Descent*
 (:py:class:`~mitsuba.python.autodiff.SGD`) with and without momentum, as well
 as :py:class:`~mitsuba.python.autodiff.Adam` :cite:`kingma2014adam` We will
 instantiate the latter and optimize our reduced
-:py:class:`~mitsuba.python.util.ParameterMap` ``params`` with a learning rate
+:py:class:`~mitsuba.python.util.SceneParameters` ``params`` with a learning rate
 of 0.2. The optimizer class automatically requests derivative information for
 selected parameters and updates their value after each step, hence it is not
 necessary to directly modify ``params`` or call ``ek.set_requires_gradient`` as
