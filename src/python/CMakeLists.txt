@@ -98,7 +98,7 @@ if (UNIX)
   endforeach()
 
   add_custom_target(docstrings USES_TERMINAL COMMAND
-    ${Python_EXECUTABLE} -m pybind11_mkdoc -std=c++17 -stdlib=libc++
+    ${Python_EXECUTABLE} -m pybind11_mkdoc -std=c++17 -stdlib=libc++ -ferror-limit=100000
     ${MKDOC_CXXFLAGS}
     `find ${MKDOC_PATH}/core -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
