@@ -31,16 +31,27 @@ using RayGenSbtRecord   = EmptySbtRecord;
 using MissSbtRecord     = EmptySbtRecord;
 using HitGroupSbtRecord = SbtRecord<OptixHitGroupData>;
 
+template <typename T>
+struct OptixInputParam {
+    const T *ptr;
+    uint32_t width;
+
+#ifdef __CUDACC__
+    __device__ const T& operator[](int i) {
+        return ptr[(width == 1 ? 0 : i)];
+    }
+#endif
+};
+
 /// Launch-varying data structure specifying data pointers for the input and output variables.
 struct OptixParams {
-    /// Input `active` mask data pointer
-    bool    *in_mask;
-    /// Input ray data pointers
-    float   *in_o[3],
-            *in_d[3],
-            *in_mint, *in_maxt;
-    unsigned int in_mask_width, in_o_width, in_d_width,
-                 in_mint_width, in_maxt_width;
+    /// Input `active` mask data
+    OptixInputParam<bool> in_mask;
+    /// Input ray data
+    OptixInputParam<float> in_o[3],
+                           in_d[3],
+                           in_mint,
+                           in_maxt;
     /// Output surface interaction data pointers
     float   *out_t,
             *out_prim_uv[2],

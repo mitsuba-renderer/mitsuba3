@@ -334,11 +334,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 template <typename OptixState>
 void launch_optix_kernel(const OptixState &s,
                          const OptixParams &params,
-                         size_t ray_count) {
+                         size_t wavefront_size) {
 
     jitc_memcpy_async(s.params, &params, sizeof(OptixParams));
 
-    unsigned int width = 1, height = (unsigned int) ray_count;
+    unsigned int width = 1, height = (unsigned int) wavefront_size;
     while (!(height & 1) && width < height) {
         width <<= 1;
         height >>= 1;
@@ -371,67 +371,68 @@ void launch_optix_kernel(const OptixState &s,
     rt_check(rt);
 }
 
-/// Helper function to bind CUDAArray data pointer to fields in the OptixParams struct
-template <typename T> void bind_data(ek::scalar_t<T> **field, T &value) {
+/// Helper functions to bind CUDAArray data pointer to fields in the OptixParams struct
+template <typename T>
+void bind_input(OptixInputParam<ek::scalar_t<T>> *field, T &value) {
     if constexpr (ek::is_static_array_v<T>) {
         for (size_t i = 0; i < ek::array_size_v<T>; ++i)
-            field[i] = value[i].data();
+            bind_input(&field[i], value[i]);
+    } else {
+        field->ptr   = value.data();
+        field->width = (uint32_t) ek::width(value);
+    }
+}
+
+template <typename T>
+void bind_output(ek::scalar_t<T> **field, T &value) {
+    if constexpr (ek::is_static_array_v<T>) {
+        for (size_t i = 0; i < ek::array_size_v<T>; ++i)
+            bind_output(&field[i], value[i]);
     } else {
         *field = value.data();
     }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
         using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
 
-        Ray3f ray(ray_);
-        size_t ray_count = ek::width(ray);
-
-        // Ensures all dimensions have the same width
-        ek::resize(ray.o, ek::width(ray.o));
-        ek::resize(ray.d, ek::width(ray.d));
-
-        PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(ray_count);
+        size_t wavefront_size = ek::width(ray);
+        PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(wavefront_size);
 
         // Initialize instance index with the highest possible index an instance
         // could have in m_shapes. As the hierarchy of IAS is built, this value
         // is used to tag IAS that are not related to instancing (e.g. custom
         // shape tree).
         uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
+        UInt32 instance_index = ek::full<UInt32>(max_inst_index, wavefront_size);
 
         // Ensure pi and instance_index are allocated before binding the data pointers
-        ek::eval(pi, instance_index, active, ray, ray_);
+        ek::eval(instance_index, ray, active);
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
         // Inputs
-        bind_data(&params.in_mask, active);
-        params.in_mask_width = (uint32_t) ek::width(active);
-        bind_data(params.in_o, ray.o);
-        params.in_o_width = (uint32_t) ek::width(ray.o);
-        bind_data(params.in_d, ray.d);
-        params.in_d_width = (uint32_t) ek::width(ray.d);
-        bind_data(&params.in_mint, ray.mint);
-        params.in_mint_width = (uint32_t) ek::width(ray.mint);
-        bind_data(&params.in_maxt, ray.maxt);
-        params.in_maxt_width = (uint32_t) ek::width(ray.maxt);
+        bind_input(&params.in_mask, active);
+        bind_input(params.in_o, ray.o);
+        bind_input(params.in_d, ray.d);
+        bind_input(&params.in_mint, ray.mint);
+        bind_input(&params.in_maxt, ray.maxt);
         // Outputs
-        bind_data(&params.out_t, pi.t);
-        bind_data(params.out_prim_uv, pi.prim_uv);
-        bind_data(&params.out_prim_index, pi.prim_index);
-        bind_data(&params.out_inst_index, instance_index);
+        bind_output(&params.out_t, pi.t);
+        bind_output(params.out_prim_uv, pi.prim_uv);
+        bind_output(&params.out_prim_index, pi.prim_index);
+        bind_output(&params.out_inst_index, instance_index);
         params.out_shape_ptr = (uint32_t *)pi.shape.data();
         params.handle = s.ias_handle;
 
-        launch_optix_kernel(s, params, ray_count);
+        launch_optix_kernel(s, params, wavefront_size);
 
         // Only gather instance pointers for valid instance indices
         Mask valid_instances = instance_index < max_inst_index;
@@ -440,14 +441,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 
         return pi;
     } else {
-        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
@@ -457,42 +458,37 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         if constexpr (ek::is_diff_array_v<Float>) {
             // Differentiable SurfaceInteraction needs to be computed outside of the OptiX kernel
             if (!has_flag(flags, HitComputeFlags::NonDifferentiable) &&
-                (ek::grad_enabled(ray_.o) || shapes_grad_enabled())) {
-                auto pi = ray_intersect_preliminary_gpu(ray_, active);
-                return pi.compute_surface_interaction(ray_, flags, active);
+                (ek::grad_enabled(ray.o) || shapes_grad_enabled())) {
+                auto pi = ray_intersect_preliminary_gpu(ray, active);
+                return pi.compute_surface_interaction(ray, flags, active);
             }
         }
 
-        Ray3f ray(ray_);
-        size_t ray_count = ek::width(ray);
-
-        // Ensures all dimensions have the same width
-        ek::resize(ray.o, ek::width(ray.o));
-        ek::resize(ray.d, ek::width(ray.d));
+        size_t wavefront_size = ek::width(ray);
 
         // Allocate only the required fields of the SurfaceInteraction struct
         SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
 
-        si.t          = ek::empty<Float>(ray_count);
-        si.p          = ek::empty<Point3f>(ray_count);
-        si.n          = ek::empty<Normal3f>(ray_count);
-        si.prim_index = ek::empty<UInt32>(ray_count);
-        si.shape      = ek::empty<ShapePtr>(ray_count);
+        si.t          = ek::empty<Float>(wavefront_size);
+        si.p          = ek::empty<Point3f>(wavefront_size);
+        si.n          = ek::empty<Normal3f>(wavefront_size);
+        si.prim_index = ek::empty<UInt32>(wavefront_size);
+        si.shape      = ek::empty<ShapePtr>(wavefront_size);
 
         if (has_flag(flags, HitComputeFlags::ShadingFrame))
-            si.sh_frame.n = ek::empty<Normal3f>(ray_count);
+            si.sh_frame.n = ek::empty<Normal3f>(wavefront_size);
 
         if (has_flag(flags, HitComputeFlags::UV))
-            si.uv = ek::empty<Point2f>(ray_count);
+            si.uv = ek::empty<Point2f>(wavefront_size);
 
         if (has_flag(flags, HitComputeFlags::dPdUV)) {
-            si.dp_du = ek::empty<Vector3f>(ray_count);
-            si.dp_dv = ek::empty<Vector3f>(ray_count);
+            si.dp_du = ek::empty<Vector3f>(wavefront_size);
+            si.dp_dv = ek::empty<Vector3f>(wavefront_size);
         }
 
         if (has_flag(flags, HitComputeFlags::dNGdUV) || has_flag(flags, HitComputeFlags::dNSdUV)) {
-            si.dn_du = ek::empty<Vector3f>(ray_count);
-            si.dn_dv = ek::empty<Vector3f>(ray_count);
+            si.dn_du = ek::empty<Vector3f>(wavefront_size);
+            si.dn_dv = ek::empty<Vector3f>(wavefront_size);
         }
 
         // DEBUG mode: Explicitly instantiate `si` with NaN values.
@@ -500,10 +496,11 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // `si.is_valid()==true`, this makes it easier to catch bugs in the
         // masking logic implemented in the integrator.
 #if !defined(NDEBUG)
-        #define SET_NAN(name) name = ek::full<decltype(name)>(ek::NaN<Float>, ray_count);
+        #define SET_NAN(name) name = ek::full<decltype(name)>(ek::NaN<Float>, wavefront_size);
         SET_NAN(si.t); SET_NAN(si.time); SET_NAN(si.p); SET_NAN(si.uv); SET_NAN(si.n);
         SET_NAN(si.sh_frame.n); SET_NAN(si.dp_du); SET_NAN(si.dp_dv);
         #undef SET_NAN
+        ek::schedule(si);
 #endif  // !defined(NDEBUG)
 
         // Initialize instance index with the highest possible index an instance
@@ -511,51 +508,46 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
         // is used to tag IAS that are not related to instancing (e.g. custom
         // shape tree).
         uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32 instance_index = ek::full<UInt32>(max_inst_index, ray_count);
+        UInt32 instance_index = ek::full<UInt32>(max_inst_index, wavefront_size);
 
-        ek::eval(si, instance_index, active, ray, ray_);
+        ek::eval(instance_index, ray, active);
 
         // Init OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
         // Inputs
-        bind_data(&params.in_mask, active);
-        params.in_mask_width = (uint32_t) ek::width(active);
-        bind_data(params.in_o, ray.o);
-        params.in_o_width = (uint32_t) ek::width(ray.o);
-        bind_data(params.in_d, ray.d);
-        params.in_d_width = (uint32_t) ek::width(ray.d);
-        bind_data(&params.in_mint, ray.mint);
-        params.in_mint_width = (uint32_t) ek::width(ray.mint);
-        bind_data(&params.in_maxt, ray.maxt);
-        params.in_maxt_width = (uint32_t) ek::width(ray.maxt);
+        bind_input(&params.in_mask, active);
+        bind_input(params.in_o, ray.o);
+        bind_input(params.in_d, ray.d);
+        bind_input(&params.in_mint, ray.mint);
+        bind_input(&params.in_maxt, ray.maxt);
         // Outputs
-        bind_data(&params.out_t, si.t);
+        bind_output(&params.out_t, si.t);
         if (has_flag(flags, HitComputeFlags::UV))
-            bind_data(params.out_uv, si.uv);
-        bind_data(params.out_ng, si.n);
+            bind_output(params.out_uv, si.uv);
+        bind_output(params.out_ng, si.n);
         if (has_flag(flags, HitComputeFlags::ShadingFrame))
-            bind_data(params.out_ns, si.sh_frame.n);
-        bind_data(params.out_p, si.p);
+            bind_output(params.out_ns, si.sh_frame.n);
+        bind_output(params.out_p, si.p);
         if (has_flag(flags, HitComputeFlags::dPdUV)) {
-            bind_data(params.out_dp_du, si.dp_du);
-            bind_data(params.out_dp_dv, si.dp_dv);
+            bind_output(params.out_dp_du, si.dp_du);
+            bind_output(params.out_dp_dv, si.dp_dv);
         }
         if (has_flag(flags, HitComputeFlags::dNGdUV)) {
-            bind_data(params.out_dng_du, si.dn_du);
-            bind_data(params.out_dng_dv, si.dn_dv);
+            bind_output(params.out_dng_du, si.dn_du);
+            bind_output(params.out_dng_dv, si.dn_dv);
         }
         if (has_flag(flags, HitComputeFlags::dNSdUV)) {
-            bind_data(params.out_dns_du, si.dn_du);
-            bind_data(params.out_dns_dv, si.dn_dv);
+            bind_output(params.out_dns_du, si.dn_du);
+            bind_output(params.out_dns_dv, si.dn_dv);
         }
-        bind_data(&params.out_prim_index, si.prim_index);
-        bind_data(&params.out_inst_index, instance_index);
+        bind_output(&params.out_prim_index, si.prim_index);
+        bind_output(&params.out_inst_index, instance_index);
         params.out_shape_ptr = (uint32_t *)si.shape.data();
         params.handle = s.ias_handle;
 
-        launch_optix_kernel(s, params, ray_count);
+        launch_optix_kernel(s, params, wavefront_size);
 
         si.time = ray.time;
         si.wavelengths = ray.wavelengths;
@@ -575,7 +567,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 
         return si;
     } else {
-        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(flags);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
@@ -583,47 +575,38 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray_, HitComputeFlags fla
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
         using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
-        Ray3f ray(ray_);
-        size_t ray_count = ek::width(ray);
 
-        // Ensures all dimensions have the same width
-        ek::resize(ray.o, ek::width(ray.o));
-        ek::resize(ray.d, ek::width(ray.d));
+        size_t wavefront_size = ek::width(ray);
 
-        Mask hit = ek::empty<Mask>(ray_count);
+        Mask hit = ek::empty<Mask>(wavefront_size);
 
-        ek::eval(hit, active, ray, ray_);
+        ek::eval(ray, active);
 
         // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
         OptixParams params = {};
 
         // Bind GPU data pointers to be filled by the OptiX kernel
         // Inputs
-        bind_data(&params.in_mask, active);
-        params.in_mask_width = (uint32_t) ek::width(active);
-        bind_data(params.in_o, ray.o);
-        params.in_o_width = (uint32_t) ek::width(ray.o);
-        bind_data(params.in_d, ray.d);
-        params.in_d_width = (uint32_t) ek::width(ray.d);
-        bind_data(&params.in_mint, ray.mint);
-        params.in_mint_width = (uint32_t) ek::width(ray.mint);
-        bind_data(&params.in_maxt, ray.maxt);
-        params.in_maxt_width = (uint32_t) ek::width(ray.maxt);
+        bind_input(&params.in_mask, active);
+        bind_input(params.in_o, ray.o);
+        bind_input(params.in_d, ray.d);
+        bind_input(&params.in_mint, ray.mint);
+        bind_input(&params.in_maxt, ray.maxt);
         // Outputs
-        bind_data(&params.out_hit, hit);
+        bind_output(&params.out_hit, hit);
         params.handle = s.ias_handle;
 
-        launch_optix_kernel(s, params, ray_count);
+        launch_optix_kernel(s, params, wavefront_size);
 
         return hit;
     } else {
-        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(active);
         Throw("ray_test_gpu() should only be called in GPU mode.");
     }

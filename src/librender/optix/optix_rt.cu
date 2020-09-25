@@ -10,17 +10,17 @@ extern "C" __global__ void __raygen__rg() {
     unsigned int launch_index = calculate_launch_index();
 
     // Get inputs from the params struct
-    Vector3f ro = Vector3f(params.in_o[0][params.in_o_width > 1 ? launch_index : 0],
-                           params.in_o[1][params.in_o_width > 1 ? launch_index : 0],
-                           params.in_o[2][params.in_o_width > 1 ? launch_index : 0]),
-             rd = Vector3f(params.in_d[0][params.in_d_width > 1 ? launch_index : 0],
-                           params.in_d[1][params.in_d_width > 1 ? launch_index : 0],
-                           params.in_d[2][params.in_d_width > 1 ? launch_index : 0]);
-    float mint = params.in_mint[params.in_mint_width > 1 ? launch_index : 0],
-          maxt = params.in_maxt[params.in_maxt_width > 1 ? launch_index : 0];
+    Vector3f ro = Vector3f(params.in_o[0][launch_index],
+                           params.in_o[1][launch_index],
+                           params.in_o[2][launch_index]),
+             rd = Vector3f(params.in_d[0][launch_index],
+                           params.in_d[1][launch_index],
+                           params.in_d[2][launch_index]);
+    float mint = params.in_mint[launch_index],
+          maxt = params.in_maxt[launch_index];
 
     if (params.is_ray_test()) {
-        if (!params.in_mask[params.in_mask_width > 1 ? launch_index : 0]) {
+        if (!params.in_mask[launch_index]) {
             params.out_hit[launch_index] = false;
         } else {
             optixTrace(
@@ -33,7 +33,7 @@ extern "C" __global__ void __raygen__rg() {
                 );
         }
     } else {
-        if (!params.in_mask[params.in_mask_width > 1 ? launch_index : 0]) {
+        if (!params.in_mask[launch_index]) {
             params.out_shape_ptr[launch_index] = 0;
             params.out_t[launch_index] = CUDART_INF_F;
         } else {
