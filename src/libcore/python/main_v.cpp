@@ -2,6 +2,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/python/python.h>
 
+MTS_PY_DECLARE(Enoki);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(BoundingBox);
 MTS_PY_DECLARE(BoundingSphere);
@@ -32,10 +33,10 @@ using Caster = py::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
 PYBIND11_MODULE(MODULE_NAME, m) {
+    MTS_PY_IMPORT_TYPES()
+
     // Temporarily change the module name (for pydoc)
     m.attr("__name__") = "mitsuba.core";
-
-    MTS_PY_IMPORT_TYPES()
 
     // Create sub-modules
     py::module math   = create_submodule(m, "math"),
@@ -49,209 +50,23 @@ PYBIND11_MODULE(MODULE_NAME, m) {
                    "domains, such as spheres, hemispheres, etc.";
     xml.doc()    = "Mitsuba scene XML parser";
 
-    // Import the right variant of Enoki
-    const char *enoki_pkg = nullptr;
-    if constexpr (ek::is_cuda_array_v<Float> && ek::is_diff_array_v<Float>)
-        enoki_pkg = "enoki.cuda.ad";
-    else if constexpr (ek::is_cuda_array_v<Float>)
-        enoki_pkg = "enoki.cuda";
-    else if constexpr (ek::is_llvm_array_v<Float> && ek::is_diff_array_v<Float>)
-        enoki_pkg = "enoki.llvm.ad";
-    else if constexpr (ek::is_llvm_array_v<Float>)
-        enoki_pkg = "enoki.llvm";
-    else
-        enoki_pkg = "enoki.scalar";
-
-    py::module enoki        = py::module::import(enoki_pkg);
-    py::module enoki_scalar = py::module::import("enoki.scalar");
-
-    // Basic type aliases in the Enoki module (scalar + vectorized)
-    m.attr("Float32") = enoki.attr("Float32");
-    m.attr("Float64") = enoki.attr("Float64");
-    m.attr("Mask")    = enoki.attr("Bool");
-    m.attr("Bool")    = enoki.attr("Bool");
-    m.attr("Int32")   = enoki.attr("Int32");
-    m.attr("Int64")   = enoki.attr("Int64");
-    m.attr("UInt32")  = enoki.attr("UInt32");
-    m.attr("UInt64")  = enoki.attr("UInt64");
-    m.attr("Int")     = enoki.attr("Int");
-    m.attr("UInt")    = enoki.attr("UInt");
-
-    m.attr("ScalarFloat32") = enoki_scalar.attr("Float32");
-    m.attr("ScalarFloat64") = enoki_scalar.attr("Float64");
-    m.attr("ScalarMask")    = enoki_scalar.attr("Bool");
-    m.attr("ScalarBool")    = enoki_scalar.attr("Bool");
-    m.attr("ScalarInt32")   = enoki_scalar.attr("Int32");
-    m.attr("ScalarInt64")   = enoki_scalar.attr("Int64");
-    m.attr("ScalarUInt32")  = enoki_scalar.attr("UInt32");
-    m.attr("ScalarUInt64")  = enoki_scalar.attr("UInt64");
-    m.attr("ScalarInt")     = enoki_scalar.attr("Int");
-    m.attr("ScalarUInt")    = enoki_scalar.attr("UInt");
-
-    if constexpr (std::is_same_v<float, ScalarFloat>) {
-        m.attr("Float")       = enoki.attr("Float32");
-        m.attr("ScalarFloat") = enoki_scalar.attr("Float32");
-    } else {
-        m.attr("Float")       = enoki.attr("Float64");
-        m.attr("ScalarFloat") = enoki_scalar.attr("Float64");
-    }
-
-    // Vector type aliases
-    for (int dim = 0; dim < 4; ++dim) {
-        for (int i = 0; i < 3; ++i) {
-            std::string ek_name = "Array" + std::to_string(dim) + "fiu"[i];
-            if constexpr (std::is_same_v<double, ScalarFloat>)
-                ek_name += "64";
-
-            std::string mts_v_name = "Vector" + std::to_string(dim) + "fiu"[i];
-            std::string mts_p_name = "Point" + std::to_string(dim) + "fiu"[i];
-
-            py::handle h = enoki.attr(ek_name.c_str());
-            m.attr(mts_v_name.c_str()) = h;
-            m.attr(mts_p_name.c_str()) = h;
-
-            h = enoki_scalar.attr(ek_name.c_str());
-            m.attr(("Scalar" + mts_v_name).c_str()) = h;
-            m.attr(("Scalar" + mts_p_name).c_str()) = h;
-        }
-    }
-
-    // Matrix type aliases
-    for (int dim = 2; dim < 5; ++dim) {
-        std::string ek_name = "Matrix" + std::to_string(dim) + "f";
-        if constexpr (std::is_same_v<double, ScalarFloat>)
-            ek_name += "64";
-
-        std::string mts_d_name = "Matrix" + std::to_string(dim) + "f";
-
-        py::handle h = enoki.attr(ek_name.c_str());
-        m.attr(mts_d_name.c_str()) = h;
-
-        h = enoki_scalar.attr(ek_name.c_str());
-        m.attr(("Scalar" + mts_d_name).c_str()) = h;
-    }
-
-    m.attr("Normal3f")       = m.attr("Vector3f");
-    m.attr("ScalarNormal3f") = m.attr("ScalarVector3f");
-
-    m.attr("Color3f")        = m.attr("Vector3f");
-    m.attr("ScalarColor3f")  = m.attr("ScalarVector3f");
-
-    m.attr("Color1f")        = m.attr("Vector1f");
-    m.attr("ScalarColor1f")  = m.attr("ScalarVector1f");
-
-    if constexpr (ek::is_cuda_array_v<Float> && ek::is_diff_array_v<Float>)
-        m.attr("PCG32") = py::module::import("enoki.cuda").attr("PCG32");
-    else
-        m.attr("PCG32") = enoki.attr("PCG32");
-
-    /* After importing the 'enoki' module, pybind11 is aware
-       of various Enoki array types (e.g. Array<Float, 3>), etc.
-
-       Unfortunately, it is completely unaware of Mitsuba-specific array
-       variants, including points, vectors, normals, etc. Creating additional
-       bindings for that many flavors of vectors would be rather prohibitive,
-       so a compromise is made in the Python bindings: we consider types such
-       as Vector<Float, 3>, Point<Float, 3>, Array<Float, 3>, etc., to be
-       identical. The following lines set up these equivalencies.
-     */
-
-    pybind11_type_alias<ek::Array<Float, 1>,  Vector1f>();
-    pybind11_type_alias<ek::Array<Float, 1>,  Point1f>();
-    pybind11_type_alias<ek::Array<Float, 1>,  Color1f>();
-    pybind11_type_alias<ek::Array<Float, 0>,  Color<Float, 0>>();
-
-    pybind11_type_alias<ek::Array<Float, 2>,  Vector2f>();
-    pybind11_type_alias<ek::Array<Float, 2>,  Point2f>();
-    pybind11_type_alias<ek::Array<Int32, 2>,  Vector2i>();
-    pybind11_type_alias<ek::Array<Int32, 2>,  Point2i>();
-    pybind11_type_alias<ek::Array<UInt32, 2>, Vector2u>();
-    pybind11_type_alias<ek::Array<UInt32, 2>, Point2u>();
-
-    pybind11_type_alias<ek::Array<Float, 3>,  Vector3f>();
-    pybind11_type_alias<ek::Array<Float, 3>,  Color3f>();
-    pybind11_type_alias<ek::Array<Float, 3>,  Point3f>();
-    pybind11_type_alias<ek::Array<Float, 3>,  Normal3f>();
-    pybind11_type_alias<ek::Array<Int32, 3>,  Vector3i>();
-    pybind11_type_alias<ek::Array<Int32, 3>,  Point3i>();
-    pybind11_type_alias<ek::Array<UInt32, 3>, Vector3u>();
-    pybind11_type_alias<ek::Array<UInt32, 3>, Point3u>();
-
-    pybind11_type_alias<ek::Array<Float, 4>,  Vector4f>();
-    pybind11_type_alias<ek::Array<Float, 4>,  Point4f>();
-    pybind11_type_alias<ek::Array<Int32, 4>,  Vector4i>();
-    pybind11_type_alias<ek::Array<Int32, 4>,  Point4i>();
-    pybind11_type_alias<ek::Array<UInt32, 4>, Vector4u>();
-    pybind11_type_alias<ek::Array<UInt32, 4>, Point4u>();
-
-    if constexpr (ek::is_array_v<Float>) {
-        pybind11_type_alias<ek::Array<ScalarFloat, 1>,  ScalarVector1f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 1>,  ScalarPoint1f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 1>,  ScalarColor1f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 0>,  Color<ScalarFloat, 0>>();
-
-        pybind11_type_alias<ek::Array<ScalarFloat, 2>,  ScalarVector2f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 2>,  ScalarPoint2f>();
-        pybind11_type_alias<ek::Array<ScalarInt32, 2>,  ScalarVector2i>();
-        pybind11_type_alias<ek::Array<ScalarInt32, 2>,  ScalarPoint2i>();
-        pybind11_type_alias<ek::Array<ScalarUInt32, 2>, ScalarVector2u>();
-        pybind11_type_alias<ek::Array<ScalarUInt32, 2>, ScalarPoint2u>();
-
-        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarVector3f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarColor3f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarPoint3f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 3>,  ScalarNormal3f>();
-        pybind11_type_alias<ek::Array<ScalarInt32, 3>,  ScalarVector3i>();
-        pybind11_type_alias<ek::Array<ScalarInt32, 3>,  ScalarPoint3i>();
-        pybind11_type_alias<ek::Array<ScalarUInt32, 3>, ScalarVector3u>();
-        pybind11_type_alias<ek::Array<ScalarUInt32, 3>, ScalarPoint3u>();
-
-        pybind11_type_alias<ek::Array<ScalarFloat, 4>,  ScalarVector4f>();
-        pybind11_type_alias<ek::Array<ScalarFloat, 4>,  ScalarPoint4f>();
-        pybind11_type_alias<ek::Array<ScalarInt32, 4>,  ScalarVector4i>();
-        pybind11_type_alias<ek::Array<ScalarInt32, 4>,  ScalarPoint4i>();
-        pybind11_type_alias<ek::Array<ScalarUInt32, 4>, ScalarVector4u>();
-        pybind11_type_alias<ek::Array<ScalarUInt32, 4>, ScalarPoint4u>();
-    }
-
-    if constexpr (is_spectral_v<UnpolarizedSpectrum>)
-        pybind11_type_alias<ek::Array<Float, UnpolarizedSpectrum::Size>,
-                            UnpolarizedSpectrum>();
-
-    if constexpr (is_polarized_v<Spectrum>)
-        pybind11_type_alias<ek::Matrix<ek::Array<Float, UnpolarizedSpectrum::Size>, 4>,
-                            Spectrum>();
-
-    if constexpr (ek::is_array_v<Float>)
-        pybind11_type_alias<UInt64, ek::replace_scalar_t<Float, const Object *>>();
-
-    m.attr("UnpolarizedSpectrum") = get_type_handle<UnpolarizedSpectrum>();
-    m.attr("Spectrum") = get_type_handle<Spectrum>();
+    MTS_PY_IMPORT(Enoki);
 
     m.attr("float_dtype") = std::is_same_v<ScalarFloat, float> ? "f" : "d";
-
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
     m.attr("is_rgb") = is_rgb_v<Spectrum>;
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
-    m.attr("USE_OPTIX") = ek::is_cuda_array_v<Float>;
+    // Initialize the just-in-time compiler if needed
+    if constexpr (ek::is_jit_array_v<Float>) {
+        if constexpr (ek::is_llvm_array_v<Float>)
+            ek::set_device(-1);
 
-    #if defined(MTS_ENABLE_EMBREE)
-        m.attr("USE_EMBREE")  = !ek::is_cuda_array_v<Float>;
-    #else
-        m.attr("USE_EMBREE")  = false;
-    #endif
-
-    if constexpr (ek::is_jit_array_v<Float>)
-        jitc_init();
-
-    if constexpr (ek::is_llvm_array_v<Float>)
-        ek::set_device(-1);
-
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        ek::set_device(0);
-        cie_initialize();
+        if constexpr (ek::is_cuda_array_v<Float>) {
+            ek::set_device(0);
+            cie_initialize();
+        }
     }
 
     MTS_PY_IMPORT(Object);

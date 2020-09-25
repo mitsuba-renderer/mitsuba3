@@ -8,6 +8,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   pybind11_add_module(${TARGET_NAME}
     THIN_LTO OPT_SIZE
     main_v.cpp
+    enoki_v.cpp
     bbox_v.cpp
     bsphere_v.cpp
     distr_1d_v.cpp

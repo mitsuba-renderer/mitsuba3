@@ -120,7 +120,7 @@ def test05_surface_area(variant_scalar_rgb):
     assert ek.allclose(rect.surface_area(), 2.0 * 2.0)
 
 
-def test06_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'rectangle'})
@@ -162,7 +162,7 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
     assert ek.allclose(ek.grad(si.p), [10, 0, 0])
 
 
-def test07_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
+def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'rectangle'})

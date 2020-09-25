@@ -46,7 +46,7 @@ def generate_fixture(variant):
 for variant in ['scalar_rgb', 'scalar_spectral',
                 'scalar_mono_polarized', 'llvm_rgb',
                 'llvm_spectral', 'cuda_rgb', 'cuda_spectral',
-                'llvm_autodiff_rgb', 'cuda_autodiff_rgb']:
+                'llvm_ad_rgb', 'cuda_ad_rgb']:
     generate_fixture(variant)
 del generate_fixture
 
@@ -68,7 +68,7 @@ variant_groups = {
     'cpu_rgb' : ['scalar_rgb', 'llvm_rgb'],
     'all_rgb' : ['scalar_rgb', 'llvm_rgb', 'cuda_rgb'],
     'vec_spectral' : ['llvm_spectral', 'cuda_spectral'],
-    'all_autodiff_rgb' : ['llvm_autodiff_rgb', 'cuda_autodiff_rgb'],
+    'all_ad_rgb' : ['llvm_ad_rgb', 'cuda_ad_rgb'],
 }
 
 for name, variants in variant_groups.items():

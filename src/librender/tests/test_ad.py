@@ -46,7 +46,7 @@ def make_simple_scene(res=1):
 
 
 @pytest.mark.parametrize("spp", [1, 4])
-def test01_bsdf_reflectance_backward(variants_all_autodiff_rgb, spp):
+def test01_bsdf_reflectance_backward(variants_all_ad_rgb, spp):
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render
@@ -84,7 +84,7 @@ def test01_bsdf_reflectance_backward(variants_all_autodiff_rgb, spp):
 
 
 @pytest.mark.parametrize("spp", [1, 4])
-def test02_bsdf_reflectance_forward(variants_all_autodiff_rgb, spp):
+def test02_bsdf_reflectance_forward(variants_all_ad_rgb, spp):
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.core import Float
     from mitsuba.python.util import traverse
@@ -129,7 +129,7 @@ from mitsuba.python.autodiff import Adam, SGD
 @pytest.mark.parametrize("spp", [8])
 @pytest.mark.parametrize("unbiased", [False]) # TODO refactoring
 @pytest.mark.parametrize("opt_conf", [(SGD, [200.5, 0.9])])
-def test03_optimizer(variants_all_autodiff_rgb, spp, unbiased, opt_conf):
+def test03_optimizer(variants_all_ad_rgb, spp, unbiased, opt_conf):
     from mitsuba.core import Float, Color3f
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render

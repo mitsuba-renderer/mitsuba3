@@ -13,26 +13,25 @@
 #include <pybind11/stl.h>
 #include <enoki/packet.h>
 
-#if MTS_VARIANT_VECTORIZE == 1
-#  include <enoki/dynamic.h>
-#endif
-
 #include "docstr.h"
 
 PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 #define D(...) DOC(mitsuba, __VA_ARGS__)
 
-#define MTS_PY_CLASS(Name, Base, ...) \
-    py::class_<Name, Base, ref<Name>>(m, #Name, D(Name), ##__VA_ARGS__)
-
-#define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
-    py::class_<Name, Base, ref<Name>, Trampoline>(m, #Name, D(Name), ##__VA_ARGS__)
-
+/// Shorthand notation for defining a data structure
 #define MTS_PY_STRUCT(Name, ...) \
     py::class_<Name>(m, #Name, D(Name), ##__VA_ARGS__)
 
-/// Shorthand notation for defining read_write members
+/// Shorthand notation for defining a Mitsuba class deriving from a base class
+#define MTS_PY_CLASS(Name, Base, ...) \
+    py::class_<Name, Base, ref<Name>>(m, #Name, D(Name), ##__VA_ARGS__)
+
+/// Shorthand notation for defining a Mitsuba class that can be extended in Python
+#define MTS_PY_TRAMPOLINE_CLASS(Trampoline, Name, Base, ...) \
+    py::class_<Name, Base, ref<Name>, Trampoline>(m, #Name, D(Name), ##__VA_ARGS__)
+
+/// Shorthand notation for defining attributes with read-write access
 #define def_field(Class, Member, ...) \
     def_readwrite(#Member, &Class::Member, ##__VA_ARGS__)
 
@@ -111,26 +110,6 @@ template <typename Type> pybind11::handle get_type_handle() {
     using Spectrum = MTS_VARIANT_SPECTRUM;                                                         \
     MTS_IMPORT_TYPES(__VA_ARGS__)                                                                  \
     MTS_IMPORT_OBJECT_TYPES()
-
-// #define MTS_PY_IMPORT_TYPES_DYNAMIC(...)                                                           \
-//     using Float = std::conditional_t<ek::is_static_array_v<MTS_VARIANT_FLOAT>,                     \
-//                                      ek::make_dynamic_t<MTS_VARIANT_FLOAT>, MTS_VARIANT_FLOAT>;    \
-//                                                                                                    \
-//     using Spectrum =                                                                               \
-//         std::conditional_t<ek::is_static_array_v<MTS_VARIANT_FLOAT>,                               \
-//                            ek::make_dynamic_t<MTS_VARIANT_SPECTRUM>, MTS_VARIANT_SPECTRUM>;        \
-//                                                                                                    \
-//     MTS_IMPORT_TYPES(__VA_ARGS__)                                                                  \
-//     MTS_IMPORT_OBJECT_TYPES()
-
-// template <typename Func>
-// decltype(auto) vectorize(const Func &func) {
-// #if MTS_VARIANT_VECTORIZE == 1
-//     return ek::vectorize_wrapper(func);
-// #else
-//     return func;
-// #endif
-// }
 
 inline py::module create_submodule(py::module &m, const char *name) {
     std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;

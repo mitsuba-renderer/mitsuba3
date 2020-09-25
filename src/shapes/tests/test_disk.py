@@ -109,7 +109,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)
 
 
-def test05_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
+def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'disk'})
@@ -165,7 +165,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
     assert ek.allclose(ek.grad(si.dp_dv), [-1, 0, 0])
 
 
-def test06_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'disk'})

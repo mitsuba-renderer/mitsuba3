@@ -144,7 +144,7 @@ def test05_sample_direct(variant_scalar_rgb):
             assert ek.allclose(its.p, sample.p, atol=1e-5, rtol=1e-5)
 
 
-def test06_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
+def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32, Float
 
     shape = xml.load_dict({'type' : 'sphere'})
@@ -208,7 +208,7 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
     assert ek.allclose(ek.grad(si.n), [0, 0, 1])
 
 
-def test07_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
+def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     shape = xml.load_dict({'type' : 'sphere'})

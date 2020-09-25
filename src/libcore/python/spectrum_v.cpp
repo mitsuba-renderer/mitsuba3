@@ -60,10 +60,4 @@ MTS_PY_EXPORT(Spectrum) {
 
     m.def("unpolarized", [](const Spectrum &s) { return unpolarized(s); }, "");
     m.def("depolarize", [](const Spectrum &s) { return depolarize(s); }, "");
-
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        py::module::import("enoki");
-        pybind11_type_alias<ek::Array<Float, 3>, Color3f>();
-        pybind11_type_alias<ek::Array<Float, ek::array_size_v<Spectrum>>, Spectrum>();
-    }
 }

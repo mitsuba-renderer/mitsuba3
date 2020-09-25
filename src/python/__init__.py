@@ -123,13 +123,13 @@ render = sys.modules['mitsuba.render']
 def set_variant(value):
     '''
     Mitsuba 2 can be compiled to a great variety of different variants (e.g.
-    'scalar_rgb', 'cuda_autodiff_spectral_polarized', etc.) that each have their
+    'scalar_rgb', 'cuda_ad_spectral_polarized', etc.) that each have their
     own Python bindings in addition to generic/non-templated code that lives in
     yet another module.
 
     Writing various different prefixes many times in import statements such as
 
-       from mitsuba.render_cuda_autodiff_spectral_ext import Integrator
+       from mitsuba.render_cuda_ad_spectral_ext import Integrator
        from mitsuba.core_ext import FileStream
 
     can get rather tiring. For this reason, Mitsuba uses /virtual/ Python
@@ -138,7 +138,7 @@ def set_variant(value):
     function. The above example then simplifies to
 
         import mitsuba
-        mitsuba.set_variant('cuda_autodiff_spectral_polarized')
+        mitsuba.set_variant('cuda_ad_spectral_polarized')
 
         from mitsuba.render import Integrator
         from mitsuba.core import FileStream

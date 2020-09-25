@@ -1,37 +1,38 @@
 {
-    # This list specifies variants of Mitsuba that should be included
-    # during compilation. note that enabling many features here can
-    # lead to slow build times and very large binaries.
+    # This file specifies the variants of Mitsuba that should be compiled.
+    # Note that enabling many features here can lead to slow build times
+    # and large binaries.
     #
-    # Available features (which can often be combined) include
+    # Each variant can make use of the following features, which can be
+    # combined by concatenating them into a longer name (using underscores,
+    # as in "scalar_spectral_polarized")
     #
     # 1. Basic arithmetic type used for computation
     #
     #    - 'scalar': Computation is done on the CPU using ordinary
-    #      floating point arithmetic as in Mitsuba 0.5. This is the
-    #      preferred mode for fixing compilation errors (there is
-    #      relatively little templating) and debugging the renderer.
+    #      floating point arithmetic as in Mitsuba 0.5. The renderer
+    #      processes individual rays at a time. This mode is the
+    #      easiest to understand and therefore preferred for fixing
+    #      compilation errors and debugging the renderer.
     #
     #    - 'llvm': Computation is done on the CPU using Enoki's
     #      Just-in-time compiler to generate LLVM kernels on the fly.
-    #      In this case, Mitsuba becomes a wavefront path tracer.
-    #
-    #    - 'llvm_autodiff': building on the properties of the 'llvm'
-    #      variant, computation additionally keeps track of derivatives,
-    #      enabling the use of Mitsuba 2 for optimization and the
-    #      solution of challenging inverse problems.
+    #      In this case, Mitsuba becomes a wavefront path tracer that
+    #      simultaneously propagates many rays at a time.
     #
     #    - 'cuda': Computation is done on the GPU using Enoki's
     #      Just-in-time compiler to generate CUDA kernels on the fly.
-    #      In this case, Mitsuba becomes a wavefront path tracer that
-    #      performs ray tracing using NVIDIA's OptiX library.
+    #      In this case, Mitsuba becomes a wavefront path tracer,
+    #      and ray tracing is performed via NVIDIA's OptiX library.
     #
-    #    - 'cuda_autodiff': building on the properties of the 'cuda'
-    #      variant, computation additionally keeps track of derivatives,
-    #      enabling the use of Mitsuba 2 for optimization and the
-    #      solution of challenging inverse problems.
+    # 2. Automatic Differentiation (optional)
     #
-    # 2. Representation of color
+    #    - 'ad': When this flag is specified, the computation additionally
+    #      keeps track of derivatives. These derivatives can then be used to
+    #      solve challenging inverse problems using gradient-based
+    #      optimization.
+    #
+    # 3. Representation of color
     #
     #    - 'mono': Monochromatic simulation, i.e., simply don't simulate
     #      color at all. This is useful when simulating scenes that are
@@ -46,29 +47,33 @@
     #
     #    - 'spectral': Integrate over continuous wavelengths spanning the
     #      visible spectrum (360..830 nm). Any RGB data provided in the input
-    #      scene has to be up-sampled into plausible equivalent spectra
+    #      scene will be up-sampled into plausible equivalent spectra
     #      in this case.
     #
-    #  Each color mode can additionally have the suffix "_polarized", in which
-    #  case Mitsuba will additionally keep track of the polarization state of
-    #  light. Builtin materials based on specular reflection and refraction
-    #  will also switch to the polarized form of the Fresnel equations.
+    # 4. Polarization (optional)
     #
-    # 3. Precision
+    #    - "polarized": when this flag is specified, Mitsuba will additionally
+    #      keep track of the polarization state of light. Builtin materials 
+    #      based on specular reflection and refraction will also switch to the
+    #      polarized form of the Fresnel equations.
     #
-    #    - default: Mitsuba normally uses single precision for all computation.
+    # 5. Higher precision (optional)
     #
-    #    - 'double': Sometimes, it can be useful to compile a higher-precision
-    #       version of the renderer to determine if an issue arises due to
-    #       insufficient floating point accuracy.
+    #    - 'double': Mitsuba normally relies on single precision arithmetic.
+    #       When this flag is specified, double precision will be used for
+    #       everything: ray tracing, radiance evaluation, etc. This can be
+    #       useful to check if an issue arises due to insufficient accuracy.
+    #       Note that this flag is only available in 'scalar' mode, and it
+    #       furthermore requires that Embree is disabled.
     #
-    # These 3 feature dimensions can then be concatenated into longer variant
-    # names like "scalar_spectral_polarized_double" that are defined in more
-    # detail in the remainder of this file. Note that it is possible to create
-    # additional variants that are not explicitly mentioned here. To do so, you
-    # will have to create a corresponding entry specifying 'float' and
-    # 'spectrum' C++ types.
+    # As mentioned earlier, these 5 "feature dimensions" can be concatenated
+    # into longer variant names like "cuda_ad_spectral_polarized" that are
+    # defined in more detail in the remainder of this file. Note that it is
+    # possible to create additional variants that are not explicitly mentioned
+    # here. To do so, you will have to create a corresponding entry specifying
+    # 'float' and 'spectrum' C++ types.
 
+    # Which variants should be compiled?
     "enabled": [
         # The "scalar_rgb" variant *must* be included at the moment.
         "scalar_rgb",
@@ -153,8 +158,8 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-
-    # LLVM variants
+    # LLVM variants (note: currently no double precision variants since
+    # double precision ray tracing is not supported by Embree)
 
     "llvm_mono": {
         "float": "ek::LLVMArray<float>",
@@ -186,32 +191,32 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    "llvm_autodiff_mono": {
+    "llvm_ad_mono": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "Color<Float, 1>"
     },
 
-    "llvm_autodiff_mono_polarized": {
+    "llvm_ad_mono_polarized": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
-    "llvm_autodiff_rgb": {
+    "llvm_ad_rgb": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "Color<Float, 3>"
     },
 
-    "llvm_autodiff_rgb_polarized": {
+    "llvm_ad_rgb_polarized": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
-    "llvm_autodiff_spectral": {
+    "llvm_ad_spectral": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
-    "llvm_autodiff_spectral_polarized": {
+    "llvm_ad_spectral_polarized": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
@@ -249,32 +254,32 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    "cuda_autodiff_mono": {
+    "cuda_ad_mono": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Color<Float, 1>"
     },
 
-    "cuda_autodiff_mono_polarized": {
+    "cuda_ad_mono_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
-    "cuda_autodiff_rgb": {
+    "cuda_ad_rgb": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Color<Float, 3>"
     },
 
-    "cuda_autodiff_rgb_polarized": {
+    "cuda_ad_rgb_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
-    "cuda_autodiff_spectral": {
+    "cuda_ad_spectral": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
-    "cuda_autodiff_spectral_polarized": {
+    "cuda_ad_spectral_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }

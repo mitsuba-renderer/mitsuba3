@@ -102,7 +102,7 @@ if (MTS_VARIANTS MATCHES "llvm_")
   set(MTS_ENABLE_LLVM ON)
 endif()
 
-if (MTS_VARIANTS MATCHES "autodiff_")
+if (MTS_VARIANTS MATCHES "ad_")
   set(MTS_ENABLE_AUTODIFF ON)
 endif()
 

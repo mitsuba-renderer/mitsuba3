@@ -300,7 +300,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
 
 
 @fresolver_append_path
-def test11_parameters_grad_enabled(variants_all_autodiff_rgb):
+def test11_parameters_grad_enabled(variants_all_ad_rgb):
     from mitsuba.core.xml import load_string
 
     shape = load_string('''
@@ -330,7 +330,7 @@ def test11_parameters_grad_enabled(variants_all_autodiff_rgb):
 
 
 @fresolver_append_path
-def test12_differentiable_surface_interaction_automatic(variants_all_autodiff_rgb):
+def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
 
@@ -376,7 +376,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_autodiff_rg
 
 
 @fresolver_append_path
-def test13_differentiable_surface_interaction_ray_forward(variants_all_autodiff_rgb):
+def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     scene = xml.load_string('''
@@ -415,7 +415,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_autodiff_
 
 
 @fresolver_append_path
-def test14_differentiable_surface_interaction_ray_backward(variants_all_autodiff_rgb):
+def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     scene = xml.load_string('''
@@ -444,7 +444,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_autodiff
 
 
 @fresolver_append_path
-def test15_differentiable_surface_interaction_params_forward(variants_all_autodiff_rgb):
+def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
 
     scene = xml.load_string('''
@@ -517,7 +517,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_autodi
 
 
 @fresolver_append_path
-def test16_differentiable_surface_interaction_params_backward(variants_all_autodiff_rgb):
+def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
 
     scene = xml.load_string('''
