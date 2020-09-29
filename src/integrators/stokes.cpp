@@ -1,5 +1,6 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
+#include <mitsuba/render/mueller.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -84,10 +85,23 @@ public:
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        auto result = m_integrator->sample(scene, sampler, ray, medium, aovs + 12, active);
+        auto [spec, mask] = m_integrator->sample(scene, sampler, ray, medium, aovs + 12, active);
 
         if constexpr (is_polarized_v<Spectrum>) {
-            auto const &stokes = result.first.entry(0);
+            /* The Stokes vector that comes from the integrator is still aligned
+               with the implicit Stokes frame used for the ray direction. Apply
+               one last rotation here s.t. it alignes with the sensor's x-axis. */
+            auto sensor = scene->sensors()[0];
+            const AnimatedTransform *transform = sensor->world_transform();
+            Vector3f horizontal = transform->eval(ray.time) * Vector3f(1.f, 0.f, 0.f);
+            Vector3f current_basis = mueller::stokes_basis(-ray.d);
+            Vector3f tmp = cross(horizontal, ray.d),
+                     target_basis = cross(ray.d, tmp);
+            spec = mueller::rotate_stokes_basis(-ray.d,
+                                                 current_basis,
+                                                 target_basis) * spec;
+
+            auto const &stokes = spec.entry(0);
             for (int i = 0; i < 4; ++i) {
                 Color3f rgb;
                 if constexpr (is_monochromatic_v<Spectrum>) {
@@ -106,7 +120,7 @@ public:
             }
         }
 
-        return result;
+        return { spec, mask };
     }
 
     std::vector<std::string> aov_names() const override {
