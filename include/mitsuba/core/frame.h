@@ -204,5 +204,3 @@ Frame compute_shading_frame(const Normal3f &n, const Vector3f &dp_du) {
 }
 
 NAMESPACE_END(mitsuba)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::Frame, s, t, n)

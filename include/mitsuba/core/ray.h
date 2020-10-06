@@ -121,8 +121,8 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
         d_y = ek::fmadd(d_y - d, amount, d);
     }
 
-    ENOKI_DERIVED_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time,
-                         wavelengths, o_x, o_y, d_x, d_y)
+    ENOKI_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time,
+                 wavelengths, o_x, o_y, d_x, d_y)
 };
 
 /// Return a string representation of the ray
@@ -141,16 +141,3 @@ std::ostream &operator<<(std::ostream &os, const Ray<Point, Spectrum> &r) {
 }
 
 NAMESPACE_END(mitsuba)
-
-// -----------------------------------------------------------------------
-//! @{ \name Enoki accessors for static & dynamic vectorization
-// -----------------------------------------------------------------------
-
-// Support for static & dynamic vectorization
-ENOKI_STRUCT_SUPPORT(mitsuba::Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::RayDifferential, o, d, d_rcp, mint, maxt,
-                     time, wavelengths, o_x, o_y, d_x, d_y)
-
-//! @}
-// -----------------------------------------------------------------------

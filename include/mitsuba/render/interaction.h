@@ -358,9 +358,9 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_DERIVED_STRUCT(SurfaceInteraction, t, time, wavelengths, p, shape, uv,
-                         n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                         duv_dy, wi, prim_index, instance)
+    ENOKI_STRUCT(SurfaceInteraction, t, time, wavelengths, p, shape, uv,
+                 n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+                 duv_dy, wi, prim_index, instance)
 };
 
 // -----------------------------------------------------------------------------
@@ -423,9 +423,9 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_DERIVED_STRUCT(MediumInteraction, t, time, wavelengths, p, medium,
-                         sh_frame, wi, sigma_s, sigma_n, sigma_t,
-                         combined_extinction, mint)
+    ENOKI_STRUCT(MediumInteraction, t, time, wavelengths, p, medium,
+                 sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                 combined_extinction, mint)
 };
 
 // -----------------------------------------------------------------------------
@@ -705,21 +705,3 @@ std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, 
 }
 
 NAMESPACE_END(mitsuba)
-
-// -----------------------------------------------------------------------
-//! @{ \name Enoki accessors for dynamic vectorization
-// -----------------------------------------------------------------------
-
-ENOKI_STRUCT_SUPPORT(mitsuba::Interaction, t, time, wavelengths, p)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::SurfaceInteraction, t, time, wavelengths, p,
-                     shape, uv, n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx, duv_dy, wi,
-                     prim_index, instance)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::MediumInteraction, t, time, wavelengths, p,
-                     medium, sh_frame, wi, sigma_s, sigma_n, sigma_t, combined_extinction, mint)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::PreliminaryIntersection, t, prim_uv, prim_index, shape_index, shape, instance)
-
-//! @}
-// -----------------------------------------------------------------------

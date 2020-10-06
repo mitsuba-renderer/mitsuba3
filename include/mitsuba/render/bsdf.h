@@ -506,16 +506,6 @@ MTS_EXTERN_CLASS_RENDER(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enoki accessors for dynamic vectorization
-// -----------------------------------------------------------------------
-
-ENOKI_STRUCT_SUPPORT(mitsuba::BSDFSample3, wo, pdf, eta,
-                     sampled_type, sampled_component)
-
-//! @}
-// -----------------------------------------------------------------------
-
-// -----------------------------------------------------------------------
 //! @{ \name Enoki support for vectorized function calls
 // -----------------------------------------------------------------------
 

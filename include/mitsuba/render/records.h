@@ -203,7 +203,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_DERIVED_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, object, d, dist)
+    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, object, d, dist)
 };
 
 // -----------------------------------------------------------------------------
@@ -241,16 +241,3 @@ std::ostream &operator<<(std::ostream &os,
 }
 
 NAMESPACE_END(mitsuba)
-
-// -----------------------------------------------------------------------
-//! @{ \name Enoki accessors for dynamic vectorization
-// -----------------------------------------------------------------------
-
-ENOKI_STRUCT_SUPPORT(mitsuba::PositionSample, p, n, uv, time, pdf,
-                     delta, object)
-
-ENOKI_STRUCT_SUPPORT(mitsuba::DirectionSample, p, n, uv, time, pdf,
-                     delta, object, d, dist)
-
-//! @}
-// -----------------------------------------------------------------------
