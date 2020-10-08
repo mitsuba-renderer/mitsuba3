@@ -19,6 +19,10 @@ extern "C" __global__ void __raygen__rg() {
     float mint = params.in_mint[launch_index],
           maxt = params.in_maxt[launch_index];
 
+    // Replace inf with very large float value as it isn't supported by Optix
+    if (maxt == CUDART_INF_F)
+        maxt = 1e38f;
+
     if (params.is_ray_test()) {
         if (!params.in_mask[launch_index]) {
             params.out_hit[launch_index] = false;

@@ -88,7 +88,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     #else
         module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
-        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+        module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
     #endif
 
         pipeline_compile_options.usesMotionBlur        = false;

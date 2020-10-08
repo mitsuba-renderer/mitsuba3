@@ -256,10 +256,6 @@ def test09_eval_parameterization(variants_all_rgb):
 
 @fresolver_append_path
 def test10_ray_intersect_preliminary(variants_all_rgb):
-
-    if 'packet' in mitsuba.variant():
-        pytest.skip("pi.compute_surface_interaction isn't bound for packet modes")
-
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
 
