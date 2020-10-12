@@ -9,10 +9,63 @@
 #include <mitsuba/python/python.h>
 #include <pybind11/numpy.h>
 
+template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
+    MTS_PY_IMPORT_TYPES()
+
+    cls.def("is_emitter", [](Ptr shape) { return shape->is_emitter(); },
+            D(Shape, is_emitter))
+       .def("is_sensor", [](Ptr shape) { return shape->is_sensor(); },
+            D(Shape, is_sensor))
+       .def("is_medium_transition",
+            [](Ptr shape) { return shape->is_medium_transition(); },
+            D(Shape, is_medium_transition))
+       .def("interior_medium",
+            [](Ptr shape) { return shape->interior_medium(); },
+            D(Shape, interior_medium))
+       .def("exterior_medium",
+            [](Ptr shape) { return shape->exterior_medium(); },
+            D(Shape, exterior_medium))
+       .def("bsdf", [](Ptr shape) { return shape->bsdf(); },
+            D(Shape, bsdf))
+       .def("sensor", [](Ptr shape) { return shape->sensor(); },
+            D(Shape, sensor))
+       .def("emitter", [](Ptr shape) { return shape->emitter(); },
+            D(Shape, emitter))
+       .def("compute_surface_interaction",
+            [](Ptr shape, const Ray3f &ray,
+               const PreliminaryIntersection3f &pi, HitComputeFlags flags,
+               Mask active) {
+                return shape->compute_surface_interaction(ray, pi, flags, active);
+            },
+            "ray"_a, "pi"_a, "flags"_a = HitComputeFlags::All,
+            "active"_a = true, D(Shape, compute_surface_interaction))
+       .def("eval_attribute",
+            [](Ptr shape, const std::string &name,
+               const SurfaceInteraction3f &si, const Mask &active) {
+                return shape->eval_attribute(name, si, active);
+            },
+            "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute))
+       .def("eval_attribute_1",
+            [](Ptr shape, const std::string &name,
+               const SurfaceInteraction3f &si, const Mask &active) {
+                return shape->eval_attribute_1(name, si, active);
+            },
+            "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_1))
+       .def("eval_attribute_3",
+            [](Ptr shape, const std::string &name,
+               const SurfaceInteraction3f &si, const Mask &active) {
+                return shape->eval_attribute_3(name, si, active);
+            },
+            "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_3));
+
+    if constexpr (ek::is_array_v<Ptr>)
+        bind_enoki_ptr_array(cls);
+}
+
 MTS_PY_EXPORT(Shape) {
     MTS_PY_IMPORT_TYPES(Shape, Mesh)
 
-    MTS_PY_CLASS(Shape, Object)
+    auto shape = MTS_PY_CLASS(Shape, Object)
         .def("sample_position", &Shape::sample_position,
             "time"_a, "sample"_a, "active"_a = true, D(Shape, sample_position))
         .def("pdf_position", &Shape::pdf_position,
@@ -28,8 +81,6 @@ MTS_PY_EXPORT(Shape) {
              "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true,
              D(Shape, ray_intersect))
         .def("ray_test", &Shape::ray_test, "ray"_a, "active"_a = true)
-        .def("compute_surface_interaction", &Shape::compute_surface_interaction,
-                "ray"_a, "pi"_a, "flags"_a = HitComputeFlags::All, "active"_a = true)
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
         .def("bbox", py::overload_cast<ScalarUInt32>(
@@ -39,18 +90,19 @@ MTS_PY_EXPORT(Shape) {
         .def_method(Shape, surface_area)
         .def_method(Shape, id)
         .def_method(Shape, is_mesh)
-        .def_method(Shape, is_medium_transition)
-        .def_method(Shape, interior_medium)
-        .def_method(Shape, exterior_medium)
-        .def_method(Shape, is_emitter)
-        .def_method(Shape, is_sensor)
-        .def("emitter", py::overload_cast<Mask>(&Shape::emitter, py::const_),
-                "active"_a = true)
-        .def("sensor", py::overload_cast<>(&Shape::sensor, py::const_))
-        .def("bsdf", py::overload_cast<>(&Shape::bsdf, py::const_))
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count);
+
+    bind_shape_generic<Shape *>(shape);
+
+    if (ek::is_array_v<ShapePtr>) {
+        py::object ek       = py::module_::import("enoki"),
+                   ek_array = ek.attr("ArrayBase");
+
+        py::class_<ShapePtr> cls(m, "ShapePtr", ek_array);
+        bind_shape_generic<ShapePtr>(cls);
+    }
 
     using ScalarSize = typename Mesh::ScalarSize;
     MTS_PY_CLASS(Mesh, Shape)

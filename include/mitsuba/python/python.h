@@ -97,8 +97,8 @@ template <typename Type> pybind11::handle get_type_handle() {
     return pybind11::detail::get_type_handle(typeid(Type), false);
 }
 
-#define MTS_PY_DECLARE(Name) extern void python_export_##Name(py::module &m)
-#define MTS_PY_EXPORT(Name) void python_export_##Name(py::module &m)
+#define MTS_PY_DECLARE(Name) extern void python_export_##Name(py::module_ &m)
+#define MTS_PY_EXPORT(Name) void python_export_##Name(py::module_ &m)
 #define MTS_PY_IMPORT(Name) python_export_##Name(m)
 #define MTS_PY_IMPORT_SUBMODULE(Name) python_export_##Name(Name)
 
@@ -111,11 +111,34 @@ template <typename Type> pybind11::handle get_type_handle() {
     MTS_IMPORT_TYPES(__VA_ARGS__)                                                                  \
     MTS_IMPORT_OBJECT_TYPES()
 
-inline py::module create_submodule(py::module &m, const char *name) {
+inline py::module_ create_submodule(py::module_ &m, const char *name) {
     std::string full_name = std::string(PyModule_GetName(m.ptr())) + "." + name;
-    py::module module = py::reinterpret_steal<py::module>(PyModule_New(full_name.c_str()));
+    py::module_ module = py::reinterpret_steal<py::module_>(PyModule_New(full_name.c_str()));
     m.attr(name) = module;
     return module;
+}
+
+template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
+    using Type = std::decay_t<std::remove_pointer_t<ek::value_t<Array>>>;
+
+    cls.def("entry_", [](Array shape, size_t i) { return shape.entry(i); })
+        .def("__len__", [](Array shape) { return shape.size(); });
+
+    cls.attr("Value") = py::type::of<Type>();
+    cls.attr("IsJIT") = ek::is_jit_array_v<Array>;
+    cls.attr("Depth") = ek::array_depth_v<Array>;
+    cls.attr("Size")  = ek::array_size_v<Array>;
+    cls.attr("IsDiff") = false;
+    cls.attr("IsQuaternion") = false;
+    cls.attr("IsComplex") = false;
+    cls.attr("IsMatrix") = false;
+    cls.attr("IsEnoki") = true;
+
+    if constexpr (ek::is_jit_array_v<Array>) {
+        py::cpp_function func([](Array shape) { return shape.index(); });
+        cls.attr("index_") =
+            py::reinterpret_steal<py::object>(PyInstanceMethod_New(func.ptr()));
+    }
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \

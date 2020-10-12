@@ -407,7 +407,7 @@ public:
      *     the field <tt>si.wi</tt>.
      */
     virtual Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
-                             Mask active = true) const;
+                                            Mask active = true) const;
 
 
     // -----------------------------------------------------------------------

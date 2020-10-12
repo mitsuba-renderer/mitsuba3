@@ -57,63 +57,61 @@ public:
     using BSDF::m_components;
 };
 
+template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
+    MTS_PY_IMPORT_TYPES()
+
+    cls.def("sample",
+            [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
+               Float sample1, const Point2f &sample2, Mask active) {
+                return bsdf->sample(ctx, si, sample1, sample2, active);
+            }, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a,
+            "active"_a = true, D(BSDF, sample))
+        .def("eval",
+             [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                const Vector3f &wo,
+                Mask active) { return bsdf->eval(ctx, si, wo, active);
+             }, "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
+        .def("pdf",
+             [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                const Vector3f &wo,
+                Mask active) { return bsdf->pdf(ctx, si, wo, active);
+             }, "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
+        .def("eval_null_transmission",
+             [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
+                 return bsdf->eval_null_transmission(si, active);
+             }, "si"_a, "active"_a = true, D(BSDF, eval_null_transmission))
+        .def("flags", [](Ptr bsdf) { return bsdf->flags(); }, D(BSDF, flags))
+        .def("needs_differentials",
+             [](Ptr bsdf) { return bsdf->needs_differentials(); },
+             D(BSDF, needs_differentials));
+
+    if constexpr (ek::is_array_v<Ptr>)
+        bind_enoki_ptr_array(cls);
+}
+
 MTS_PY_EXPORT(BSDF) {
     MTS_PY_IMPORT_TYPES(BSDF, BSDFPtr)
     using PyBSDF = PyBSDF<Float, Spectrum>;
 
     auto bsdf = py::class_<BSDF, PyBSDF, Object, ref<BSDF>>(m, "BSDF", D(BSDF))
         .def(py::init<const Properties&>(), "props"_a)
-        .def("sample", &BSDF::sample,
-            "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true, D(BSDF, sample))
-        .def("eval", &BSDF::eval,
-            "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval))
-        .def("pdf", &BSDF::pdf,
-            "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
-        .def("eval_null_transmission", &BSDF::eval_null_transmission,
-            "si"_a, "active"_a = true, D(BSDF, eval_null_transmission))
-        .def("flags", py::overload_cast<Mask>(&BSDF::flags, py::const_),
-            "active"_a = true, D(BSDF, flags))
         .def("flags", py::overload_cast<size_t, Mask>(&BSDF::flags, py::const_),
             "index"_a, "active"_a = true, D(BSDF, flags, 2))
-        .def_method(BSDF, needs_differentials, "active"_a = true)
         .def_method(BSDF, component_count, "active"_a = true)
         .def_method(BSDF, id)
         .def_readwrite("m_flags",      &PyBSDF::m_flags)
         .def_readwrite("m_components", &PyBSDF::m_components)
-        .def("__repr__", &BSDF::to_string)
-        ;
+        .def("__repr__", &BSDF::to_string);
 
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        pybind11_type_alias<UInt64, BSDFPtr>();
-        pybind11_type_alias<UInt32, ek::replace_scalar_t<Float, BSDFFlags>>();
-    }
+    bind_bsdf_generic<BSDF *>(bsdf);
 
-    if constexpr (ek::is_array_v<Float>) {
-        bsdf.def_static(
-            "sample_vec",
-            [](const BSDFPtr &ptr, const BSDFContext &ctx,
-                                const SurfaceInteraction3f &si, Float s1, const Point2f &s2,
-                                Mask active) { return ptr->sample(ctx, si, s1, s2, active); },
-            "ptr"_a, "ctx"_a, "si"_a, "sample1"_a, "sample2"_a, "active"_a = true,
-            D(BSDF, sample));
-        bsdf.def_static(
-            "eval_vec",
-            [](const BSDFPtr &ptr, const BSDFContext &ctx,
-                                const SurfaceInteraction3f &si, const Vector3f &wo,
-                                Mask active) { return ptr->eval(ctx, si, wo, active); },
-            "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
-            D(BSDF, eval));
-        bsdf.def_static(
-            "pdf_vec",
-            [](const BSDFPtr &ptr, const BSDFContext &ctx,
-                                const SurfaceInteraction3f &si, const Vector3f &wo,
-                                Mask active) { return ptr->pdf(ctx, si, wo, active); },
-            "ptr"_a, "ctx"_a, "si"_a, "wo"_a, "active"_a = true,
-            D(BSDF, pdf));
-        bsdf.def_static(
-            "flags_vec",
-            [](const BSDFPtr &ptr, Mask active) { return ptr->flags(active); },
-            "ptr"_a, "active"_a = true, D(BSDF, flags));
+    if (ek::is_array_v<BSDFPtr>) {
+        py::object ek       = py::module_::import("enoki"),
+                   ek_array = ek.attr("ArrayBase");
+
+        py::class_<BSDFPtr> cls(m, "BSDFPtr", ek_array);
+        bind_bsdf_generic<BSDFPtr>(cls);
+        pybind11_type_alias<UInt32, ek::replace_scalar_t<UInt32, BSDFFlags>>();
     }
 
     MTS_PY_REGISTER_OBJECT("register_bsdf", BSDF)
