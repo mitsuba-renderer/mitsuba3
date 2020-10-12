@@ -136,7 +136,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
 
     if constexpr (ek::is_jit_array_v<Array>) {
         py::cpp_function func([](Array shape) { return shape.index(); });
-        cls.attr("index_") =
+        cls.attr("index") =
             py::reinterpret_steal<py::object>(PyInstanceMethod_New(func.ptr()));
     }
 }
