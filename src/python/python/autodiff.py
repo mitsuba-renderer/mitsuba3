@@ -314,7 +314,7 @@ class Optimizer:
         # Ensure that the JIT compiler does merge 'lr' into the PTX code
         # (this would trigger a recompile every time it is changed)
         self.lr = lr
-        self.lr_v = ek.full(ek.nondiff_array_t(Float), lr, size=1, eval=True)
+        self.lr_v = ek.full(ek.detached_t(Float), lr, size=1, eval=True)
 
     @contextmanager
     def disable_gradients(self):
@@ -392,7 +392,7 @@ class SGD(Optimizer):
             return
         p = self.variables[key]
         size = ek.width(p)
-        self.state[key] = ek.zero(ek.nondiff_array_t(p), size)
+        self.state[key] = ek.zero(ek.detached_t(p), size)
 
     def __repr__(self):
         return ('SGD[\n  params = %s,\n  lr = %.2g,\n  momentum = %.2g\n]') % \
@@ -434,7 +434,7 @@ class Adam(Optimizer):
         from mitsuba.core import Float
 
         lr_t = self.lr * ek.sqrt(1 - self.beta_2**self.t) / (1 - self.beta_1**self.t)
-        lr_t = ek.full(ek.nondiff_array_t(Float), lr_t, size=1, eval=True)
+        lr_t = ek.full(ek.detached_t(Float), lr_t, size=1, eval=True)
 
         for k, p in self.variables.items():
             g_p = ek.grad(p)
@@ -463,8 +463,8 @@ class Adam(Optimizer):
         """ Zero-initializes the internal state associated with a parameter """
         p = self.variables[key]
         size = ek.width(p)
-        self.state[key] = (ek.zero(ek.nondiff_array_t(p), size),
-                           ek.zero(ek.nondiff_array_t(p), size))
+        self.state[key] = (ek.zero(ek.detached_t(p), size),
+                           ek.zero(ek.detached_t(p), size))
 
     def __repr__(self):
         return ('Adam[\n'
