@@ -53,7 +53,7 @@ bool optix_initialize() {
     optix_init_attempted = true;
 
 #if !defined(MTS_USE_OPTIX_HEADERS)
-    Log(LogLevel::Info, "Dynamic loading of the Optix library ..");
+    Log(LogLevel::Trace, "Dynamic loading of the Optix library ..");
 
     optix_handle = nullptr;
 
@@ -74,12 +74,12 @@ bool optix_initialize() {
     if (!optix_handle)
         optix_handle = dlopen(optix_fname, RTLD_NOW);
 #  else
-    filesystem::path optix_dll_path;
+    fs::path optix_dll_path;
 
     // First look for the DLL in the System32 folder
     char system_path[MAX_PATH];
     if (GetSystemDirectoryA(system_path, MAX_PATH) != 0)
-        optix_dll_path = filesystem::path(system_path) / optix_fname;
+        optix_dll_path = fs::path(system_path) / optix_fname;
 
     // If couldn't be found, look in the folders next to the opengl driver
     // For this, we need to query the registry to find the location of the OpenGL driver
@@ -127,7 +127,7 @@ bool optix_initialize() {
             }
 
             // Replace the opengl DLL name with the optix DLL name
-            optix_dll_path = filesystem::path(reg_dll_path).parent_path() / optix_fname;
+            optix_dll_path = fs::path(reg_dll_path).parent_path() / optix_fname;
 
             RegCloseKey(reg_key);
             free(reg_dll_path);
