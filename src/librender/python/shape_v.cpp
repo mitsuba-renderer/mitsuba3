@@ -96,7 +96,7 @@ MTS_PY_EXPORT(Shape) {
 
     bind_shape_generic<Shape *>(shape);
 
-    if (ek::is_array_v<ShapePtr>) {
+    if constexpr (ek::is_array_v<ShapePtr>) {
         py::object ek       = py::module_::import("enoki"),
                    ek_array = ek.attr("ArrayBase");
 

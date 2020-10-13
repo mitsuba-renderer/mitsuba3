@@ -105,7 +105,7 @@ MTS_PY_EXPORT(BSDF) {
 
     bind_bsdf_generic<BSDF *>(bsdf);
 
-    if (ek::is_array_v<BSDFPtr>) {
+    if constexpr (ek::is_array_v<BSDFPtr>) {
         py::object ek       = py::module_::import("enoki"),
                    ek_array = ek.attr("ArrayBase");
 

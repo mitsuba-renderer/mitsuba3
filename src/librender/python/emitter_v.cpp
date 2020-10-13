@@ -54,37 +54,44 @@ MTS_PY_EXPORT(Emitter) {
         .def_method(Emitter, is_environment)
         .def_method(Emitter, flags);
 
-    if constexpr (ek::is_cuda_array_v<Float>)
-        pybind11_type_alias<UInt64, EmitterPtr>();
+    if constexpr (ek::is_array_v<EmitterPtr>) {
+        py::object ek       = py::module_::import("enoki"),
+                   ek_array = ek.attr("ArrayBase");
 
-    if constexpr (ek::is_array_v<Float>) {
-        emitter.def_static("sample_ray_vec",
-                            [](const EmitterPtr &ptr, Float time, Float sample1,
-                                         const Point2f &sample2, const Point2f &sample3,
-                                         Mask active) {
-                                 return ptr->sample_ray(time, sample1, sample2, sample3, active);
-                            },
-                            "ptr"_a, "time"_a, "sample1"_a, "sample2"_a, "sample3"_a,
-                            "active"_a = true,
-                            D(Endpoint, sample_ray));
-        emitter.def_static("sample_direction_vec",
-                            [](const EmitterPtr &ptr, const Interaction3f &it,
-                                         const Point2f &sample, Mask active) {
-                                return ptr->sample_direction(it, sample, active);
-                            },
-                            "ptr"_a, "it"_a, "sample"_a, "active"_a = true,
-                            D(Endpoint, sample_direction));
-        emitter.def_static("pdf_direction_vec",
-                            [](const EmitterPtr &ptr, const Interaction3f &it,
-                                         const DirectionSample3f &ds, Mask active) {
-                                return ptr->pdf_direction(it, ds, active);
-                            },
-                            "ptr"_a, "it"_a, "ds"_a, "active"_a = true,
-                            D(Endpoint, pdf_direction));
-        emitter.def_static("eval_vec",
-                           [](const EmitterPtr &ptr, const SurfaceInteraction3f &si,
-                                        Mask active) { return ptr->eval(si, active); },
-                           "ptr"_a, "si"_a, "active"_a = true, D(Endpoint, eval));
+        py::class_<EmitterPtr> cls(m, "EmitterPtr", ek_array);
+
+        cls.def("sample_ray",
+                [](EmitterPtr ptr, Float time, Float sample1, const Point2f &sample2,
+                const Point2f &sample3, Mask active) {
+                    return ptr->sample_ray(time, sample1, sample2, sample3, active);
+                },
+                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+                D(Endpoint, sample_ray))
+        .def("sample_direction",
+                [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+                return ptr->sample_direction(it, sample, active);
+                },
+                "it"_a, "sample"_a, "active"_a = true,
+                D(Endpoint, sample_direction))
+        .def("pdf_direction",
+                [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+                    return ptr->pdf_direction(it, ds, active);
+                },
+                "it"_a, "ds"_a, "active"_a = true,
+                D(Endpoint, pdf_direction))
+        .def("eval",
+                [](EmitterPtr ptr, const SurfaceInteraction3f &si, Mask active) {
+                    return ptr->eval(si, active);
+                },
+                "si"_a, "active"_a = true, D(Endpoint, eval))
+        .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
+        .def("is_environment",
+             [](EmitterPtr ptr) { return ptr->is_environment(); },
+             D(Emitter, is_environment));
+
+        bind_enoki_ptr_array(cls);
+
+        pybind11_type_alias<UInt32, ek::replace_scalar_t<UInt32, EmitterFlags>>();
     }
 
     MTS_PY_REGISTER_OBJECT("register_emitter", Emitter)
