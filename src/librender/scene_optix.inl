@@ -316,7 +316,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         OptixState &s = *(OptixState *) m_accel;
         jitc_free((void*)s.sbt.raygenRecord);
         jitc_free((void*)s.params);
-        jitc_free(s.ias_buffer);
+        if (s.ias_buffer)
+            jitc_free(s.ias_buffer);
         rt_check(optixPipelineDestroy(s.pipeline));
         for (size_t i = 0; i < ProgramGroupCount; i++)
             rt_check(optixProgramGroupDestroy(s.program_groups[i]));
