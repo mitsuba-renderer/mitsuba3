@@ -1,7 +1,7 @@
 # ----------------------------------------------------------
 # Top-level Mitsuba 2 CMake file, requires a recent version.
 # ----------------------------------------------------------
-cmake_minimum_required (VERSION 3.13..3.18)
+cmake_minimum_required (VERSION 3.13...3.18)
 
 project(mitsuba
   DESCRIPTION
