@@ -460,7 +460,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flag
             if (!has_flag(flags, HitComputeFlags::NonDifferentiable) &&
                 (ek::grad_enabled(ray.o) || shapes_grad_enabled())) {
                 auto pi = ray_intersect_preliminary_gpu(ray, active);
-                return pi.compute_surface_interaction(ray, flags, active);
+                return pi.compute_surface_interaction(ray, flags, pi.is_valid());
             }
         }
 
