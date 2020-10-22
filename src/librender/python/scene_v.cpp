@@ -44,8 +44,8 @@ MTS_PY_EXPORT(Scene) {
              py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect, py::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_intersect",
-             py::overload_cast<const Ray3f &, HitComputeFlags, Mask>(&Scene::ray_intersect, py::const_),
-             "ray"_a, "flags"_a, "active"_a = true, D(Scene, ray_intersect))
+             py::overload_cast<const Ray3f &, uint32_t, Mask>(&Scene::ray_intersect, py::const_),
+             "ray"_a, "hit_flags"_a, "active"_a = true, D(Scene, ray_intersect))
         .def("ray_test",
             &Scene::ray_test,
             "ray"_a, "active"_a = true)

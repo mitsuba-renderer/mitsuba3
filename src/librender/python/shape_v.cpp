@@ -33,11 +33,11 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             D(Shape, emitter))
        .def("compute_surface_interaction",
             [](Ptr shape, const Ray3f &ray,
-               const PreliminaryIntersection3f &pi, HitComputeFlags flags,
+               const PreliminaryIntersection3f &pi, uint32_t hit_flags,
                Mask active) {
-                return shape->compute_surface_interaction(ray, pi, flags, active);
+                return shape->compute_surface_interaction(ray, pi, hit_flags, active);
             },
-            "ray"_a, "pi"_a, "flags"_a = HitComputeFlags::All,
+            "ray"_a, "pi"_a, "hit_flags"_a = +HitComputeFlags::All,
             "active"_a = true, D(Shape, compute_surface_interaction))
        .def("eval_attribute",
             [](Ptr shape, const std::string &name,
@@ -78,7 +78,7 @@ MTS_PY_EXPORT(Shape) {
              "ray"_a, "active"_a = true,
              D(Shape, ray_intersect_preliminary))
         .def("ray_intersect", &Shape::ray_intersect,
-             "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true,
+             "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
              D(Shape, ray_intersect))
         .def("ray_test", &Shape::ray_test, "ray"_a, "active"_a = true)
         .def("bbox", py::overload_cast<>(

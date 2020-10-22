@@ -22,7 +22,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, Mask act
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;
 
     PreliminaryIntersection3f pi = kdtree->template ray_intersect_preliminary<false>(ray, active);
@@ -31,7 +31,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flag
     SurfaceInteraction3f si;
     if (likely(ek::any(active))) {
         ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-        si = pi.compute_surface_interaction(ray, flags, active);
+        si = pi.compute_surface_interaction(ray, hit_flags, active);
     } else {
         si.wavelengths = ray.wavelengths;
         si.wi = -ray.d;
@@ -51,7 +51,7 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
     SurfaceInteraction3f si;
     if (likely(ek::any(active))) {
         ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-        si = pi.compute_surface_interaction(ray, HitComputeFlags::All, active);
+        si = pi.compute_surface_interaction(ray, +HitComputeFlags::All, active);
     } else {
         si.wavelengths = ray.wavelengths;
         si.wi = -ray.d;

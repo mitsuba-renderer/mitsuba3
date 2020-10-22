@@ -123,28 +123,28 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
-                                                     HitComputeFlags flags,
+                                                     uint32_t hit_flags,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
-            m_to_object.transform_affine(ray), pi, flags, active);
+            m_to_object.transform_affine(ray), pi, hit_flags, active);
 
         si.p = m_to_world.transform_affine(si.p);
         si.n = ek::normalize(m_to_world.transform_affine(si.n));
 
-        if (likely(has_flag(flags, HitComputeFlags::ShadingFrame))) {
+        if (likely(has_flag(hit_flags, HitComputeFlags::ShadingFrame))) {
             si.sh_frame.n = ek::normalize(m_to_world.transform_affine(si.sh_frame.n));
             si.initialize_sh_frame();
         }
 
-        if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
+        if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
             si.dp_du = m_to_world.transform_affine(si.dp_du);
             si.dp_dv = m_to_world.transform_affine(si.dp_dv);
         }
 
-        if (has_flag(flags, HitComputeFlags::dNGdUV) || has_flag(flags, HitComputeFlags::dNSdUV)) {
-            Normal3f n = has_flag(flags, HitComputeFlags::dNGdUV) ? si.n : si.sh_frame.n;
+        if (has_flag(hit_flags, HitComputeFlags::dNGdUV) || has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
+            Normal3f n = has_flag(hit_flags, HitComputeFlags::dNGdUV) ? si.n : si.sh_frame.n;
 
             // Determine the length of the transformed normal before it was re-normalized
             Normal3f tn = m_to_world.transform_affine(

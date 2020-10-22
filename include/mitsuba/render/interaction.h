@@ -482,18 +482,14 @@ enum class HitComputeFlags : uint32_t {
     AllNonDifferentiable = UV | dPdUV | ShadingFrame | NonDifferentiable,
 };
 
-constexpr HitComputeFlags operator|(HitComputeFlags f1, HitComputeFlags f2) {
-    return HitComputeFlags((uint32_t) f1 | (uint32_t) f2);
-}
-constexpr HitComputeFlags operator&(HitComputeFlags f1, HitComputeFlags f2) {
-    return HitComputeFlags((uint32_t) f1 & (uint32_t) f2);
-}
-constexpr HitComputeFlags operator~(HitComputeFlags f1) {
-    return HitComputeFlags(~(uint32_t) f1);
-}
-constexpr bool has_flag(HitComputeFlags f0, HitComputeFlags f1) {
-    return ((uint32_t) f0 & (uint32_t) f1) != 0;
-}
+constexpr uint32_t operator |(HitComputeFlags f1, HitComputeFlags f2) { return (uint32_t) f1 | (uint32_t) f2; }
+constexpr uint32_t operator |(uint32_t f1, HitComputeFlags f2)        { return f1 | (uint32_t) f2; }
+constexpr uint32_t operator &(HitComputeFlags f1, HitComputeFlags f2) { return (uint32_t) f1 & (uint32_t) f2; }
+constexpr uint32_t operator &(uint32_t f1, HitComputeFlags f2)        { return f1 & (uint32_t) f2; }
+constexpr uint32_t operator ~(HitComputeFlags f)                     { return ~(uint32_t) f; }
+constexpr uint32_t operator +(HitComputeFlags f)                      { return (uint32_t) f; }
+template <typename UInt32>
+constexpr auto has_flag(UInt32 flags, HitComputeFlags f) { return ek::neq(flags & (uint32_t) f, 0u); }
 
 // -----------------------------------------------------------------------------
 
@@ -563,16 +559,17 @@ struct PreliminaryIntersection {
      *
      * \param ray
      *      Ray associated with the ray intersection
-     * \param flags
+     * \param hit_flags
      *      Flags specifying which information should be computed
      * \return
      *      A data structure containing the detailed information
      */
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     HitComputeFlags flags,
+                                                     uint32_t hit_flags,
                                                      Mask active) {
         ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
-        SurfaceInteraction3f si = target->compute_surface_interaction(ray, *this, flags, active);
+        SurfaceInteraction3f si
+            = target->compute_surface_interaction(ray, *this, hit_flags, active);
         active &= si.is_valid();
         si.t = ek::select(active, si.t, ek::Infinity<Float>);
         si.prim_index  = prim_index;
@@ -584,7 +581,7 @@ struct PreliminaryIntersection {
         si.time        = ray.time;
         si.wavelengths = ray.wavelengths;
 
-        if (has_flag(flags, HitComputeFlags::ShadingFrame))
+        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
             si.initialize_sh_frame();
 
         // Incident direction in local coordinates

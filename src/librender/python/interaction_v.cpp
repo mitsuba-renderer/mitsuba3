@@ -104,7 +104,7 @@ MTS_PY_EXPORT(MediumInteraction) {
 MTS_PY_EXPORT(PreliminaryIntersection) {
     MTS_PY_IMPORT_TYPES()
 
-    m.def("has_flag", [](HitComputeFlags f0, HitComputeFlags f1) { return has_flag(f0, f1); });
+    m.def("has_flag", [](uint32_t f0, HitComputeFlags f1) { return has_flag(f0, f1); });
 
     auto pi =
         py::class_<PreliminaryIntersection3f>(m, "PreliminaryIntersection3f",
@@ -123,7 +123,7 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
         .def("compute_surface_interaction",
            &PreliminaryIntersection3f::compute_surface_interaction,
            D(PreliminaryIntersection, compute_surface_interaction),
-           "ray"_a, "flags"_a = HitComputeFlags::All, "active"_a = true)
+           "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true)
         .def_repr(PreliminaryIntersection3f);
 
     bind_struct_support<PreliminaryIntersection3f>(pi);

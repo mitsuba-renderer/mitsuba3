@@ -344,7 +344,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
-                                                     HitComputeFlags flags,
+                                                     uint32_t hit_flags,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
@@ -355,7 +355,7 @@ public:
                              parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();
@@ -368,7 +368,7 @@ public:
         // Re-project onto the sphere to improve accuracy
         si.p = ek::fmadd(si.sh_frame.n, m_radius, m_center);
 
-        if (likely(has_flag(flags, HitComputeFlags::UV))) {
+        if (likely(has_flag(hit_flags, HitComputeFlags::UV))) {
             Vector3f local = m_to_object.transform_affine(si.p);
 
             Float rd_2  = ek::sqr(local.x()) + ek::sqr(local.y()),
@@ -378,7 +378,7 @@ public:
             ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
             si.uv = Point2f(phi * ek::InvTwoPi<Float>, theta * ek::InvPi<Float>);
-            if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
+            if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
                 si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
                 Float rd      = ek::sqrt(rd_2),
@@ -404,7 +404,7 @@ public:
 
         si.n = si.sh_frame.n;
 
-        if (has_flag(flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
             si.dn_du = si.dp_du * inv_radius;
             si.dn_dv = si.dp_dv * inv_radius;

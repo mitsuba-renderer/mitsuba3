@@ -353,19 +353,19 @@ Shape<Float, Spectrum>::ray_test_packet(const Ray3fP &ray, MaskP active) const {
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
                                                     PreliminaryIntersection3f /*pi*/,
-                                                    HitComputeFlags /*flags*/,
+                                                    uint32_t /*hit_flags*/,
                                                     Mask /*active*/) const {
     NotImplementedError("compute_surface_interaction");
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
-Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
+Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
     auto pi = ray_intersect_preliminary(ray, active);
     active &= pi.is_valid();
 
-    return pi.compute_surface_interaction(ray, flags, active);
+    return pi.compute_surface_interaction(ray, hit_flags, active);
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum

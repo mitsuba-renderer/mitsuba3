@@ -15,6 +15,12 @@ MTS_PY_EXPORT(HitComputeFlags) {
         .def_value(HitComputeFlags, AllNonDifferentiable)
         .def(py::self == py::self)
         .def(py::self | py::self)
+        .def(int() | py::self)
         .def(py::self & py::self)
-        .def(~py::self);
+        .def(int() & py::self)
+        .def(+py::self)
+        .def(~py::self)
+        .def("__pos__", [](const HitComputeFlags &f) {
+            return static_cast<uint32_t>(f);
+        }, py::is_operator());
 }

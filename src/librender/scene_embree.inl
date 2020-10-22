@@ -240,7 +240,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, uint32_t hit_flags, Mask active) const {
     Ray3f ray = ray_;
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
@@ -291,7 +291,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
 
-                si = pi.compute_surface_interaction(ray_, flags, active);
+                si = pi.compute_surface_interaction(ray_, hit_flags, active);
             } else {
                 si.wavelengths = ray.wavelengths;
                 si.time = ray.time;
@@ -361,7 +361,7 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, HitComputeFlags fla
             pi.instance = ek::select(hit_inst, shape, nullptr);
             pi.shape = ek::select(hit_not_inst, shape, nullptr);
 
-            si = pi.compute_surface_interaction(ray_, flags, hit);
+            si = pi.compute_surface_interaction(ray_, hit_flags, hit);
         }
 
         return si;

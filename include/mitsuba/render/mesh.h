@@ -162,7 +162,7 @@ public:
 
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              PreliminaryIntersection3f pi,
-                                                             HitComputeFlags flags,
+                                                             uint32_t hit_flags,
                                                              Mask active = true) const override;
 
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,

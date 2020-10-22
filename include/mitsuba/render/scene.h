@@ -39,7 +39,7 @@ public:
                                        Mask active = true) const;
 
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       HitComputeFlags flags,
+                                       uint32_t hit_flags,
                                        Mask active = true) const;
 
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
@@ -196,8 +196,8 @@ protected:
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a ray
-    MTS_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const;
-    MTS_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const;
+    MTS_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const;
+    MTS_INLINE SurfaceInteraction3f ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const;
     MTS_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a shadow ray

@@ -174,7 +174,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
-                                                     HitComputeFlags flags,
+                                                     uint32_t hit_flags,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
@@ -185,7 +185,7 @@ public:
                              parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();

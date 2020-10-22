@@ -178,7 +178,7 @@ public:
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
-                                                     HitComputeFlags flags,
+                                                     uint32_t hit_flags,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
@@ -189,7 +189,7 @@ public:
                              parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();
@@ -199,7 +199,7 @@ public:
 
         si.p = ray(pi.t);
 
-        if (likely(has_flag(flags, HitComputeFlags::UV))) {
+        if (likely(has_flag(hit_flags, HitComputeFlags::UV))) {
             Float r = ek::norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
                   inv_r = ek::rcp(r);
 
@@ -207,7 +207,7 @@ public:
             ek::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
-            if (likely(has_flag(flags, HitComputeFlags::dPdUV))) {
+            if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
                 Float cos_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
                       sin_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
 

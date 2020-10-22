@@ -126,19 +126,19 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
     if constexpr (ek::is_cuda_array_v<Float>)
-        return ray_intersect_gpu(ray, HitComputeFlags::All, active);
+        return ray_intersect_gpu(ray, +HitComputeFlags::All, active);
     else
-        return ray_intersect_cpu(ray, HitComputeFlags::All, active);
+        return ray_intersect_cpu(ray, +HitComputeFlags::All, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
 
     if constexpr (ek::is_cuda_array_v<Float>)
-        return ray_intersect_gpu(ray, flags, active);
+        return ray_intersect_gpu(ray, hit_flags, active);
     else
-        return ray_intersect_cpu(ray, flags, active);
+        return ray_intersect_cpu(ray, hit_flags, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f

@@ -104,7 +104,7 @@ ShapeGroup<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::SurfaceInteraction3f
 ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          PreliminaryIntersection3f pi,
-                                                         HitComputeFlags flags,
+                                                         uint32_t hit_flags,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
@@ -119,14 +119,14 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             pi.shape = ek::gather<ShapePtr>(m_shapes_registry_ids.data(), pi.shape_index, active);
         }
 
-        SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, flags, active);
+        SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, hit_flags, active);
         si.shape = pi.shape;
 
         return si;
     }
 #endif
 
-    return pi.shape->compute_surface_interaction(ray, pi, flags, active);
+    return pi.shape->compute_surface_interaction(ray, pi, hit_flags, active);
 }
 
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize

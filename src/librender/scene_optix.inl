@@ -448,7 +448,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, Mask act
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
@@ -457,10 +457,10 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flag
 
         if constexpr (ek::is_diff_array_v<Float>) {
             // Differentiable SurfaceInteraction needs to be computed outside of the OptiX kernel
-            if (!has_flag(flags, HitComputeFlags::NonDifferentiable) &&
+            if (!has_flag(hit_flags, HitComputeFlags::NonDifferentiable) &&
                 (ek::grad_enabled(ray.o) || shapes_grad_enabled())) {
                 auto pi = ray_intersect_preliminary_gpu(ray, active);
-                return pi.compute_surface_interaction(ray, flags, pi.is_valid());
+                return pi.compute_surface_interaction(ray, hit_flags, pi.is_valid());
             }
         }
 
@@ -475,18 +475,18 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flag
         si.prim_index = ek::empty<UInt32>(wavefront_size);
         si.shape      = ek::empty<ShapePtr>(wavefront_size);
 
-        if (has_flag(flags, HitComputeFlags::ShadingFrame))
+        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
             si.sh_frame.n = ek::empty<Normal3f>(wavefront_size);
 
-        if (has_flag(flags, HitComputeFlags::UV))
+        if (has_flag(hit_flags, HitComputeFlags::UV))
             si.uv = ek::empty<Point2f>(wavefront_size);
 
-        if (has_flag(flags, HitComputeFlags::dPdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dPdUV)) {
             si.dp_du = ek::empty<Vector3f>(wavefront_size);
             si.dp_dv = ek::empty<Vector3f>(wavefront_size);
         }
 
-        if (has_flag(flags, HitComputeFlags::dNGdUV) || has_flag(flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNGdUV) || has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             si.dn_du = ek::empty<Vector3f>(wavefront_size);
             si.dn_dv = ek::empty<Vector3f>(wavefront_size);
         }
@@ -524,21 +524,21 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flag
         bind_input(&params.in_maxt, ray.maxt);
         // Outputs
         bind_output(&params.out_t, si.t);
-        if (has_flag(flags, HitComputeFlags::UV))
+        if (has_flag(hit_flags, HitComputeFlags::UV))
             bind_output(params.out_uv, si.uv);
         bind_output(params.out_ng, si.n);
-        if (has_flag(flags, HitComputeFlags::ShadingFrame))
+        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
             bind_output(params.out_ns, si.sh_frame.n);
         bind_output(params.out_p, si.p);
-        if (has_flag(flags, HitComputeFlags::dPdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dPdUV)) {
             bind_output(params.out_dp_du, si.dp_du);
             bind_output(params.out_dp_dv, si.dp_dv);
         }
-        if (has_flag(flags, HitComputeFlags::dNGdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
             bind_output(params.out_dng_du, si.dn_du);
             bind_output(params.out_dng_dv, si.dn_dv);
         }
-        if (has_flag(flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             bind_output(params.out_dns_du, si.dn_du);
             bind_output(params.out_dns_dv, si.dn_dv);
         }
@@ -553,7 +553,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flag
         si.wavelengths = ray.wavelengths;
         si.duv_dx = si.duv_dy = ek::zero<Point2f>();
 
-        if (has_flag(flags, HitComputeFlags::ShadingFrame))
+        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
             si.initialize_sh_frame();
 
         // Only gather instance pointers for valid instance indices
@@ -568,7 +568,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, HitComputeFlags flag
         return si;
     } else {
         ENOKI_MARK_USED(ray);
-        ENOKI_MARK_USED(flags);
+        ENOKI_MARK_USED(hit_flags);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
