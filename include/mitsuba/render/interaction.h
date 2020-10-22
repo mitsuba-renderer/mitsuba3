@@ -469,7 +469,10 @@ enum class HitComputeFlags : uint32_t {
     // =============================================================
 
     /// Force computed fields to not be be differentiable
-    NonDifferentiable     = 0x00020,
+    NonDifferentiable     = 0x00040,
+
+    /// Derivatives of the SurfaceInteraction members will follow the shape's motion
+    Sticky     = 0x00080,
 
     // =============================================================
     //!                 Compound compute flags

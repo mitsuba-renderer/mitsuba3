@@ -190,6 +190,7 @@ public:
 
         active &= pi.is_valid();
 
+        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 

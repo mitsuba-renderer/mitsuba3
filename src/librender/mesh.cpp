@@ -468,8 +468,14 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     active &= pi.is_valid();
 
-    Float b1 = pi.prim_uv.x();
-    Float b2 = pi.prim_uv.y();
+    Float b1, b2;
+    if (!has_flag(hit_flags, HitComputeFlags::Sticky)) {
+        b1 = pi.prim_uv.x();
+        b2 = pi.prim_uv.y();
+    } else {
+        b1 = ek::detach(pi.prim_uv.x());
+        b2 = ek::detach(pi.prim_uv.y());
+    }
     Float b0 = 1.f - b1 - b2;
 
     auto fi = face_indices(pi.prim_index, active);
@@ -482,10 +488,15 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
              dp1 = p2 - p0;
 
     SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-    si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
     // Re-interpolate intersection using barycentric coordinates
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
+
+    // Re-compute the distance traveled to the surface interaction hit point (might be sticky)
+    if (!has_flag(hit_flags, HitComputeFlags::Sticky))
+        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+    else
+        si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d), ek::Infinity<Float>);
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));

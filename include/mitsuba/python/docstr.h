@@ -2867,6 +2867,8 @@ static const char *__doc_mitsuba_HitComputeFlags_Minimal = R"doc(Compute positio
 
 static const char *__doc_mitsuba_HitComputeFlags_NonDifferentiable = R"doc(Force computed fields to not be be differentiable)doc";
 
+static const char *__doc_mitsuba_HitComputeFlags_Sticky = R"doc(Derivatives of the SurfaceInteraction members will follow the shape's motion)doc";
+
 static const char *__doc_mitsuba_HitComputeFlags_None = R"doc(No flags set)doc";
 
 static const char *__doc_mitsuba_HitComputeFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";

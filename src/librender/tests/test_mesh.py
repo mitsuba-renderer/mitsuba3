@@ -352,11 +352,11 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
     assert ek.grad_enabled(si.t)
     assert ek.grad_enabled(si.p)
 
-    # si should not be attached if falgs says so
+    # si should not be attached if flags says so
     ek.enable_grad(ray.o)
     si = pi.compute_surface_interaction(ray, HitComputeFlags.NonDifferentiable)
-    assert not ek.grad_enabled(si.t)
     assert not ek.grad_enabled(si.p)
+    assert not ek.grad_enabled(si.n)
 
     # si should be attached if shape parameters are attached
     params = traverse(scene)
@@ -391,8 +391,9 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     # If the ray origin is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    p = si.p + Float(0.001) # Ensure p is a AD leaf node
     ek.forward(ray.o.x)
-    assert ek.allclose(ek.grad(si.p), [1, 0, 0])
+    assert ek.allclose(ek.grad(p), [1, 0, 0])
 
     # If the ray origin is shifted along the x-axis, so does si.uv
     si = pi.compute_surface_interaction(ray)
@@ -406,8 +407,9 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     # If the ray direction is shifted along the x-axis, so does si.p
     si = pi.compute_surface_interaction(ray)
+    p = si.p + Float(0.001) # Ensure p is a AD leaf node
     ek.forward(ray.d.x)
-    assert ek.allclose(ek.grad(si.p), [10, 0, 0])
+    assert ek.allclose(ek.grad(p), [10, 0, 0])
 
 
 @fresolver_append_path
@@ -483,8 +485,9 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # If the vertices are shifted along z-axis, so does si.p
     apply_transformation(lambda v : Transform4f.translate(v))
     si = pi.compute_surface_interaction(ray)
+    p = si.p + Float(0.001) # Ensure p is a AD leaf node
     ek.forward(diff_vector.z)
-    assert ek.allclose(ek.grad(si.p), [0.0, 0.0, 1.0])
+    assert ek.allclose(ek.grad(p), [0.0, 0.0, 1.0])
 
     # If the vertices are shifted along x-axis, so does si.uv (times 0.5)
     apply_transformation(lambda v : Transform4f.translate(v))
@@ -541,7 +544,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     pi = scene.ray_intersect_preliminary(ray)
 
     # ---------------------------------------
-    # Test vertex posistions
+    # Test vertex positions
 
     # If si.t changes, so the 4th vertex should move along the z-axis
     si = pi.compute_surface_interaction(ray)
@@ -644,3 +647,75 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     ek.backward(si.dp_dv.y)
     assert ek.allclose(ek.grad(params[vertex_texcoords_key]),
                        [0, 2, 0, 0, 0, 0, 0, -2], atol=1e-5)
+
+
+@fresolver_append_path
+def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb):
+    from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+    from mitsuba.render import HitComputeFlags
+
+    scene = xml.load_string('''
+        <scene version="2.0.0">
+            <shape type="obj" id="rect">
+                <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
+            </shape>
+        </scene>
+    ''')
+
+    params = traverse(scene)
+    shape_param_key = 'rect.vertex_positions'
+    positions_buf = params[shape_param_key]
+    positions_initial = ek.unravel(Vector3f, positions_buf)
+
+    # Create differential parameter to be optimized
+    diff_vector = Vector3f(0.0)
+    ek.enable_grad(diff_vector)
+
+    # Apply the transformation to mesh vertex position and update scene
+    def apply_transformation(trasfo):
+        trasfo = trasfo(diff_vector)
+        new_positions = trasfo.transform_point(positions_initial)
+        params[shape_param_key] = ek.ravel(new_positions)
+        params.set_dirty(shape_param_key)
+        params.update()
+
+    # ---------------------------------------
+    # Test translation
+
+    ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    pi = scene.ray_intersect_preliminary(ray)
+
+    # If the vertices are shifted along x-axis, si.p won't move
+    apply_transformation(lambda v : Transform4f.translate(v))
+    si = pi.compute_surface_interaction(ray)
+    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    ek.forward(diff_vector.x)
+    assert ek.allclose(ek.grad(p), [0.0, 0.0, 0.0], atol=1e-5)
+
+    # If the vertices are shifted along x-axis, sticky si.p should follow
+    apply_transformation(lambda v : Transform4f.translate(v))
+    si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    p = si.p + Float(0.001) # Ensure p is a AD leaf node
+    ek.forward(diff_vector.x)
+    assert ek.allclose(ek.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
+
+    # If the vertices are shifted along x-axis, si.uv should move
+    apply_transformation(lambda v : Transform4f.translate(v))
+    si = pi.compute_surface_interaction(ray)
+    ek.forward(diff_vector.x)
+    assert ek.allclose(ek.grad(si.uv), [-0.5, 0.0], atol=1e-5)
+
+    # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
+    apply_transformation(lambda v : Transform4f.translate(v))
+    si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    ek.forward(diff_vector.x)
+    assert ek.allclose(ek.grad(si.uv), [0.0, 0.0], atol=1e-5)
+
+    # TODO fix this!
+    # If the vertices are shifted along x-axis, sticky si.t should follow
+    # apply_transformation(lambda v : Transform4f.translate(v))
+    # si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    # ek.forward(diff_vector.y)
+    # assert ek.allclose(ek.grad(si.t), 10.0, atol=1e-5)
+
+    # TODO add tests for normals on curved mesh (sticky normals shouldn't move)

@@ -109,7 +109,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, spp):
     img_1 = render(scene, spp=spp)
 
     # Compute forward gradients
-    assert len(ek.grad(img_1)) == 0
+    assert ek.grad(img_1) == 0.0
     ek.forward(X)
     grad = ek.grad(img_1)
 
