@@ -410,6 +410,10 @@ if (CMAKE_GENERATOR STREQUAL "Ninja")
   endif()
 endif()
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
+  add_definitions(-fno-math-errno -ffp-contract=fast -fno-trapping-math)
+endif()
+
 if (MSVC)
   # Disable checked iterators
   add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
