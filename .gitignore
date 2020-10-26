@@ -17,4 +17,4 @@ __pycache__
 \.DS_Store
 
 # Default build directory
-/build
+/build*
