@@ -882,6 +882,10 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
         if (m_parameterization)
             m_parameterization = nullptr;
 
+#if defined(MTS_ENABLE_CUDA)
+        m_vertex_buffer_ptr = (void*) m_vertex_positions.data();
+#endif
+
         Base::parameters_changed();
     }
 }
