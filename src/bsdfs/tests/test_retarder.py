@@ -66,13 +66,13 @@ def test02_sample_quarter_wave_local(variant_scalar_mono_polarized):
     bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
     # Case 1)
-    assert ek.allclose(M * linear_pos, circular_right, atol=1e-3)
+    assert ek.allclose(M @ linear_pos, circular_right, atol=1e-3)
     # Case 2)
-    assert ek.allclose(M * linear_neg, circular_left , atol=1e-3)
+    assert ek.allclose(M @ linear_neg, circular_left , atol=1e-3)
     # Case 3)
-    assert ek.allclose(M * circular_right, linear_neg, atol=1e-3)
+    assert ek.allclose(M @ circular_right, linear_neg, atol=1e-3)
     # Case 4)
-    assert ek.allclose(M * circular_left, linear_pos , atol=1e-3)
+    assert ek.allclose(M @ circular_left, linear_pos , atol=1e-3)
 
 
 def test03_sample_half_wave_local(variant_scalar_mono_polarized):
@@ -120,13 +120,13 @@ def test03_sample_half_wave_local(variant_scalar_mono_polarized):
     bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
     # Case 1)
-    assert ek.allclose(M * linear_pos, linear_neg, atol=1e-3)
+    assert ek.allclose(M @ linear_pos, linear_neg, atol=1e-3)
     # Case 2)
-    assert ek.allclose(M * linear_neg, linear_pos , atol=1e-3)
+    assert ek.allclose(M @ linear_neg, linear_pos , atol=1e-3)
     # Case 3)
-    assert ek.allclose(M * circular_right, circular_left, atol=1e-3)
+    assert ek.allclose(M @ circular_right, circular_left, atol=1e-3)
     # Case 4)
-    assert ek.allclose(M * circular_left, circular_right , atol=1e-3)
+    assert ek.allclose(M @ circular_left, circular_right , atol=1e-3)
 
 
 
@@ -196,13 +196,13 @@ def test04_sample_quarter_wave_world(variant_scalar_mono_polarized):
                                        stokes_basis(forward), [-1, 0, 0])
 
     # Case 1)
-    assert ek.allclose(M * linear_pos, circular_right, atol=1e-3)
+    assert ek.allclose(M @ linear_pos, circular_right, atol=1e-3)
     # Case 2)
-    assert ek.allclose(M * linear_neg, circular_left , atol=1e-3)
+    assert ek.allclose(M @ linear_neg, circular_left , atol=1e-3)
     # Case 3)
-    assert ek.allclose(M * circular_right, linear_neg, atol=1e-3)
+    assert ek.allclose(M @ circular_right, linear_neg, atol=1e-3)
     # Case 4)
-    assert ek.allclose(M * circular_left, linear_pos , atol=1e-3)
+    assert ek.allclose(M @ circular_left, linear_pos , atol=1e-3)
 
 
 def test05_sample_half_wave_world(variant_scalar_mono_polarized):
@@ -264,13 +264,13 @@ def test05_sample_half_wave_world(variant_scalar_mono_polarized):
                                        stokes_basis(forward), [-1, 0, 0])
 
     # Case 1)
-    assert ek.allclose(M * linear_pos, linear_neg, atol=1e-3)
+    assert ek.allclose(M @ linear_pos, linear_neg, atol=1e-3)
     # Case 2)
-    assert ek.allclose(M * linear_neg, linear_pos , atol=1e-3)
+    assert ek.allclose(M @ linear_neg, linear_pos , atol=1e-3)
     # Case 3)
-    assert ek.allclose(M * circular_right, circular_left, atol=1e-3)
+    assert ek.allclose(M @ circular_right, circular_left, atol=1e-3)
     # Case 4)
-    assert ek.allclose(M * circular_left, circular_right , atol=1e-3)
+    assert ek.allclose(M @ circular_left, circular_right , atol=1e-3)
 
 
 def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
@@ -378,7 +378,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
         value, _, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
-        value /= value[0,0][0]
+        value = value * ek.rcp(value[0,0][0])
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
@@ -386,7 +386,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
         basis_tar = [-1, 0, 0]
 
         R = rotate_stokes_basis_m(forward, basis_cur, basis_tar)
-        value = R * value
+        value = R @ value
 
         observed.append(value)
 
@@ -497,7 +497,7 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
         value, _, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
-        value /= value[0,0][0]
+        value = value * ek.rcp(value[0,0][0])
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
@@ -505,7 +505,7 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
         basis_tar = [-1, 0, 0]
 
         R = rotate_stokes_basis_m(forward, basis_cur, basis_tar)
-        value = R * value
+        value = R @ value
 
         observed.append(value)
 

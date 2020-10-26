@@ -67,7 +67,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
         # Case 1: Perpendicular incidence.
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
 
-        stokes_out = M * stokes_in
+        stokes_out = M @ stokes_in
         assert ek.allclose(expected, stokes_out, atol=1e-3)
 
         def rotate_vector(v, axis, angle):
@@ -77,14 +77,14 @@ def test02_sample_local(variant_scalar_mono_polarized):
         # (Note: to stay with local coordinates, we rotate the incident direction instead.)
         si.wi = rotate_vector(wi, [1, 0, 0], angle=30.0)
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
-        stokes_out = M * stokes_in
+        stokes_out = M @ stokes_in
         assert ek.allclose(expected, stokes_out, atol=1e-3)
 
         # Case 3: Tilt polarizer around "y". Should not change anything.
         # (Note: to stay with local coordinates, we rotate the incident direction instead.)
         si.wi = rotate_vector(wi, [0, 1, 0], angle=30.0)
         bs, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
-        stokes_out = M * stokes_in
+        stokes_out = M @ stokes_in
         assert ek.allclose(expected, stokes_out, atol=1e-3)
 
 
@@ -152,7 +152,7 @@ def test03_sample_world(variant_scalar_mono_polarized):
                                            forward,
                                            stokes_basis(forward), [-1, 0, 0])
 
-        stokes_out = M * stokes_in
+        stokes_out = M @ stokes_in
         assert ek.allclose(stokes_out, expected, atol=1e-3)
 
 
@@ -244,14 +244,14 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
         value, _, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
-        value /= value[0, 0][0]
+        value = value * ek.rcp(value[0, 0][0])
 
         # Align output stokes vector (based on ray.d) with optical table. (In this configuration, this is a no-op.)
         forward = -ray.d
         basis_cur = stokes_basis(forward)
         basis_tar = [-1, 0, 0]
         R = rotate_stokes_basis_m(forward, basis_cur, basis_tar)
-        value = R * value
+        value = R @ value
 
         assert ek.allclose(value, expected[k], atol=1e-3)
 
