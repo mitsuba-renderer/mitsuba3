@@ -91,7 +91,6 @@ if (UNIX)
   foreach (value ${MKDOC_INCLUDE_DIRECTORIES})
     list(APPEND MKDOC_CXXFLAGS -I${value})
   endforeach()
-  list(APPEND MKDOC_CXXFLAGS -I${ZMQ_INCLUDE_DIR})
 
   foreach (value ${MKDOC_COMPILE_DEFINITIONS})
     list(APPEND MKDOC_CXXFLAGS -D${value})
