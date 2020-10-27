@@ -702,8 +702,6 @@ static const char *__doc_mitsuba_BSDFSample3_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_apply_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFSample3_apply_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_BSDFSample3_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_eta = R"doc(Relative index of refraction in the sampled direction)doc";
@@ -1875,8 +1873,6 @@ static const char *__doc_mitsuba_DirectionSample_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_apply_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectionSample_apply_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_DirectionSample_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_d = R"doc(Unit direction from the reference point to the target shape)doc";
@@ -2675,8 +2671,6 @@ static const char *__doc_mitsuba_Frame_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_apply_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Frame_apply_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Frame_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_cos_phi =
@@ -3122,8 +3116,6 @@ static const char *__doc_mitsuba_Interaction_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_apply_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_apply_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_Interaction_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_is_valid = R"doc(Is the current interaction valid?)doc";
@@ -3507,8 +3499,6 @@ static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_5 = R"doc()
 static const char *__doc_mitsuba_MediumInteraction_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_apply_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_MediumInteraction_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_apply_label = R"doc()doc";
 
@@ -3915,6 +3905,8 @@ static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute s
 
 static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_set_grad_suspended = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_surface_area = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
@@ -4224,6 +4216,13 @@ See also:
 
 static const char *__doc_mitsuba_Object_ref_count = R"doc(Return the current reference count)doc";
 
+static const char *__doc_mitsuba_Object_set_grad_suspended =
+R"doc(Suspend or resume tracking of derivatives of the object and its
+children.
+
+This allows to stop keeping track of gradients while not recomputing
+intermediate values (e.g. normals, height fields...))doc";
+
 static const char *__doc_mitsuba_Object_to_string =
 R"doc(Return a human-readable string representation of the object's
 contents.
@@ -4489,6 +4488,12 @@ static const char *__doc_mitsuba_PositionSample_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_apply_label = R"doc()doc";
 
+static const char *__doc_mitsuba_PositionSample_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_PositionSample_delta =
 R"doc(Set if the sample was drawn from a degenerate (Dirac delta)
 distribution)doc";
@@ -4544,8 +4549,6 @@ static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection
 static const char *__doc_mitsuba_PreliminaryIntersection_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_apply_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_PreliminaryIntersection_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_apply_label = R"doc()doc";
 
@@ -5099,8 +5102,6 @@ static const char *__doc_mitsuba_RayDifferential_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_apply_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_RayDifferential_apply_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_RayDifferential_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
@@ -5146,8 +5147,6 @@ static const char *__doc_mitsuba_Ray_Ray_9 = R"doc()doc";
 static const char *__doc_mitsuba_Ray_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_apply_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Ray_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_apply_label = R"doc()doc";
 
@@ -6895,8 +6894,6 @@ static const char *__doc_mitsuba_SurfaceInteraction_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_apply_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_apply_3 = R"doc()doc";
-
 static const char *__doc_mitsuba_SurfaceInteraction_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
@@ -7935,8 +7932,6 @@ static const char *__doc_mitsuba_Transform_Transform_7 = R"doc()doc";
 static const char *__doc_mitsuba_Transform_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_apply_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_apply_label = R"doc()doc";
 

@@ -267,6 +267,10 @@ public:
         return oss.str();
     }
 
+    void set_grad_suspended(bool state) override {
+        m_warp.set_grad_suspended(state);
+    }
+
 protected:
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
         uv *= Vector2f(m_resolution - 1u);

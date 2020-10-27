@@ -115,6 +115,29 @@ public:
      */
     virtual std::string to_string() const;
 
+
+    /**
+     * \brief Suspend or resume tracking of derivatives.
+     *
+     * One important use case of Mitsuba 2 entails the propagation of
+     * derivatives through the full rendering process, typically via
+     * automatic differentiation. To this end, certain variants of the
+     * renderer perform all computation via Enoki's DiffArray<T> class, which
+     * internally builds a computation graph of all involved arithmetic.
+     * In certain situations, this is undesirable, and we need to temporarily
+     * suspend the propagation of gradients. That is typically done using the
+     * Object::traverse mechanism. However, some parameters may not be exposed
+     * through traverse, and we need to suspend them too, otherwise parts of
+     * the computation will still be recorded. This method handles such cases:
+     * its default implementation doed nothing, but classes using such "hidden"
+     * parameters may override it to properly suspend the tracking of their
+     * gradients.
+     *
+     * \param state
+     *      Whether to stop or resume recording derivatives.
+     */
+    virtual void set_grad_suspended(bool state);
+
 protected:
     /** \brief Virtual protected deconstructor.
      * (Will only be called by \ref ref)

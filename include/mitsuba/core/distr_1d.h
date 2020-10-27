@@ -233,6 +233,13 @@ public:
         };
     }
 
+    void set_grad_suspended(bool state) {
+        if constexpr (ek::is_diff_array_v<Float>) {
+            ek::set_grad_suspended(m_pmf, state);
+            ek::set_grad_suspended(m_cdf, state);
+        }
+    }
+
 private:
     FloatStorage m_pmf;
     FloatStorage m_cdf;
@@ -493,6 +500,13 @@ public:
 
         return { ek::fmadd(Float(index) + t, m_interval_size, m_range.x()),
                  ek::fmadd(t, y1 - y0, y0) * m_normalization };
+    }
+
+    void set_grad_suspended(bool state) {
+        if constexpr (ek::is_diff_array_v<Float>) {
+            ek::set_grad_suspended(m_pdf, state);
+            ek::set_grad_suspended(m_cdf, state);
+        }
     }
 
 private:
@@ -787,6 +801,14 @@ public:
 
         return { ek::fmadd(t, w, x0),
                  ek::fmadd(t, y1 - y0, y0) * m_normalization };
+    }
+
+    void set_grad_suspended(bool state) {
+        if constexpr (ek::is_diff_array_v<Float>) {
+            ek::set_grad_suspended(m_pdf, state);
+            ek::set_grad_suspended(m_cdf, state);
+            ek::set_grad_suspended(m_nodes, state);
+        }
     }
 
 private:

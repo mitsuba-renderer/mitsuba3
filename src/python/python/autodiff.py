@@ -179,7 +179,7 @@ def render(scene,
         if not type(spp) is tuple:
             spp = (spp, spp)
 
-        with optimizer.disable_gradients():
+        with optimizer.suspend_gradients():
             image = _render_helper(scene, spp=spp[0],
                                    sensor_index=sensor_index)
         image_diff = _render_helper(scene, spp=spp[1],
@@ -317,15 +317,13 @@ class Optimizer:
         self.lr_v = ek.full(ek.detached_t(Float), lr, size=1, eval=True)
 
     @contextmanager
-    def disable_gradients(self):
+    def suspend_gradients(self):
         """Temporarily disable the generation of gradients."""
-        for _, p in self.variables.items():
-            ek.disable_grad(p)
+        self.params.set_grad_suspended(True)
         try:
             yield
         finally:
-            for _, p in self.variables.items():
-                ek.enable_grad(p)
+            self.params.set_grad_suspended(False)
 
 
 class SGD(Optimizer):

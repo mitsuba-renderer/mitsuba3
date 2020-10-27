@@ -66,6 +66,7 @@ MTS_PY_EXPORT(Object) {
         }, D(Object, expand))
         .def_method(Object, traverse, "cb"_a)
         .def_method(Object, parameters_changed, "keys"_a = py::list())
+        .def_method(Object, set_grad_suspended, "state"_a)
         .def_property_readonly("ptr", [](Object *self) { return (uintptr_t) self; })
         .def("class_", &Object::class_, py::return_value_policy::reference, D(Object, class))
         .def("__repr__", &Object::to_string, D(Object, to_string));

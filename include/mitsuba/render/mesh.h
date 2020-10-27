@@ -249,6 +249,8 @@ public:
     /// Return a human-readable string representation of the shape contents.
     virtual std::string to_string() const override;
 
+    virtual void set_grad_suspended(bool state) override;
+
     size_t vertex_data_bytes() const;
     size_t face_data_bytes() const;
 
