@@ -7,8 +7,8 @@ class PyAppender : public Appender {
 public:
     using Appender::Appender;
 
-    virtual void append(LogLevel level, const std::string &text) override {
-        PYBIND11_OVERLOAD_PURE(
+    virtual void append(mitsuba::LogLevel level, const std::string &text) override {
+        PYBIND11_OVERRIDE_PURE(
             void,          // Return value
             Appender,      // Parent class
             append,        // Function
@@ -19,7 +19,7 @@ public:
     virtual void log_progress(float progress, const std::string &name,
                               const std::string &formatted,
                               const std::string &eta, const void *ptr) override {
-        PYBIND11_OVERLOAD_PURE(
+        PYBIND11_OVERRIDE_PURE(
             void,          // Return value
             Appender,      // Parent class
             append,        // Function
@@ -29,7 +29,7 @@ public:
 };
 
 MTS_PY_EXPORT(Appender) {
-    py::enum_<LogLevel>(m, "LogLevel", D(LogLevel))
+    py::enum_<mitsuba::LogLevel>(m, "LogLevel", D(LogLevel))
         .value("Trace", Trace, D(LogLevel, Trace))
         .value("Debug", Debug, D(LogLevel, Debug))
         .value("Info", Info, D(LogLevel, Info))

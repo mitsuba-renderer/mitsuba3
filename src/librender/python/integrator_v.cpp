@@ -49,11 +49,11 @@ public:
     }
 
     std::vector<std::string> aov_names() const override {
-        PYBIND11_OVERLOAD(std::vector<std::string>, SamplingIntegrator, aov_names, );
+        PYBIND11_OVERRIDE(std::vector<std::string>, SamplingIntegrator, aov_names, );
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERLOAD(std::string, SamplingIntegrator, to_string, );
+        PYBIND11_OVERRIDE(std::string, SamplingIntegrator, to_string, );
     }
 };
 

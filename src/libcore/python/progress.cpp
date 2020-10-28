@@ -38,7 +38,7 @@ public:
     }
 
     /// Append a line of text with the given log level
-    virtual void append(LogLevel level, const std::string &text) override {
+    virtual void append(mitsuba::LogLevel level, const std::string &text) override {
         std::string col = "#000";
         if (level == Debug)
             col = "#bbb";

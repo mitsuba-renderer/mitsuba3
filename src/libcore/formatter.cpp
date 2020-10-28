@@ -10,7 +10,7 @@ DefaultFormatter::DefaultFormatter()
     : m_has_date(true), m_has_log_level(true), m_has_thread(true),
       m_has_class(true) { }
 
-std::string DefaultFormatter::format(LogLevel level, const Class *class_,
+std::string DefaultFormatter::format(mitsuba::LogLevel level, const Class *class_,
                                      const Thread *thread, const char *file, int line,
                                      const std::string &msg) {
     std::ostringstream oss;

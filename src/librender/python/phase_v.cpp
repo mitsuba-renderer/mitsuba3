@@ -14,24 +14,24 @@ public:
                     const MediumInteraction3f &mi, const Point2f &sample,
                     Mask active) const override {
         using Return = std::pair<Vector3f, Float>;
-        PYBIND11_OVERLOAD_PURE(Return, PhaseFunction, sample, ctx, mi, sample, active);
+        PYBIND11_OVERRIDE_PURE(Return, PhaseFunction, sample, ctx, mi, sample, active);
     }
 
     Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,
                const Vector3f &wo, Mask active) const override {
-        PYBIND11_OVERLOAD_PURE(Float, PhaseFunction, eval, ctx, mi, wo, active);
+        PYBIND11_OVERRIDE_PURE(Float, PhaseFunction, eval, ctx, mi, wo, active);
     }
 
     Float projected_area(const MediumInteraction3f &mi, Mask active) const override {
-        PYBIND11_OVERLOAD(Float, PhaseFunction, projected_area, mi, active);
+        PYBIND11_OVERRIDE(Float, PhaseFunction, projected_area, mi, active);
     }
 
     Float max_projected_area() const override {
-        PYBIND11_OVERLOAD(Float, PhaseFunction, max_projected_area, );
+        PYBIND11_OVERRIDE(Float, PhaseFunction, max_projected_area, );
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERLOAD_PURE(std::string, PhaseFunction, to_string, );
+        PYBIND11_OVERRIDE_PURE(std::string, PhaseFunction, to_string, );
     }
 };
 

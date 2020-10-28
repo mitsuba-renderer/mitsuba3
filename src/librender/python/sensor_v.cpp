@@ -13,7 +13,7 @@ public:
     sample_ray(Float time, Float sample1, const Point2f &sample2,
            const Point2f &sample3, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
-        PYBIND11_OVERLOAD_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3,
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3,
                                active);
     }
 
@@ -21,7 +21,7 @@ public:
     sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
                             const Point2f &sample3, Mask active) const override {
         using Return = std::pair<RayDifferential3f, Spectrum>;
-        PYBIND11_OVERLOAD_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
                                active);
     }
 
@@ -30,25 +30,25 @@ public:
                      const Point2f &sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
-        PYBIND11_OVERLOAD_PURE(Return, Sensor, sample_direction, ref, sample, active);
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_direction, ref, sample, active);
     }
 
     Float pdf_direction(const Interaction3f &ref,
                         const DirectionSample3f &ds,
                         Mask active) const override {
-        PYBIND11_OVERLOAD_PURE(Float, Sensor, pdf_direction, ref, ds, active);
+        PYBIND11_OVERRIDE_PURE(Float, Sensor, pdf_direction, ref, ds, active);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
-        PYBIND11_OVERLOAD_PURE(Spectrum, Sensor, eval, si, active);
+        PYBIND11_OVERRIDE_PURE(Spectrum, Sensor, eval, si, active);
     }
 
     ScalarBoundingBox3f bbox() const override {
-        PYBIND11_OVERLOAD_PURE(ScalarBoundingBox3f, Sensor, bbox,);
+        PYBIND11_OVERRIDE_PURE(ScalarBoundingBox3f, Sensor, bbox,);
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERLOAD_PURE(std::string, Sensor, to_string,);
+        PYBIND11_OVERRIDE_PURE(std::string, Sensor, to_string,);
     }
 };
 

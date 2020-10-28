@@ -4,7 +4,7 @@
 #include <mitsuba/python/python.h>
 
 /// Submit a log message to the Mitusba logging system and tag it with the Python caller
-static void PyLog(LogLevel level, const std::string &msg) {
+static void PyLog(mitsuba::LogLevel level, const std::string &msg) {
     PyFrameObject *frame = PyThreadState_Get()->frame;
 
     std::string name =
@@ -25,7 +25,7 @@ static void PyLog(LogLevel level, const std::string &msg) {
 
 MTS_PY_EXPORT(Logger) {
     MTS_PY_CLASS(Logger, Object)
-        .def(py::init<LogLevel>(), D(Logger, Logger))
+        .def(py::init<mitsuba::LogLevel>(), D(Logger, Logger))
         .def_method(Logger, log_progress, "progress"_a, "name"_a,
             "formatted"_a, "eta"_a, "ptr"_a = py::none())
         .def_method(Logger, set_log_level)

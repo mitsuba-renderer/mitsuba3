@@ -17,13 +17,13 @@ public:
 
     std::string to_string() const override {
         py::gil_scoped_acquire acquire;
-        PYBIND11_OVERLOAD(std::string, Thread, to_string);
+        PYBIND11_OVERRIDE(std::string, Thread, to_string);
     }
 
 protected:
     void run() override {
         py::gil_scoped_acquire acquire;
-        PYBIND11_OVERLOAD_PURE(void, Thread, run);
+        PYBIND11_OVERRIDE_PURE(void, Thread, run);
     }
 };
 

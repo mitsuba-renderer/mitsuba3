@@ -32,25 +32,25 @@ public:
            Float sample1, const Point2f &sample2,
            Mask active) const override {
         using Return = std::pair<BSDFSample3f, Spectrum>;
-        PYBIND11_OVERLOAD_PURE(Return, BSDF, sample, ctx, si, sample1, sample2, active);
+        PYBIND11_OVERRIDE_PURE(Return, BSDF, sample, ctx, si, sample1, sample2, active);
     }
 
     Spectrum eval(const BSDFContext &ctx,
                   const SurfaceInteraction3f &si,
                   const Vector3f &wo,
                   Mask active) const override {
-        PYBIND11_OVERLOAD_PURE(Spectrum, BSDF, eval, ctx, si, wo, active);
+        PYBIND11_OVERRIDE_PURE(Spectrum, BSDF, eval, ctx, si, wo, active);
     }
 
     Float pdf(const BSDFContext &ctx,
               const SurfaceInteraction3f &si,
               const Vector3f &wo,
               Mask active) const override {
-        PYBIND11_OVERLOAD_PURE(Float, BSDF, pdf, ctx, si, wo, active);
+        PYBIND11_OVERRIDE_PURE(Float, BSDF, pdf, ctx, si, wo, active);
     }
 
     std::string to_string() const override {
-        PYBIND11_OVERLOAD_PURE(std::string, BSDF, to_string,);
+        PYBIND11_OVERRIDE_PURE(std::string, BSDF, to_string,);
     }
 
     using BSDF::m_flags;
