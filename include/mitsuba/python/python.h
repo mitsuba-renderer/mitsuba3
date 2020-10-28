@@ -12,6 +12,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 #include <enoki/packet.h>
+#include <enoki-jit/jit.h>
 
 #include "docstr.h"
 
@@ -121,9 +122,18 @@ inline py::module_ create_submodule(py::module_ &m, const char *name) {
 template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     using Type = std::decay_t<std::remove_pointer_t<ek::value_t<Array>>>;
 
-    cls.def("entry_", [](Array shape, size_t i) { return shape.entry(i); })
-        .def("__len__", [](Array shape) { return shape.size(); });
+    cls.attr("eq_") = py::none();
+    cls.attr("neq_") = py::none();
+    cls.attr("index") = py::none();
 
+    cls.def(py::init<>())
+       .def(py::init<Type *>())
+       .def("entry_", [](Array shape, size_t i) { return shape.entry(i); })
+       .def("eq_", &Array::eq_)
+       .def("neq_", &Array::neq_)
+       .def("__len__", [](Array shape) { return shape.size(); });
+
+    cls.attr("Type") = VarType::Pointer;
     cls.attr("Value") = py::type::of<Type>();
     cls.attr("IsJIT") = ek::is_jit_array_v<Array>;
     cls.attr("Depth") = ek::array_depth_v<Array>;
@@ -134,11 +144,8 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("IsMatrix") = false;
     cls.attr("IsEnoki") = true;
 
-    if constexpr (ek::is_jit_array_v<Array>) {
-        py::cpp_function func([](Array shape) { return shape.index(); });
-        cls.attr("index") =
-            py::reinterpret_steal<py::object>(PyInstanceMethod_New(func.ptr()));
-    }
+    if constexpr (ek::is_jit_array_v<Array>)
+        cls.def("index", [](Array shape) { return shape.index(); });
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \
