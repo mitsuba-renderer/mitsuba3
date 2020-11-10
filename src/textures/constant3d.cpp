@@ -16,21 +16,17 @@ public:
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        return eval_impl(it, active);
-    }
-
-    Float eval_1(const Interaction3f & /* it */, Mask /* active */) const override {
-        return m_color->mean();
-    }
-
-
-    MTS_INLINE auto eval_impl(const Interaction3f &it, const Mask &active) const {
         SurfaceInteraction3f si;
+        si.t           = 0.f;
         si.uv          = Point2f(0.f, 0.f);
         si.wavelengths = it.wavelengths;
         si.time        = it.time;
         auto result = m_color->eval(si, active);
         return result;
+    }
+
+    Float eval_1(const Interaction3f & /* it */, Mask /* active */) const override {
+        return m_color->mean();
     }
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {

@@ -55,7 +55,6 @@ public:
         Spectrum throughput(1.f), result(0.f);
         MediumPtr medium = initial_medium;
         MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-        mi.t = ek::Infinity<Float>;
         Mask specular_chain = active && !m_hide_emitters;
         UInt32 depth = 0;
 
@@ -66,7 +65,6 @@ public:
         }
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::Infinity<Float>;
         Mask needs_intersection = true;
         for (int bounce = 0;; ++bounce) {
             // ----------------- Handle termination of paths ------------------
@@ -276,7 +274,6 @@ public:
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::Infinity<Float>;
         Mask needs_intersection = true;
         while (ek::any(active)) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;

@@ -15,13 +15,10 @@ struct Interaction {
     //! @{ \name Type declarations
     // =============================================================
 
-    using Float      = Float_;
-    using Spectrum   = Spectrum_;
-    using Mask       = ek::mask_t<Float>;
-    using Point3f    = Point<Float, 3>;
-    using Vector3f   = Vector<Float, 3>;
-    using Ray3f      = Ray<Point3f, Spectrum>;
-    using Wavelength = wavelength_t<Spectrum>;
+    using Float    = Float_;
+    using Spectrum = Spectrum_;
+    MTS_IMPORT_RENDER_BASIC_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
 
     //! @}
     // =============================================================
@@ -52,6 +49,15 @@ struct Interaction {
     /// Constructor
     Interaction(Float t, Float time, const Wavelength &w, const Point3f &p)
         : t(t), time(time), wavelengths(w), p(p) { }
+
+    /**
+     * This callback method is invoked by ek::zero<>, and takes care of fields that deviate
+     * from the standard zero-initialization convention. In this particular class, the ``t``
+     * field should be set to an infinite value to mark invalid intersection records.
+     */
+    void zero_(size_t size = 1) {
+        t = ek::full<Float>(ek::Infinity<Float>, size);
+    }
 
     /// Is the current interaction valid?
     Mask is_valid() const {
@@ -200,7 +206,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     MediumPtr target_medium(const Float &cos_theta) const {
         return ek::select(cos_theta > 0, shape->exterior_medium(),
-                                     shape->interior_medium());
+                                         shape->interior_medium());
     }
 
     /**
@@ -552,6 +558,15 @@ struct PreliminaryIntersection {
     //! @{ \name Methods
     // =============================================================
 
+    /**
+     * This callback method is invoked by ek::zero<>, and takes care of fields that deviate
+     * from the standard zero-initialization convention. In this particular class, the ``t``
+     * field should be set to an infinite value to mark invalid intersection records.
+     */
+    void zero_(size_t size = 1) {
+        t = ek::full<Float>(ek::Infinity<Float>, size);
+    }
+
     /// Is the current interaction valid?
     Mask is_valid() const {
         return ek::neq(t, ek::Infinity<Float>);
@@ -571,15 +586,13 @@ struct PreliminaryIntersection {
                                                      uint32_t hit_flags,
                                                      Mask active) {
         ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
-        SurfaceInteraction3f si
-            = target->compute_surface_interaction(ray, *this, hit_flags, active);
+        SurfaceInteraction3f si =
+            target->compute_surface_interaction(ray, *this, hit_flags, active);
         active &= si.is_valid();
-        si.t = ek::select(active, si.t, ek::Infinity<Float>);
-        si.prim_index  = prim_index;
+        si.prim_index = prim_index;
 
         // Set shape pointer if not already set by compute_surface_interaction()
-        si.shape = ek::select(ek::eq(si.shape, nullptr), shape, si.shape);
-
+        si.shape       = ek::select(ek::eq(si.shape, nullptr), shape, si.shape);
         si.instance    = instance;
         si.time        = ray.time;
         si.wavelengths = ray.wavelengths;
@@ -667,7 +680,6 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
     }
     return os;
 }
-
 
 template <typename Float, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectrum> &it) {

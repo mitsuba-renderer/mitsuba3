@@ -131,7 +131,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 
     if constexpr (!ek::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
-        pi.t = ek::Infinity<Float>;
         if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;
             rh.ray.org_x = ray.o.x();
@@ -246,7 +245,6 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, uint32_t hit_flags,
 
     if constexpr (!ek::is_cuda_array_v<Float>) {
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::Infinity<Float>;
 
         if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;

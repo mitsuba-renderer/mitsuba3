@@ -2095,7 +2095,7 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        PreliminaryIntersection3f pi;
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
@@ -2194,7 +2194,7 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        PreliminaryIntersection3f pi;
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         const KDNode *node = m_nodes.get();
 
@@ -2307,7 +2307,7 @@ public:
     template <bool ShadowRay>
     MTS_INLINE PreliminaryIntersection3f ray_intersect_naive(Ray3f ray,
                                                              Mask active) const {
-        PreliminaryIntersection3f pi;
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         for (Size i = 0; i < primitive_count(); ++i) {
             PreliminaryIntersection3f prim_pi =
@@ -2371,7 +2371,7 @@ protected:
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
 
-        PreliminaryIntersection3f pi;
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         if constexpr (ShadowRay) {
             Mask hit;
@@ -2381,9 +2381,7 @@ protected:
             } else {
                 hit = shape->ray_test(ray, active);
             }
-
-            pi.t = ek::select(hit, Float(0.f), ek::Infinity<Float>);
-            return pi;
+            ek::masked(pi.t, hit) = 0.f;
         } else {
             if (shape->is_mesh()) {
                 const Mesh *mesh = (const Mesh *) shape;
@@ -2391,9 +2389,9 @@ protected:
             } else {
                 pi = shape->ray_intersect_preliminary(ray, active);
             }
-
-            return pi;
         }
+
+        return pi;
     }
 
 protected:

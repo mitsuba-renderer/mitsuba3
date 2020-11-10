@@ -77,7 +77,6 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::Infinity<Float>;
 
         Float pdf = 1.f;
 
