@@ -465,13 +465,13 @@ def SpectrumAdapter(value):
 
     def sample_functor(sample, *args):
         plugin = instantiate(args)
-        si = SurfaceInteraction3f.zero(ek.width(sample))
+        si = ek.zero(SurfaceInteraction3f, ek.width(sample))
         wavelength, weight = plugin.sample_spectrum(si, sample_shifted(sample[0]))
         return Vector1f(wavelength[0])
 
     def pdf_functor(w, *args):
         plugin = instantiate(args)
-        si = SurfaceInteraction3f.zero(ek.width(w))
+        si = ek.zero(SurfaceInteraction3f, ek.width(w))
         si.wavelengths = w
         return plugin.pdf_spectrum(si)[0]
 
@@ -500,7 +500,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = BSDFContext()
 
     def make_context(n):
-        si = SurfaceInteraction3f.zero(n)
+        si = ek.zero(SurfaceInteraction3f, n)
         si.wi = wi
         si.wavelengths = []
         return (si, ctx)
@@ -578,7 +578,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         ctx = PhaseFunctionContext(None)
 
     def make_context(n):
-        mi = MediumInteraction3f.zero(n)
+        mi = ek.zero(MediumInteraction3f, n)
         mi.wi = wi
         mi.sh_frame = Frame3f(-mi.wi)
         mi.wavelengths = []

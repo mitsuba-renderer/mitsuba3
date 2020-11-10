@@ -23,7 +23,7 @@ bsdf = load_string("""<bsdf version='2.0.0' type='roughconductor'>
                       </bsdf>""")
 
 # Create a (dummy) surface interaction to use for the evaluation
-si = SurfaceInteraction3f.zero()
+si = ek.zero(SurfaceInteraction3f)
 
 # Specify an incident direction with 45 degrees elevation
 si.wi = sph_dir(ek.Pi * 45 / 180, 0.0)

@@ -122,4 +122,12 @@ MTS_PY_EXPORT(Object) {
         py::detail::clean_type_id(name);
         Throw("set_property(): unsupported type \"%s\"!", name);
     });
+
+    if constexpr (ek::is_array_v<ObjectPtr>) {
+        py::object ek       = py::module_::import("enoki"),
+                   ek_array = ek.attr("ArrayBase");
+
+        py::class_<ObjectPtr> cls(m, "ObjectPtr", ek_array);
+        bind_enoki_ptr_array(cls);
+    }
 }

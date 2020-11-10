@@ -57,7 +57,7 @@ void bind_transform3f(py::module &m, const char *name) {
     if constexpr (ek::is_dynamic_v<Float>)
         trans3.def(py::init<const ScalarTransform3f &>(), "Broadcast constructor");
 
-    bind_struct_support<Transform3f>(trans3);
+    MTS_PY_ENOKI_STRUCT(trans3, Transform3f, matrix, inverse_transpose)
 }
 
 template <typename Float>
@@ -125,7 +125,7 @@ void bind_transform4f(py::module &m, const char *name) {
     if constexpr (ek::is_dynamic_v<Float>)
         trans4.def(py::init<const ScalarTransform4f &>(), "Broadcast constructor");
 
-    bind_struct_support<Transform4f>(trans4);
+    MTS_PY_ENOKI_STRUCT(trans4, Transform4f, matrix, inverse_transpose)
 }
 
 MTS_PY_EXPORT(Transform) {

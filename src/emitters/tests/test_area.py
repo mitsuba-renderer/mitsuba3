@@ -64,7 +64,7 @@ def test02_eval(variants_vec_spectral, spectrum_key):
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
-    it = SurfaceInteraction3f.zero(3)
+    it = ek.zero(SurfaceInteraction3f, 3)
     assert ek.allclose(emitter.eval(it), spectrum.eval(it))
 
     # Check that eval return 0.0 when direction points inside the shape
@@ -93,7 +93,7 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
         time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = SurfaceInteraction3f.zero(3)
+    it = ek.zero(SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     # Sample a position on the shape
@@ -117,7 +117,7 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     emitter = shape.emitter()
 
     # Direction sampling is conditioned on a sampled position
-    it = SurfaceInteraction3f.zero(3)
+    it = ek.zero(SurfaceInteraction3f, 3)
     it.p = [[0.2, 0.1, 0.2], [0.6, -0.9, 0.2],
             [0.4, 0.9, -0.2]]  # Some positions
     it.time = 1.0

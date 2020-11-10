@@ -46,7 +46,7 @@ def test02_position_sample_construction_vec(variants_vec_rgb):
 
     n_records = 5
 
-    records = PositionSample3f.zero(n_records)
+    records = ek.zero(PositionSample3f, n_records)
     records.p = np.array([[1.0, 1.0, 1.0], [0.9, 0.9, 0.9], [0.7, 0.7, 0.7],
                  [1.2, 1.5, 1.1], [1.5, 1.5, 1.5]])
     records.time = [0.0, 0.5, 0.7, 1.0, 1.5]
@@ -74,7 +74,7 @@ def test02_position_sample_construction_vec(variants_vec_rgb):
 ]""" in str(records)
 
     # SurfaceInteraction constructor
-    si = SurfaceInteraction3f.zero(n_records)
+    si = ek.zero(SurfaceInteraction3f, n_records)
     si.time = [0.0, 0.5, 0.7, 1.0, 1.5]
     records = PositionSample3f(si)
     assert ek.all(records.time == si.time)
@@ -106,10 +106,10 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
 ]"""
 
     # Construct from two interactions: ds.d should start from the reference its.
-    its = SurfaceInteraction3f.zero()
+    its = ek.zero(SurfaceInteraction3f)
     its.p = [20, 3, 40.02]
     its.t = 1
-    ref = Interaction3f.zero()
+    ref = ek.zero(Interaction3f)
     ref.p = [1.6, -2, 35]
     record = DirectionSample3f(its, ref)
     d = (its.p - ref.p) / ek.norm(its.p - ref.p)
@@ -130,7 +130,7 @@ def test05_direction_sample_construction_vec(variants_vec_rgb):
 
     pdfs = [0.99, 1.0, 0.05]
 
-    records_batch = DirectionSample3f.zero(len(pdfs))
+    records_batch = ek.zero(DirectionSample3f, len(pdfs))
     records_batch.p = its
     records_batch.d = directions
     records_batch.pdf = pdfs
@@ -145,7 +145,7 @@ def test05_direction_sample_construction_vec(variants_vec_rgb):
         # Needs to be a "valid" (surface) interaction, otherwise interaction
         # will be assumed to have happened on an environment emitter.
         it.t = 0.1
-        ref = Interaction3f.zero()
+        ref = ek.zero(Interaction3f)
         ref.p = refs[i, :]
 
     assert ek.allclose(records_batch.p, its)

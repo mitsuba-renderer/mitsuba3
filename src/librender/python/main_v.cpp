@@ -94,16 +94,16 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
     MTS_PY_IMPORT(Scene);
+    MTS_PY_IMPORT(Shape);
+    MTS_PY_IMPORT(Medium);
     MTS_PY_IMPORT(Interaction);
     MTS_PY_IMPORT(SurfaceInteraction);
     MTS_PY_IMPORT(MediumInteraction);
     MTS_PY_IMPORT(PreliminaryIntersection);
     MTS_PY_IMPORT(PositionSample);
     MTS_PY_IMPORT(DirectionSample);
-    MTS_PY_IMPORT(Medium);
     MTS_PY_IMPORT(BSDFSample);
     MTS_PY_IMPORT(BSDF);
-    MTS_PY_IMPORT(Shape);
     MTS_PY_IMPORT(Endpoint);
     MTS_PY_IMPORT(Emitter);
     MTS_PY_IMPORT(Film);

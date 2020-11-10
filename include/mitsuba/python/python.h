@@ -72,19 +72,26 @@ namespace py = pybind11;
 
 using namespace py::literals;
 
-template <typename Class, typename PyClass>
-void bind_struct_support(PyClass &cl) {
-    using Float = typename Class::Float;
-
-    cl.def_static("zero", [](size_t size) {
-            if constexpr (!ek::is_dynamic_v<Float>) {
-                if (size != 1)
-                    throw std::runtime_error("zero(): Size must equal 1 in scalar mode!");
-            }
-            return ek::zero<Class>(size);
-        }, "size"_a = 1
-    );
+template <typename T>
+py::handle type_of() {
+    if constexpr (std::is_integral_v<T>)
+        return py::handle((PyObject *) &PyLong_Type);
+    else if constexpr (std::is_floating_point_v<T>)
+        return py::handle((PyObject *) &PyFloat_Type);
+    else if constexpr (std::is_pointer_v<T>)
+        return py::type::of<std::decay_t<std::remove_pointer_t<T>>>();
+    else
+        return py::type::of<T>();
 }
+
+#define MTS_PY_ENOKI_STRUCT_BIND_FIELD(x) \
+    fields[#x] = type_of<decltype(struct_type_().x)>();
+
+#define MTS_PY_ENOKI_STRUCT(cls, Type, ...)                \
+    py::dict fields;                                       \
+    using struct_type_ = Type;                             \
+    ENOKI_MAP(MTS_PY_ENOKI_STRUCT_BIND_FIELD, __VA_ARGS__) \
+    cls.attr("ENOKI_STRUCT") = fields;
 
 template <typename Source, typename Target> void pybind11_type_alias() {
     auto &types = pybind11::detail::get_internals().registered_types_cpp;
@@ -128,11 +135,12 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
 
     cls.def(py::init<>())
        .def(py::init<Type *>())
-       .def("entry_", [](Array shape, size_t i) { return shape.entry(i); })
+       .def("entry_", [](Array a, size_t i) { return a.entry(i); })
        .def("eq_", &Array::eq_)
        .def("neq_", &Array::neq_)
-       .def("__len__", [](Array shape) { return shape.size(); });
+       .def("__len__", [](Array a) { return a.size(); });
 
+    cls.attr("zero_") = py::cpp_function(&Array::zero_);
     cls.attr("Type") = VarType::Pointer;
     cls.attr("Value") = py::type::of<Type>();
     cls.attr("IsJIT") = ek::is_jit_array_v<Array>;
@@ -145,7 +153,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("IsEnoki") = true;
 
     if constexpr (ek::is_jit_array_v<Array>)
-        cls.def("index", [](Array shape) { return shape.index(); });
+        cls.def("index", [](Array a) { return a.index(); });
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \

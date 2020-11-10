@@ -37,7 +37,7 @@ def test01_eval(variants_vec_spectral, spectrum_key):
 
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)
 
-    it = SurfaceInteraction3f.zero()
+    it = ek.zero(SurfaceInteraction3f)
     assert ek.allclose(emitter.eval(it), spectrum.eval(it))
 
 
@@ -59,7 +59,7 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)
 
     # Sample wavelengths on the spectrum
-    it = SurfaceInteraction3f.zero(3)
+    it = ek.zero(SurfaceInteraction3f, 3)
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     assert ek.allclose(res, spec * 4 * ek.Pi * ek.Pi)
@@ -78,7 +78,7 @@ def test03_sample_direction(variants_vec_spectral):
 
     emitter, spectrum = create_emitter_and_spectrum()
 
-    it = SurfaceInteraction3f.zero(3)
+    it = ek.zero(SurfaceInteraction3f, 3)
     # Some positions inside the unit sphere
     it.p = [[-0.5, 0.3, -0.1], [0.8, -0.3, -0.2], [-0.2, 0.6, -0.6]]
     it.time = 1.0

@@ -31,6 +31,6 @@ MTS_PY_EXPORT(Frame) {
             .def_field(Frame3f, n)
             .def_repr(Frame3f);
 
-        bind_struct_support<Frame3f>(f);
+        MTS_PY_ENOKI_STRUCT(f, Frame3f, s, t, n)
     }
 }

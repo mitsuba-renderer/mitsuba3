@@ -8,7 +8,7 @@
 
 MTS_PY_EXPORT(Interaction) {
     MTS_PY_IMPORT_TYPES()
-    auto inter = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction))
+    auto it = py::class_<Interaction3f>(m, "Interaction3f", D(Interaction))
         // Members
         .def_field(Interaction3f, t,           D(Interaction, t))
         .def_field(Interaction3f, time,        D(Interaction, time))
@@ -16,16 +16,18 @@ MTS_PY_EXPORT(Interaction) {
         .def_field(Interaction3f, p,           D(Interaction, p))
         // Methods
         .def(py::init<>(), D(Interaction, Interaction))
+        .def("zero_",        &Interaction3f::zero_, "size"_a = 1)
         .def("spawn_ray",    &Interaction3f::spawn_ray, "d"_a,    D(Interaction, spawn_ray))
         .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def_repr(Interaction3f);
-    bind_struct_support<Interaction3f>(inter);
+
+    MTS_PY_ENOKI_STRUCT(it, Interaction3f, t, time, wavelengths, p)
 }
 
 MTS_PY_EXPORT(SurfaceInteraction) {
     MTS_PY_IMPORT_TYPES()
-    auto inter =
+    auto si =
         py::class_<SurfaceInteraction3f, Interaction3f>(m, "SurfaceInteraction3f",
                                                         D(SurfaceInteraction))
         // Members
@@ -79,18 +81,25 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             D(SurfaceInteraction, has_n_partials))
         .def_repr(SurfaceInteraction3f);
 
-    bind_struct_support<SurfaceInteraction3f>(inter);
+    MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths,
+                        p, shape, uv, n, sh_frame, dp_du, dp_dv, dn_du,
+                        dn_dv, duv_dx, duv_dy, wi, prim_index, instance)
 }
 
 MTS_PY_EXPORT(MediumInteraction) {
     MTS_PY_IMPORT_TYPES()
-    auto inter =
+    auto mi =
         py::class_<MediumInteraction3f, Interaction3f>(m, "MediumInteraction3f",
                                                         D(MediumInteraction))
         // Members
         .def_field(MediumInteraction3f, medium,     D(MediumInteraction, medium))
         .def_field(MediumInteraction3f, sh_frame,   D(MediumInteraction, sh_frame))
         .def_field(MediumInteraction3f, wi,         D(MediumInteraction, wi))
+        .def_field(MediumInteraction3f, sigma_s,    D(MediumInteraction, sigma_s))
+        .def_field(MediumInteraction3f, sigma_n,    D(MediumInteraction, sigma_n))
+        .def_field(MediumInteraction3f, sigma_t,    D(MediumInteraction, sigma_t))
+        .def_field(MediumInteraction3f, combined_extinction, D(MediumInteraction, combined_extinction))
+        .def_field(MediumInteraction3f, mint, D(MediumInteraction, mint))
 
         // Methods
         .def(py::init<>(), D(MediumInteraction, MediumInteraction))
@@ -98,7 +107,9 @@ MTS_PY_EXPORT(MediumInteraction) {
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
 
-    bind_struct_support<MediumInteraction3f>(inter);
+    MTS_PY_ENOKI_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p,
+                        medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                        combined_extinction, mint)
 }
 
 MTS_PY_EXPORT(PreliminaryIntersection) {
@@ -126,5 +137,6 @@ MTS_PY_EXPORT(PreliminaryIntersection) {
            "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true)
         .def_repr(PreliminaryIntersection3f);
 
-    bind_struct_support<PreliminaryIntersection3f>(pi);
+    MTS_PY_ENOKI_STRUCT(pi, PreliminaryIntersection3f, t, prim_uv, prim_index,
+                        shape_index, shape, instance);
 }

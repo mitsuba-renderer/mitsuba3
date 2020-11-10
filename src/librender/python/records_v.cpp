@@ -31,7 +31,7 @@ MTS_PY_EXPORT(PositionSample) {
 
     bind_set_object<PositionSample3f>(pos);
 
-    bind_struct_support<PositionSample3f>(pos);
+    MTS_PY_ENOKI_STRUCT(pos, PositionSample3f, p, n, uv, time, pdf, delta, object)
 }
 
 MTS_PY_EXPORT(DirectionSample) {
@@ -52,5 +52,5 @@ MTS_PY_EXPORT(DirectionSample) {
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_repr(DirectionSample3f);
 
-    bind_struct_support<DirectionSample3f>(pos);
+    MTS_PY_ENOKI_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, object, d, dist)
 }
