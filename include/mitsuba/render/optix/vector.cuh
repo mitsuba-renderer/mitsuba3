@@ -179,7 +179,7 @@ template <typename Value, size_t Size>
 DEVICE Value dot(const Array<Value, Size> &a1, const Array<Value, Size> &a2) {
     Value result = a1.v[0] * a2.v[0];
     for (size_t i = 1; i < Size; ++i)
-        result = fmaf(a1.v[i], a2.v[i], result);
+        result = ::fmaf(a1.v[i], a2.v[i], result);
     return result;
 }
 
@@ -187,7 +187,7 @@ template <typename Value, size_t Size>
 DEVICE Value squared_norm(const Array<Value, Size> &a) {
     Value result = a.v[0] * a.v[0];
     for (size_t i = 1; i < Size; ++i)
-        result = fmaf(a.v[i], a.v[i], result);
+        result = ::fmaf(a.v[i], a.v[i], result);
     return result;
 }
 
