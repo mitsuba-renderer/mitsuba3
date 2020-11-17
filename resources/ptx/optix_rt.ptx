@@ -21019,7 +21019,7 @@ BB8_116:
 	add.s64 	%rd42, %rd39, %rd41;
 	ld.global.f32 	%f9, [%rd42];
 	setp.eq.f32	%p9, %f9, 0f7F800000;
-	selp.f32	%f8, 0f7E967699, %f9, %p9;
+	selp.f32	%f8, 0f7F7FFFFF, %f9, %p9;
 	ld.const.u64 	%rd1, [params+424];
 	setp.eq.s64	%p10, %rd1, 0;
 	ld.const.u64 	%rd43, [params];
