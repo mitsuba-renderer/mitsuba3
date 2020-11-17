@@ -161,7 +161,7 @@ public:
             spec = m_radiance->eval(si, active) / ds.pdf;
         }
 
-        ds.object = this;
+        ds.emitter = this;
         return { ds, unpolarized<Spectrum>(spec) & active };
     }
 

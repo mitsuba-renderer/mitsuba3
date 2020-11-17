@@ -190,15 +190,12 @@ public:
 
             /* Determine probability of having sampled that same
                direction using emitter sampling. */
-            emitter = si_bsdf.emitter(scene, active);
-            DirectionSample3f ds(si_bsdf, si);
-            ds.object = emitter;
+            DirectionSample3f ds(scene, si_bsdf, si);
 
-            if (ek::any_or<true>(ek::neq(emitter, nullptr))) {
+            if (ek::any_or<true>(ek::neq(ds.emitter, nullptr))) {
+                Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
                 Float emitter_pdf =
-                    ek::select(ek::neq(emitter, nullptr) && !has_flag(bs.sampled_type, BSDFFlags::Delta),
-                           scene->pdf_emitter_direction(si, ds),
-                           0.f);
+                    ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active));
 
                 emission_weight = mis_weight(bs.pdf, emitter_pdf);
             }

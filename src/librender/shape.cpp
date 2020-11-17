@@ -310,7 +310,6 @@ Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
 
     Float dp = ek::abs_dot(ds.d, ds.n);
     ds.pdf *= ek::select(ek::neq(dp, 0.f), dist_squared / dp, 0.f);
-    ds.object = (const Object *) this;
 
     return ds;
 }

@@ -149,6 +149,12 @@ static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory re
 
 static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Enoki's pointer registry)doc";
 
+static const char *__doc_OptixInputParam = R"doc()doc";
+
+static const char *__doc_OptixInputParam_ptr = R"doc()doc";
+
+static const char *__doc_OptixInputParam_width = R"doc()doc";
+
 static const char *__doc_OptixInstance = R"doc()doc";
 
 static const char *__doc_OptixInstance_flags = R"doc()doc";
@@ -191,25 +197,15 @@ and output variables.)doc";
 
 static const char *__doc_OptixParams_handle = R"doc(Handle for the acceleration data structure to trace against)doc";
 
-static const char *__doc_OptixParams_in_d = R"doc(Input ray data pointers)doc";
+static const char *__doc_OptixParams_in_d = R"doc(Input ray data)doc";
 
-static const char *__doc_OptixParams_in_d_width = R"doc()doc";
+static const char *__doc_OptixParams_in_mask = R"doc(Input `active` mask data)doc";
 
-static const char *__doc_OptixParams_in_mask = R"doc(Input `active` mask data pointer)doc";
+static const char *__doc_OptixParams_in_maxt = R"doc(Input ray data)doc";
 
-static const char *__doc_OptixParams_in_mask_width = R"doc()doc";
+static const char *__doc_OptixParams_in_mint = R"doc(Input ray data)doc";
 
-static const char *__doc_OptixParams_in_maxt = R"doc(Input ray data pointers)doc";
-
-static const char *__doc_OptixParams_in_maxt_width = R"doc()doc";
-
-static const char *__doc_OptixParams_in_mint = R"doc(Input ray data pointers)doc";
-
-static const char *__doc_OptixParams_in_mint_width = R"doc()doc";
-
-static const char *__doc_OptixParams_in_o = R"doc(Input ray data pointers)doc";
-
-static const char *__doc_OptixParams_in_o_width = R"doc()doc";
+static const char *__doc_OptixParams_in_o = R"doc(Input ray data)doc";
 
 static const char *__doc_OptixParams_out_dng_du = R"doc(Output surface interaction data pointers)doc";
 
@@ -702,7 +698,17 @@ static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_BSDFSample3_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_BSDFSample3_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFSample3_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFSample3_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFSample3_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_BSDFSample3_eta = R"doc(Relative index of refraction in the sampled direction)doc";
+
+static const char *__doc_mitsuba_BSDFSample3_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_operator_assign = R"doc()doc";
 
@@ -1865,9 +1871,27 @@ static const char *__doc_mitsuba_DirectionSample_DirectionSample_7 = R"doc()doc"
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_8 = R"doc()doc";
 
+static const char *__doc_mitsuba_DirectionSample_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_DirectionSample_d = R"doc(Unit direction from the reference point to the target shape)doc";
 
 static const char *__doc_mitsuba_DirectionSample_dist = R"doc(Distance from the reference point to the target shape)doc";
+
+static const char *__doc_mitsuba_DirectionSample_emitter =
+R"doc(Optional: pointer to an associated object
+
+In some uses of this record, sampling a position also involves
+choosing one of several objects (shapes, emitters, ..) on which the
+position lies. In that case, the ``object`` attribute stores a pointer
+to this object.)doc";
+
+static const char *__doc_mitsuba_DirectionSample_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign = R"doc()doc";
 
@@ -1876,20 +1900,6 @@ static const char *__doc_mitsuba_DirectionSample_operator_assign_2 = R"doc()doc"
 static const char *__doc_mitsuba_DirectionSample_operator_assign_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign_4 = R"doc()doc";
-
-static const char *__doc_mitsuba_DirectionSample_set_query =
-R"doc(Setup this record so that it can be used to *query* the density of a
-surface position (where the reference point lies on a *surface*).
-
-Parameter ``ray``:
-    Reference to the ray that generated the intersection ``si``. The
-    ray origin must be located at the reference surface and point
-    towards ``si``.p.
-
-Parameter ``si``:
-    A surface intersection record (usually on an emitter).
-
-\note Defined in scene.h)doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution =
 R"doc(Discrete 1D probability distribution
@@ -2661,6 +2671,14 @@ static const char *__doc_mitsuba_Frame_Frame_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_Frame_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_Frame_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_Frame_cos_phi =
 R"doc(Give a unit direction, this function returns the cosine of the azimuth
 in a reference spherical coordinate system (see the Frame description))doc";
@@ -2681,6 +2699,8 @@ elevation angle in a reference spherical coordinate system (see the
 Frame description))doc";
 
 static const char *__doc_mitsuba_Frame_n = R"doc()doc";
+
+static const char *__doc_mitsuba_Frame_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_operator_assign = R"doc()doc";
 
@@ -2867,11 +2887,13 @@ static const char *__doc_mitsuba_HitComputeFlags_Minimal = R"doc(Compute positio
 
 static const char *__doc_mitsuba_HitComputeFlags_NonDifferentiable = R"doc(Force computed fields to not be be differentiable)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_Sticky = R"doc(Derivatives of the SurfaceInteraction members will follow the shape's motion)doc";
-
 static const char *__doc_mitsuba_HitComputeFlags_None = R"doc(No flags set)doc";
 
 static const char *__doc_mitsuba_HitComputeFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";
+
+static const char *__doc_mitsuba_HitComputeFlags_Sticky =
+R"doc(Derivatives of the SurfaceInteraction members will follow the shape's
+motion)doc";
 
 static const char *__doc_mitsuba_HitComputeFlags_UV = R"doc(Compute UV coordinates)doc";
 
@@ -3096,7 +3118,17 @@ static const char *__doc_mitsuba_Interaction_Interaction_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_Interaction_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_Interaction_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Interaction_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_Interaction_is_valid = R"doc(Is the current interaction valid?)doc";
+
+static const char *__doc_mitsuba_Interaction_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_operator_assign = R"doc()doc";
 
@@ -3472,11 +3504,21 @@ static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_4 = R"doc()
 
 static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_MediumInteraction_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction_combined_extinction = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_medium = R"doc(Pointer to the associated medium)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_mint = R"doc(mint used when sampling the given distance "t".)doc";
+
+static const char *__doc_mitsuba_MediumInteraction_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_operator_assign = R"doc()doc";
 
@@ -4429,7 +4471,7 @@ This is useful to determine the hypothetical sampling density on a
 surface after hitting it using standard ray tracing. This happens for
 instance in path tracing with multiple importance sampling.)doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_2 = R"doc(Basic field constructor)doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc()doc";
 
@@ -4439,7 +4481,13 @@ static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_6 = R"doc()doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_7 = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PositionSample_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_delta =
 R"doc(Set if the sample was drawn from a degenerate (Dirac delta)
@@ -4447,13 +4495,7 @@ distribution)doc";
 
 static const char *__doc_mitsuba_PositionSample_n = R"doc(Sampled surface normal (if applicable))doc";
 
-static const char *__doc_mitsuba_PositionSample_object =
-R"doc(Optional: pointer to an associated object
-
-In some uses of this record, sampling a position also involves
-choosing one of several objects (shapes, emitters, ..) on which the
-position lies. In that case, the ``object`` attribute stores a pointer
-to this object.)doc";
+static const char *__doc_mitsuba_PositionSample_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc()doc";
 
@@ -4499,6 +4541,14 @@ static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection
 
 static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_PreliminaryIntersection_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_PreliminaryIntersection_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PreliminaryIntersection_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PreliminaryIntersection_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_PreliminaryIntersection_compute_surface_interaction =
 R"doc(Compute and return detailed information related to a surface
 interaction
@@ -4506,7 +4556,7 @@ interaction
 Parameter ``ray``:
     Ray associated with the ray intersection
 
-Parameter ``flags``:
+Parameter ``hit_flags``:
     Flags specifying which information should be computed
 
 Returns:
@@ -4515,6 +4565,8 @@ Returns:
 static const char *__doc_mitsuba_PreliminaryIntersection_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_is_valid = R"doc(Is the current interaction valid?)doc";
+
+static const char *__doc_mitsuba_PreliminaryIntersection_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_operator_assign = R"doc()doc";
 
@@ -5043,6 +5095,14 @@ static const char *__doc_mitsuba_RayDifferential_RayDifferential_6 = R"doc()doc"
 
 static const char *__doc_mitsuba_RayDifferential_RayDifferential_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_RayDifferential_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_d_y = R"doc()doc";
@@ -5052,6 +5112,8 @@ static const char *__doc_mitsuba_RayDifferential_has_differentials = R"doc()doc"
 static const char *__doc_mitsuba_RayDifferential_o_x = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_o_y = R"doc()doc";
+
+static const char *__doc_mitsuba_RayDifferential_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_operator_assign = R"doc()doc";
 
@@ -5081,6 +5143,14 @@ static const char *__doc_mitsuba_Ray_Ray_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_Ray_9 = R"doc()doc";
 
+static const char *__doc_mitsuba_Ray_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_Ray_d = R"doc(< Ray direction)doc";
 
 static const char *__doc_mitsuba_Ray_d_rcp = R"doc(< Componentwise reciprocals of the ray direction)doc";
@@ -5090,6 +5160,8 @@ static const char *__doc_mitsuba_Ray_maxt = R"doc(< Maximum position on the ray 
 static const char *__doc_mitsuba_Ray_mint = R"doc(< Minimum position on the ray segment)doc";
 
 static const char *__doc_mitsuba_Ray_o = R"doc(< Ray origin)doc";
+
+static const char *__doc_mitsuba_Ray_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_operator_assign = R"doc()doc";
 
@@ -6819,6 +6891,14 @@ static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_5 = R"doc
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -6861,6 +6941,8 @@ static const char *__doc_mitsuba_SurfaceInteraction_is_medium_transition = R"doc
 static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the intersected shape also a sensor?)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_n = R"doc(Geometric normal)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_assign = R"doc()doc";
 
@@ -7850,6 +7932,14 @@ static const char *__doc_mitsuba_Transform_Transform_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_Transform_7 = R"doc()doc";
 
+static const char *__doc_mitsuba_Transform_apply_1 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_apply_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_apply_label = R"doc()doc";
+
 static const char *__doc_mitsuba_Transform_extract = R"doc(Extract a lower-dimensional submatrix)doc";
 
 static const char *__doc_mitsuba_Transform_from_frame =
@@ -7880,6 +7970,8 @@ Parameter ``up``:
     Up vector)doc";
 
 static const char *__doc_mitsuba_Transform_matrix = R"doc(//! @{ \name Fields)doc";
+
+static const char *__doc_mitsuba_Transform_operator_array = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_operator_assign = R"doc()doc";
 
@@ -8966,6 +9058,8 @@ static const char *__doc_mitsuba_operator_add_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_5 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_6 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -8983,6 +9077,8 @@ static const char *__doc_mitsuba_operator_band_7 = R"doc()doc";
 static const char *__doc_mitsuba_operator_band_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
@@ -9011,6 +9107,8 @@ static const char *__doc_mitsuba_operator_bor_7 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bor_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
@@ -9428,20 +9526,6 @@ static const char *__doc_mitsuba_scoped_migrate_to_host_cond_migrate_tuple = R"d
 static const char *__doc_mitsuba_scoped_migrate_to_host_cond_scoped_migrate_to_host_cond = R"doc()doc";
 
 static const char *__doc_mitsuba_scoped_migrate_to_host_scoped_migrate_to_host = R"doc()doc";
-
-static const char *__doc_mitsuba_set_query =
-R"doc(Setup this record so that it can be used to *query* the density of a
-surface position (where the reference point lies on a *surface*).
-
-Parameter ``ray``:
-    Reference to the ray that generated the intersection ``si``. The
-    ray origin must be located at the reference surface and point
-    towards ``si``.p.
-
-Parameter ``si``:
-    A surface intersection record (usually on an emitter).
-
-\note Defined in scene.h)doc";
 
 static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 2)doc";
 

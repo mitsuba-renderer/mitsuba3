@@ -181,8 +181,7 @@ public:
 
                 /* Determine probability of having sampled that same
                    direction using Emitter sampling. */
-                DirectionSample3f ds(si_bsdf, si);
-                ds.object = emitter;
+                DirectionSample3f ds(scene, si_bsdf, si);
 
                 Float emitter_pdf =
                     ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));

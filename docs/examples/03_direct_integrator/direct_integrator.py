@@ -24,32 +24,30 @@ def integrator_sample(scene, sampler, rays, medium, active=True):
     active = si.is_valid() & active
 
     # Visible emitters
-    emitter_vis = si.emitter(scene, active)
-    result = ek.select(active, Emitter.eval_vec(emitter_vis, si, active), Vector3f(0.0))
+    result = si.emitter(scene, active).eval(si, active)
 
     ctx = BSDFContext()
     bsdf = si.bsdf(rays)
 
     # Emitter sampling
-    sample_emitter = active & has_flag(BSDF.flags_vec(bsdf), BSDFFlags.Smooth)
-    ds, emitter_val = scene.sample_emitter_direction(si, sampler.next_2d(sample_emitter), True, sample_emitter)
-    active_e = sample_emitter & ek.neq(ds.pdf, 0.0)
+    active_e = active & has_flag(bsdf.flags(), BSDFFlags.Smooth)
+    ds, emitter_val = scene.sample_emitter_direction(si, sampler.next_2d(active_e), True, active_e)
+    active_e &= ek.neq(ds.pdf, 0.0)
     wo = si.to_local(ds.d)
-    bsdf_val = BSDF.eval_vec(bsdf, ctx, si, wo, active_e)
-    bsdf_pdf = BSDF.pdf_vec(bsdf, ctx, si, wo, active_e)
+    bsdf_val = bsdf.eval(ctx, si, wo, active_e)
+    bsdf_pdf = bsdf.pdf(ctx, si, wo, active_e)
     mis = ek.select(ds.delta, Float(1), mis_weight(ds.pdf, bsdf_pdf))
     result += ek.select(active_e, emitter_val * bsdf_val * mis, Vector3f(0))
 
     # BSDF sampling
     active_b = active
-    bs, bsdf_val = BSDF.sample_vec(bsdf, ctx, si, sampler.next_1d(active), sampler.next_2d(active), active_b)
+    bs, bsdf_val = bsdf.sample(ctx, si, sampler.next_1d(active), sampler.next_2d(active), active_b)
     si_bsdf = scene.ray_intersect(si.spawn_ray(si.to_world(bs.wo)), active_b)
     emitter = si_bsdf.emitter(scene, active_b)
     active_b &= ek.neq(emitter, 0)
-    emitter_val = Emitter.eval_vec(emitter, si_bsdf, active_b)
+    emitter_val = emitter.eval(si_bsdf, active_b)
     delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
     ds = DirectionSample3f(si_bsdf, si)
-    ds.object = emitter
     emitter_pdf = ek.select(delta, Float(0), scene.pdf_emitter_direction(si, ds, active_b))
     result += ek.select(active_b, bsdf_val * emitter_val * mis_weight(bs.pdf, emitter_pdf), Vector3f(0))
     return result, si.is_valid(), ek.select(si.is_valid(), si.t, Float(0.0))

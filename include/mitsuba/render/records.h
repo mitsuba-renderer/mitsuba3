@@ -25,7 +25,6 @@ struct PositionSample {
     using Float    = Float_;
     using Spectrum = Spectrum_;
     MTS_IMPORT_RENDER_BASIC_TYPES()
-    using ObjectPtr            = typename RenderAliases::ObjectPtr;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
 
     //! @}
@@ -60,16 +59,6 @@ struct PositionSample {
     /// Set if the sample was drawn from a degenerate (Dirac delta) distribution
     Mask delta;
 
-    /**
-      * \brief Optional: pointer to an associated object
-      *
-      * In some uses of this record, sampling a position also involves choosing
-      * one of several objects (shapes, emitters, ..) on which the position
-      * lies. In that case, the \c object attribute stores a pointer to this
-      * object.
-      */
-    ObjectPtr object = nullptr;
-
     //! @}
     // =============================================================
 
@@ -86,18 +75,17 @@ struct PositionSample {
      */
     PositionSample(const SurfaceInteraction3f &si)
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
-          delta(false), object(ek::reinterpret_array<ObjectPtr>(si.shape)) { }
+          delta(false) { }
 
     /// Basic field constructor
     PositionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
-                   Float time, Float pdf, Mask delta, ObjectPtr object)
-        : p(p), n(n), uv(uv), time(time), pdf(pdf), delta(delta),
-          object(object) {}
+                   Float time, Float pdf, Mask delta)
+        : p(p), n(n), uv(uv), time(time), pdf(pdf), delta(delta) { }
 
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta, object)
+    ENOKI_STRUCT(PositionSample, p, n, uv, time, pdf, delta)
 };
 
 // -----------------------------------------------------------------------------
@@ -125,11 +113,13 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    MTS_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta, object)
+
+    MTS_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
     MTS_IMPORT_RENDER_BASIC_TYPES()
+
     using Interaction3f        = typename RenderAliases::Interaction3f;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
-    using ObjectPtr            = typename RenderAliases::ObjectPtr;
+    using EmitterPtr           = typename RenderAliases::EmitterPtr;
 
     //! @}
     // =============================================================
@@ -143,6 +133,16 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
 
     /// Distance from the reference point to the target shape
     Float dist;
+
+    /**
+      * \brief Optional: pointer to an associated object
+      *
+      * In some uses of this record, sampling a position also involves choosing
+      * one of several objects (shapes, emitters, ..) on which the position
+      * lies. In that case, the \c object attribute stores a pointer to this
+      * object.
+      */
+    EmitterPtr emitter = nullptr;
 
     //! @}
     // =============================================================
@@ -160,50 +160,39 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      * the intersected surface, as required when using e.g. the \ref Endpoint
      * interface to compute PDF values.
      *
+     * \param scene
+     *     Pointer to the scene, which is needed to extract information
+     *     about the environment emitter (if applicable)
+     *
      * \param it
      *     Surface interaction
      *
      * \param ref
      *     Reference position
      */
-    DirectionSample(const SurfaceInteraction3f &it, const Interaction3f &ref)
-        : Base(it) {
-        d    = it.p - ref.p;
-        dist = ek::norm(d);
-        d   /= dist;
-        d[!it.is_valid()] = -it.wi; // for environment emitters
+    DirectionSample(const Scene<Float, Spectrum> *scene,
+                    const SurfaceInteraction3f &it,
+                    const Interaction3f &ref) : Base(it) {
+        Vector3f rel = it.p - ref.p;
+        Mask valid = it.is_valid();
+        dist = ek::norm(rel);
+        d    = select(valid, rel / dist, -it.wi);
+        emitter = it.emitter(scene, valid);
     }
 
     /// Element-by-element constructor
     DirectionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                     const Float &time, const Float &pdf, const Mask &delta,
-                    const ObjectPtr &object, const Vector3f &d, const Float &dist)
-        : Base(p, n, uv, time, pdf, delta, object), d(d), dist(dist) { }
+                    const Vector3f &d, const Float &dist, const EmitterPtr &emitter)
+        : Base(p, n, uv, time, pdf, delta), d(d), dist(dist), emitter(emitter) { }
 
     /// Construct from a position sample
     DirectionSample(const Base &base) : Base(base) { }
 
-    /**
-     * \brief Setup this record so that it can be used to \a query
-     * the density of a surface position (where the reference point lies on
-     * a \a surface).
-     *
-     * \param ray
-     *     Reference to the ray that generated the intersection \c si.
-     *     The ray origin must be located at the reference surface and point
-     *     towards \c si.p.
-     *
-     * \param si
-     *     A surface intersection record (usually on an emitter).
-     *
-     * \note Defined in scene.h
-     */
-    void set_query(const Ray3f &ray, const SurfaceInteraction3f &si);
-
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, object, d, dist)
+    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)
 };
 
 // -----------------------------------------------------------------------------
@@ -218,7 +207,6 @@ std::ostream &operator<<(std::ostream &os,
        << "  time = " << ps.time << "," << std::endl
        << "  pdf = " << ps.pdf << "," << std::endl
        << "  delta = " << ps.delta << "," << std::endl
-       << "  object = " << string::indent(ps.object) << std::endl
        <<  "]";
     return os;
 }
@@ -233,7 +221,7 @@ std::ostream &operator<<(std::ostream &os,
        << "  time = " << ds.time << "," << std::endl
        << "  pdf = " << ds.pdf << "," << std::endl
        << "  delta = " << ds.delta << "," << std::endl
-       << "  object = " << string::indent(ds.object) << "," << std::endl
+       << "  emitter = " << string::indent(ds.emitter) << "," << std::endl
        << "  d = " << string::indent(ds.d, 6) << "," << std::endl
        << "  dist = " << ds.dist << std::endl
        << "]";

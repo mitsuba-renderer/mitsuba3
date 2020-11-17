@@ -92,7 +92,7 @@ public:
         ds.time  = it.time;
         ds.pdf   = 1.f;
         ds.delta = true;
-        ds.object = this;
+        ds.emitter = this;
         ds.d     = ds.p - it.p;
         ds.dist  = ek::norm(ds.d);
 

@@ -179,7 +179,7 @@ public:
         ds.time = it.time;
         ds.pdf = 1.f;
         ds.delta = true;
-        ds.object   = this;
+        ds.emitter   = this;
 
         ds.d = ds.p - it.p;
         Float dist_squared = ek::squared_norm(ds.d);

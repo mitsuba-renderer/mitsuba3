@@ -182,7 +182,7 @@ public:
         ds.time   = it.time;
         ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))), 0.f);
         ds.delta  = false;
-        ds.object = this;
+        ds.emitter = this;
         ds.d      = d;
         ds.dist   = dist;
 

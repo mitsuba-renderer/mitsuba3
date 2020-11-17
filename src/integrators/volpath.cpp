@@ -426,8 +426,7 @@ public:
             EmitterPtr emitter = si.emitter(scene, active_surface);
             Mask emitter_hit   = ek::neq(emitter, nullptr) && active_surface;
             if (ek::any_or<true>(emitter_hit)) {
-                DirectionSample3f ds(si, ref_interaction);
-                ds.object                        = emitter;
+                DirectionSample3f ds(scene, si, ref_interaction);
                 ek::masked(emitter_val, emitter_hit) = emitter->eval(si, emitter_hit);
                 ek::masked(emitter_pdf, emitter_hit) = scene->pdf_emitter_direction(ref_interaction, ds, emitter_hit);
                 active &= !emitter_hit; // disable lanes which found an emitter

@@ -262,8 +262,7 @@ public:
                 if (ek::any_or<true>(active_e)) {
                     if (ek::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
-                        DirectionSample3f ds(si, last_scatter_event);
-                        ds.object         = emitter;
+                        DirectionSample3f ds(scene, si, last_scatter_event);
                         Float emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
                         update_weights(p_over_f_nee, emitter_pdf, 1.f, channel, active_e);
                     }

@@ -241,8 +241,8 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
         ek::schedule(res);
         return res;
     } else {
-        return ek::reinterpret_array<EmitterPtr>(ds.object)->pdf_direction(ref, ds, active) *
-            (1.f / emitters_size);
+        return ds.emitter->pdf_direction(ref, ds, active) *
+               (1.f / emitters_size);
     }
 }
 

@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
     auto arg_extra     = parser.add("", true);
     bool print_profile = false;
     xml::ParameterList params;
-    std::string error_msg;
+    std::string error_msg, mode;
 
 #if !defined(__WINDOWS__)
     /* Initialize signal handlers */
@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
                                             value.substr(sep+1)));
             arg_define = arg_define->next();
         }
-        std::string mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
+        mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
 
 #if defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_")) {
@@ -315,11 +315,18 @@ int main(int argc, char *argv[]) {
     Thread::static_shutdown();
     Class::static_shutdown();
     Jit::static_shutdown();
+
 #if defined(MTS_ENABLE_CUDA)
-    optix_shutdown();
+    if (string::starts_with(mode, "cuda_")) {
+        optix_shutdown();
+        jitc_shutdown();
+    }
 #endif
-#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-    jitc_shutdown();
+
+#if defined(MTS_ENABLE_LLVM)
+    if (string::starts_with(mode, "llvm_"))
+        jitc_shutdown();
 #endif
+
     return error_msg.empty() ? 0 : -1;
 }

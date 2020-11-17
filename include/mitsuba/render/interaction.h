@@ -95,14 +95,19 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Type declarations
     // =============================================================
+
     using Float    = Float_;
     using Spectrum = Spectrum_;
-    MTS_IMPORT_RENDER_BASIC_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
-    using Index            = typename CoreAliases::UInt32;
-    using PositionSample3f = typename RenderAliases::PositionSample3f;
+
     // Make parent fields/functions visible
     MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, is_valid)
+
+    MTS_IMPORT_RENDER_BASIC_TYPES()
+    MTS_IMPORT_OBJECT_TYPES()
+
+    using Index            = typename CoreAliases::UInt32;
+    using PositionSample3f = typename RenderAliases::PositionSample3f;
+
     //! @}
     // =============================================================
 
@@ -161,7 +166,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
-        sh_frame.s = ek::normalize(ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, dp_du), dp_du));
+        sh_frame.s = ek::normalize(
+            ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, dp_du), dp_du));
         sh_frame.t = ek::cross(sh_frame.n, sh_frame.s);
     }
 
@@ -241,21 +247,21 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         Float a00 = ek::dot(dp_du, dp_du),
               a01 = ek::dot(dp_du, dp_dv),
               a11 = ek::dot(dp_dv, dp_dv),
-              inv_det = ek::rcp(a00*a11 - a01*a01);
+              inv_det = ek::rcp(ek::fmsub(a00, a11, a01*a01));
 
         Float b0x = ek::dot(dp_du, dp_dx),
               b1x = ek::dot(dp_dv, dp_dx),
               b0y = ek::dot(dp_du, dp_dy),
               b1y = ek::dot(dp_dv, dp_dy);
 
-        /* Set the UV partials to zero if dpdu and/or dpdv == 0 */
+        // Set the UV partials to zero if dpdu and/or dpdv == 0
         inv_det = ek::select(ek::isfinite(inv_det), inv_det, 0.f);
 
-        duv_dx = Vector2f(ek::fmsub(a11, b0x, a01 * b1x) * inv_det,
-                          ek::fmsub(a00, b1x, a01 * b0x) * inv_det);
+        duv_dx = Vector2f(ek::fmsub(a11, b0x, a01 * b1x),
+                          ek::fmsub(a00, b1x, a01 * b0x)) * inv_det;
 
-        duv_dy = Vector2f(ek::fmsub(a11, b0y, a01 * b1y) * inv_det,
-                          ek::fmsub(a00, b1y, a01 * b0y) * inv_det);
+        duv_dy = Vector2f(ek::fmsub(a11, b0y, a01 * b1y),
+                          ek::fmsub(a00, b1y, a01 * b0y)) * inv_det;
     }
 
     /**
@@ -521,8 +527,10 @@ struct PreliminaryIntersection {
 
     using Float    = Float_;
     using Spectrum = Spectrum_;
+
     MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
+
     using Index = typename CoreAliases::UInt32;
     using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
 

@@ -92,7 +92,7 @@ public:
         ds.time   = it.time;
         ds.pdf    = warp::square_to_uniform_sphere_pdf(d);
         ds.delta  = false;
-        ds.object = this;
+        ds.emitter = this;
         ds.d      = d;
         ds.dist   = dist;
 
