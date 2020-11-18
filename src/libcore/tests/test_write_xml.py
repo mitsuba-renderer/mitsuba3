@@ -514,7 +514,7 @@ def test12_xml_duplicate_files(variants_scalar_all):
     dict_to_xml(scene_dict, filepath)
 
     spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
-    assert len(spectra_files) == 2 and spectra_files[0] == "Al.eta.spd" and spectra_files[1] == "Al.eta(1).spd"
+    assert len(spectra_files) == 2 and "Al.eta.spd" and "Al.eta(1).spd" in spectra_files
     rmtree(os.path.split(filepath)[0])
 
 @fresolver_append_path
