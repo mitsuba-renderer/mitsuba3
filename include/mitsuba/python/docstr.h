@@ -702,6 +702,8 @@ static const char *__doc_mitsuba_BSDFSample3_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_apply_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_BSDFSample3_apply_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_BSDFSample3_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_eta = R"doc(Relative index of refraction in the sampled direction)doc";
@@ -1776,6 +1778,8 @@ Returns:
 1. the sampled position. 2. the normalized probability density of the
 sample.)doc";
 
+static const char *__doc_mitsuba_ContinuousDistribution_set_grad_suspended = R"doc()doc";
+
 static const char *__doc_mitsuba_ContinuousDistribution_size = R"doc(Return the number of discretizations)doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution_update =
@@ -1849,6 +1853,10 @@ Direction `s` is set so that it points from the reference surface to
 the intersected surface, as required when using e.g. the Endpoint
 interface to compute PDF values.
 
+Parameter ``scene``:
+    Pointer to the scene, which is needed to extract information about
+    the environment emitter (if applicable)
+
 Parameter ``it``:
     Surface interaction
 
@@ -1872,6 +1880,8 @@ static const char *__doc_mitsuba_DirectionSample_DirectionSample_8 = R"doc()doc"
 static const char *__doc_mitsuba_DirectionSample_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectionSample_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_apply_label = R"doc()doc";
 
@@ -1998,6 +2008,8 @@ Returns the integer position, the normalized probability value, and
 re-uniformized random variate that can be used for further sampling
 steps.)doc";
 
+static const char *__doc_mitsuba_DiscreteDistribution2D_set_grad_suspended = R"doc()doc";
+
 static const char *__doc_mitsuba_DiscreteDistribution2D_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_DiscreteDistribution = R"doc(Create an unitialized DiscreteDistribution instance)doc";
@@ -2098,6 +2110,8 @@ Returns:
 
 1. the discrete index associated with the sample 2. the re-scaled
 sample value 3. the normalized probability value of the sample)doc";
+
+static const char *__doc_mitsuba_DiscreteDistribution_set_grad_suspended = R"doc()doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries)doc";
 
@@ -2671,6 +2685,8 @@ static const char *__doc_mitsuba_Frame_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_apply_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Frame_apply_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_Frame_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_Frame_cos_phi =
@@ -2860,6 +2876,8 @@ R"doc(Given a uniformly distributed 2D sample, draw a sample from the
 distribution (parameterized by ``param`` if applicable)
 
 Returns the warped sample and associated probability density.)doc";
+
+static const char *__doc_mitsuba_Hierarchical2D_set_grad_suspended = R"doc()doc";
 
 static const char *__doc_mitsuba_Hierarchical2D_to_string = R"doc()doc";
 
@@ -3116,6 +3134,8 @@ static const char *__doc_mitsuba_Interaction_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_apply_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Interaction_apply_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_Interaction_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_is_valid = R"doc(Is the current interaction valid?)doc";
@@ -3141,6 +3161,12 @@ static const char *__doc_mitsuba_Interaction_t = R"doc(Distance traveled along t
 static const char *__doc_mitsuba_Interaction_time = R"doc(Time value associated with the interaction)doc";
 
 static const char *__doc_mitsuba_Interaction_wavelengths = R"doc(Wavelengths associated with the ray that produced this interaction)doc";
+
+static const char *__doc_mitsuba_Interaction_zero =
+R"doc(This callback method is invoked by ek::zero<>, and takes care of
+fields that deviate from the standard zero-initialization convention.
+In this particular class, the ``t`` field should be set to an infinite
+value to mark invalid intersection records.)doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution =
 R"doc(Continuous 1D probability distribution defined in terms of an
@@ -3239,6 +3265,8 @@ Returns:
 
 1. the sampled position. 2. the normalized probability density of the
 sample.)doc";
+
+static const char *__doc_mitsuba_IrregularContinuousDistribution_set_grad_suspended = R"doc()doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution_size = R"doc(Return the number of discretizations)doc";
 
@@ -3474,6 +3502,8 @@ static const char *__doc_mitsuba_Marginal2D_sample_discrete = R"doc()doc";
 
 static const char *__doc_mitsuba_Marginal2D_sample_segment = R"doc()doc";
 
+static const char *__doc_mitsuba_Marginal2D_set_grad_suspended = R"doc()doc";
+
 static const char *__doc_mitsuba_Marginal2D_to_string = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium = R"doc()doc";
@@ -3499,6 +3529,8 @@ static const char *__doc_mitsuba_MediumInteraction_MediumInteraction_5 = R"doc()
 static const char *__doc_mitsuba_MediumInteraction_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_MediumInteraction_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_apply_label = R"doc()doc";
 
@@ -4217,11 +4249,24 @@ See also:
 static const char *__doc_mitsuba_Object_ref_count = R"doc(Return the current reference count)doc";
 
 static const char *__doc_mitsuba_Object_set_grad_suspended =
-R"doc(Suspend or resume tracking of derivatives of the object and its
-children.
+R"doc(Suspend or resume tracking of derivatives.
 
-This allows to stop keeping track of gradients while not recomputing
-intermediate values (e.g. normals, height fields...))doc";
+One important use case of Mitsuba 2 entails the propagation of
+derivatives through the full rendering process, typically via
+automatic differentiation. To this end, certain variants of the
+renderer perform all computation via Enoki's DiffArray<T> class, which
+internally builds a computation graph of all involved arithmetic. In
+certain situations, this is undesirable, and we need to temporarily
+suspend the propagation of gradients. That is typically done using the
+Object::traverse mechanism. However, some parameters may not be
+exposed through traverse, and we need to suspend them too, otherwise
+parts of the computation will still be recorded. This method handles
+such cases: its default implementation doed nothing, but classes using
+such "hidden" parameters may override it to properly suspend the
+tracking of their gradients.
+
+Parameter ``state``:
+    Whether to stop or resume recording derivatives.)doc";
 
 static const char *__doc_mitsuba_Object_to_string =
 R"doc(Return a human-readable string representation of the object's
@@ -4470,7 +4515,7 @@ This is useful to determine the hypothetical sampling density on a
 surface after hitting it using standard ray tracing. This happens for
 instance in path tracing with multiple importance sampling.)doc";
 
-static const char *__doc_mitsuba_PositionSample_PositionSample_2 = R"doc()doc";
+static const char *__doc_mitsuba_PositionSample_PositionSample_2 = R"doc(Basic field constructor)doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_3 = R"doc()doc";
 
@@ -4480,17 +4525,13 @@ static const char *__doc_mitsuba_PositionSample_PositionSample_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_PositionSample_6 = R"doc()doc";
 
+static const char *__doc_mitsuba_PositionSample_PositionSample_7 = R"doc()doc";
+
 static const char *__doc_mitsuba_PositionSample_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_apply_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_apply_3 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_apply_label = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_apply_1 = R"doc()doc";
-
-static const char *__doc_mitsuba_PositionSample_apply_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_apply_label = R"doc()doc";
 
@@ -4550,6 +4591,8 @@ static const char *__doc_mitsuba_PreliminaryIntersection_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_apply_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_PreliminaryIntersection_apply_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_PreliminaryIntersection_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_compute_surface_interaction =
@@ -4588,6 +4631,12 @@ static const char *__doc_mitsuba_PreliminaryIntersection_shape = R"doc(Pointer t
 static const char *__doc_mitsuba_PreliminaryIntersection_shape_index = R"doc(Shape index, e.g. the shape ID in shapegroup (if applicable))doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_t = R"doc(Distance traveled along the ray)doc";
+
+static const char *__doc_mitsuba_PreliminaryIntersection_zero =
+R"doc(This callback method is invoked by ek::zero<>, and takes care of
+fields that deviate from the standard zero-initialization convention.
+In this particular class, the ``t`` field should be set to an infinite
+value to mark invalid intersection records.)doc";
 
 static const char *__doc_mitsuba_Profiler = R"doc()doc";
 
@@ -5102,6 +5151,8 @@ static const char *__doc_mitsuba_RayDifferential_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_apply_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_RayDifferential_apply_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_RayDifferential_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_RayDifferential_d_x = R"doc()doc";
@@ -5147,6 +5198,8 @@ static const char *__doc_mitsuba_Ray_Ray_9 = R"doc()doc";
 static const char *__doc_mitsuba_Ray_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_apply_label = R"doc()doc";
 
@@ -6894,6 +6947,8 @@ static const char *__doc_mitsuba_SurfaceInteraction_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_apply_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_apply_3 = R"doc()doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_apply_label = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
@@ -7932,6 +7987,8 @@ static const char *__doc_mitsuba_Transform_Transform_7 = R"doc()doc";
 static const char *__doc_mitsuba_Transform_apply_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_apply_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_apply_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_apply_label = R"doc()doc";
 
