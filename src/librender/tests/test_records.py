@@ -20,7 +20,6 @@ def test01_position_sample_construction_single(variant_scalar_rgb):
     record.pdf = 0.002
     record.delta = False
     record.time = 0
-    record.object = None
     assert str(record) == """PositionSample3f[
   p = [0, 42, 0],
   n = [0, 0, 0.4],
@@ -28,7 +27,6 @@ def test01_position_sample_construction_single(variant_scalar_rgb):
   time = 0,
   pdf = 0.002,
   delta = 0,
-  object = nullptr
 ]"""
 
     # SurfaceInteraction constructor
@@ -70,7 +68,7 @@ def test02_position_sample_construction_vec(variants_vec_rgb):
   time = [0, 0.5, 0.7, 1, 1.5],
   pdf = [0, 0, 0, 0, 0],
   delta = [0, 0, 0, 0, 0],
-  object = [0x0, 0x0, 0x0, 0x0, 0x0]
+  emitter = [0x0, 0x0, 0x0, 0x0, 0x0]
 ]""" in str(records)
 
     # SurfaceInteraction constructor
@@ -100,18 +98,23 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
   time = 0,
   pdf = 0.002,
   delta = 0,
-  object = nullptr,
+  emitter = nullptr,
   d = [0, 42, -1],
   dist = 0.13
 ]"""
 
     # Construct from two interactions: ds.d should start from the reference its.
+    shape = mitsuba.core.xml.load_dict({
+        'type': 'sphere',
+        'emitter': { 'type' : 'area' }
+    })
     its = ek.zero(SurfaceInteraction3f)
     its.p = [20, 3, 40.02]
     its.t = 1
+    its.shape = shape
     ref = ek.zero(Interaction3f)
     ref.p = [1.6, -2, 35]
-    record = DirectionSample3f(its, ref)
+    record = DirectionSample3f(None, its, ref)
     d = (its.p - ref.p) / ek.norm(its.p - ref.p)
     assert ek.allclose(record.d, d)
 
