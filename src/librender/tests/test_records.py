@@ -68,7 +68,6 @@ def test02_position_sample_construction_vec(variants_vec_rgb):
   time = [0, 0.5, 0.7, 1, 1.5],
   pdf = [0, 0, 0, 0, 0],
   delta = [0, 0, 0, 0, 0],
-  emitter = [0x0, 0x0, 0x0, 0x0, 0x0]
 ]""" in str(records)
 
     # SurfaceInteraction constructor
