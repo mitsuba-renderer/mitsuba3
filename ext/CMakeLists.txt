@@ -48,6 +48,7 @@ add_subdirectory(enoki)
 
 if (MTS_ENABLE_JIT)
   set_target_properties(enoki-jit PROPERTIES FOLDER "enoki")
+  set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
 endif()
 
 if (MTS_ENABLE_AUTODIFF)

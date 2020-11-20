@@ -638,8 +638,10 @@ if (MTS_ENABLE_EMBREE)
 endif()
 
 if (MTS_ENABLE_JIT)
-  list(APPEND MTS_DEPEND enoki-jit)
+  list(APPEND MTS_DEPEND enoki-jit enoki-thread)
   set_target_properties(enoki-jit PROPERTIES
+    INSTALL_RPATH "${MTS_ORIGIN}")
+  set_target_properties(enoki-thread PROPERTIES
     INSTALL_RPATH "${MTS_ORIGIN}")
 endif()
 
