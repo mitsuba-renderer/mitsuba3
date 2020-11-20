@@ -47,7 +47,7 @@ def integrator_sample(scene, sampler, rays, medium, active=True):
     active_b &= ek.neq(emitter, None)
     emitter_val = emitter.eval(si_bsdf, active_b)
     delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-    ds = DirectionSample3f(si_bsdf, si)
+    ds = DirectionSample3f(scene, si_bsdf, si)
     emitter_pdf = ek.select(delta, Float(0), scene.pdf_emitter_direction(si, ds, active_b))
     result += ek.select(active_b, bsdf_val * emitter_val * mis_weight(bs.pdf, emitter_pdf), Vector3f(0))
     return result, si.is_valid(), ek.select(si.is_valid(), si.t, Float(0.0))
