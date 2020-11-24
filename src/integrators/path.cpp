@@ -200,6 +200,7 @@ public:
                 emission_weight = mis_weight(bs.pdf, emitter_pdf);
             }
 
+            emitter = si_bsdf.emitter(scene, active);
             si = std::move(si_bsdf);
 
             if constexpr (ek::is_jit_array_v<Float>)
