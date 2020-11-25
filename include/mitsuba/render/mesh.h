@@ -292,7 +292,7 @@ protected:
     struct MeshAttribute {
         size_t size;
         MeshAttributeType type;
-        FloatStorage buf;
+        mutable FloatStorage buf;
     };
 
     template <uint32_t Size, bool Raw>
@@ -350,7 +350,7 @@ protected:
     mutable FloatStorage m_vertex_normals;
     mutable FloatStorage m_vertex_texcoords;
 
-    DynamicBuffer<UInt32> m_faces;
+    mutable DynamicBuffer<UInt32> m_faces;
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
 

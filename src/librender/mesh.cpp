@@ -75,12 +75,22 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
+    /* Ensure the buffers are evaluated and on the CPU before writing anything,
+       We have to do it manually for mesh attributes. */
+    scoped_migrate_to_host scope(m_vertex_positions, m_vertex_normals, m_vertex_texcoords, m_faces);
+    static constexpr bool IsCUDA = ek::is_cuda_array_v<Float>;
+    static constexpr bool IsJIT = IsCUDA || ek::is_llvm_array_v<Float>;
+
     ref<FileStream> stream = new FileStream(filename, FileStream::ETruncReadWrite);
 
     std::vector<std::pair<std::string, const MeshAttribute&>> vertex_attributes;
     std::vector<std::pair<std::string, const MeshAttribute&>> face_attributes;
 
     for (const auto&[name, attribute]: m_mesh_attributes) {
+        if constexpr (IsCUDA) // Migrate if necessary
+            ek::migrate(attribute.buf, AllocType::Host);
+        if constexpr (IsJIT) // Schedule evaluation if necessary
+            ek::schedule(attribute.buf);
         switch (attribute.type) {
             case MeshAttributeType::Vertex:
                 vertex_attributes.push_back({ name.substr(7), attribute });
@@ -89,6 +99,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
                 face_attributes.push_back({ name.substr(5), attribute });
                 break;
         }
+    }
+    // Evaluate buffers if necessary
+    if (IsJIT && !m_mesh_attributes.empty()) {
+        ek::eval();
+        ek::sync_stream();
     }
 
     Log(Info, "Writing mesh to \"%s\" ..", filename);
@@ -189,6 +204,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
                             m_vertex_count * vertex_data_bytes()),
         util::time_string((float) timer.value())
     );
+
+    // Migrate buffers back to the GPU
+    if constexpr (IsCUDA) {
+        for (const auto&[name, attribute]: m_mesh_attributes) {
+            ek::migrate(attribute.buf, AllocType::Device);
+        }
+    }
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {

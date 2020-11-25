@@ -719,3 +719,42 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # assert ek.allclose(ek.grad(si.t), 10.0, atol=1e-5)
 
     # TODO add tests for normals on curved mesh (sticky normals shouldn't move)
+
+@fresolver_append_path
+def test18_write_xml(variants_all_rgb):
+    from mitsuba.core.xml import load_dict
+    from mitsuba.core import Thread
+    from mitsuba.python.util import traverse
+    from enoki import allclose
+    import os
+    from shutil import rmtree
+
+    fr = Thread.thread().file_resolver()
+    # Add the path to the mitsuba root folder, so that files are always saved in mitsuba/resources/...
+    # This way we know where to look for the file in case the unit test fails
+    mts_root = str(fr[len(fr)-1])
+    filepath = os.path.join(mts_root, 'resources/data/scenes/mesh_write_xml/mesh.ply')
+    dirname = os.path.dirname(filepath)
+    os.makedirs(dirname, exist_ok=True)
+    mesh = load_dict({
+        'type': 'ply',
+        'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
+    })
+    params = traverse(mesh)
+    positions = params['vertex_positions'].numpy().copy()
+    # Modify one buffer, to check if JIT modes are properly evaluated when saving
+    params['vertex_positions'] += 10
+    # Add a mesh attribute, to check if they are properly migrated in CUDA modes
+    buf_name = 'vertex_test'
+    mesh.add_attribute(buf_name, 1, [1,2,3,4])
+
+    mesh.write_ply(filepath)
+    mesh_saved = load_dict({
+        'type': 'ply',
+        'filename': filepath
+    })
+    params_saved = traverse(mesh_saved)
+
+    rmtree(os.path.split(filepath)[0])
+    assert allclose(params_saved['vertex_positions'], positions + 10)
+    assert buf_name in params_saved and allclose(params_saved[buf_name], [1, 2, 3, 4])
