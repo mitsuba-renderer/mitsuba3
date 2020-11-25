@@ -25,7 +25,9 @@ TEST_SCENE_DIR = realpath(join(os.path.dirname(
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 # List of test scene folders to exclude
-EXCLUDE_FOLDERS = []
+EXCLUDE_FOLDERS = [
+    'orthographic_sensor', #TODO remove this after rebase onto master
+]
 
 # Don't test participating media in GPU modes
 # to reduce the time needed to run all tests
@@ -147,10 +149,15 @@ def test_render(variants_all, scene_fname):
             basename(scene_fname))[0] + '_' + mitsuba.variant())
 
         img_rgb_bmp = xyz_to_rgb_bmp(img)
+        ref_img_rgb_bmp = xyz_to_rgb_bmp(ref_img)
 
         fname = output_prefix + '_img.exr'
         img_rgb_bmp.write(fname)
         print('Saved rendered image to: ' + fname)
+
+        fname = output_prefix + '_ref.exr'
+        ref_img_rgb_bmp.write(fname)
+        print('Saved reference image to: ' + fname)
 
         var_fname = output_prefix + '_var.exr'
         xyz_to_rgb_bmp(var_img).write(var_fname)
