@@ -458,7 +458,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, 
         if constexpr (ek::is_diff_array_v<Float>) {
             // Differentiable SurfaceInteraction needs to be computed outside of the OptiX kernel
             if (!has_flag(hit_flags, HitComputeFlags::NonDifferentiable) &&
-                (ek::grad_enabled(ray.o) || shapes_grad_enabled())) {
+                (ek::grad_enabled(ray) || shapes_grad_enabled())) {
                 auto pi = ray_intersect_preliminary_gpu(ray, active);
                 return pi.compute_surface_interaction(ray, hit_flags, pi.is_valid());
             }

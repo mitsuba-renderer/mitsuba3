@@ -496,7 +496,7 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
-    /// Return whether shape's parameters require gradients (default implementation return false)
+    /// Return whether any shape's parameters require gradients (default return false)
     virtual bool parameters_grad_enabled() const;
 
     //! @}

@@ -478,8 +478,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     bool differentiable = false;
     if constexpr (ek::is_diff_array_v<Float>)
-        differentiable = ek::grad_enabled(m_vertex_positions) ||
-                         ek::grad_enabled(ray.o) || ek::grad_enabled(ray.d);
+        differentiable = ek::grad_enabled(m_vertex_positions) || ek::grad_enabled(ray);
 
     // Recompute ray intersection to get differentiable prim_uv and t
     if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
@@ -918,9 +917,10 @@ MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
         bool result = false;
         for (auto &[name, attribute]: m_mesh_attributes)
             result |= ek::grad_enabled(attribute.buf);
-        return result || ek::grad_enabled(m_vertex_positions) ||
-               ek::grad_enabled(m_vertex_normals) ||
-               ek::grad_enabled(m_vertex_texcoords);
+        result |= ek::grad_enabled(m_vertex_positions);
+        result |= ek::grad_enabled(m_vertex_normals);
+        result |= ek::grad_enabled(m_vertex_texcoords);
+        return result;
     }
 
     return false;

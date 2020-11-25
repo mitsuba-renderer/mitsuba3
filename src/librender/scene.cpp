@@ -280,7 +280,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<st
     if constexpr (ek::is_diff_array_v<Float>) {
         for (auto& s : m_shapes) {
             m_shapes_grad_enabled |= s->parameters_grad_enabled();
-            if (m_shapes_grad_enabled) break;
+            if (m_shapes_grad_enabled)
+                break;
         }
     }
 }
