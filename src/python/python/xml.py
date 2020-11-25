@@ -538,7 +538,7 @@ class WriteXML:
 
         data: The dictionary to write to file.
         '''
-        from mitsuba.core import Transform4f, Point3f
+        from mitsuba.core import ScalarTransform4f, ScalarPoint3f
 
         if 'type' in data: # Scene tag
             self.open_element(data.pop('type'), {'version': '2.1.0'})
@@ -593,14 +593,14 @@ class WriteXML:
                 self.element('integer', {'name':key, 'value': '%d' % value})
             elif isinstance(value, float):
                 self.element('float', {'name':key, 'value': '%f' % value})
-            elif any(isinstance(value, x) for x in [list, Point3f, np.ndarray]):
+            elif any(isinstance(value, x) for x in [list, ScalarPoint3f, np.ndarray]):
                 # Cast to point
                 if len(value) == 3:
                     args = {'name': key, 'x' : value[0] , 'y' :  value[1] , 'z' :  value[2]}
                     self.element('point', args)
                 else:
                     raise ValueError("Expected 3 values for a point. Got %d instead." % len(value))
-            elif isinstance(value, Transform4f):
+            elif isinstance(value, ScalarTransform4f):
                 # In which plugin are we adding a transform?
                 parent_plugin = self.current_tag()
                 if parent_plugin == 'sensor':
@@ -651,7 +651,7 @@ class WriteXML:
 
     def transform_matrix(self, transform):
         '''
-        Converts a mitsuba Transform4f into a dict entry.
+        Converts a mitsuba ScalarTransform4f into a dict entry.
         This dict entry won't have a 'type' because it's handled in a specific case.
 
         Params
@@ -678,7 +678,7 @@ class WriteXML:
         Params
         ------
 
-        transform: The Transform4f transform matrix to decompose
+        transform: The ScalarTransform4f transform matrix to decompose
         export_scale: Whether to add a scale property or not. (e.g. don't do it for cameras to avoid clutter)
         '''
         from enoki import transform_decompose, quat_to_euler
