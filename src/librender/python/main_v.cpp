@@ -128,7 +128,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
 #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
     if constexpr (ek::is_jit_array_v<Float>) {
         /* Register a cleanup callback function that is invoked when
-           the 'mitsuba::BSDF' Python type is garbage collected */
+           the 'mitsuba::Scene' Python type is garbage collected */
         py::cpp_function cleanup_callback(
             [](py::handle weakref) {
                 #if defined(MTS_ENABLE_CUDA)
@@ -141,7 +141,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
             }
         );
 
-        (void) py::weakref(m.attr("BSDF"), cleanup_callback).release();
+        (void) py::weakref(m.attr("Scene"), cleanup_callback).release();
     }
 #endif
 
