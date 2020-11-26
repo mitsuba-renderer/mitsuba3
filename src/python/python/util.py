@@ -1,5 +1,6 @@
 import mitsuba
 import enoki as ek
+from collections.abc import Mapping
 
 
 def is_differentiable(p):
@@ -7,7 +8,7 @@ def is_differentiable(p):
     return ek.is_diff_array_v(p) and ek.is_floating_point_v(p)
 
 
-class SceneParameters:
+class SceneParameters(Mapping):
     """
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
@@ -53,10 +54,7 @@ class SceneParameters:
                 ('*' if is_differentiable(self[k]) else ' '), k)
         return 'SceneParameters[\n%s]' % param_list
 
-    def keys(self):
-        return self.properties.keys()
-
-    def items(self):
+    def __iter__(self):
         class SceneParametersItemIterator:
             def __init__(self, pmap):
                 self.pmap = pmap
@@ -70,6 +68,12 @@ class SceneParameters:
                 return (key, self.pmap[key])
 
         return SceneParametersItemIterator(self)
+
+    def items(self):
+        return self.__iter__()
+
+    def keys(self):
+        return self.properties.keys()
 
     def all_differentiable(self):
         for k in self.keys():
