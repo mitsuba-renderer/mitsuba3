@@ -264,7 +264,6 @@ struct XMLParseContext {
     XMLParseContext(const std::string &variant) : variant(variant) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
         parallelize = !is_jit(); // TODO this shouldn't be necessary
-        std::cout << "parallelizing " << parallelize << " " << variant << std::endl;
     }
 
     std::string variant;
