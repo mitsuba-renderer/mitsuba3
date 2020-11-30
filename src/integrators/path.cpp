@@ -223,7 +223,8 @@ public:
     Float mis_weight(Float pdf_a, Float pdf_b) const {
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
-        return ek::select(pdf_a > 0.f, pdf_a / (pdf_a + pdf_b), 0.f);
+        Float w = pdf_a / (pdf_a + pdf_b);
+        return ek::select(ek::isfinite(w), w, 0.f);
     }
 
     MTS_DECLARE_CLASS()
