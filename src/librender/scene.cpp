@@ -100,16 +100,13 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         for (Emitter *emitter: m_emitters)
             emitter->set_scene(this);
 
-        // For cuda_* modes, convert the emitters pointers to enoki registry ids
-        if constexpr (ek::is_jit_array_v<Float>) {
-            std::vector<uint32_t> tmp(m_emitters.size());
-            for (uint32_t i = 0; i < m_emitters.size(); i++)
-                tmp[i] = jitc_registry_get_id(m_emitters[i]);
-            m_emitters_ptr = ek::load_unaligned<EmitterPtr>(tmp.data(), tmp.size());
-        } else {
-            m_emitters_ptr = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(m_emitters.data(), m_emitters.size());
-        }
     }
+
+    m_shapes_ek = ek::load_unaligned<DynamicBuffer<ShapePtr>>(
+        m_shapes.data(), m_shapes.size());
+
+    m_emitters_ek = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(
+        m_emitters.data(), m_emitters.size());
 
     m_shapes_grad_enabled = false;
 }
@@ -201,7 +198,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
             // Rescale sample.x() to lie in [0,1) again
             sample.x() = (sample.x() - index*emitter_pdf) * emitters_size;
 
-            EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ptr.data(), index, active);
+            EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek.data(), index, active);
 
             // Sample a direction towards the emitter
             std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);

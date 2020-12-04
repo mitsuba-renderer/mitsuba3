@@ -131,11 +131,12 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
 
     cls.attr("eq_") = py::none();
     cls.attr("neq_") = py::none();
+    cls.attr("gather_") = py::none();
     cls.attr("index") = py::none();
 
     cls.def(py::init<>())
        .def(py::init<Type *>())
-       .def("entry_", [](Array a, size_t i) { return a.entry(i); })
+       .def("entry_", [](const Array &a, size_t i) { return a.entry(i); })
        .def("eq_", &Array::eq_)
        .def("neq_", &Array::neq_)
        .def("__len__", [](Array a) { return a.size(); });
@@ -143,7 +144,10 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("zero_") = py::cpp_function(&Array::zero_);
     cls.attr("Type") = VarType::Pointer;
     cls.attr("Value") = py::type::of<Type>();
+    cls.attr("IsScalar") = false;
     cls.attr("IsJIT") = ek::is_jit_array_v<Array>;
+    cls.attr("IsLLVM") = ek::is_llvm_array_v<Array>;
+    cls.attr("IsCUDA") = ek::is_cuda_array_v<Array>;
     cls.attr("Depth") = ek::array_depth_v<Array>;
     cls.attr("Size")  = ek::array_size_v<Array>;
     cls.attr("IsDiff") = false;
@@ -151,9 +155,22 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("IsComplex") = false;
     cls.attr("IsMatrix") = false;
     cls.attr("IsEnoki") = true;
+    cls.attr("Prefix") = "Array";
+    cls.attr("Shape") = py::make_tuple(ek::Dynamic);
 
     if constexpr (ek::is_jit_array_v<Array>)
-        cls.def("index", [](Array a) { return a.index(); });
+        cls.def("index", [](const Array &a) { return a.index(); });
+
+    using UInt32 = ek::uint32_array_t<Array>;
+    using Mask = ek::mask_t<UInt32>;
+
+    cls.def_static("gather_",
+            [](const Array &source, const UInt32 &index, const Mask &mask, bool permute) {
+                if (permute)
+                    return ek::gather<Array, true>(source, index, mask);
+                else
+                    return ek::gather<Array, false>(source, index, mask);
+            });
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \

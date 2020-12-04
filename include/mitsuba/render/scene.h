@@ -160,6 +160,12 @@ public:
     /// Return the scene's integrator
     const Integrator* integrator() const { return m_integrator; }
 
+    /// Return the list of emitters as an Enoki array
+    const DynamicBuffer<EmitterPtr> &emitters_ek() const { return m_emitters_ek; }
+
+    /// Return the list of shapes as an Enoki array
+    const DynamicBuffer<ShapePtr> &shapes_ek() const { return m_shapes_ek; }
+
     //! @}
     // =============================================================
 
@@ -213,8 +219,9 @@ protected:
     ScalarBoundingBox3f m_bbox;
 
     std::vector<ref<Emitter>> m_emitters;
-    DynamicBuffer<EmitterPtr> m_emitters_ptr;
+    DynamicBuffer<EmitterPtr> m_emitters_ek;
     std::vector<ref<Shape>> m_shapes;
+    DynamicBuffer<ShapePtr> m_shapes_ek;
     std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
     std::vector<ref<Object>> m_children;

@@ -5595,6 +5595,8 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitt
 
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters (const version))doc";
 
+static const char *__doc_mitsuba_Scene_emitters_ek = R"doc(Return the list of emitters as an Enoki array)doc";
+
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's integrator)doc";
@@ -5609,7 +5611,7 @@ static const char *__doc_mitsuba_Scene_m_children = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_emitters_ptr = R"doc()doc";
+static const char *__doc_mitsuba_Scene_m_emitters_ek = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 
@@ -5620,6 +5622,8 @@ static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_shapegroups = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_shapes_ek = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapes_grad_enabled = R"doc()doc";
 
@@ -5724,6 +5728,8 @@ static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sens
 static const char *__doc_mitsuba_Scene_shapes = R"doc(Return the list of shapes)doc";
 
 static const char *__doc_mitsuba_Scene_shapes_2 = R"doc(Return the list of shapes)doc";
+
+static const char *__doc_mitsuba_Scene_shapes_ek = R"doc(Return the list of shapes as an Enoki array)doc";
 
 static const char *__doc_mitsuba_Scene_shapes_grad_enabled = R"doc(Return whether any of the shape's parameters require gradient)doc";
 
@@ -6220,8 +6226,8 @@ The default implementation throws an exception.)doc";
 static const char *__doc_mitsuba_Shape_parameters_changed = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_parameters_grad_enabled =
-R"doc(Return whether shape's parameters require gradients (default
-implementation return false))doc";
+R"doc(Return whether any shape's parameters require gradients (default
+return false))doc";
 
 static const char *__doc_mitsuba_Shape_pdf_direction =
 R"doc(Query the probability density of sample_direction()
@@ -8301,8 +8307,6 @@ Out-of-bounds regions are safely ignored. It is assumed that ``source
 
 The function supports `T` being a raw pointer or an arbitrary Enoki
 array that can potentially live on the GPU and/or be differentiable.)doc";
-
-static const char *__doc_mitsuba_array_of_pointers = R"doc()doc";
 
 static const char *__doc_mitsuba_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
