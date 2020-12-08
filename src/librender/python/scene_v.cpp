@@ -56,7 +56,7 @@ MTS_PY_EXPORT(Scene) {
 #endif
         .def("sample_emitter_direction",
             &Scene::sample_emitter_direction,
-            "ref"_a, "sample"_a, "test_visibility"_a = true, "mask"_a = true)
+            "ref"_a, "sample"_a, "test_visibility"_a = true, "active"_a = true)
         .def("pdf_emitter_direction",
             &Scene::pdf_emitter_direction,
             "ref"_a, "ds"_a, "active"_a = true)
