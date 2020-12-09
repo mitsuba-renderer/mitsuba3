@@ -296,17 +296,16 @@ class Optimizer:
         """
 
         if self.params is None:
-            raise Exception('Optimizer.update(): scene parameters dictionary should be'
+            raise Exception('Optimizer.update(): scene parameters dictionary should be '
                             'passed to the constructor!')
 
         for k in Optimizer.__match(keys, self.variables):
             if k in self.params:
                 self.params[k] = self.variables[k]
-                ek.schedule(self.params[k])
 
-        ek.eval()
-
+        ek.schedule(self.params)
         self.params.update()
+        ek.eval()
 
     def set_learning_rate(self, lr):
         """Set the learning rate."""
@@ -315,6 +314,10 @@ class Optimizer:
         # (this would trigger a recompile every time it is changed)
         self.lr = lr
         self.lr_v = ek.full(ek.detached_t(Float), lr, size=1, eval=True)
+
+    def set_grad_suspended(self, value):
+        """Temporarily disable the generation of gradients."""
+        self.params.set_grad_suspended(value)
 
     @contextmanager
     def suspend_gradients(self):
@@ -381,6 +384,7 @@ class SGD(Optimizer):
             value = type(p)(value)
             ek.enable_grad(value)
             self.variables[k] = value
+            ek.schedule(self.variables[k])
 
         ek.eval()
 
@@ -454,6 +458,7 @@ class Adam(Optimizer):
             u = type(p)(u)
             ek.enable_grad(u)
             self.variables[k] = u
+            ek.schedule(self.variables[k])
 
         ek.eval()
 
