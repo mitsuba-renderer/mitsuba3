@@ -198,7 +198,8 @@ public:
 
         si.p = ray(pi.t);
 
-        if (likely(has_flag(hit_flags, HitComputeFlags::UV))) {
+        if (likely(has_flag(hit_flags, HitComputeFlags::UV) ||
+                   has_flag(hit_flags, HitComputeFlags::dPdUV))) {
             Float r = ek::norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
                   inv_r = ek::rcp(r);
 

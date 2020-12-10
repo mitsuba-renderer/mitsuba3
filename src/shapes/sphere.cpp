@@ -358,6 +358,12 @@ public:
 
         active &= pi.is_valid();
 
+        // Fields requirement dependencies
+        bool need_dn_duv = has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
+                           has_flag(hit_flags, HitComputeFlags::dNGdUV);
+        bool need_dp_duv = has_flag(hit_flags, HitComputeFlags::dPdUV) || need_dn_duv;
+        bool need_uv     = has_flag(hit_flags, HitComputeFlags::UV) || need_dp_duv;
+
         // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
@@ -367,7 +373,7 @@ public:
         // Re-project onto the sphere to improve accuracy
         si.p = ek::fmadd(si.sh_frame.n, m_radius, m_center);
 
-        if (likely(has_flag(hit_flags, HitComputeFlags::UV))) {
+        if (likely(need_uv)) {
             Vector3f local = m_to_object.transform_affine(si.p);
 
             Float rd_2  = ek::sqr(local.x()) + ek::sqr(local.y()),
@@ -377,7 +383,7 @@ public:
             ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
             si.uv = Point2f(phi * ek::InvTwoPi<Float>, theta * ek::InvPi<Float>);
-            if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+            if (likely(need_dp_duv)) {
                 si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
 
                 Float rd      = ek::sqrt(rd_2),
@@ -403,8 +409,7 @@ public:
 
         si.n = si.sh_frame.n;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
-            has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
+        if (need_dn_duv) {
             ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
             si.dn_du = si.dp_du * inv_radius;
             si.dn_dv = si.dp_dv * inv_radius;

@@ -522,7 +522,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
     std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
-    if (has_vertex_texcoords() && likely(has_flag(hit_flags, HitComputeFlags::UV))) {
+    if (has_vertex_texcoords() &&
+        likely(has_flag(hit_flags, HitComputeFlags::UV) ||
+               has_flag(hit_flags, HitComputeFlags::dPdUV))) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
@@ -544,7 +546,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     }
 
     // Shading normal (if available)
-    if (has_vertex_normals() && likely(has_flag(hit_flags, HitComputeFlags::ShadingFrame))) {
+    if (has_vertex_normals() &&
+        likely(has_flag(hit_flags, HitComputeFlags::ShadingFrame) ||
+               has_flag(hit_flags, HitComputeFlags::dNSdUV))) {
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
