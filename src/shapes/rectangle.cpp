@@ -229,7 +229,7 @@ public:
             OptixRectangleData data = { bbox(), m_to_object, m_frame.n,
                                         m_frame.s, m_frame.t };
 
-            jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixRectangleData));
+            jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixRectangleData));
         }
     }
 #endif

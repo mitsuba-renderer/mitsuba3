@@ -851,7 +851,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
             (const optix::Vector2f *) m_vertex_texcoords.data()
         };
 
-        jitc_memcpy(m_optix_data_ptr, &data, sizeof(OptixMeshData));
+        jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixMeshData));
     }
 }
 

@@ -59,15 +59,8 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
 
     // Initialize the just-in-time compiler if needed
-    if constexpr (ek::is_jit_array_v<Float>) {
-        if constexpr (ek::is_llvm_array_v<Float>)
-            ek::set_device(-1);
-
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            ek::set_device(0);
-            cie_initialize();
-        }
-    }
+    if constexpr (ek::is_cuda_array_v<Float>)
+        cie_initialize();
 
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Ray);

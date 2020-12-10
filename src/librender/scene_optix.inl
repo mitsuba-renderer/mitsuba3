@@ -210,18 +210,18 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         RayGenSbtRecord raygen_sbt;
         rt_check(optixSbtRecordPackHeader(s.program_groups[0], &raygen_sbt));
         void* raygen_record = records;
-        jitc_memcpy_async(raygen_record, &raygen_sbt, sizeof(RayGenSbtRecord));
+        jitc_memcpy_async(true, raygen_record, &raygen_sbt, sizeof(RayGenSbtRecord));
 
         MissSbtRecord miss_sbt;
         rt_check(optixSbtRecordPackHeader(s.program_groups[1], &miss_sbt));
         void* miss_record = (char*)records + sizeof(RayGenSbtRecord);
-        jitc_memcpy_async(miss_record, &miss_sbt, sizeof(MissSbtRecord));
+        jitc_memcpy_async(true, miss_record, &miss_sbt, sizeof(MissSbtRecord));
 
         // Allocate hitgroup records array
         void* hitgroup_records = (char*)records + sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord);
 
         // Copy HitGroupRecords to the GPU
-        jitc_memcpy_async(hitgroup_records, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
+        jitc_memcpy_async(true, hitgroup_records, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
 
         s.sbt.raygenRecord                = (CUdeviceptr)raygen_record;
         s.sbt.missRecordBase              = (CUdeviceptr)miss_record;
@@ -276,7 +276,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         accel_options.motionOptions.numKeys = 0;
 
         void* d_ias = jitc_malloc(AllocType::Device, ias.size() * sizeof(OptixInstance));
-        jitc_memcpy_async(d_ias, ias.data(), ias.size() * sizeof(OptixInstance));
+        jitc_memcpy_async(true, d_ias, ias.data(), ias.size() * sizeof(OptixInstance));
 
         OptixBuildInput build_input;
         build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
@@ -336,7 +336,7 @@ void launch_optix_kernel(const OptixState &s,
                          const OptixParams &params,
                          size_t wavefront_size) {
 
-    jitc_memcpy_async(s.params, &params, sizeof(OptixParams));
+    jitc_memcpy_async(true, s.params, &params, sizeof(OptixParams));
 
     unsigned int width = 1, height = (unsigned int) wavefront_size;
     while (!(height & 1) && width < height) {

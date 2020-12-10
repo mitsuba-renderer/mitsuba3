@@ -989,11 +989,6 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
     auto functor = [&](const tbb::blocked_range<uint32_t> &range) {
         ScopedSetThreadEnvironment set_env(env);
 
-#if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
-        if (ctx.is_jit())
-            ek::set_device(ctx.is_cuda() ? 0 : -1, tbb::task_arena::current_thread_index());
-#endif
-
         for (uint32_t i = range.begin(); i != range.end(); ++i) {
             auto &kv = named_references[i];
             try {

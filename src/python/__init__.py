@@ -175,10 +175,6 @@ def set_variant(value):
     _tls.modules = modules
     _tls.variant = value
 
-    if value.startswith("cuda"):
-        ek.set_device(0)
-    elif value.startswith("llvm"):
-        ek.set_device(-1)
 
 def variant():
     'Returns the currently active variant'

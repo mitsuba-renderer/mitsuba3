@@ -142,7 +142,7 @@ void build_gas(const OptixDeviceContext &context,
         jitc_free(d_temp_buffer);
 
         size_t compact_size;
-        jitc_memcpy(&compact_size, (void*)emit_property.result, sizeof(size_t));
+        jitc_memcpy(true, &compact_size, (void*)emit_property.result, sizeof(size_t));
         if (compact_size < buffer_sizes.outputSizeInBytes) {
             void* compact_buffer = jitc_malloc(AllocType::Device, compact_size);
             // Use handle as input and output

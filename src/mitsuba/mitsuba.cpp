@@ -208,7 +208,6 @@ int main(int argc, char *argv[]) {
 #if defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_")) {
             jitc_init(0, 1);
-            ek::set_device(0);
             cie_initialize();
             optix_initialize();
         }
@@ -217,7 +216,6 @@ int main(int argc, char *argv[]) {
 #if defined(MTS_ENABLE_LLVM)
         if (string::starts_with(mode, "llvm_")) {
             jitc_init(1, 0);
-            ek::set_device(-1);
         }
 #endif
 
