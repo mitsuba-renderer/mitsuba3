@@ -486,7 +486,8 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, 
             si.dp_dv = ek::empty<Vector3f>(wavefront_size);
         }
 
-        if (has_flag(hit_flags, HitComputeFlags::dNGdUV) || has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNGdUV) ||
+            has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             si.dn_du = ek::empty<Vector3f>(wavefront_size);
             si.dn_dv = ek::empty<Vector3f>(wavefront_size);
         }

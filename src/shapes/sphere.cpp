@@ -403,7 +403,8 @@ public:
 
         si.n = si.sh_frame.n;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
+            has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
             ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
             si.dn_du = si.dp_du * inv_radius;
             si.dn_dv = si.dp_dv * inv_radius;

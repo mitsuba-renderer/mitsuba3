@@ -389,7 +389,8 @@ public:
         si.sh_frame.n = si.n;
         si.time = ray.time;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
+            has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
             si.dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }
