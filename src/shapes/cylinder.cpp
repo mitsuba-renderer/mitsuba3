@@ -421,8 +421,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
-            OptixCylinderData data = { bbox(), m_to_world, m_to_object,
-                                       m_length, m_radius, m_flip_normals };
+            OptixCylinderData data = { bbox(), m_to_object, m_length, m_radius };
 
             jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }

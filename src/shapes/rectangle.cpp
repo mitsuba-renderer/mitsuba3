@@ -226,8 +226,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixRectangleData));
 
-            OptixRectangleData data = { bbox(), m_to_object, m_frame.n,
-                                        m_frame.s, m_frame.t };
+            OptixRectangleData data = { bbox(), m_to_object };
 
             jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixRectangleData));
         }

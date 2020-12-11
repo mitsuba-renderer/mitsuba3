@@ -93,7 +93,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         pipeline_compile_options.usesMotionBlur        = false;
         pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        pipeline_compile_options.numPayloadValues      = 3;
+        pipeline_compile_options.numPayloadValues      = 6;
         pipeline_compile_options.numAttributeValues    = 3;
         pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
@@ -429,7 +429,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, Mask act
         bind_output(params.out_prim_uv, pi.prim_uv);
         bind_output(&params.out_prim_index, pi.prim_index);
         bind_output(&params.out_inst_index, instance_index);
-        params.out_shape_ptr = (uint32_t *)pi.shape.data();
+        params.out_shape_registry_id = (uint32_t *)pi.shape.data();
         params.handle = s.ias_handle;
 
         launch_optix_kernel(s, params, wavefront_size);
@@ -450,123 +450,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, Mask act
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        Assert(!m_shapes.empty());
+        auto pi = ray_intersect_preliminary_gpu(ray, active);
+        return pi.compute_surface_interaction(ray, hit_flags, pi.is_valid());
 
-        using OptixState = OptixState<Float>;
-        OptixState &s = *(OptixState *) m_accel;
-
-        if constexpr (ek::is_diff_array_v<Float>) {
-            // Differentiable SurfaceInteraction needs to be computed outside of the OptiX kernel
-            if (!has_flag(hit_flags, HitComputeFlags::NonDifferentiable) &&
-                (ek::grad_enabled(ray) || shapes_grad_enabled())) {
-                auto pi = ray_intersect_preliminary_gpu(ray, active);
-                return pi.compute_surface_interaction(ray, hit_flags, pi.is_valid());
-            }
-        }
-
-        size_t wavefront_size = ek::width(ray);
-
-        // Allocate only the required fields of the SurfaceInteraction struct
-        SurfaceInteraction3f si = ek::empty<SurfaceInteraction3f>(1); // needed for virtual calls
-
-        si.t          = ek::empty<Float>(wavefront_size);
-        si.p          = ek::empty<Point3f>(wavefront_size);
-        si.n          = ek::empty<Normal3f>(wavefront_size);
-        si.prim_index = ek::empty<UInt32>(wavefront_size);
-        si.shape      = ek::empty<ShapePtr>(wavefront_size);
-
-        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
-            si.sh_frame.n = ek::empty<Normal3f>(wavefront_size);
-
-        if (has_flag(hit_flags, HitComputeFlags::UV))
-            si.uv = ek::empty<Point2f>(wavefront_size);
-
-        if (has_flag(hit_flags, HitComputeFlags::dPdUV)) {
-            si.dp_du = ek::empty<Vector3f>(wavefront_size);
-            si.dp_dv = ek::empty<Vector3f>(wavefront_size);
-        }
-
-        if (has_flag(hit_flags, HitComputeFlags::dNGdUV) ||
-            has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
-            si.dn_du = ek::empty<Vector3f>(wavefront_size);
-            si.dn_dv = ek::empty<Vector3f>(wavefront_size);
-        }
-
-        // DEBUG mode: Explicitly instantiate `si` with NaN values.
-        // As the integrator should only deal with the lanes of `si` for which
-        // `si.is_valid()==true`, this makes it easier to catch bugs in the
-        // masking logic implemented in the integrator.
-#if !defined(NDEBUG)
-        #define SET_NAN(name) name = ek::full<decltype(name)>(ek::NaN<Float>, wavefront_size);
-        SET_NAN(si.t); SET_NAN(si.time); SET_NAN(si.p); SET_NAN(si.uv); SET_NAN(si.n);
-        SET_NAN(si.sh_frame.n); SET_NAN(si.dp_du); SET_NAN(si.dp_dv);
-        #undef SET_NAN
-        ek::schedule(si);
-#endif  // !defined(NDEBUG)
-
-        // Initialize instance index with the highest possible index an instance
-        // could have in m_shapes. As the hierarchy of IAS is built, this value
-        // is used to tag IAS that are not related to instancing (e.g. custom
-        // shape tree).
-        uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32 instance_index = ek::full<UInt32>(max_inst_index, wavefront_size);
-
-        ek::eval(instance_index, ray, active);
-
-        // Init OptixParams with all members initialized to 0 (e.g. nullptr)
-        OptixParams params = {};
-
-        // Bind GPU data pointers to be filled by the OptiX kernel
-        // Inputs
-        bind_input(&params.in_mask, active);
-        bind_input(params.in_o, ray.o);
-        bind_input(params.in_d, ray.d);
-        bind_input(&params.in_mint, ray.mint);
-        bind_input(&params.in_maxt, ray.maxt);
-        // Outputs
-        bind_output(&params.out_t, si.t);
-        if (has_flag(hit_flags, HitComputeFlags::UV))
-            bind_output(params.out_uv, si.uv);
-        bind_output(params.out_ng, si.n);
-        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
-            bind_output(params.out_ns, si.sh_frame.n);
-        bind_output(params.out_p, si.p);
-        if (has_flag(hit_flags, HitComputeFlags::dPdUV)) {
-            bind_output(params.out_dp_du, si.dp_du);
-            bind_output(params.out_dp_dv, si.dp_dv);
-        }
-        if (has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
-            bind_output(params.out_dng_du, si.dn_du);
-            bind_output(params.out_dng_dv, si.dn_dv);
-        }
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
-            bind_output(params.out_dns_du, si.dn_du);
-            bind_output(params.out_dns_dv, si.dn_dv);
-        }
-        bind_output(&params.out_prim_index, si.prim_index);
-        bind_output(&params.out_inst_index, instance_index);
-        params.out_shape_ptr = (uint32_t *)si.shape.data();
-        params.handle = s.ias_handle;
-
-        launch_optix_kernel(s, params, wavefront_size);
-
-        si.time = ray.time;
-        si.wavelengths = ray.wavelengths;
-        si.duv_dx = si.duv_dy = ek::zero<Point2f>();
-
-        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
-            si.initialize_sh_frame();
-
-        // Only gather instance pointers for valid instance indices
-        Mask valid_instances = instance_index < m_shapes.size();
-
-        si.instance = ek::gather<ShapePtr>(
-            s.shapes_registry_ids, instance_index, active & valid_instances);
-
-        // Incident direction in local coordinates
-        si.wi = ek::select(si.is_valid(), si.to_local(-ray.d), -ray.d);
-
-        return si;
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(hit_flags);

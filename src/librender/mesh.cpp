@@ -842,21 +842,8 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 static const uint32_t triangle_input_flags =  OPTIX_GEOMETRY_FLAG_NONE;
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
-    if constexpr (ek::is_cuda_array_v<Float>) {
+    if constexpr (ek::is_cuda_array_v<Float>)
         m_vertex_buffer_ptr = (void*) m_vertex_positions.data();
-
-        if (!m_optix_data_ptr)
-            m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixMeshData));
-
-        OptixMeshData data = {
-            (const optix::Vector3u *) m_faces.data(),
-            (const optix::Vector3f *) m_vertex_positions.data(),
-            (const optix::Vector3f *) m_vertex_normals.data(),
-            (const optix::Vector2f *) m_vertex_texcoords.data()
-        };
-
-        jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixMeshData));
-    }
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
