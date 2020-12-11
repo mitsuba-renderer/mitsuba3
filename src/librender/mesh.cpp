@@ -103,7 +103,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
     // Evaluate buffers if necessary
     if (IsJIT && !m_mesh_attributes.empty()) {
         ek::eval();
-        ek::sync_stream();
+        ek::sync_thread();
     }
 
     Log(Info, "Writing mesh to \"%s\" ..", filename);
@@ -890,7 +890,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
     if (keys.empty() || string::contains(keys, "vertex_positions")) {
         if constexpr (ek::is_jit_array_v<Float>) {
             ek::eval(m_vertex_positions);
-            ek::sync_stream();
+            ek::sync_thread();
         }
 
         recompute_bbox();
