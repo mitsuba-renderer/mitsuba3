@@ -121,7 +121,7 @@ def write_bitmap(filename, data, resolution, write_async=True):
 def render(scene,
            spp: Union[None, int, Tuple[int, int]] = None,
            unbiased=False,
-           optimizer: 'mitsuba.python.autodiff.Optimizer' = None,
+           optimizer: 'mitsuba.python.autodiff.Optimizer'=None,
            sensor_index=0):
     """
     Perform a differentiable of the scene `scene`, returning a floating point

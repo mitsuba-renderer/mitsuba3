@@ -150,7 +150,7 @@ struct MTS_EXPORT_RENDER BSDFContext {
     // =============================================================
 
     /// Transported mode (radiance or importance)
-    TransportMode mode;
+    TransportMode mode = TransportMode::Radiance;
 
     /*
      * Bit mask for requested BSDF component types to be sampled/evaluated
@@ -164,10 +164,10 @@ struct MTS_EXPORT_RENDER BSDFContext {
     //! @}
     // =============================================================
 
-    BSDFContext(TransportMode mode = TransportMode::Radiance)
-        : mode(mode) { }
+    BSDFContext() = default;
 
-    BSDFContext(TransportMode mode, uint32_t type_mask, uint32_t component)
+    BSDFContext(TransportMode mode, uint32_t type_mask = (uint32_t) 0x1FFu,
+                uint32_t component = (uint32_t) -1)
         : mode(mode), type_mask(type_mask), component(component) { }
 
     /**

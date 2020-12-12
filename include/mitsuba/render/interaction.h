@@ -619,7 +619,8 @@ struct PreliminaryIntersection {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index, shape, instance);
+    ENOKI_STRUCT(PreliminaryIntersection, t, prim_uv, prim_index, shape_index,
+                 shape, instance);
 };
 
 // -----------------------------------------------------------------------------

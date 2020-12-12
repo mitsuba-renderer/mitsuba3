@@ -102,23 +102,29 @@ public:
 
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
-
-        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
-             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
-
         Result result = ek::zero<Result>();
-        if (ek::any_or<true>(front_side))
-            ek::masked(result, front_side) =
-                m_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
 
-        if (ek::any_or<true>(back_side)) {
-            if (ctx.component != (uint32_t) -1)
-                ctx.component -= (uint32_t) m_brdf[0]->component_count();
+        if (m_brdf[0] == m_brdf[1]) {
+            si.wi.z() = abs(si.wi.z());
+            result = m_brdf[0]->sample(ctx, si, sample1, sample2, active);
+            result.first.wo.z() = ek::mulsign(result.first.wo.z(), si_.wi.z());
+        } else {
+            Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+                 back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
-            si.wi.z() *= -1.f;
-            ek::masked(result, back_side) =
-                m_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
-            ek::masked(result.first.wo.z(), back_side) *= -1.f;
+            if (ek::any_or<true>(front_side))
+                ek::masked(result, front_side) =
+                    m_brdf[0]->sample(ctx, si, sample1, sample2, front_side);
+
+            if (ek::any_or<true>(back_side)) {
+                if (ctx.component != (uint32_t) -1)
+                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
+
+                si.wi.z() *= -1.f;
+                ek::masked(result, back_side) =
+                    m_brdf[1]->sample(ctx, si, sample1, sample2, back_side);
+                ek::masked(result.first.wo.z(), back_side) *= -1.f;
+            }
         }
 
         return result;
@@ -133,20 +139,27 @@ public:
         Vector3f wo(wo_);
         Spectrum result = 0.f;
 
-        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
-             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+        if (m_brdf[0] == m_brdf[1]) {
+            wo.z() = ek::mulsign(wo.z(), si.wi.z());
+            si.wi.z() = abs(si.wi.z());
+            result = m_brdf[0]->eval(ctx, si, wo, active);
+        } else {
+            Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+                 back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
-        if (ek::any_or<true>(front_side))
-            result = m_brdf[0]->eval(ctx, si, wo, front_side);
+            if (ek::any_or<true>(front_side))
+                result = m_brdf[0]->eval(ctx, si, wo, front_side);
 
-        if (ek::any_or<true>(back_side)) {
-            if (ctx.component != (uint32_t) -1)
-                ctx.component -= (uint32_t) m_brdf[0]->component_count();
+            if (ek::any_or<true>(back_side)) {
+                if (ctx.component != (uint32_t) -1)
+                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
-            si.wi.z() *= -1.f;
-            wo.z() *= -1.f;
+                si.wi.z() *= -1.f;
+                wo.z() *= -1.f;
 
-            ek::masked(result, back_side) = m_brdf[1]->eval(ctx, si, wo, back_side);
+                ek::masked(result, back_side) =
+                    m_brdf[1]->eval(ctx, si, wo, back_side);
+            }
         }
 
         return result;
@@ -161,20 +174,26 @@ public:
         Vector3f wo(wo_);
         Float result = 0.f;
 
-        Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
-             back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+        if (m_brdf[0] == m_brdf[1]) {
+            wo.z() = ek::mulsign(wo.z(), si.wi.z());
+            si.wi.z() = abs(si.wi.z());
+            result = m_brdf[0]->pdf(ctx, si, wo, active);
+        } else {
+            Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+                 back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
-        if (ek::any_or<true>(front_side))
-            result = m_brdf[0]->pdf(ctx, si, wo, front_side);
+            if (ek::any_or<true>(front_side))
+                result = m_brdf[0]->pdf(ctx, si, wo, front_side);
 
-        if (ek::any_or<true>(back_side)) {
-            if (ctx.component != (uint32_t) -1)
-                ctx.component -= (uint32_t) m_brdf[0]->component_count();
+            if (ek::any_or<true>(back_side)) {
+                if (ctx.component != (uint32_t) -1)
+                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
 
-            si.wi.z() *= -1.f;
-            wo.z() *= -1.f;
+                si.wi.z() *= -1.f;
+                wo.z() *= -1.f;
 
-            ek::masked(result, back_side) = m_brdf[1]->pdf(ctx, si, wo, back_side);
+                ek::masked(result, back_side) = m_brdf[1]->pdf(ctx, si, wo, back_side);
+            }
         }
 
         return result;

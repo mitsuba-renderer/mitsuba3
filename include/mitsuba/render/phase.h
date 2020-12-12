@@ -56,15 +56,18 @@ struct MTS_EXPORT_RENDER PhaseFunctionContext {
     // =============================================================
 
     /// Transported mode (radiance or importance)
-    TransportMode mode;
+    TransportMode mode = TransportMode::Radiance;
 
     /// Sampler object
-    Sampler *sampler;
+    Sampler *sampler = nullptr;
 
     //! @}
     // =============================================================
 
-    PhaseFunctionContext(Sampler *sampler, TransportMode mode = TransportMode::Radiance)
+    PhaseFunctionContext() = default;
+
+    PhaseFunctionContext(Sampler *sampler,
+                         TransportMode mode = TransportMode::Radiance)
         : mode(mode), sampler(sampler) {}
 
     /**

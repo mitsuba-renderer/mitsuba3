@@ -210,6 +210,8 @@ int main(int argc, char *argv[]) {
             jitc_init(0, 1);
             cie_initialize();
             optix_initialize();
+
+            jitc_set_flag(JitFlag::RecordVCalls);
         }
 #endif
 
@@ -314,16 +316,20 @@ int main(int argc, char *argv[]) {
     Class::static_shutdown();
     Jit::static_shutdown();
 
+
 #if defined(MTS_ENABLE_CUDA)
     if (string::starts_with(mode, "cuda_")) {
+        printf("%s\n", jitc_var_whos());
         optix_shutdown();
         jitc_shutdown();
     }
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
-    if (string::starts_with(mode, "llvm_"))
+    if (string::starts_with(mode, "llvm_")) {
+        printf("%s\n", jitc_var_whos());
         jitc_shutdown();
+    }
 #endif
 
     return error_msg.empty() ? 0 : -1;
