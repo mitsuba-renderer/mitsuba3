@@ -181,7 +181,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             pi = ek::empty<PreliminaryIntersection3f>(N);
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
-            pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
+            pi.t = ek::empty<Float>(N);
+            jitc_memcpy_async(false, pi.t.data(), ray.maxt.data(), sizeof(ScalarFloat) * N);
+            pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
 
             Vector3f ng = ek::empty<Vector3f>(N);
             UInt32 inst_index = ek::empty<UInt32>(N);
@@ -303,8 +305,11 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, uint32_t hit_flags,
             ek::eval(ray);
 
             PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(N);
+
             // A ray is considered inactive if its tnear value is larger than its tfar value
-            pi.t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
+            pi.t = ek::empty<Float>(N);
+            jitc_memcpy_async(false, pi.t.data(), ray.maxt.data(), sizeof(ScalarFloat) * N);
+            pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
 
             Vector3f ng = ek::empty<Vector3f>(N);
             UInt32 inst_index = ek::empty<UInt32>(N);
@@ -401,7 +406,9 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             ek::eval(ray);
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
-            Float t = ek::select(active, ray.maxt.copy(), ray.mint - ek::Epsilon<Float>);
+            Float t = ek::empty<Float>(N);
+            jitc_memcpy_async(false, t.data(), ray.maxt.data(), sizeof(ScalarFloat) * N);
+            t = ek::select(active, t, ray.mint - ek::Epsilon<Float>);
 
             Vector3u extra = ek::zero<Vector3u>(N);
 
