@@ -93,7 +93,7 @@ def test03_develop(variant_scalar_rgb, file_format, tmpdir):
     contents = np.random.uniform(size=(film.size()[1], film.size()[0], 5))
     # RGBE and will only reconstruct well images that have similar scales on
     # all channel (because exponent is shared between channels).
-    if file_format is "rgbe":
+    if file_format == "rgbe":
         contents = 1 + 0.1 * contents
     # Use unit weights.
     contents[:, :, 4] = 1.0
