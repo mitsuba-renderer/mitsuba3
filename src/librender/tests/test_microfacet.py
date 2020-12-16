@@ -14,7 +14,7 @@ def test01_construct(variant_scalar_rgb):
     assert md.sample_visible()
 
 
-def test02_eval_pdf_beckmann(variants_vec_rgb):
+def test02_eval_pdf_beckmann(variants_vec_backends_once):
     from mitsuba.core import Float, Vector3f
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -93,7 +93,7 @@ def test02_eval_pdf_beckmann(variants_vec_rgb):
     assert ek.allclose(mdf_i.pdf(wi, v), ek.full(Float, 11.86709118 * ek.cos(0.1), steps))
 
 
-def test03_smith_g1_beckmann(variants_vec_rgb):
+def test03_smith_g1_beckmann(variants_vec_backends_once):
     from mitsuba.core import Float, Vector3f
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -137,7 +137,7 @@ def test03_smith_g1_beckmann(variants_vec_rgb):
     assert ek.allclose(mdf_i.smith_g1(v, wi), ek.full(Float, 0.67333597, steps))
 
 
-def test04_sample_beckmann(variants_vec_rgb):
+def test04_sample_beckmann(variants_vec_backends_once):
     from mitsuba.core import Float, Vector3f
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -202,7 +202,7 @@ def test04_sample_beckmann(variants_vec_rgb):
     assert ek.allclose(ref[1], result[1], atol=1e-4)
 
 
-def test03_smith_g1_ggx(variants_vec_rgb):
+def test03_smith_g1_ggx(variants_vec_backends_once):
     from mitsuba.core import Float
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -244,7 +244,7 @@ def test03_smith_g1_ggx(variants_vec_rgb):
     assert ek.allclose(mdf_i.smith_g1(v, wi), ek.full(Float, 0.46130955, steps))
 
 
-def test05_sample_ggx(variants_vec_rgb):
+def test05_sample_ggx(variants_vec_backends_once):
     from mitsuba.core import Float
     from mitsuba.render import MicrofacetDistribution, MicrofacetType
 
@@ -311,7 +311,7 @@ def test05_sample_ggx(variants_vec_rgb):
 @pytest.mark.parametrize("alpha", [0.1, 0.5])
 @pytest.mark.parametrize("md_type_name", ['GGX', 'Beckmann'])
 @pytest.mark.parametrize("angle", [10, 80, 30])
-def test06_chi2(variants_vec_rgb, md_type_name, alpha, sample_visible, angle):
+def test06_chi2(variants_vec_backends_once, md_type_name, alpha, sample_visible, angle):
     from mitsuba.python.chi2 import MicrofacetAdapter, ChiSquareTest, SphericalDomain
     from mitsuba.render import MicrofacetType
 

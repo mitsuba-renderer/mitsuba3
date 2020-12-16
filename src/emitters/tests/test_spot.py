@@ -39,7 +39,7 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
 @pytest.mark.parametrize("it_pos", [[2.0, 0.5, 0.0], [1.0, 0.5, -5.0]])
-@pytest.mark.parametrize("wavelength_sample", [0.1, 0.7])
+@pytest.mark.parametrize("wavelength_sample", [0.7])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
@@ -93,7 +93,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
-@pytest.mark.parametrize("wavelength_sample", [0.1, 0.7])
+@pytest.mark.parametrize("wavelength_sample", [0.7])
 @pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)

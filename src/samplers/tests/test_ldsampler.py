@@ -16,7 +16,7 @@ def test01_ldsampler_scalar(variant_scalar_rgb):
     check_uniform_scalar_sampler(sampler)
 
 
-def test02_ldsampler_wavefront(variants_vec_rgb):
+def test02_ldsampler_wavefront(variants_vec_backends_once):
     from mitsuba.core import xml
 
     sampler = xml.load_dict({

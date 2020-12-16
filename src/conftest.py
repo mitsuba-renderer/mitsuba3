@@ -5,6 +5,7 @@
 
 import pytest
 import re
+import mitsuba
 
 re1 = re.compile(r'<built-in method (\w*) of PyCapsule object at 0x[0-9a-f]*>')
 re2 = re.compile(r'<bound method PyCapsule.(\w*)[^>]*>')
@@ -62,13 +63,22 @@ def generate_fixture_group(name, variants):
         return request.param
     globals()['variants_' + name] = fixture
 
+any_scalar = next((x for x in mitsuba.variants() if x.startswith('scalar')), 'scalar_rgb')
+any_llvm   = next((x for x in mitsuba.variants() if x.startswith('llvm')),   'llvm_rgb')
+any_cuda   = next((x for x in mitsuba.variants() if x.startswith('cuda')),   'cuda_rgb')
+
 variant_groups = {
-    'scalar_all' : ['scalar_rgb', 'scalar_spectral', 'scalar_mono', 'scalar_spectral_polarized'],
-    'vec_rgb' : ['llvm_rgb', 'cuda_rgb'],
-    'cpu_rgb' : ['scalar_rgb', 'llvm_rgb'],
-    'all_rgb' : ['scalar_rgb', 'llvm_rgb', 'cuda_rgb'],
-    'vec_spectral' : ['llvm_spectral', 'cuda_spectral'],
-    'all_ad_rgb' : ['llvm_ad_rgb', 'cuda_ad_rgb'],
+    'any_scalar' : [any_scalar],
+    'any_llvm' : [any_llvm],
+    'any_cuda' : [any_cuda],
+    'all' : mitsuba.variants(),
+    'all_scalar' : [x for x in mitsuba.variants() if x.startswith('scalar')],
+    'all_rgb' : [x for x in mitsuba.variants() if x.endswith('rgb')],
+    'all_backends_once' : [any_scalar, any_llvm, any_cuda],
+    'vec_backends_once' : [any_llvm, any_cuda],
+    'vec_rgb' : [x for x in mitsuba.variants() if x.endswith('rgb') and not x.startswith('scalar')],
+    'vec_spectral' : [x for x in mitsuba.variants() if x.endswith('spectral') and not x.startswith('scalar')],
+    'all_ad_rgb' : [x for x in mitsuba.variants() if x.endswith('ad_rgb')],
 }
 
 for name, variants in variant_groups.items():

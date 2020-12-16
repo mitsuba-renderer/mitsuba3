@@ -16,7 +16,7 @@ def test01_multijitter_scalar(variant_scalar_rgb):
     check_uniform_scalar_sampler(sampler)
 
 
-def test02_multijitter_wavefront(variants_vec_rgb):
+def test02_multijitter_wavefront(variants_vec_backends_once):
     from mitsuba.core import xml
 
     sampler = xml.load_dict({

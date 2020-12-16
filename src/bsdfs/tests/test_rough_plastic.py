@@ -4,7 +4,7 @@ import mitsuba
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 @pytest.mark.slow
-def test01_chi2_smooth(variants_vec_rgb):
+def test01_chi2_smooth(variants_vec_backends_once):
     xml = """<float name="alpha" value="0.05"/>
              <spectrum name="specular_reflectance" value="0.7"/>
              <spectrum name="diffuse_reflectance" value="0.1"/>"""
@@ -22,7 +22,7 @@ def test01_chi2_smooth(variants_vec_rgb):
 
 
 @pytest.mark.slow
-def test02_chi2_rough(variants_vec_rgb):
+def test02_chi2_rough(variants_vec_backends_once):
     xml = """<float name="alpha" value="0.25"/>
              <spectrum name="specular_reflectance" value="0.7"/>
              <spectrum name="diffuse_reflectance" value="0.1"/>"""

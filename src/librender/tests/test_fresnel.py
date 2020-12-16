@@ -49,7 +49,7 @@ def test02_fresnel_polarized(variant_scalar_rgb):
     assert ek.allclose(ek.real(a_p*a_p), 0)
 
 
-def test02_fresnel_polarized_vec(variants_vec_rgb):
+def test02_fresnel_polarized_vec(variants_vec_backends_once):
     from mitsuba.core import Float
     from mitsuba.render import fresnel
 
@@ -59,7 +59,7 @@ def test02_fresnel_polarized_vec(variants_vec_rgb):
     assert ek.allclose(cos_theta_t, -cos_theta_i, atol=5e-7)
 
 
-def test03_fresnel_conductor(variants_vec_rgb):
+def test03_fresnel_conductor(variants_vec_backends_once):
     from mitsuba.core import Float
     from mitsuba.render import fresnel, fresnel_conductor
 
@@ -75,7 +75,7 @@ def test03_fresnel_conductor(variants_vec_rgb):
     assert ek.allclose(r, r_2)
 
 
-def test04_snell(variants_vec_rgb):
+def test04_snell(variants_vec_backends_once):
     from mitsuba.core import Float
     from mitsuba.render import fresnel
 

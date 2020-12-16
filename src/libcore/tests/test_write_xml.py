@@ -351,7 +351,7 @@ def test09_xml_decompose_transform(variants_all_rgb):
     rmtree(os.path.split(filepath)[0])
 
 @fresolver_append_path
-def test10_xml_rgb(variants_scalar_all):
+def test10_xml_rgb(variants_all_scalar):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_dict, load_file
     from mitsuba.core import Thread, ScalarColor3f
@@ -416,7 +416,7 @@ def test10_xml_rgb(variants_scalar_all):
     rmtree(os.path.split(filepath)[0])
 
 @fresolver_append_path
-def test11_xml_spectrum(variants_scalar_all):
+def test11_xml_spectrum(variants_all_scalar):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_dict, load_file
     from mitsuba.core import Thread
@@ -525,7 +525,7 @@ def test11_xml_spectrum(variants_scalar_all):
     rmtree(os.path.split(filepath)[0])
 
 @fresolver_append_path
-def test12_xml_duplicate_files(variants_scalar_all):
+def test12_xml_duplicate_files(variants_all_scalar):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core import Thread
     fr = Thread.thread().file_resolver()

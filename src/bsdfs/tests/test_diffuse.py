@@ -38,7 +38,7 @@ def test02_eval_pdf(variant_scalar_rgb):
         assert ek.allclose(v_eval, 0.5 * wo[2] / ek.Pi)
 
 
-def test03_chi2(variants_vec_rgb):
+def test03_chi2(variants_vec_backends_once):
     from mitsuba.python.chi2 import BSDFAdapter, ChiSquareTest, SphericalDomain
 
     sample_func, pdf_func = BSDFAdapter("diffuse", '')

@@ -43,7 +43,7 @@ def test03_tea_vectorized(variant_scalar_rgb):
     check_vectorization(kernel, width=width)
 
 
-def test04_permute_bijection(variants_all_rgb):
+def test04_permute_bijection(variants_all_backends_once):
     """ Check that the resulting permutation vectors are bijections """
     from mitsuba.core import permute
 
@@ -75,7 +75,7 @@ def test05_permute_uniform(variant_scalar_rgb):
         assert ek.allclose(1.0 / sample_count, mean)
 
 
-def test06_permute_kensler_bijection(variants_all_rgb):
+def test06_permute_kensler_bijection(variants_all_backends_once):
     """ Check that the resulting permutation vectors are bijections """
     from mitsuba.core import permute_kensler
 

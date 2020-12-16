@@ -2,7 +2,7 @@ import mitsuba
 import pytest
 import enoki as ek
 
-def test01_interaction_invalid_init(variants_all_rgb):
+def test01_interaction_invalid_init(variants_all_backends_once):
     from mitsuba.render import SurfaceInteraction3f
 
     si = ek.zero(SurfaceInteraction3f)

@@ -5,7 +5,7 @@ import mitsuba
 from mitsuba.python.test.util import fresolver_append_path
 
 
-def test1_dict_plugins(variants_all_rgb):
+def test1_dict_plugins(variants_all):
     from mitsuba.core import xml
 
     plugins = [('emitter', 'point'), ('film', 'hdrfilm'),
@@ -19,7 +19,7 @@ def test1_dict_plugins(variants_all_rgb):
         assert str(o1) == str(o2)
 
 
-def test2_dict_missing_type(variants_all_rgb):
+def test2_dict_missing_type(variants_all):
     from mitsuba.core import xml
     with pytest.raises(Exception) as e:
         xml.load_dict({
@@ -29,7 +29,7 @@ def test2_dict_missing_type(variants_all_rgb):
     e.match("""Missing key 'type'""")
 
 
-def test3_dict_simple_field(variants_all_rgb):
+def test3_dict_simple_field(variants_all):
     from mitsuba.core import xml, ScalarPoint3f
     import numpy as np
 
@@ -75,7 +75,7 @@ def test3_dict_simple_field(variants_all_rgb):
     assert str(s1) == str(s5)
 
 
-def test4_dict_nested(variants_all_rgb):
+def test4_dict_nested(variants_all):
     from mitsuba.core import xml
 
     s1 = xml.load_dict({
@@ -141,7 +141,7 @@ def test4_dict_nested(variants_all_rgb):
     assert str(s1.bsdf()) == str(s2.bsdf())
 
 
-def test5_dict_nested_object(variants_all_rgb):
+def test5_dict_nested_object(variants_all):
     from mitsuba.core import xml
 
     bsdf = xml.load_dict({"type" : "diffuse"})
@@ -160,7 +160,7 @@ def test5_dict_nested_object(variants_all_rgb):
     assert str(s1.bsdf()) == str(s2.bsdf())
 
 
-def test6_dict_rgb(variants_scalar_all):
+def test6_dict_rgb(variants_all_scalar):
     from mitsuba.core import xml, ScalarColor3f
 
     e1 = xml.load_dict({
@@ -205,7 +205,7 @@ def test6_dict_rgb(variants_scalar_all):
     assert str(e1) == str(e2)
 
 
-def test7_dict_spectrum(variants_scalar_all):
+def test7_dict_spectrum(variants_all_scalar):
     from mitsuba.core import xml
 
     e1 = xml.load_dict({
@@ -333,7 +333,7 @@ def test7_dict_scene(variant_scalar_rgb):
     assert len(scene.shapes())   == 4
 
 
-def test8_dict_unreferenced_attribute_error(variants_all_rgb):
+def test8_dict_unreferenced_attribute_error(variants_all):
     from mitsuba.core import xml
     with pytest.raises(Exception) as e:
         xml.load_dict({

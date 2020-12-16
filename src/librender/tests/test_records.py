@@ -39,7 +39,7 @@ def test01_position_sample_construction_single(variant_scalar_rgb):
            and record.pdf == 0.0
 
 
-def test02_position_sample_construction_vec(variants_vec_rgb):
+def test02_position_sample_construction_vec(variants_vec_backends_once):
     from mitsuba.render import PositionSample3f, SurfaceInteraction3f
 
     n_records = 5
@@ -118,7 +118,7 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
     assert ek.allclose(record.d, d)
 
 
-def test05_direction_sample_construction_vec(variants_vec_rgb):
+def test05_direction_sample_construction_vec(variants_vec_backends_once):
     from mitsuba.render import DirectionSample3f, SurfaceInteraction3f
     import numpy as np
 

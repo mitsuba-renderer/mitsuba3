@@ -3,7 +3,7 @@ import enoki as ek
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 
-def test01_chi2_smooth(variants_vec_rgb):
+def test01_chi2_smooth(variants_vec_backends_once):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.05"/>"""
     wi = ek.normalize(ScalarVector3f(1.0, 1.0, 1.0))
@@ -21,7 +21,7 @@ def test01_chi2_smooth(variants_vec_rgb):
     assert chi2.run()
 
 
-def test02_chi2_aniso_beckmann_all(variants_vec_rgb):
+def test02_chi2_aniso_beckmann_all(variants_vec_backends_once):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
@@ -42,7 +42,7 @@ def test02_chi2_aniso_beckmann_all(variants_vec_rgb):
     assert chi2.run()
 
 
-def test03_chi2_aniso_beckmann_visible(variants_vec_rgb):
+def test03_chi2_aniso_beckmann_visible(variants_vec_backends_once):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
@@ -62,7 +62,7 @@ def test03_chi2_aniso_beckmann_visible(variants_vec_rgb):
     assert chi2.run()
 
 
-def test04_chi2_aniso_ggx_all(variants_vec_rgb):
+def test04_chi2_aniso_ggx_all(variants_vec_backends_once):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>
@@ -82,7 +82,7 @@ def test04_chi2_aniso_ggx_all(variants_vec_rgb):
     assert chi2.run()
 
 
-def test05_chi2_aniso_ggx_visible(variants_vec_rgb):
+def test05_chi2_aniso_ggx_visible(variants_vec_backends_once):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha_u" value="0.2"/>
              <float name="alpha_v" value="0.05"/>

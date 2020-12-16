@@ -6,7 +6,7 @@ import numpy as np
 
 @pytest.mark.parametrize("normalize", [True, False])
 @pytest.mark.parametrize("warp", ['Hierarchical2D0', 'MarginalDiscrete2D0'])
-def test01_sample_inverse_discrete(variants_all_rgb, warp, normalize):
+def test01_sample_inverse_discrete(variants_all_backends_once, warp, normalize):
     # Spot checks of Hierarchial2D0/MarginalDiscrete2D0 vs Mathematica
 
     def allclose(a, b):
@@ -50,7 +50,7 @@ def test01_sample_inverse_discrete(variants_all_rgb, warp, normalize):
 
 
 @pytest.mark.parametrize("normalize", [True, False])
-def test02_sample_inverse_continuous(variants_all_rgb, normalize):
+def test02_sample_inverse_continuous(variants_all_backends_once, normalize):
     # Spot checks of MarginalContinuous2D0 vs Mathematica
 
     from mitsuba.core import MarginalContinuous2D0
@@ -124,7 +124,7 @@ def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
 
 @pytest.mark.parametrize("attempt", list(range(2)))
 @pytest.mark.parametrize("warp", all_warps)
-def test04_chi2(variants_vec_rgb, warp, attempt):
+def test04_chi2(variants_vec_backends_once, warp, attempt):
     # Chi^2 test to make sure that the warping schemes are producing
     # the right distribution. Test for all supported variants of
     # N-dimensional warps (N = 0..3)
@@ -171,7 +171,7 @@ def test04_chi2(variants_vec_rgb, warp, attempt):
         )
 
 
-def test05_discrete_distribution_2d(variants_all_rgb):
+def test05_discrete_distribution_2d(variants_all_backends_once):
     from mitsuba.core import DiscreteDistribution2D
     import numpy as np
 

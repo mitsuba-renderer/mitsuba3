@@ -11,7 +11,7 @@ def test01_create(variant_scalar_rgb):
     </phase>""")
     assert p is not None
 
-def test02_chi2(variants_vec_rgb):
+def test02_chi2(variants_vec_backends_once):
     from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
     from mitsuba.core import ScalarBoundingBox2f
 

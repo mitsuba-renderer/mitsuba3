@@ -9,7 +9,7 @@ import numpy.linalg as la
 from mitsuba.python.test.util import check_vectorization
 
 
-def test01_basics(variants_all_rgb):
+def test01_basics(variants_all_backends_once):
     from mitsuba.core import Transform4f, Matrix4f
 
     # Check that default constructor give identity transform
