@@ -139,9 +139,11 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 
 
 def test03_ray_intersect_instance(variants_all_rgb):
-    from mitsuba.core import xml, Ray3f, ScalarVector3f, ScalarTransform4f as T
+    from mitsuba.core import xml, Float, Ray3f, ScalarVector3f, ScalarTransform4f as T
 
     """Check that we get the correct instance pointer when tracing a ray"""
+
+    scalar_mode = mitsuba.variant().startswith('scalar')
 
     scene = xml.load_dict({
         'type' : 'scene',
@@ -189,19 +191,26 @@ def test03_ray_intersect_instance(variants_all_rgb):
     ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
     pi = scene.ray_intersect_preliminary(ray)
 
-    assert '[0.5, 0, 0, -0.5]' in str(pi)
-    assert '[0, 0.5, 0, -0.5]' in str(pi)
+    instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
+    assert '[0.5, 0, 0, -0.5]' in instance_str
+    assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
     pi = scene.ray_intersect_preliminary(ray)
-    assert '[0.5, 0, 0, -0.5]' in str(pi)
-    assert '[0, 0.5, 0, 0.5]' in str(pi)
+
+    instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
+    assert '[0.5, 0, 0, -0.5]' in instance_str
+    assert '[0, 0.5, 0, 0.5]' in instance_str
 
     ray = Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
     pi = scene.ray_intersect_preliminary(ray)
-    assert '[0.5, 0, 0, 0.5]' in str(pi)
-    assert '[0, 0.5, 0, -0.5]' in str(pi)
+    instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
+    assert '[0.5, 0, 0, 0.5]' in instance_str
+    assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
     pi = scene.ray_intersect_preliminary(ray)
-    assert 'instance = nullptr' in str(pi) or 'instance = [nullptr]' in str(pi)
+    if scalar_mode:
+        assert 'instance = nullptr' in str(pi)
+    else:
+        assert 'instance = [0x0]' in str(pi)
