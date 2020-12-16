@@ -22,7 +22,7 @@ from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 #     assert chi2.run()
 
 
-def test02_chi2_rough_grazing(variants_vec_backends_once):
+def test02_chi2_rough_grazing(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>"""
     wi = ek.normalize(ScalarVector3f(0.8, 0.3, 0.05))
@@ -38,7 +38,7 @@ def test02_chi2_rough_grazing(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test03_chi2_rough_beckmann_all(variants_vec_backends_once):
+def test03_chi2_rough_beckmann_all(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>
              <boolean name="sample_visible" value="false"/>
@@ -58,7 +58,7 @@ def test03_chi2_rough_beckmann_all(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test04_chi2_rough_beckmann_visible(variants_vec_backends_once):
+def test04_chi2_rough_beckmann_visible(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>
              <boolean name="sample_visible" value="true"/>
@@ -77,7 +77,7 @@ def test04_chi2_rough_beckmann_visible(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test05_chi2_rough_ggx_all(variants_vec_backends_once):
+def test05_chi2_rough_ggx_all(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>
              <boolean name="sample_visible" value="false"/>
@@ -97,7 +97,7 @@ def test05_chi2_rough_ggx_all(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test06_chi2_rough_ggx_visible(variants_vec_backends_once):
+def test06_chi2_rough_ggx_visible(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>
              <boolean name="sample_visible" value="true"/>
@@ -116,7 +116,7 @@ def test06_chi2_rough_ggx_visible(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test07_chi2_rough_from_inside(variants_vec_backends_once):
+def test07_chi2_rough_from_inside(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>"""
     wi = ek.normalize(ScalarVector3f(0.2, -0.6, -0.5))
@@ -133,7 +133,7 @@ def test07_chi2_rough_from_inside(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test08_chi2_rough_from_inside_tir(variants_vec_backends_once):
+def test08_chi2_rough_from_inside_tir(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>"""
     wi = ek.normalize(ScalarVector3f(0.8, 0.3, -0.05))
@@ -149,7 +149,7 @@ def test08_chi2_rough_from_inside_tir(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test09_chi2_rough_from_denser(variants_vec_backends_once):
+def test09_chi2_rough_from_denser(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     xml = """<float name="alpha" value="0.5"/>
              <float name="ext_ior" value="1.5"/>
@@ -167,7 +167,7 @@ def test09_chi2_rough_from_denser(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test10_chi2_lobe_refl(variants_vec_backends_once):
+def test10_chi2_lobe_refl(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     from mitsuba.render import BSDFContext
 
@@ -191,7 +191,7 @@ def test10_chi2_lobe_refl(variants_vec_backends_once):
     assert chi2.run()
 
 
-def test11_chi2_aniso_lobe_trans(variants_vec_backends_once):
+def test11_chi2_aniso_lobe_trans(variants_vec_backends_once_rgb):
     from mitsuba.core import ScalarVector3f
     from mitsuba.render import BSDFContext
 

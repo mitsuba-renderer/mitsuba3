@@ -66,6 +66,8 @@ def generate_fixture_group(name, variants):
 any_scalar = next((x for x in mitsuba.variants() if x.startswith('scalar')), 'scalar_rgb')
 any_llvm   = next((x for x in mitsuba.variants() if x.startswith('llvm')),   'llvm_rgb')
 any_cuda   = next((x for x in mitsuba.variants() if x.startswith('cuda')),   'cuda_rgb')
+any_llvm_rgb = 'llvm_rgb' if 'llvm_rgb' in mitsuba.variants() else 'llvm_ad_rgb'
+any_cuda_rgb = 'cuda_rgb' if 'cuda_rgb' in mitsuba.variants() else 'cuda_ad_rgb'
 
 variant_groups = {
     'any_scalar' : [any_scalar],
@@ -76,6 +78,7 @@ variant_groups = {
     'all_rgb' : [x for x in mitsuba.variants() if x.endswith('rgb')],
     'all_backends_once' : [any_scalar, any_llvm, any_cuda],
     'vec_backends_once' : [any_llvm, any_cuda],
+    'vec_backends_once_rgb' : [any_llvm_rgb, any_cuda_rgb],
     'vec_rgb' : [x for x in mitsuba.variants() if x.endswith('rgb') and not x.startswith('scalar')],
     'vec_spectral' : [x for x in mitsuba.variants() if x.endswith('spectral') and not x.startswith('scalar')],
     'all_ad_rgb' : [x for x in mitsuba.variants() if x.endswith('ad_rgb')],

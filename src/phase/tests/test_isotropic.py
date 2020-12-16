@@ -26,7 +26,7 @@ def test02_eval(variant_scalar_rgb):
             assert np.allclose(v_eval, 1.0 / (4 * ek.Pi))
 
 
-def test03_chi2(variants_vec_backends_once):
+def test03_chi2(variants_vec_backends_once_rgb):
     from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
     from mitsuba.core import ScalarBoundingBox2f
 

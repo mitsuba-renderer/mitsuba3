@@ -502,7 +502,6 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     def make_context(n):
         si = ek.zero(SurfaceInteraction3f, n)
         si.wi = wi
-        si.wavelengths = []
         return (si, ctx)
 
     def instantiate(args):
@@ -581,7 +580,6 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         mi = ek.zero(MediumInteraction3f, n)
         mi.wi = wi
         mi.sh_frame = Frame3f(-mi.wi)
-        mi.wavelengths = []
         return mi, ctx
 
     def instantiate(args):
