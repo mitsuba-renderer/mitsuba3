@@ -9431,49 +9431,46 @@ BB9_7:
 	.reg .pred 	%p<2>;
 	.reg .b16 	%rs<2>;
 	.reg .b32 	%r<11>;
-	.reg .b64 	%rd<12>;
+	.reg .b64 	%rd<5>;
 
 
 	// inline asm
-	call (%r1), _optix_get_launch_dimension_x, ();
+	call (%r2), _optix_get_launch_dimension_x, ();
 	// inline asm
 	// inline asm
-	call (%r2), _optix_get_launch_dimension_y, ();
+	call (%r3), _optix_get_launch_dimension_y, ();
 	// inline asm
 	// inline asm
-	call (%r4), _optix_get_launch_index_x, ();
+	call (%r5), _optix_get_launch_index_x, ();
 	// inline asm
 	// inline asm
-	call (%r5), _optix_get_launch_index_y, ();
+	call (%r6), _optix_get_launch_index_y, ();
 	// inline asm
 	// inline asm
-	call (%r6), _optix_get_launch_index_z, ();
+	call (%r7), _optix_get_launch_index_z, ();
 	// inline asm
-	mad.lo.s32 	%r7, %r6, %r2, %r5;
-	mad.lo.s32 	%r8, %r7, %r1, %r4;
+	mad.lo.s32 	%r8, %r7, %r3, %r6;
+	mad.lo.s32 	%r1, %r8, %r2, %r5;
 	ld.const.u64 	%rd1, [params+192];
 	setp.eq.s64	%p1, %rd1, 0;
-	cvt.u64.u32	%rd2, %r8;
 	@%p1 bra 	BB10_2;
 
-	cvta.to.global.u64 	%rd3, %rd1;
-	add.s64 	%rd4, %rd3, %rd2;
+	cvta.to.global.u64 	%rd2, %rd1;
+	cvt.u64.u32	%rd3, %r1;
+	add.s64 	%rd4, %rd2, %rd3;
 	mov.u16 	%rs1, 0;
 	st.global.u8 	[%rd4], %rs1;
 	bra.uni 	BB10_3;
 
 BB10_2:
-	ld.const.u64 	%rd5, [params+176];
-	cvta.to.global.u64 	%rd6, %rd5;
-	shl.b64 	%rd7, %rd2, 2;
-	add.s64 	%rd8, %rd6, %rd7;
-	mov.u32 	%r9, 0;
-	st.global.u32 	[%rd8], %r9;
-	ld.const.u64 	%rd9, [params+144];
-	cvta.to.global.u64 	%rd10, %rd9;
-	add.s64 	%rd11, %rd10, %rd7;
-	mov.u32 	%r10, 2139095040;
-	st.global.u32 	[%rd11], %r10;
+	mov.u32 	%r9, 2139095040;
+	// inline asm
+	call _optix_set_payload_0, (%r9);
+	// inline asm
+	mov.u32 	%r10, 0;
+	// inline asm
+	call _optix_set_payload_4, (%r10);
+	// inline asm
 
 BB10_3:
 	ret;

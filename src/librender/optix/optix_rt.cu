@@ -31,7 +31,7 @@ extern "C" __global__ void __raygen__rg() {
                 params.handle,
                 make_float3(ro), make_float3(rd),
                 mint, maxt, 0.0f,
-                OptixVisibilityMask( 1 ),
+                OptixVisibilityMask(1),
                 OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
                 0, 1, 0
                 );
@@ -57,7 +57,7 @@ extern "C" __global__ void __raygen__rg() {
                 params.handle,
                 make_float3(ro), make_float3(rd),
                 mint, maxt, 0.0f,
-                OptixVisibilityMask( 1 ),
+                OptixVisibilityMask(1),
                 OPTIX_RAY_FLAG_NONE,
                 0, 1, 0,
                 payload_t,
@@ -85,8 +85,8 @@ extern "C" __global__ void __miss__ms() {
     if (params.is_ray_test()) {
         params.out_hit[launch_index] = false;
     } else {
-        params.out_shape_registry_id[launch_index] = 0;
-        params.out_t[launch_index] = CUDART_INF_F;
+        optixSetPayload_0(__float_as_int(CUDART_INF_F));
+        optixSetPayload_4(0);
     }
 }
 
