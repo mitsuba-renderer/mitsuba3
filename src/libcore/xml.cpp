@@ -1240,7 +1240,9 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     // Make a backup copy of the FileResolver, which will be restored after parsing
     ref<FileResolver> fs_backup = Thread::thread()->file_resolver();
-    Thread::thread()->set_file_resolver(new FileResolver(*fs_backup));
+    ref<FileResolver> fs = new FileResolver(*fs_backup);
+    fs->append(filename.parent_path());
+    Thread::thread()->set_file_resolver(fs.get());
 
     try {
         pugi::xml_node root = doc.document_element();
