@@ -10,8 +10,8 @@ from mitsuba.core.xml import load_file
 from mitsuba.python.util import traverse
 from mitsuba.python.autodiff import render, write_bitmap
 
+
 # Load the Cornell Box
-Thread.thread().file_resolver().append('cbox')
 scene = load_file('cbox/cbox.xml')
 
 # Find differentiable scene parameters

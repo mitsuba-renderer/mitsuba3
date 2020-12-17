@@ -27,9 +27,6 @@ file:
     # Absolute or relative path to the XML file
     filename = 'path/to/my/scene.xml'
 
-    # Add the scene directory to the FileResolver's search path
-    Thread.thread().file_resolver().append(os.path.dirname(filename))
-
     # Load the scene for an XML file
     scene = load_file(filename)
 

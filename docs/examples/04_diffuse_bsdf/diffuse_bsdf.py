@@ -66,9 +66,9 @@ class MyDiffuseBSDF(BSDF):
 register_bsdf("mydiffusebsdf", lambda props: MyDiffuseBSDF(props))
 
 # Load an XML file which specifies "mydiffusebsdf" as material
-filename = 'path/to/my/scene.xml'
-Thread.thread().file_resolver().append(os.path.dirname(filename))
-scene = load_file(filename)
+scene = load_file('path/to/my/scene.xml')
+
+
 
 scene.integrator().render(scene, scene.sensors()[0])
 

@@ -13,7 +13,7 @@ from mitsuba.python.autodiff import render_torch, write_bitmap
 import torch
 import time
 
-Thread.thread().file_resolver().append('cbox')
+
 scene = load_file('cbox/cbox.xml')
 
 # Find differentiable scene parameters

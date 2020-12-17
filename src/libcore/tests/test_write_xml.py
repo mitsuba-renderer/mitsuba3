@@ -16,7 +16,6 @@ def test01_xml_save_plugin(variants_all_rgb):
     # This way we know where to look for the file in case the unit test fails
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict01/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
             "type": "sphere",
             "center" : [0, 0, -10],
@@ -46,7 +45,6 @@ def test02_xml_missing_type(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict02/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'my_bsdf':{
             'type':'diffuse'
@@ -69,7 +67,6 @@ def test03_xml_references(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict03/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'type': 'scene',
         'bsdf1': {
@@ -126,7 +123,6 @@ def test04_xml_point(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict04/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'type': 'scene',
         'light':{
@@ -171,7 +167,6 @@ def test05_xml_split(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict05/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'type': 'scene',
         'bsdf1': {
@@ -207,7 +202,6 @@ def test06_xml_duplicate_id(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict06/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'type': 'scene',
         'my-bsdf': {
@@ -234,7 +228,6 @@ def test07_xml_invalid_ref(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict07/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'type': 'scene',
         'bsdf': {
@@ -265,7 +258,6 @@ def test08_xml_defaults(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict08/dict.xml')
-    fr.append(os.path.dirname(filepath))
     spp = 250
     resx = 1920
     resy = 1080
@@ -322,7 +314,6 @@ def test09_xml_decompose_transform(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict09/dict.xml')
-    fr.append(os.path.dirname(filepath))
     scene_dict = {
         'type': 'scene',
         'cam': {
@@ -358,7 +349,6 @@ def test10_xml_rgb(variants_all_scalar):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict10/dict.xml')
-    fr.append(os.path.dirname(filepath))
 
     d1 = {
         'type': 'scene',
@@ -423,7 +413,6 @@ def test11_xml_spectrum(variants_all_scalar):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict11/dict.xml')
-    fr.append(os.path.dirname(filepath))
     d1 = {
          'type': 'scene',
         'light': {
@@ -531,7 +520,6 @@ def test12_xml_duplicate_files(variants_all_scalar):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict12/dict.xml')
-    fr.append(os.path.dirname(filepath))
 
     spectrum_path = os.path.join(mts_root, 'resources/data/ior/Al.eta.spd')
     #Export the same file twice, this should only copy it once
@@ -600,7 +588,6 @@ def test13_xml_multiple_defaults(variants_all_rgb):
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict13/dict.xml')
-    fr.append(os.path.dirname(filepath))
 
     scene_dict = {
         'type' : 'scene',

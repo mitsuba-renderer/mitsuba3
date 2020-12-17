@@ -12,8 +12,8 @@ from mitsuba.python.util import traverse
 from mitsuba.python.autodiff import render, write_bitmap, Adam
 import time
 
+
 # Load example scene
-Thread.thread().file_resolver().append('bunny')
 scene = load_file('bunny/bunny.xml')
 
 # Find differentiable scene parameters

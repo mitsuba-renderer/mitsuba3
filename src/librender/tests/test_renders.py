@@ -96,8 +96,6 @@ def test_render(variants_all, scene_fname):
     if is_jit and os.path.split(scene_dir)[1] in JIT_EXCLUDE_FOLDERS:
         pytest.skip(f"Skip rendering scene {scene_fname} in JIT mode")
 
-    Thread.thread().file_resolver().prepend(scene_dir)
-
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
     if not (exists(ref_fname) and exists(ref_var_fname)):
         pytest.skip("Non-existent reference data.")
@@ -207,8 +205,6 @@ if __name__ == '__main__':
             ref_fname, var_fname = get_ref_fname(scene_fname)
             if exists(ref_fname) and exists(var_fname) and not overwrite:
                 continue
-
-            Thread.thread().file_resolver().append(scene_dir)
 
             scene = mitsuba.core.xml.load_file(scene_fname, spp=ref_spp)
             scene.integrator().render(scene, scene.sensors()[0])

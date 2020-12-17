@@ -72,9 +72,9 @@ class MyDirectIntegrator(SamplingIntegrator):
 register_integrator("mydirectintegrator", lambda props: MyDirectIntegrator(props))
 
 # Load an XML file which specifies "mydirectintegrator" as the scene's integrator
-filename = 'path/to/my/scene.xml'
-Thread.thread().file_resolver().append(os.path.dirname(filename))
-scene = load_file(filename)
+
+
+scene = load_file('path/to/my/scene.xml')
 
 scene.integrator().render(scene, scene.sensors()[0])
 
