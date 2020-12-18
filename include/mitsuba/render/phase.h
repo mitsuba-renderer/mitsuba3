@@ -158,7 +158,7 @@ public:
     virtual Float max_projected_area() const { return 1.f; }
 
     /// Flags for this phase function
-    uint32_t flags(Mask /*active*/) const { return m_flags; }
+    uint32_t flags(Mask /*active*/ = true) const { return m_flags; }
 
     /// Return a string identifier
     std::string id() const override { return m_id; }

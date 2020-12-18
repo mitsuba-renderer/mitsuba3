@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
     auto arg_update    = parser.add(StringVec{ "-u", "--update" }, false);
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
+    auto arg_wavefront = parser.add(StringVec{ "-w", "--wavefront" });
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
     auto arg_extra     = parser.add("", true);
     bool print_profile = false;
@@ -211,7 +212,8 @@ int main(int argc, char *argv[]) {
             cie_initialize();
             optix_initialize();
 
-            jitc_set_flag(JitFlag::RecordVCalls);
+            if (!*arg_wavefront)
+                jitc_set_flag(JitFlag::RecordVCalls);
         }
 #endif
 

@@ -129,7 +129,11 @@ public:
 
         BSDFContext ctx;
         BSDFPtr bsdf = si.bsdf(ray);
-        Mask sample_emitter = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
+        ek::set_label(si.shape, "shape");
+        ek::set_label(bsdf, "bsdf");
+        auto flags = bsdf->flags();
+        ek::set_label(flags, "flags");
+        Mask sample_emitter = active && has_flag(flags, BSDFFlags::Smooth);
 
         if (ek::any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
