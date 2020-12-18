@@ -219,7 +219,7 @@ int main(int argc, char *argv[]) {
             optix_initialize();
 
             if (!*arg_wavefront)
-                jitc_set_flag(JitFlag::RecordVCalls);
+                jitc_enable_flag(JitFlag::RecordVCalls);
 
             jitc_vcall_set_targets_explicit(*arg_vcall_targets_explicit);
         }
