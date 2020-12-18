@@ -71,6 +71,10 @@ Options:
 
     -o <filename>, --output <filename>
         Write the output image to the file "filename".
+
+    -T
+        For NVIDIA: generate explicit call targets in JIT-compiled
+        kernels to provoke miscompile
 )";
 }
 
@@ -149,8 +153,10 @@ int main(int argc, char *argv[]) {
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_wavefront = parser.add(StringVec{ "-w", "--wavefront" });
+    auto arg_vcall_targets_explicit = parser.add(StringVec{ "-T", "--targets-explicit" });
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
     auto arg_extra     = parser.add("", true);
+
     bool print_profile = false;
     xml::ParameterList params;
     std::string error_msg, mode;
@@ -214,6 +220,8 @@ int main(int argc, char *argv[]) {
 
             if (!*arg_wavefront)
                 jitc_set_flag(JitFlag::RecordVCalls);
+
+            jitc_vcall_set_targets_explicit(*arg_vcall_targets_explicit);
         }
 #endif
 
