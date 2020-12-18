@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <cstring>
 
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/properties.h>

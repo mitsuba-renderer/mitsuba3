@@ -107,7 +107,20 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
                 | OPTIX_EXCEPTION_FLAG_DEBUG;
     #endif
 
-        rt_check_log(optixModuleCreateFromPTX(
+        size_t optix_log_buffer_size = 2048;
+        char optix_log_buffer[2048];
+
+        auto check_log = [&](int rv) {
+            if (rv != OPTIX_SUCCESS) {
+                fprintf(stderr, "\tLog: %s%s", optix_log_buffer,
+                        optix_log_buffer_size > sizeof(optix_log_buffer)
+                            ? "<TRUNCATED>"
+                            : "");
+                rt_check(rv);
+            }
+        };
+
+        check_log(optixModuleCreateFromPTX(
             s.context,
             &module_compile_options,
             &pipeline_compile_options,
@@ -159,7 +172,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         exception_prog_group_desc.hitgroup.entryFunctionNameCH = "__exception__err";
     #endif
 
-        rt_check_log(optixProgramGroupCreate(
+        check_log(optixProgramGroupCreate(
             s.context,
             prog_group_descs,
             ProgramGroupCount,
@@ -181,7 +194,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         pipeline_link_options.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     #endif
         pipeline_link_options.overrideUsesMotionBlur = false;
-        rt_check_log(optixPipelineCreate(
+        check_log(optixPipelineCreate(
             s.context,
             &pipeline_compile_options,
             &pipeline_link_options,

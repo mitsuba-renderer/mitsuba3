@@ -248,14 +248,9 @@ NAMESPACE_BEGIN(mitsuba)
 extern MTS_EXPORT_RENDER bool optix_initialize();
 extern MTS_EXPORT_RENDER void optix_shutdown();
 
-static size_t optix_log_buffer_size;
-static char optix_log_buffer[2024];
-
 #define rt_check(err)     __rt_check(err, __FILE__, __LINE__)
-#define rt_check_log(err) __rt_check_log(err, __FILE__, __LINE__)
 
 extern MTS_EXPORT_RENDER void __rt_check(OptixResult errval, const char *file, const int line);
-extern MTS_EXPORT_RENDER void __rt_check_log(OptixResult errval, const char *file, const int line);
 
 NAMESPACE_END(mitsuba)
 

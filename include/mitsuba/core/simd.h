@@ -2,6 +2,7 @@
 
 #include <mitsuba/mitsuba.h>
 #include <string>
+#include <tuple>
 
 #include <enoki-jit/jit.h>
 #include <enoki/array_router.h>

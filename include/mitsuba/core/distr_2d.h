@@ -720,6 +720,7 @@ public:
     }
 
     void set_grad_suspended(bool state) {
+        ENOKI_MARK_USED(state);
         if constexpr (ek::is_diff_array_v<Float>) {
             for (auto level : m_levels)
                 ek::set_grad_suspended(level.data, state);

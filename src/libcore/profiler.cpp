@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <array>
 #include <map>
+#include <cstring>
 
 NAMESPACE_BEGIN(mitsuba)
 

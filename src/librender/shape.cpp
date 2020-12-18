@@ -242,6 +242,7 @@ void embree_occluded(const RTCOccludedFunctionNArguments* args) {
 }
 
 MTS_VARIANT RTCGeometry Shape<Float, Spectrum>::embree_geometry(RTCDevice device) {
+    ENOKI_MARK_USED(device);
     if constexpr (!ek::is_cuda_array_v<Float>) {
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryUserPrimitiveCount(geom, 1);

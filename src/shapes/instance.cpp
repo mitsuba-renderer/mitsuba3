@@ -55,7 +55,7 @@ public:
     MTS_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
-    using ShapeGroup = ShapeGroup<Float, Spectrum>;
+    using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
 
     Instance(const Properties &props) {
         m_id = props.id();
@@ -68,7 +68,7 @@ public:
             if (shape && shape->is_shapegroup()) {
                 if (m_shapegroup)
                     Throw("Only a single shapegroup can be specified per instance.");
-                m_shapegroup = (ShapeGroup*)shape;
+                m_shapegroup = (ShapeGroup_*) shape;
             } else {
                 Throw("Only a shapegroup can be specified in an instance.");
             }
@@ -179,6 +179,7 @@ public:
 
 #if defined(MTS_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override {
+        ENOKI_MARK_USED(device);
         if constexpr (!ek::is_cuda_array_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
@@ -207,7 +208,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-   ref<ShapeGroup> m_shapegroup;
+   ref<ShapeGroup_> m_shapegroup;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Instance, Shape)

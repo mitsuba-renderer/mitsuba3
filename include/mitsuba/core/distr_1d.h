@@ -234,6 +234,7 @@ public:
     }
 
     void set_grad_suspended(bool state) {
+        ENOKI_MARK_USED(state);
         if constexpr (ek::is_diff_array_v<Float>) {
             ek::set_grad_suspended(m_pmf, state);
             ek::set_grad_suspended(m_cdf, state);
@@ -503,6 +504,7 @@ public:
     }
 
     void set_grad_suspended(bool state) {
+        ENOKI_MARK_USED(state);
         if constexpr (ek::is_diff_array_v<Float>) {
             ek::set_grad_suspended(m_pdf, state);
             ek::set_grad_suspended(m_cdf, state);
@@ -804,6 +806,7 @@ public:
     }
 
     void set_grad_suspended(bool state) {
+        ENOKI_MARK_USED(state);
         if constexpr (ek::is_diff_array_v<Float>) {
             ek::set_grad_suspended(m_pdf, state);
             ek::set_grad_suspended(m_cdf, state);

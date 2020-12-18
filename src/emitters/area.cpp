@@ -110,6 +110,7 @@ public:
         } else {
             wavelength = ek::zero<Wavelength>();
             spec_weight = m_radiance->eval(si, active);
+            ENOKI_MARK_USED(wavelength_sample);
         }
 
         return std::make_pair(

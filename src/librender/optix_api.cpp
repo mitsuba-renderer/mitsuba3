@@ -222,18 +222,6 @@ void __rt_check(OptixResult errval, const char *file, const int line) {
         exit(EXIT_FAILURE);
     }
 }
-
-void __rt_check_log(OptixResult errval, const char *file, const int line) {
-    if (errval != OPTIX_SUCCESS) {
-        const char *message = optixGetErrorString(errval);
-        fprintf(stderr, "rt_check(): OptiX API error = %04d (%s) in %s:%i.\n",
-                (int) errval, message, file, line);
-        fprintf(stderr, "\tLog: %s%s", optix_log_buffer,
-                optix_log_buffer_size > sizeof(optix_log_buffer) ? "<TRUNCATED>" : "");
-        exit(EXIT_FAILURE);
-    }
-}
-
 NAMESPACE_END(mitsuba)
 
 #endif // defined(MTS_ENABLE_CUDA)

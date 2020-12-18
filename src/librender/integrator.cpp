@@ -222,6 +222,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         ENOKI_MARK_USED(diff_scale_factor);
         ENOKI_MARK_USED(pixel_count);
         ENOKI_MARK_USED(sample_count);
+        ENOKI_MARK_USED(block_id);
         Throw("Not implemented for CUDA arrays.");
     }
 }

@@ -4,6 +4,7 @@
 #include <tinyformat.h>
 #include <sstream>
 #include <string>
+
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(util)
 

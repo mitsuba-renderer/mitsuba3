@@ -192,7 +192,7 @@ auto sample_tea_float(UInt v0, UInt v1, int rounds = 4) {
 template <typename UInt32>
 UInt32 permute(UInt32 index, uint32_t sample_count, UInt32 seed, int rounds = 2) {
     uint32_t  n = ek::log2i(sample_count);
-    Assert((1 << n) == sample_count, "sample_count should be a power of 2");
+    Assert(uint32_t(1 << n) == sample_count, "sample_count should be a power of 2");
 
     for (uint32_t  level = 0; level < n; ++level) {
         UInt32 bit = UInt32(1 << level);
