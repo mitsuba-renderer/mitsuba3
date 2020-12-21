@@ -357,8 +357,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         pi.prim_uv[0] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[16]));
         pi.prim_uv[1] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[17]));
         pi.prim_index = UInt32C::steal(trace_args[18]);
-        pi.shape      = ek::reinterpret_array<ShapePtr, UInt32C>(UInt32C::steal(trace_args[19]));
-        pi.instance   = ek::reinterpret_array<ShapePtr, UInt32C>(UInt32C::steal(trace_args[20]));
+        pi.shape      = ShapePtr::steal(trace_args[19]);
+        pi.instance   = ShapePtr::steal(trace_args[20]);
 
         // This field is only used by embree, but we still need to initialized it for vcalls
         pi.shape_index = ek::empty<UInt32>(ek::width(ray));
