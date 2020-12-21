@@ -106,8 +106,6 @@ public:
         ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
         ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
-        ray.update();
-
         return std::make_pair(ray, wav_weight);
     }
 
@@ -133,8 +131,6 @@ public:
         // 3. Set differentials; since the film size is always 1x1, we don't
         //    have differentials
         ray.has_differentials = false;
-
-        ray.update();
 
         return std::make_pair(ray, wav_weight);
     }

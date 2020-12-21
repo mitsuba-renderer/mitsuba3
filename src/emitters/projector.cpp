@@ -146,7 +146,6 @@ public:
         ray.wavelengths = wavelengths;
         ray.o = trafo.translation();
         ray.d = trafo * Vector3f(ek::normalize(near_p));
-        ray.update();
 
         return std::make_pair(
             ray, unpolarized<Spectrum>(weight / pdf) & active);

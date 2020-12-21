@@ -308,8 +308,9 @@ template <typename Point_> struct BoundingBox {
         auto active = ek::all(ek::neq(ray.d, ek::zero<Vector>()) || ((ray.o > min) || (ray.o < max)));
 
         // Compute intersection intervals for each axis
-        Vector t1 = (min - ray.o) * ray.d_rcp,
-               t2 = (max - ray.o) * ray.d_rcp;
+        Vector d_rcp = ek::rcp(ray.d),
+               t1 = (min - ray.o) * d_rcp,
+               t2 = (max - ray.o) * d_rcp;
 
         // Ensure proper ordering
         Vector t1p = ek::min(t1, t2),

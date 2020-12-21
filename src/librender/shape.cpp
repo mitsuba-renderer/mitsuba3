@@ -148,7 +148,6 @@ void embree_intersect_scalar(int* valid,
     ray.mint  = rtc_ray->tnear;
     ray.maxt  = rtc_ray->tfar;
     ray.time  = rtc_ray->time;
-    ray.update();
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
@@ -194,7 +193,6 @@ void embree_intersect_packet(int* valid,
     ray.mint  = ek::load<FloatP>(rays->tnear);
     ray.maxt  = ek::load<FloatP>(rays->tfar);
     ray.time  = ek::load<FloatP>(rays->time);
-    ray.update();
 
     // Check whether this is a shadow ray or not
     if (hits) {

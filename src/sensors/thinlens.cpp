@@ -183,7 +183,6 @@ public:
         auto trafo = m_world_transform->eval(ray.time, active);
         ray.o = trafo.transform_affine(aperture_p);
         ray.d = trafo * d;
-        ray.update();
 
         return std::make_pair(ray, wav_weight);
     }
@@ -222,7 +221,6 @@ public:
         auto trafo = m_world_transform->eval(ray.time, active);
         ray.o = trafo.transform_affine(aperture_p);
         ray.d = trafo * d;
-        ray.update();
 
         ray.o_x = ray.o_y = ray.o;
 

@@ -147,7 +147,7 @@ public:
     ray_intersect_preliminary_impl(const Ray3fX &ray_,
                                    ek::mask_t<FloatX> active) const {
         Ray3fX ray = m_to_object.transform_affine(ray_);
-        FloatX t   = -ray.o.z() * ray.d_rcp.z();
+        FloatX t   = -ray.o.z() / ray.d.z();
         Point<FloatX, 3> local = ray(t);
 
         // Is intersection within ray segment and disk?
@@ -165,7 +165,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         Ray3fX ray = m_to_object.transform_affine(ray_);
-        FloatX t   = -ray.o.z() * ray.d_rcp.z();
+        FloatX t   = -ray.o.z() / ray.d.z();
         Point<FloatX, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?

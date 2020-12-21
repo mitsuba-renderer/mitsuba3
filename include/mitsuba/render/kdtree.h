@@ -2100,8 +2100,10 @@ public:
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
 
-        Float mint = std::max(ray.mint, std::get<1>(bbox_result));
-        Float maxt = std::min(ray.maxt, std::get<2>(bbox_result));
+        Float mint = std::max(ray.mint, std::get<1>(bbox_result)),
+              maxt = std::min(ray.maxt, std::get<2>(bbox_result));
+
+        Vector d_rcp = ek::rcp(ray.d);
 
         const KDNode *node = m_nodes.get();
         while (mint <= maxt) {
@@ -2110,7 +2112,7 @@ public:
                 const uint32_t axis = node->axis();
 
                 /* Compute parametric distance along the rays to the split plane */
-                Float t_plane = (split - ray.o[axis]) * ray.d_rcp[axis];
+                Float t_plane = (split - ray.o[axis]) * d_rcp[axis];
 
                 bool left_first  = (ray.o[axis] < split) ||
                                    (ray.o[axis] == split && ray.d[axis] >= 0.f),

@@ -14,10 +14,6 @@ NAMESPACE_BEGIN(mitsuba)
  * stores a ray segment [mint, maxt] (whose entries may include positive/negative
  * infinity), as well as the componentwise reciprocals of the ray direction.
  * That is just done for convenience, as these values are frequently required.
- *
- * \remark Important: be careful when changing the ray direction. You must call
- * \ref update() to compute the componentwise reciprocals as well, or Mitsuba's
- * ray-object intersection code may produce undefined results.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = ek::array_size_v<Point_>;
@@ -34,7 +30,6 @@ template <typename Point_, typename Spectrum_> struct Ray {
 
     Point o;                              ///< Ray origin
     Vector d;                             ///< Ray direction
-    Vector d_rcp;                         ///< Componentwise reciprocals of the ray direction
     Float mint = math::RayEpsilon<Float>; ///< Minimum position on the ray segment
     Float maxt = ek::Largest<Float>;      ///< Maximum position on the ray segment
     Float time = 0.f;                     ///< Time value associated with this ray
@@ -43,28 +38,22 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Construct a new ray (o, d) at time 'time'
     Ray(const Point &o, const Vector &d, Float time,
         const Wavelength &wavelengths)
-        : o(o), d(d), d_rcp(ek::rcp(d)), time(time),
-          wavelengths(wavelengths) { }
+        : o(o), d(d), time(time), wavelengths(wavelengths) { }
 
     /// Construct a new ray (o, d) with time
     Ray(const Point &o, const Vector &d, const Float &t)
-        : o(o), d(d), time(t) {
-        update();
-    }
+        : o(o), d(d), time(t) { }
 
     /// Construct a new ray (o, d) with bounds
     Ray(const Point &o, const Vector &d, Float mint, Float maxt,
         Float time, const Wavelength &wavelengths)
-        : o(o), d(d), d_rcp(ek::rcp(d)), mint(mint), maxt(maxt),
+        : o(o), d(d), mint(mint), maxt(maxt),
           time(time), wavelengths(wavelengths) { }
 
     /// Copy a ray, but change the [mint, maxt] interval
     Ray(const Ray &r, Float mint, Float maxt)
-        : o(r.o), d(r.d), d_rcp(r.d_rcp), mint(mint), maxt(maxt),
+        : o(r.o), d(r.d), mint(mint), maxt(maxt),
           time(r.time), wavelengths(r.wavelengths) { }
-
-    /// Update the reciprocal ray directions after changing 'd'
-    void update() { d_rcp = ek::rcp(d); }
 
     /// Return the position of a point along the ray
     Point operator() (Float t) const { return ek::fmadd(d, t, o); }
@@ -74,7 +63,6 @@ template <typename Point_, typename Spectrum_> struct Ray {
         Ray result;
         result.o           = o;
         result.d           = -d;
-        result.d_rcp       = -d_rcp;
         result.mint        = mint;
         result.maxt        = maxt;
         result.time        = time;
@@ -82,7 +70,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
         return result;
     }
 
-    ENOKI_STRUCT(Ray, o, d, d_rcp, mint, maxt, time, wavelengths)
+    ENOKI_STRUCT(Ray, o, d, mint, maxt, time, wavelengths)
 };
 
 /**
@@ -94,7 +82,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;
 
     MTS_USING_TYPES(Float, Point, Vector, Wavelength)
-    MTS_USING_MEMBERS(o, d, d_rcp, mint, maxt, time, wavelengths)
+    MTS_USING_MEMBERS(o, d, mint, maxt, time, wavelengths)
 
     Point o_x, o_y;
     Vector d_x, d_y;
@@ -109,7 +97,6 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
                     const Wavelength &wavelengths_) {
         o           = o_;
         d           = d_;
-        d_rcp       = ek::rcp(d);
         time        = time_;
         wavelengths = wavelengths_;
     }
@@ -121,7 +108,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
         d_y = ek::fmadd(d_y - d, amount, d);
     }
 
-    ENOKI_STRUCT(RayDifferential, o, d, d_rcp, mint, maxt, time,
+    ENOKI_STRUCT(RayDifferential, o, d, mint, maxt, time,
                  wavelengths, o_x, o_y, d_x, d_y)
 };
 
