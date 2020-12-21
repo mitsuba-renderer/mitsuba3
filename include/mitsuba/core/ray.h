@@ -36,7 +36,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     Vector d;                             ///< Ray direction
     Vector d_rcp;                         ///< Componentwise reciprocals of the ray direction
     Float mint = math::RayEpsilon<Float>; ///< Minimum position on the ray segment
-    Float maxt = ek::Infinity<Float>;     ///< Maximum position on the ray segment
+    Float maxt = ek::Largest<Float>;      ///< Maximum position on the ray segment
     Float time = 0.f;                     ///< Time value associated with this ray
     Wavelength wavelengths;               ///< Wavelength packet associated with the ray
 
