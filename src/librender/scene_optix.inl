@@ -34,8 +34,6 @@ struct OptixState {
     void* ias_buffer = nullptr;
 
     char *custom_shapes_program_names[2 * custom_optix_shapes_count];
-
-    ek::uint32_array_t<Float> shapes_registry_ids;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
@@ -46,13 +44,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         using OptixState = OptixState<Float>;
         m_accel = new OptixState();
         OptixState &s = *(OptixState *) m_accel;
-
-        // Copy shapes registry ids to the GPU
-        std::vector<uint32_t> ids(m_shapes.size());
-        for (size_t i = 0; i < m_shapes.size(); i++)
-            ids[i] = jitc_registry_get_id(m_shapes[i]);
-        s.shapes_registry_ids =
-            ek::load_unaligned<ek::CUDAArray<uint32_t>>(ids.data(), ids.size());
 
         bool scene_has_custom_shapes = false;
         bool scene_has_instances = false;
@@ -85,7 +76,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         s.pipeline_compile_options.usesMotionBlur        = false;
         s.pipeline_compile_options.numPayloadValues      = 6;
-        s.pipeline_compile_options.numAttributeValues    = 0; // TODO should be 0?
+        s.pipeline_compile_options.numAttributeValues    = 0;
         s.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
         if (scene_has_instances)
@@ -240,8 +231,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
         // Gather information about the instance acceleration structures to be built
         std::vector<OptixInstance> ias;
-        prepare_ias(s.context, m_shapes, 0, s.accel, (uint32_t) m_shapes.size(),
-                    ScalarTransform4f(), ias);
+        prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
 
         // If there is only a single IAS, no need to build the "master" IAS
         if (ias.size() == 1) {
@@ -330,10 +320,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 
         auto ray = ek::detach(ray_);
 
-        using UInt32C = ek::detached_t<UInt32>;
-        using UInt64C = ek::detached_t<UInt64>;
-        using FloatC  = ek::detached_t<Float>;
-
         UInt64C handle = ek::full<UInt64C>(s.ias_handle, 1, /* eval = */ true);
         UInt32C ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
                 sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
@@ -344,20 +330,16 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
                 payload_prim_index(0),
                 payload_shape_ptr(0);
 
-        // Initialize instance index with the highest possible index an instance
-        // could have in m_shapes. As the hierarchy of IAS is built, this value
-        // is used to tag IAS that are not related to instancing (e.g. custom
-        // shape tree).
-        uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32C payload_inst_index =
-            ek::full<UInt32C>(max_inst_index, ek::width(ray));
+
+    // Instance index is initialized to 0 when there is no instancing in the scene
+        UInt32C payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
 
         uint32_t trace_args[] {
             handle.index(),
             ray.o.x().index(), ray.o.y().index(), ray.o.z().index(),
             ray.d.x().index(), ray.d.y().index(), ray.d.z().index(),
             ray.mint.index(), ray.maxt.index(), ray.time.index(),
-            ray_mask.index(), ray_flags.index(), // TODO use ray flag to identify shadow rays
+            ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
             miss_sbt_index.index(),
             payload_t.index(),
@@ -375,13 +357,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         pi.prim_uv[0] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[16]));
         pi.prim_uv[1] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[17]));
         pi.prim_index = UInt32C::steal(trace_args[18]);
-        pi.shape    = ek::reinterpret_array<ShapePtr, UInt32C>(UInt32C::steal(trace_args[19]));
+        pi.shape      = ek::reinterpret_array<ShapePtr, UInt32C>(UInt32C::steal(trace_args[19]));
+        pi.instance   = ek::reinterpret_array<ShapePtr, UInt32C>(UInt32C::steal(trace_args[20]));
 
-        // Only gather instance pointers for valid instance indices
-        UInt32C instance_index = UInt32C::steal(trace_args[20]);
-        Mask valid_instances = instance_index < max_inst_index;
-        pi.instance = ek::gather<ShapePtr>(
-            s.shapes_registry_ids, instance_index, active & valid_instances);
+        // This field is only used by embree, but we still need to initialized it for vcalls
+        pi.shape_index = ek::empty<UInt32>(ek::width(ray));
 
         return pi;
     } else {

@@ -47,21 +47,15 @@ set_preliminary_intersection_to_payload(float t,
                                         const Vector2f &prim_uv,
                                         unsigned int prim_index,
                                         unsigned int shape_registry_id) {
-    // Instance index is initialized to 0 when there is no instancing in the scene
-    unsigned int out_inst_index = optixGetPayload_5();
-    if (out_inst_index > 0) {
-        // Check whether the current instance ID is a valid instance index
-        unsigned int inst_index = optixGetInstanceId();
-        if (inst_index < out_inst_index)
-            out_inst_index = inst_index;
-    }
-
     optixSetPayload_0(__float_as_int(t));
     optixSetPayload_1(__float_as_int(prim_uv[0]));
     optixSetPayload_2(__float_as_int(prim_uv[1]));
     optixSetPayload_3(prim_index);
     optixSetPayload_4(shape_registry_id);
-    optixSetPayload_5(out_inst_index);
+
+    // Instance index is initialized to 0 when there is no instancing in the scene
+    if (optixGetPayload_5() > 0)
+        optixSetPayload_5(optixGetInstanceId());
 }
 
 #endif

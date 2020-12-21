@@ -173,24 +173,12 @@ void build_gas(const OptixDeviceContext &context,
 /// Prepares and fills the \ref OptixInstance array associated with a given list of shapes.
 template <typename Shape, typename Transform4f>
 void prepare_ias(const OptixDeviceContext &context,
-                       std::vector<ref<Shape>> &shapes,
-                       uint32_t base_sbt_offset,
-                       const OptixAccelData &accel,
-                       uint32_t instance_id,
-                       const Transform4f& transf,
-                       std::vector<OptixInstance> &out_instances) {
-    // Find all instances in the list of shapes
-    std::vector<Shape*> instances;
-    std::vector<uint32_t> instance_offsets;
-    uint32_t offset = 0;
-    for (Shape* shape: shapes) {
-        if (shape->is_instance()) {
-            instances.push_back(shape);
-            instance_offsets.push_back(offset);
-        }
-        ++offset;
-    }
-
+                 std::vector<ref<Shape>> &shapes,
+                 uint32_t base_sbt_offset,
+                 const OptixAccelData &accel,
+                 uint32_t instance_id,
+                 const Transform4f& transf,
+                 std::vector<OptixInstance> &out_instances) {
     unsigned int sbt_offset = base_sbt_offset;
 
     float T[12] = {
@@ -226,8 +214,10 @@ void prepare_ias(const OptixDeviceContext &context,
     }
 
     // Apply the same process to every shape instances
-    for (uint32_t i = 0; i < instances.size(); ++i)
-        instances[i]->optix_prepare_ias(context, out_instances, instance_offsets[i], transf);
+    for (Shape* shape: shapes) {
+        if (shape->is_instance())
+            shape->optix_prepare_ias(context, out_instances, jitc_registry_get_id(shape), transf);
+    }
 }
 
 NAMESPACE_END(mitsuba)
