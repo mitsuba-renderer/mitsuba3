@@ -273,9 +273,10 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
     hitgroup_records.push_back(HitGroupSbtRecord());
     hitgroup_records.back().data = { jitc_registry_get_id(this), m_optix_data_ptr };
 
-    size_t program_group_idx = (is_mesh() ? 2 : 3 + get_shape_descr_idx(this));
+    size_t program_group_idx = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
     // Setup the hitgroup record and copy it to the hitgroup records array
-    rt_check(optixSbtRecordPackHeader(program_groups[program_group_idx], &hitgroup_records.back()));
+    jitc_optix_check(optixSbtRecordPackHeader(program_groups[program_group_idx],
+                                              &hitgroup_records.back()));
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,
@@ -288,11 +289,11 @@ MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceCont
 MTS_VARIANT void Shape<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
     build_input.type = OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES;
     // Assumes the aabb is always the first member of the data struct
-    build_input.aabbArray.aabbBuffers   = (CUdeviceptr*) &m_optix_data_ptr;
-    build_input.aabbArray.numPrimitives = 1;
-    build_input.aabbArray.strideInBytes = sizeof(OptixAabb);
-    build_input.aabbArray.flags         = optix_geometry_flags;
-    build_input.aabbArray.numSbtRecords = 1;
+    build_input.customPrimitiveArray.aabbBuffers   = (CUdeviceptr*) &m_optix_data_ptr;
+    build_input.customPrimitiveArray.numPrimitives = 1;
+    build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
+    build_input.customPrimitiveArray.flags         = optix_geometry_flags;
+    build_input.customPrimitiveArray.numSbtRecords = 1;
 }
 #endif
 

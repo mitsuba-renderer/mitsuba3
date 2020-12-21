@@ -6,10 +6,8 @@
 #ifdef __CUDACC__
 
 extern "C" __global__ void __closesthit__mesh() {
-    unsigned int launch_index = calculate_launch_index();
-
-    if (params.is_ray_test()) { // ray_test
-        params.out_hit[launch_index] = true;
+    if (optixGetRayFlags() == OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT) { // ray_test
+        optixSetPayload_0(1);
     } else {
         const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
         unsigned int prim_index = optixGetPrimitiveIndex();

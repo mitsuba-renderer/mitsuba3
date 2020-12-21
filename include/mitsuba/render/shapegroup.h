@@ -44,6 +44,9 @@ public:
 
     MTS_INLINE ScalarSize effective_primitive_count() const override { return 0; }
 
+    /// Return whether this shapegroup only contains triangle mesh shapes
+    bool has_meshes_only() const { return m_has_meshes_only; }
+
     std::string to_string() const override;
 
 #if defined(MTS_ENABLE_CUDA)
@@ -85,6 +88,8 @@ private:
     /// OptiX hitgroup sbt offset
     uint32_t m_sbt_offset;
 #endif
+
+    bool m_has_meshes_only;
 };
 
 MTS_EXTERN_CLASS_RENDER(ShapeGroup)

@@ -9,133 +9,79 @@
 # include <optix.h>
 # include <optix_stubs.h>
 #else
-# define OPTIX_ABI_VERSION 22
-# define OPTIX_SBT_RECORD_ALIGNMENT 16ull
-# define OPTIX_SBT_RECORD_HEADER_SIZE ( (size_t)32 )
-# define OPTIX_SUCCESS 0
-# define OPTIX_ERROR_HOST_OUT_OF_MEMORY 7002
-# define OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT 0
-# define OPTIX_COMPILE_OPTIMIZATION_DEFAULT 3
-# define OPTIX_COMPILE_OPTIMIZATION_LEVEL_0 0
-# define OPTIX_COMPILE_DEBUG_LEVEL_DEFAULT 0
-# define OPTIX_COMPILE_DEBUG_LEVEL_NONE 0
-# define OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO 1
-# define OPTIX_COMPILE_DEBUG_LEVEL_FULL 2
-# define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY 0u
-# define OPTIX_EXCEPTION_FLAG_NONE 0u
-# define OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW 1u
-# define OPTIX_EXCEPTION_FLAG_TRACE_DEPTH 2u
-# define OPTIX_EXCEPTION_FLAG_USER 4u
-# define OPTIX_EXCEPTION_FLAG_DEBUG 8u
-# define OPTIX_PROGRAM_GROUP_KIND_RAYGEN 0x2421
-# define OPTIX_PROGRAM_GROUP_KIND_MISS 0x2422
-# define OPTIX_PROGRAM_GROUP_KIND_EXCEPTION 0x2423
-# define OPTIX_PROGRAM_GROUP_KIND_HITGROUP 0x2424
-# define OPTIX_BUILD_FLAG_NONE 0
-# define OPTIX_BUILD_FLAG_ALLOW_COMPACTION 2u
-# define OPTIX_BUILD_FLAG_PREFER_FAST_TRACE 4u
-# define OPTIX_BUILD_FLAG_PREFER_FAST_BUILD 8u
-# define OPTIX_BUILD_OPERATION_BUILD 0x2161
-# define OPTIX_BUILD_OPERATION_UPDATE 0x2162
-# define OPTIX_PROPERTY_TYPE_COMPACTED_SIZE 0x2181
-# define OPTIX_GEOMETRY_FLAG_NONE 0
-# define OPTIX_INSTANCE_FLAG_NONE 0
-# define OPTIX_BUILD_INPUT_TYPE_TRIANGLES 0x2141
-# define OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES 0x2142
-# define OPTIX_BUILD_INPUT_TYPE_INSTANCES 0x2143
-# define OPTIX_VERTEX_FORMAT_FLOAT3 0x2121
-# define OPTIX_INDICES_FORMAT_UNSIGNED_INT3 0x2103
-# define OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM 64u
 
-using CUcontext = struct CUctx_st *;
-using CUstream  = struct CUstream_st *;
-using CUdeviceptr = void*;
-using OptixResult = int;
-using OptixDeviceContext = struct OptixDeviceContext_t*;
-using OptixPipeline      = struct OptixPipeline_t*;
-using OptixModule        = struct OptixModule_t*;
-using OptixProgramGroup  = struct OptixProgramGroup_t*;
-using OptixQueryFunctionTableOptions = void*;
-using OptixLogCallback = void (*)(unsigned int, const char*, const char*, void*);
+// =====================================================
+//       Various opaque handles and enumerations
+// =====================================================
+
+using CUdeviceptr            = void*;
+using CUstream               = void*;
+using OptixPipeline          = void *;
+using OptixModule            = void *;
+using OptixProgramGroup      = void *;
+using OptixResult            = int;
 using OptixTraversableHandle = unsigned long long;
+using OptixBuildOperation    = int;
+using OptixBuildInputType    = int;
+using OptixVertexFormat      = int;
+using OptixIndicesFormat     = int;
+using OptixTransformFormat   = int;
+using OptixAccelPropertyType = int;
+using OptixProgramGroupKind  = int;
+using OptixDeviceContext     = void*;
 
-struct OptixDeviceContextOptions {
-    OptixLogCallback logCallbackFunction;
-    void* logCallbackData;
-    int logCallbackLevel;
-};
+// =====================================================
+//            Commonly used OptiX constants
+// =====================================================
 
-struct OptixPipelineLinkOptions {
-    unsigned int maxTraceDepth;
-    int debugLevel;
-    int overrideUsesMotionBlur;
-};
+#define OPTIX_BUILD_INPUT_TYPE_TRIANGLES         0x2141
+#define OPTIX_BUILD_INPUT_TYPE_CUSTOM_PRIMITIVES 0x2142
+#define OPTIX_BUILD_INPUT_TYPE_INSTANCES         0x2143
+#define OPTIX_BUILD_OPERATION_BUILD              0x2161
 
-struct OptixPipelineCompileOptions {
-    int usesMotionBlur;
-    unsigned int traversableGraphFlags;
-    int numPayloadValues;
-    int numAttributeValues;
-    unsigned int exceptionFlags;
-    const char* pipelineLaunchParamsVariableName;
-};
+#define OPTIX_GEOMETRY_FLAG_NONE           0
+#define OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT 1
 
-struct OptixModuleCompileOptions {
-    int maxRegisterCount;
-    int optLevel;
-    int debugLevel;
-};
+#define OPTIX_INDICES_FORMAT_UNSIGNED_INT3 0x2103
+#define OPTIX_VERTEX_FORMAT_FLOAT3         0x2121
+#define OPTIX_SBT_RECORD_ALIGNMENT         16ull
+#define OPTIX_SBT_RECORD_HEADER_SIZE       32
 
-struct OptixProgramGroupOptions {
-    int placeholder;
-};
+#define OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT 0
+#define OPTIX_COMPILE_OPTIMIZATION_DEFAULT       0
+#define OPTIX_COMPILE_OPTIMIZATION_LEVEL_0       0x2340
+#define OPTIX_COMPILE_DEBUG_LEVEL_NONE           0x2350
+#define OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO       0x2351
 
-struct OptixProgramGroupSingleModule {
-    OptixModule module;
-    const char* entryFunctionName;
-};
+#define OPTIX_BUILD_FLAG_ALLOW_COMPACTION  2
+#define OPTIX_BUILD_FLAG_PREFER_FAST_TRACE 4
+#define OPTIX_PROPERTY_TYPE_COMPACTED_SIZE 0x2181
 
-struct OptixProgramGroupCallables {
-    OptixModule moduleDC;
-    const char* entryFunctionNameDC;
-    OptixModule moduleCC;
-    const char* entryFunctionNameCC;
-};
+#define OPTIX_EXCEPTION_FLAG_NONE           0
+#define OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW 1
+#define OPTIX_EXCEPTION_FLAG_TRACE_DEPTH    2
+#define OPTIX_EXCEPTION_FLAG_USER           4
+#define OPTIX_EXCEPTION_FLAG_DEBUG          8
 
-struct OptixProgramGroupHitgroup {
-    OptixModule moduleCH;
-    const char* entryFunctionNameCH;
-    OptixModule moduleAH;
-    const char* entryFunctionNameAH;
-    OptixModule moduleIS;
-    const char* entryFunctionNameIS;
-};
+#define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY 0
+#define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS 1
+#define OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING (1u << 1)
 
-struct OptixProgramGroupDesc {
-    int kind;
-    unsigned int flags;
-    union {
-        OptixProgramGroupSingleModule raygen;
-        OptixProgramGroupSingleModule miss;
-        OptixProgramGroupSingleModule exception;
-        OptixProgramGroupCallables callables;
-        OptixProgramGroupHitgroup hitgroup;
-    };
-};
+#define OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM   (1 << 0)
+#define OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE (1 << 31)
 
-struct OptixShaderBindingTable {
-    CUdeviceptr raygenRecord;
-    CUdeviceptr exceptionRecord;
-    CUdeviceptr  missRecordBase;
-    unsigned int missRecordStrideInBytes;
-    unsigned int missRecordCount;
-    CUdeviceptr  hitgroupRecordBase;
-    unsigned int hitgroupRecordStrideInBytes;
-    unsigned int hitgroupRecordCount;
-    CUdeviceptr  callablesRecordBase;
-    unsigned int callablesRecordStrideInBytes;
-    unsigned int callablesRecordCount;
-};
+#define OPTIX_PROGRAM_GROUP_KIND_MISS      0x2422
+#define OPTIX_PROGRAM_GROUP_KIND_HITGROUP  0x2424
+
+#define OPTIX_INSTANCE_FLAG_NONE              0
+#define OPTIX_INSTANCE_FLAG_DISABLE_TRANSFORM (1u << 6)
+
+#define OPTIX_RAY_FLAG_NONE                   0
+#define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
+
+// =====================================================
+//          Commonly used OptiX data structures
+// =====================================================
 
 struct OptixMotionOptions {
     unsigned short numKeys;
@@ -146,7 +92,7 @@ struct OptixMotionOptions {
 
 struct OptixAccelBuildOptions {
     unsigned int buildFlags;
-    int operation;
+    OptixBuildOperation operation;
     OptixMotionOptions motionOptions;
 };
 
@@ -156,29 +102,14 @@ struct OptixAccelBufferSizes {
     size_t tempUpdateSizeInBytes;
 };
 
-struct OptixAccelEmitDesc {
-    CUdeviceptr result;
-    int type;
-};
-
-struct OptixInstance {
-    float transform[12];
-    unsigned int instanceId;
-    unsigned int sbtOffset;
-    unsigned int visibilityMask;
-    unsigned int flags;
-    OptixTraversableHandle traversableHandle;
-    unsigned int pad[2];
-};
-
 struct OptixBuildInputTriangleArray {
     const CUdeviceptr* vertexBuffers;
     unsigned int numVertices;
-    int vertexFormat;
+    OptixVertexFormat vertexFormat;
     unsigned int vertexStrideInBytes;
     CUdeviceptr indexBuffer;
     unsigned int numIndexTriplets;
-    int indexFormat;
+    OptixIndicesFormat indexFormat;
     unsigned int indexStrideInBytes;
     CUdeviceptr preTransform;
     const unsigned int* flags;
@@ -187,11 +118,7 @@ struct OptixBuildInputTriangleArray {
     unsigned int sbtIndexOffsetSizeInBytes;
     unsigned int sbtIndexOffsetStrideInBytes;
     unsigned int primitiveIndexOffset;
-};
-
-struct OptixAabb {
-    float minX; float minY; float minZ;
-    float maxX; float maxY; float maxZ;
+    OptixTransformFormat transformFormat;
 };
 
 struct OptixBuildInputCustomPrimitiveArray {
@@ -209,49 +136,130 @@ struct OptixBuildInputCustomPrimitiveArray {
 struct OptixBuildInputInstanceArray {
     CUdeviceptr instances;
     unsigned int numInstances;
-    CUdeviceptr aabbs;
-    unsigned int numAabbs;
 };
 
 struct OptixBuildInput {
-    int type;
+    OptixBuildInputType type;
     union {
         OptixBuildInputTriangleArray triangleArray;
-        OptixBuildInputCustomPrimitiveArray aabbArray;
+        OptixBuildInputCustomPrimitiveArray customPrimitiveArray;
         OptixBuildInputInstanceArray instanceArray;
         char pad[1024];
     };
 };
 
-// Driver API
-extern MTS_EXPORT_RENDER const char* (*optixGetErrorName)(OptixResult);
-extern MTS_EXPORT_RENDER const char* (*optixGetErrorString)(OptixResult);
-extern MTS_EXPORT_RENDER OptixResult (*optixDeviceContextCreate)(CUcontext, const OptixDeviceContextOptions*, OptixDeviceContext*);
-extern MTS_EXPORT_RENDER OptixResult (*optixDeviceContextDestroy)(OptixDeviceContext);
-extern MTS_EXPORT_RENDER OptixResult (*optixModuleCreateFromPTX)(OptixDeviceContext, const OptixModuleCompileOptions*, const OptixPipelineCompileOptions*, const char*, size_t, char*, size_t*, OptixModule*);
-extern MTS_EXPORT_RENDER OptixResult (*optixModuleDestroy)(OptixModule);
-extern MTS_EXPORT_RENDER OptixResult (*optixProgramGroupCreate)(OptixDeviceContext, const OptixProgramGroupDesc*, unsigned int, const OptixProgramGroupOptions*, char*, size_t*, OptixProgramGroup*);
-extern MTS_EXPORT_RENDER OptixResult (*optixProgramGroupDestroy)(OptixProgramGroup);
-extern MTS_EXPORT_RENDER OptixResult (*optixPipelineCreate)(OptixDeviceContext, const OptixPipelineCompileOptions*, const OptixPipelineLinkOptions*, const OptixProgramGroup*, unsigned int, char*, size_t*, OptixPipeline*);
-extern MTS_EXPORT_RENDER OptixResult (*optixPipelineDestroy)(OptixPipeline);
-extern MTS_EXPORT_RENDER OptixResult (*optixAccelComputeMemoryUsage)(OptixDeviceContext, const OptixAccelBuildOptions*, const OptixBuildInput*, unsigned int, OptixAccelBufferSizes*);
-extern MTS_EXPORT_RENDER OptixResult (*optixAccelBuild)(OptixDeviceContext, CUstream, const OptixAccelBuildOptions*, const OptixBuildInput*,unsigned int, CUdeviceptr, size_t, CUdeviceptr, size_t, OptixTraversableHandle*, const OptixAccelEmitDesc*, unsigned int);
-extern MTS_EXPORT_RENDER OptixResult (*optixAccelCompact)(OptixDeviceContext, CUstream, OptixTraversableHandle, CUdeviceptr, size_t, OptixTraversableHandle*);
-extern MTS_EXPORT_RENDER OptixResult (*optixSbtRecordPackHeader)(OptixProgramGroup, void*);
-extern MTS_EXPORT_RENDER OptixResult (*optixLaunch)(OptixPipeline, CUstream, CUdeviceptr, size_t, const OptixShaderBindingTable*, unsigned int, unsigned int, unsigned int);
-extern MTS_EXPORT_RENDER OptixResult (*optixQueryFunctionTable)(int, unsigned int, OptixQueryFunctionTableOptions*, const void**, void*, size_t);
+struct OptixInstance {
+    float transform[12];
+    unsigned int instanceId;
+    unsigned int sbtOffset;
+    unsigned int visibilityMask;
+    unsigned int flags;
+    OptixTraversableHandle traversableHandle;
+    unsigned int pad[2];
+};
+
+struct OptixModuleCompileOptions {
+    int maxRegisterCount;
+    int optLevel;
+    int debugLevel;
+    const void *boundValues;
+    unsigned int numBoundValues;
+};
+
+struct OptixPipelineCompileOptions {
+    int usesMotionBlur;
+    unsigned int traversableGraphFlags;
+    int numPayloadValues;
+    int numAttributeValues;
+    unsigned int exceptionFlags;
+    const char* pipelineLaunchParamsVariableName;
+    unsigned int usesPrimitiveTypeFlags;
+};
+
+struct OptixAccelEmitDesc {
+    CUdeviceptr result;
+    OptixAccelPropertyType type;
+};
+
+struct OptixProgramGroupSingleModule {
+    OptixModule module;
+    const char* entryFunctionName;
+};
+
+struct OptixProgramGroupHitgroup {
+    OptixModule moduleCH;
+    const char* entryFunctionNameCH;
+    OptixModule moduleAH;
+    const char* entryFunctionNameAH;
+    OptixModule moduleIS;
+    const char* entryFunctionNameIS;
+};
+
+struct OptixProgramGroupDesc {
+    OptixProgramGroupKind kind;
+    unsigned int flags;
+
+    union {
+        OptixProgramGroupSingleModule raygen;
+        OptixProgramGroupSingleModule miss;
+        OptixProgramGroupSingleModule exception;
+        OptixProgramGroupHitgroup hitgroup;
+    };
+};
+
+struct OptixProgramGroupOptions {
+    int placeholder;
+};
+
+struct OptixShaderBindingTable {
+    CUdeviceptr raygenRecord;
+    CUdeviceptr exceptionRecord;
+    CUdeviceptr  missRecordBase;
+    unsigned int missRecordStrideInBytes;
+    unsigned int missRecordCount;
+    CUdeviceptr  hitgroupRecordBase;
+    unsigned int hitgroupRecordStrideInBytes;
+    unsigned int hitgroupRecordCount;
+    CUdeviceptr  callablesRecordBase;
+    unsigned int callablesRecordStrideInBytes;
+    unsigned int callablesRecordCount;
+};
+
+// =====================================================
+//             Commonly used OptiX functions
+// =====================================================
+
+#if defined(OPTIX_API_IMPL)
+#  define D(name, ...) OptixResult (*name)(__VA_ARGS__) = nullptr;
+#else
+#  define D(name, ...) extern MTS_EXPORT_RENDER OptixResult (*name)(__VA_ARGS__)
+#endif
+
+D(optixAccelComputeMemoryUsage, OptixDeviceContext,
+  const OptixAccelBuildOptions *, const OptixBuildInput *, unsigned int,
+  OptixAccelBufferSizes *);
+D(optixAccelBuild, OptixDeviceContext, CUstream, const OptixAccelBuildOptions *,
+  const OptixBuildInput *, unsigned int, CUdeviceptr, size_t, CUdeviceptr,
+  size_t, OptixTraversableHandle *, const OptixAccelEmitDesc *, unsigned int);
+D(optixModuleCreateFromPTX, OptixDeviceContext,
+  const OptixModuleCompileOptions *, const OptixPipelineCompileOptions *,
+  const char *, size_t, char *, size_t *, OptixModule *);
+D(optixModuleDestroy, OptixModule);
+D(optixProgramGroupCreate, OptixDeviceContext, const OptixProgramGroupDesc *,
+  unsigned int, const OptixProgramGroupOptions *, char *, size_t *,
+  OptixProgramGroup *);
+D(optixProgramGroupDestroy, OptixProgramGroup);
+D(optixSbtRecordPackHeader, OptixProgramGroup, void *);
+D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
+  CUdeviceptr, size_t, OptixTraversableHandle *);
+
+#undef D
 
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-/// Try to load the OptiX library
 extern MTS_EXPORT_RENDER bool optix_initialize();
 extern MTS_EXPORT_RENDER void optix_shutdown();
-
-#define rt_check(err)     __rt_check(err, __FILE__, __LINE__)
-
-extern MTS_EXPORT_RENDER void __rt_check(OptixResult errval, const char *file, const int line);
-
 NAMESPACE_END(mitsuba)
 
 #endif // defined(MTS_ENABLE_CUDA)

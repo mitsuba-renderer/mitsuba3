@@ -10,6 +10,8 @@
 #include "sphere.cuh"
 #else
 
+#include <enoki-jit/optix.h>
+
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix_api.h>
 #include <mitsuba/render/shape.h>
@@ -88,7 +90,8 @@ void build_gas(const OptixDeviceContext &context,
                                        OptixAccelData::HandleData &handle) {
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION |
+                                   OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
         if (handle.buffer) {
@@ -108,7 +111,7 @@ void build_gas(const OptixDeviceContext &context,
             shape_subset[i]->optix_build_input(build_inputs[i]);
 
         OptixAccelBufferSizes buffer_sizes;
-        rt_check(optixAccelComputeMemoryUsage(
+        jitc_optix_check(optixAccelComputeMemoryUsage(
             context,
             &accel_options,
             build_inputs.data(),
@@ -124,7 +127,7 @@ void build_gas(const OptixDeviceContext &context,
         emit_property.result = (CUdeviceptr)((char*)output_buffer + buffer_sizes.outputSizeInBytes);
 
         OptixTraversableHandle accel;
-        rt_check(optixAccelBuild(
+        jitc_optix_check(optixAccelBuild(
             context,
             (CUstream) jitc_cuda_stream(),
             &accel_options,
@@ -146,7 +149,7 @@ void build_gas(const OptixDeviceContext &context,
         if (compact_size < buffer_sizes.outputSizeInBytes) {
             void* compact_buffer = jitc_malloc(AllocType::Device, compact_size);
             // Use handle as input and output
-            rt_check(optixAccelCompact(
+            jitc_optix_check(optixAccelCompact(
                 context,
                 (CUstream) jitc_cuda_stream(),
                 accel,

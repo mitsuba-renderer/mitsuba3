@@ -273,6 +273,9 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         xyz = spectrum_to_xyz(spec_u, ray.wavelengths, active);
     }
 
+    // TODO Workaround for Optix compiler issue
+    ek::eval(xyz, result.second);
+
     aovs[0] = xyz.x();
     aovs[1] = xyz.y();
     aovs[2] = xyz.z();

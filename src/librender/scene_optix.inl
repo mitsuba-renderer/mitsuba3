@@ -1,9 +1,14 @@
-#include "librender_ptx.h"
+
 #include <iomanip>
+#include <stdio.h>
+
+#include <enoki-jit/optix.h>
 
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/shapes.h>
 #include <mitsuba/render/optix_api.h>
+
+#include "librender_ptx.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -15,22 +20,12 @@ NAMESPACE_BEGIN(mitsuba)
 # define strdup _strdup
 #endif
 
-static inline void context_log_cb(unsigned int level, const char *tag,
-                                  const char *message, void * /*cbdata */) {
-    std::cerr << "[" << std::setw(2) << level << "][" << std::setw(12) << tag
-              << "]: " << message << "\n";
-}
-
-#if defined(MTS_OPTIX_DEBUG)
-    static constexpr size_t ProgramGroupCount = 4 + custom_optix_shapes_count;
-#else
-    static constexpr size_t ProgramGroupCount = 3 + custom_optix_shapes_count;
-#endif
+static constexpr size_t ProgramGroupCount = 2 + custom_optix_shapes_count;
 
 template <typename Float>
 struct OptixState {
     OptixDeviceContext context;
-    OptixPipeline pipeline = nullptr;
+    OptixPipelineCompileOptions pipeline_compile_options = {};
     OptixModule module = nullptr;
     OptixProgramGroup program_groups[ProgramGroupCount];
     OptixShaderBindingTable sbt = {};
@@ -38,8 +33,7 @@ struct OptixState {
     OptixTraversableHandle ias_handle = 0ull;
     void* ias_buffer = nullptr;
 
-    void* params;
-    char *custom_optix_shapes_program_names[2 * custom_optix_shapes_count];
+    char *custom_shapes_program_names[2 * custom_optix_shapes_count];
 
     ek::uint32_array_t<Float> shapes_registry_ids;
 };
@@ -57,31 +51,29 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         std::vector<uint32_t> ids(m_shapes.size());
         for (size_t i = 0; i < m_shapes.size(); i++)
             ids[i] = jitc_registry_get_id(m_shapes[i]);
-        s.shapes_registry_ids = ek::load_unaligned<ek::CUDAArray<uint32_t>>(ids.data(), ids.size());
+        s.shapes_registry_ids =
+            ek::load_unaligned<ek::CUDAArray<uint32_t>>(ids.data(), ids.size());
 
-        // ------------------------
-        //  OptiX context creation
-        // ------------------------
+        bool scene_has_custom_shapes = false;
+        bool scene_has_instances = false;
+        for (auto& s : m_shapes) {
+            scene_has_custom_shapes |= !s->is_mesh() && !s->is_instance();
+            scene_has_instances     |= s->is_instance();
+        }
+        for (auto& s : m_shapegroups)
+            scene_has_custom_shapes |= !s->has_meshes_only();
 
-        CUcontext cuCtx = 0;  // zero means take the current context
-        cuCtx = (CUcontext) jitc_cuda_context();
+        // =====================================================
+        // OptiX context creation
+        // =====================================================
 
-        OptixDeviceContextOptions options = {};
-        options.logCallbackFunction       = &context_log_cb;
-    #if !defined(MTS_OPTIX_DEBUG)
-        options.logCallbackLevel          = 1;
-    #else
-        options.logCallbackLevel          = 3;
-    #endif
-        rt_check(optixDeviceContextCreate(cuCtx, &options, &s.context));
+        s.context = jitc_optix_context();
 
-        // ----------------------------------------------
-        //  Pipeline generation - Create Module from PTX
-        // ----------------------------------------------
+        // =====================================================
+        // Configure options for OptiX pipeline
+        // =====================================================
 
-        OptixPipelineCompileOptions pipeline_compile_options = {};
         OptixModuleCompileOptions module_compile_options = {};
-
         module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     #if !defined(MTS_OPTIX_DEBUG)
         module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
@@ -91,123 +83,105 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         module_compile_options.debugLevel       = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
     #endif
 
-        pipeline_compile_options.usesMotionBlur        = false;
-        pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        pipeline_compile_options.numPayloadValues      = 6;
-        pipeline_compile_options.numAttributeValues    = 3;
-        pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
+        s.pipeline_compile_options.usesMotionBlur        = false;
+        s.pipeline_compile_options.numPayloadValues      = 6;
+        s.pipeline_compile_options.numAttributeValues    = 0; // TODO should be 0?
+        s.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
+
+        if (scene_has_instances)
+            s.pipeline_compile_options.traversableGraphFlags =
+                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
+        else if (scene_has_custom_shapes)
+            s.pipeline_compile_options.traversableGraphFlags =
+                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+        else
+            s.pipeline_compile_options.traversableGraphFlags =
+                OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
 
     #if !defined(MTS_OPTIX_DEBUG)
-        pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+        s.pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
     #else
-        pipeline_compile_options.exceptionFlags =
+        s.pipeline_compile_options.exceptionFlags =
                 OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW
                 | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH
-                | OPTIX_EXCEPTION_FLAG_USER
                 | OPTIX_EXCEPTION_FLAG_DEBUG;
     #endif
 
-        size_t optix_log_buffer_size = 2048;
-        char optix_log_buffer[2048];
+        if (scene_has_custom_shapes)
+            s.pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+        else
+            s.pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
 
+        // =====================================================
+        // Logging infra for pipeline setup
+        // =====================================================
+
+        char optix_log[2048];
+        size_t optix_log_size = sizeof(optix_log);
         auto check_log = [&](int rv) {
-            if (rv != OPTIX_SUCCESS) {
-                fprintf(stderr, "\tLog: %s%s", optix_log_buffer,
-                        optix_log_buffer_size > sizeof(optix_log_buffer)
-                            ? "<TRUNCATED>"
-                            : "");
-                rt_check(rv);
+            if (rv) {
+                fprintf(stderr, "\tLog: %s%s", optix_log,
+                        optix_log_size > sizeof(optix_log) ? "<TRUNCATED>" : "");
+                jitc_optix_check(rv);
             }
         };
+
+        // =====================================================
+        // Create Optix module from supplemental PTX code
+        // =====================================================
 
         check_log(optixModuleCreateFromPTX(
             s.context,
             &module_compile_options,
-            &pipeline_compile_options,
+            &s.pipeline_compile_options,
             (const char *)optix_rt_ptx,
             optix_rt_ptx_size,
-            optix_log_buffer,
-            &optix_log_buffer_size,
+            optix_log,
+            &optix_log_size,
             &s.module
         ));
 
-        // ---------------------------------------------
-        //  Pipeline generation - Create program groups
-        // ---------------------------------------------
+        // =====================================================
+        // Create program groups (raygen provided by Enoki..)
+        // =====================================================
 
         OptixProgramGroupOptions program_group_options = {};
+        OptixProgramGroupDesc pgd[ProgramGroupCount] {};
 
-        OptixProgramGroupDesc prog_group_descs[ProgramGroupCount];
-        memset(prog_group_descs, 0, sizeof(prog_group_descs));
-
-        prog_group_descs[0].kind                     = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-        prog_group_descs[0].raygen.module            = s.module;
-        prog_group_descs[0].raygen.entryFunctionName = "__raygen__rg";
-
-        prog_group_descs[1].kind                   = OPTIX_PROGRAM_GROUP_KIND_MISS;
-        prog_group_descs[1].miss.module            = s.module;
-        prog_group_descs[1].miss.entryFunctionName = "__miss__ms";
-
-        prog_group_descs[2].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        prog_group_descs[2].hitgroup.moduleCH            = s.module;
-        prog_group_descs[2].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
+        pgd[0].kind                         = OPTIX_PROGRAM_GROUP_KIND_MISS;
+        pgd[0].miss.module                  = s.module;
+        pgd[0].miss.entryFunctionName       = "__miss__ms";
+        pgd[1].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+        pgd[1].hitgroup.moduleCH            = s.module;
+        pgd[1].hitgroup.entryFunctionNameCH = "__closesthit__mesh";
 
         for (size_t i = 0; i < custom_optix_shapes_count; i++) {
-            prog_group_descs[3+i].kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+            pgd[2+i].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
 
             std::string name = string::to_lower(custom_optix_shapes[i]);
-            s.custom_optix_shapes_program_names[2*i] = strdup(("__closesthit__" + name).c_str());
-            s.custom_optix_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
+            s.custom_shapes_program_names[2*i]   = strdup(("__closesthit__"   + name).c_str());
+            s.custom_shapes_program_names[2*i+1] = strdup(("__intersection__" + name).c_str());
 
-            prog_group_descs[3+i].hitgroup.moduleCH            = s.module;
-            prog_group_descs[3+i].hitgroup.entryFunctionNameCH = s.custom_optix_shapes_program_names[2*i];
-            prog_group_descs[3+i].hitgroup.moduleIS            = s.module;
-            prog_group_descs[3+i].hitgroup.entryFunctionNameIS = s.custom_optix_shapes_program_names[2*i+1];
+            pgd[2+i].hitgroup.moduleCH            = s.module;
+            pgd[2+i].hitgroup.entryFunctionNameCH = s.custom_shapes_program_names[2*i];
+            pgd[2+i].hitgroup.moduleIS            = s.module;
+            pgd[2+i].hitgroup.entryFunctionNameIS = s.custom_shapes_program_names[2*i+1];
         }
 
-    #if defined(MTS_OPTIX_DEBUG)
-        OptixProgramGroupDesc &exception_prog_group_desc = prog_group_descs[ProgramGroupCount-1];
-        exception_prog_group_desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_EXCEPTION;
-        exception_prog_group_desc.hitgroup.moduleCH            = s.module;
-        exception_prog_group_desc.hitgroup.entryFunctionNameCH = "__exception__err";
-    #endif
-
+        optix_log_size = sizeof(optix_log);
         check_log(optixProgramGroupCreate(
             s.context,
-            prog_group_descs,
+            pgd,
             ProgramGroupCount,
             &program_group_options,
-            optix_log_buffer,
-            &optix_log_buffer_size,
+            optix_log,
+            &optix_log_size,
             s.program_groups
         ));
 
-        // ---------------------------------------
-        //  Pipeline generation - Create pipeline
-        // ---------------------------------------
-
-        OptixPipelineLinkOptions pipeline_link_options = {};
-        pipeline_link_options.maxTraceDepth          = 1;
-    #if defined(MTS_OPTIX_DEBUG)
-        pipeline_link_options.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
-    #else
-        pipeline_link_options.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
-    #endif
-        pipeline_link_options.overrideUsesMotionBlur = false;
-        check_log(optixPipelineCreate(
-            s.context,
-            &pipeline_compile_options,
-            &pipeline_link_options,
-            s.program_groups,
-            ProgramGroupCount,
-            optix_log_buffer,
-            &optix_log_buffer_size,
-            &s.pipeline
-        ));
-
-        // ---------------------------------
+        // =====================================================
         //  Shader Binding Table generation
-        // ---------------------------------
+        // =====================================================
 
         std::vector<HitGroupSbtRecord> hg_sbts;
         fill_hitgroup_records(m_shapes, hg_sbts, s.program_groups);
@@ -216,43 +190,38 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         size_t shapes_count = hg_sbts.size();
 
-        void *records = jitc_malloc(AllocType::Device,
-                                    sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord) +
-                                    sizeof(HitGroupSbtRecord) * shapes_count);
+        s.sbt.missRecordBase = jitc_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
+        s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
+        s.sbt.missRecordCount         = 1;
 
-        RayGenSbtRecord raygen_sbt;
-        rt_check(optixSbtRecordPackHeader(s.program_groups[0], &raygen_sbt));
-        void* raygen_record = records;
-        jitc_memcpy_async(true, raygen_record, &raygen_sbt, sizeof(RayGenSbtRecord));
-
-        MissSbtRecord miss_sbt;
-        rt_check(optixSbtRecordPackHeader(s.program_groups[1], &miss_sbt));
-        void* miss_record = (char*)records + sizeof(RayGenSbtRecord);
-        jitc_memcpy_async(true, miss_record, &miss_sbt, sizeof(MissSbtRecord));
-
-        // Allocate hitgroup records array
-        void* hitgroup_records = (char*)records + sizeof(RayGenSbtRecord) + sizeof(MissSbtRecord);
-
-        // Copy HitGroupRecords to the GPU
-        jitc_memcpy_async(true, hitgroup_records, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
-
-        s.sbt.raygenRecord                = (CUdeviceptr)raygen_record;
-        s.sbt.missRecordBase              = (CUdeviceptr)miss_record;
-        s.sbt.missRecordStrideInBytes     = sizeof(MissSbtRecord);
-        s.sbt.missRecordCount             = 1;
-        s.sbt.hitgroupRecordBase          = (CUdeviceptr)hitgroup_records;
+        s.sbt.hitgroupRecordBase = jitc_malloc(AllocType::HostPinned,
+                                               shapes_count * sizeof(HitGroupSbtRecord));
         s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
         s.sbt.hitgroupRecordCount         = (unsigned int) shapes_count;
 
-        // --------------------------------------
-        //  Acceleration data structure building
-        // --------------------------------------
+        jitc_optix_check(optixSbtRecordPackHeader(s.program_groups[0], s.sbt.missRecordBase));
+        jitc_memcpy_async(true, s.sbt.hitgroupRecordBase, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
 
-        // Build and bind GAS and IAS for all the shapes and instances in the scene
+        s.sbt.missRecordBase = jitc_malloc_migrate(s.sbt.missRecordBase,
+                                                   AllocType::Device, 1);
+        s.sbt.hitgroupRecordBase = jitc_malloc_migrate(s.sbt.hitgroupRecordBase,
+                                                       AllocType::Device, 1);
+
+        // =====================================================
+        //  Acceleration data structure building
+        // =====================================================
+
         accel_parameters_changed_gpu();
 
-        // Allocate launch-varying OptixParams data structure
-        s.params = jitc_malloc(AllocType::Device, sizeof(OptixParams));
+        // =====================================================
+        // Let Enoki know about all of this
+        // =====================================================
+
+        jitc_optix_configure(
+            &s.pipeline_compile_options,
+            &s.sbt,
+            s.program_groups, ProgramGroupCount
+        );
     }
 }
 
@@ -284,26 +253,33 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         // Build a "master" IAS that contains all the IAS of the scene (meshes,
         // custom shapes, instances, ...)
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
 
-        void* d_ias = jitc_malloc(AllocType::Device, ias.size() * sizeof(OptixInstance));
-        jitc_memcpy_async(true, d_ias, ias.data(), ias.size() * sizeof(OptixInstance));
+        size_t ias_data_size = ias.size() * sizeof(OptixInstance);
+        void* d_ias = jitc_malloc(AllocType::HostPinned, ias_data_size);
+        jitc_memcpy_async(true, d_ias, ias.data(), ias_data_size);
 
         OptixBuildInput build_input;
         build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-        build_input.instanceArray.instances = (CUdeviceptr) d_ias;
+        build_input.instanceArray.instances =
+            (CUdeviceptr) jitc_malloc_migrate(d_ias, AllocType::Device, 1);
         build_input.instanceArray.numInstances = (unsigned int) ias.size();
-        build_input.instanceArray.aabbs = 0;
-        build_input.instanceArray.numAabbs = 0;
 
         OptixAccelBufferSizes buffer_sizes;
-        rt_check(optixAccelComputeMemoryUsage(s.context, &accel_options, &build_input, 1, &buffer_sizes));
+        jitc_optix_check(optixAccelComputeMemoryUsage(
+            s.context,
+            &accel_options,
+            &build_input,
+            1,
+            &buffer_sizes
+        ));
+
         void* d_temp_buffer = jitc_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
         s.ias_buffer = jitc_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
-        rt_check(optixAccelBuild(
+        jitc_optix_check(optixAccelBuild(
             s.context,
             (CUstream) jitc_cuda_stream(),
             &accel_options,
@@ -328,133 +304,88 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
         jitc_free((void*)s.sbt.raygenRecord);
-        jitc_free((void*)s.params);
         jitc_free(s.ias_buffer);
-        rt_check(optixPipelineDestroy(s.pipeline));
+
         for (size_t i = 0; i < ProgramGroupCount; i++)
-            rt_check(optixProgramGroupDestroy(s.program_groups[i]));
+            jitc_optix_check(optixProgramGroupDestroy(s.program_groups[i]));
         for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
-            free(s.custom_optix_shapes_program_names[i]);
-        rt_check(optixModuleDestroy(s.module));
-        rt_check(optixDeviceContextDestroy(s.context));
+            free(s.custom_shapes_program_names[i]);
+        jitc_optix_check(optixModuleDestroy(s.module));
 
         delete (OptixState *) m_accel;
         m_accel = nullptr;
     }
 }
 
-/// Helper function to launch the OptiX kernel (try twice if unsuccessful)
-template <typename OptixState>
-void launch_optix_kernel(const OptixState &s,
-                         const OptixParams &params,
-                         size_t wavefront_size) {
-
-    jitc_memcpy_async(true, s.params, &params, sizeof(OptixParams));
-
-    unsigned int width = 1, height = (unsigned int) wavefront_size;
-    while (!(height & 1) && width < height) {
-        width <<= 1;
-        height >>= 1;
-    }
-
-    OptixResult rt = optixLaunch(
-        s.pipeline,
-        (CUstream) jitc_cuda_stream(),
-        (CUdeviceptr) s.params,
-        sizeof(OptixParams),
-        &s.sbt,
-        width,
-        height,
-        1u // depth
-    );
-    if (rt == OPTIX_ERROR_HOST_OUT_OF_MEMORY) {
-        jitc_malloc_trim();
-        rt = optixLaunch(
-            s.pipeline,
-            (CUstream) jitc_cuda_stream(),
-            (CUdeviceptr) s.params,
-            sizeof(OptixParams),
-            &s.sbt,
-            width,
-            height,
-            1u // depth
-        );
-    }
-
-    rt_check(rt);
-}
-
-/// Helper functions to bind CUDAArray data pointer to fields in the OptixParams struct
-template <typename T>
-void bind_input(OptixInputParam<ek::scalar_t<T>> *field, T &value) {
-    if constexpr (ek::is_static_array_v<T>) {
-        for (size_t i = 0; i < ek::array_size_v<T>; ++i)
-            bind_input(&field[i], value[i]);
-    } else {
-        field->ptr   = value.data();
-        field->width = (uint32_t) ek::width(value);
-    }
-}
-
-template <typename T>
-void bind_output(ek::scalar_t<T> **field, T &value) {
-    if constexpr (ek::is_static_array_v<T>) {
-        for (size_t i = 0; i < ek::array_size_v<T>; ++i)
-            bind_output(&field[i], value[i]);
-    } else {
-        *field = value.data();
-    }
-}
-
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
-        using OptixState = OptixState<Float>;
-        OptixState &s = *(OptixState *) m_accel;
+        using UInt32C = ek::detached_t<UInt32>;
+        using UInt64C = ek::detached_t<UInt64>;
+        using FloatC  = ek::detached_t<Float>;
 
-        size_t wavefront_size = ek::width(ray);
-        PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(wavefront_size);
+        OptixState<Float> &s = *(OptixState<Float> *) m_accel;
+
+        auto ray = ek::detach(ray_);
+
+        using UInt32C = ek::detached_t<UInt32>;
+        using UInt64C = ek::detached_t<UInt64>;
+        using FloatC  = ek::detached_t<Float>;
+
+        UInt64C handle = ek::full<UInt64C>(s.ias_handle, 1, /* eval = */ true);
+        UInt32C ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
+                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
+
+        UInt32C payload_t(0),
+                payload_prim_u(0),
+                payload_prim_v(0),
+                payload_prim_index(0),
+                payload_shape_ptr(0);
 
         // Initialize instance index with the highest possible index an instance
         // could have in m_shapes. As the hierarchy of IAS is built, this value
         // is used to tag IAS that are not related to instancing (e.g. custom
         // shape tree).
         uint32_t max_inst_index = m_shapegroups.empty() ? 0u : (unsigned int) m_shapes.size();
-        UInt32 instance_index = ek::full<UInt32>(max_inst_index, wavefront_size);
+        UInt32C payload_inst_index =
+            ek::full<UInt32C>(max_inst_index, ek::width(ray));
 
-        // Ensure pi and instance_index are allocated before binding the data pointers
-        ek::eval(instance_index, ray, active);
+        uint32_t trace_args[] {
+            handle.index(),
+            ray.o.x().index(), ray.o.y().index(), ray.o.z().index(),
+            ray.d.x().index(), ray.d.y().index(), ray.d.z().index(),
+            ray.mint.index(), ray.maxt.index(), ray.time.index(),
+            ray_mask.index(), ray_flags.index(), // TODO use ray flag to identify shadow rays
+            sbt_offset.index(), sbt_stride.index(),
+            miss_sbt_index.index(),
+            payload_t.index(),
+            payload_prim_u.index(),
+            payload_prim_v.index(),
+            payload_prim_index.index(),
+            payload_shape_ptr.index(),
+            payload_inst_index.index(),
+        };
 
-        // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
-        OptixParams params = {};
+        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args);
 
-        // Bind GPU data pointers to be filled by the OptiX kernel
-        // Inputs
-        bind_input(&params.in_mask, active);
-        bind_input(params.in_o, ray.o);
-        bind_input(params.in_d, ray.d);
-        bind_input(&params.in_mint, ray.mint);
-        bind_input(&params.in_maxt, ray.maxt);
-        // Outputs
-        bind_output(&params.out_t, pi.t);
-        bind_output(params.out_prim_uv, pi.prim_uv);
-        bind_output(&params.out_prim_index, pi.prim_index);
-        bind_output(&params.out_inst_index, instance_index);
-        params.out_shape_registry_id = (uint32_t *)pi.shape.data();
-        params.handle = s.ias_handle;
-
-        launch_optix_kernel(s, params, wavefront_size);
+        PreliminaryIntersection3f pi;
+        pi.t          = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[15]));
+        pi.prim_uv[0] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[16]));
+        pi.prim_uv[1] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[17]));
+        pi.prim_index = UInt32C::steal(trace_args[18]);
+        pi.shape    = ek::reinterpret_array<ShapePtr, UInt32C>(UInt32C::steal(trace_args[19]));
 
         // Only gather instance pointers for valid instance indices
+        UInt32C instance_index = UInt32C::steal(trace_args[20]);
         Mask valid_instances = instance_index < max_inst_index;
         pi.instance = ek::gather<ShapePtr>(
             s.shapes_registry_ids, instance_index, active & valid_instances);
 
         return pi;
     } else {
-        ENOKI_MARK_USED(ray);
+        ENOKI_MARK_USED(ray_);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
@@ -465,7 +396,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, 
     if constexpr (ek::is_cuda_array_v<Float>) {
         auto pi = ray_intersect_preliminary_gpu(ray, active);
         return pi.compute_surface_interaction(ray, hit_flags, pi.is_valid());
-
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(hit_flags);
@@ -475,41 +405,41 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, 
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
-        using OptixState = OptixState<Float>;
-        OptixState &s = *(OptixState *) m_accel;
+        using UInt32C = ek::detached_t<UInt32>;
+        using UInt64C = ek::detached_t<UInt64>;
 
-        size_t wavefront_size = ek::width(ray);
+        OptixState<Float> &s = *(OptixState<Float> *) m_accel;
 
-        Mask hit = ek::empty<Mask>(wavefront_size);
+        auto ray = ek::detach(ray_);
 
-        ek::eval(ray, active);
+        UInt64C handle = ek::full<UInt64C>(s.ias_handle, 1, /* eval = */ true);
+        UInt32C ray_mask(255), ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT),
+                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        // Initialize OptixParams with all members initialized to 0 (e.g. nullptr)
-        OptixParams params = {};
+        UInt32C payload_hit(0);
 
-        // Bind GPU data pointers to be filled by the OptiX kernel
-        // Inputs
-        bind_input(&params.in_mask, active);
-        bind_input(params.in_o, ray.o);
-        bind_input(params.in_d, ray.d);
-        bind_input(&params.in_mint, ray.mint);
-        bind_input(&params.in_maxt, ray.maxt);
-        // Outputs
-        bind_output(&params.out_hit, hit);
-        params.handle = s.ias_handle;
+        uint32_t trace_args[] {
+            handle.index(),
+            ray.o.x().index(), ray.o.y().index(), ray.o.z().index(),
+            ray.d.x().index(), ray.d.y().index(), ray.d.z().index(),
+            ray.mint.index(), ray.maxt.index(), ray.time.index(),
+            ray_mask.index(), ray_flags.index(),
+            sbt_offset.index(), sbt_stride.index(),
+            miss_sbt_index.index(), payload_hit.index()
+        };
 
-        launch_optix_kernel(s, params, wavefront_size);
+        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args);
 
-        return hit;
+        return ek::eq(UInt32C::steal(trace_args[15]), 1);
     } else {
-        ENOKI_MARK_USED(ray);
+        ENOKI_MARK_USED(ray_);
         ENOKI_MARK_USED(active);
         Throw("ray_test_gpu() should only be called in GPU mode.");
     }
 }
 
-NAMESPACE_END(msiuba)
+NAMESPACE_END(mitsuba)
