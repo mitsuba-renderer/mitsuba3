@@ -519,7 +519,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     if (!has_flag(hit_flags, HitComputeFlags::Sticky))
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
     else
-        si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d), ek::Infinity<Float>);
+        si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d),
+                          ek::Infinity<Float>);
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));
@@ -534,7 +535,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
-        si.uv = uv0 * b0 + uv1 * b1 + uv2 * b2;
+        si.uv = ek::fmadd(uv2, b2, ek::fmadd(uv1, b1, uv0 * b0));
 
         if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
             Vector2f duv0 = uv1 - uv0,
@@ -558,9 +559,13 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
-        si.sh_frame.n = ek::normalize(n0 * b0 + n1 * b1 + n2 * b2);
 
-        si.dn_du = si.dn_dv = ek::zero<Vector3f>();
+        Normal3f n = ek::fmadd(n2, b2, ek::fmadd(n1, b1, n0 * b0));
+        Float il = ek::rsqrt(ek::squared_norm(n));
+        n *= il;
+
+        si.sh_frame.n = n;
+
         if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
                with respect to [u, v] in the local triangle parameterization.
@@ -569,15 +574,13 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                    - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
             */
 
-            Normal3f N = b0 * n1 + b1 * n2 + b2 * n0;
-            Float il = ek::rsqrt(ek::squared_norm(N));
-            N *= il;
-
             si.dn_du = (n1 - n0) * il;
             si.dn_dv = (n2 - n0) * il;
 
-            si.dn_du = ek::fnmadd(N, ek::dot(N, si.dn_du), si.dn_du);
-            si.dn_dv = ek::fnmadd(N, ek::dot(N, si.dn_dv), si.dn_dv);
+            si.dn_du = ek::fnmadd(n, ek::dot(n, si.dn_du), si.dn_du);
+            si.dn_dv = ek::fnmadd(n, ek::dot(n, si.dn_dv), si.dn_dv);
+        } else {
+            si.dn_du = si.dn_dv = ek::zero<Vector3f>();
         }
     } else {
         si.sh_frame.n = si.n;
