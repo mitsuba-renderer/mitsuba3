@@ -133,7 +133,6 @@ int main(int argc, char *argv[]) {
     Thread::static_initialization();
     Logger::static_initialization();
     Bitmap::static_initialization();
-    Profiler::static_initialization();
 
     // Ensure that the mitsuba-render shared library is loaded
     librender_nop();
@@ -153,7 +152,7 @@ int main(int argc, char *argv[]) {
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
     auto arg_extra     = parser.add("", true);
 
-    bool print_profile = false;
+    bool profile = true, print_profile = false;
     xml::ParameterList params;
     std::string error_msg, mode;
 
@@ -217,14 +216,19 @@ int main(int argc, char *argv[]) {
                 jitc_enable_flag(JitFlag::RecordVCalls);
 
             jitc_vcall_set_targets_explicit(*arg_vcall_targets_explicit);
+            profile = false;
         }
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
         if (string::starts_with(mode, "llvm_")) {
             jitc_init(1, 0);
+            profile = false;
         }
 #endif
+
+        if (profile)
+            Profiler::static_initialization();
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
@@ -312,9 +316,11 @@ int main(int argc, char *argv[]) {
     }
 
     cie_shutdown();
-    Profiler::static_shutdown();
-    if (print_profile)
-        Profiler::print_report();
+    if (profile) {
+        Profiler::static_shutdown();
+        if (print_profile)
+            Profiler::print_report();
+    }
     Bitmap::static_shutdown();
     Logger::static_shutdown();
     Thread::static_shutdown();
