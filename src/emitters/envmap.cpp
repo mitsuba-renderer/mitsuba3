@@ -92,7 +92,7 @@ public:
                 std::sin(y / ScalarFloat(bitmap->size().y() - 1) * ek::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                ScalarColor3f rgb = ek::load_unaligned<ScalarVector3f>(ptr);
+                ScalarColor3f rgb = ek::load<ScalarVector3f>(ptr);
                 ScalarFloat lum   = mitsuba::luminance(rgb);
 
                 ScalarVector4f coeff;
@@ -113,13 +113,13 @@ public:
                 }
 
                 *lum_ptr++ = lum * sin_theta;
-                ek::store_unaligned(ptr, coeff);
+                ek::store(ptr, coeff);
                 ptr += 4;
             }
         }
 
         m_resolution = bitmap->size();
-        m_data = ek::load_unaligned<DynamicBuffer<Float>>(bitmap->data(), ek::hprod(m_resolution) * 4);
+        m_data = ek::load<DynamicBuffer<Float>>(bitmap->data(), ek::hprod(m_resolution) * 4);
 
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(luminance.get(), m_resolution);
@@ -224,11 +224,15 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            scoped_migrate_to_host scope(m_data);
+            auto&& data = ek::migrate(m_data, AllocType::Host);
 
-            std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(m_resolution)]);
+            if constexpr (ek::is_jit_array_v<Float>)
+                ek::sync_thread();
 
-            ScalarFloat *ptr     = (ScalarFloat *) m_data.data(),
+            std::unique_ptr<ScalarFloat[]> luminance(
+                new ScalarFloat[ek::hprod(m_resolution)]);
+
+            ScalarFloat *ptr     = (ScalarFloat *) data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
 
             for (size_t y = 0; y < m_resolution.y(); ++y) {
@@ -236,7 +240,7 @@ public:
                     std::sin(y / ScalarFloat(m_resolution.y() - 1) * ek::Pi<ScalarFloat>);
 
                 for (size_t x = 0; x < m_resolution.x(); ++x) {
-                    ScalarVector4f coeff = ek::load<ScalarVector4f>(ptr);
+                    ScalarVector4f coeff = ek::load_aligned<ScalarVector4f>(ptr);
                     ScalarFloat lum;
 
                     if constexpr (is_monochromatic_v<Spectrum>) {

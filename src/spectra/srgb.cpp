@@ -30,14 +30,16 @@ public:
         if (ek::any(color < 0 || color > 1) && !props.bool_("unbounded", false))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 
-        if constexpr (is_spectral_v<Spectrum>) {
-            m_value = srgb_model_fetch(color);
-        } else if constexpr (is_rgb_v<Spectrum>) {
-            m_value = color;
-        } else {
-            static_assert(is_monochromatic_v<Spectrum>);
-            m_value = luminance(color);
-        }
+        Color<ScalarFloat, ChannelCount> value;
+        if constexpr (is_spectral_v<Spectrum>)
+            value = srgb_model_fetch(color);
+        else if constexpr (is_rgb_v<Spectrum>)
+            value = color;
+        else
+            value = luminance(color);
+
+        for (size_t i = 0; i < ChannelCount; ++i)
+            m_value[i] = ek::full<Float>(value[i], 1, true);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

@@ -169,17 +169,17 @@ public:
         if (m_bitmap->channel_count() == 3) {
             if (is_spectral_v<Spectrum> && !m_raw) {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = ek::load_unaligned<ScalarColor3f>(ptr);
+                    ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
                         bad = true;
                     value = srgb_model_fetch(value);
                     mean += (double) srgb_model_mean(value);
-                    ek::store_unaligned(ptr, value);
+                    ek::store(ptr, value);
                     ptr += 3;
                 }
             } else {
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarColor3f value = ek::load_unaligned<ScalarColor3f>(ptr);
+                    ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
                         bad = true;
                     mean += (double) luminance(value);
@@ -261,7 +261,7 @@ public:
           m_inv_resolution_y((int) bitmap->height()),
           m_name(name), m_transform(transform), m_mean(mean),
           m_filter_type(filter_type), m_wrap_mode(wrap_mode){
-        m_data = ek::load_unaligned<DynamicBuffer<Float>>(bitmap->data(),
+        m_data = ek::load<DynamicBuffer<Float>>(bitmap->data(),
             ek::hprod(m_resolution) * Channels);
     }
 
@@ -605,9 +605,12 @@ protected:
      * following an update
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
-        scoped_migrate_to_host scope(m_data);
+        auto&& data = ek::migrate(m_data, AllocType::Host);
 
-        const ScalarFloat *ptr = m_data.data();
+        if constexpr (ek::is_jit_array_v<Float>)
+            ek::sync_thread();
+
+        const ScalarFloat *ptr = data.data();
 
         double mean = 0.0;
         size_t pixel_count = (size_t) ek::hprod(m_resolution);
@@ -618,7 +621,7 @@ protected:
                 init_distr ? new ScalarFloat[pixel_count] : nullptr);
 
             for (size_t i = 0; i < pixel_count; ++i) {
-                ScalarColor3f value = ek::load_unaligned<ScalarColor3f>(ptr);
+                ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
                 ScalarFloat tmp;
                 if constexpr (is_spectral_v<Spectrum> && !Raw) {
                     tmp = srgb_model_mean(value);

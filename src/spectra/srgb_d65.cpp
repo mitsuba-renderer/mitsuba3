@@ -27,6 +27,7 @@ public:
     SRGBEmitterSpectrum(const Properties &props) : Texture(props) {
         ScalarColor3f color = props.color("color");
 
+        Color<ScalarFloat, ChannelCount> value;
         if constexpr (is_spectral_v<Spectrum>) {
             /* Evaluate the spectral upsampling model. This requires a
                reflectance value (colors in [0, 1]) which is accomplished here by
@@ -36,18 +37,21 @@ public:
             if (scale != 0.f)
                 color /= scale;
 
-            m_value = srgb_model_fetch(color);
+            value = srgb_model_fetch(color);
 
             Properties props2("d65");
             props2.set_float("scale", props.float_("scale", 1.f) * scale);
             PluginManager *pmgr = PluginManager::instance();
             m_d65 = (Texture *) pmgr->create_object<Texture>(props2)->expand().at(0).get();
         } else if constexpr (is_rgb_v<Spectrum>) {
-            m_value = color;
+            value = color;
         } else {
             static_assert(is_monochromatic_v<Spectrum>);
-            m_value = luminance(color);
+            value = luminance(color);
         }
+
+        for (size_t i = 0; i < ChannelCount; ++i)
+            m_value[i] = ek::full<Float>(value[i], 1, true);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

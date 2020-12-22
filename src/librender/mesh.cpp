@@ -56,15 +56,13 @@ Mesh<Float, Spectrum>::bbox() const {
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
-    Assert(index <= m_face_count);
+    Assert(index <= m_face_count && !ek::is_jit_array_v<Float>);
 
     auto fi = face_indices(index);
 
     Assert(fi[0] < m_vertex_count &&
            fi[1] < m_vertex_count &&
            fi[2] < m_vertex_count);
-
-    scoped_migrate_to_host scope(m_vertex_positions);
 
     ScalarPoint3f v0 = vertex_position(fi[0]),
                   v1 = vertex_position(fi[1]),
@@ -75,36 +73,31 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
-    /* Ensure the buffers are evaluated and on the CPU before writing anything,
-       We have to do it manually for mesh attributes. */
-    scoped_migrate_to_host scope(m_vertex_positions, m_vertex_normals, m_vertex_texcoords, m_faces);
-    static constexpr bool IsCUDA = ek::is_cuda_array_v<Float>;
-    static constexpr bool IsJIT = IsCUDA || ek::is_llvm_array_v<Float>;
+    auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
+    auto&& vertex_normals = ek::migrate(m_vertex_normals, AllocType::Host);
+    auto&& vertex_texcoords = ek::migrate(m_vertex_texcoords, AllocType::Host);
+    auto&& faces = ek::migrate(m_faces, AllocType::Host);
 
-    ref<FileStream> stream = new FileStream(filename, FileStream::ETruncReadWrite);
-
-    std::vector<std::pair<std::string, const MeshAttribute&>> vertex_attributes;
-    std::vector<std::pair<std::string, const MeshAttribute&>> face_attributes;
+    std::vector<std::pair<std::string, MeshAttribute>> vertex_attributes;
+    std::vector<std::pair<std::string, MeshAttribute>> face_attributes;
 
     for (const auto&[name, attribute]: m_mesh_attributes) {
-        if constexpr (IsCUDA) // Migrate if necessary
-            ek::migrate(attribute.buf, AllocType::Host);
-        if constexpr (IsJIT) // Schedule evaluation if necessary
-            ek::schedule(attribute.buf);
         switch (attribute.type) {
             case MeshAttributeType::Vertex:
-                vertex_attributes.push_back({ name.substr(7), attribute });
+                vertex_attributes.push_back(
+                    { name.substr(7), attribute.migrate(AllocType::Host) });
                 break;
             case MeshAttributeType::Face:
-                face_attributes.push_back({ name.substr(5), attribute });
+                face_attributes.push_back(
+                    { name.substr(5), attribute.migrate(AllocType::Host) });
                 break;
         }
     }
     // Evaluate buffers if necessary
-    if (IsJIT && !m_mesh_attributes.empty()) {
-        ek::eval();
+    if constexpr (ek::is_jit_array_v<Float>)
         ek::sync_thread();
-    }
+
+    ref<FileStream> stream = new FileStream(filename, FileStream::ETruncReadWrite);
 
     Log(Info, "Writing mesh to \"%s\" ..", filename);
 
@@ -145,9 +138,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
     stream->write_line("end_header");
 
     // Write vertices data
-    const InputFloat* position_ptr = m_vertex_positions.data();
-    const InputFloat* normal_ptr   = m_vertex_normals.data();
-    const InputFloat* texcoord_ptr = m_vertex_texcoords.data();
+    const InputFloat* position_ptr = vertex_positions.data();
+    const InputFloat* normal_ptr   = vertex_normals.data();
+    const InputFloat* texcoord_ptr = vertex_texcoords.data();
 
     std::vector<const InputFloat*> vertex_attributes_ptr;
     for (const auto&[name, attribute]: vertex_attributes)
@@ -175,7 +168,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         }
     }
 
-    const ScalarIndex* face_ptr = m_faces.data();
+    const ScalarIndex* face_ptr = faces.data();
 
     std::vector<const InputFloat*> face_attributes_ptr;
     for (const auto&[name, attribute]: face_attributes)
@@ -198,19 +191,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) c
         }
     }
 
-    Log(Info, "\"%s\": wrote %i faces, %i vertices (%s in %s)",
-        filename, m_face_count, m_vertex_count,
+    Log(Info, "\"%s\": wrote %i faces, %i vertices (%s in %s)", filename,
+        m_face_count, m_vertex_count,
         util::mem_string(m_face_count * face_data_bytes() +
-                            m_vertex_count * vertex_data_bytes()),
-        util::time_string((float) timer.value())
-    );
-
-    // Migrate buffers back to the GPU
-    if constexpr (IsCUDA) {
-        for (const auto&[name, attribute]: m_mesh_attributes) {
-            ek::migrate(attribute.buf, AllocType::Device);
-        }
-    }
+                         m_vertex_count * vertex_data_bytes()),
+        util::time_string((float) timer.value()));
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
@@ -262,7 +247,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                 invalid_counter++;
             }
 
-            store_unaligned(m_vertex_normals.data() + 3 * i, n);
+            ek::store(m_vertex_normals.data() + 3 * i, n);
         }
 
         if (invalid_counter > 0)
@@ -296,12 +281,16 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
-    scoped_migrate_to_host scope(m_vertex_positions);
+    auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
+    if constexpr (ek::is_jit_array_v<Float>)
+        ek::sync_thread();
+
+    const ScalarFloat *ptr = vertex_positions.data();
 
     m_bbox.reset();
-
     for (ScalarSize i = 0; i < m_vertex_count; ++i)
-        m_bbox.expand(vertex_position(i));
+        m_bbox.expand(
+            ScalarPoint3f(ptr[3 * i + 0], ptr[3 * i + 1], ptr[3 * i + 2]));
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
@@ -313,21 +302,29 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
-    // TODO could use manage() as area_pmf doesn't need to be differentiable
-    if constexpr (!ek::is_dynamic_v<Float>) {
-        std::vector<ScalarFloat> table(m_face_count);
-        for (ScalarIndex i = 0; i < m_face_count; i++)
-            table[i] = face_area(i);
+    auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
+    auto&& faces = ek::migrate(m_faces, AllocType::Host);
+    if constexpr (ek::is_jit_array_v<Float>)
+        ek::sync_thread();
 
-        m_area_pmf = DiscreteDistribution<Float>(
-            table.data(),
-            m_face_count
-        );
-    } else {
-        Float table = face_area(ek::arange<UInt32>(m_face_count));
+    const ScalarFloat *pos_p = vertex_positions.data();
+    const ScalarIndex *idx_p = faces.data();
 
-        m_area_pmf = DiscreteDistribution<Float>(table);
+    std::vector<ScalarFloat> table(m_face_count);
+    for (ScalarIndex i = 0; i < m_face_count; i++) {
+        ScalarPoint3u idx = ek::load<ScalarPoint3u>(idx_p + 3 * i);
+
+        ScalarPoint3f p0 = ek::load<ScalarPoint3f>(pos_p + 3 * idx.x()),
+                      p1 = ek::load<ScalarPoint3f>(pos_p + 3 * idx.y()),
+                      p2 = ek::load<ScalarPoint3f>(pos_p + 3 * idx.z());
+
+        table[i] = .5f * ek::norm(ek::cross(p1 - p0, p2 - p0));
     }
+
+    m_area_pmf = DiscreteDistribution<Float>(
+        table.data(),
+        m_face_count
+    );
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
@@ -344,16 +341,24 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
                  props, false, false);
     mesh->m_faces = m_faces;
 
-    scoped_migrate_to_host scope(mesh->m_vertex_positions, m_vertex_texcoords);
+    auto&& vertex_texcoords = ek::migrate(m_vertex_texcoords, AllocType::Host);
+    if constexpr (ek::is_jit_array_v<Float>)
+        ek::sync_thread();
 
-    ScalarFloat *pos_out = mesh->m_vertex_positions.data();
+    const ScalarFloat *ptr = vertex_texcoords.data();
+
+    std::vector<ScalarFloat> pos_out(m_vertex_count * 3);
+    ScalarBoundingBox3f bbox;
     for (size_t i = 0; i < m_vertex_count; ++i) {
-        ScalarPoint2f uv_i = vertex_texcoord(i);
-        pos_out[i*3 + 0] = uv_i.x();
-        pos_out[i*3 + 1] = uv_i.y();
+        ScalarFloat u = ptr[2*i + 0], v = ptr[2*i + 1];
+        pos_out[i*3 + 0] = u;
+        pos_out[i*3 + 1] = v;
         pos_out[i*3 + 2] = 0.f;
+        bbox.expand(ScalarPoint3f(u, v, 0.f));
     }
-    mesh->recompute_bbox();
+    mesh->m_vertex_positions =
+        ek::load<FloatStorage>(pos_out.data(), m_vertex_count * 3);
+    mesh->m_bbox = bbox;
 
     props.set_object("mesh", mesh.get());
     m_parameterization = new Scene<Float, Spectrum>(props);
@@ -601,13 +606,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::add_attribute(const std::string& name,
         if (dim == 3 && name.find("color") != std::string::npos) {
             InputFloat *ptr = (InputFloat *) data.data();
             for (size_t i = 0; i < count; ++i) {
-                ek::store_unaligned(ptr, srgb_model_fetch(ek::load_unaligned<Color<InputFloat, 3>>(ptr)));
+                ek::store(ptr, srgb_model_fetch(ek::load<Color<InputFloat, 3>>(ptr)));
                 ptr += 3;
             }
         }
     }
 
-    FloatStorage buffer = ek::load_unaligned<FloatStorage>(data.data(), count * dim);
+    FloatStorage buffer = ek::load<FloatStorage>(data.data(), count * dim);
     m_mesh_attributes.insert({ name, { dim, type, buffer } });
 }
 
@@ -731,8 +736,6 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) 
     Assert(fi[1] < m_vertex_count);
     Assert(fi[2] < m_vertex_count);
 
-    scoped_migrate_to_host scope(m_vertex_positions);
-
     ScalarPoint3f v0 = vertex_position(fi[0]),
                   v1 = vertex_position(fi[1]),
                   v2 = vertex_position(fi[2]);
@@ -841,12 +844,9 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 #if defined(MTS_ENABLE_CUDA)
 static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
 
-MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() {
-    if constexpr (ek::is_cuda_array_v<Float>)
-        m_vertex_buffer_ptr = (void*) m_vertex_positions.data();
-}
-
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
+    m_vertex_buffer_ptr = (void*) m_vertex_positions.data();
+    ek::eval(m_faces, m_vertex_positions);
     build_input.type                           = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
     build_input.triangleArray.vertexFormat     = OPTIX_VERTEX_FORMAT_FLOAT3;
     build_input.triangleArray.indexFormat      = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
@@ -875,11 +875,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
     if (keys.empty() || string::contains(keys, "vertex_positions")) {
-        if constexpr (ek::is_jit_array_v<Float>) {
-            ek::eval(m_vertex_positions);
-            ek::sync_thread();
-        }
-
         recompute_bbox();
 
         if (has_vertex_normals())
@@ -890,10 +885,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 
         if (m_parameterization)
             m_parameterization = nullptr;
-
-#if defined(MTS_ENABLE_CUDA)
-        optix_prepare_geometry();
-#endif
 
         Base::parameters_changed();
     }

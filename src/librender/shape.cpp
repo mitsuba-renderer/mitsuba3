@@ -178,35 +178,35 @@ void embree_intersect_packet(int* valid,
     const Shape* shape = (const Shape*) geometryUserPtr;
 
     using IntP = ek::replace_scalar_t<FloatP, int>;
-    MaskP active = ek::neq(ek::load<IntP>(valid), 0);
+    MaskP active = ek::neq(ek::load_aligned<IntP>(valid), 0);
     if (ek::none(active))
         return;
 
     // Create Mitsuba ray
     Ray3fP ray;
-    ray.o.x() = ek::load<FloatP>(rays->org_x);
-    ray.o.y() = ek::load<FloatP>(rays->org_y);
-    ray.o.z() = ek::load<FloatP>(rays->org_z);
-    ray.d.x() = ek::load<FloatP>(rays->dir_x);
-    ray.d.y() = ek::load<FloatP>(rays->dir_y);
-    ray.d.z() = ek::load<FloatP>(rays->dir_z);
-    ray.mint  = ek::load<FloatP>(rays->tnear);
-    ray.maxt  = ek::load<FloatP>(rays->tfar);
-    ray.time  = ek::load<FloatP>(rays->time);
+    ray.o.x() = ek::load_aligned<FloatP>(rays->org_x);
+    ray.o.y() = ek::load_aligned<FloatP>(rays->org_y);
+    ray.o.z() = ek::load_aligned<FloatP>(rays->org_z);
+    ray.d.x() = ek::load_aligned<FloatP>(rays->dir_x);
+    ray.d.y() = ek::load_aligned<FloatP>(rays->dir_y);
+    ray.d.z() = ek::load_aligned<FloatP>(rays->dir_z);
+    ray.mint  = ek::load_aligned<FloatP>(rays->tnear);
+    ray.maxt  = ek::load_aligned<FloatP>(rays->tfar);
+    ray.time  = ek::load_aligned<FloatP>(rays->time);
 
     // Check whether this is a shadow ray or not
     if (hits) {
         auto [t, prim_uv] = shape->ray_intersect_preliminary_packet(ray, active);
         active &= ek::neq(t, ek::Infinity<Float>);
-        ek::store(rays->tfar,      ek::select(active, t,            ek::load<FloatP>(rays->tfar)));
-        ek::store(hits->u,         ek::select(active, prim_uv.x(),  ek::load<FloatP>(hits->u)));
-        ek::store(hits->v,         ek::select(active, prim_uv.y(),  ek::load<FloatP>(hits->v)));
-        ek::store(hits->geomID,    ek::select(active, IntP(geomID), ek::load<IntP>(hits->geomID)));
-        ek::store(hits->primID,    ek::select(active, IntP(0),      ek::load<IntP>(hits->primID)));
-        ek::store(hits->instID[0], ek::select(active, IntP(instID), ek::load<IntP>(hits->instID[0])));
+        ek::store_aligned(rays->tfar,      ek::select(active, t,            ek::load_aligned<FloatP>(rays->tfar)));
+        ek::store_aligned(hits->u,         ek::select(active, prim_uv.x(),  ek::load_aligned<FloatP>(hits->u)));
+        ek::store_aligned(hits->v,         ek::select(active, prim_uv.y(),  ek::load_aligned<FloatP>(hits->v)));
+        ek::store_aligned(hits->geomID,    ek::select(active, IntP(geomID), ek::load_aligned<IntP>(hits->geomID)));
+        ek::store_aligned(hits->primID,    ek::select(active, IntP(0),      ek::load_aligned<IntP>(hits->primID)));
+        ek::store_aligned(hits->instID[0], ek::select(active, IntP(instID), ek::load_aligned<IntP>(hits->instID[0])));
     } else {
         active &= shape->ray_test_packet(ray, active);
-        ek::store(rays->tfar, ek::select(active, ray.maxt, ek::Infinity<Float>));
+        ek::store_aligned(rays->tfar, ek::select(active, ray.maxt, ek::Infinity<Float>));
     }
 }
 

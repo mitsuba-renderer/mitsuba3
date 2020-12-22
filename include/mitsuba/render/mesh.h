@@ -104,20 +104,6 @@ public:
         return ek::gather<Result>(m_vertex_texcoords, index, active);
     }
 
-    /// Returns the surface area of the face with index \c index
-    template <typename Index>
-    auto face_area(Index index, ek::mask_t<Index> active = true) const {
-        auto fi = face_indices(index, active);
-
-        scoped_migrate_to_host_cond<!ek::is_array_v<Index>, FloatStorage> scope(m_vertex_positions);
-
-        auto p0 = vertex_position(fi[0], active),
-             p1 = vertex_position(fi[1], active),
-             p2 = vertex_position(fi[2], active);
-
-        return 0.5f * ek::norm(ek::cross(p1 - p0, p2 - p0));
-    }
-
     /// Does this mesh have per-vertex normals?
     bool has_vertex_normals() const { return ek::width(m_vertex_normals) != 0; }
 
@@ -235,7 +221,6 @@ public:
 
 #if defined(MTS_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
-    virtual void optix_prepare_geometry() override;
     virtual void optix_build_input(OptixBuildInput&) const override;
 #endif
 
@@ -292,7 +277,11 @@ protected:
     struct MeshAttribute {
         size_t size;
         MeshAttributeType type;
-        mutable FloatStorage buf;
+        FloatStorage buf;
+
+        MeshAttribute migrate(AllocType at) const {
+            return MeshAttribute { size, type, ek::migrate(buf, at) };
+        }
     };
 
     template <uint32_t Size, bool Raw>
@@ -346,17 +335,13 @@ protected:
     ScalarSize m_vertex_count = 0;
     ScalarSize m_face_count = 0;
 
-    mutable FloatStorage m_vertex_positions;
-    mutable FloatStorage m_vertex_normals;
-    mutable FloatStorage m_vertex_texcoords;
+    FloatStorage m_vertex_positions;
+    FloatStorage m_vertex_normals;
+    FloatStorage m_vertex_texcoords;
 
-    mutable DynamicBuffer<UInt32> m_faces;
+    DynamicBuffer<UInt32> m_faces;
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
-
-#if defined(MTS_ENABLE_CUDA)
-    void* m_vertex_buffer_ptr;
-#endif
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
@@ -368,6 +353,10 @@ protected:
 
     /// Optional: used in eval_parameterization()
     ref<Scene<Float, Spectrum>> m_parameterization;
+
+#if defined(MTS_ENABLE_CUDA)
+    mutable void* m_vertex_buffer_ptr = nullptr;
+#endif
 };
 
 MTS_EXTERN_CLASS_RENDER(Mesh)

@@ -295,32 +295,32 @@ public:
                 InputFloat* texcoord_ptr = vertex_texcoords.get() + v->value * 2;
                 auto key = v->key;
 
-                ek::store_unaligned(position_ptr, vertices[key[0] - 1]);
+                ek::store(position_ptr, vertices[key[0] - 1]);
 
                 if (key[1]) {
                     size_t map_index = key[1] - 1;
                     if (unlikely(map_index >= texcoords.size()))
                         fail("reference to invalid texture coordinate %i!", key[1]);
-                    ek::store_unaligned(texcoord_ptr, texcoords[map_index]);
+                    ek::store(texcoord_ptr, texcoords[map_index]);
                 }
 
                 if (!m_disable_vertex_normals && key[2]) {
                     size_t map_index = key[2] - 1;
                     if (unlikely(map_index >= normals.size()))
                         fail("reference to invalid normal %i!", key[2]);
-                    ek::store_unaligned(normal_ptr, normals[key[2] - 1]);
+                    ek::store(normal_ptr, normals[key[2] - 1]);
                 }
 
                 v = v->next;
             }
         }
 
-        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
-        m_vertex_positions = ek::load_unaligned<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
+        m_faces = ek::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
+        m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
         if (!m_disable_vertex_normals)
-            m_vertex_normals   = ek::load_unaligned<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
+            m_vertex_normals   = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         if (!texcoords.empty())
-            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
+            m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
         size_t vertex_data_bytes = 3 * sizeof(InputFloat);
         if (!m_disable_vertex_normals)

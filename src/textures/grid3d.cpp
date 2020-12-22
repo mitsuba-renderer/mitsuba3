@@ -72,14 +72,14 @@ public:
             double mean = 0.0;
             ScalarFloat max = 0.0;
             for (ScalarUInt32 i = 0; i < size; ++i) {
-                ScalarColor3f rgb = ek::load_unaligned<ScalarColor3f>(ptr);
+                ScalarColor3f rgb = ek::load<ScalarColor3f>(ptr);
                 // TODO: Make this scaling optional if the RGB values are between 0 and 1
                 ScalarFloat scale = ek::hmax(rgb) * 2.f;
                 ScalarColor3f rgb_norm = rgb / ek::max((ScalarFloat) 1e-8, scale);
                 ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
                 mean += (double) (srgb_model_mean(coeff) * scale);
                 max = ek::max(max, scale);
-                ek::store_unaligned(
+                ek::store(
                     scaled_data_ptr,
                     ek::concat(coeff, ek::Array<ScalarFloat, 1>(scale)));
                 ptr += 3;
@@ -87,9 +87,9 @@ public:
             }
             m_metadata.mean = mean;
             m_metadata.max = max;
-            m_data = ek::load_unaligned<DynamicBuffer<Float>>(scaled_data.get(), size * 4);
+            m_data = ek::load<DynamicBuffer<Float>>(scaled_data.get(), size * 4);
         } else {
-            m_data = ek::load_unaligned<DynamicBuffer<Float>>(raw_data.get(), size * m_metadata.channel_count);
+            m_data = ek::load<DynamicBuffer<Float>>(raw_data.get(), size * m_metadata.channel_count);
         }
 
         // Mark values which are only used in the implementation class as queried

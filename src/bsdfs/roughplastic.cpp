@@ -390,7 +390,7 @@ public:
 
             auto external_transmittance = eval_transmittance(distr, wi, m_eta);
 
-            m_external_transmittance = ek::load_unaligned<DynamicBuffer<Float>>(
+            m_external_transmittance = ek::load<DynamicBuffer<Float>>(
                 external_transmittance.data(),
                 ek::width(external_transmittance));
 

@@ -476,9 +476,9 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
 
     for (size_t i = 0; i < packet_count; ++i) {
         Vector3fP wi_p;
-        wi_p.x() = ek::load_unaligned<FloatP>(wi.x().data() + i * FloatP::Size);
-        wi_p.y() = ek::load_unaligned<FloatP>(wi.y().data() + i * FloatP::Size);
-        wi_p.z() = ek::load_unaligned<FloatP>(wi.z().data() + i * FloatP::Size);
+        wi_p.x() = ek::load<FloatP>(wi.x().data() + i * FloatP::Size);
+        wi_p.y() = ek::load<FloatP>(wi.y().data() + i * FloatP::Size);
+        wi_p.z() = ek::load<FloatP>(wi.z().data() + i * FloatP::Size);
 
         FloatP result_p = 0.f;
 
@@ -495,7 +495,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
             result_p += smith * ek::hprod(weight) * 0.25f;
         }
 
-        ek::store_unaligned(result.data() + i * FloatP::Size, result_p);
+        ek::store(result.data() + i * FloatP::Size, result_p);
     }
 
     return result;
@@ -528,9 +528,9 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
 
     for (size_t i = 0; i < packet_count; ++i) {
         Vector3fP wi_p;
-        wi_p.x() = ek::load_unaligned<FloatP>(wi.x().data() + i * FloatP::Size);
-        wi_p.y() = ek::load_unaligned<FloatP>(wi.y().data() + i * FloatP::Size);
-        wi_p.z() = ek::load_unaligned<FloatP>(wi.z().data() + i * FloatP::Size);
+        wi_p.x() = ek::load<FloatP>(wi.x().data() + i * FloatP::Size);
+        wi_p.y() = ek::load<FloatP>(wi.y().data() + i * FloatP::Size);
+        wi_p.z() = ek::load<FloatP>(wi.z().data() + i * FloatP::Size);
 
         FloatP result_p = 0.f;
 
@@ -549,7 +549,7 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
             result_p += smith * ek::hprod(weight) * 0.25f;
         }
 
-        ek::store_unaligned(result.data() + i * FloatP::Size, result_p);
+        ek::store(result.data() + i * FloatP::Size, result_p);
     }
 
     return result;

@@ -175,7 +175,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
         } else {
             uint32_t N = (uint32_t) ek::width(ray);
             ek::resize(ray, N);
-            ray.update();
             ek::eval(ray);
 
             pi = ek::empty<PreliminaryIntersection3f>(N);

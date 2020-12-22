@@ -102,10 +102,10 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
     }
 
-    m_shapes_ek = ek::load_unaligned<DynamicBuffer<ShapePtr>>(
+    m_shapes_ek = ek::load<DynamicBuffer<ShapePtr>>(
         m_shapes.data(), m_shapes.size());
 
-    m_emitters_ek = ek::load_unaligned<DynamicBuffer<EmitterPtr>>(
+    m_emitters_ek = ek::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
 
     m_shapes_grad_enabled = false;

@@ -249,12 +249,14 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
-        scoped_migrate_to_host scope(m_storage->data());
+        auto &&storage = ek::migrate(m_storage->data(), AllocType::Host);
+        if constexpr (ek::is_jit_array_v<Float>)
+            ek::sync_thread();
 
         ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
                                                                : Bitmap::PixelFormat::XYZAW,
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
-                          (uint8_t *) m_storage->data().data());
+                          (uint8_t *) storage.data());
 
         if (raw)
             return source;

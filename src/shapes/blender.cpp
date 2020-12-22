@@ -291,14 +291,14 @@ public:
             return;
 
         m_face_count = (ScalarSize) tmp_triangles.size();
-        m_faces = ek::load_unaligned<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
+        m_faces = ek::load<DynamicBuffer<UInt32>>(tmp_triangles.data(), m_face_count * 3);
 
         m_vertex_count = vertex_ctr;
-        m_vertex_positions = ek::load_unaligned<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
-        m_vertex_normals = ek::load_unaligned<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
+        m_vertex_positions = ek::load<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
+        m_vertex_normals = ek::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
 
         if (has_uvs)
-            m_vertex_texcoords = ek::load_unaligned<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
+            m_vertex_texcoords = ek::load<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
 
         if (has_cols) {
             for (size_t p = 0; p < cols.size(); p++)

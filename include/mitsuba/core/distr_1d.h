@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  * function \ref normalization().
  */
 template <typename Float> struct DiscreteDistribution {
-    using FloatStorage = DynamicBuffer<Float>;
+    using FloatStorage   = DynamicBuffer<Float>;
     using Index          = ek::uint32_array_t<Float>;
     using Mask           = ek::mask_t<Float>;
     using ScalarFloat    = ek::scalar_t<Float>;
@@ -42,47 +42,19 @@ public:
 
     /// Initialize from a given floating point array
     DiscreteDistribution(const ScalarFloat *values, size_t size)
-        : DiscreteDistribution(ek::load_unaligned<FloatStorage>(values, size)) {
+        : m_pmf(ek::load<FloatStorage>(values, size)) {
+        compute_cdf(values, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pmf.
     void update() {
-        size_t size = m_pmf.size();
-
-        if (size == 0)
-            Throw("DiscreteDistribution: empty distribution!");
-
-        if (m_cdf.size() != size)
-            m_cdf = ek::empty<FloatStorage>(size);
-
-        scoped_migrate_to_host scope(m_pmf, m_cdf);
-
-        ScalarFloat *pmf_ptr = m_pmf.data(),
-                    *cdf_ptr = m_cdf.data();
-
-        m_valid = (uint32_t) -1;
-
-        double sum = 0.0;
-        for (uint32_t i = 0; i < size; ++i) {
-            double value = (double) *pmf_ptr++;
-            sum += value;
-            *cdf_ptr++ = (ScalarFloat) sum;
-
-            if (value < 0.0) {
-                Throw("DiscreteDistribution: entries must be non-negative!");
-            } else if (value > 0.0) {
-                // Determine the first and last wavelength bin with nonzero density
-                if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = i;
-                m_valid.y() = i;
-            }
+        if constexpr (ek::is_jit_array_v<Float>) {
+            FloatStorage temp = ek::migrate(m_pmf, AllocType::Host);
+            ek::sync_thread();
+            compute_cdf(temp.data(), temp.size());
+        } else {
+            compute_cdf(m_pmf.data(), m_pmf.size());
         }
-
-        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
-            Throw("DiscreteDistribution: no probability mass found!");
-
-        m_sum = ScalarFloat(sum);
-        m_normalization = ScalarFloat(1.0 / sum);
     }
 
     /// Return the unnormalized probability mass function
@@ -242,6 +214,38 @@ public:
     }
 
 private:
+    void compute_cdf(const ScalarFloat *pmf, size_t size) {
+        if (size == 0)
+            Throw("DiscreteDistribution: empty distribution!");
+
+        std::vector<ScalarFloat> cdf(size);
+        m_valid = (uint32_t) -1;
+
+        double sum = 0.0;
+        for (uint32_t i = 0; i < size; ++i) {
+            double value = (double) *pmf++;
+            sum += value;
+            cdf[i] = (ScalarFloat) sum;
+
+            if (value < 0.0) {
+                Throw("DiscreteDistribution: entries must be non-negative!");
+            } else if (value > 0.0) {
+                // Determine the first and last wavelength bin with nonzero density
+                if (m_valid.x() == (uint32_t) -1)
+                    m_valid.x() = i;
+                m_valid.y() = i;
+            }
+        }
+
+        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
+            Throw("DiscreteDistribution: no probability mass found!");
+
+        m_sum = ScalarFloat(sum);
+        m_normalization = ScalarFloat(1.0 / sum);
+        m_cdf = ek::load<FloatStorage>(cdf.data(), size);
+    }
+
+private:
     FloatStorage m_pmf;
     FloatStorage m_cdf;
     ScalarFloat m_sum = 0.f;
@@ -290,62 +294,21 @@ public:
 
     /// Initialize from a given floating point array
     ContinuousDistribution(const ScalarVector2f &range,
-                           const ScalarFloat *values,
-                           size_t size)
-        : ContinuousDistribution(range, ek::load_unaligned<FloatStorage>(values, size)) {
+                           const ScalarFloat *values, size_t size)
+        : m_pdf(ek::load<FloatStorage>(values, size)),
+          m_range(range) {
+        compute_cdf(values, size);
     }
 
-    /// Update the internal state. Must be invoked when changing the pdf or range.
+    /// Update the internal state. Must be invoked when changing the pdf.
     void update() {
-        size_t size = m_pdf.size();
-
-        if (size < 2)
-            Throw("ContinuousDistribution: needs at least two entries!");
-
-        if (!(m_range.x() < m_range.y()))
-            Throw("ContinuousDistribution: invalid range!");
-
-        if (m_cdf.size() != size - 1)
-            m_cdf = ek::empty<FloatStorage>(size - 1);
-
-        scoped_migrate_to_host scope(m_pdf, m_cdf);
-
-        ScalarFloat *pdf_ptr = m_pdf.data(),
-                    *cdf_ptr = m_cdf.data();
-
-        m_valid = (uint32_t) -1;
-
-        double range = double(m_range.y()) - double(m_range.x()),
-               interval_size = range / (size - 1),
-               integral = 0.;
-
-        for (size_t i = 0; i < size - 1; ++i) {
-            double y0 = (double) pdf_ptr[0],
-                   y1 = (double) pdf_ptr[1];
-
-            double value = 0.5 * interval_size * (y0 + y1);
-
-            integral += value;
-            *cdf_ptr++ = (ScalarFloat) integral;
-            pdf_ptr++;
-
-            if (y0 < 0. || y1 < 0.) {
-                Throw("ContinuousDistribution: entries must be non-negative!");
-            } else if (value > 0.) {
-                // Determine the first and last wavelength bin with nonzero density
-                if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = (uint32_t) i;
-                m_valid.y() = (uint32_t) i;
-            }
+        if constexpr (ek::is_jit_array_v<Float>) {
+            FloatStorage temp = ek::migrate(m_pdf, AllocType::Host);
+            ek::sync_thread();
+            compute_cdf(temp.data(), temp.size());
+        } else {
+            compute_cdf(m_pdf.data(), m_pdf.size());
         }
-
-        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
-            Throw("ContinuousDistribution: no probability mass found!");
-
-        m_integral = ScalarFloat(integral);
-        m_normalization = ScalarFloat(1. / integral);
-        m_interval_size = ScalarFloat(interval_size);
-        m_inv_interval_size = ScalarFloat(1. / interval_size);
     }
 
     /// Return the range of the distribution
@@ -512,6 +475,51 @@ public:
     }
 
 private:
+    void compute_cdf(const ScalarFloat *pdf, size_t size) {
+        if (size < 2)
+            Throw("ContinuousDistribution: needs at least two entries!");
+
+        if (!(m_range.x() < m_range.y()))
+            Throw("ContinuousDistribution: invalid range!");
+
+        std::vector<ScalarFloat> cdf(size - 1);
+        m_valid = (uint32_t) -1;
+
+        double range = double(m_range.y()) - double(m_range.x()),
+               interval_size = range / (size - 1),
+               integral = 0.;
+
+        for (size_t i = 0; i < size - 1; ++i) {
+            double y0 = (double) pdf[0],
+                   y1 = (double) pdf[1];
+
+            double value = 0.5 * interval_size * (y0 + y1);
+
+            integral += value;
+            cdf[i] = (ScalarFloat) integral;
+            pdf++;
+
+            if (y0 < 0. || y1 < 0.) {
+                Throw("ContinuousDistribution: entries must be non-negative!");
+            } else if (value > 0.) {
+                // Determine the first and last wavelength bin with nonzero density
+                if (m_valid.x() == (uint32_t) -1)
+                    m_valid.x() = (uint32_t) i;
+                m_valid.y() = (uint32_t) i;
+            }
+        }
+
+        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
+            Throw("ContinuousDistribution: no probability mass found!");
+
+        m_integral = ScalarFloat(integral);
+        m_normalization = ScalarFloat(1. / integral);
+        m_interval_size = ScalarFloat(interval_size);
+        m_inv_interval_size = ScalarFloat(1. / interval_size);
+        m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
+    }
+
+private:
     FloatStorage m_pdf;
     FloatStorage m_cdf;
     ScalarFloat m_integral = 0.f;
@@ -563,71 +571,26 @@ public:
 
     /// Initialize from a given floating point array
     IrregularContinuousDistribution(const ScalarFloat *nodes,
-                                    const ScalarFloat *values,
+                                    const ScalarFloat *pdf,
                                     size_t size)
-        : IrregularContinuousDistribution(ek::load_unaligned<FloatStorage>(nodes, size),
-                                          ek::load_unaligned<FloatStorage>(values, size)) {
+        : IrregularContinuousDistribution(ek::load<FloatStorage>(nodes, size),
+                                          ek::load<FloatStorage>(pdf, size)) {
+        compute_cdf(nodes, pdf, size);
     }
 
     /// Update the internal state. Must be invoked when changing the pdf or range.
     void update() {
-        size_t size = m_nodes.size();
-
-        if (m_pdf.size() != size)
+        if (m_pdf.size() != m_nodes.size())
             Throw("IrregularContinuousDistribution: 'pdf' and 'nodes' size mismatch!");
 
-        if (size < 2)
-            Throw("IrregularContinuousDistribution: needs at least two entries!");
-
-        if (m_cdf.size() != size - 1)
-            m_cdf = ek::empty<FloatStorage>(size - 1);
-
-        scoped_migrate_to_host scope(m_pdf, m_cdf, m_nodes);
-
-        ScalarFloat *pdf_ptr   = m_pdf.data(),
-                    *cdf_ptr   = m_cdf.data(),
-                    *nodes_ptr = m_nodes.data();
-
-        m_valid = (uint32_t) -1;
-        m_range = ScalarVector2f(
-             ek::Infinity<Float>,
-            -ek::Infinity<Float>
-        );
-
-        double integral = 0.;
-
-        for (size_t i = 0; i < size - 1; ++i) {
-            double x0 = (double) nodes_ptr[0],
-                   x1 = (double) nodes_ptr[1],
-                   y0 = (double) pdf_ptr[0],
-                   y1 = (double) pdf_ptr[1];
-
-            double value = 0.5 * (x1 - x0) * (y0 + y1);
-
-            m_range.x() = ek::min(m_range.x(), (ScalarFloat) x0);
-            m_range.y() = ek::max(m_range.y(), (ScalarFloat) x1);
-
-            integral += value;
-            *cdf_ptr++ = (ScalarFloat) integral;
-            pdf_ptr++; nodes_ptr++;
-
-            if (!(x1 > x0)) {
-                Throw("IrregularContinuousDistribution: node positions must be strictly increasing!");
-            } else if (y0 < 0. || y1 < 0.) {
-                Throw("IrregularContinuousDistribution: entries must be non-negative!");
-            } else if (value > 0.) {
-                // Determine the first and last wavelength bin with nonzero density
-                if (m_valid.x() == (uint32_t) -1)
-                    m_valid.x() = (uint32_t) i;
-                m_valid.y() = (uint32_t) i;
-            }
+        if constexpr (ek::is_jit_array_v<Float>) {
+            FloatStorage temp_nodes = ek::migrate(m_nodes, AllocType::Host);
+            FloatStorage temp_pdf   = ek::migrate(m_pdf, AllocType::Host);
+            ek::sync_thread();
+            compute_cdf(temp_nodes.data(), temp_pdf.data(), temp_nodes.size());
+        } else {
+            compute_cdf(m_nodes.data(), m_pdf.data(), m_nodes.size());
         }
-
-        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
-            Throw("IrregularContinuousDistribution: no probability mass found!");
-
-        m_integral = ScalarFloat(integral);
-        m_normalization = ScalarFloat(1. / integral);
     }
 
     /// Return the nodes of the underlying discretization
@@ -812,6 +775,55 @@ public:
             ek::set_grad_suspended(m_cdf, state);
             ek::set_grad_suspended(m_nodes, state);
         }
+    }
+
+private:
+    void compute_cdf(const ScalarFloat *nodes, const ScalarFloat *pdf, size_t size) {
+        if (size < 2)
+            Throw("IrregularContinuousDistribution: needs at least two entries!");
+
+        m_valid = (uint32_t) -1;
+        m_range = ScalarVector2f(
+             ek::Infinity<Float>,
+            -ek::Infinity<Float>
+        );
+
+        double integral = 0.;
+        std::vector<ScalarFloat> cdf(size - 1);
+
+        for (size_t i = 0; i < size - 1; ++i) {
+            double x0 = (double) nodes[0],
+                   x1 = (double) nodes[1],
+                   y0 = (double) pdf[0],
+                   y1 = (double) pdf[1];
+
+            double value = 0.5 * (x1 - x0) * (y0 + y1);
+
+            m_range.x() = ek::min(m_range.x(), (ScalarFloat) x0);
+            m_range.y() = ek::max(m_range.y(), (ScalarFloat) x1);
+
+            integral += value;
+            cdf[i] = (ScalarFloat) integral;
+            pdf++; nodes++;
+
+            if (!(x1 > x0)) {
+                Throw("IrregularContinuousDistribution: node positions must be strictly increasing!");
+            } else if (y0 < 0. || y1 < 0.) {
+                Throw("IrregularContinuousDistribution: entries must be non-negative!");
+            } else if (value > 0.) {
+                // Determine the first and last wavelength bin with nonzero density
+                if (m_valid.x() == (uint32_t) -1)
+                    m_valid.x() = (uint32_t) i;
+                m_valid.y() = (uint32_t) i;
+            }
+        }
+
+        if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
+            Throw("IrregularContinuousDistribution: no probability mass found!");
+
+        m_integral = ScalarFloat(integral);
+        m_normalization = ScalarFloat(1. / integral);
+        m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
     }
 
 private:

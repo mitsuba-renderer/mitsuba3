@@ -100,8 +100,8 @@ public:
             marg_cdf[y] = (ScalarFloat) accum_marg;
         }
 
-        m_cond_cdf = ek::load_unaligned<FloatStorage>(cond_cdf.get(), ek::hprod(m_size));
-        m_marg_cdf = ek::load_unaligned<FloatStorage>(marg_cdf.get(), m_size.y());
+        m_cond_cdf = ek::load<FloatStorage>(cond_cdf.get(), ek::hprod(m_size));
+        m_marg_cdf = ek::load<FloatStorage>(marg_cdf.get(), m_size.y());
 
         m_inv_normalization = (ScalarFloat) accum_marg;
         m_normalization = (ScalarFloat) (1.0 / accum_marg);
@@ -237,7 +237,7 @@ protected:
             if (param_res[i] < 1)
                 Throw("Distribution2D(): parameter resolution must be >= 1!");
 
-            m_param_values[i] = ek::load_unaligned<FloatStorage>(param_values[i], param_res[i]);
+            m_param_values[i] = ek::load<FloatStorage>(param_values[i], param_res[i]);
             m_param_strides[i] = param_res[i] > 1 ? m_slices : 0;
             m_slices *= param_res[i];
         }
@@ -962,8 +962,8 @@ public:
                     *data_out_ptr++ = *data++ * norm;
             }
 
-            m_marg_cdf = ek::load_unaligned<FloatStorage>(marg_cdf.get(), m_slices * n_marg);
-            m_cond_cdf = ek::load_unaligned<FloatStorage>(cond_cdf.get(), m_slices * n_cond);
+            m_marg_cdf = ek::load<FloatStorage>(marg_cdf.get(), m_slices * n_marg);
+            m_cond_cdf = ek::load<FloatStorage>(cond_cdf.get(), m_slices * n_cond);
         } else {
             ScalarFloat *data_out_ptr = data_out.get();
 
@@ -989,7 +989,7 @@ public:
             }
         }
 
-        m_data = ek::load_unaligned<FloatStorage>(data_out.get(), m_slices * n_data);
+        m_data = ek::load<FloatStorage>(data_out.get(), m_slices * n_data);
     }
 
     /**

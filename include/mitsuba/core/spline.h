@@ -328,14 +328,14 @@ void integrate_1d(Value min, Value max, const Value *values,
                   uint32_t size, Value *out) {
     const Value width = (max - min) / (size - 1);
     Value sum = 0;
-    ek::store(out, sum);
+    ek::store_aligned(out, sum);
     for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_UNIFORM(idx);
 
         sum += ((d0 - d1) * (Value) (1.0 / 12.0) +
                 (f0 + f1) * (Value) 0.5) * width;
 
-        ek::store(out + idx + 1, sum);
+        ek::store_aligned(out + idx + 1, sum);
     }
 }
 
@@ -367,14 +367,14 @@ template <typename Value>
 void integrate_1d(const Value *nodes, const Value *values,
                   uint32_t size, Value *out) {
     Value sum = 0;
-    ek::store(out, sum);
+    ek::store_aligned(out, sum);
     for (uint32_t idx = 0; idx < size - 1; ++idx) {
         GET_SPLINE_NONUNIFORM(idx);
 
         sum += ((d0 - d1) * (Value) (1.0 / 12.0) +
                 (f0 + f1) * (Value) 0.5) * width;
 
-        ek::store(out + idx + 1, sum);
+        ek::store_aligned(out + idx + 1, sum);
     }
 }
 
@@ -825,10 +825,10 @@ std::pair<Mask, Int32> eval_spline_weights(Float min, Float max, uint32_t size,
     w2 = ek::select(valid_boundary_right, w2, w2 + d1);
     w3 = ek::select(valid_boundary_right, w3 + d1 * .5f, w3);
 
-    ek::store(weights,     w0);
-    ek::store(weights + 1, w1);
-    ek::store(weights + 2, w2);
-    ek::store(weights + 3, w3);
+    ek::store_aligned(weights,     w0);
+    ek::store_aligned(weights + 1, w1);
+    ek::store_aligned(weights + 2, w2);
+    ek::store_aligned(weights + 3, w3);
 
     if (!Extrapolate)
         return std::make_pair(mask_valid, offset);
@@ -931,10 +931,10 @@ std::pair<Mask, Int32> eval_spline_weights(const Float* nodes, uint32_t size,
     w2 = ek::select(valid_boundary_right, w2, w2 + d1);
     w3 = ek::select(valid_boundary_right, w3 + d1 * factor, w3);
 
-    ek::store(weights,     w0);
-    ek::store(weights + 1, w1);
-    ek::store(weights + 2, w2);
-    ek::store(weights + 3, w3);
+    ek::store_aligned(weights,     w0);
+    ek::store_aligned(weights + 1, w1);
+    ek::store_aligned(weights + 2, w2);
+    ek::store_aligned(weights + 3, w3);
 
     if (!Extrapolate)
         return std::make_pair(mask_valid, offset);
