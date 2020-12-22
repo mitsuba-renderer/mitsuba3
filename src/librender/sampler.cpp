@@ -42,6 +42,12 @@ Sampler<Float, Spectrum>::next_2d(Mask) {
     NotImplementedError("next_2d");
 }
 
+MTS_VARIANT
+void Sampler<Float, Spectrum>::loop_register(
+    ek::Loop<typename Sampler<Float, Spectrum>::Mask> &) {
+    NotImplementedError("loop_register");
+}
+
 MTS_VARIANT void
 Sampler<Float, Spectrum>::set_samples_per_wavefront(uint32_t samples_per_wavefront) {
     if constexpr (!ek::is_array_v<Float>)

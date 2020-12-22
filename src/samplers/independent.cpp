@@ -81,6 +81,10 @@ public:
         return Point2f(f1, f2);
     }
 
+    void loop_register(ek::Loop<Mask> &loop) override {
+        loop.put(m_rng.state);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "IndependentSampler[" << std::endl

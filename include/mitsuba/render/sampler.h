@@ -6,6 +6,7 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/random.h>
+#include <enoki/loop.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -84,6 +85,9 @@ public:
 
     /// Retrieve the next two component values from the current sample
     virtual Point2f next_2d(Mask active = true);
+
+    /// Register internal content of this sampler with a symbolic loop
+    virtual void loop_register(ek::Loop<Mask> &loop);
 
     /// Return the number of samples per pixel
     uint32_t sample_count() const { return m_sample_count; }

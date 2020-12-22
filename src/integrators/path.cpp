@@ -104,49 +104,44 @@ public:
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        RayDifferential3f ray = ray_;
+        Ray3f ray(ray_);
+
+        // Spectral throughput and accumulated radiance
+        Spectrum throughput(1.f), result(0.f);
 
         // Tracks radiance scaling due to index of refraction changes
         Float eta(1.f);
 
-        // MIS weight for intersected emitters (set by prev. iteration)
-        Float emission_weight(1.f);
-
-        Spectrum throughput(1.f), result(0.f);
+        Int32 depth = 1;
 
         // ---------------------- First intersection ----------------------
 
         SurfaceInteraction3f si = scene->ray_intersect(ray, active);
-        Mask valid_ray = si.is_valid();
+
+        // Used to compute the alpha channel of the image
+        Mask valid_ray = active && si.is_valid();
+
+        // Account for directly visible emitter
         EmitterPtr emitter = si.emitter(scene);
+        if (ek::any_or<true>(ek::neq(emitter, nullptr)))
+            result = emitter->eval(si, active);
 
-        for (int depth = 1;; ++depth) {
+        active &= si.is_valid();
+        if (m_max_depth >= 0)
+            active &= depth < m_max_depth;
 
-            // ---------------- Intersection with emitters ----------------
+        /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
+           generates wavefront or megakernel renderer based on configuration) */
+        ek::Loop<Mask> loop;
 
-            if (ek::any_or<true>(ek::neq(emitter, nullptr)))
-                result[active] += emission_weight * throughput * emitter->eval(si, active);
+        // Register everything that changes as part of the loop here
+        loop.put(active, depth, ray, throughput, result, si, eta);
 
-            active &= si.is_valid();
+        // The internal sampler state is also modified by the loop
+        sampler->loop_register(loop);
+        loop.init();
 
-            /* Russian roulette: try to keep path weights equal to one,
-               while accounting for the solid angle compression at refractive
-               index boundaries. Stop with at least some probability to avoid
-               getting stuck (e.g. due to total internal reflection) */
-            if (depth > m_rr_depth) {
-                Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
-                active &= sampler->next_1d(active) < q;
-                throughput *= ek::rcp(q);
-            }
-
-            // Stop if we've exceeded the number of requested bounces, or
-            // if there are no more active lanes. Only do this latter check
-            // in JIT mode when the number of requested bounces is infinite
-            // since it causes a costly synchronization.
-            if ((uint32_t) depth >= (uint32_t) m_max_depth ||
-                ((!ek::is_jit_array_v<Float> || m_max_depth < 0) && ek::none(active)))
-                break;
-
+        while (loop.cond(active)) {
             // --------------------- Emitter sampling ---------------------
 
             BSDFContext ctx;
@@ -188,23 +183,39 @@ public:
             ray = si.spawn_ray(si.to_world(bs.wo));
             SurfaceInteraction3f si_bsdf = scene->ray_intersect(ray, active);
 
-            /* Determine probability of having sampled that same
-               direction using emitter sampling. */
             DirectionSample3f ds(scene, si_bsdf, si);
 
+            // Did we happen to hit an emitter?
             if (ek::any_or<true>(ek::neq(ds.emitter, nullptr))) {
                 Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
+
+                /* If so, determine probability of having sampled that same
+                   direction using the emitter sampling. */
                 Float emitter_pdf =
                     ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active));
 
-                emission_weight = mis_weight(bs.pdf, emitter_pdf);
+                Float mis = mis_weight(bs.pdf, emitter_pdf);
+                if (ek::any_or<true>(ek::neq(emitter, nullptr)))
+                    result += mis * throughput * emitter->eval(si, active);
             }
 
-            emitter = si_bsdf.emitter(scene, active);
             si = std::move(si_bsdf);
 
-            if constexpr (ek::is_jit_array_v<Float>)
-                ek::schedule(result, eta, ray, emission_weight, throughput);
+            depth++;
+            if (m_max_depth >= 0)
+                active &= depth < m_max_depth;
+            active &= si.is_valid();
+
+            /* Russian roulette: try to keep path weights equal to one,
+               while accounting for the solid angle compression at refractive
+               index boundaries. Stop with at least some probability to avoid
+               getting stuck (e.g. due to total internal reflection) */
+            Mask use_rr = depth > m_rr_depth;
+            if (ek::any_or<true>(use_rr)) {
+                Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
+                ek::masked(active, use_rr) &= sampler->next_1d(active) < q;
+                ek::masked(throughput, use_rr) *= ek::rcp(q);
+            }
         }
 
         return { result, valid_ray };

@@ -1,6 +1,7 @@
 
 #include <iomanip>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include <enoki-jit/optix.h>
 
@@ -13,11 +14,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 #if !defined(NDEBUG)
-# define MTS_OPTIX_DEBUG 1
-#endif
-
-#ifdef __WINDOWS__
-# define strdup _strdup
+#  define MTS_OPTIX_DEBUG 1
 #endif
 
 static constexpr size_t ProgramGroupCount = 2 + custom_optix_shapes_count;
@@ -66,7 +63,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // Configure options for OptiX pipeline
         // =====================================================
 
-        OptixModuleCompileOptions module_compile_options = {};
+        OptixModuleCompileOptions module_compile_options { };
         module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
     #if !defined(MTS_OPTIX_DEBUG)
         module_compile_options.optLevel         = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
@@ -78,7 +75,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         s.pipeline_compile_options.usesMotionBlur        = false;
         s.pipeline_compile_options.numPayloadValues      = 6;
-        s.pipeline_compile_options.numAttributeValues    = 0;
+        s.pipeline_compile_options.numAttributeValues    = 2; // the minimum legal value
         s.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
         if (scene_has_instances)
@@ -100,13 +97,16 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
                 | OPTIX_EXCEPTION_FLAG_DEBUG;
     #endif
 
+        unsigned int primflags = 0;
         if (scene_has_custom_shapes)
-            s.pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+            primflags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
         else
-            s.pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+            primflags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+
+        s.pipeline_compile_options.usesPrimitiveTypeFlags = primflags;
 
         // =====================================================
-        // Logging infra for pipeline setup
+        // Logging infrastructure for pipeline setup
         // =====================================================
 
         char optix_log[2048];
