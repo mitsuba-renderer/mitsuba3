@@ -221,6 +221,7 @@ public:
 
 #if defined(MTS_ENABLE_CUDA)
     using Base::m_optix_data_ptr;
+    virtual void optix_prepare_geometry() override;
     virtual void optix_build_input(OptixBuildInput&) const override;
 #endif
 
@@ -277,7 +278,7 @@ protected:
     struct MeshAttribute {
         size_t size;
         MeshAttributeType type;
-        FloatStorage buf;
+        mutable FloatStorage buf;
 
         MeshAttribute migrate(AllocType at) const {
             return MeshAttribute { size, type, ek::migrate(buf, at) };
@@ -335,13 +336,17 @@ protected:
     ScalarSize m_vertex_count = 0;
     ScalarSize m_face_count = 0;
 
-    FloatStorage m_vertex_positions;
-    FloatStorage m_vertex_normals;
-    FloatStorage m_vertex_texcoords;
+    mutable FloatStorage m_vertex_positions;
+    mutable FloatStorage m_vertex_normals;
+    mutable FloatStorage m_vertex_texcoords;
 
-    DynamicBuffer<UInt32> m_faces;
+    mutable DynamicBuffer<UInt32> m_faces;
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
+
+#if defined(MTS_ENABLE_CUDA)
+    mutable void* m_vertex_buffer_ptr = nullptr;
+#endif
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
@@ -353,10 +358,6 @@ protected:
 
     /// Optional: used in eval_parameterization()
     ref<Scene<Float, Spectrum>> m_parameterization;
-
-#if defined(MTS_ENABLE_CUDA)
-    mutable void* m_vertex_buffer_ptr = nullptr;
-#endif
 };
 
 MTS_EXTERN_CLASS_RENDER(Mesh)

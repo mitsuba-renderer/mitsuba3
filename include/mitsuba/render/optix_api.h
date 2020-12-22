@@ -5,11 +5,6 @@
 #include <iomanip>
 #include <mitsuba/core/platform.h>
 
-#if defined(MTS_USE_OPTIX_HEADERS)
-# include <optix.h>
-# include <optix_stubs.h>
-#else
-
 // =====================================================
 //       Various opaque handles and enumerations
 // =====================================================
@@ -254,8 +249,6 @@ D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
   CUdeviceptr, size_t, OptixTraversableHandle *);
 
 #undef D
-
-#endif
 
 NAMESPACE_BEGIN(mitsuba)
 extern MTS_EXPORT_RENDER bool optix_initialize();

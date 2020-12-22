@@ -17,7 +17,6 @@ bool optix_initialize() {
         return optix_init_success;
     optix_init_attempted = true;
 
-#if !defined(MTS_USE_OPTIX_HEADERS)
     Log(LogLevel::Trace, "Dynamic loading of the Optix library ..");
 
     jitc_optix_context(); // Ensure OptiX is initialized
@@ -34,9 +33,6 @@ bool optix_initialize() {
     L(optixSbtRecordPackHeader);
 
     #undef L
-#else
-    rt_check(optixInit());
-#endif
     optix_init_success = true;
     return true;
 }

@@ -844,6 +844,8 @@ MTS_VARIANT RTCGeometry Mesh<Float, Spectrum>::embree_geometry(RTCDevice device)
 #if defined(MTS_ENABLE_CUDA)
 static const uint32_t triangle_input_flags = OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT;
 
+MTS_VARIANT void Mesh<Float, Spectrum>::optix_prepare_geometry() { }
+
 MTS_VARIANT void Mesh<Float, Spectrum>::optix_build_input(OptixBuildInput &build_input) const {
     m_vertex_buffer_ptr = (void*) m_vertex_positions.data();
     ek::eval(m_faces, m_vertex_positions);

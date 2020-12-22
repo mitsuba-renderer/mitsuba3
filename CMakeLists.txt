@@ -191,12 +191,6 @@ option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 # Build the graphical user interface? (Note that this feature remains incomplete)
 option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
 
-if (MTS_ENABLE_CUDA)
-  # Mitsuba 2 resolves OptiX dynamically and can thus be compiled even if the official headers
-  # aren't installed. In very rare cases, it may be helpful to disable this dynamic behavior.
-  option(MTS_USE_OPTIX_HEADERS "Compile against OptiX headers, instead of resolving API dynamically." OFF)
-endif()
-
 if (UNIX)
   # Mitsuba 2 ships with a built-in sampling profiler that highlights where
   # rendering time is spent. Only supported on Linux/macOS at the moment.
@@ -220,10 +214,6 @@ endif()
 
 option(MTS_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
 option(MTS_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
-
-if (MTS_ENABLE_CUDA AND MTS_USE_OPTIX_HEADERS)
-  set(MTS_OPTIX_PATH "/opt/optix" CACHE STRING "Path to OptiX installation")
-endif()
 
 # ----------------------------------
 
@@ -354,17 +344,6 @@ include_directories(include
 )
 
 if (MTS_ENABLE_CUDA)
-  if (MTS_USE_OPTIX_HEADERS AND NOT EXISTS "${MTS_OPTIX_PATH}/include/optix.h")
-    message(FATAL_ERROR "optix.h not found, run CMake with -DMTS_OPTIX_PATH=...")
-  endif()
-
-  if (MTS_USE_OPTIX_HEADERS)
-    find_package(CUDA 10.0 REQUIRED)
-    include_directories(${MTS_OPTIX_PATH}/include ${CUDA_INCLUDE_DIRS})
-    add_definitions(-DMTS_USE_OPTIX_HEADERS=1)
-    message(STATUS "Mitsuba: OptiX header files will be used.")
-  endif()
-
   message(STATUS "Mitsuba: using OptiX for GPU ray tracing.")
   add_definitions(-DMTS_ENABLE_CUDA=1)
 endif()
