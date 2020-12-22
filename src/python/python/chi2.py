@@ -134,7 +134,7 @@ class ChiSquareTest:
                            (xy <= self.bounds.max + eps))
         if not ek.all(in_domain):
             self._log('Encountered samples outside of the specified '
-                      'domain: %s' % str(ek.compress(xy, ~in_domain)))
+                      'domain!')
             self.fail = True
 
         # Normalize position values

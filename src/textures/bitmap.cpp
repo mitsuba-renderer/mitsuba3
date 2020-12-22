@@ -592,11 +592,6 @@ public:
         return oss.str();
     }
 
-    void set_grad_suspended(bool state) override {
-        if (m_distr2d)
-            m_distr2d->set_grad_suspended(state);
-    }
-
     MTS_DECLARE_CLASS()
 
 protected:

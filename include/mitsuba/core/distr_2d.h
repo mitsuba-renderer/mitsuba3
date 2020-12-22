@@ -179,12 +179,6 @@ public:
         return oss.str();
     }
 
-    void set_grad_suspended(bool state) {
-        ek::set_grad_suspended(m_data, state);
-        ek::set_grad_suspended(m_marg_cdf, state);
-        ek::set_grad_suspended(m_cond_cdf, state);
-    }
-
 protected:
     /// Resolution of the discretized density function
     ScalarVector2u m_size;
@@ -391,7 +385,9 @@ public:
             m_levels.emplace_back(size, m_slices);
 
             for (uint32_t slice = 0; slice < m_slices; ++slice) {
-                uint32_t offset = m_levels[0].size * slice;
+                ScalarFloat *p = m_levels[0].data.data();
+                uint32_t size = m_levels[0].size,
+                         offset = size * slice;
 
                 ScalarFloat scale = 1.f;
                 if (normalize) {
@@ -400,8 +396,11 @@ public:
                         sum += (double) data[offset + i];
                     scale = ek::hprod(n_patches) / (ScalarFloat) sum;
                 }
-                for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                    m_levels[0].data_ptr[offset + i] = data[offset + i] * scale;
+
+                for (uint32_t i = 0; i < size; ++i)
+                    p[offset + i] = data[offset + i] * scale;
+
+                m_levels[0].ready();
             }
 
             return;
@@ -418,6 +417,9 @@ public:
             level_size = ek::sr<1>(level_size);
         }
 
+        ScalarFloat *l0p = m_levels[0].data.data(),
+                    *l1p = m_levels[1].data.data();
+
         for (uint32_t slice = 0; slice < m_slices; ++slice) {
             uint32_t offset0 = m_levels[0].size * slice,
                      offset1 = m_levels[1].size * slice;
@@ -428,10 +430,10 @@ public:
             double sum = 0.0;
             for (uint32_t y = 0; y < n_patches.y(); ++y) {
                 for (uint32_t x = 0; x < n_patches.x(); ++x) {
-                    ScalarFloat avg = (in[0] + in[1] + in[size.x()] +
-                                 in[size.x() + 1]) * .25f;
+                    ScalarFloat avg = .25f * (in[0] + in[1] + in[size.x()] +
+                                              in[size.x() + 1]);
                     sum += (double) avg;
-                    *(m_levels[1].ptr(ScalarVector2u(x, y)) + offset1) = avg;
+                    *(l1p + m_levels[1].index(ScalarVector2u(x, y)) + offset1) = avg;
                     ++in;
                 }
                 ++in;
@@ -440,9 +442,9 @@ public:
             // Copy and normalize fine resolution interpolant
             ScalarFloat scale = normalize ? (ScalarFloat) (ek::hprod(n_patches) / sum) : 1.f;
             for (uint32_t i = 0; i < m_levels[0].size; ++i)
-                m_levels[0].data_ptr[offset0 + i] = data[offset0 + i] * scale;
+                l0p[offset0 + i] = data[offset0 + i] * scale;
             for (uint32_t i = 0; i < m_levels[1].size; ++i)
-                m_levels[1].data_ptr[offset1 + i] *= scale;
+                l1p[offset1 + i] *= scale;
 
             // Build a MIP hierarchy
             level_size = n_patches;
@@ -453,21 +455,22 @@ public:
                 offset1 = l1.size * slice;
                 level_size = ek::sr<1>(level_size + 1u);
 
+                const ScalarFloat *l0p_ = l0.data.data();
+                ScalarFloat *l1p_ = l1.data.data();
+
                 // Downsample
                 for (uint32_t y = 0; y < level_size.y(); ++y) {
                     for (uint32_t x = 0; x < level_size.x(); ++x) {
-                        ScalarFloat *d1 = l1.ptr(ScalarVector2u(x, y)) + offset1;
-                        const ScalarFloat *d0 = l0.ptr(ScalarVector2u(x*2, y*2)) + offset0;
+                        ScalarFloat *d1 = l1p_ + l1.index(ScalarVector2u(x, y)) + offset1;
+                        const ScalarFloat *d0 = l0p_ + l0.index(ScalarVector2u(x*2, y*2)) + offset0;
                         *d1 = d0[0] + d0[1] + d0[2] + d0[3];
                     }
                 }
             }
         }
 
-        if constexpr (ek::is_cuda_array_v<Float>) {
-            for (auto& level : m_levels)
-                ek::migrate(level.data, AllocType::Device);
-        }
+        for (auto& level : m_levels)
+            level.ready();
     }
 
     /**
@@ -719,35 +722,30 @@ public:
         return oss.str();
     }
 
-    void set_grad_suspended(bool state) {
-        ENOKI_MARK_USED(state);
-        if constexpr (ek::is_diff_array_v<Float>) {
-            for (auto level : m_levels)
-                ek::set_grad_suspended(level.data, state);
-        }
-    }
-
 protected:
     struct Level {
         uint32_t size;
         uint32_t width;
         FloatStorage data;
-        ScalarFloat *data_ptr;
 
         Level() { }
         Level(ScalarVector2u res, uint32_t slices)
-            : size(ek::hprod(res)), width(res.x()),
-              data(ek::zero<FloatStorage>(ek::hprod(res) * slices)) {
+            : size(ek::hprod(res)), width(res.x()) {
+
+            uint32_t n = size * slices;
+            if constexpr (ek::is_cuda_array_v<Float>) {
+                data = ek::map<FloatStorage>(
+                    jitc_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
+                    n, true);
+            } else {
+                data = ek::empty<FloatStorage>(n);
+            }
+            memset(data.data(), 0, n * sizeof(ScalarFloat));
+        }
+
+        void ready() {
             if constexpr (ek::is_cuda_array_v<Float>)
-                ek::migrate(data, AllocType::Host);
-
-            if constexpr (ek::is_llvm_array_v<Float>)
-                ek::eval(data);
-
-            if constexpr (ek::is_jit_array_v<Float>)
-                ek::sync_thread();
-
-            data_ptr = data.data();
+                data = ek::migrate(data, AllocType::Device);
         }
 
         /**
@@ -763,14 +761,6 @@ protected:
                    ((p.y() & ~1u) * width);
         }
 
-        MTS_INLINE ScalarFloat *ptr(const ScalarVector2u &p) {
-            return data_ptr + index(p);
-        }
-
-        MTS_INLINE const ScalarFloat *ptr(const ScalarVector2u &p) const {
-            return data_ptr + index(p);
-        }
-
         template <size_t Dim = Dimension>
         MTS_INLINE Float lookup(const UInt32 &i0,
                                 const uint32_t *param_strides,
@@ -778,7 +768,6 @@ protected:
                                 const Mask &active) const {
             if constexpr (Dim != 0) {
                 UInt32 i1 = i0 + param_strides[Dim - 1] * size;
-
                 Float w0 = param_weight[2 * Dim - 2],
                       w1 = param_weight[2 * Dim - 1],
                       v0 = lookup<Dim - 1>(i0, param_strides, param_weight, active),
@@ -1084,14 +1073,6 @@ public:
         oss << util::mem_string(size * sizeof(ScalarFloat)) << " }" << std::endl
             << "]";
         return oss.str();
-    }
-
-    void set_grad_suspended(bool state) {
-        if constexpr (ek::is_diff_array_v<Float>) {
-            ek::set_grad_suspended(m_data, state);
-            ek::set_grad_suspended(m_marg_cdf, state);
-            ek::set_grad_suspended(m_cond_cdf, state);
-        }
     }
 
 protected:

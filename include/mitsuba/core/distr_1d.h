@@ -585,7 +585,7 @@ public:
 
         if constexpr (ek::is_jit_array_v<Float>) {
             FloatStorage temp_nodes = ek::migrate(m_nodes, AllocType::Host);
-            FloatStorage temp_pdf   = ek::migrate(m_pdf, AllocType::Host);
+            FloatStorage temp_pdf = ek::migrate(m_pdf, AllocType::Host);
             ek::sync_thread();
             compute_cdf(temp_nodes.data(), temp_pdf.data(), temp_nodes.size());
         } else {
