@@ -361,10 +361,7 @@ Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     MTS_MASK_ARGUMENT(active);
-
     auto pi = ray_intersect_preliminary(ray, active);
-    active &= pi.is_valid();
-
     return pi.compute_surface_interaction(ray, hit_flags, active);
 }
 

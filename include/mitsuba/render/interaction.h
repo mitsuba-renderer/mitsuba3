@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/frame.h>
+#include <mitsuba/core/profiler.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
@@ -593,15 +594,26 @@ struct PreliminaryIntersection {
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      uint32_t hit_flags,
                                                      Mask active) {
+        active &= is_valid();
+        if (ek::none_or<false>(active)) {
+            SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+            si.wi = -ray.d;
+            si.wavelengths = ray.wavelengths;
+            return si;
+        }
+
+        ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
+
         ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
         SurfaceInteraction3f si =
             target->compute_surface_interaction(ray, *this, hit_flags, active);
+
         active &= si.is_valid();
-        si.prim_index = prim_index;
 
         // Set shape pointer if not already set by compute_surface_interaction()
         si.shape       = ek::select(ek::eq(si.shape, nullptr), shape, si.shape);
         si.instance    = instance;
+        si.prim_index  = prim_index;
         si.time        = ray.time;
         si.wavelengths = ray.wavelengths;
 

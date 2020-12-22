@@ -128,10 +128,10 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
     Ray3f ray = ray_;
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    ENOKI_MARK_USED(active);
 
     if constexpr (!ek::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+
         if constexpr (!ek::is_array_v<Float>) {
             RTCRayHit rh;
             rh.ray.org_x = ray.o.x();
@@ -152,7 +152,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             rtcIntersect1(s.accel, &context, &rh);
 
             if (rh.ray.tfar != ray.maxt) {
-                ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index  = rh.hit.primID;
 
@@ -176,6 +175,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
         } else {
             uint32_t N = (uint32_t) ek::width(ray);
             ek::resize(ray, N);
+            ray.update();
             ek::eval(ray);
 
             pi = ek::empty<PreliminaryIntersection3f>(N);
@@ -232,7 +232,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 
             ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
             pi.instance = ek::select(hit_inst, shape, nullptr);
-            pi.shape = ek::select(hit_not_inst, shape, nullptr);
+            pi.shape    = ek::select(hit_not_inst, shape, nullptr);
         }
         return pi;
     } else {
@@ -241,135 +241,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray_, uint32_t hit_flags, Mask active) const {
-    Ray3f ray = ray_;
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-
-    ENOKI_MARK_USED(active);
-    ENOKI_MARK_USED(hit_flags);
-
+Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     if constexpr (!ek::is_cuda_array_v<Float>) {
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-
-        if constexpr (!ek::is_array_v<Float>) {
-            RTCRayHit rh;
-            rh.ray.org_x = ray.o.x();
-            rh.ray.org_y = ray.o.y();
-            rh.ray.org_z = ray.o.z();
-            rh.ray.tnear = ray.mint;
-            rh.ray.dir_x = ray.d.x();
-            rh.ray.dir_y = ray.d.y();
-            rh.ray.dir_z = ray.d.z();
-            rh.ray.time = 0;
-            rh.ray.tfar = ray.maxt;
-            rh.ray.mask = 0;
-            rh.ray.id = 0;
-            rh.ray.flags = 0;
-
-            RTCIntersectContext context;
-            rtcInitIntersectContext(&context);
-            rtcIntersect1(s.accel, &context, &rh);
-
-            if (rh.ray.tfar != ray.maxt) {
-                ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-                uint32_t shape_index = rh.hit.geomID;
-                uint32_t prim_index  = rh.hit.primID;
-
-                // We get level 0 because we only support one level of instancing
-                uint32_t inst_index = rh.hit.instID[0];
-
-                PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
-
-                // If the hit is not on an instance
-                if (inst_index == RTC_INVALID_GEOMETRY_ID) {
-                    // If the hit is not on an instance
-                    pi.shape = m_shapes[shape_index];
-                } else {
-                    // If the hit is on an instance
-                    pi.instance = m_shapes[inst_index];
-                    pi.shape_index = shape_index;
-                }
-
-                pi.t = rh.ray.tfar;
-                pi.prim_index = prim_index;
-                pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
-
-                si = pi.compute_surface_interaction(ray_, hit_flags, active);
-            } else {
-                si.wavelengths = ray.wavelengths;
-                si.time = ray.time;
-                si.wi = -ray.d;
-                si.t = ek::Infinity<Float>;
-            }
-        } else {
-            uint32_t N = (uint32_t) ek::width(ray);
-            ek::resize(ray, N);
-            ek::eval(ray);
-
-            PreliminaryIntersection3f pi = ek::empty<PreliminaryIntersection3f>(N);
-
-            // A ray is considered inactive if its tnear value is larger than its tfar value
-            pi.t = ek::empty<Float>(N);
-            jitc_memcpy_async(false, pi.t.data(), ray.maxt.data(), sizeof(ScalarFloat) * N);
-            pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
-
-            Vector3f ng = ek::empty<Vector3f>(N);
-            UInt32 inst_index = ek::empty<UInt32>(N);
-            Vector3u extra = ek::zero<Vector3u>(N);
-
-            ek::eval(extra, ng, inst_index, pi);
-            ek::sync_device();
-
-            RTCRayHitNp rh;
-            rh.ray = bind_ray(ray, pi.t, extra);
-            rh.hit = bind_hit(pi, ng, inst_index);
-
-#ifndef PARALLEL_LLVM_RAY_INTERSECT
-            RTCIntersectContext context;
-            rtcInitIntersectContext(&context);
-            // Force embree to use maximum packet width when dispatching rays
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-            rtcIntersectNp(s.accel, &context, &rh, N);
-#else
-            tbb::parallel_for(
-                tbb::blocked_range<uint32_t>(0, N, 1024),
-                [&](const tbb::blocked_range<uint32_t> &range) {
-                    ScopedPhase sp(ProfilerPhase::RayIntersect);
-                    uint32_t offset = range.begin();
-                    uint32_t size   = range.end() - offset;
-
-                    RTCRayHitNp rh_;
-                    rh_.ray = offset_rtc_ray(rh.ray, offset);
-                    rh_.hit = offset_rtc_hit(rh.hit, offset);
-
-                    RTCIntersectContext context;
-                    rtcInitIntersectContext(&context);
-                    // Force embree to use maximum packet width when dispatching rays
-                    context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-                    rtcIntersectNp(s.accel, &context, &rh_, size);
-                }
-            );
-#endif
-            Mask hit = active && ek::neq(pi.t, ray.maxt);
-            ek::masked(pi.t, !hit) = ek::Infinity<Float>;
-
-            using ShapePtr = ek::replace_scalar_t<Float, const Shape *>;
-            ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-
-            Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
-            Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
-
-            // Set si.instance and si.shape
-            UInt32 index   = ek::select(hit_inst, inst_index, pi.shape_index);
-            ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
-
-            pi.instance = ek::select(hit_inst, shape, nullptr);
-            pi.shape = ek::select(hit_not_inst, shape, nullptr);
-
-            si = pi.compute_surface_interaction(ray_, hit_flags, hit);
-        }
-
-        return si;
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_cpu(ray, active);
+        return pi.compute_surface_interaction(ray, hit_flags, active);
     } else {
         Throw("ray_intersect_cpu() should only be called in CPU mode.");
     }

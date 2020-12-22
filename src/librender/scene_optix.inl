@@ -374,8 +374,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        auto pi = ray_intersect_preliminary_gpu(ray, active);
-        return pi.compute_surface_interaction(ray, hit_flags, pi.is_valid());
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
+        return pi.compute_surface_interaction(ray, hit_flags, active);
     } else {
         ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(hit_flags);
