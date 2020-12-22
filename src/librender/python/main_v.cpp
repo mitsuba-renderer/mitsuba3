@@ -10,10 +10,6 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/python/python.h>
 
-#if defined(MTS_ENABLE_CUDA)
-# include <mitsuba/render/optix_api.h>
-#endif
-
 #define MODULE_NAME MTS_MODULE_NAME(render, MTS_VARIANT_NAME)
 
 #define PY_TRY_CAST(Type)                                         \
@@ -84,10 +80,6 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     m.attr("__name__") = "mitsuba.render";
 
     using Float = MTS_VARIANT_FLOAT;
-#if defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_cuda_array_v<Float>)
-        optix_initialize();
-#endif
 
     // Create sub-modules
     py::module mueller = create_submodule(m, "mueller");
@@ -133,7 +125,6 @@ PYBIND11_MODULE(MODULE_NAME, m) {
             [](py::handle weakref) {
                 #if defined(MTS_ENABLE_CUDA)
                     cie_shutdown();
-                    optix_shutdown();
                 #endif
                 /* The Enoki python module is responsible for cleaning up the
                    JIT state, so jitc_shutdown() shouldn't be called here. */

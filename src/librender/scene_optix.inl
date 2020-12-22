@@ -40,6 +40,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
     if constexpr (ek::is_cuda_array_v<Float>) {
         ScopedPhase phase(ProfilerPhase::InitAccel);
         Log(Info, "Building scene in OptiX ..");
+        Timer timer;
+        optix_initialize();
 
         using OptixState = OptixState<Float>;
         m_accel = new OptixState();
@@ -213,6 +215,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
             &s.sbt,
             s.program_groups, ProgramGroupCount
         );
+        Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
     }
 }
 
@@ -350,7 +353,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
             payload_inst_index.index(),
         };
 
-        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args);
+        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                         ek::detach(active).index());
 
         PreliminaryIntersection3f pi;
         pi.t          = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[15]));
@@ -412,7 +416,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
             miss_sbt_index.index(), payload_hit.index()
         };
 
-        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args);
+        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                         ek::detach(active).index());
 
         return ek::eq(UInt32C::steal(trace_args[15]), 1);
     } else {

@@ -251,7 +251,7 @@ D(optixAccelCompact, OptixDeviceContext, CUstream, OptixTraversableHandle,
 #undef D
 
 NAMESPACE_BEGIN(mitsuba)
-extern MTS_EXPORT_RENDER bool optix_initialize();
+extern MTS_EXPORT_RENDER void optix_initialize();
 extern MTS_EXPORT_RENDER void optix_shutdown();
 NAMESPACE_END(mitsuba)
 

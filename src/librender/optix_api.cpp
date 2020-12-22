@@ -7,17 +7,11 @@
 #include <mitsuba/render/optix_api.h>
 #include <mitsuba/render/optix/shapes.h>
 
-static bool optix_init_attempted = false;
-static bool optix_init_success = false;
-
 NAMESPACE_BEGIN(mitsuba)
 
-bool optix_initialize() {
-    if (optix_init_attempted)
-        return optix_init_success;
-    optix_init_attempted = true;
-
-    Log(LogLevel::Trace, "Dynamic loading of the Optix library ..");
+void optix_initialize() {
+    if (optixAccelBuild)
+        return;
 
     jitc_optix_context(); // Ensure OptiX is initialized
 
@@ -33,29 +27,6 @@ bool optix_initialize() {
     L(optixSbtRecordPackHeader);
 
     #undef L
-    optix_init_success = true;
-    return true;
-}
-
-void optix_shutdown() {
-    if (!optix_init_success)
-        return;
-
-    #define Z(x) x = nullptr
-
-    Z(optixAccelComputeMemoryUsage);
-    Z(optixAccelBuild);
-    Z(optixAccelCompact);
-    Z(optixModuleCreateFromPTX);
-    Z(optixModuleDestroy);
-    Z(optixProgramGroupCreate);
-    Z(optixProgramGroupDestroy);
-    Z(optixSbtRecordPackHeader);
-
-    #undef Z
-
-    optix_init_success = false;
-    optix_init_attempted = false;
 }
 
 NAMESPACE_END(mitsuba)

@@ -17,10 +17,6 @@
 #define __TBB_show_deprecation_message_task_scheduler_init_H 1
 #include <tbb/task_scheduler_init.h>
 
-#if defined(MTS_ENABLE_CUDA)
-#  include <mitsuba/render/optix_api.h>
-#endif
-
 
 #if !defined(__WINDOWS__)
 #  include <signal.h>
@@ -216,7 +212,6 @@ int main(int argc, char *argv[]) {
         if (string::starts_with(mode, "cuda_")) {
             jitc_init(0, 1);
             cie_initialize();
-            optix_initialize();
 
             if (!*arg_wavefront)
                 jitc_enable_flag(JitFlag::RecordVCalls);
@@ -330,7 +325,6 @@ int main(int argc, char *argv[]) {
 #if defined(MTS_ENABLE_CUDA)
     if (string::starts_with(mode, "cuda_")) {
         printf("%s\n", jitc_var_whos());
-        optix_shutdown();
         jitc_shutdown();
     }
 #endif
