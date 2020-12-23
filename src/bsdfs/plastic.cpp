@@ -294,6 +294,43 @@ public:
         return ek::select(active, pdf, 0.f);
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        bool has_diffuse = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
+
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+
+        if (unlikely(!has_diffuse || ek::none_or<false>(active)))
+            return { 0.f, 0.f };
+
+        Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
+              f_o = std::get<0>(fresnel(cos_theta_o, Float(m_eta)));
+
+        UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
+        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
+
+        Float hemi_pdf = warp::square_to_cosine_hemisphere_pdf(wo);
+
+        diff *= hemi_pdf * m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
+
+        Float prob_diffuse = 1.f;
+        if (ctx.is_enabled(BSDFFlags::DeltaReflection, 0)) {
+            Float prob_specular = f_i * m_specular_sampling_weight;
+            prob_diffuse  = (1.f - f_i) * (1.f - m_specular_sampling_weight);
+            prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
+        }
+
+        return { ek::select(active, unpolarized<Spectrum>(diff), 0.f),
+                 ek::select(active, hemi_pdf * prob_diffuse, 0.f) };
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("eta", m_eta);
         callback->put_object("diffuse_reflectance", m_diffuse_reflectance.get());

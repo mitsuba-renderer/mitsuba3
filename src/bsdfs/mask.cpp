@@ -156,6 +156,30 @@ public:
         return result;
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        uint32_t null_index      = (uint32_t) component_count() - 1;
+        bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, null_index);
+        bool sample_nested       = ctx.component == (uint32_t) -1 || ctx.component < null_index;
+
+        auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, si, wo, active);
+
+        Float opacity = eval_opacity(si, active);
+        value *= opacity;
+
+        if (!sample_nested)
+            pdf = 0.f;
+
+        if (sample_transmission)
+            pdf *= opacity;
+
+        return { value, pdf };
+    }
+
     Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
                                     Mask active) const override {
         Float opacity = eval_opacity(si, active);

@@ -98,3 +98,7 @@ def test03_sample_eval_pdf(variant_scalar_rgb, interaction):
                         assert ek.allclose(bs.pdf, p_pdf)
                         assert not ek.any(ek.isnan(e_value) | ek.isnan(s_value))
                     # Otherwise, sampling failed and we can't rely on bs.wo.
+
+                        v_eval_pdf = bsdf.eval_pdf(ctx, interaction, bs.wo)
+                        assert ek.allclose(e_value, v_eval_pdf[0])
+                        assert ek.allclose(p_pdf, v_eval_pdf[1])

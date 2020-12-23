@@ -1,5 +1,6 @@
 import pytest
 import mitsuba
+import enoki as ek
 
 from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
@@ -36,3 +37,29 @@ def test02_chi2_rough(variants_vec_backends_once_rgb):
     )
 
     assert chi2.run()
+
+
+def test03_eval_pdf(variant_scalar_rgb):
+    from mitsuba.core import Frame3f
+    from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
+    from mitsuba.core.xml import load_string
+
+    bsdf = load_string("<bsdf version='2.0.0' type='roughplastic'></bsdf>")
+
+    si    = SurfaceInteraction3f()
+    si.p  = [0, 0, 0]
+    si.n  = [0, 0, 1]
+    si.wi = [0, 0, 1]
+    si.sh_frame = Frame3f(si.n)
+
+    ctx = BSDFContext()
+
+    for i in range(20):
+        theta = i / 19.0 * (ek.Pi / 2)
+        wo = [ek.sin(theta), 0, ek.cos(theta)]
+
+        v_pdf  = bsdf.pdf(ctx, si, wo=wo)
+        v_eval = bsdf.eval(ctx, si, wo=wo)[0]
+        v_eval_pdf = bsdf.eval_pdf(ctx, si, wo=wo)
+        assert ek.allclose(v_eval, v_eval_pdf[0])
+        assert ek.allclose(v_pdf, v_eval_pdf[1])

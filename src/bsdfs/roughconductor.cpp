@@ -394,6 +394,97 @@ public:
         return ek::select(active, result, 0.f);
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
+
+        // Calculate the half-direction vector
+        Vector3f H = ek::normalize(wo + si.wi);
+
+        /* Filter cases where the micro/macro-surface don't agree on the side.
+           This logic is evaluated in smith_g1() called as part of the eval()
+           and sample() methods and needs to be replicated in the probability
+           density computation as well. */
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
+                  ek::dot(si.wi, H) > 0.f && ek::dot(wo, H) > 0.f;
+
+        if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || ek::none_or<false>(active)))
+            return { 0.f, 0.f };
+
+        /* Construct a microfacet distribution matching the
+           roughness values at the current surface position. */
+        MicrofacetDistribution distr(m_type,
+                                     m_alpha_u->eval_1(si, active),
+                                     m_alpha_v->eval_1(si, active),
+                                     m_sample_visible);
+
+        // Evaluate the microfacet normal distribution
+        Float D = distr.eval(H);
+
+        active &= ek::neq(D, 0.f);
+
+        // Evaluate Smith's shadow-masking function
+        Float smith_g1_wi = distr.smith_g1(si.wi, H);
+        Float G = smith_g1_wi * distr.smith_g1(wo, H);
+
+        // Evaluate the full microfacet model (except Fresnel)
+        UnpolarizedSpectrum value = D * G / (4.f * Frame3f::cos_theta(si.wi));
+
+        // Evaluate the Fresnel factor
+        ek::Complex<UnpolarizedSpectrum> eta_c(m_eta->eval(si, active),
+                                           m_k->eval(si, active));
+
+        Spectrum F;
+        if constexpr (is_polarized_v<Spectrum>) {
+            /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
+               always evaluated w.r.t. the actual light propagation direction, no
+               matter the transport mode. In the following, 'wi_hat' is toward the
+               light source. */
+            Vector3f wi_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
+                     wo_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
+
+            // Mueller matrix for specular reflection.
+            F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wi_hat)), eta_c);
+
+            /* Apply frame reflection, according to "Stellar Polarimetry" by
+               David Clarke, Appendix A.2 (A26) */
+            F = mueller::reverse(F);
+
+            /* The Stokes reference frame vector of this matrix lies in the plane
+               of reflection. */
+            Vector3f s_axis_in  = ek::normalize(ek::cross(H, -wi_hat)),
+                     p_axis_in  = ek::normalize(ek::cross(-wi_hat, s_axis_in)),
+                     s_axis_out = ek::normalize(ek::cross(H, wo_hat)),
+                     p_axis_out = ek::normalize(ek::cross(wo_hat, s_axis_out));
+
+            /* Rotate in/out reference vector of F s.t. it aligns with the implicit
+               Stokes bases of -wi_hat & wo_hat. */
+            F = mueller::rotate_mueller_basis(F,
+                                              -wi_hat, p_axis_in, mueller::stokes_basis(-wi_hat),
+                                               wo_hat, p_axis_out, mueller::stokes_basis(wo_hat));
+        } else {
+            F = fresnel_conductor(UnpolarizedSpectrum(ek::dot(si.wi, H)), eta_c);
+        }
+
+        // If requested, include the specular reflectance component
+        if (m_specular_reflectance)
+            value *= m_specular_reflectance->eval(si, active);
+
+        Float pdf;
+        if (likely(m_sample_visible))
+            pdf = D * smith_g1_wi / (4.f * cos_theta_i);
+        else
+            pdf = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
+
+        return { ek::select(active, F * value, 0.f),
+                 ek::select(active, pdf, 0.f) };
+    }
+
     void traverse(TraversalCallback *callback) override {
         if (!has_flag(m_flags, BSDFFlags::Anisotropic))
             callback->put_object("alpha", m_alpha_u.get());

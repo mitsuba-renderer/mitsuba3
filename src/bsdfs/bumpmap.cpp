@@ -154,6 +154,25 @@ public:
         return ek::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        // Evaluate nested BSDF with perturbed shading frame
+        SurfaceInteraction3f perturbed_si(si);
+        perturbed_si.sh_frame = frame(si, active);
+        perturbed_si.wi       = perturbed_si.to_local(si.wi);
+        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+
+        active &= Frame3f::cos_theta(wo) *
+                  Frame3f::cos_theta(perturbed_wo) > 0.f;
+
+        auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+        return { ek::select(active, value, 0.f), ek::select(active, pdf, 0.f) };
+    }
+
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
         // Evaluate texture gradient
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);

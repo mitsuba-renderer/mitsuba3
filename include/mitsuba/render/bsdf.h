@@ -394,6 +394,44 @@ public:
                       const Vector3f &wo,
                       Mask active = true) const = 0;
 
+/**
+     * \brief Jointly evaluate the BSDF f(wi, wo) and the probability per unit
+     * solid angle of sampling the given direction. The result from the evaluated
+     * BSDF is multiplied by the cosine foreshortening term.
+     *
+     * Based on the information in the supplied query context \c ctx, this
+     * method will either evaluate the entire BSDF or query individual
+     * components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+     * components are supported: calling ``eval()`` on a perfectly specular
+     * material will return zero.
+     *
+     * This method provides access to the probability density that would result
+     * when supplying the same BSDF context and surface interaction data
+     * structures to the \ref sample() method. It correctly handles changes in
+     * probability when only a subset of the components is chosen for sampling
+     * (this can be done using the \ref BSDFContext::component and \ref
+     * BSDFContext::type_mask fields).
+     *
+     * Note that the incident direction does not need to be explicitly
+     * specified. It is obtained from the field <tt>si.wi</tt>.
+     *
+     * \param ctx
+     *     A context data structure describing which lobes to evalute,
+     *     and whether radiance or importance are being transported.
+     *
+     * \param si
+     *     A surface interaction data structure describing the underlying
+     *     surface position. The incident direction is obtained from
+     *     the field <tt>si.wi</tt>.
+     *
+     * \param wo
+     *     The outgoing direction
+     */
+    virtual std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                                const SurfaceInteraction3f &si,
+                                                const Vector3f &wo,
+                                                Mask active = true) const;
+
     /**
      * \brief Evaluate un-scattered transmission component of the BSDF
      *
@@ -514,6 +552,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     ENOKI_VCALL_METHOD(eval)
     ENOKI_VCALL_METHOD(eval_null_transmission)
     ENOKI_VCALL_METHOD(pdf)
+    ENOKI_VCALL_METHOD(eval_pdf)
     ENOKI_VCALL_GETTER(flags, uint32_t)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);

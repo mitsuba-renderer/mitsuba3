@@ -49,6 +49,14 @@ public:
         PYBIND11_OVERRIDE_PURE(Float, BSDF, pdf, ctx, si, wo, active);
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+              const SurfaceInteraction3f &si,
+              const Vector3f &wo,
+              Mask active) const override {
+        using Return = std::pair<Spectrum, Float>;
+        PYBIND11_OVERRIDE_PURE(Return, BSDF, eval_pdf, ctx, si, wo, active);
+    }
+
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, BSDF, to_string,);
     }
@@ -76,6 +84,11 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
                 const Vector3f &wo,
                 Mask active) { return bsdf->pdf(ctx, si, wo, active);
              }, "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, pdf))
+        .def("eval_pdf",
+             [](Ptr bsdf, const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                const Vector3f &wo,
+                Mask active) { return bsdf->eval_pdf(ctx, si, wo, active);
+             }, "ctx"_a, "si"_a, "wo"_a, "active"_a = true, D(BSDF, eval_pdf))
         .def("eval_null_transmission",
              [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
                  return bsdf->eval_null_transmission(si, active);

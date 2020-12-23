@@ -757,6 +757,39 @@ Parameter ``si``:
 Parameter ``wo``:
     The outgoing direction)doc";
 
+static const char *__doc_mitsuba_BSDF_eval_pdf =
+R"doc(Jointly evaluate the BSDF f(wi, wo) and the probability per unit
+solid angle of sampling the given direction. The result from the evaluated
+BSDF is multiplied by the cosine foreshortening term.
+
+Based on the information in the supplied query context ``ctx``, this
+method will either evaluate the entire BSDF or query individual
+components (e.g. the diffuse lobe). Only smooth (i.e. non Dirac-delta)
+components are supported: calling ``eval()`` on a perfectly specular
+material will return zero.
+
+This method provides access to the probability density that would
+result when supplying the same BSDF context and surface interaction
+data structures to the sample() method. It correctly handles changes
+in probability when only a subset of the components is chosen for
+sampling (this can be done using the BSDFContext::component and
+BSDFContext::type_mask fields).
+
+Note that the incident direction does not need to be explicitly
+specified. It is obtained from the field ``si.wi``.
+
+Parameter ``ctx``:
+    A context data structure describing which lobes to evalute, and
+    whether radiance or importance are being transported.
+
+Parameter ``si``:
+    A surface interaction data structure describing the underlying
+    surface position. The incident direction is obtained from the
+    field ``si.wi``.
+
+Parameter ``wo``:
+    The outgoing direction)doc";
+
 static const char *__doc_mitsuba_BSDF_eval_null_transmission =
 R"doc(Evaluate un-scattered transmission component of the BSDF
 

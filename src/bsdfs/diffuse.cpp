@@ -135,6 +135,29 @@ public:
         return ek::select(cos_theta_i > 0.f && cos_theta_o > 0.f, pdf, 0.f);
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        if (!ctx.is_enabled(BSDFFlags::DiffuseReflection))
+            return { 0.f, 0.f };
+
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
+
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+
+        UnpolarizedSpectrum value =
+            m_reflectance->eval(si, active) * ek::InvPi<Float> * cos_theta_o;
+
+        Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
+
+        return { ek::select(active, unpolarized<Spectrum>(value), 0.f),
+                 ek::select(active, pdf, 0.f) };
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("reflectance", m_reflectance.get());
     }

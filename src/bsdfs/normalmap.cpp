@@ -146,6 +146,24 @@ public:
         return m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active);
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        // Evaluate nested BSDF with perturbed shading frame
+        SurfaceInteraction3f perturbed_si(si);
+        perturbed_si.sh_frame = frame(si, active);
+        perturbed_si.wi       = perturbed_si.to_local(si.wi);
+        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+
+        active &= Frame3f::cos_theta(wo) *
+                  Frame3f::cos_theta(perturbed_wo) > 0.f;
+
+        return m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+    }
+
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
         Normal3f n = ek::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);
 

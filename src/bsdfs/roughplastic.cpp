@@ -254,13 +254,13 @@ public:
 
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
 
-        MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
-
-        UnpolarizedSpectrum result(0.f);
         if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
-            return result;
+            return 0.f;
 
+        UnpolarizedSpectrum value(0.f);
         if (has_specular) {
+            MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
+
             // Calculate the reflection half-vector
             Vector3f H = ek::normalize(wo + si.wi);
 
@@ -274,12 +274,10 @@ public:
             Float G = distr.G(si.wi, wo, H);
 
             // Calculate the specular reflection component
-            UnpolarizedSpectrum value = F * D * G / (4.f * cos_theta_i);
+            value = F * D * G / (4.f * cos_theta_i);
 
             if (m_specular_reflectance)
                 value *= m_specular_reflectance->eval(si, active);
-
-            result += value;
         }
 
         if (has_diffuse) {
@@ -292,10 +290,10 @@ public:
             diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
                                        : UnpolarizedSpectrum(m_internal_reflectance));
 
-            result += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+            value += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
-        return ek::select(active, unpolarized<Spectrum>(result), 0.f);
+        return ek::select(active, unpolarized<Spectrum>(value), 0.f);
     }
 
     Float lerp_gather(const ek::scalar_t<Float> *data, Float x, size_t size,
@@ -353,6 +351,85 @@ public:
         result += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
 
         return result;
+    }
+
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        bool has_specular = ctx.is_enabled(BSDFFlags::GlossyReflection, 0),
+             has_diffuse  = ctx.is_enabled(BSDFFlags::DiffuseReflection, 1);
+
+        Float cos_theta_i = Frame3f::cos_theta(si.wi),
+              cos_theta_o = Frame3f::cos_theta(wo);
+
+        active &= cos_theta_i > 0.f && cos_theta_o > 0.f;
+
+        if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
+            return { 0.f, 0.f };
+
+        Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
+                                MTS_ROUGH_TRANSMITTANCE_RES, active);
+
+        // Determine which component should be sampled
+        Float prob_specular = (1.f - t_i) * m_specular_sampling_weight,
+              prob_diffuse  = t_i * (1.f - m_specular_sampling_weight);
+
+        if (unlikely(has_specular != has_diffuse))
+            prob_specular = has_specular ? 1.f : 0.f;
+        else
+            prob_specular = prob_specular / (prob_specular + prob_diffuse);
+        prob_diffuse = 1.f - prob_specular;
+
+        // Calculate the reflection half-vector
+        Vector3f H = ek::normalize(wo + si.wi);
+
+        MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
+
+        // Evaluate the microfacet normal distribution
+        Float D = distr.eval(H);
+
+        // Evaluate shadow/masking term for incoming direction
+        Float smith_g1_wi = distr.smith_g1(si.wi, H);
+
+        Float pdf = 0.f;
+        if (m_sample_visible)
+            pdf = D * smith_g1_wi / (4.f * cos_theta_i);
+        else
+            pdf = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
+        pdf *= prob_specular;
+
+        pdf += prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
+
+        UnpolarizedSpectrum value(0.f);
+        if (has_specular) {
+            // Fresnel term
+            Float F = std::get<0>(fresnel(ek::dot(si.wi, H), Float(m_eta)));
+
+            // Smith's shadow-masking function
+            Float G = distr.smith_g1(wo, H) * smith_g1_wi;
+
+            // Calculate the specular reflection component
+            value = F * D * G / (4.f * cos_theta_i);
+
+            if (m_specular_reflectance)
+                value *= m_specular_reflectance->eval(si, active);
+        }
+
+        if (has_diffuse) {
+            Float t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
+                                    MTS_ROUGH_TRANSMITTANCE_RES, active);
+
+            UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
+            diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
+                                       : UnpolarizedSpectrum(m_internal_reflectance));
+
+            value += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
+        }
+
+        return { ek::select(active, unpolarized<Spectrum>(value), 0.f), pdf };
     }
 
     void traverse(TraversalCallback *callback) override {

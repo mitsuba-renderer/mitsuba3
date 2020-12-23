@@ -199,6 +199,47 @@ public:
         return result;
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx_,
+                                        const SurfaceInteraction3f &si_,
+                                        const Vector3f &wo_,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        SurfaceInteraction3f si(si_);
+        BSDFContext ctx(ctx_);
+        Vector3f wo(wo_);
+
+        Spectrum value = 0.f;
+        Float pdf = 0.f;
+
+        if (m_brdf[0] == m_brdf[1]) {
+            wo.z() = ek::mulsign(wo.z(), si.wi.z());
+            si.wi.z() = abs(si.wi.z());
+            std::tie(value, pdf) = m_brdf[0]->eval_pdf(ctx, si, wo, active);
+        } else {
+            Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
+                 back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
+
+            if (ek::any_or<true>(front_side))
+                std::tie(value, pdf) = m_brdf[0]->eval_pdf(ctx, si, wo, front_side);
+
+            if (ek::any_or<true>(back_side)) {
+                if (ctx.component != (uint32_t) -1)
+                    ctx.component -= (uint32_t) m_brdf[0]->component_count();
+
+                si.wi.z() *= -1.f;
+                wo.z() *= -1.f;
+
+                auto [back_value, back_pdf] = m_brdf[1]->eval_pdf(ctx, si, wo, back_side);
+
+                ek::masked(value, back_side) = back_value;
+                ek::masked(pdf, back_side) = back_pdf;
+            }
+        }
+
+        return { value, pdf };
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("brdf_0", m_brdf[0].get());
         callback->put_object("brdf_1", m_brdf[1].get());

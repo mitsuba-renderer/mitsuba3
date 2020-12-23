@@ -160,6 +160,32 @@ public:
                m_nested_bsdf[1]->pdf(ctx, si, wo, active) * weight;
     }
 
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        Float weight = eval_weight(si, active);
+        if (unlikely(ctx.component != (uint32_t) -1)) {
+            bool sample_first = ctx.component < m_nested_bsdf[0]->component_count();
+            BSDFContext ctx2(ctx);
+            if (!sample_first)
+                ctx2.component -= (uint32_t) m_nested_bsdf[0]->component_count();
+            else
+                weight = 1.f - weight;
+
+            auto [val, pdf] = m_nested_bsdf[sample_first ? 0 : 1]->eval_pdf(ctx2, si, wo, active);
+            return { weight * val, pdf };
+        }
+
+        auto [val_0, pdf_0] = m_nested_bsdf[0]->eval_pdf(ctx, si, wo, active);
+        auto [val_1, pdf_1] = m_nested_bsdf[1]->eval_pdf(ctx, si, wo, active);
+
+        return { val_0 * (1 - weight) + val_1 * weight,
+                 pdf_0 * (1 - weight) + pdf_1 * weight };
+    }
+
     MTS_INLINE Float eval_weight(const SurfaceInteraction3f &si, const Mask &active) const {
         return ek::clamp(m_weight->eval_1(si, active), 0.f, 1.f);
     }
