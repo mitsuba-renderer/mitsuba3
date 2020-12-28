@@ -68,7 +68,7 @@ struct MTS_EXPORT_RENDER PhaseFunctionContext {
 
     PhaseFunctionContext(Sampler *sampler,
                          TransportMode mode = TransportMode::Radiance)
-        : mode(mode), sampler(sampler) {}
+        : mode(mode), sampler(sampler) { }
 
     /**
      * \brief Reverse the direction of light transport in the record

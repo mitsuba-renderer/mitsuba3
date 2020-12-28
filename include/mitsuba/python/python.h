@@ -87,11 +87,15 @@ py::handle type_of() {
 #define MTS_PY_ENOKI_STRUCT_BIND_FIELD(x) \
     fields[#x] = type_of<decltype(struct_type_().x)>();
 
-#define MTS_PY_ENOKI_STRUCT(cls, Type, ...)                \
-    py::dict fields;                                       \
-    using struct_type_ = Type;                             \
-    ENOKI_MAP(MTS_PY_ENOKI_STRUCT_BIND_FIELD, __VA_ARGS__) \
-    cls.attr("ENOKI_STRUCT") = fields;
+#define MTS_PY_ENOKI_STRUCT(cls, Type, ...)                                    \
+    py::dict fields;                                                           \
+    using struct_type_ = Type;                                                 \
+    ENOKI_MAP(MTS_PY_ENOKI_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
+    cls.attr("ENOKI_STRUCT") = fields;                                         \
+    cls.def("__setitem__",                                                     \
+            [](Type &type, const Mask &mask, const Type &value) {              \
+                type = ek::select(mask, value, type);                          \
+            });
 
 template <typename Source, typename Target> void pybind11_type_alias() {
     auto &types = pybind11::detail::get_internals().registered_types_cpp;
@@ -128,10 +132,13 @@ inline py::module_ create_submodule(py::module_ &m, const char *name) {
 
 template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     using Type = std::decay_t<std::remove_pointer_t<ek::value_t<Array>>>;
+    using UInt32 = ek::uint32_array_t<Array>;
+    using Mask = ek::mask_t<UInt32>;
 
     cls.attr("eq_") = py::none();
     cls.attr("neq_") = py::none();
     cls.attr("gather_") = py::none();
+    cls.attr("select_") = py::none();
     cls.attr("index") = py::none();
     cls.attr("assign") = py::none();
 
@@ -152,6 +159,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("zero_") = py::cpp_function(&Array::zero_);
     cls.attr("Type") = VarType::Pointer;
     cls.attr("Value") = py::type::of<Type>();
+    cls.attr("MaskType") = py::type::of<Mask>();
     cls.attr("IsScalar") = false;
     cls.attr("IsJIT") = ek::is_jit_array_v<Array>;
     cls.attr("IsLLVM") = ek::is_llvm_array_v<Array>;
@@ -172,9 +180,6 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
                 [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
     }
 
-    using UInt32 = ek::uint32_array_t<Array>;
-    using Mask = ek::mask_t<UInt32>;
-
     cls.def_static("gather_",
             [](const Array &source, const UInt32 &index, const Mask &mask, bool permute) {
                 if (permute)
@@ -182,6 +187,8 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
                 else
                     return ek::gather<Array, false>(source, index, mask);
             });
+
+    cls.def_static("select_", &Array::select_);
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \
