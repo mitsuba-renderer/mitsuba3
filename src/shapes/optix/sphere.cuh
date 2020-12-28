@@ -42,12 +42,8 @@ extern "C" __global__ void __intersection__sphere() {
 }
 
 extern "C" __global__ void __closesthit__sphere() {
-    if (optixGetRayFlags() == OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT) { // ray_test
-        optixSetPayload_0(1);
-    } else {
-        const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-        set_preliminary_intersection_to_payload(
-            optixGetRayTmax(), Vector2f(), 0, sbt_data->shape_registry_id);
-    }
+    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
+    set_preliminary_intersection_to_payload(
+        optixGetRayTmax(), Vector2f(), 0, sbt_data->shape_registry_id);
 }
 #endif

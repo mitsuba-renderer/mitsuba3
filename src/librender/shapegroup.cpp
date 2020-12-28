@@ -10,7 +10,8 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 #if !defined(MTS_ENABLE_EMBREE)
     m_kdtree = new ShapeKDTree(props);
 #endif
-    m_has_meshes_only = true;
+    m_has_meshes = false;
+    m_has_others = false;
 
     // Add children to the underlying datastructure
     for (auto &kv : props.objects()) {
@@ -34,7 +35,8 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 #if !defined(MTS_ENABLE_EMBREE)
                 m_kdtree->add_shape(shape);
 #endif
-                m_has_meshes_only &= shape->is_mesh();
+                m_has_meshes |= shape->is_mesh();
+                m_has_others |= !shape->is_mesh();
             }
         } else {
             Throw("Tried to add an unsupported object of type \"%s\"", kv.second);

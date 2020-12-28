@@ -44,14 +44,20 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         m_accel = new OptixState();
         OptixState &s = *(OptixState *) m_accel;
 
-        bool scene_has_custom_shapes = false;
+        bool scene_has_meshes = false;
+        bool scene_has_others = false;
         bool scene_has_instances = false;
+
         for (auto& s : m_shapes) {
-            scene_has_custom_shapes |= !s->is_mesh() && !s->is_instance();
-            scene_has_instances     |= s->is_instance();
+            scene_has_meshes    |= s->is_mesh();
+            scene_has_others    |= !s->is_mesh() && !s->is_instance();
+            scene_has_instances |= s->is_instance();
         }
-        for (auto& s : m_shapegroups)
-            scene_has_custom_shapes |= !s->has_meshes_only();
+
+        for (auto& s : m_shapegroups) {
+            scene_has_meshes |= !s->has_meshes();
+            scene_has_others |= !s->has_others();
+        }
 
         // =====================================================
         // OptiX context creation
@@ -81,7 +87,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         if (scene_has_instances)
             s.pipeline_compile_options.traversableGraphFlags =
                 OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
-        else if (scene_has_custom_shapes)
+        else if (scene_has_others && scene_has_meshes)
             s.pipeline_compile_options.traversableGraphFlags =
                 OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
         else
@@ -97,13 +103,13 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
                 | OPTIX_EXCEPTION_FLAG_DEBUG;
     #endif
 
-        unsigned int primflags = 0;
-        if (scene_has_custom_shapes)
-            primflags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
-        else
-            primflags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+        unsigned int prim_flags = 0;
+        if (scene_has_meshes)
+            prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+        if (scene_has_others)
+            prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
-        s.pipeline_compile_options.usesPrimitiveTypeFlags = primflags;
+        s.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
 
         // =====================================================
         // Logging infrastructure for pipeline setup
@@ -288,7 +294,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         ));
 
         jitc_free(d_temp_buffer);
-        jitc_free(d_ias);
     }
 }
 
@@ -401,10 +406,12 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         auto ray = ek::detach(ray_);
 
         UInt64C handle = ek::full<UInt64C>(s.ias_handle, 1, /* eval = */ true);
-        UInt32C ray_mask(255), ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT),
+        UInt32C ray_mask(255),
+                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
                 sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        UInt32C payload_hit(0);
+        UInt32C payload_hit(1);
 
         uint32_t trace_args[] {
             handle.index(),

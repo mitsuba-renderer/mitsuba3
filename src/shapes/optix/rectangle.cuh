@@ -26,24 +26,20 @@ extern "C" __global__ void __intersection__rectangle() {
 }
 
 extern "C" __global__ void __closesthit__rectangle() {
-    if (optixGetRayFlags() == OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT) { // ray_test
-        optixSetPayload_0(1);
-    } else {
-        const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
-        OptixRectangleData *rect = (OptixRectangleData *)sbt_data->data;
+    const OptixHitGroupData *sbt_data = (OptixHitGroupData *) optixGetSbtDataPointer();
+    OptixRectangleData *rect = (OptixRectangleData *)sbt_data->data;
 
-        // Ray in instance-space
-        Ray3f ray_ = get_ray();
+    // Ray in instance-space
+    Ray3f ray_ = get_ray();
 
-        // Ray in object-space
-        Ray3f ray = rect->to_object.transform_ray(ray_);
+    // Ray in object-space
+    Ray3f ray = rect->to_object.transform_ray(ray_);
 
-        float t = -ray.o.z() * ray.d_rcp.z();
-        Vector3f local = ray(t);
-        Vector2f prim_uv = Vector2f(local.x(), local.y());
+    float t = -ray.o.z() * ray.d_rcp.z();
+    Vector3f local = ray(t);
+    Vector2f prim_uv = Vector2f(local.x(), local.y());
 
-        set_preliminary_intersection_to_payload(t, prim_uv, 0,
-                                                sbt_data->shape_registry_id);
-    }
+    set_preliminary_intersection_to_payload(t, prim_uv, 0,
+                                            sbt_data->shape_registry_id);
 }
 #endif

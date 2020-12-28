@@ -44,8 +44,10 @@ public:
 
     MTS_INLINE ScalarSize effective_primitive_count() const override { return 0; }
 
-    /// Return whether this shapegroup only contains triangle mesh shapes
-    bool has_meshes_only() const { return m_has_meshes_only; }
+    /// Return whether this shapegroup contains triangle mesh shapes
+    bool has_meshes() const { return m_has_meshes; }
+    /// Return whether this shapegroup contains other type of shapes
+    bool has_others() const { return m_has_others; }
 
     std::string to_string() const override;
 
@@ -89,7 +91,7 @@ private:
     uint32_t m_sbt_offset;
 #endif
 
-    bool m_has_meshes_only;
+    bool m_has_meshes, m_has_others;
 };
 
 MTS_EXTERN_CLASS_RENDER(ShapeGroup)

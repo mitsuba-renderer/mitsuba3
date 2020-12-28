@@ -6,7 +6,6 @@
 // Include all shapes CUDA headers to generate their PTX programs
 #include <mitsuba/render/optix/shapes.h>
 
-
 extern "C" __global__ void __miss__ms() {
     if (optixGetRayFlags() == OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT) { // ray_test
         optixSetPayload_0(0);

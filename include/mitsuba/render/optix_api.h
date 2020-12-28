@@ -73,6 +73,7 @@ using OptixDeviceContext     = void*;
 
 #define OPTIX_RAY_FLAG_NONE                   0
 #define OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT (1u << 2)
+#define OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT     (1u << 3)
 
 // =====================================================
 //          Commonly used OptiX data structures
