@@ -33,7 +33,8 @@ public:
     get_combined_extinction(const MediumInteraction3f &mi,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return eval_sigmat(mi);
+        auto value = eval_sigmat(mi);
+        return ek::select(active, value, 0.f);
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -43,7 +44,10 @@ public:
         auto sigmat                = eval_sigmat(mi);
         auto sigmas                = sigmat * m_albedo->eval(mi, active);
         UnpolarizedSpectrum sigman = 0.f;
-        return { sigmas, sigman, sigmat };
+
+        return { ek::select(active, sigmas, 0.f),
+                 sigman,
+                 ek::select(active, sigmat, 0.f) };
     }
 
     std::tuple<Mask, Float, Float>
