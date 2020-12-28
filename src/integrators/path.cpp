@@ -195,8 +195,9 @@ public:
                     ek::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active));
 
                 Float mis = mis_weight(bs.pdf, emitter_pdf);
+                EmitterPtr emitter = si_bsdf.emitter(scene, active);
                 if (ek::any_or<true>(ek::neq(emitter, nullptr)))
-                    result += mis * throughput * emitter->eval(si, active);
+                    result += mis * throughput * emitter->eval(si_bsdf, active);
             }
 
             si = std::move(si_bsdf);
