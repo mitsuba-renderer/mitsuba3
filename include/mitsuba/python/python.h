@@ -133,12 +133,20 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("neq_") = py::none();
     cls.attr("gather_") = py::none();
     cls.attr("index") = py::none();
+    cls.attr("assign") = py::none();
 
     cls.def(py::init<>())
        .def(py::init<Type *>())
+       .def("assign", [](Array &a, const Array &b) {
+           if (&a != &b)
+               a = b;
+       })
        .def("entry_", [](const Array &a, size_t i) { return a.entry(i); })
        .def("eq_", &Array::eq_)
        .def("neq_", &Array::neq_)
+       .def("__setitem__", [](Array &a, const ek::mask_t<Array> &m, const Array &b) {
+           a[m] = b;
+       })
        .def("__len__", [](Array a) { return a.size(); });
 
     cls.attr("zero_") = py::cpp_function(&Array::zero_);
@@ -158,8 +166,11 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("Prefix") = "Array";
     cls.attr("Shape") = py::make_tuple(ek::Dynamic);
 
-    if constexpr (ek::is_jit_array_v<Array>)
-        cls.def("index", [](const Array &a) { return a.index(); });
+    if constexpr (ek::is_jit_array_v<Array>) {
+        cls.def("index", [](const Array &a) { return ek::detach(a).index(); });
+        cls.def("set_index_",
+                [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
+    }
 
     using UInt32 = ek::uint32_array_t<Array>;
     using Mask = ek::mask_t<UInt32>;
