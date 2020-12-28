@@ -155,11 +155,10 @@ public:
 
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
-                Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
-                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
-                // Determine density of sampling that same direction using BSDF sampling
-                Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
+                // Determine BSDF value and density of sampling that direction using BSDF sampling
+                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
+                bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 Float mis = ek::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
                 result[active_e] += mis * throughput * bsdf_val * emitter_val;
