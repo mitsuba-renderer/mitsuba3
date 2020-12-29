@@ -132,7 +132,7 @@ public:
 
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration) */
-        ek::Loop<Mask> loop;
+        ek::Loop<ek::detached_t<Mask>> loop;
 
         // Register everything that changes as part of the loop here
         loop.put(active, depth, ray, throughput, result, si, eta);
@@ -141,7 +141,7 @@ public:
         sampler->loop_register(loop);
         loop.init();
 
-        while (loop.cond(active)) {
+        while (loop.cond(ek::detach(active))) {
             // --------------------- Emitter sampling ---------------------
 
             BSDFContext ctx;

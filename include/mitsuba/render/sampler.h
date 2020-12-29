@@ -87,7 +87,7 @@ public:
     virtual Point2f next_2d(Mask active = true);
 
     /// Register internal content of this sampler with a symbolic loop
-    virtual void loop_register(ek::Loop<Mask> &loop);
+    virtual void loop_register(ek::Loop<ek::detached_t<Mask>> &loop);
 
     /// Return the number of samples per pixel
     uint32_t sample_count() const { return m_sample_count; }

@@ -44,7 +44,7 @@ Sampler<Float, Spectrum>::next_2d(Mask) {
 
 MTS_VARIANT
 void Sampler<Float, Spectrum>::loop_register(
-    ek::Loop<typename Sampler<Float, Spectrum>::Mask> &) {
+    ek::Loop<typename ek::detached_t<Sampler<Float, Spectrum>::Mask>> &) {
     NotImplementedError("loop_register");
 }
 

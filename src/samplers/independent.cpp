@@ -81,7 +81,7 @@ public:
         return Point2f(f1, f2);
     }
 
-    void loop_register(ek::Loop<Mask> &loop) override {
+    void loop_register(ek::Loop<ek::detached_t<Mask>> &loop) override {
         loop.put(m_rng.state);
     }
 
