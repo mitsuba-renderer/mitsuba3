@@ -186,7 +186,6 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         if (emitters_size == 1) {
             // Fast path if there is only one emitter
             std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
-            ek::schedule(ds, spec);
         } else {
             ScalarFloat emitter_pdf = 1.f / emitters_size;
 
@@ -235,7 +234,6 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
     if (emitters_size == 1) {
         // Fast path if there is only one emitter
         Float res = m_emitters[0]->pdf_direction(ref, ds, active);
-        ek::schedule(res);
         return res;
     } else {
         return ds.emitter->pdf_direction(ref, ds, active) *

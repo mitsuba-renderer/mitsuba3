@@ -370,7 +370,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         pi.instance   = ShapePtr::steal(trace_args[20]);
 
         // This field is only used by embree, but we still need to initialized it for vcalls
-        pi.shape_index = ek::empty<UInt32>(ek::width(ray));
+        pi.shape_index = ek::empty<UInt32>();
 
         return pi;
     } else {
