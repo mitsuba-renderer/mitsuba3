@@ -9067,7 +9067,7 @@ BB8_2:
 	// inline asm
 	call (%r1), _optix_get_ray_flags, ();
 	// inline asm
-	setp.eq.s32	%p1, %r1, 4;
+	setp.eq.s32	%p1, %r1, 12;
 	@%p1 bra 	BB9_2;
 	bra.uni 	BB9_1;
 
