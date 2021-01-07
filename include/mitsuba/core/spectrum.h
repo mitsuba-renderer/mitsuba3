@@ -132,13 +132,11 @@ extern MTS_EXPORT_CORE const float *cie1931_x_cpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_y_cpu_data;
 extern MTS_EXPORT_CORE const float *cie1931_z_cpu_data;
 
-extern MTS_EXPORT_CORE const float *cie1931_x_gpu_data;
-extern MTS_EXPORT_CORE const float *cie1931_y_gpu_data;
-extern MTS_EXPORT_CORE const float *cie1931_z_gpu_data;
-
 #if defined(MTS_ENABLE_CUDA)
 using FloatC = ek::CUDAArray<float>;
-extern MTS_EXPORT_CORE FloatC cie_gpu_data;
+extern MTS_EXPORT_CORE FloatC cie1931_x_gpu_data;
+extern MTS_EXPORT_CORE FloatC cie1931_y_gpu_data;
+extern MTS_EXPORT_CORE FloatC cie1931_z_gpu_data;
 #endif
 
 /// Allocate GPU memory for the CIE 1931 tables
@@ -165,17 +163,22 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    constexpr bool is_cuda = ek::is_cuda_array_v<Float>;
-    const float* cie1931_x_data = is_cuda ? cie1931_x_gpu_data : cie1931_x_cpu_data;
-    const float* cie1931_y_data = is_cuda ? cie1931_y_gpu_data : cie1931_y_cpu_data;
-    const float* cie1931_z_data = is_cuda ? cie1931_z_gpu_data : cie1931_z_cpu_data;
-
-    Float v0_x = (Float) ek::gather<Float32>(cie1931_x_data, i0, active),
-          v1_x = (Float) ek::gather<Float32>(cie1931_x_data, i1, active),
-          v0_y = (Float) ek::gather<Float32>(cie1931_y_data, i0, active),
-          v1_y = (Float) ek::gather<Float32>(cie1931_y_data, i1, active),
-          v0_z = (Float) ek::gather<Float32>(cie1931_z_data, i0, active),
-          v1_z = (Float) ek::gather<Float32>(cie1931_z_data, i1, active);
+    Float v0_x, v1_x, v0_y, v1_y, v0_z, v1_z;
+    if constexpr (ek::is_cuda_array_v<Float>) {
+          v0_x = (Float) ek::gather<Float32>(cie1931_x_gpu_data, i0, active);
+          v1_x = (Float) ek::gather<Float32>(cie1931_x_gpu_data, i1, active);
+          v0_y = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i0, active);
+          v1_y = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i1, active);
+          v0_z = (Float) ek::gather<Float32>(cie1931_z_gpu_data, i0, active);
+          v1_z = (Float) ek::gather<Float32>(cie1931_z_gpu_data, i1, active);
+    } else {
+          v0_x = (Float) ek::gather<Float32>(cie1931_x_cpu_data, i0, active);
+          v1_x = (Float) ek::gather<Float32>(cie1931_x_cpu_data, i1, active);
+          v0_y = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i0, active);
+          v1_y = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i1, active);
+          v0_z = (Float) ek::gather<Float32>(cie1931_z_cpu_data, i0, active);
+          v1_z = (Float) ek::gather<Float32>(cie1931_z_cpu_data, i1, active);
+    }
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
@@ -206,11 +209,14 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    const float *cie1931_y_data =
-        ek::is_cuda_array_v<Float> ? cie1931_y_gpu_data : cie1931_y_cpu_data;
-
-    Float v0 = (Float) ek::gather<Float32>(cie1931_y_data, i0, active),
-          v1 = (Float) ek::gather<Float32>(cie1931_y_data, i1, active);
+    Float v0, v1;
+    if constexpr (ek::is_cuda_array_v<Float>) {
+        v0 = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i0, active);
+        v1 = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i1, active);
+    } else {
+        v0 = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i0, active);
+        v1 = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i1, active);
+    }
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;

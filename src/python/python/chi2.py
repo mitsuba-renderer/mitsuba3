@@ -145,7 +145,8 @@ class ChiSquareTest:
         # Compute a histogram of the positions in the parameter domain
         self.histogram = ek.zero(Float, ek.hprod(self.res))
 
-        ek.scatter_add(
+        ek.scatter_reduce(
+            ek.ReduceOp.Add,
             self.histogram,
             weights_out,
             xy.x + xy.y * self.res.x,

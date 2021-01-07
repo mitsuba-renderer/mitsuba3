@@ -36,14 +36,16 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
     hist_2d = ek.zero(UInt32, res * res)
 
     v_1d = ek.clamp(sampler.next_1d() * res, 0, res)
-    ek.scatter_add(
+    ek.scatter_reduce(
+        ek.ReduceOp.Add,
         hist_1d,
         UInt32(1),
         UInt32(v_1d)
     )
 
     v_2d = Vector2u(ek.clamp(sampler.next_2d() * res, 0, res))
-    ek.scatter_add(
+    ek.scatter_reduce(
+        ek.ReduceOp.Add,
         hist_2d,
         UInt32(1),
         UInt32(v_2d.x * res + v_2d.y)

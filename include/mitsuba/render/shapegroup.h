@@ -75,7 +75,7 @@ private:
 
 #if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     std::vector<ref<Base>> m_shapes;
-    std::vector<uint32_t> m_shapes_registry_ids;
+    DynamicBuffer<UInt32> m_shapes_registry_ids;
 #endif
 
 #if defined(MTS_ENABLE_EMBREE)

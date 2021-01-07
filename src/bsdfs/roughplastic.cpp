@@ -202,7 +202,7 @@ public:
         if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return { bs, result };
 
-        Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
+        Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
                                 MTS_ROUGH_TRANSMITTANCE_RES, active);
 
         // Determine which component should be sampled
@@ -281,9 +281,9 @@ public:
         }
 
         if (has_diffuse) {
-            Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
+            Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active),
-                  t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
+                  t_o = lerp_gather(m_external_transmittance, cos_theta_o,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active);
 
             UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
@@ -296,7 +296,7 @@ public:
         return ek::select(active, unpolarized<Spectrum>(value), 0.f);
     }
 
-    Float lerp_gather(const ek::scalar_t<Float> *data, Float x, size_t size,
+    Float lerp_gather(const DynamicBuffer<Float> &data, Float x, size_t size,
                       Mask active = true) const {
         using UInt = ek::uint_array_t<Float>;
         x *= Float(size - 1);
@@ -324,7 +324,7 @@ public:
         if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return 0.f;
 
-        Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
+        Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
                                 MTS_ROUGH_TRANSMITTANCE_RES, active);
 
         // Determine which component should be sampled
@@ -370,7 +370,7 @@ public:
         if (unlikely((!has_specular && !has_diffuse) || ek::none_or<false>(active)))
             return { 0.f, 0.f };
 
-        Float t_i = lerp_gather(m_external_transmittance.data(), cos_theta_i,
+        Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
                                 MTS_ROUGH_TRANSMITTANCE_RES, active);
 
         // Determine which component should be sampled
@@ -419,7 +419,7 @@ public:
         }
 
         if (has_diffuse) {
-            Float t_o = lerp_gather(m_external_transmittance.data(), cos_theta_o,
+            Float t_o = lerp_gather(m_external_transmittance, cos_theta_o,
                                     MTS_ROUGH_TRANSMITTANCE_RES, active);
 
             UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);

@@ -174,8 +174,6 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
                                                  bool test_visibility, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
-    using EmitterPtr = ek::replace_scalar_t<Float, Emitter*>;
-
     Point2f sample(sample_);
     DirectionSample3f ds;
     Spectrum spec;
@@ -183,29 +181,24 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     size_t emitters_size = m_emitters.size();
 
     if (likely(emitters_size > 0)) {
-        if (emitters_size == 1) {
-            // Fast path if there is only one emitter
-            std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
-        } else {
-            ScalarFloat emitter_pdf = 1.f / emitters_size;
+        ScalarFloat emitter_pdf = 1.f / emitters_size;
 
-            // Randomly pick an emitter
-            UInt32 index =
-                ek::min(UInt32(sample.x() * (ScalarFloat) emitters_size),
-                    (uint32_t) emitters_size - 1);
+        // Randomly pick an emitter
+        UInt32 index =
+            ek::min(UInt32(sample.x() * (ScalarFloat) emitters_size),
+                (uint32_t) emitters_size - 1);
 
-            // Rescale sample.x() to lie in [0,1) again
-            sample.x() = (sample.x() - index*emitter_pdf) * emitters_size;
+        // Rescale sample.x() to lie in [0,1) again
+        sample.x() = (sample.x() - index*emitter_pdf) * emitters_size;
 
-            EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek.data(), index, active);
+        EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
 
-            // Sample a direction towards the emitter
-            std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
+        // Sample a direction towards the emitter
+        std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
 
-            // Account for the discrete probability of sampling this emitter
-            ds.pdf *= emitter_pdf;
-            spec *= ek::rcp(emitter_pdf);
-        }
+        // Account for the discrete probability of sampling this emitter
+        ds.pdf *= emitter_pdf;
+        spec *= ek::rcp(emitter_pdf);
 
         active &= ek::neq(ds.pdf, 0.f);
 

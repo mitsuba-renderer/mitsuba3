@@ -25,8 +25,9 @@ static RTCDevice __embree_device = nullptr;
 
 template <typename Float>
 struct EmbreeState {
+    MTS_IMPORT_CORE_TYPES()
     RTCScene accel;
-    std::vector<uint32_t> shapes_registry_ids;
+    DynamicBuffer<UInt32> shapes_registry_ids;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
@@ -48,9 +49,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
 
     if constexpr (ek::is_llvm_array_v<Float>) {
         // Get shapes registry ids
-        s.shapes_registry_ids.resize(m_shapes.size());
+        std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
         for (size_t i = 0; i < m_shapes.size(); i++)
-            s.shapes_registry_ids[i] = jit_registry_get_id(m_shapes[i]);
+            data[i] = jit_registry_get_id(m_shapes[i]);
+        s.shapes_registry_ids
+            = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
 
     rtcCommitScene(embree_scene);
@@ -230,7 +233,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
             UInt32 index      = ek::select(hit_inst, inst_index, pi.shape_index);
 
-            ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids.data(), index, hit);
+            ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids, index, hit);
             pi.instance = ek::select(hit_inst, shape, nullptr);
             pi.shape    = ek::select(hit_not_inst, shape, nullptr);
         }

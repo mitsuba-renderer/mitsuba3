@@ -188,34 +188,32 @@ const Float *cie1931_x_cpu_data = cie1931_tbl;
 const Float *cie1931_y_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES;
 const Float *cie1931_z_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
 
-const Float *cie1931_x_gpu_data;
-const Float *cie1931_y_gpu_data;
-const Float *cie1931_z_gpu_data;
-
 #if defined(MTS_ENABLE_CUDA)
-FloatC cie_gpu_data;
+FloatC cie1931_x_gpu_data;
+FloatC cie1931_y_gpu_data;
+FloatC cie1931_z_gpu_data;
 #endif
 
 void cie_initialize() {
 #if defined(MTS_ENABLE_CUDA)
-    if (cie_gpu_data.index() != 0)
+    if (cie1931_x_gpu_data.index() != 0)
         return;
 
-    cie_gpu_data = ek::load<FloatC>(cie1931_tbl, 3 * MTS_CIE_SAMPLES);
-
-    cie1931_x_gpu_data = cie_gpu_data.data();
-    cie1931_y_gpu_data = cie_gpu_data.data() + MTS_CIE_SAMPLES;
-    cie1931_z_gpu_data = cie_gpu_data.data() + MTS_CIE_SAMPLES * 2;
+    cie1931_x_gpu_data = ek::load<FloatC>(cie1931_tbl, MTS_CIE_SAMPLES);
+    cie1931_y_gpu_data = ek::load<FloatC>(cie1931_tbl + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES);
+    cie1931_z_gpu_data = ek::load<FloatC>(cie1931_tbl + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES);
 #endif
 }
 
 
 void cie_shutdown() {
 #if defined(MTS_ENABLE_CUDA)
-    if (cie_gpu_data.index() == 0)
+    if (cie1931_x_gpu_data.index() == 0)
         return;
 
-    cie_gpu_data = FloatC();
+    cie1931_x_gpu_data = FloatC();
+    cie1931_y_gpu_data = FloatC();
+    cie1931_z_gpu_data = FloatC();
 #endif
 }
 
