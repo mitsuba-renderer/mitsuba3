@@ -64,7 +64,7 @@ class BlenderMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, add_attribute, set_children)
+                    m_vertex_texcoords, m_faces, m_disable_vertex_normals, add_attribute, set_children)
     MTS_IMPORT_TYPES()
 
     using typename Base::MeshAttributeType;
@@ -128,6 +128,20 @@ public:
         else
             Log(Warn, "Mesh %s has no texture coordinates!", m_name);
 
+        // Determine whether the object is globally smooth or flat shaded and set the flag accordingly
+        // Blender meshes can be partially smooth AND flat (e.g. with edge split modifier)
+        // In this case, flat face vertices will be duplicated.
+        m_disable_vertex_normals = true;
+        for (size_t tri_loop_id = 0; tri_loop_id < loop_tri_count; tri_loop_id++) {
+            const blender::MLoopTri &tri_loop = tri_loops[tri_loop_id];
+            const blender::MPoly &face        = polygons[tri_loop.poly];
+            if (blender::ME_SMOOTH & face.flag) {
+                // If at least one face is smooth shaded, we need to disable face normals
+                // and duplicate the (potential) flat shaded face vertices.
+                m_disable_vertex_normals = false;
+                break;
+            }
+        }
         // Temporary buffers for vertices, normals, etc.
         std::vector<std::array<InputFloat, 3>> tmp_vertices; // Store as vector for alignement issues
         std::vector<std::array<InputFloat, 3>> tmp_normals; // Same here
@@ -136,7 +150,8 @@ public:
         std::vector<ScalarIndex3> tmp_triangles;
 
         tmp_vertices.reserve(vertex_count);
-        tmp_normals.reserve(vertex_count);
+        if (!m_disable_vertex_normals)
+            tmp_normals.reserve(vertex_count);
         tmp_triangles.reserve(loop_tri_count);
 
         if (has_uvs)
@@ -203,8 +218,8 @@ public:
             face_points[2] = InputPoint3f(v2.co[0], v2.co[1], v2.co[2]);
 
             InputNormal3f normal(0.f);
-            if (!(blender::ME_SMOOTH & face.flag)) {
-                // Flat shading, use per face normals
+            if (!(blender::ME_SMOOTH & face.flag) && !m_disable_vertex_normals) {
+                // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
                 normal = m_to_world.transform_affine(ek::cross(e1, e2));
@@ -225,8 +240,8 @@ public:
                 const blender::MVert &vert = verts[vert_index];
 
                 Key vert_key;
-                if (blender::ME_SMOOTH & face.flag) {
-                    // Smooth shading, store per vertex normals
+                if (blender::ME_SMOOTH & face.flag || m_disable_vertex_normals) {
+                    // Store per vertex normals if the face is smooth or if the mesh is globally flat
                     normal = m_to_world.transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
                     if(unlikely(ek::all(ek::eq(normal, 0.f))))
                         fail("Mesh has invalid normals!");
@@ -268,7 +283,8 @@ public:
                     // Add stuff to the temporary buffers
                     InputPoint3f pt = m_to_world.transform_affine(face_points[i]);
                     tmp_vertices.push_back({pt.x(), pt.y(), pt.z()});
-                    tmp_normals.push_back({normal.x(), normal.y(), normal.z()});
+                    if (!m_disable_vertex_normals)
+                        tmp_normals.push_back({normal.x(), normal.y(), normal.z()});
                     if (has_uvs)
                         tmp_uvs.push_back(vert_key.uv);
                     if (has_cols) {
@@ -295,7 +311,8 @@ public:
 
         m_vertex_count = vertex_ctr;
         m_vertex_positions = ek::load<FloatStorage>(tmp_vertices.data(), m_vertex_count * 3);
-        m_vertex_normals = ek::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
+        if (!m_disable_vertex_normals)
+            m_vertex_normals = ek::load<FloatStorage>(tmp_normals.data(), m_vertex_count * 3);
 
         if (has_uvs)
             m_vertex_texcoords = ek::load<FloatStorage>(tmp_uvs.data(), m_vertex_count * 2);
@@ -306,6 +323,7 @@ public:
         }
 
         set_children();
+
     }
 
     MTS_DECLARE_CLASS()
