@@ -28,7 +28,18 @@ def write_core_config_cpp(f, enabled, default_variant):
     f.write('   helper various macros to instantiate multiple variants of Mitsuba. */\n\n')
 
     f.write('#pragma once\n\n')
-    f.write('#include <mitsuba/core/fwd.h>\n\n')
+    f.write('#include <mitsuba/core/fwd.h>\n')
+
+    enable_jit = False
+    enable_ad  = False
+    for index, (name, float_, spectrum) in enumerate(enabled):
+        enable_jit |= ('cuda' in name) or ('llvm' in name)
+        enable_ad  |= ('ad' in name)
+    if enable_jit:
+        f.write('#include <enoki/jit.h>\n')
+    if enable_ad:
+        f.write('#include <enoki/autodiff.h>\n')
+    f.write('\n')
 
     f.write('/// List of enabled Mitsuba variants\n')
     w('#define MTS_VARIANTS')

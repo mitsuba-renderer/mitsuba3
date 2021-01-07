@@ -50,7 +50,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
         // Get shapes registry ids
         s.shapes_registry_ids.resize(m_shapes.size());
         for (size_t i = 0; i < m_shapes.size(); i++)
-            s.shapes_registry_ids[i] = jitc_registry_get_id(m_shapes[i]);
+            s.shapes_registry_ids[i] = jit_registry_get_id(m_shapes[i]);
     }
 
     rtcCommitScene(embree_scene);
@@ -181,7 +181,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             pi.t = ek::empty<Float>(N);
-            jitc_memcpy_async(false, pi.t.data(), ray.maxt.data(), sizeof(ScalarFloat) * N);
+            jit_memcpy_async(JitBackend::LLVM, pi.t.data(), ray.maxt.data(),
+                             sizeof(ScalarFloat) * N);
             pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
 
             Vector3f ng = ek::empty<Vector3f>(N);
@@ -283,7 +284,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
 
             // A ray is considered inactive if its tnear value is larger than its tfar value
             Float t = ek::empty<Float>(N);
-            jitc_memcpy_async(false, t.data(), ray.maxt.data(), sizeof(ScalarFloat) * N);
+            jit_memcpy_async(JitBackend::LLVM, t.data(), ray.maxt.data(),
+                             sizeof(ScalarFloat) * N);
             t = ek::select(active, t, ray.mint - ek::Epsilon<Float>);
 
             Vector3u extra = ek::zero<Vector3u>(N);

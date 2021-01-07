@@ -46,8 +46,8 @@ struct OptixAccelData {
     HandleData others;
 
     ~OptixAccelData() {
-        if (meshes.buffer) jitc_free(meshes.buffer);
-        if (others.buffer) jitc_free(others.buffer);
+        if (meshes.buffer) jit_free(meshes.buffer);
+        if (others.buffer) jit_free(others.buffer);
     }
 };
 
@@ -95,7 +95,7 @@ void build_gas(const OptixDeviceContext &context,
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
         if (handle.buffer) {
-            jitc_free(handle.buffer);
+            jit_free(handle.buffer);
             handle.handle = 0ull;
             handle.buffer = nullptr;
             handle.count = 0;
@@ -111,7 +111,7 @@ void build_gas(const OptixDeviceContext &context,
             shape_subset[i]->optix_build_input(build_inputs[i]);
 
         OptixAccelBufferSizes buffer_sizes;
-        jitc_optix_check(optixAccelComputeMemoryUsage(
+        jit_optix_check(optixAccelComputeMemoryUsage(
             context,
             &accel_options,
             build_inputs.data(),
@@ -119,17 +119,17 @@ void build_gas(const OptixDeviceContext &context,
             &buffer_sizes
         ));
 
-        void* d_temp_buffer = jitc_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-        void* output_buffer = jitc_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes + 8);
+        void* d_temp_buffer = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+        void* output_buffer = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes + 8);
 
         OptixAccelEmitDesc emit_property = {};
         emit_property.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
         emit_property.result = (CUdeviceptr)((char*)output_buffer + buffer_sizes.outputSizeInBytes);
 
         OptixTraversableHandle accel;
-        jitc_optix_check(optixAccelBuild(
+        jit_optix_check(optixAccelBuild(
             context,
-            (CUstream) jitc_cuda_stream(),
+            (CUstream) jit_cuda_stream(),
             &accel_options,
             build_inputs.data(),
             (unsigned int) shapes_count, // num build inputs
@@ -142,22 +142,25 @@ void build_gas(const OptixDeviceContext &context,
             1                // num emitted properties
         ));
 
-        jitc_free(d_temp_buffer);
+        jit_free(d_temp_buffer);
 
         size_t compact_size;
-        jitc_memcpy(true, &compact_size, (void*)emit_property.result, sizeof(size_t));
+        jit_memcpy(JitBackend::CUDA,
+                   &compact_size,
+                   (void*)emit_property.result,
+                   sizeof(size_t));
         if (compact_size < buffer_sizes.outputSizeInBytes) {
-            void* compact_buffer = jitc_malloc(AllocType::Device, compact_size);
+            void* compact_buffer = jit_malloc(AllocType::Device, compact_size);
             // Use handle as input and output
-            jitc_optix_check(optixAccelCompact(
+            jit_optix_check(optixAccelCompact(
                 context,
-                (CUstream) jitc_cuda_stream(),
+                (CUstream) jit_cuda_stream(),
                 accel,
                 (CUdeviceptr) compact_buffer,
                 compact_size,
                 &accel
             ));
-            jitc_free(output_buffer);
+            jit_free(output_buffer);
             output_buffer = compact_buffer;
         }
 
@@ -216,7 +219,7 @@ void prepare_ias(const OptixDeviceContext &context,
     // Apply the same process to every shape instances
     for (Shape* shape: shapes) {
         if (shape->is_instance())
-            shape->optix_prepare_ias(context, out_instances, jitc_registry_get_id(shape), transf);
+            shape->optix_prepare_ias(context, out_instances, jit_registry_get_id(shape), transf);
     }
 }
 

@@ -13,9 +13,9 @@ void optix_initialize() {
     if (optixAccelBuild)
         return;
 
-    jitc_optix_context(); // Ensure OptiX is initialized
+    jit_optix_context(); // Ensure OptiX is initialized
 
-    #define L(name) name = (decltype(name)) jitc_optix_lookup(#name);
+    #define L(name) name = (decltype(name)) jit_optix_lookup(#name);
 
     L(optixAccelComputeMemoryUsage);
     L(optixAccelBuild);

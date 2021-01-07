@@ -270,7 +270,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
             auto nn =  n * face_angle;
             for (int j = 0; j < 3; ++j)
-                ek::scatter_add(normals[j], nn[j], fi[i]);
+                ek::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
         }
         normals = ek::normalize(normals);
 

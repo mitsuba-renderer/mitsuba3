@@ -63,7 +63,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // OptiX context creation
         // =====================================================
 
-        s.context = jitc_optix_context();
+        s.context = jit_optix_context();
 
         // =====================================================
         // Configure options for OptiX pipeline
@@ -121,7 +121,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
             if (rv) {
                 fprintf(stderr, "\tLog: %s%s", optix_log,
                         optix_log_size > sizeof(optix_log) ? "<TRUNCATED>" : "");
-                jitc_optix_check(rv);
+                jit_optix_check(rv);
             }
         };
 
@@ -189,21 +189,24 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         size_t shapes_count = hg_sbts.size();
 
-        s.sbt.missRecordBase = jitc_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
+        s.sbt.missRecordBase = jit_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
         s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
         s.sbt.missRecordCount         = 1;
 
-        s.sbt.hitgroupRecordBase = jitc_malloc(AllocType::HostPinned,
+        s.sbt.hitgroupRecordBase = jit_malloc(AllocType::HostPinned,
                                                shapes_count * sizeof(HitGroupSbtRecord));
         s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
         s.sbt.hitgroupRecordCount         = (unsigned int) shapes_count;
 
-        jitc_optix_check(optixSbtRecordPackHeader(s.program_groups[0], s.sbt.missRecordBase));
-        jitc_memcpy_async(true, s.sbt.hitgroupRecordBase, hg_sbts.data(), shapes_count * sizeof(HitGroupSbtRecord));
+        jit_optix_check(optixSbtRecordPackHeader(s.program_groups[0], s.sbt.missRecordBase));
+        jit_memcpy_async(JitBackend::CUDA,
+                         s.sbt.hitgroupRecordBase,
+                         hg_sbts.data(),
+                         shapes_count * sizeof(HitGroupSbtRecord));
 
-        s.sbt.missRecordBase = jitc_malloc_migrate(s.sbt.missRecordBase,
+        s.sbt.missRecordBase = jit_malloc_migrate(s.sbt.missRecordBase,
                                                    AllocType::Device, 1);
-        s.sbt.hitgroupRecordBase = jitc_malloc_migrate(s.sbt.hitgroupRecordBase,
+        s.sbt.hitgroupRecordBase = jit_malloc_migrate(s.sbt.hitgroupRecordBase,
                                                        AllocType::Device, 1);
 
         // =====================================================
@@ -216,7 +219,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // Let Enoki know about all of this
         // =====================================================
 
-        jitc_optix_configure(
+        jit_optix_configure(
             &s.pipeline_compile_options,
             &s.sbt,
             s.program_groups, ProgramGroupCount
@@ -257,17 +260,17 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
         accel_options.motionOptions.numKeys = 0;
 
         size_t ias_data_size = ias.size() * sizeof(OptixInstance);
-        void* d_ias = jitc_malloc(AllocType::HostPinned, ias_data_size);
-        jitc_memcpy_async(true, d_ias, ias.data(), ias_data_size);
+        void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
+        jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
 
         OptixBuildInput build_input;
         build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
         build_input.instanceArray.instances =
-            (CUdeviceptr) jitc_malloc_migrate(d_ias, AllocType::Device, 1);
+            (CUdeviceptr) jit_malloc_migrate(d_ias, AllocType::Device, 1);
         build_input.instanceArray.numInstances = (unsigned int) ias.size();
 
         OptixAccelBufferSizes buffer_sizes;
-        jitc_optix_check(optixAccelComputeMemoryUsage(
+        jit_optix_check(optixAccelComputeMemoryUsage(
             s.context,
             &accel_options,
             &build_input,
@@ -275,12 +278,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             &buffer_sizes
         ));
 
-        void* d_temp_buffer = jitc_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-        s.ias_buffer = jitc_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
+        void* d_temp_buffer
+            = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+        s.ias_buffer
+            = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
 
-        jitc_optix_check(optixAccelBuild(
+        jit_optix_check(optixAccelBuild(
             s.context,
-            (CUstream) jitc_cuda_stream(),
+            (CUstream) jit_cuda_stream(),
             &accel_options,
             &build_input,
             1, // num build inputs
@@ -293,7 +298,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
             0  // num emitted properties
         ));
 
-        jitc_free(d_temp_buffer);
+        jit_free(d_temp_buffer);
     }
 }
 
@@ -301,14 +306,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
         using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
-        jitc_free((void*)s.sbt.raygenRecord);
-        jitc_free(s.ias_buffer);
+        jit_free((void*)s.sbt.raygenRecord);
+        jit_free(s.ias_buffer);
 
         for (size_t i = 0; i < ProgramGroupCount; i++)
-            jitc_optix_check(optixProgramGroupDestroy(s.program_groups[i]));
+            jit_optix_check(optixProgramGroupDestroy(s.program_groups[i]));
         for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
             free(s.custom_shapes_program_names[i]);
-        jitc_optix_check(optixModuleDestroy(s.module));
+        jit_optix_check(optixModuleDestroy(s.module));
 
         delete (OptixState *) m_accel;
         m_accel = nullptr;
@@ -316,7 +321,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
+                                                      Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
@@ -358,7 +364,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
             payload_inst_index.index(),
         };
 
-        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+        jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
                          ek::detach(active).index());
 
         PreliminaryIntersection3f pi;
@@ -372,6 +378,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
         // This field is only used by embree, but we still need to initialized it for vcalls
         pi.shape_index = ek::empty<UInt32>();
 
+        // jit_optix_trace leaves payload data uninitialized for in-active lanes
+        pi.t[!active] = ek::Infinity<Float>;
+
         return pi;
     } else {
         ENOKI_MARK_USED(ray_);
@@ -381,7 +390,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_, Mask ac
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
+                                          Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
         return pi.compute_surface_interaction(ray, hit_flags, active);
@@ -423,10 +433,10 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
             miss_sbt_index.index(), payload_hit.index()
         };
 
-        jitc_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                         ek::detach(active).index());
+        jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                        ek::detach(active).index());
 
-        return ek::eq(UInt32C::steal(trace_args[15]), 1);
+        return active && ek::eq(UInt32C::steal(trace_args[15]), 1);
     } else {
         ENOKI_MARK_USED(ray_);
         ENOKI_MARK_USED(active);

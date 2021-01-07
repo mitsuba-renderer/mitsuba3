@@ -90,7 +90,7 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
 MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
 #if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>)
-        jitc_free(m_optix_data_ptr);
+        jit_free(m_optix_data_ptr);
 #endif
 }
 
@@ -269,12 +269,12 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
     optix_prepare_geometry();
     // Set hitgroup record data
     hitgroup_records.push_back(HitGroupSbtRecord());
-    hitgroup_records.back().data = { jitc_registry_get_id(this), m_optix_data_ptr };
+    hitgroup_records.back().data = { jit_registry_get_id(this), m_optix_data_ptr };
 
     size_t program_group_idx = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
     // Setup the hitgroup record and copy it to the hitgroup records array
-    jitc_optix_check(optixSbtRecordPackHeader(program_groups[program_group_idx],
-                                              &hitgroup_records.back()));
+    jit_optix_check(optixSbtRecordPackHeader(program_groups[program_group_idx],
+                                             &hitgroup_records.back()));
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::optix_prepare_ias(const OptixDeviceContext& /*context*/,

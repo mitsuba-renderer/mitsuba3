@@ -224,11 +224,12 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
-                m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixRectangleData));
+                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
 
             OptixRectangleData data = { bbox(), m_to_object };
 
-            jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixRectangleData));
+            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
+                       sizeof(OptixRectangleData));
         }
     }
 #endif

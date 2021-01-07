@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mitsuba/core/fwd.h>
-#include <mitsuba/core/simd.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
 #include <enoki/matrix.h>

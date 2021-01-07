@@ -439,11 +439,12 @@ public:
     void optix_prepare_geometry() override {
         if constexpr (ek::is_cuda_array_v<Float>) {
             if (!m_optix_data_ptr)
-                m_optix_data_ptr = jitc_malloc(AllocType::Device, sizeof(OptixSphereData));
+                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSphereData));
 
             OptixSphereData data = { bbox(), m_center, m_radius };
 
-            jitc_memcpy(true, m_optix_data_ptr, &data, sizeof(OptixSphereData));
+            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
+                       sizeof(OptixSphereData));
         }
     }
 #endif

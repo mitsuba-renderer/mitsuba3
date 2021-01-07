@@ -3,12 +3,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/spectrum.h>
 
-#if defined(MTS_ENABLE_CUDA)
-# include<enoki/cuda.h>
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
-
 
 template <typename Scalar>
 void spectrum_from_file(const std::string &filename, std::vector<Scalar> &wavelengths,

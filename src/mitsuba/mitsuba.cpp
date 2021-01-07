@@ -175,17 +175,17 @@ int main(int argc, char *argv[]) {
             if (arg_verbose->next()) {
                 logger->set_log_level(Trace);
 #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-                jitc_set_log_level_stderr(::LogLevel::Trace);
+                jit_set_log_level_stderr(::LogLevel::Trace);
 #endif
             } else {
                 logger->set_log_level(Debug);
 #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-                jitc_set_log_level_stderr(::LogLevel::Info);
+                jit_set_log_level_stderr(::LogLevel::Info);
 #endif
             }
         } else {
 #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-            jitc_set_log_level_stderr(::LogLevel::Warn);
+            jit_set_log_level_stderr(::LogLevel::Warn);
 #endif
         }
 
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_")) {
-            jitc_init(0, 1);
+            jit_init(JitBackend::CUDA);
             cie_initialize();
             profile = false;
         }
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM)
         if (string::starts_with(mode, "llvm_")) {
-            jitc_init(1, 0);
+            jit_init(JitBackend::LLVM);
             profile = false;
         }
 #endif
@@ -225,17 +225,17 @@ int main(int argc, char *argv[]) {
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_") ||
             string::starts_with(mode, "llvm_")) {
-            jitc_enable_flag(JitFlag::RecordVCalls);
-            jitc_enable_flag(JitFlag::RecordLoops);
-            jitc_enable_flag(JitFlag::OptimizeVCalls);
+            jit_enable_flag(JitFlag::VCallRecord);
+            jit_enable_flag(JitFlag::LoopRecord);
+            jit_enable_flag(JitFlag::VCallOptimize);
 
             if (*arg_no_elide)
-                jitc_disable_flag(JitFlag::OptimizeVCalls);
+                jit_disable_flag(JitFlag::VCallOptimize);
 
             if (*arg_wavefront) {
-                jitc_disable_flag(JitFlag::RecordLoops);
+                jit_disable_flag(JitFlag::LoopRecord);
                 if (arg_wavefront->next())
-                    jitc_disable_flag(JitFlag::RecordVCalls);
+                    jit_disable_flag(JitFlag::VCallRecord);
             }
         }
 #endif
@@ -343,15 +343,15 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_CUDA)
     if (string::starts_with(mode, "cuda_")) {
-        printf("%s\n", jitc_var_whos());
-        jitc_shutdown();
+        printf("%s\n", jit_var_whos());
+        jit_shutdown();
     }
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
     if (string::starts_with(mode, "llvm_")) {
-        printf("%s\n", jitc_var_whos());
-        jitc_shutdown();
+        printf("%s\n", jit_var_whos());
+        jit_shutdown();
     }
 #endif
 

@@ -735,7 +735,7 @@ protected:
             uint32_t n = size * slices;
             if constexpr (ek::is_cuda_array_v<Float>) {
                 data = ek::map<FloatStorage>(
-                    jitc_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
+                    jit_malloc(AllocType::HostPinned, n * sizeof(ScalarFloat)),
                     n, true);
             } else {
                 data = ek::empty<FloatStorage>(n);

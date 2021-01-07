@@ -4,20 +4,7 @@
 #include <string>
 #include <tuple>
 
-#include <enoki-jit/jit.h>
 #include <enoki/array_router.h>
-
-#if defined(MTS_ENABLE_CUDA)
-#  include <enoki/cuda.h>
-#endif
-
-#if defined(MTS_ENABLE_LLVM)
-#  include <enoki/llvm.h>
-#endif
-
-#if defined(MTS_ENABLE_AUTODIFF)
-#  include <enoki/autodiff.h>
-#endif
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -127,7 +127,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
                     cie_shutdown();
                 #endif
                 /* The Enoki python module is responsible for cleaning up the
-                   JIT state, so jitc_shutdown() shouldn't be called here. */
+                   JIT state, so jit_shutdown() shouldn't be called here. */
                 weakref.dec_ref();
             }
         );
