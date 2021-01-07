@@ -334,7 +334,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
 
         auto ray = ek::detach(ray_);
 
-        UInt64C handle = ek::full<UInt64C>(s.ias_handle, 1, /* eval = */ true);
+        UInt64C handle = ek::opaque<UInt64C>(s.ias_handle, 1);
         UInt32C ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
                 sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
@@ -415,7 +415,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
 
         auto ray = ek::detach(ray_);
 
-        UInt64C handle = ek::full<UInt64C>(s.ias_handle, 1, /* eval = */ true);
+        UInt64C handle = ek::opaque<UInt64C>(s.ias_handle, 1);
         UInt32C ray_mask(255),
                 ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                           OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),

@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_")) {
-            jit_init(JitBackend::CUDA);
+            jit_init((uint32_t) JitBackend::CUDA);
             cie_initialize();
             profile = false;
         }
@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM)
         if (string::starts_with(mode, "llvm_")) {
-            jit_init(JitBackend::LLVM);
+            jit_init((uint32_t) JitBackend::LLVM);
             profile = false;
         }
 #endif
@@ -225,17 +225,17 @@ int main(int argc, char *argv[]) {
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_") ||
             string::starts_with(mode, "llvm_")) {
-            jit_enable_flag(JitFlag::VCallRecord);
-            jit_enable_flag(JitFlag::LoopRecord);
-            jit_enable_flag(JitFlag::VCallOptimize);
+            jit_set_flag(JitFlag::VCallRecord, true);
+            jit_set_flag(JitFlag::LoopRecord, true);
+            jit_set_flag(JitFlag::VCallOptimize, true);
 
             if (*arg_no_elide)
-                jit_disable_flag(JitFlag::VCallOptimize);
+                jit_set_flag(JitFlag::VCallOptimize, false);
 
             if (*arg_wavefront) {
-                jit_disable_flag(JitFlag::LoopRecord);
+                jit_set_flag(JitFlag::LoopRecord, false);
                 if (arg_wavefront->next())
-                    jit_disable_flag(JitFlag::VCallRecord);
+                    jit_set_flag(JitFlag::VCallRecord, false);
             }
         }
 #endif
