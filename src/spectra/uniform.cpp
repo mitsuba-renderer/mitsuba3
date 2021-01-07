@@ -21,7 +21,7 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     UniformSpectrum(const Properties &props) : Texture(props) {
-        m_value = ek::full<Float>(props.float_("value"), 1, true);
+        m_value = ek::opaque<Float>(props.float_("value"), 1);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,

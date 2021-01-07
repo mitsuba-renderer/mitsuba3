@@ -1,10 +1,11 @@
 #pragma once
 
+#include <enoki/jit.h>
+#include <enoki/vcall.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
-#include <enoki/vcall.h>
 #include <enoki/packet.h>
 
 #if defined(MTS_ENABLE_CUDA)

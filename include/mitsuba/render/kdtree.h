@@ -13,7 +13,6 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
-#include <mitsuba/render/shape.h>
 #include <tbb/blocked_range.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>

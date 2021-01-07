@@ -39,7 +39,7 @@ public:
             value = luminance(color);
 
         for (size_t i = 0; i < ChannelCount; ++i)
-            m_value[i] = ek::full<Float>(value[i], 1, true);
+            m_value[i] = ek::opaque<Float>(value[i], 1);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
