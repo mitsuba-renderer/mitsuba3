@@ -131,11 +131,10 @@ public:
             active &= depth < m_max_depth;
 
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
-           generates wavefront or megakernel renderer based on configuration) */
-        ek::Loop<ek::detached_t<Mask>> loop;
-
-        // Register everything that changes as part of the loop here
-        loop.put(active, depth, ray, throughput, result, si, eta);
+           generates wavefront or megakernel renderer based on configuration).
+           Register everything that changes as part of the loop here */
+        ek::Loop<ek::detached_t<Mask>> loop("PathTracerLoop", active, depth,
+                                            ray, throughput, result, si, eta);
 
         // The internal sampler state is also modified by the loop
         sampler->loop_register(loop);
