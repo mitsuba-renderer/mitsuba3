@@ -304,7 +304,7 @@ public:
         UInt index = ek::min(UInt(x), ek::scalar_t<UInt>(size - 2));
 
         Float v0 = ek::gather<Float>(data, index, active),
-              v1 = ek::gather<Float>(data + 1, index, active);
+              v1 = ek::gather<Float>(data, index + 1, active);
 
         return ek::lerp(v0, v1, x - Float(index));
     }
