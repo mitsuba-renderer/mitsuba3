@@ -1035,13 +1035,13 @@ public:
         if (Dimension != 0)
             index += slice_offset * size;
 
-        Float v00 = lookup(m_data.data(), index,
+        Float v00 = lookup(m_data, 0, index,
                            size, param_weight, active),
-              v10 = lookup(m_data.data() + 1, index,
+              v10 = lookup(m_data, 1, index,
                            size, param_weight, active),
-              v01 = lookup(m_data.data() + m_size.x(), index,
+              v01 = lookup(m_data, m_size.x(), index,
                            size, param_weight, active),
-              v11 = lookup(m_data.data() + m_size.x() + 1, index,
+              v11 = lookup(m_data, m_size.x() + 1, index,
                            size, param_weight, active);
 
         return warp::square_to_bilinear_pdf(v00, v10, v01, v11, pos);
@@ -1077,7 +1077,8 @@ public:
 
 protected:
     template <size_t Dim = Dimension>
-    MTS_INLINE Float lookup(const ScalarFloat *data,
+    MTS_INLINE Float lookup(const FloatStorage &data,
+                            size_t offset,
                             UInt32 i0,
                             uint32_t size,
                             const Float *param_weight,
@@ -1087,14 +1088,14 @@ protected:
 
             Float w0 = param_weight[2 * Dim - 2],
                   w1 = param_weight[2 * Dim - 1],
-                  v0 = lookup<Dim - 1>(data, i0, size, param_weight, active),
-                  v1 = lookup<Dim - 1>(data, i1, size, param_weight, active);
+                  v0 = lookup<Dim - 1>(data, offset, i0, size, param_weight, active),
+                  v1 = lookup<Dim - 1>(data, offset, i1, size, param_weight, active);
 
             return ek::fmadd(v0, w0, v1 * w1);
         } else {
             ENOKI_MARK_USED(param_weight);
             ENOKI_MARK_USED(size);
-            return ek::gather<Float>(data, i0, active);
+            return ek::gather<Float>(data, i0 + offset, active);
         }
     }
 
@@ -1121,7 +1122,7 @@ protected:
 
         auto fetch_marginal = [&](UInt32 idx, Mask mask)
                                   ENOKI_INLINE_LAMBDA {
-            return lookup(m_marg_cdf.data(), offset_marg + idx,
+            return lookup(m_marg_cdf, 0, offset_marg + idx,
                           n_marg, param_weight, mask);
         };
 
@@ -1143,22 +1144,22 @@ protected:
 
         /// Multiply by last entry of conditional CDF
         UInt32 offset_cond = slice_offset * n_cond + row * (m_size.x() - 1);
-        sample.x() *= lookup(m_cond_cdf.data(),
+        sample.x() *= lookup(m_cond_cdf, 0,
                              offset_cond + m_size.x() - 2,
                              n_cond, param_weight, active);
 
         // Sample the column from the conditional distribution
         UInt32 col = ek::binary_search<UInt32>(
             0u, m_size.x() - 2, [&](UInt32 idx) ENOKI_INLINE_LAMBDA {
-                return lookup(m_cond_cdf.data(),
+                return lookup(m_cond_cdf, 0,
                               offset_cond + idx, n_cond,
                               param_weight, active) < sample.x();
             });
 
         // Re-scale uniform variate
-        Float col_cdf_0 = lookup(m_cond_cdf.data(), offset_cond + col - 1,
+        Float col_cdf_0 = lookup(m_cond_cdf, 0, offset_cond + col - 1,
                                  n_cond, param_weight, active && col > 0),
-              col_cdf_1 = lookup(m_cond_cdf.data(), offset_cond + col,
+              col_cdf_1 = lookup(m_cond_cdf, 0, offset_cond + col,
                                  n_cond, param_weight, active);
 
         sample.x() -= col_cdf_0;
@@ -1166,13 +1167,13 @@ protected:
 
         // Sample a position on the bilinear patch
         UInt32 offset_data = slice_offset * n_data + row * m_size.x() + col;
-        Float v00 = lookup(m_data.data(), offset_data, n_data,
+        Float v00 = lookup(m_data, 0, offset_data, n_data,
                            param_weight, active),
-              v10 = lookup(m_data.data() + 1, offset_data, n_data,
+              v10 = lookup(m_data, 1, offset_data, n_data,
                            param_weight, active),
-              v01 = lookup(m_data.data() + m_size.x(), offset_data,
+              v01 = lookup(m_data, m_size.x(), offset_data,
                            n_data, param_weight, active),
-              v11 = lookup(m_data.data() + m_size.x() + 1, offset_data,
+              v11 = lookup(m_data, m_size.x() + 1, offset_data,
                            n_data, param_weight, active);
 
         Float pdf;
@@ -1206,13 +1207,13 @@ protected:
         UInt32 index = offset.x() + offset.y() * m_size.x() + slice_offset * n_data;
         sample -= Point2f(Point2i(offset));
 
-        Float v00 = lookup(m_data.data(), index,
+        Float v00 = lookup(m_data, 0, index,
                            n_data, param_weight, active),
-              v10 = lookup(m_data.data() + 1, index,
+              v10 = lookup(m_data, 1, index,
                            n_data, param_weight, active),
-              v01 = lookup(m_data.data() + m_size.x(), index,
+              v01 = lookup(m_data, m_size.x(), index,
                            n_data, param_weight, active),
-              v11 = lookup(m_data.data() + m_size.x() + 1, index,
+              v11 = lookup(m_data, m_size.x() + 1, index,
                            n_data, param_weight, active);
 
         Float pdf;
@@ -1221,24 +1222,24 @@ protected:
         UInt32 offset_cond = slice_offset * n_cond + offset.y() * (m_size.x() - 1),
                offset_marg = slice_offset * n_marg;
 
-        Float row_cdf_0 = lookup(m_marg_cdf.data(), offset_marg + offset.y() - 1,
+        Float row_cdf_0 = lookup(m_marg_cdf, 0, offset_marg + offset.y() - 1,
                                  n_marg, param_weight, active && offset.y() > 0),
-              row_cdf_1 = lookup(m_marg_cdf.data(), offset_marg + offset.y(),
+              row_cdf_1 = lookup(m_marg_cdf, 0, offset_marg + offset.y(),
                                  n_marg, param_weight, active),
-              col_cdf_0 = lookup(m_cond_cdf.data(), offset_cond + offset.x() - 1,
+              col_cdf_0 = lookup(m_cond_cdf, 0, offset_cond + offset.x() - 1,
                                  n_cond, param_weight, active && offset.x() > 0),
-              col_cdf_1 = lookup(m_cond_cdf.data(), offset_cond + offset.x(),
+              col_cdf_1 = lookup(m_cond_cdf, 0, offset_cond + offset.x(),
                                  n_cond, param_weight, active);
 
         sample.x() = ek::lerp(col_cdf_0, col_cdf_1, sample.x());
         sample.y() = ek::lerp(row_cdf_0, row_cdf_1, sample.y());
 
-        sample.x() /= lookup(m_cond_cdf.data(),
+        sample.x() /= lookup(m_cond_cdf, 0,
                              offset_cond + m_size.x() - 2,
                              n_cond, param_weight, active);
 
         if (!m_normalized)
-            sample.y() /= lookup(m_marg_cdf.data(), offset_marg + n_marg - 1,
+            sample.y() /= lookup(m_marg_cdf, 0, offset_marg + n_marg - 1,
                                  n_marg, param_weight, active);
 
         return { sample, pdf };
@@ -1269,7 +1270,7 @@ protected:
 
         auto fetch_marginal = [&](UInt32 idx, Mask mask)
                                   ENOKI_INLINE_LAMBDA {
-            return lookup(m_marg_cdf.data(), offset_marg + idx,
+            return lookup(m_marg_cdf, 0, offset_marg + idx,
                           n_marg, param_weight, mask);
         };
 
@@ -1288,9 +1289,9 @@ protected:
         UInt32 offset_cond = slice_offset * n_cond + row * (m_size.x() - 1);
 
         /// Look up conditional CDF values of surrounding rows for x == 1
-        Float r0 = lookup(m_cond_cdf.data() + 1 * (m_size.x() - 1) - 1,
+        Float r0 = lookup(m_cond_cdf, 1 * (m_size.x() - 1) - 1,
                           offset_cond, n_cond, param_weight, active),
-              r1 = lookup(m_cond_cdf.data() + 2 * (m_size.x() - 1) - 1,
+              r1 = lookup(m_cond_cdf, 2 * (m_size.x() - 1) - 1,
                           offset_cond, n_cond, param_weight, active);
 
         sample.y() = sample_segment(sample.y(), m_inv_patch_size.y(), r0, r1);
@@ -1302,9 +1303,9 @@ protected:
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
                                      ENOKI_INLINE_LAMBDA {
             idx += offset_cond;
-            Float v0 = lookup(m_cond_cdf.data(),
+            Float v0 = lookup(m_cond_cdf, 0,
                               idx, n_cond, param_weight, mask),
-                  v1 = lookup(m_cond_cdf.data() + m_size.x() - 1,
+                  v1 = lookup(m_cond_cdf, m_size.x() - 1,
                               idx, n_cond, param_weight, mask);
             return ek::lerp(v0, v1, sample.y());
         };
@@ -1320,13 +1321,13 @@ protected:
 
         UInt32 offset_data = slice_offset * n_data + row * m_size.x() + col;
 
-        Float v00 = lookup(m_data.data(), offset_data, n_data,
+        Float v00 = lookup(m_data, 0, offset_data, n_data,
                            param_weight, active),
-              v10 = lookup(m_data.data() + 1, offset_data, n_data,
+              v10 = lookup(m_data, 1, offset_data, n_data,
                            param_weight, active),
-              v01 = lookup(m_data.data() + m_size.x(), offset_data,
+              v01 = lookup(m_data, m_size.x(), offset_data,
                            n_data, param_weight, active),
-              v11 = lookup(m_data.data() + m_size.x() + 1, offset_data,
+              v11 = lookup(m_data, m_size.x() + 1, offset_data,
                            n_data, param_weight, active),
               c0  = ek::lerp(v00, v01, sample.y()),
               c1  = ek::lerp(v10, v11, sample.y());
@@ -1366,13 +1367,13 @@ protected:
             slice_offset * n_data + pos.y() * m_size.x() + pos.x();
 
         // Invert the X component
-        Float v00 = lookup(m_data.data(), offset_data, n_data,
+        Float v00 = lookup(m_data, 0, offset_data, n_data,
                            param_weight, active),
-              v10 = lookup(m_data.data() + 1, offset_data, n_data,
+              v10 = lookup(m_data, 1, offset_data, n_data,
                            param_weight, active),
-              v01 = lookup(m_data.data() + m_size.x(), offset_data,
+              v01 = lookup(m_data, m_size.x(), offset_data,
                            n_data, param_weight, active),
-              v11 = lookup(m_data.data() + m_size.x() + 1, offset_data,
+              v11 = lookup(m_data, m_size.x() + 1, offset_data,
                            n_data, param_weight, active);
 
         Float c0  = ek::lerp(v00, v01, sample.y()),
@@ -1387,18 +1388,18 @@ protected:
         auto fetch_conditional = [&](UInt32 idx, Mask mask)
                                      ENOKI_INLINE_LAMBDA {
             idx += offset_cond;
-            Float v0 = lookup(m_cond_cdf.data(),
+            Float v0 = lookup(m_cond_cdf, 0,
                               idx, n_cond, param_weight, mask),
-                  v1 = lookup(m_cond_cdf.data() + m_size.x() - 1,
+                  v1 = lookup(m_cond_cdf, m_size.x() - 1,
                               idx, n_cond, param_weight, mask);
             return ek::lerp(v0, v1, sample.y());
         };
 
         sample.x() += fetch_conditional(pos.x() - 1, active && pos.x() > 0);
 
-        Float r0 = lookup(m_cond_cdf.data() + 1 * (m_size.x() - 1) - 1,
+        Float r0 = lookup(m_cond_cdf, 1 * (m_size.x() - 1) - 1,
                           offset_cond, n_cond, param_weight, active),
-              r1 = lookup(m_cond_cdf.data() + 2 * (m_size.x() - 1) - 1,
+              r1 = lookup(m_cond_cdf, 2 * (m_size.x() - 1) - 1,
                           offset_cond, n_cond, param_weight, active);
 
         sample.x() /= ek::lerp(r0, r1, sample.y());
@@ -1407,11 +1408,11 @@ protected:
         sample.y() = invert_segment(sample.y(), m_patch_size.y(), r0, r1);
 
         UInt32 offset_marg = slice_offset * n_marg;
-        sample.y() += lookup(m_marg_cdf.data(), offset_marg + pos.y() - 1,
+        sample.y() += lookup(m_marg_cdf, 0, offset_marg + pos.y() - 1,
                              m_size.y(), param_weight, active && pos.y() > 0);
 
         if (!m_normalized)
-            sample.y() /= lookup(m_marg_cdf.data(), offset_marg + n_marg - 1,
+            sample.y() /= lookup(m_marg_cdf, 0, offset_marg + n_marg - 1,
                           n_marg, param_weight, active);
 
         return { sample, pdf };
