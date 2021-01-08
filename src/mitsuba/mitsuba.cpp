@@ -69,8 +69,14 @@ Options:
         Write the output image to the file "filename".
 
     -w, --wavefront
-        Render in wavefront mode. Can be specified twice to disable
-        recording virtual calls as well.
+        Render in wavefront mode. Can be specified twice to
+        disable recording of virtual calls as well.
+
+    -O0
+        Disable loop and virtual function call optimizations
+
+    -Ob
+        Implement virtual function calls using branching
 )";
 }
 
@@ -148,9 +154,11 @@ int main(int argc, char *argv[]) {
     auto arg_help      = parser.add(StringVec{ "-h", "--help" });
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_wavefront = parser.add(StringVec{ "-w", "--wavefront" });
-    auto arg_no_elide  = parser.add(StringVec{ "-E", "--no-elide" });
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
     auto arg_extra     = parser.add("", true);
+
+    auto arg_branch   = parser.add(StringVec{ "-Ob" });
+    auto arg_no_optim = parser.add(StringVec{ "-O0" });
 
     bool profile = true, print_profile = false;
     xml::ParameterList params;
@@ -228,9 +236,16 @@ int main(int argc, char *argv[]) {
             jit_set_flag(JitFlag::VCallRecord, true);
             jit_set_flag(JitFlag::LoopRecord, true);
             jit_set_flag(JitFlag::VCallOptimize, true);
+            jit_set_flag(JitFlag::LoopOptimize, true);
+            jit_set_flag(JitFlag::VCallBranch, false);
 
-            if (*arg_no_elide)
+            if (arg_no_optimize) {
                 jit_set_flag(JitFlag::VCallOptimize, false);
+                jit_set_flag(JitFlag::LoopOptimize, false);
+            }
+
+            if (arg_branch)
+                jit_set_flag(JitFlag::VCallBranch, true);
 
             if (*arg_wavefront) {
                 jit_set_flag(JitFlag::LoopRecord, false);
