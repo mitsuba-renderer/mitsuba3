@@ -189,7 +189,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
                 // A ray is considered inactive if its tnear value is larger than its tfar value
                 pi.t = ek::empty<Float>(N);
                 jit_memcpy_async(JitBackend::LLVM, pi.t.data(), ray.maxt.data(),
-                                sizeof(ScalarFloat) * N);
+                                 sizeof(ScalarFloat) * N);
                 pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
 
                 Vector3f ng       = ek::empty<Vector3f>(N);

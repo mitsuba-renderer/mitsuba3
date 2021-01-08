@@ -223,7 +223,7 @@ public:
         }
 
         Mask inside_mask = ek::andnot(active, outside_mask);
-        if (unlikely(ek::any(inside_mask))) {
+        if (unlikely(ek::any_or<true>(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
             ds.p        = ek::fmadd(d, m_radius, m_center);
@@ -396,7 +396,7 @@ public:
                                     -rd);
 
                 Mask singularity_mask = active && ek::eq(rd, 0.f);
-                if (unlikely(ek::any(singularity_mask)))
+                if (unlikely(ek::any_or<true>(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
                 si.dp_du = m_to_world * si.dp_du * (2.f * ek::Pi<Float>);
