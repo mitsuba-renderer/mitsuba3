@@ -169,9 +169,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
                     shape = ek::gather<UInt32>(s.shapes_registry_ids, index);
 
                 if (hit_instance)
-                    pi.shape = shape;
-                else
                     pi.instance = shape;
+                else
+                    pi.shape = shape;
 
                 pi.shape_index = shape_index;
 

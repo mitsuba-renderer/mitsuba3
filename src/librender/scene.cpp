@@ -189,7 +189,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
                 (uint32_t) emitters_size - 1);
 
         // Rescale sample.x() to lie in [0,1) again
-        sample.x() = (sample.x() - index*emitter_pdf) * emitters_size;
+        sample.x() = (sample.x() - index * emitter_pdf) * emitters_size;
 
         EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
 
