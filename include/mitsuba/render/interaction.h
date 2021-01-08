@@ -608,6 +608,7 @@ struct PreliminaryIntersection {
         SurfaceInteraction3f si =
             target->compute_surface_interaction(ray, *this, hit_flags, active);
 
+        ek::masked(si.t, !active) = ek::Infinity<Float>;
         active &= si.is_valid();
 
         // Set shape pointer if not already set by compute_surface_interaction()
