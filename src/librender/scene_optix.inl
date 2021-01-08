@@ -365,7 +365,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
         };
 
         jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                         ek::detach(active).index());
+                        ek::detach(active).index());
 
         PreliminaryIntersection3f pi;
         pi.t          = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[15]));
