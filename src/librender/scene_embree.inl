@@ -129,32 +129,29 @@ RTCHitNp offset_rtc_hit(const RTCHitNp& h, size_t offset) {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
-    Ray3f ray = ray_;
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-
     if constexpr (!ek::is_cuda_array_v<Float>) {
+        EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+
+        Ray3f ray = ray_;
+        uint32_t N = (uint32_t) ek::width(ray);
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
-        if constexpr (!ek::is_array_v<Float>) {
-            RTCRayHit rh;
-            rh.ray.org_x = ray.o.x();
-            rh.ray.org_y = ray.o.y();
-            rh.ray.org_z = ray.o.z();
-            rh.ray.tnear = ray.mint;
-            rh.ray.dir_x = ray.d.x();
-            rh.ray.dir_y = ray.d.y();
-            rh.ray.dir_z = ray.d.z();
-            rh.ray.time = 0;
-            rh.ray.tfar = ray.maxt;
-            rh.ray.mask = 0;
-            rh.ray.id = 0;
-            rh.ray.flags = 0;
+        if (!ek::is_array_v<Float> || N == 1) {
+            RTCRayHit rh = {};
+            rh.ray.org_x = ek::hsum(ray.o.x());
+            rh.ray.org_y = ek::hsum(ray.o.y());
+            rh.ray.org_z = ek::hsum(ray.o.z());
+            rh.ray.dir_x = ek::hsum(ray.d.x());
+            rh.ray.dir_y = ek::hsum(ray.d.y());
+            rh.ray.dir_z = ek::hsum(ray.d.z());
+            rh.ray.tnear = ek::hsum(ray.mint);
+            rh.ray.tfar  = ek::hsum(ray.maxt);
 
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);
             rtcIntersect1(s.accel, &context, &rh);
 
-            if (rh.ray.tfar != ray.maxt) {
+            if (ek::all(ek::neq(rh.ray.tfar, ray.maxt))) {
                 uint32_t shape_index = rh.hit.geomID;
                 uint32_t prim_index  = rh.hit.primID;
 
@@ -162,80 +159,88 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
                 uint32_t inst_index = rh.hit.instID[0];
 
                 // If the hit is not on an instance
-                if (inst_index == RTC_INVALID_GEOMETRY_ID) {
-                    // If the hit is not on an instance
-                    pi.shape = m_shapes[shape_index];
-                } else {
-                    // If the hit is on an instance
-                    pi.instance = m_shapes[inst_index];
-                    pi.shape_index = shape_index;
-                }
+                bool hit_instance = (inst_index != RTC_INVALID_GEOMETRY_ID);
+                uint32_t index = hit_instance ? inst_index : shape_index;
+
+                ShapePtr shape;
+                if constexpr (!ek::is_array_v<Float>)
+                    shape = m_shapes[index];
+                else
+                    shape = ek::gather<UInt32>(s.shapes_registry_ids, index);
+
+                if (hit_instance)
+                    pi.shape = shape;
+                else
+                    pi.instance = shape;
+
+                pi.shape_index = shape_index;
 
                 pi.t = rh.ray.tfar;
                 pi.prim_index = prim_index;
                 pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
             }
         } else {
-            uint32_t N = (uint32_t) ek::width(ray);
-            ek::resize(ray, N);
-            ek::eval(ray);
+            if constexpr (ek::is_array_v<Float>) {
+                ek::resize(ray, N);
+                ek::eval(ray);
 
-            pi = ek::empty<PreliminaryIntersection3f>(N);
+                pi = ek::empty<PreliminaryIntersection3f>(N);
 
-            // A ray is considered inactive if its tnear value is larger than its tfar value
-            pi.t = ek::empty<Float>(N);
-            jit_memcpy_async(JitBackend::LLVM, pi.t.data(), ray.maxt.data(),
-                             sizeof(ScalarFloat) * N);
-            pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
+                // A ray is considered inactive if its tnear value is larger than its tfar value
+                pi.t = ek::empty<Float>(N);
+                jit_memcpy_async(JitBackend::LLVM, pi.t.data(), ray.maxt.data(),
+                                sizeof(ScalarFloat) * N);
+                pi.t = ek::select(active, pi.t, ray.mint - ek::Epsilon<Float>);
 
-            Vector3f ng = ek::empty<Vector3f>(N);
-            UInt32 inst_index = ek::empty<UInt32>(N);
-            Vector3u extra = ek::zero<Vector3u>(N);
+                Vector3f ng       = ek::empty<Vector3f>(N);
+                UInt32 inst_index = ek::empty<UInt32>(N);
+                Vector3u extra    = ek::zero<Vector3u>(N);
 
-            ek::eval(extra, ng, inst_index, pi);
-            ek::sync_device();
+                ek::eval(extra, ng, inst_index, pi);
+                ek::sync_device();
 
-            RTCRayHitNp rh;
-            rh.ray = bind_ray(ray, pi.t, extra);
-            rh.hit = bind_hit(pi, ng, inst_index);
+                RTCRayHitNp rh;
+                rh.ray = bind_ray(ray, pi.t, extra);
+                rh.hit = bind_hit(pi, ng, inst_index);
 
 #ifndef PARALLEL_LLVM_RAY_INTERSECT
-            RTCIntersectContext context;
-            rtcInitIntersectContext(&context);
-            // Force embree to use maximum packet width when dispatching rays
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-            rtcIntersectNp(s.accel, &context, &rh, N);
+                RTCIntersectContext context;
+                rtcInitIntersectContext(&context);
+                // Force embree to use maximum packet width when dispatching rays
+                context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+                rtcIntersectNp(s.accel, &context, &rh, N);
 #else
-            tbb::parallel_for(
-                tbb::blocked_range<uint32_t>(0, N, 1024),
-                [&](const tbb::blocked_range<uint32_t> &range) {
-                    ScopedPhase sp(ProfilerPhase::RayIntersect);
-                    uint32_t offset = range.begin();
-                    uint32_t size   = range.end() - offset;
+                tbb::parallel_for(
+                    tbb::blocked_range<uint32_t>(0, N, 1024),
+                    [&](const tbb::blocked_range<uint32_t> &range) {
+                        ScopedPhase sp(ProfilerPhase::RayIntersect);
+                        uint32_t offset = range.begin();
+                        uint32_t size   = range.end() - offset;
 
-                    RTCRayHitNp rh_;
-                    rh_.ray = offset_rtc_ray(rh.ray, offset);
-                    rh_.hit = offset_rtc_hit(rh.hit, offset);
+                        RTCRayHitNp rh_;
+                        rh_.ray = offset_rtc_ray(rh.ray, offset);
+                        rh_.hit = offset_rtc_hit(rh.hit, offset);
 
-                    RTCIntersectContext context;
-                    rtcInitIntersectContext(&context);
-                    // Force embree to use maximum packet width when dispatching rays
-                    context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-                    rtcIntersectNp(s.accel, &context, &rh_, size);
-                }
-            );
+                        RTCIntersectContext context;
+                        rtcInitIntersectContext(&context);
+                        // Force embree to use maximum packet width when dispatching rays
+                        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+                        rtcIntersectNp(s.accel, &context, &rh_, size);
+                    }
+                );
 #endif
-            Mask hit = active && ek::neq(pi.t, ray.maxt);
-            ek::masked(pi.t, !hit) = ek::Infinity<Float>;
+                Mask hit = active && ek::neq(pi.t, ray.maxt);
+                ek::masked(pi.t, !hit) = ek::Infinity<Float>;
 
-            // Set si.instance and si.shape
-            Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
-            Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
-            UInt32 index      = ek::select(hit_inst, inst_index, pi.shape_index);
+                // Set si.instance and si.shape
+                Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+                UInt32 index      = ek::select(hit_inst, inst_index, pi.shape_index);
 
-            ShapePtr shape = ek::gather<ShapePtr>(s.shapes_registry_ids, index, hit);
-            pi.instance = ek::select(hit_inst, shape, nullptr);
-            pi.shape    = ek::select(hit_not_inst, shape, nullptr);
+                ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index, hit);
+                pi.instance = ek::select(hit_inst, shape, nullptr);
+                pi.shape    = ek::select(hit_not_inst, shape, nullptr);
+            }
         }
         return pi;
     } else {
@@ -255,73 +260,73 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t hit_flags, 
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
-    Ray3f ray = ray_;
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    ENOKI_MARK_USED(active);
-
     if constexpr (!ek::is_cuda_array_v<Float>) {
-        if constexpr (!ek::is_array_v<Float>) {
-            RTCRay ray2;
-            ray2.org_x = ray.o.x();
-            ray2.org_y = ray.o.y();
-            ray2.org_z = ray.o.z();
-            ray2.tnear = ray.mint;
-            ray2.dir_x = ray.d.x();
-            ray2.dir_y = ray.d.y();
-            ray2.dir_z = ray.d.z();
-            ray2.time = 0;
-            ray2.tfar = ray.maxt;
-            ray2.mask = 0;
-            ray2.id = 0;
-            ray2.flags = 0;
+        EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+
+        Ray3f ray = ray_;
+        uint32_t N = (uint32_t) ek::width(ray);
+
+        if (!ek::is_array_v<Float> || N == 1) {
+            ENOKI_MARK_USED(active);
+
+            RTCRay ray2 = {};
+            ray2.org_x = ek::hsum(ray.o.x());
+            ray2.org_y = ek::hsum(ray.o.y());
+            ray2.org_z = ek::hsum(ray.o.z());
+            ray2.dir_x = ek::hsum(ray.d.x());
+            ray2.dir_y = ek::hsum(ray.d.y());
+            ray2.dir_z = ek::hsum(ray.d.z());
+            ray2.tnear = ek::hsum(ray.mint);
+            ray2.tfar  = ek::hsum(ray.maxt);
 
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);
             rtcOccluded1(s.accel, &context, &ray2);
 
-            return ray2.tfar != ray.maxt;
+            return ek::neq(ray2.tfar, ray.maxt);
         } else {
-            uint32_t N = (uint32_t) ek::width(ray);
-            ek::resize(ray, N);
-            ek::eval(ray);
+            if constexpr (ek::is_array_v<Float>) {
+                ek::resize(ray, N);
+                ek::eval(ray);
 
-            // A ray is considered inactive if its tnear value is larger than its tfar value
-            Float t = ek::empty<Float>(N);
-            jit_memcpy_async(JitBackend::LLVM, t.data(), ray.maxt.data(),
-                             sizeof(ScalarFloat) * N);
-            t = ek::select(active, t, ray.mint - ek::Epsilon<Float>);
+                // A ray is considered inactive if its tnear value is larger than its tfar value
+                Float t = ek::empty<Float>(N);
+                jit_memcpy_async(JitBackend::LLVM, t.data(), ray.maxt.data(),
+                                sizeof(ScalarFloat) * N);
+                t = ek::select(active, t, ray.mint - ek::Epsilon<Float>);
 
-            Vector3u extra = ek::zero<Vector3u>(N);
+                Vector3u extra = ek::zero<Vector3u>(N);
 
-            ek::eval(extra, t);
-            ek::sync_device();
+                ek::eval(extra, t);
+                ek::sync_device();
 
-            RTCRayNp ray2 = bind_ray(ray, t, extra);
+                RTCRayNp ray2 = bind_ray(ray, t, extra);
 
 #ifndef PARALLEL_LLVM_RAY_INTERSECT
-            RTCIntersectContext context;
-            rtcInitIntersectContext(&context);
-            // Force embree to use maximum packet width when dispatching rays
-            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-            rtcOccludedNp(s.accel, &context, &ray2, N);
+                RTCIntersectContext context;
+                rtcInitIntersectContext(&context);
+                // Force embree to use maximum packet width when dispatching rays
+                context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+                rtcOccludedNp(s.accel, &context, &ray2, N);
 #else
-            tbb::parallel_for(
-                tbb::blocked_range<uint32_t>(0, N, 1024),
-                [&](const tbb::blocked_range<uint32_t> &range) {
-                    ScopedPhase sp(ProfilerPhase::RayTest);
-                    uint32_t offset = range.begin();
-                    uint32_t size   = range.end() - offset;
-                    RTCRayNp ray_ = offset_rtc_ray(ray2, offset);
+                tbb::parallel_for(
+                    tbb::blocked_range<uint32_t>(0, N, 1024),
+                    [&](const tbb::blocked_range<uint32_t> &range) {
+                        ScopedPhase sp(ProfilerPhase::RayTest);
+                        uint32_t offset = range.begin();
+                        uint32_t size   = range.end() - offset;
+                        RTCRayNp ray_ = offset_rtc_ray(ray2, offset);
 
-                    RTCIntersectContext context;
-                    rtcInitIntersectContext(&context);
-                    // Force embree to use maximum packet width when dispatching rays
-                    context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-                    rtcOccludedNp(s.accel, &context, &ray_, size);
-                }
-            );
+                        RTCIntersectContext context;
+                        rtcInitIntersectContext(&context);
+                        // Force embree to use maximum packet width when dispatching rays
+                        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+                        rtcOccludedNp(s.accel, &context, &ray_, size);
+                    }
+                );
 #endif
-            return active && ek::neq(t, ray.maxt);
+                return active && ek::neq(t, ray.maxt);
+            }
         }
     } else {
         Throw("ray_test_cpu() should only be called in CPU mode.");
