@@ -239,12 +239,12 @@ int main(int argc, char *argv[]) {
             jit_set_flag(JitFlag::LoopOptimize, true);
             jit_set_flag(JitFlag::VCallBranch, false);
 
-            if (arg_no_optim) {
+            if (*arg_no_optim) {
                 jit_set_flag(JitFlag::VCallOptimize, false);
                 jit_set_flag(JitFlag::LoopOptimize, false);
             }
 
-            if (arg_branch)
+            if (*arg_branch)
                 jit_set_flag(JitFlag::VCallBranch, true);
 
             if (*arg_wavefront) {
