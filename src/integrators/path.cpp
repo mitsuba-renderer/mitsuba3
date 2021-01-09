@@ -133,7 +133,7 @@ public:
         /* Set up an Enoki loop (optimizes away to a normal loop in scalar mode,
            generates wavefront or megakernel renderer based on configuration).
            Register everything that changes as part of the loop here */
-        ek::Loop<ek::detached_t<Mask>> loop("PathTracerLoop", active, depth,
+        ek::Loop<ek::detached_t<Mask>> loop("PathIntegrator", active, depth,
                                             ray, throughput, result, si, eta);
 
         // The internal sampler state is also modified by the loop

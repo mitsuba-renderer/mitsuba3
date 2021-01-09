@@ -140,6 +140,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         );
     } else {
         Log(Info, "Start rendering...");
+        // jit_optix_set_launch_size(film_size.x(), film_size.y(), samples_per_pass);
 
         ref<Sampler> sampler = sensor->sampler();
         sampler->set_samples_per_wavefront((uint32_t) samples_per_pass);
@@ -166,14 +167,6 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                           pos, diff_scale_factor);
 
         film->put(block);
-
-        auto &out = Base::m_graphviz_output;
-        if (!out.empty()) {
-            ref<FileStream> out = new FileStream(Base::m_graphviz_output,
-                                                 FileStream::ETruncReadWrite);
-            const char *graph = jit_var_graphviz();
-            out->write(graph, strlen(graph));
-        }
     }
 
     if (!m_stop)
@@ -245,6 +238,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Vector2f &pos,
                                                    ScalarFloat diff_scale_factor,
                                                    Mask active) const {
+    std::conditional_t<ek::is_jit_array_v<Float>, Timer, int> timer;
+
     Vector2f position_sample = pos + sampler->next_2d(active);
 
     Point2f aperture_sample(.5f);
@@ -290,8 +285,23 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     block->put(position_sample, aovs, active);
 
-    ek::eval(block->data());
-    ek::sync_thread();
+    if constexpr (ek::is_jit_array_v<Float>) {
+        if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
+            Log(Info, "Computation graph recorded. (took %s)",
+                util::time_string((float) timer.value(), true));
+        }
+
+        auto &out = Base::m_graphviz_output;
+        if (!out.empty()) {
+            ref<FileStream> out = new FileStream(Base::m_graphviz_output,
+                                                 FileStream::ETruncReadWrite);
+            const char *graph = jit_var_graphviz();
+            out->write(graph, strlen(graph));
+        }
+
+        ek::eval(block->data());
+        ek::sync_thread();
+    }
 
     sampler->advance();
 }

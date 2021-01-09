@@ -458,22 +458,25 @@ public:
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
             using FloatX = DynamicBuffer<ScalarFloat>;
             using Vector3fX = Vector<FloatX, 3>;
+            ScalarFloat eta = ek::hsum(m_eta), alpha = ek::hsum(m_alpha);
 
-            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, m_alpha);
+            mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);
             FloatX mu = ek::max(1e-6f, ek::linspace<FloatX>(0, 1, MTS_ROUGH_TRANSMITTANCE_RES));
             FloatX zero = ek::zero<FloatX>(MTS_ROUGH_TRANSMITTANCE_RES);
 
             Vector3fX wi = Vector3fX(ek::sqrt(1 - mu * mu), zero, mu);
 
-            auto external_transmittance = eval_transmittance(distr, wi, m_eta);
+            auto external_transmittance = eval_transmittance(distr, wi, eta);
 
             m_external_transmittance = ek::load<DynamicBuffer<Float>>(
                 external_transmittance.data(),
                 ek::width(external_transmittance));
 
             m_internal_reflectance =
-                ek::hmean(eval_reflectance(distr, wi, 1.f / m_eta) * wi.z()) * 2.f;
+                ek::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
+        ek::eval(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
+                 m_internal_reflectance);
     }
 
     std::string to_string() const override {
@@ -499,14 +502,14 @@ private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
     MicrofacetType m_type;
-    ScalarFloat m_eta;
-    ScalarFloat m_inv_eta_2;
-    ScalarFloat m_alpha;
-    ScalarFloat m_specular_sampling_weight;
+    Float m_eta;
+    Float m_inv_eta_2;
+    Float m_alpha;
+    Float m_specular_sampling_weight;
     bool m_nonlinear;
     bool m_sample_visible;
     DynamicBuffer<Float> m_external_transmittance;
-    ScalarFloat m_internal_reflectance;
+    Float m_internal_reflectance;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(RoughPlastic, BSDF);
