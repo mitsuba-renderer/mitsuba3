@@ -36,8 +36,7 @@ Options:
     -h, --help
         Display this help text.
 
-    -m, --mode
-        Rendering mode. Defines a combination of floating point
+    -m, --mode Rendering mode. Defines a combination of floating point
         and color types.
 
         Default: )" MTS_DEFAULT_VARIANT R"(
@@ -77,6 +76,9 @@ Options:
 
     -Ob
         Implement virtual function calls using branching
+
+    -g <out>
+        Write a GraphViz visualization of the computation
 )";
 }
 
@@ -84,7 +86,8 @@ std::function<void(void)> develop_callback;
 std::mutex develop_callback_mutex;
 
 template <typename Float, typename Spectrum>
-bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
+bool render(Object *scene_, size_t sensor_i, fs::path filename,
+            const fs::path &graphviz_output) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
     if (!scene)
         Throw("Root element of the input file must be a <scene> tag!");
@@ -99,6 +102,7 @@ bool render(Object *scene_, size_t sensor_i, filesystem::path filename) {
     auto integrator = scene->integrator();
     if (!integrator)
         Throw("No integrator specified for scene: %s", scene);
+    integrator->set_graphviz_output(graphviz_output);
 
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
@@ -159,10 +163,12 @@ int main(int argc, char *argv[]) {
 
     auto arg_branch   = parser.add(StringVec{ "-Ob" });
     auto arg_no_optim = parser.add(StringVec{ "-O0" });
+    auto arg_graphviz  = parser.add(StringVec{ "-g" }, true);
 
     bool profile = true, print_profile = false;
     xml::ParameterList params;
     std::string error_msg, mode;
+    fs::path graphviz_output;
 
 #if !defined(__WINDOWS__)
     /* Initialize signal handlers */
@@ -252,6 +258,9 @@ int main(int argc, char *argv[]) {
                 if (arg_wavefront->next())
                     jit_set_flag(JitFlag::VCallRecord, false);
             }
+
+            if (*arg_graphviz)
+                graphviz_output = arg_graphviz->as_string();
         }
 #endif
 
@@ -263,7 +272,7 @@ int main(int argc, char *argv[]) {
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
         ref<FileResolver> fr = thread->file_resolver();
-        filesystem::path base_path = util::library_path().parent_path();
+        fs::path base_path = util::library_path().parent_path();
         if (!fr->contains(base_path))
             fr->append(base_path);
 
@@ -289,7 +298,7 @@ int main(int argc, char *argv[]) {
         }
 
         while (arg_extra && *arg_extra) {
-            filesystem::path filename(arg_extra->as_string());
+            fs::path filename(arg_extra->as_string());
             ref<FileResolver> fr2 = new FileResolver(*fr);
             thread->set_file_resolver(fr2);
 
@@ -306,7 +315,7 @@ int main(int argc, char *argv[]) {
                 xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
 
             bool success = MTS_INVOKE_VARIANT(mode, render, parsed.get(),
-                                              sensor_i, filename);
+                                              sensor_i, filename, graphviz_output);
             print_profile = print_profile || success;
             arg_extra = arg_extra->next();
         }

@@ -5,6 +5,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/timer.h>
+#include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/tls.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
@@ -50,6 +51,10 @@ public:
      */
     virtual void cancel() = 0;
 
+    void set_graphviz_output(const fs::path &value) {
+        m_graphviz_output = value;
+    }
+
     MTS_DECLARE_CLASS()
 protected:
     /// Create an integrator
@@ -57,6 +62,9 @@ protected:
 
     /// Virtual destructor
     virtual ~Integrator() { }
+
+protected:
+    fs::path m_graphviz_output;
 };
 
 /** \brief Integrator based on Monte Carlo sampling

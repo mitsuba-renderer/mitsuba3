@@ -8,6 +8,7 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/warp.h>
+#include <mitsuba/core/fstream.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/sampler.h>
@@ -165,6 +166,14 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                           pos, diff_scale_factor);
 
         film->put(block);
+
+        auto &out = Base::m_graphviz_output;
+        if (!out.empty()) {
+            ref<FileStream> out = new FileStream(Base::m_graphviz_output,
+                                                 FileStream::ETruncReadWrite);
+            const char *graph = jit_var_graphviz();
+            out->write(graph, strlen(graph));
+        }
     }
 
     if (!m_stop)
