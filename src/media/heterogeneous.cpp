@@ -26,6 +26,9 @@ public:
 
         m_max_density = m_scale * m_sigmat->max();
         m_aabb        = m_sigmat->bbox();
+
+        ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
+        ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     UnpolarizedSpectrum

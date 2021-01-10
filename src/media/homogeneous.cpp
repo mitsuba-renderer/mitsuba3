@@ -23,6 +23,9 @@ public:
 
         m_scale = props.float_("scale", 1.0f);
         m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
+
+        ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
+        ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi) const {

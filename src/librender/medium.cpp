@@ -27,6 +27,8 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
     }
 
     m_sample_emitters = props.bool_("sample_emitters", true);
+    ek::set_attr(this, "use_emitter_sampling", m_sample_emitters);
+    ek::set_attr(this, "phase_function", m_phase_function.get());
 }
 
 MTS_VARIANT Medium<Float, Spectrum>::~Medium() {}
