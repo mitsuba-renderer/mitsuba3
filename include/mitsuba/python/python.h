@@ -188,7 +188,10 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
                     return ek::gather<Array, false>(source, index, mask);
             });
 
-    cls.def_static("select_", &Array::select_);
+    cls.def_static("select_",
+                   [](const Mask &m, const Array &t, const Array &f) {
+                       return ek::select(m, t, f);
+                   });
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \

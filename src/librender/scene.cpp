@@ -116,6 +116,20 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
         accel_release_gpu();
     else
         accel_release_cpu();
+
+    // Triger deallocation of all instances
+    m_emitters.clear();
+    m_shapes.clear();
+    m_shapegroups.clear();
+    m_sensors.clear();
+    m_children.clear();
+    m_integrator = nullptr;
+    m_environment = nullptr;
+
+    if constexpr (ek::is_jit_array_v<Float>) {
+        // Clean up JIT pointer registry now that the above has happened
+        jit_registry_trim();
+    }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
