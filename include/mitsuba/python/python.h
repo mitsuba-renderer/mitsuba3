@@ -92,6 +92,10 @@ py::handle type_of() {
     using struct_type_ = Type;                                                 \
     ENOKI_MAP(MTS_PY_ENOKI_STRUCT_BIND_FIELD, __VA_ARGS__)                     \
     cls.attr("ENOKI_STRUCT") = fields;                                         \
+    cls.def("assign", [](Type &a, const Type &b) {                             \
+        if (&a != &b)                                                          \
+            a = b;                                                             \
+    });                                                                        \
     cls.def("__setitem__",                                                     \
             [](Type &type, const Mask &mask, const Type &value) {              \
                 type = ek::select(mask, value, type);                          \
