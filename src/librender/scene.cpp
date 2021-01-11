@@ -235,17 +235,7 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
     MTS_MASK_ARGUMENT(active);
-    using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
-
-    size_t emitters_size = m_emitters.size();
-    if (emitters_size == 1) {
-        // Fast path if there is only one emitter
-        Float res = m_emitters[0]->pdf_direction(ref, ds, active);
-        return res;
-    } else {
-        return ds.emitter->pdf_direction(ref, ds, active) *
-               (1.f / emitters_size);
-    }
+    return ds.emitter->pdf_direction(ref, ds, active) / m_emitters.size();
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
