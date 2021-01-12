@@ -305,7 +305,7 @@ public:
             active, ek::select(near_t < mint, FloatX(far_t), FloatX(near_t)),
             ek::Infinity<FloatX>);
 
-        return { t, Point<FloatX, 2>() };
+        return { t, ek::zero<Point<FloatX, 2>>() };
     }
 
     template <typename FloatX, typename Ray3fX>

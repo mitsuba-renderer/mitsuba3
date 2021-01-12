@@ -293,7 +293,7 @@ public:
                                   FloatX(near_t), FloatX(far_t)),
                        ek::Infinity<FloatX>);
 
-        return { t, Point<FloatX, 2>() };
+        return { t, ek::zero<Point<FloatX, 2>>() };
     }
 
     template <typename FloatX, typename Ray3fX>
