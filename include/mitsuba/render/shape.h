@@ -359,33 +359,33 @@ public:
                                                m_exterior_medium.get() != nullptr; }
 
     /// Return the medium that lies on the interior of this shape
-    const Medium *interior_medium() const { return m_interior_medium.get(); }
+    const Medium *interior_medium(Mask /*unused*/ = true) const { return m_interior_medium.get(); }
 
     /// Return the medium that lies on the exterior of this shape
-    const Medium *exterior_medium() const { return m_exterior_medium.get(); }
+    const Medium *exterior_medium(Mask /*unused*/ = true) const { return m_exterior_medium.get(); }
 
     /// Return the shape's BSDF
-    const BSDF *bsdf() const { return m_bsdf.get(); }
+    const BSDF *bsdf(Mask /*unused*/ = true) const { return m_bsdf.get(); }
 
     /// Return the shape's BSDF
-    BSDF *bsdf() { return m_bsdf.get(); }
+    BSDF *bsdf(Mask /*unused*/ = true) { return m_bsdf.get(); }
 
     /// Is this shape also an area emitter?
     bool is_emitter() const { return (bool) m_emitter; }
 
     /// Return the area emitter associated with this shape (if any)
-    const Emitter *emitter(Mask /* unused */ = false) const { return m_emitter.get(); }
+    const Emitter *emitter(Mask /*unused*/ = true) const { return m_emitter.get(); }
 
     /// Return the area emitter associated with this shape (if any)
-    Emitter *emitter(Mask /* unused */ = false) { return m_emitter.get(); }
+    Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
 
     /// Is this shape also an area sensor?
     bool is_sensor() const { return (bool) m_sensor; }
 
     /// Return the area sensor associated with this shape (if any)
-    const Sensor *sensor() const { return m_sensor.get(); }
+    const Sensor *sensor(Mask /*unused*/ = true) const { return m_sensor.get(); }
     /// Return the area sensor associated with this shape (if any)
-    Sensor *sensor() { return m_sensor.get(); }
+    Sensor *sensor(Mask /*unused*/ = true) { return m_sensor.get(); }
 
     /**
      * \brief Returns the number of sub-primitives that make up this shape

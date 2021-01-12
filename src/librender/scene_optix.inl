@@ -381,6 +381,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
         // jit_optix_trace leaves payload data uninitialized for in-active lanes
         pi.t[!active] = ek::Infinity<Float>;
 
+        // Ensure pointers are initialized to nullptr for inactive lanes
+        active &= pi.is_valid();
+        pi.shape[!active]    = nullptr;
+        pi.instance[!active] = nullptr;
+
         return pi;
     } else {
         ENOKI_MARK_USED(ray_);

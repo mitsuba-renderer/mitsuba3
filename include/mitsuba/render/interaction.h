@@ -612,7 +612,7 @@ struct PreliminaryIntersection {
         active &= si.is_valid();
 
         // Set shape pointer if not already set by compute_surface_interaction()
-        si.shape       = ek::select(ek::eq(si.shape, nullptr), shape, si.shape);
+        si.shape       = ek::select(active && ek::eq(si.shape, nullptr), shape, si.shape);
         si.instance    = instance;
         si.prim_index  = prim_index;
         si.time        = ray.time;

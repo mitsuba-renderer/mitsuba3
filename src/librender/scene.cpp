@@ -117,7 +117,7 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
     else
         accel_release_cpu();
 
-    // Triger deallocation of all instances
+    // Trigger deallocation of all instances
     m_emitters.clear();
     m_shapes.clear();
     m_shapegroups.clear();
