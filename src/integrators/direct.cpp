@@ -129,10 +129,7 @@ public:
 
         BSDFContext ctx;
         BSDFPtr bsdf = si.bsdf(ray);
-        ek::set_label(si.shape, "shape");
-        ek::set_label(bsdf, "bsdf");
         auto flags = bsdf->flags();
-        ek::set_label(flags, "flags");
         Mask sample_emitter = active && has_flag(flags, BSDFFlags::Smooth);
 
         if (ek::any_or<true>(sample_emitter)) {
@@ -149,12 +146,10 @@ public:
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
 
-                Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+                /* Determine BSDF value and probability of having sampled
+                   that same direction using BSDF sampling. */
+                auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
-
-                /* Determine probability of having sampled that same
-                   direction using BSDF sampling. */
-                Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
 
                 Float mis = ek::select(ds.delta, Float(1.f), mis_weight(
                     ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
