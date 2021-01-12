@@ -321,32 +321,26 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
                                                       Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
-        using UInt32C = ek::detached_t<UInt32>;
-        using UInt64C = ek::detached_t<UInt64>;
-        using FloatC  = ek::detached_t<Float>;
-
         OptixState<Float> &s = *(OptixState<Float> *) m_accel;
 
-        auto ray = ek::detach(ray_);
+        UInt64 handle = ek::opaque<UInt64>(s.ias_handle, 1);
+        UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
+               sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        UInt64C handle = ek::opaque<UInt64C>(s.ias_handle, 1);
-        UInt32C ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
-                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
-
-        UInt32C payload_t(0),
-                payload_prim_u(0),
-                payload_prim_v(0),
-                payload_prim_index(0),
-                payload_shape_ptr(0);
+        UInt32 payload_t(0),
+               payload_prim_u(0),
+               payload_prim_v(0),
+               payload_prim_index(0),
+               payload_shape_ptr(0);
 
 
     // Instance index is initialized to 0 when there is no instancing in the scene
-        UInt32C payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
+        UInt32 payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
 
         uint32_t trace_args[] {
             handle.index(),
@@ -365,13 +359,13 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
         };
 
         jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        ek::detach(active).index());
+                        active.index());
 
         PreliminaryIntersection3f pi;
-        pi.t          = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[15]));
-        pi.prim_uv[0] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[16]));
-        pi.prim_uv[1] = ek::reinterpret_array<FloatC, UInt32C>(UInt32C::steal(trace_args[17]));
-        pi.prim_index = UInt32C::steal(trace_args[18]);
+        pi.t          = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[15]));
+        pi.prim_uv[0] = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[16]));
+        pi.prim_uv[1] = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[17]));
+        pi.prim_index = UInt32::steal(trace_args[18]);
         pi.shape      = ShapePtr::steal(trace_args[19]);
         pi.instance   = ShapePtr::steal(trace_args[20]);
 
@@ -388,7 +382,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray_,
 
         return pi;
     } else {
-        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(active);
         Throw("ray_intersect_gpu() should only be called in GPU mode.");
     }
@@ -409,24 +403,19 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 
-        using UInt32C = ek::detached_t<UInt32>;
-        using UInt64C = ek::detached_t<UInt64>;
-
         OptixState<Float> &s = *(OptixState<Float> *) m_accel;
 
-        auto ray = ek::detach(ray_);
+        UInt64 handle = ek::opaque<UInt64>(s.ias_handle, 1);
+        UInt32 ray_mask(255),
+               ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
+                         OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
+               sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
-        UInt64C handle = ek::opaque<UInt64C>(s.ias_handle, 1);
-        UInt32C ray_mask(255),
-                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
-                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
-
-        UInt32C payload_hit(1);
+        UInt32 payload_hit(1);
 
         uint32_t trace_args[] {
             handle.index(),
@@ -439,11 +428,11 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray_, Mask active) const {
         };
 
         jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        ek::detach(active).index());
+                        active.index());
 
-        return active && ek::eq(UInt32C::steal(trace_args[15]), 1);
+        return active && ek::eq(UInt32::steal(trace_args[15]), 1);
     } else {
-        ENOKI_MARK_USED(ray_);
+        ENOKI_MARK_USED(ray);
         ENOKI_MARK_USED(active);
         Throw("ray_test_gpu() should only be called in GPU mode.");
     }

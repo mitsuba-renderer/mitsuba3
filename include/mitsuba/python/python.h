@@ -179,7 +179,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("Shape") = py::make_tuple(ek::Dynamic);
 
     if constexpr (ek::is_jit_array_v<Array>) {
-        cls.def("index", [](const Array &a) { return ek::detach(a).index(); });
+        cls.def("index", [](const Array &a) { return a.index(); });
         cls.def("set_index_",
                 [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
     }
