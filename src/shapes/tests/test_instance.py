@@ -138,7 +138,8 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                             assert ek.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
 
 
-def test03_ray_intersect_instance(variants_all_rgb):
+@pytest.mark.parametrize('width', [1, 10])
+def test03_ray_intersect_instance(variants_all_rgb, width):
     from mitsuba.core import xml, Float, Ray3f, ScalarVector3f, ScalarTransform4f as T
 
     """Check that we get the correct instance pointer when tracing a ray"""
@@ -188,29 +189,35 @@ def test03_ray_intersect_instance(variants_all_rgb):
         }
     })
 
-    ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
-    pi = scene.ray_intersect_preliminary(ray)
+    time = 0.0 if scalar_mode else [0.0] * width
 
+    ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
+    pi = scene.ray_intersect_preliminary(ray)
+    assert ek.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, -0.5]' in instance_str
     assert '[0, 0.5, 0, -0.5]' in instance_str
 
-    ray = Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    ray = Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect_preliminary(ray)
-
+    assert ek.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, -0.5]' in instance_str
     assert '[0, 0.5, 0, 0.5]' in instance_str
 
-    ray = Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    ray = Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect_preliminary(ray)
+    assert ek.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, 0.5]' in instance_str
     assert '[0, 0.5, 0, -0.5]' in instance_str
 
-    ray = Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], 0.0, [])
+    ray = Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     pi = scene.ray_intersect_preliminary(ray)
+
+    assert ek.all(pi.is_valid())
+
     if scalar_mode:
         assert 'instance = nullptr' in str(pi)
     else:
-        assert 'instance = [0x0]' in str(pi)
+        assert ('instance = [' + '0x0, ' * (width - 1) + '0x0]') in str(pi)

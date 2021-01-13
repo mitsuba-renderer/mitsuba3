@@ -146,6 +146,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask ac
             rh.ray.dir_z = ek::hsum(ray.d.z());
             rh.ray.tnear = ek::hsum(ray.mint);
             rh.ray.tfar  = ek::hsum(ray.maxt);
+            rh.ray.time  = ek::hsum(ray.time);
 
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);
@@ -278,6 +279,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
             ray2.dir_z = ek::hsum(ray.d.z());
             ray2.tnear = ek::hsum(ray.mint);
             ray2.tfar  = ek::hsum(ray.maxt);
+            ray2.time  = ek::hsum(ray.time);
 
             RTCIntersectContext context;
             rtcInitIntersectContext(&context);

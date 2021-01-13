@@ -138,7 +138,7 @@ void embree_intersect_scalar(int* valid,
         return;
 
     // Create a Mitsuba ray
-    Ray3f ray;
+    Ray3f ray = ek::zero<Ray3f>();
     ray.o.x() = rtc_ray->org_x;
     ray.o.y() = rtc_ray->org_y;
     ray.o.z() = rtc_ray->org_z;
@@ -151,17 +151,17 @@ void embree_intersect_scalar(int* valid,
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
-        auto pi = shape->ray_intersect_preliminary(ray);
-        if (pi.is_valid()) {
-            rtc_ray->tfar = pi.t;
-            rtc_hit->u = pi.prim_uv.x();
-            rtc_hit->v = pi.prim_uv.y();
-            rtc_hit->geomID = geomID;
-            rtc_hit->primID = 0;
+        PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray);
+        if (ek::all(pi.is_valid())) {
+            rtc_ray->tfar      = ek::hsum(pi.t);
+            rtc_hit->u         = ek::hsum(pi.prim_uv.x());
+            rtc_hit->v         = ek::hsum(pi.prim_uv.y());
+            rtc_hit->geomID    = geomID;
+            rtc_hit->primID    = 0;
             rtc_hit->instID[0] = instID;
         }
     } else {
-        if (shape->ray_test(ray))
+        if (ek::all(shape->ray_test(ray)))
             rtc_ray->tfar = -ek::Infinity<Float>;
     }
 }
@@ -212,30 +212,38 @@ void embree_intersect_packet(int* valid,
 
 template <typename Float, typename Spectrum>
 void embree_intersect(const RTCIntersectFunctionNArguments* args) {
-    if constexpr (!ek::is_array_v<Float>) {
+    if (args->N == 1) {
         RTCRayHit *rh = (RTCRayHit *) args->rayhit;
         embree_intersect_scalar<Float, Spectrum>(
             args->valid, args->geometryUserPtr, args->geomID,
             args->context->instID[0], (RTCRay *) &rh->ray, (RTCHit *) &rh->hit);
     } else {
-        RTCRayHitW *rh = (RTCRayHitW *) args->rayhit;
-        embree_intersect_packet<Float, Spectrum>(
-            args->valid, args->geometryUserPtr, args->geomID,
-            args->context->instID[0], (RTCRayW *) &rh->ray,
-            (RTCHitW *) &rh->hit);
+        if constexpr (ek::is_array_v<Float>) {
+            RTCRayHitW *rh = (RTCRayHitW *) args->rayhit;
+            embree_intersect_packet<Float, Spectrum>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0], (RTCRayW *) &rh->ray,
+                (RTCHitW *) &rh->hit);
+        } else {
+            Throw("embree_intersect(): vectorized intersection is not supported in scalar modes.");
+        }
     }
 }
 
 template <typename Float, typename Spectrum>
 void embree_occluded(const RTCOccludedFunctionNArguments* args) {
-    if constexpr (!ek::is_array_v<Float>) {
+    if (args->N == 1) {
         embree_intersect_scalar<Float, Spectrum>(
             args->valid, args->geometryUserPtr, args->geomID,
             args->context->instID[0], (RTCRay *) args->ray, nullptr);
     } else {
-        embree_intersect_packet<Float, Spectrum>(
-            args->valid, args->geometryUserPtr, args->geomID,
-            args->context->instID[0], (RTCRayW *) args->ray, nullptr);
+        if constexpr (ek::is_array_v<Float>) {
+            embree_intersect_packet<Float, Spectrum>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0], (RTCRayW *) args->ray, nullptr);
+        } else {
+            Throw("embree_occluded(): vectorized intersection is not supported in scalar modes.");
+        }
     }
 }
 
