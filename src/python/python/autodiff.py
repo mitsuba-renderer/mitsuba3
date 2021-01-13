@@ -313,7 +313,7 @@ class Optimizer:
         # Ensure that the JIT compiler does merge 'lr' into the PTX code
         # (this would trigger a recompile every time it is changed)
         self.lr = lr
-        self.lr_v = ek.full(ek.detached_t(Float), lr, size=1, eval=True)
+        self.lr_v = ek.opaque(ek.detached_t(Float), lr, size=1)
 
     def set_grad_suspended(self, value):
         """Temporarily disable the generation of gradients."""
@@ -436,7 +436,7 @@ class Adam(Optimizer):
         from mitsuba.core import Float
 
         lr_t = self.lr * ek.sqrt(1 - self.beta_2**self.t) / (1 - self.beta_1**self.t)
-        lr_t = ek.full(ek.detached_t(Float), lr_t, size=1, eval=True)
+        lr_t = ek.opaque(ek.detached_t(Float), lr_t, size=1)
 
         for k, p in self.variables.items():
             g_p = ek.grad(p)
