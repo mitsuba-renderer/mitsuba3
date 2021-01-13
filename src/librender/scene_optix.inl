@@ -370,7 +370,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
         pi.instance   = ShapePtr::steal(trace_args[20]);
 
         // This field is only used by embree, but we still need to initialized it for vcalls
-        pi.shape_index = ek::empty<UInt32>();
+        pi.shape_index = ek::zero<UInt32>();
 
         // jit_optix_trace leaves payload data uninitialized for in-active lanes
         pi.t[!active] = ek::Infinity<Float>;
