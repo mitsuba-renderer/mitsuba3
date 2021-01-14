@@ -288,7 +288,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     if constexpr (ek::is_jit_array_v<Float>) {
         if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
             Log(Info, "Computation graph recorded. (took %s)",
-                util::time_string((float) timer.value(), true));
+                util::time_string((float) timer.reset(), true));
         }
 
         auto &out = Base::m_graphviz_output;
@@ -300,6 +300,11 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         }
 
         ek::eval(block->data());
+        if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
+            Log(Info, "Code generation finished. (took %s)",
+                util::time_string((float) timer.reset(), true));
+        }
+
         ek::sync_thread();
     }
 
