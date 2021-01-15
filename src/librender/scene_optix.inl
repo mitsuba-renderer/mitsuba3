@@ -306,7 +306,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
         using OptixState = OptixState<Float>;
         OptixState &s = *(OptixState *) m_accel;
-        jit_free((void*)s.sbt.raygenRecord);
+        jit_free(s.sbt.raygenRecord);
+        jit_free(s.sbt.hitgroupRecordBase);
+        jit_free(s.sbt.missRecordBase);
         jit_free(s.ias_buffer);
 
         for (size_t i = 0; i < ProgramGroupCount; i++)
