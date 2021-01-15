@@ -45,8 +45,19 @@ def make_simple_scene(res=1):
     })
 
 
+jit_flags_options =[
+    [],
+    [ek.JitFlag.VCallRecord, ek.JitFlag.LoopRecord],
+    [ek.JitFlag.VCallRecord, ek.JitFlag.VCallOptimize, ek.JitFlag.LoopRecord, ek.JitFlag.LoopOptimize],
+]
+
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4])
-def test01_bsdf_reflectance_backward(variants_all_ad_rgb, spp):
+def test01_bsdf_reflectance_backward(variants_all_ad_rgb, jit_flags, spp):
+    # Set enoki JIT flags
+    for f in jit_flags:
+        ek.set_flag(f, True)
+
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render
@@ -83,8 +94,13 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, spp):
     assert ek.allclose(loss, new_loss - lr * grad[0])
 
 
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4])
-def test02_bsdf_reflectance_forward(variants_all_ad_rgb, spp):
+def test02_bsdf_reflectance_forward(variants_all_ad_rgb, jit_flags, spp):
+    # Set enoki JIT flags
+    for f in jit_flags:
+        ek.set_flag(f, True)
+
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.core import Float
     from mitsuba.python.util import traverse
@@ -183,3 +199,88 @@ def test03_optimizer(variants_all_ad_rgb, spp, unbiased, opt_conf):
     avrg_params /= W
 
     assert ek.allclose(avrg_params, param_ref, atol=1e-3)
+
+
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test04_vcall_autodiff_bsdf_backward(variants_all_ad_rgb, jit_flags):
+    # Set enoki JIT flags
+    for f in jit_flags:
+        ek.set_flag(f, True)
+
+    from mitsuba.core import xml, Float, UInt32, Color3f, Mask, Frame3f
+    from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
+    from mitsuba.python.util import traverse
+
+    bsdf1 = xml.load_dict({
+        'type' : 'diffuse',
+        'reflectance': {
+            'type': 'rgb',
+            'value': [1.0, 0.0, 0.0]
+        }
+    })
+
+    bsdf2 = xml.load_dict({
+        'type' : 'diffuse',
+        'reflectance': {
+            'type': 'rgb',
+            'value': [0.0, 0.0, 1.0]
+        }
+    })
+
+    # Enable gradients
+    bsdf1_params = traverse(bsdf1)
+    ek.enable_grad(bsdf1_params['reflectance.value'])
+    bsdf1_params.update()
+
+    bsdf2_params = traverse(bsdf2)
+    ek.enable_grad(bsdf2_params['reflectance.value'])
+    bsdf2_params.update()
+
+    ek.set_log_level(4)
+
+    N = 10
+    mask = ek.eq(ek.arange(UInt32, N) & 1, 0)
+    bsdf_ptr = ek.select(mask, BSDFPtr(bsdf1), BSDFPtr(bsdf2))
+
+    si    = ek.zero(SurfaceInteraction3f, N)
+    si.t  = 0.0
+    si.p  = [0, 0, 0]
+    si.n  = [0, 0, 1]
+    si.wi = [0, 0, 1]
+    si.sh_frame = Frame3f(si.n)
+
+    ctx = BSDFContext()
+
+    theta = 0.5 * (ek.Pi / 2)
+    wo = [ek.sin(theta), 0, ek.cos(theta)]
+
+    # Evaluate BSDF (using vcalls)
+    v_eval = bsdf_ptr.eval(ctx, si, wo)
+
+    # Check against reference value
+    v = ek.cos(theta) * ek.InvPi
+    v_ref = ek.select(mask, Color3f(v, 0, 0), Color3f(0, 0, v))
+    assert ek.allclose(v_eval, v_ref)
+
+    # Make their gradients a bit different
+    mult1 = Float(0.5)
+    mult2 = Float(4.0)
+    v_eval *= ek.select(mask, mult1, mult2)
+
+    loss = ek.hsum(v_eval)
+
+    # Backpropagate throught vcall
+    if False:
+        ek.backward(loss, retain_graph=True)
+
+        # Check gradients
+        grad1 = ek.grad(bsdf1_params['reflectance.value'])
+        grad2 = ek.grad(bsdf2_params['reflectance.value'])
+
+        assert ek.allclose(grad1, v * N / 2.0 * mult1)
+        assert ek.allclose(grad2, v * N / 2.0 * mult2)
+
+    # Forward propagate gradients to loss
+    ek.forward(bsdf1_params['reflectance.value'], retain_graph=True)
+    ek.forward(bsdf2_params['reflectance.value'], retain_graph=True) # TODO crash here
+    assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
