@@ -379,6 +379,7 @@ public:
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
         callback->put_parameter("size", m_size);
+        callback->put_parameter("resolution", m_metadata.shape);
         Base::traverse(callback);
     }
 
@@ -398,7 +399,7 @@ public:
         auto sum = ek::hsum(ek::hsum(ek::detach(m_data)));
         m_metadata.mean = (double) sum / (double) (m_size * 3);
         if (!m_fixed_max) {
-            m_metadata.max = ek::hmax(ek::hmax(m_data));
+            m_metadata.max = ek::hmax(ek::hmax(ek::detach(m_data)));
         }
     }
 
