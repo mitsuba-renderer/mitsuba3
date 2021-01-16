@@ -315,7 +315,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
     bsdf2_params = traverse(bsdf2)
     p = bsdf2_params['reflectance.value']
     ek.enable_grad(p)
-    ek.set_label(p, "albedo_1")
+    ek.set_label(p, "albedo_2")
     bsdf2_params.update()
 
     #  ek.set_log_level(4)
