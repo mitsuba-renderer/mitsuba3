@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from typing import Union, Tuple
+from collections import defaultdict
 import enoki as ek
 
 
@@ -206,6 +207,9 @@ class Optimizer:
         Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
             Scene parameters dictionary
         """
+        self.lr = defaultdict(lambda: self.lr_default)
+        self.lr_v = defaultdict(lambda: self.lr_default_v)
+
         self.set_learning_rate(lr)
         self.variables = {}
         self.params = params
@@ -307,13 +311,28 @@ class Optimizer:
         self.params.update()
         ek.eval()
 
-    def set_learning_rate(self, lr):
-        """Set the learning rate."""
+    def set_learning_rate(self, lr, key=None):
+        """Set the learning rate.
+
+        Parameter ``lr``:
+            The new learning rate
+
+        Parameter ``key`` (``None``, ``str``):
+            Optional parameter to specify for which parameter to set the learning rate.
+            If set to ``None``, the default learning rate is updated.
+        """
+
         from mitsuba.core import Float
         # Ensure that the JIT compiler does merge 'lr' into the PTX code
         # (this would trigger a recompile every time it is changed)
-        self.lr = lr
-        self.lr_v = ek.opaque(ek.detached_t(Float), lr, size=1)
+
+        if key is None:
+            self.lr_default = lr
+            self.lr_default_v = ek.opaque(ek.detached_t(Float), lr, size=1)
+        else:
+            self.lr[key] = lr
+            self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, size=1)
+
 
     def set_grad_suspended(self, value):
         """Temporarily disable the generation of gradients."""
@@ -375,10 +394,10 @@ class SGD(Optimizer):
                     self._reset(k)
 
                 self.state[k] = self.momentum * self.state[k] + g_p
-                value = ek.detach(p) - self.lr_v * self.state[k]
+                value = ek.detach(p) - self.lr_v[k] * self.state[k]
                 ek.schedule(self.state[k])
             else:
-                value = ek.detach(p) - self.lr_v * g_p
+                value = ek.detach(p) - self.lr_v[k] * g_p
 
 
             value = type(p)(value)
@@ -435,10 +454,10 @@ class Adam(Optimizer):
 
         from mitsuba.core import Float
 
-        lr_t = self.lr * ek.sqrt(1 - self.beta_2**self.t) / (1 - self.beta_1**self.t)
-        lr_t = ek.opaque(ek.detached_t(Float), lr_t, size=1)
-
+        lr_scale = ek.sqrt(1 - self.beta_2 ** self.t) / (1 - self.beta_1 ** self.t)
+        lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, size=1)
         for k, p in self.variables.items():
+            lr_t = self.lr_v[k] * lr_scale
             g_p = ek.grad(p)
             size = ek.width(g_p)
 
