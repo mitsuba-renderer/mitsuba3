@@ -77,6 +77,9 @@ Options:
     -Ob
         Implement virtual function calls using branching
 
+    -Oo
+        Force kernel evaluation in OptiX (esp. in wavefront mode)
+
     -g <out>
         Write a GraphViz visualization of the computation
 )";
@@ -163,6 +166,7 @@ int main(int argc, char *argv[]) {
 
     auto arg_branch   = parser.add(StringVec{ "-Ob" });
     auto arg_no_optim = parser.add(StringVec{ "-O0" });
+    auto arg_force_optix = parser.add(StringVec{ "-Oo" });
     auto arg_graphviz  = parser.add(StringVec{ "-g" }, true);
 
     bool profile = true, print_profile = false;
@@ -244,6 +248,9 @@ int main(int argc, char *argv[]) {
             jit_set_flag(JitFlag::VCallOptimize, true);
             jit_set_flag(JitFlag::LoopOptimize, true);
             jit_set_flag(JitFlag::VCallBranch, false);
+
+            if (*arg_force_optix)
+                jit_set_flag(JitFlag::ForceOptiX, true);
 
             if (*arg_no_optim) {
                 jit_set_flag(JitFlag::VCallOptimize, false);
