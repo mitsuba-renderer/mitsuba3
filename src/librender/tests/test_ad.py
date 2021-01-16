@@ -200,9 +200,84 @@ def test03_optimizer(variants_all_ad_rgb, spp, unbiased, opt_conf):
 
     assert ek.allclose(avrg_params, param_ref, atol=1e-3)
 
-
+@pytest.mark.parametrize("eval_grad", [False, True])
+@pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test04_vcall_autodiff_bsdf_backward(variants_all_ad_rgb, jit_flags):
+def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval_grad, N, jit_flags):
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
+
+    from mitsuba.core import xml, Float, UInt32, Color3f, Mask, Frame3f
+    from mitsuba.render import SurfaceInteraction3f, BSDFPtr, BSDFContext
+    from mitsuba.python.util import traverse
+
+    bsdf = xml.load_dict({
+        'type' : 'diffuse',
+        'reflectance': {
+            'type': 'rgb',
+            'value': [1.0, 0.0, 0.0]
+        }
+    })
+
+    # Enable gradients
+    bsdf_params = traverse(bsdf)
+    p = bsdf_params['reflectance.value']
+    ek.enable_grad(p)
+    ek.set_label(p, "albedo_1")
+    bsdf_params.update()
+
+    mask = ek.eq(ek.arange(UInt32, N) & 1, 0)
+    bsdf_ptr = ek.select(mask, BSDFPtr(bsdf), ek.zero(BSDFPtr))
+
+    si    = ek.zero(SurfaceInteraction3f, N)
+    si.t  = 0.0
+    si.p  = [0, 0, 0]
+    si.n  = [0, 0, 1]
+    si.wi = [0, 0, 1]
+    si.sh_frame = Frame3f(si.n)
+
+    ctx = BSDFContext()
+
+    theta = 0.5 * (ek.Pi / 2)
+    wo = [ek.sin(theta), 0, ek.cos(theta)]
+
+    # Evaluate BSDF (using vcalls)
+    ek.set_label(si, "si")
+    ek.set_label(wo, "wo")
+    v_eval = bsdf_ptr.eval(ctx, si, wo)
+    ek.set_label(v_eval, "v_eval")
+
+    # Check against reference value
+    v = Float(ek.cos(theta) * ek.InvPi)
+    v_ref = ek.select(mask, Color3f(v, 0, 0), Color3f(0))
+    assert ek.allclose(v_eval, v_ref)
+
+    loss = ek.hsum(v_eval)
+
+    # Backpropagate through vcall
+    if eval_grad:
+        loss_grad = ek.full(Float, 1.0, N)
+        ek.eval(loss_grad)
+        ek.set_grad(loss, loss_grad)
+    else:
+        ek.set_grad(loss, 1)
+    ek.enqueue(loss)
+    ek.traverse(Float, reverse=True, retain_graph=True)
+
+    # Check gradients
+    grad = ek.grad(bsdf_params['reflectance.value'])
+    assert ek.allclose(grad, v * ek.count(mask))
+
+    # Forward propagate gradients to loss
+    ek.forward(bsdf_params['reflectance.value'], retain_graph=True)
+    assert ek.allclose(ek.grad(loss), ek.select(mask, 3 * v, 0.0))
+
+
+@pytest.mark.parametrize("eval", [False])
+@pytest.mark.parametrize("N", [10])
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, eval, N, jit_flags):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
@@ -242,7 +317,6 @@ def test04_vcall_autodiff_bsdf_backward(variants_all_ad_rgb, jit_flags):
 
     #  ek.set_log_level(4)
 
-    N = 10
     mask = ek.eq(ek.arange(UInt32, N) & 1, 0)
     bsdf_ptr = ek.select(mask, BSDFPtr(bsdf1), BSDFPtr(bsdf2))
 
@@ -275,6 +349,7 @@ def test04_vcall_autodiff_bsdf_backward(variants_all_ad_rgb, jit_flags):
     v_eval *= ek.select(mask, mult1, mult2)
 
     loss = ek.hsum(v_eval)
+    ek.set_label(loss, "loss")
 
     # Backpropagate through vcall
     if False:
@@ -284,8 +359,8 @@ def test04_vcall_autodiff_bsdf_backward(variants_all_ad_rgb, jit_flags):
         grad1 = ek.grad(bsdf1_params['reflectance.value'])
         grad2 = ek.grad(bsdf2_params['reflectance.value'])
 
-        assert ek.allclose(grad1, v * N / 2.0 * mult1)
-        assert ek.allclose(grad2, v * N / 2.0 * mult2)
+        assert ek.allclose(grad1, v * ek.count(mask)  * mult1)
+        assert ek.allclose(grad2, v * ek.count(~mask) * mult2)
 
     print(ek.graphviz_str(Float(1)))
 
