@@ -12,8 +12,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * Along with the ray origin and direction, this data structure additionally
  * stores a ray segment [mint, maxt] (whose entries may include positive/negative
- * infinity), as well as the componentwise reciprocals of the ray direction.
- * That is just done for convenience, as these values are frequently required.
+ * infinity).
  */
 template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = ek::array_size_v<Point_>;

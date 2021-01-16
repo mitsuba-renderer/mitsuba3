@@ -144,6 +144,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("gather_") = py::none();
     cls.attr("select_") = py::none();
     cls.attr("set_label_") = py::none();
+    cls.attr("label_") = py::none();
     cls.attr("index") = py::none();
     cls.attr("assign") = py::none();
 
@@ -181,9 +182,9 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
 
     if constexpr (ek::is_jit_array_v<Array>) {
         cls.def("index", [](const Array &a) { return a.index(); });
-        cls.def("set_label_", [](const Array &a, const char *label) { ek::set_label(a, label); });
-        cls.def("set_index_",
-                [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
+        cls.def("label_", [](const Array &a) { return a.label_(); });
+        cls.def("set_label_", [](const Array &a, const char *label) { a.set_label_(label); });
+        cls.def("set_index_", [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
     }
 
     cls.def_static("gather_",
