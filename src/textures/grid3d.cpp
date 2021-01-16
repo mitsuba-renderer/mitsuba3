@@ -374,28 +374,17 @@ public:
 
     ScalarFloat max() const override { return m_metadata.max; }
     ScalarVector3i resolution() const override { return m_metadata.shape; };
-    auto data_size() const { return m_data.size(); }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
-        callback->put_parameter("size", m_size);
+        callback->put_parameter("channels", m_metadata.channel_count);
         callback->put_parameter("resolution", m_metadata.shape);
         Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        auto new_size = data_size();
-        if (m_size != new_size) {
-            // Only support a special case: resolution doubling along all axes
-            if (new_size != m_size * 8)
-                Throw("Unsupported GridVolume data size update: %d -> %d. Expected %d or %d "
-                      "(doubling "
-                      "the resolution).",
-                      m_size, new_size, m_size, m_size * 8);
-            m_metadata.shape *= 2;
-            m_size = (ScalarUInt32) new_size;
-        }
 
+        // Recompute mean and maximum if necessary
         auto sum = ek::hsum(ek::hsum(ek::detach(m_data)));
         m_metadata.mean = (double) sum / (double) (m_size * 3);
         if (!m_fixed_max) {

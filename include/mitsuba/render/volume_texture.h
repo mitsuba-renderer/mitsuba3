@@ -16,8 +16,8 @@ struct VolumeMetadata {
     std::string filename;
     uint8_t version;
     int32_t data_type;
-    Vector3i shape;
-    size_t channel_count;
+    ScalarVector3i shape;
+    ScalarUInt32 channel_count;
     BoundingBox3f bbox;
     Transform4f transform;
 
