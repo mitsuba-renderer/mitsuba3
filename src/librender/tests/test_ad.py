@@ -47,7 +47,7 @@ def make_simple_scene(res=1):
 
 jit_flags_options = [
     {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
     {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
 ]
 
@@ -257,27 +257,30 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 
     # Backpropagate through vcall
     if eval_grad:
-        loss_grad = ek.full(Float, 1.0, N)
+        loss_grad = ek.arange(Float, N)
         ek.eval(loss_grad)
-        ek.set_grad(loss, loss_grad)
     else:
-        ek.set_grad(loss, 1)
+        loss_grad = Float(1)
+
+    ek.set_grad(loss, loss_grad)
     ek.enqueue(loss)
     ek.traverse(Float, reverse=True, retain_graph=True)
 
     # Check gradients
     grad = ek.grad(bsdf_params['reflectance.value'])
-    assert ek.allclose(grad, v * ek.count(mask))
+
+    assert ek.allclose(grad, v * ek.hsum(ek.select(mask, loss_grad, 0.0)))
 
     # Forward propagate gradients to loss
     ek.forward(bsdf_params['reflectance.value'], retain_graph=True)
     assert ek.allclose(ek.grad(loss), ek.select(mask, 3 * v, 0.0))
 
 
-@pytest.mark.parametrize("eval", [False])
-@pytest.mark.parametrize("N", [10])
+@pytest.mark.parametrize("mode", ['backward', 'forward'])
+@pytest.mark.parametrize("eval_grad", [False, True])
+@pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, eval, N, jit_flags):
+def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flags):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
@@ -351,23 +354,34 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, eval, N, jit_flags):
     loss = ek.hsum(v_eval)
     ek.set_label(loss, "loss")
 
-    # Backpropagate through vcall
-    if False:
-        ek.backward(loss, retain_graph=True)
+    # print(ek.graphviz_str(Float(1)))
+
+    if mode == "backward":
+        if eval_grad:
+            loss_grad = ek.arange(Float, N)
+            ek.eval(loss_grad)
+        else:
+            loss_grad = Float(1)
+
+        ek.set_grad(loss, loss_grad)
+        ek.enqueue(loss)
+        ek.traverse(Float, reverse=True, retain_graph=True)
 
         # Check gradients
         grad1 = ek.grad(bsdf1_params['reflectance.value'])
         grad2 = ek.grad(bsdf2_params['reflectance.value'])
 
-        assert ek.allclose(grad1, v * ek.count(mask)  * mult1)
-        assert ek.allclose(grad2, v * ek.count(~mask) * mult2)
+        assert ek.allclose(grad1, v * mult1 * ek.hsum(ek.select(mask,  loss_grad, 0.0)))
+        assert ek.allclose(grad2, v * mult2 * ek.hsum(ek.select(~mask, loss_grad, 0.0)))
 
-    print(ek.graphviz_str(Float(1)))
+    if mode == "forward":
+        # Forward propagate gradients to loss, one BSDF at a time
+        ek.set_grad(bsdf1_params['reflectance.value'], 1)
+        ek.enqueue(bsdf1_params['reflectance.value'])
+        ek.traverse(Float, reverse=False, retain_graph=True)
 
-    # Forward propagate gradients to loss
-    print("Step 1")
-    ek.forward(bsdf1_params['reflectance.value'], retain_graph=True)
+        ek.set_grad(bsdf2_params['reflectance.value'], 1)
+        ek.enqueue(bsdf2_params['reflectance.value'])
+        ek.traverse(Float, reverse=False, retain_graph=True)
 
-    print("Step 2")
-    ek.forward(bsdf2_params['reflectance.value'], retain_graph=True) # TODO crash here
-    assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
+        assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
