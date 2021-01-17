@@ -324,11 +324,21 @@ def test11_parameters_grad_enabled(variants_all_ad_rgb):
     params.update()
     assert shape.parameters_grad_enabled() == True
 
+jit_flags_options = [
+    {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
+]
 
 @fresolver_append_path
-def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -372,8 +382,13 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb):
 
 
 @fresolver_append_path
-def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -413,8 +428,13 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 @fresolver_append_path
-def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -442,8 +462,13 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
 
 
 @fresolver_append_path
-def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -516,8 +541,13 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
 
 
 @fresolver_append_path
-def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -650,9 +680,14 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 
 
 @fresolver_append_path
-def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
     from mitsuba.render import HitComputeFlags
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene = xml.load_string('''
         <scene version="2.0.0">

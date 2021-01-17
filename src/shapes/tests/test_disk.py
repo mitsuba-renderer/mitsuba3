@@ -66,7 +66,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                         ray = Ray3f(o=[x, y, -10], d=[0, 0, 1],
                                     time=0.0, wavelengths=[])
 
-                        si = s.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV)
+                        si = s.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV, True)
                         ray_u = Ray3f(ray)
                         ray_v = Ray3f(ray)
                         eps = 1e-4
