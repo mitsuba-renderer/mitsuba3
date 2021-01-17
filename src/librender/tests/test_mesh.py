@@ -1,5 +1,6 @@
 import mitsuba
 import pytest
+import gc
 import enoki as ek
 from enoki.scalar import ArrayXf as Float
 
@@ -755,8 +756,91 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # TODO add tests for normals on curved mesh (sticky normals shouldn't move)
 
+
+@pytest.fixture
+def collect():
+    gc.collect() # Ensure no leftover Shape instances from other tests in registry
+    gc.collect()
+
 @fresolver_append_path
-def test18_write_xml(variants_all_rgb):
+@pytest.mark.parametrize("wall", [False, True])
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
+    from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Transform4f, Ray3f
+    from mitsuba.render import HitComputeFlags
+    from mitsuba.python.util import traverse
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
+
+    # Create scene
+    scene_dict = {
+        'type' : 'scene',
+        'sphere' : {
+            'type' : 'obj',
+            'id' : 'sphere',
+            'filename' : 'resources/data/common/meshes/sphere.obj'
+        }
+    }
+    if wall:
+        scene_dict['wall'] = {
+            'type' : 'obj',
+            'id' : 'wall',
+            'filename' : 'resources/data/common/meshes/cbox/back.obj'
+        }
+    scene = xml.load_dict(scene_dict)
+
+    # Get scene parameters
+    params = traverse(scene)
+    key = 'sphere.vertex_positions'
+    params.keep([key])
+
+    # Create differential parameter
+    theta = Float(0.0)
+    ek.enable_grad(theta)
+    ek.set_label(theta, 'theta')
+
+    # Attach object vertices to differential parameter
+    with ek.Scope("Attach object vertices"):
+        positions_initial = ek.unravel(Vector3f, params[key])
+        ek.set_label(positions_initial, 'positions_initial')
+        transform = Transform4f.translate(Vector3f(0.0, theta, 0.0))
+        positions_new = transform.transform_point(positions_initial)
+        ek.set_label(positions_new, 'positions_new')
+        params[key] = ek.ravel(positions_new)
+        ek.set_label(params[key], key)
+        params.update()
+
+    spp = 1
+    film_size = ScalarVector2i(4)
+
+    # Sample a wavefront of rays (one per pixel and spp)
+    total_sample_count = ek.hprod(film_size) * spp
+    pos = ek.arange(UInt32, total_sample_count)
+    pos //= spp
+    scale = ek.rcp(Vector2f(film_size))
+    pos = Vector2f(Float(pos %  int(film_size[0])),
+                   Float(pos // int(film_size[0])))
+    pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
+
+    ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1], 0.0, [])
+    ek.set_label(ray, 'ray')
+
+    # Intersect rays against objects in the scene
+    si = scene.ray_intersect(ray, HitComputeFlags.Sticky, True)
+    ek.set_label(si, 'si')
+
+    # print(ek.graphviz_str(Float(1)))
+
+    ek.forward(theta)
+
+    hit_sphere = si.t < 5.0
+    assert ek.allclose(ek.grad(si.p), ek.select(hit_sphere, Vector3f(0, 1, 0), Vector3f(0.0)))
+
+
+@fresolver_append_path
+def test19_write_xml(variants_all_rgb):
     from mitsuba.core.xml import load_dict
     from mitsuba.core import Thread
     from mitsuba.python.util import traverse
