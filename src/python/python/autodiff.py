@@ -68,7 +68,7 @@ def _render_helper(scene, spp=None, sensor_index=0):
         channel_count=len(aovs),
         filter=film.reconstruction_filter(),
         warn_negative=False,
-        warn_invalid=DEBUG,
+        warn_invalid=False,
         border=False
     )
 
