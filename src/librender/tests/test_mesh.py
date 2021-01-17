@@ -794,7 +794,6 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
     # Get scene parameters
     params = traverse(scene)
     key = 'sphere.vertex_positions'
-    params.keep([key])
 
     # Create differential parameter
     theta = Float(0.0)
@@ -804,13 +803,17 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
     # Attach object vertices to differential parameter
     with ek.Scope("Attach object vertices"):
         positions_initial = ek.unravel(Vector3f, params[key])
-        ek.set_label(positions_initial, 'positions_initial')
         transform = Transform4f.translate(Vector3f(0.0, theta, 0.0))
         positions_new = transform.transform_point(positions_initial)
+        positions_new = ek.ravel(positions_new)
         ek.set_label(positions_new, 'positions_new')
-        params[key] = ek.ravel(positions_new)
-        ek.set_label(params[key], key)
+        del transform
+        print(ek.graphviz_str(Float(1)))
+        params[key] = positions_new
         params.update()
+        ek.set_label(params[key], 'positions_post_update')
+        ek.set_label(params['sphere.vertex_normals'], 'vertex_normals')
+        print(ek.graphviz_str(Float(1)))
 
     spp = 1
     film_size = ScalarVector2i(4)
@@ -831,7 +834,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
     si = scene.ray_intersect(ray, HitComputeFlags.Sticky, True)
     ek.set_label(si, 'si')
 
-    # print(ek.graphviz_str(Float(1)))
+    print(ek.graphviz_str(Float(1)))
 
     ek.forward(theta)
 
