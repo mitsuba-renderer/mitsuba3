@@ -326,9 +326,10 @@ def test11_parameters_grad_enabled(variants_all_ad_rgb):
     assert shape.parameters_grad_enabled() == True
 
 jit_flags_options = [
-    {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
-    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
+    {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
 ]
 
 @fresolver_append_path
@@ -773,8 +774,6 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
-    #  ek.set_flag(ek.JitFlag.VCallBranch, True)
-    ek.set_log_level(10)
 
     # Create scene
     scene_dict = {
