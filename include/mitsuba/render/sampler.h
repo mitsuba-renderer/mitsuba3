@@ -86,9 +86,6 @@ public:
     /// Retrieve the next two component values from the current sample
     virtual Point2f next_2d(Mask active = true);
 
-    /// Register internal content of this sampler with a symbolic loop
-    virtual void loop_register(ek::Loop<ek::detached_t<Mask>> &loop);
-
     /// Return the number of samples per pixel
     uint32_t sample_count() const { return m_sample_count; }
 
@@ -100,6 +97,12 @@ public:
 
     /// Set the number of samples per pass in wavefront modes (default is 1)
     void set_samples_per_wavefront(uint32_t samples_per_wavefront);
+
+    /// ek::schedule() variables that represent the internal sampler state
+    virtual void schedule_state();
+
+    /// Register internal state of this sampler with a symbolic loop
+    virtual void loop_register(ek::Loop<ek::detached_t<Mask>> &loop);
 
     MTS_DECLARE_CLASS()
 protected:
@@ -135,6 +138,7 @@ public:
     using PCG32 = mitsuba::PCG32<UInt32>;
 
     virtual void seed(uint64_t seed_offset, size_t wavefront_size = 1) override;
+    virtual void schedule_state() override;
 
     MTS_DECLARE_CLASS()
 protected:

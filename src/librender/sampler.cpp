@@ -76,6 +76,8 @@ Sampler<Float, Spectrum>::current_sample_index() const {
     return m_sample_index * m_samples_per_wavefront + wavefront_sample_offsets;
 }
 
+MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() { }
+
 //! @}
 // =======================================================================
 
@@ -100,6 +102,10 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
         assert(wavefront_size == 1);
         m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM);
     }
+}
+
+MTS_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
+    ek::schedule(m_rng.inc, m_rng.state);
 }
 
 //! @}

@@ -5445,6 +5445,8 @@ static const char *__doc_mitsuba_Sampler_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sampler_Sampler = R"doc()doc";
 
+static const char *__doc_mitsuba_Sampler_schedule_state = R"doc()doc";
+
 static const char *__doc_mitsuba_Sampler_advance =
 R"doc(Advance to the next sample.
 
