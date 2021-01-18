@@ -773,6 +773,8 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
+    #  ek.set_flag(ek.JitFlag.VCallBranch, True)
+    ek.set_log_level(10)
 
     # Create scene
     scene_dict = {
