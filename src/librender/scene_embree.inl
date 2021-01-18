@@ -129,6 +129,77 @@ RTCHitNp offset_rtc_hit(const RTCHitNp& h, size_t offset) {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
+#if 0
+    if constexpr (ek::is_llvm_array<Float>) {
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
+        uintptr_t func_ptr = &rtcIntersectW,
+                  ctx_ptr  = &context;
+
+        uint32_t func_v = jitc_var_new_pointer(JitBackend::LLVM, &func_ptr, 0, 0),
+                 ctx_v  = jitc_var_new_pointer(JitBackend::LLVM, &ctx_ptr, 0, 0);
+
+        Int32 valid = select(active, (int32_t) -1, 0),
+              z     = zero<Int32>();
+
+        uint32_t in[13] = { valid.index(),     ray.o.x().index(),
+                            ray.o.y().index(), ray.o.z().index(),
+                            ray.tmin.index(),  ray.d.x().index(),
+                            ray.d.y().index(), ray.d.z().index(),
+                            ray.time.index(),  ray.tmax.index(),
+                            z.index(),         z.index(),
+                            z.index() };
+
+        uint32_t out[5] = { };
+
+        jit_embree_trace(func_v, ctx_v, in, out);
+        jit_var_dec_ref_ext(func_v);
+        jit_var_dec_ref_ext(ctx_v);
+
+        Float t(Float::steal(out[0]));
+        Vector2f uv(Float::steal(out[1]), Float::steal(out[2]));
+        UInt32 prim_index = UInt32::steal(out[3]),
+               shape_index = UInt32::steal(out[4]),
+               inst_index = UInt32::steal(out[5]);
+
+        Mask hit = active && ek::neq(pi.t, ray.maxt);
+
+            ek::masked(pi.t, !hit) = ek::Infinity<Float>;
+
+            // Set si.instance and si.shape
+            Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
+            Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+            UInt32 index      = ek::select(hit_inst, inst_index, pi.shape_index);
+
+            ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index, hit);
+            pi.instance = ek::select(hit_inst, shape, nullptr);
+            pi.shape    = ek::select(hit_not_inst, shape, nullptr);
+
+
+
+        // If the hit is not on an instance
+        Bool hit_instance = neq(inst_index, uint32_t(RTC_INVALID_GEOMETRY_ID));
+        UInt32 index = ek::select(hit_instance, inst_index, shape_index);
+        ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index);
+
+
+
+            if (hit_instance)
+                pi.instance = shape;
+            else
+                pi.shape = shape;
+
+                pi.shape_index = shape_index;
+
+                pi.t = rh.ray.tfar;
+                pi.prim_index = prim_index;
+                pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
+
+    }
+#endif
+
     if constexpr (!ek::is_cuda_array_v<Float>) {
         EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
