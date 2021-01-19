@@ -28,6 +28,7 @@ struct EmbreeState {
     MTS_IMPORT_CORE_TYPES()
     RTCScene accel;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    RTCIntersectContext context;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
@@ -42,6 +43,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
     m_accel = new EmbreeState<Float>();
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     s.accel = embree_scene;
+    rtcInitIntersectContext(&s.context);
+    s.context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
     for (Shape *shape : m_shapes)
@@ -61,8 +64,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    rtcReleaseScene((RTCScene) s.accel);
+    EmbreeState<Float> *s = (EmbreeState<Float> *) m_accel;
+    rtcReleaseScene((RTCScene) s->accel);
+    delete s;
+    m_accel = nullptr;
 }
 
 template <typename Ray, typename Float, typename Vector3u>
@@ -129,76 +134,64 @@ RTCHitNp offset_rtc_hit(const RTCHitNp& h, size_t offset) {
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray_, Mask active) const {
-#if 0
-    if constexpr (ek::is_llvm_array<Float>) {
-        RTCIntersectContext context;
-        rtcInitIntersectContext(&context);
-        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+    if constexpr (ek::is_llvm_array_v<Float>) {
+        EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
-        uintptr_t func_ptr = &rtcIntersectW,
-                  ctx_ptr  = &context;
+        if (jit_llvm_vector_width() != MTS_RAY_WIDTH)
+            Throw("ray_intersect_preliminary_cpu(): LLVM backend and "
+                  "Mitsuba/Embree don't have matching vector widths!");
 
-        uint32_t func_v = jitc_var_new_pointer(JitBackend::LLVM, &func_ptr, 0, 0),
-                 ctx_v  = jitc_var_new_pointer(JitBackend::LLVM, &ctx_ptr, 0, 0);
+        void *func_ptr  = (void *) rtcIntersectW,
+             *ctx_ptr   = (void *) &s.context,
+             *scene_ptr = (void *) s.accel;
 
-        Int32 valid = select(active, (int32_t) -1, 0),
-              z     = zero<Int32>();
+        UInt64 func_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
+               ctx_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, ctx_ptr, 0, 0)),
+               scene_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
-        uint32_t in[13] = { valid.index(),     ray.o.x().index(),
-                            ray.o.y().index(), ray.o.z().index(),
-                            ray.tmin.index(),  ray.d.x().index(),
-                            ray.d.y().index(), ray.d.z().index(),
-                            ray.time.index(),  ray.tmax.index(),
-                            z.index(),         z.index(),
-                            z.index() };
+        Int32 valid = ek::select(active, (int32_t) -1, 0);
+        UInt32 zero = ek::zero<UInt32>();
 
-        uint32_t out[5] = { };
+        uint32_t in[13] = { valid.index(),      ray_.o.x().index(),
+                            ray_.o.y().index(), ray_.o.z().index(),
+                            ray_.mint.index(),  ray_.d.x().index(),
+                            ray_.d.y().index(), ray_.d.z().index(),
+                            ray_.time.index(),  ray_.maxt.index(),
+                            zero.index(),       zero.index(),
+                            zero.index() };
 
-        jit_embree_trace(func_v, ctx_v, in, out);
-        jit_var_dec_ref_ext(func_v);
-        jit_var_dec_ref_ext(ctx_v);
+        uint32_t out[6] { };
+
+        jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
+                         0, in, out);
+
+        PreliminaryIntersection3f pi;
 
         Float t(Float::steal(out[0]));
-        Vector2f uv(Float::steal(out[1]), Float::steal(out[2]));
-        UInt32 prim_index = UInt32::steal(out[3]),
-               shape_index = UInt32::steal(out[4]),
-               inst_index = UInt32::steal(out[5]);
+        pi.prim_uv = Vector2f(Float::steal(out[1]),
+                              Float::steal(out[2]));
 
-        Mask hit = active && ek::neq(pi.t, ray.maxt);
+        pi.prim_index = UInt32::steal(out[3]);
+        pi.shape_index = UInt32::steal(out[4]);
 
-            ek::masked(pi.t, !hit) = ek::Infinity<Float>;
+        UInt32 inst_index = UInt32::steal(out[5]);
 
-            // Set si.instance and si.shape
-            Mask hit_not_inst = hit &&  ek::eq(inst_index, RTC_INVALID_GEOMETRY_ID);
-            Mask hit_inst     = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
-            UInt32 index      = ek::select(hit_inst, inst_index, pi.shape_index);
+        Mask hit = active && ek::neq(t, ray_.maxt);
 
-            ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index, hit);
-            pi.instance = ek::select(hit_inst, shape, nullptr);
-            pi.shape    = ek::select(hit_not_inst, shape, nullptr);
+        pi.t = select(hit, t, ek::Infinity<Float>);
 
+        // Set si.instance and si.shape
+        Mask hit_inst = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
+        UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
 
-
-        // If the hit is not on an instance
-        Bool hit_instance = neq(inst_index, uint32_t(RTC_INVALID_GEOMETRY_ID));
-        UInt32 index = ek::select(hit_instance, inst_index, shape_index);
-        ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index);
-
-
-
-            if (hit_instance)
-                pi.instance = shape;
-            else
-                pi.shape = shape;
-
-                pi.shape_index = shape_index;
-
-                pi.t = rh.ray.tfar;
-                pi.prim_index = prim_index;
-                pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
-
+        ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index, hit);
+        pi.instance = ek::select(hit_inst, shape, nullptr);
+        pi.shape    = ek::select(hit_inst, nullptr, shape);
+        return pi;
     }
-#endif
 
     if constexpr (!ek::is_cuda_array_v<Float>) {
         EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
@@ -332,6 +325,44 @@ Scene<Float, Spectrum>::ray_intersect_cpu(const Ray3f &ray, uint32_t hit_flags, 
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray_, Mask active) const {
+    if constexpr (ek::is_llvm_array_v<Float>) {
+        EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+
+        if (jit_llvm_vector_width() != MTS_RAY_WIDTH)
+            Throw("ray_test_cpu(): LLVM backend and "
+                  "Mitsuba/Embree don't have matching vector widths!");
+
+        void *func_ptr  = (void *) rtcIntersectW,
+             *ctx_ptr   = (void *) &s.context,
+             *scene_ptr = (void *) s.accel;
+
+        UInt64 func_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
+               ctx_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, ctx_ptr, 0, 0)),
+               scene_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
+
+        Int32 valid = ek::select(active, (int32_t) -1, 0);
+        UInt32 zero = ek::zero<UInt32>();
+
+        uint32_t in[13] = { valid.index(),      ray_.o.x().index(),
+                            ray_.o.y().index(), ray_.o.z().index(),
+                            ray_.mint.index(),  ray_.d.x().index(),
+                            ray_.d.y().index(), ray_.d.z().index(),
+                            ray_.time.index(),  ray_.maxt.index(),
+                            zero.index(),       zero.index(),
+                            zero.index() };
+
+        uint32_t out[6] { };
+
+        jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
+                         1, in, out);
+
+        Float t(Float::steal(out[0]));
+        return active && ek::neq(t, ray_.maxt);
+    }
+
     if constexpr (!ek::is_cuda_array_v<Float>) {
         EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 

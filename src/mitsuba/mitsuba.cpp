@@ -210,9 +210,7 @@ int main(int argc, char *argv[]) {
         // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)
             __global_thread_count = arg_threads->as_int();
-        if (__global_thread_count < 1)
-            Throw("Thread count must be >= 1!");
-        tbb::task_scheduler_init scheduler((int) __global_thread_count);
+        tbb::task_scheduler_init scheduler(std::max(1, (int) __global_thread_count));
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
@@ -235,6 +233,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM)
         if (string::starts_with(mode, "llvm_")) {
+            jit_llvm_set_thread_count(__global_thread_count);
             jit_init((uint32_t) JitBackend::LLVM);
             profile = false;
         }
