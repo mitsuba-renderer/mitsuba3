@@ -46,7 +46,7 @@ Texture<Float, Spectrum>::eval_3(const SurfaceInteraction3f &, Mask) const {
     NotImplementedError("eval_3");
 }
 
-MTS_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
+MTS_VARIANT Float
 Texture<Float, Spectrum>::mean() const {
     NotImplementedError("mean");
 }

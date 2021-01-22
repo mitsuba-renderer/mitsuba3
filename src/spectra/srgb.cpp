@@ -49,7 +49,7 @@ public:
             return m_value;
     }
 
-    ScalarFloat mean() const override {
+    Float mean() const override {
         if constexpr (is_spectral_v<Spectrum>)
             return ek::hmean(srgb_model_mean(m_value));
         else

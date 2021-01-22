@@ -203,7 +203,7 @@ public:
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!", m_name);
 
-        m_mean = ScalarFloat(mean / pixel_count);
+        m_mean = ek::opaque<Float>(mean / pixel_count);
     }
 
     /**
@@ -238,7 +238,7 @@ protected:
     std::string m_name;
     ScalarTransform3f m_transform;
     bool m_raw;
-    ScalarFloat m_mean;
+    Float m_mean;
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
 };
@@ -252,7 +252,7 @@ public:
                       const Bitmap *bitmap,
                       const std::string &name,
                       const ScalarTransform3f &transform,
-                      ScalarFloat mean,
+                      Float mean,
                       FilterType filter_type,
                       WrapMode wrap_mode)
         : Texture(props),
@@ -574,7 +574,7 @@ public:
 
     ScalarVector2i resolution() const override { return m_resolution; }
 
-    ScalarFloat mean() const override {
+    Float mean() const override {
         return m_mean;
     }
 
@@ -648,7 +648,7 @@ protected:
         }
 
         if (init_mean)
-            m_mean = ScalarFloat(mean / pixel_count);
+            m_mean = ek::opaque<Float>(mean / pixel_count);
 
         if (bad)
             Log(Warn,
@@ -663,7 +663,7 @@ protected:
     ek::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;
     ScalarTransform3f m_transform;
-    ScalarFloat m_mean;
+    Float m_mean;
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
 

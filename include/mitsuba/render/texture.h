@@ -172,7 +172,7 @@ public:
      *
      * Even if the operation is provided, it may only return an approximation.
      */
-    virtual ScalarFloat mean() const;
+    virtual Float mean() const;
 
     /**
      * \brief Returns the resolution of the texture, assuming that it is based

@@ -169,8 +169,8 @@ public:
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
 
         // Compute weights that further steer samples towards the specular or diffuse components
-        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
-                    s_mean = 1.f;
+        Float d_mean = m_diffuse_reflectance->mean(),
+              s_mean = 1.f;
 
         if (m_specular_reflectance)
             s_mean = m_specular_reflectance->mean();
@@ -363,7 +363,7 @@ private:
     ScalarFloat m_inv_eta_2;
     ScalarFloat m_fdr_int;
     ScalarFloat m_fdr_ext;
-    ScalarFloat m_specular_sampling_weight;
+    Float m_specular_sampling_weight;
     bool m_nonlinear;
 };
 

@@ -96,7 +96,7 @@ public:
         }
     }
 
-    ScalarFloat mean() const override {
+    Float mean() const override {
         return m_distr.integral() / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
     }
 

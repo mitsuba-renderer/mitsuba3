@@ -446,8 +446,8 @@ public:
 
         /* Compute weights that further steer samples towards
            the specular or diffuse components */
-        ScalarFloat d_mean = m_diffuse_reflectance->mean(),
-                    s_mean = 1.f;
+        Float d_mean = m_diffuse_reflectance->mean(),
+              s_mean = 1.f;
 
         if (m_specular_reflectance)
             s_mean = m_specular_reflectance->mean();
