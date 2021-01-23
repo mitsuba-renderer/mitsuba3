@@ -242,10 +242,6 @@ int main(int argc, char *argv[]) {
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (string::starts_with(mode, "cuda_") ||
             string::starts_with(mode, "llvm_")) {
-            jit_set_flag(JitFlag::VCallRecord, true);
-            jit_set_flag(JitFlag::LoopRecord, true);
-            jit_set_flag(JitFlag::VCallOptimize, true);
-            jit_set_flag(JitFlag::LoopOptimize, true);
             jit_set_flag(JitFlag::VCallBranch, false);
 
             if (*arg_force_optix)
