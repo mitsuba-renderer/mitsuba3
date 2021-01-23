@@ -188,24 +188,33 @@ int main(int argc, char *argv[]) {
         // Parse all command line options
         parser.parse(argc, argv);
 
-        if (*arg_verbose) {
-            auto logger = Thread::thread()->logger();
-            if (arg_verbose->next()) {
-                logger->set_log_level(Trace);
-#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-                jit_set_log_level_stderr(::LogLevel::Trace);
-#endif
-            } else {
-                logger->set_log_level(Debug);
-#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-                jit_set_log_level_stderr(::LogLevel::Info);
-#endif
-            }
-        } else {
-#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
-            jit_set_log_level_stderr(::LogLevel::Warn);
-#endif
+        int log_level = 0;
+        auto arg = arg_verbose;
+        while (arg) {
+            log_level++;
+            arg = arg->next();
         }
+
+        // Set the log level
+        auto logger = Thread::thread()->logger();
+        mitsuba::LogLevel log_level_mitsuba[] = {
+            Info,
+            Debug,
+            Trace
+        };
+
+        logger->set_log_level(log_level_mitsuba[std::min(log_level, 2)]);
+
+#if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
+        ::LogLevel log_level_enoki[] = {
+            ::LogLevel::Warn,
+            ::LogLevel::Info,
+            ::LogLevel::InfoSym,
+            ::LogLevel::Debug,
+            ::LogLevel::Trace
+        };
+        jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 4)]);
+#endif
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)
