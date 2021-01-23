@@ -166,84 +166,132 @@ void embree_intersect_scalar(int* valid,
     }
 }
 
-template <typename Float, typename Spectrum>
-void embree_intersect_packet(int* valid,
-                             void* geometryUserPtr,
-                             unsigned int geomID,
-                             unsigned int instID,
-                             RTCRayW* rays,
-                             RTCHitW* hits) {
+template <typename Float, typename Spectrum, size_t N, typename RTCRay_, typename RTCHit_>
+static void embree_intersect_packet(int *valid, void *geometryUserPtr,
+                                    unsigned int geomID, unsigned int instID,
+                                    RTCRay_ *rtc_ray,
+                                    RTCHit_ *rtc_hit) {
     MTS_IMPORT_TYPES(Shape)
+
+    using FloatP   = ek::Packet<ek::scalar_t<Float>, N>;
+    using MaskP    = ek::mask_t<FloatP>;
+    using Point2fP = Point<FloatP, 2>;
+    using Point3fP = Point<FloatP, 3>;
+    using Ray3fP   = Ray<Point<FloatP, 3>, Spectrum>;
+    using UInt32P  = ek::uint32_array_t<FloatP>;
 
     const Shape* shape = (const Shape*) geometryUserPtr;
 
-    using IntP = ek::replace_scalar_t<FloatP, int>;
-    MaskP active = ek::neq(ek::load_aligned<IntP>(valid), 0);
+    MaskP active = ek::neq(ek::load_aligned<UInt32P>(valid), 0);
     if (ek::none(active))
         return;
 
     // Create Mitsuba ray
     Ray3fP ray;
-    ray.o.x() = ek::load_aligned<FloatP>(rays->org_x);
-    ray.o.y() = ek::load_aligned<FloatP>(rays->org_y);
-    ray.o.z() = ek::load_aligned<FloatP>(rays->org_z);
-    ray.d.x() = ek::load_aligned<FloatP>(rays->dir_x);
-    ray.d.y() = ek::load_aligned<FloatP>(rays->dir_y);
-    ray.d.z() = ek::load_aligned<FloatP>(rays->dir_z);
-    ray.mint  = ek::load_aligned<FloatP>(rays->tnear);
-    ray.maxt  = ek::load_aligned<FloatP>(rays->tfar);
-    ray.time  = ek::load_aligned<FloatP>(rays->time);
+    ray.o.x() = ek::load_aligned<FloatP>(rtc_ray->org_x);
+    ray.o.y() = ek::load_aligned<FloatP>(rtc_ray->org_y);
+    ray.o.z() = ek::load_aligned<FloatP>(rtc_ray->org_z);
+    ray.d.x() = ek::load_aligned<FloatP>(rtc_ray->dir_x);
+    ray.d.y() = ek::load_aligned<FloatP>(rtc_ray->dir_y);
+    ray.d.z() = ek::load_aligned<FloatP>(rtc_ray->dir_z);
+    ray.mint  = ek::load_aligned<FloatP>(rtc_ray->tnear);
+    ray.maxt  = ek::load_aligned<FloatP>(rtc_ray->tfar);
+    ray.time  = ek::load_aligned<FloatP>(rtc_ray->time);
 
     // Check whether this is a shadow ray or not
-    if (hits) {
+    if (rtc_hit) {
         auto [t, prim_uv] = shape->ray_intersect_preliminary_packet(ray, active);
         active &= ek::neq(t, ek::Infinity<Float>);
-        ek::store_aligned(rays->tfar,      ek::select(active, t,            ek::load_aligned<FloatP>(rays->tfar)));
-        ek::store_aligned(hits->u,         ek::select(active, prim_uv.x(),  ek::load_aligned<FloatP>(hits->u)));
-        ek::store_aligned(hits->v,         ek::select(active, prim_uv.y(),  ek::load_aligned<FloatP>(hits->v)));
-        ek::store_aligned(hits->geomID,    ek::select(active, IntP(geomID), ek::load_aligned<IntP>(hits->geomID)));
-        ek::store_aligned(hits->primID,    ek::select(active, IntP(0),      ek::load_aligned<IntP>(hits->primID)));
-        ek::store_aligned(hits->instID[0], ek::select(active, IntP(instID), ek::load_aligned<IntP>(hits->instID[0])));
+        ek::store_aligned(rtc_ray->tfar,      ek::select(active, t,               ek::load_aligned<FloatP>(rtc_ray->tfar)));
+        ek::store_aligned(rtc_hit->u,         ek::select(active, prim_uv.x(),     ek::load_aligned<FloatP>(rtc_hit->u)));
+        ek::store_aligned(rtc_hit->v,         ek::select(active, prim_uv.y(),     ek::load_aligned<FloatP>(rtc_hit->v)));
+        ek::store_aligned(rtc_hit->geomID,    ek::select(active, UInt32P(geomID), ek::load_aligned<UInt32P>(rtc_hit->geomID)));
+        ek::store_aligned(rtc_hit->primID,    ek::select(active, UInt32P(0),      ek::load_aligned<UInt32P>(rtc_hit->primID)));
+        ek::store_aligned(rtc_hit->instID[0], ek::select(active, UInt32P(instID), ek::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
         active &= shape->ray_test_packet(ray, active);
-        ek::store_aligned(rays->tfar, ek::select(active, ray.maxt, ek::Infinity<Float>));
+        ek::store_aligned(rtc_ray->tfar, ek::select(active, ray.maxt, ek::Infinity<Float>));
     }
 }
 
 template <typename Float, typename Spectrum>
 void embree_intersect(const RTCIntersectFunctionNArguments* args) {
-    if (args->N == 1) {
-        RTCRayHit *rh = (RTCRayHit *) args->rayhit;
-        embree_intersect_scalar<Float, Spectrum>(
-            args->valid, args->geometryUserPtr, args->geomID,
-            args->context->instID[0], (RTCRay *) &rh->ray, (RTCHit *) &rh->hit);
-    } else {
-        if constexpr (ek::is_array_v<Float>) {
-            RTCRayHitW *rh = (RTCRayHitW *) args->rayhit;
-            embree_intersect_packet<Float, Spectrum>(
+    switch (args->N) {
+        case 1:
+            embree_intersect_scalar<Float, Spectrum>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], (RTCRayW *) &rh->ray,
-                (RTCHitW *) &rh->hit);
-        } else {
-            Throw("embree_intersect(): vectorized intersection is not supported in scalar modes.");
-        }
+                args->context->instID[0],
+                &((RTCRayHit *) args->rayhit)->ray,
+                &((RTCRayHit *) args->rayhit)->hit);
+            break;
+
+        case 4:
+            embree_intersect_packet<Float, Spectrum, 4>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0],
+                &((RTCRayHit4 *) args->rayhit)->ray,
+                &((RTCRayHit4 *) args->rayhit)->hit);
+            break;
+
+        case 8:
+            embree_intersect_packet<Float, Spectrum, 8>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0],
+                &((RTCRayHit8 *) args->rayhit)->ray,
+                &((RTCRayHit8 *) args->rayhit)->hit);
+            break;
+
+        case 16:
+            embree_intersect_packet<Float, Spectrum, 16>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0],
+                &((RTCRayHit16 *) args->rayhit)->ray,
+                &((RTCRayHit16 *) args->rayhit)->hit);
+            break;
+
+        default:
+            Throw("embree_intersect(): unsupported packet size!");
     }
 }
 
+
 template <typename Float, typename Spectrum>
 void embree_occluded(const RTCOccludedFunctionNArguments* args) {
-    if (args->N == 1) {
-        embree_intersect_scalar<Float, Spectrum>(
-            args->valid, args->geometryUserPtr, args->geomID,
-            args->context->instID[0], (RTCRay *) args->ray, nullptr);
-    } else {
-        if constexpr (ek::is_array_v<Float>) {
-            embree_intersect_packet<Float, Spectrum>(
+    switch (args->N) {
+        case 1:
+            embree_intersect_scalar<Float, Spectrum>(
                 args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], (RTCRayW *) args->ray, nullptr);
-        } else {
-            Throw("embree_occluded(): vectorized intersection is not supported in scalar modes.");
-        }
+                args->context->instID[0],
+                (RTCRay *) args->ray,
+                (RTCHit *) nullptr);
+            break;
+
+        case 4:
+            embree_intersect_packet<Float, Spectrum, 4>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0],
+                (RTCRay4 *) args->ray,
+                (RTCHit4 *) nullptr);
+            break;
+
+        case 8:
+            embree_intersect_packet<Float, Spectrum, 8>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0],
+                (RTCRay8 *) args->ray,
+                (RTCHit8 *) nullptr);
+            break;
+
+        case 16:
+            embree_intersect_packet<Float, Spectrum, 16>(
+                args->valid, args->geometryUserPtr, args->geomID,
+                args->context->instID[0],
+                (RTCRay16 *) args->ray,
+                (RTCHit16 *) nullptr);
+            break;
+
+        default:
+            Throw("embree_occluded(): unsupported packet size!");
     }
 }
 
@@ -341,20 +389,28 @@ Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, Mask /*
     NotImplementedError("ray_intersect_preliminary");
 }
 
-MTS_VARIANT std::pair<typename Shape<Float, Spectrum>::FloatP, typename Shape<Float, Spectrum>::Point2fP>
-Shape<Float, Spectrum>::ray_intersect_preliminary_packet(const Ray3fP & /*ray*/, MaskP /*active*/) const {
-    NotImplementedError("ray_intersect_preliminary_packet");
-}
+#define MTS_DEFAULT_RAY_INTERSECT_PACKET(N)                                    \
+    MTS_VARIANT std::pair<typename Shape<Float, Spectrum>::FloatP##N,          \
+                          typename Shape<Float, Spectrum>::Point2fP##N>        \
+    Shape<Float, Spectrum>::ray_intersect_preliminary_packet(                  \
+        const Ray3fP##N & /*ray*/, MaskP##N /*active*/) const {                \
+        NotImplementedError("ray_intersect_preliminary_packet");               \
+    }                                                                          \
+    MTS_VARIANT typename Shape<Float, Spectrum>::MaskP##N                      \
+    Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,              \
+                                            MaskP##N active) const {           \
+        return ek::neq(ray_intersect_preliminary_packet(ray, active).first,    \
+                       ek::Infinity<Float>);                                   \
+    }
+
+MTS_DEFAULT_RAY_INTERSECT_PACKET(4)
+MTS_DEFAULT_RAY_INTERSECT_PACKET(8)
+MTS_DEFAULT_RAY_INTERSECT_PACKET(16)
 
 MTS_VARIANT typename Shape<Float, Spectrum>::Mask
 Shape<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
     MTS_MASK_ARGUMENT(active);
     return ray_intersect_preliminary(ray, active).is_valid();
-}
-
-MTS_VARIANT typename Shape<Float, Spectrum>::MaskP
-Shape<Float, Spectrum>::ray_test_packet(const Ray3fP &ray, MaskP active) const {
-    return ek::neq(ray_intersect_preliminary_packet(ray, active).first, ek::Infinity<Float>);
 }
 
 

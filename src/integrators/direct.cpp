@@ -109,7 +109,8 @@ public:
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        SurfaceInteraction3f si = scene->ray_intersect(ray, active);
+        SurfaceInteraction3f si = scene->ray_intersect(
+            ray, HitComputeFlags::All | HitComputeFlags::Coherent, active);
         Mask valid_ray = si.is_valid();
 
         Spectrum result(0.f);

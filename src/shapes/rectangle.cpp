@@ -136,13 +136,13 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    template <typename FloatX, typename Ray3fX>
-    std::pair<FloatX, Point<FloatX, 2>>
-    ray_intersect_preliminary_impl(const Ray3fX &ray_,
-                                   ek::mask_t<FloatX> active) const {
-        Ray3fX ray = m_to_object.transform_affine(ray_);
-        FloatX t   = -ray.o.z() / ray.d.z();
-        Point<FloatX, 3> local = ray(t);
+    template <typename FloatP, typename Ray3fP>
+    std::pair<FloatP, Point<FloatP, 2>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray_,
+                                   ek::mask_t<FloatP> active) const {
+        Ray3fP ray = m_to_object.transform_affine(ray_);
+        FloatP t   = -ray.o.z() / ray.d.z();
+        Point<FloatP, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
         active = active && t >= ray.mint
@@ -150,18 +150,18 @@ public:
                         && ek::abs(local.x()) <= 1.f
                         && ek::abs(local.y()) <= 1.f;
 
-        return { ek::select(active, t, ek::Infinity<FloatX>),
-                 Point<FloatX, 2>(local.x(), local.y()) };
+        return { ek::select(active, t, ek::Infinity<FloatP>),
+                 Point<FloatP, 2>(local.x(), local.y()) };
     }
 
-    template <typename FloatX, typename Ray3fX>
-    ek::mask_t<FloatX> ray_test_impl(const Ray3fX &ray_,
-                                     ek::mask_t<FloatX> active) const {
+    template <typename FloatP, typename Ray3fP>
+    ek::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+                                     ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3fX ray     = m_to_object.transform_affine(ray_);
-        FloatX t       = -ray.o.z() / ray.d.z();
-        Point<FloatX, 3> local = ray(t);
+        Ray3fP ray     = m_to_object.transform_affine(ray_);
+        FloatP t       = -ray.o.z() / ray.d.z();
+        Point<FloatP, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
         return active && t >= ray.mint

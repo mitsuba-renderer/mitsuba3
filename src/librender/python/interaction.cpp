@@ -12,6 +12,7 @@ MTS_PY_EXPORT(HitComputeFlags) {
         .def_value(HitComputeFlags, ShadingFrame)
         .def_value(HitComputeFlags, NonDifferentiable)
         .def_value(HitComputeFlags, Sticky)
+        .def_value(HitComputeFlags, Coherent)
         .def_value(HitComputeFlags, All)
         .def_value(HitComputeFlags, AllNonDifferentiable)
         .def(py::self == py::self)

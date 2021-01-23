@@ -52,7 +52,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MuellerMatrix4f           = MuellerMatrix<UnpolarizedSpectrum>;
 
     using Ray3f                     = Ray<Point<Float, 3>, Spectrum>;
-    using Ray3fP                    = Ray<Point<ek::Packet<ek::scalar_t<Float>>, 3>, Spectrum>;
     using RayDifferential3f         = RayDifferential<Point<Float, 3>, Spectrum>;
 
     using PositionSample3f          = PositionSample<Float, Spectrum>;
@@ -136,7 +135,6 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using StokesVector4f       = typename RenderAliases::StokesVector4f;                           \
     using MuellerMatrix4f      = typename RenderAliases::MuellerMatrix4f;                          \
     using Ray3f                = typename RenderAliases::Ray3f;                                    \
-    using Ray3fP               = typename RenderAliases::Ray3fP;                                   \
     using RayDifferential3f    = typename RenderAliases::RayDifferential3f;
 
 #define MTS_IMPORT_TYPES_MACRO(x) using x = typename RenderAliases::x;

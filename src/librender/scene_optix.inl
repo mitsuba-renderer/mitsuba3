@@ -323,7 +323,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray,
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t,
                                                       Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
@@ -394,7 +394,7 @@ MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
                                           Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, active);
+        PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, hit_flags, active);
         return pi.compute_surface_interaction(ray, hit_flags, active);
     } else {
         ENOKI_MARK_USED(ray);
@@ -405,7 +405,7 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
         Assert(!m_shapes.empty());
 

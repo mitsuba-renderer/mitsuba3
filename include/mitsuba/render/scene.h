@@ -45,6 +45,10 @@ public:
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask active = true) const;
 
+    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+                                                        uint32_t hit_flags,
+                                                        Mask active = true) const;
+
     /**
      * \brief Ray intersection using brute force search. Used in
      * unit tests to validate the kdtree-based ray tracer.
@@ -71,6 +75,8 @@ public:
      * \return \c true if an intersection was found
      */
     Mask ray_test(const Ray3f &ray, Mask active = true) const;
+    Mask ray_test(const Ray3f &ray, uint32_t hit_flags,
+                  Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -198,8 +204,10 @@ protected:
     void accel_release_gpu();
 
     /// Trace a ray and only return a preliminary intersection data structure
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(const Ray3f &ray, Mask active) const;
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(const Ray3f &ray, Mask active) const;
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
+        const Ray3f &ray, uint32_t hit_flags, Mask active) const;
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_gpu(
+        const Ray3f &ray, uint32_t hit_flags, Mask active) const;
 
     /// Trace a ray
     MTS_INLINE SurfaceInteraction3f ray_intersect_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const;
@@ -207,8 +215,8 @@ protected:
     MTS_INLINE SurfaceInteraction3f ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const;
 
     /// Trace a shadow ray
-    MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, Mask active) const;
-    MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, Mask active) const;
+    MTS_INLINE Mask ray_test_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const;
+    MTS_INLINE Mask ray_test_gpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const;
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 

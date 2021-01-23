@@ -485,7 +485,14 @@ enum class HitComputeFlags : uint32_t {
     NonDifferentiable     = 0x00040,
 
     /// Derivatives of the SurfaceInteraction members will follow the shape's motion
-    Sticky     = 0x00080,
+    Sticky                = 0x00080,
+
+    // =============================================================
+    //!                      Miscellaneous
+    // =============================================================
+
+    /// Inform Embree that these rays are coherent (for primary rays)
+    Coherent              = 0x00100,
 
     // =============================================================
     //!                 Compound compute flags

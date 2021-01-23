@@ -467,6 +467,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
     auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
     auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
 
+    using FloatP = ek::Packet<ek::scalar_t<Float>>;
     using Normal3fP = Normal<FloatP, 3>;
     using Vector3fP = Vector<FloatP, 3>;
 
@@ -519,6 +520,7 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
     auto [nodes_x, nodes_y]     = ek::meshgrid(nodes, nodes);
     auto [weights_x, weights_y] = ek::meshgrid(weights, weights);
 
+    using FloatP = ek::Packet<ek::scalar_t<Float>>;
     using Normal3fP = Normal<FloatP, 3>;
     using Vector3fP = Vector<FloatP, 3>;
 

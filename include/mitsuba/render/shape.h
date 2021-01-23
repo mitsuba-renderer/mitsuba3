@@ -136,24 +136,6 @@ public:
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                 Mask active = true) const;
 
-
-    /**
-     * \brief Fast ray intersection test vectorized using ek::Packet<float>
-     *
-     * This method is used by the Embree ray tracing backend to efficiently
-     * compute "streamed" ray intersections with shapes other than meshes
-     * (e.g. Sphere, Disk, ...).
-     *
-     * \param ray
-     *     The ray to be tested for an intersection
-     *
-     * \return
-     *      Distance traveled along the ray and the 2D coordinates on the
-     *      primitive surface parameterization
-     */
-    virtual std::pair<FloatP, Point2fP> ray_intersect_preliminary_packet(const Ray3fP &ray,
-                                                                         MaskP active = true) const;
-
     /**
      * \brief Fast ray shadow test
      *
@@ -170,7 +152,6 @@ public:
      *     The ray to be tested for an intersection
      */
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
-    virtual MaskP ray_test_packet(const Ray3fP &ray, MaskP active = true) const;
 
     /**
      * \brief Compute and return detailed information related to a surface interaction
@@ -213,6 +194,29 @@ public:
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
                                        uint32_t hit_flags = +HitComputeFlags::All,
                                        Mask active = true) const;
+
+    //! @}
+    // =============================================================
+
+    // =============================================================
+    //! @{ \name Packet versions of ray test/intersection routines
+    // =============================================================
+
+    #define MTS_DECLARE_RAY_INTERSECT_PACKET(N)                         \
+        using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;         \
+        using MaskP##N    = ek::mask_t<FloatP##N>;                      \
+        using Point2fP##N = Point<FloatP##N, 2>;                        \
+        using Point3fP##N = Point<FloatP##N, 3>;                        \
+        using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                 \
+        virtual std::pair<FloatP##N, Point2fP##N>                       \
+        ray_intersect_preliminary_packet(const Ray3fP##N &ray,          \
+                                         MaskP##N active = true) const; \
+        virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,          \
+                                         MaskP##N active = true) const;
+
+    MTS_DECLARE_RAY_INTERSECT_PACKET(4)
+    MTS_DECLARE_RAY_INTERSECT_PACKET(8)
+    MTS_DECLARE_RAY_INTERSECT_PACKET(16)
 
     //! @}
     // =============================================================
@@ -534,6 +538,21 @@ protected:
 MTS_EXTERN_CLASS_RENDER(Shape)
 NAMESPACE_END(mitsuba)
 
+#define MTS_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                  \
+    using typename Base::FloatP##N;                                            \
+    using typename Base::MaskP##N;                                             \
+    using typename Base::Point2fP##N;                                          \
+    using typename Base::Point3fP##N;                                          \
+    using typename Base::Ray3fP##N;                                            \
+    std::pair<FloatP##N, Point2fP##N> ray_intersect_preliminary_packet(        \
+        const Ray3fP##N &ray, MaskP##N active) const override {                \
+        return ray_intersect_preliminary_impl<FloatP##N>(ray, active);         \
+    }                                                                          \
+    MaskP##N ray_test_packet(const Ray3fP##N &ray, MaskP##N active)            \
+        const override {                                                       \
+        return ray_test_impl<FloatP##N>(ray, active);                          \
+    }
+
 // Macro to define ray intersection methods given an *_impl() templated implementation
 #define MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                         \
     PreliminaryIntersection3f                                                            \
@@ -544,19 +563,13 @@ NAMESPACE_END(mitsuba)
         pi.shape = this;                                                                 \
         return pi;                                                                       \
     }                                                                                    \
-                                                                                         \
-    std::pair<FloatP, Point2fP>                                                          \
-    ray_intersect_preliminary_packet(const Ray3fP &ray, MaskP active) const override {   \
-        return ray_intersect_preliminary_impl<FloatP>(ray, active);                      \
-    }                                                                                    \
-                                                                                         \
     Mask ray_test(const Ray3f &ray, Mask active) const override {                        \
         MTS_MASK_ARGUMENT(active);                                                       \
         return ray_test_impl<Float>(ray, active);                                        \
     }                                                                                    \
-    MaskP ray_test_packet(const Ray3fP &ray, MaskP active) const override {              \
-        return ray_test_impl<FloatP>(ray, active);                                       \
-    }
+    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                                \
+    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                                \
+    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------
 //! @{ \name Enoki support for vectorized function calls

@@ -2940,6 +2940,8 @@ static const char *__doc_mitsuba_HitComputeFlags_Sticky =
 R"doc(Derivatives of the SurfaceInteraction members will follow the shape's
 motion)doc";
 
+static const char *__doc_mitsuba_HitComputeFlags_Coherent = "";
+
 static const char *__doc_mitsuba_HitComputeFlags_UV = R"doc(Compute UV coordinates)doc";
 
 static const char *__doc_mitsuba_HitComputeFlags_dNGdUV = R"doc(Compute the geometric normal partials wrt. the UV coordinates)doc";
