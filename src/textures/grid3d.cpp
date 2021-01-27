@@ -383,6 +383,10 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
+        m_size = ek::hprod(m_metadata.shape);
+        m_inv_resolution_x = ek::divisor<int32_t>(m_metadata.shape.x());
+        m_inv_resolution_y = ek::divisor<int32_t>(m_metadata.shape.y());
+        m_inv_resolution_z = ek::divisor<int32_t>(m_metadata.shape.z());
 
         // Recompute mean and maximum if necessary
         auto sum = ek::hsum(ek::hsum(ek::detach(m_data)));
