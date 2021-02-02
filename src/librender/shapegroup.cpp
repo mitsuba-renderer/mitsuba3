@@ -8,7 +8,10 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     m_id = props.id();
 
 #if !defined(MTS_ENABLE_EMBREE)
-    m_kdtree = new ShapeKDTree(props);
+    if constexpr (ek::is_llvm_array<Float>)
+        Throw("LLVM variant with native KDTree is not supported");
+    if constexpr (!ek::is_cuda_array_v<Float>)
+        m_kdtree = new ShapeKDTree(props);
 #endif
     m_has_meshes = false;
     m_has_others = false;
@@ -33,7 +36,8 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
                 m_bbox.expand(shape->bbox());
 #endif
 #if !defined(MTS_ENABLE_EMBREE)
-                m_kdtree->add_shape(shape);
+                if constexpr (!ek::is_cuda_array_v<Float>)
+                    m_kdtree->add_shape(shape);
 #endif
                 m_has_meshes |= shape->is_mesh();
                 m_has_others |= !shape->is_mesh();
@@ -43,10 +47,12 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         }
     }
 #if !defined(MTS_ENABLE_EMBREE)
-    if (!m_kdtree->ready())
-        m_kdtree->build();
+    if constexpr (!ek::is_cuda_array_v<Float>) {
+        if (!m_kdtree->ready())
+            m_kdtree->build();
 
-    m_bbox = m_kdtree->bbox();
+        m_bbox = m_kdtree->bbox();
+    }
 #endif
 
     if constexpr (ek::is_jit_array_v<Float>) {
