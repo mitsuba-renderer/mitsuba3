@@ -233,7 +233,7 @@ without changes. In contrast, ``scalar_spectral`` operates in the spectral
 domain where a RGB value is not meaningful---worse, there is an infinite set of
 spectra corresponding to each RGB color. Mitsuba uses the method of Jakob and
 Hanika :cite:`Jakob2019Spectral` to choose a plausible smooth spectrum amongst
-all of these these possibilities. An example is shown below:
+all of these possibilities. An example is shown below:
 
 .. image:: ../../../resources/data/docs/images/variants/upsampling.jpg
   :width: 100%

@@ -255,7 +255,7 @@ of *horizontal* and *elliptical* polarization.
     :align: center
 
 Because humans do not perceive polarization, accounting for it is usually not
-necessary when rendering images that are intended to be look realistic.
+necessary to render realistic images.
 However, polarization is easily observed using a variety of measurement devices
 and cameras, and it tends to provide a wealth of information about the material
 and shape of visible objects. For this reason, polarization is a powerful tool
