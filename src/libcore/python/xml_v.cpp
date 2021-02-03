@@ -56,10 +56,16 @@ MTS_PY_EXPORT(xml) {
         "load_dict",
         [](const py::dict dict) {
             std::map<std::string, ref<Object>> instances;
-            return cast_object(load_dict<Float, Spectrum>(dict, instances));
+            auto obj = cast_object(load_dict<Float, Spectrum>(dict, instances));
+            if (string::starts_with(GET_VARIANT(), "cuda_") ||
+                string::starts_with(GET_VARIANT(), "llvm_")) {
+                ek::eval();
+                ek::sync_device();
+            }
+            return obj;
         },
         "dict"_a,
-R"doc(Load a Mitsuba scene or object from an Python dictionary
+        R"doc(Load a Mitsuba scene or object from an Python dictionary
 
 Parameter ``dict``:
     Python dictionary containing the object description

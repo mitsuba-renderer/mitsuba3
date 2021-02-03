@@ -1005,10 +1005,7 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
                 // Give the object a chance to recursively expand into sub-objects
                 std::vector<ref<Object>> children = obj->expand();
-        #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
-                if (ctx.is_jit())
-                    ek::eval();
-        #endif
+
                 if (children.empty()) {
                     props.set_object(kv.first, obj, false);
                 } else if (children.size() == 1) {
@@ -1202,8 +1199,10 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
 
 #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
-        if (ctx.is_jit())
+        if (ctx.is_jit()) {
+            ek::eval();
             ek::sync_device();
+        }
 #endif
 
         Thread::thread()->set_file_resolver(fs_backup.get());
@@ -1279,8 +1278,10 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
 
 #if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
-        if (ctx.is_jit())
+        if (ctx.is_jit()) {
+            ek::eval();
             ek::sync_device();
+        }
 #endif
 
         Thread::thread()->set_file_resolver(fs_backup.get());
