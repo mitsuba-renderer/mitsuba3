@@ -4,12 +4,12 @@ import enoki as ek
 import gc
 
 
-def make_simple_scene(res=1):
+def make_simple_scene(res=1, integrator="path"):
     from mitsuba.core import xml, ScalarTransform4f
 
     return xml.load_dict({
         'type' : 'scene',
-        "integrator" : { "type" : "path" },
+        "integrator" : { "type" : integrator },
         "mysensor" : {
             "type" : "perspective",
             "near_clip": 0.1,
@@ -58,7 +58,7 @@ def collect():
     gc.collect()
 
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-@pytest.mark.parametrize("spp", [1, 4])
+@pytest.mark.parametrize("spp", [1, 4, 44])
 def test01_bsdf_reflectance_backward(variants_all_ad_rgb, collect, jit_flags, spp):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
@@ -156,7 +156,7 @@ def test03_optimizer(variants_all_ad_rgb, collect, spp, unbiased, opt_conf):
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render
 
-    scene = make_simple_scene(res=3)
+    scene = make_simple_scene(res=3, integrator="direct")
 
     key = 'rect.bsdf.reflectance.value'
 
