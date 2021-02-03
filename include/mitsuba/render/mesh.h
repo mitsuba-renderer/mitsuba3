@@ -184,11 +184,11 @@ public:
     MTS_INLINE PreliminaryIntersection3f
     ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
                            Mask active = true) const {
-        auto fi = face_indices(index);
+        auto fi = face_indices(index, active);
 
-        Point3f p0 = vertex_position(fi[0]),
-                p1 = vertex_position(fi[1]),
-                p2 = vertex_position(fi[2]);
+        Point3f p0 = vertex_position(fi[0], active),
+                p1 = vertex_position(fi[1], active),
+                p2 = vertex_position(fi[2], active);
 
         Vector3f e1 = p1 - p0, e2 = p2 - p0;
 
