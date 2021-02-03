@@ -426,6 +426,7 @@ MTS_VARIANT
 
 typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
+                                             uint32_t hit_flags,
                                              Mask active) const {
     if (!m_parameterization)
         const_cast<Mesh *>(this)->build_parameterization();
@@ -439,7 +440,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     pi.shape = this;
 
-    return pi.compute_surface_interaction(ray, +HitComputeFlags::All, active);
+    return pi.compute_surface_interaction(ray, hit_flags, active);
 }
 
 MTS_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, Mask) const {

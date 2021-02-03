@@ -571,7 +571,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     params.set_dirty(vertex_texcoords_key)
     params.update()
 
-    # Hit the upper right corner of the rectancle (the 4th vertex)
+    # Hit the upper right corner of the rectangle (the 4th vertex)
     ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
     pi = scene.ray_intersect_preliminary(ray)
 
@@ -591,7 +591,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     assert ek.allclose(ek.grad(params[vertex_pos_key]),
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], atol=1e-5)
 
-    # To increase si.dp_du along the x-axis, we need to strech the upper edge of the rectangle
+    # To increase si.dp_du along the x-axis, we need to stretch the upper edge of the rectangle
     ek.set_grad(params[vertex_pos_key], 0.0)
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.dp_du.x)

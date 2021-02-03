@@ -511,7 +511,7 @@ MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
 
 MTS_VARIANT
 typename Shape<Float, Spectrum>::SurfaceInteraction3f
-Shape<Float, Spectrum>::eval_parameterization(const Point2f &, Mask) const {
+Shape<Float, Spectrum>::eval_parameterization(const Point2f &, uint32_t, Mask) const {
     NotImplementedError("eval_parameterization");
 }
 
