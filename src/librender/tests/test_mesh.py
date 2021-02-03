@@ -764,9 +764,10 @@ def collect():
     gc.collect()
 
 @fresolver_append_path
+@pytest.mark.parametrize("res", [4, 7])
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
+def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, res, wall, jit_flags):
     from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Transform4f, Ray3f
     from mitsuba.render import HitComputeFlags
     from mitsuba.python.util import traverse
@@ -809,15 +810,15 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
         positions_new = ek.ravel(positions_new)
         ek.set_label(positions_new, 'positions_new')
         del transform
-        print(ek.graphviz_str(Float(1)))
+        # print(ek.graphviz_str(Float(1)))
         params[key] = positions_new
         params.update()
         ek.set_label(params[key], 'positions_post_update')
         ek.set_label(params['sphere.vertex_normals'], 'vertex_normals')
-        print(ek.graphviz_str(Float(1)))
+        # print(ek.graphviz_str(Float(1)))
 
     spp = 1
-    film_size = ScalarVector2i(4)
+    film_size = ScalarVector2i(res)
 
     # Sample a wavefront of rays (one per pixel and spp)
     total_sample_count = ek.hprod(film_size) * spp
@@ -835,12 +836,12 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, wall, jit_flags):
     si = scene.ray_intersect(ray, HitComputeFlags.Sticky, True)
     ek.set_label(si, 'si')
 
-    print(ek.graphviz_str(Float(1)))
+    # print(ek.graphviz_str(Float(1)))
 
     ek.forward(theta)
 
-    hit_sphere = si.t < 5.0
-    assert ek.allclose(ek.grad(si.p), ek.select(hit_sphere, Vector3f(0, 1, 0), Vector3f(0.0)))
+    hit_sphere = si.t < 6.0
+    assert ek.allclose(ek.grad(si.p), ek.select(hit_sphere, Vector3f(0, 1, 0), Vector3f(0, 0, 0)))
 
 
 @fresolver_append_path
