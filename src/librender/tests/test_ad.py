@@ -149,14 +149,15 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, collect, jit_flags, spp
 from mitsuba.python.autodiff import Adam, SGD
 
 @pytest.mark.parametrize("spp", [8])
+@pytest.mark.parametrize("res", [3])
 @pytest.mark.parametrize("unbiased", [False]) # TODO refactoring
 @pytest.mark.parametrize("opt_conf", [(SGD, [200.5, 0.9])])
-def test03_optimizer(variants_all_ad_rgb, collect, spp, unbiased, opt_conf):
+def test03_optimizer(variants_all_ad_rgb, collect, spp, res, unbiased, opt_conf):
     from mitsuba.core import Float, Color3f
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render
 
-    scene = make_simple_scene(res=3, integrator="direct")
+    scene = make_simple_scene(res=res, integrator="direct")
 
     key = 'rect.bsdf.reflectance.value'
 
@@ -170,6 +171,7 @@ def test03_optimizer(variants_all_ad_rgb, collect, spp, unbiased, opt_conf):
     opt = opt_type(*opt_args, params=params)
 
     opt[key] = Color3f(0.1)
+    ek.set_label(opt[key], key)
     opt.update()
 
     avrg_params = Color3f(0)
@@ -183,9 +185,13 @@ def test03_optimizer(variants_all_ad_rgb, collect, spp, unbiased, opt_conf):
         # Perform a differentiable rendering of the scene
         scene.sensors()[0].sampler().seed(0)
         image = render(scene, optimizer=opt, unbiased=unbiased, spp=spp)
+        ek.set_label(image, 'image')
 
         # Objective: MSE between 'image' and 'image_ref'
         ob_val = ek.hsum_async(ek.sqr(image - image_ref)) / len(image)
+        ek.set_label(ob_val, 'ob_val')
+
+        # print(ek.graphviz_str(Float(1)))
 
         # Back-propagate errors to input parameters
         ek.backward(ob_val)

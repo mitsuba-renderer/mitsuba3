@@ -255,7 +255,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
                             zero.index(),       zero.index(),
                             zero.index() };
 
-        uint32_t out[6] { };
+        uint32_t out[1] { };
 
         jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
                          1, in, out);

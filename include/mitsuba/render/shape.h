@@ -119,7 +119,7 @@ public:
     // =============================================================
 
     /**
-     * \brief Fast ray intersection test
+     * \brief Fast ray intersection
      *
      * Efficiently test whether the shape is intersected by the given ray, and
      * cache preliminary information about the intersection if that is the
@@ -139,9 +139,7 @@ public:
     /**
      * \brief Fast ray shadow test
      *
-     * Efficiently test whether the shape is intersected by the given ray, and
-     * cache preliminary information about the intersection if that is the
-     * case.
+     * Efficiently test whether the shape is intersected by the given ray.
      *
      * No details about the intersection are returned, hence the function is
      * only useful for visibility queries. For most shapes, the implementation
