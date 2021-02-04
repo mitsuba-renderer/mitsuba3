@@ -28,8 +28,6 @@ struct EmbreeState {
     MTS_IMPORT_CORE_TYPES()
     RTCScene accel;
     DynamicBuffer<UInt32> shapes_registry_ids;
-    RTCIntersectContext context_coherent;
-    RTCIntersectContext context_incoherent;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
@@ -45,10 +43,6 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
     m_accel = new EmbreeState<Float>();
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     s.accel = embree_scene;
-    rtcInitIntersectContext(&s.context_coherent);
-    rtcInitIntersectContext(&s.context_incoherent);
-    s.context_coherent.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-    s.context_incoherent.flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
     for (Shape *shape : m_shapes)
@@ -79,10 +73,10 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
-    RTCIntersectContext *context =
-        (hit_flags & (uint32_t) HitComputeFlags::Coherent)
-            ? &s.context_coherent
-            : &s.context_incoherent;
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
     if constexpr (!ek::is_jit_array_v<Float>) {
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
@@ -98,7 +92,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         rh.ray.tfar  = ray.maxt;
         rh.ray.time  = ray.time;
 
-        rtcIntersect1(s.accel, context, &rh);
+        rtcIntersect1(s.accel, &context, &rh);
 
         if (rh.ray.tfar != ray.maxt) {
             uint32_t shape_index = rh.hit.geomID;
@@ -135,7 +129,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
                   "Mitsuba/Embree don't have matching vector widths!");
 
         void *func_ptr  = (void *) rtcIntersectW,
-             *ctx_ptr   = (void *) context,
+             *ctx_ptr   = (void *) &context,
              *scene_ptr = (void *) s.accel;
 
         UInt64 func_v = UInt64::steal(
@@ -204,10 +198,10 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
                                      Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
-    RTCIntersectContext *context =
-        (hit_flags & (uint32_t) HitComputeFlags::Coherent)
-            ? &s.context_coherent
-            : &s.context_incoherent;
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
     if constexpr (!ek::is_jit_array_v<Float>) {
         EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
@@ -225,7 +219,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         ray2.tfar  = ray.maxt;
         ray2.time  = ray.time;
 
-        rtcOccluded1(s.accel, context, &ray2);
+        rtcOccluded1(s.accel, &context, &ray2);
 
         return ray2.tfar != ray.maxt;
     } else if constexpr (ek::is_llvm_array_v<Float>) {
@@ -234,7 +228,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
                   "Mitsuba/Embree don't have matching vector widths!");
 
         void *func_ptr  = (void *) rtcOccludedW,
-             *ctx_ptr   = (void *) context,
+             *ctx_ptr   = (void *) &context,
              *scene_ptr = (void *) s.accel;
 
         UInt64 func_v = UInt64::steal(
