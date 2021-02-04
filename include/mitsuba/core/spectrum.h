@@ -164,6 +164,7 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
           i1 = i0 + 1;
 
     Float v0_x, v1_x, v0_y, v1_y, v0_z, v1_z;
+#if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>) {
           v0_x = (Float) ek::gather<Float32>(cie1931_x_gpu_data, i0, active);
           v1_x = (Float) ek::gather<Float32>(cie1931_x_gpu_data, i1, active);
@@ -171,7 +172,10 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
           v1_y = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i1, active);
           v0_z = (Float) ek::gather<Float32>(cie1931_z_gpu_data, i0, active);
           v1_z = (Float) ek::gather<Float32>(cie1931_z_gpu_data, i1, active);
-    } else {
+    }
+#endif
+
+    if constexpr (!ek::is_cuda_array_v<Float>) {
           v0_x = (Float) ek::gather<Float32>(cie1931_x_cpu_data, i0, active);
           v1_x = (Float) ek::gather<Float32>(cie1931_x_cpu_data, i1, active);
           v0_y = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i0, active);
@@ -210,10 +214,13 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
           i1 = i0 + 1;
 
     Float v0, v1;
+#if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>) {
         v0 = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i0, active);
         v1 = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i1, active);
-    } else {
+    }
+#endif
+    if constexpr (!ek::is_cuda_array_v<Float>) {
         v0 = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i0, active);
         v1 = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i1, active);
     }
