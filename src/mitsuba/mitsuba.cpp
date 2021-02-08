@@ -207,13 +207,14 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
         ::LogLevel log_level_enoki[] = {
+            ::LogLevel::Error,
             ::LogLevel::Warn,
             ::LogLevel::Info,
             ::LogLevel::InfoSym,
             ::LogLevel::Debug,
             ::LogLevel::Trace
         };
-        jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 4)]);
+        jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 1)]);
 #endif
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
