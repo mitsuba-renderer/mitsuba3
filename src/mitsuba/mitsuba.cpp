@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
             ::LogLevel::Debug,
             ::LogLevel::Trace
         };
-        jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 1)]);
+        jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 6)]);
 #endif
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
