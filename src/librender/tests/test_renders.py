@@ -31,7 +31,10 @@ EXCLUDE_FOLDERS = [
 
 # Don't test participating media in GPU modes
 # to reduce the time needed to run all tests
-JIT_EXCLUDE_FOLDERS = ['participating_media']
+JIT_EXCLUDE_FOLDERS = [
+    'instancing', #TODO remove this once nested vcalls are supported
+    'participating_media'
+]
 
 def get_ref_fname(scene_fname):
     for color_mode in color_modes:
