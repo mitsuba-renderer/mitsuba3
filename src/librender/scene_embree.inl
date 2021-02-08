@@ -28,6 +28,7 @@ struct EmbreeState {
     MTS_IMPORT_CORE_TYPES()
     RTCScene accel;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    RTCIntersectContext llvm_context;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
@@ -73,12 +74,14 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
-        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-
     if constexpr (!ek::is_jit_array_v<Float>) {
+        ENOKI_MARK_USED(active);
+
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         RTCRayHit rh = {};
@@ -128,8 +131,12 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
             Throw("ray_intersect_preliminary_cpu(): LLVM backend and "
                   "Mitsuba/Embree don't have matching vector widths!");
 
+        rtcInitIntersectContext(&s.llvm_context);
+        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+            s.llvm_context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
         void *func_ptr  = (void *) rtcIntersectW,
-             *ctx_ptr   = (void *) &context,
+             *ctx_ptr   = (void *) &s.llvm_context,
              *scene_ptr = (void *) s.accel;
 
         UInt64 func_v = UInt64::steal(
@@ -161,22 +168,24 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         pi.prim_uv = Vector2f(Float::steal(out[1]),
                               Float::steal(out[2]));
 
-        pi.prim_index = UInt32::steal(out[3]);
+        pi.prim_index  = UInt32::steal(out[3]);
         pi.shape_index = UInt32::steal(out[4]);
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
         Mask hit = active && ek::neq(t, ray.maxt);
 
-        pi.t = select(hit, t, ek::Infinity<Float>);
+        pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
         // Set si.instance and si.shape
         Mask hit_inst = hit && ek::neq(inst_index, RTC_INVALID_GEOMETRY_ID);
         UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
 
         ShapePtr shape = ek::gather<UInt32>(s.shapes_registry_ids, index, hit);
-        pi.instance = ek::select(hit_inst, shape, nullptr);
-        pi.shape    = ek::select(hit_inst, nullptr, shape);
+
+        pi.instance = shape & hit_inst;
+        pi.shape    = shape & !hit_inst;
+
         return pi;
     } else {
         Throw("ray_intersect_preliminary_cpu() should only be called in CPU mode.");
@@ -198,15 +207,13 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
                                      Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
-        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-
     if constexpr (!ek::is_jit_array_v<Float>) {
-        EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-
         ENOKI_MARK_USED(active);
+
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+            context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
         RTCRay ray2 = {};
         ray2.org_x = ray.o.x();
@@ -227,8 +234,12 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
             Throw("ray_test_cpu(): LLVM backend and "
                   "Mitsuba/Embree don't have matching vector widths!");
 
+        rtcInitIntersectContext(&s.llvm_context);
+        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+            s.llvm_context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
         void *func_ptr  = (void *) rtcOccludedW,
-             *ctx_ptr   = (void *) &context,
+             *ctx_ptr   = (void *) &s.llvm_context,
              *scene_ptr = (void *) s.accel;
 
         UInt64 func_v = UInt64::steal(
