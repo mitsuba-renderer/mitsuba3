@@ -159,8 +159,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
 
         uint32_t out[6] { };
 
-        jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
-                         0, in, out);
+        uint32_t op = jit_embree_trace(func_v.index(), ctx_v.index(),
+                                       scene_v.index(), 0, in, out);
+
+        // Ensure Embree pipeline stays alive until the trace op is evaluated
+        jit_var_set_callback(op, [](uint32_t, int free, void *ptr) {
+            if (free)
+                ((Scene<Float, Spectrum> *) ptr)->dec_ref();
+        }, (void *)this);
+        inc_ref();
 
         PreliminaryIntersection3f pi;
 
@@ -262,8 +269,15 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
 
         uint32_t out[1] { };
 
-        jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
-                         1, in, out);
+        uint32_t op = jit_embree_trace(func_v.index(), ctx_v.index(),
+                                       scene_v.index(), 1, in, out);
+
+        // Ensure Embree pipeline stays alive until the trace op is evaluated
+        jit_var_set_callback(op, [](uint32_t, int free, void *ptr) {
+            if (free)
+                ((Scene<Float, Spectrum> *) ptr)->dec_ref();
+        }, (void *)this);
+        inc_ref();
 
         return active && ek::neq(Float::steal(out[0]), ray.maxt);
     } else {

@@ -340,8 +340,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
                payload_prim_index(0),
                payload_shape_ptr(0);
 
-
-    // Instance index is initialized to 0 when there is no instancing in the scene
+        // Instance index is initialized to 0 when there is no instancing in the scene
         UInt32 payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
 
         uint32_t trace_args[] {
@@ -360,8 +359,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
             payload_inst_index.index(),
         };
 
-        jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        active.index());
+        uint32_t op = jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t),
+                                      trace_args, active.index());
+
+        // Ensure OptiX pipeline stays alive until the trace op is evaluated
+        jit_var_set_callback(op, [](uint32_t, int free, void *ptr) {
+            if (free)
+                ((Scene<Float, Spectrum> *) ptr)->dec_ref();
+        }, (void *)this);
+        inc_ref();
 
         PreliminaryIntersection3f pi;
         pi.t          = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[15]));
@@ -429,8 +435,15 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) co
             miss_sbt_index.index(), payload_hit.index()
         };
 
-        jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        active.index());
+        uint32_t op = jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t),
+                                      trace_args, active.index());
+
+        // Ensure OptiX pipeline stays alive until the trace op is evaluated
+        jit_var_set_callback(op, [](uint32_t, int free, void *ptr) {
+            if (free)
+                ((Scene<Float, Spectrum> *) ptr)->dec_ref();
+        }, (void *)this);
+        inc_ref();
 
         return active && ek::eq(UInt32::steal(trace_args[15]), 1);
     } else {

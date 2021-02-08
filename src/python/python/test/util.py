@@ -87,7 +87,7 @@ def make_tmpfile(request, tmpdir_factory):
 def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['llvm', 'cuda']):
     """
     Helper routine which compares evaluations of the vectorized and
-    non-vectorized version of a kernel using available variants (e.g. LLVM, GPU).
+    non-vectorized version of a kernel using available variants (e.g. LLVM, CUDA).
 
     Parameter ``kernel`` (function):
         Function to be evaluated. It's arguments should be annotated if
@@ -161,3 +161,5 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
         # Compare results
         for i in range(len(results_scalar)):
             assert ek.allclose(results_vec[i], results_scalar[i], atol=atol)
+
+        del results_vec
