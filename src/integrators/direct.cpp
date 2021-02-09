@@ -111,11 +111,12 @@ public:
 
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, HitComputeFlags::All | HitComputeFlags::Coherent, active);
-        Mask valid_ray = si.is_valid();
+        Mask valid_ray = active && si.is_valid();
 
         Spectrum result(0.f);
 
         // ----------------------- Visible emitters -----------------------
+
         if (!m_hide_emitters) {
             EmitterPtr emitter_vis = si.emitter(scene, active);
             if (ek::any_or<true>(ek::neq(emitter_vis, nullptr)))

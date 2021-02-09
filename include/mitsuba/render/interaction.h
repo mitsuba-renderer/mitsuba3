@@ -618,9 +618,9 @@ struct PreliminaryIntersection {
         ek::masked(si.t, !active) = ek::Infinity<Float>;
         active &= si.is_valid();
 
-        // Set shape pointer if not already set by compute_surface_interaction()
-        si.shape       = ek::select(active && ek::eq(si.shape, nullptr), shape, si.shape);
-        si.instance    = instance;
+        ek::masked(si.shape,    !active) = nullptr;
+        ek::masked(si.instance, !active) = nullptr;
+
         si.prim_index  = prim_index;
         si.time        = ray.time;
         si.wavelengths = ray.wavelengths;

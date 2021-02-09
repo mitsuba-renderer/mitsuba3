@@ -587,6 +587,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         si.sh_frame.n = si.n;
     }
 
+    si.shape    = this;
+    si.instance = nullptr;
+
     return si;
 }
 

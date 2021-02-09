@@ -415,6 +415,9 @@ public:
             si.dn_dv = si.dp_dv * inv_radius;
         }
 
+        si.shape    = this;
+        si.instance = nullptr;
+
         return si;
     }
 

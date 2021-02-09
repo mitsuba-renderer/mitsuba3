@@ -202,6 +202,8 @@ public:
                                 ek::fmadd(pi.prim_uv.y(), .5f, .5f));
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
+        si.shape    = this;
+        si.instance = nullptr;
 
         return si;
     }

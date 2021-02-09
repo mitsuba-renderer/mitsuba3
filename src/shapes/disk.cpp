@@ -220,6 +220,8 @@ public:
         si.sh_frame.n = m_frame.n;
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
+        si.shape    = this;
+        si.instance = nullptr;
 
         return si;
     }
