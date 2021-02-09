@@ -142,7 +142,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         Log(Info, "Start rendering...");
         // jit_optix_set_launch_size(film_size.x(), film_size.y(), samples_per_pass);
 
-        ref<Sampler> sampler = sensor->sampler()->clone();
+        ref<Sampler> sampler = sensor->sampler();
         sampler->set_samples_per_wavefront((uint32_t) samples_per_pass);
 
         ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());

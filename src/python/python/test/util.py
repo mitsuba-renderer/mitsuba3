@@ -161,5 +161,3 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
         # Compare results
         for i in range(len(results_scalar)):
             assert ek.allclose(results_vec[i], results_scalar[i], atol=atol)
-
-        del results_vec

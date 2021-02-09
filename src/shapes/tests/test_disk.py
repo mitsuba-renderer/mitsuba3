@@ -104,7 +104,10 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
         o = 2.0 * o - 1.0
         o.z = 5.0
-        return scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+
+        t = scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+        ek.eval(t)
+        return t
 
     check_vectorization(kernel, arg_dims = [3], atol=1e-5)
 
