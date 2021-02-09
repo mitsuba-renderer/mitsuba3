@@ -80,6 +80,9 @@ Options:
     -Oo
         Force kernel evaluation in OptiX (esp. in wavefront mode)
 
+    -Os
+        Dump the kernel source code to the console
+
     -g <out>
         Write a GraphViz visualization of the computation
 )";
@@ -167,6 +170,7 @@ int main(int argc, char *argv[]) {
     auto arg_branch   = parser.add(StringVec{ "-Ob" });
     auto arg_no_optim = parser.add(StringVec{ "-O0" });
     auto arg_force_optix = parser.add(StringVec{ "-Oo" });
+    auto arg_dump_source = parser.add(StringVec{ "-Os" });
     auto arg_graphviz  = parser.add(StringVec{ "-g" }, true);
 
     bool profile = true, print_profile = false;
@@ -256,6 +260,9 @@ int main(int argc, char *argv[]) {
 
             if (*arg_force_optix)
                 jit_set_flag(JitFlag::ForceOptiX, true);
+
+            if (*arg_dump_source)
+                jit_set_flag(JitFlag::PrintIR, true);
 
             if (*arg_no_optim) {
                 jit_set_flag(JitFlag::VCallOptimize, false);
