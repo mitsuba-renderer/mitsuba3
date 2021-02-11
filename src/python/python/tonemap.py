@@ -1,5 +1,6 @@
 import mitsuba
-import numpy
+import numpy as np
+import argparse
 mitsuba.set_variant('scalar_rgb')
 
 from mitsuba.core import Bitmap, ThreadEnvironment, \
@@ -13,10 +14,12 @@ import os
 te = ThreadEnvironment()
 Thread.thread().logger().set_log_level(LogLevel.Info)
 
-def tonemap(fname):
+def tonemap(fname, scale):
     with ScopedSetThreadEnvironment(te):
         try:
             img_in = Bitmap(fname)
+            img_py = np.array(img_in, copy=False)
+            img_py *= scale
             img_out = img_in.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True)
             fname_out = fname.replace('.exr', '.png')
             img_out.write(fname_out)
@@ -27,13 +30,23 @@ def tonemap(fname):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print('Syntax: python %s <EXR file(s)>' % sys.argv[0])
-        exit()
+    class MyParser(argparse.ArgumentParser):
+        def error(self, message):
+            sys.stderr.write('error: %s\n' % message)
+            self.print_help()
+            sys.exit(2)
+
+    parser = MyParser(description=
+        'This program loads a sequence of EXR files and writes tonemapped PNGs using '
+        'a sRGB response curve. Blue-noise dithering is applied to avoid banding '
+        'artifacts in this process.')
+    parser.add_argument('--scale', type=float, default='1', help='Optional scale factor that should be applied before tonemapping')
+    parser.add_argument('file', type=str, nargs='+', help='One more more EXR files to be processed')
+    args = parser.parse_args()
 
     with ThreadPoolExecutor() as exc:
-        for fname in sys.argv[1:]:
-            if os.path.exists(fname):
-                exc.submit(tonemap, fname)
+        for f in args.file:
+            if os.path.exists(f):
+                exc.submit(tonemap, f, args.scale)
             else:
-                sys.stderr.write('File "%s" not found!\n' % fname)
+                sys.stderr.write('File "%s" not found!\n' % f)
