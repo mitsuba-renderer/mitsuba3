@@ -508,7 +508,7 @@ class WriteXML:
         if not os.path.isfile(filepath):
             raise ValueError("File '%s' not found!" % filepath)
         if abs_path in filepath: # The file is at the proper place already
-            return os.path.relpath(filepath, self.directory)
+            return f"{subfolders[tag]}/{os.path.basename(filepath)}"
         else: # We need to copy the file in the scene directory
             if filepath in self.copied_paths: # File was already copied, don't copy it again
                 return self.copied_paths[filepath]
@@ -523,7 +523,7 @@ class WriteXML:
                 self.copy_count[base_name] = 1
             target_path = os.path.join(abs_path, "%s%s" % (name, ext))
             copy2(filepath, target_path)
-            rel_path = os.path.relpath(target_path, self.directory)
+            rel_path = f"{subfolders[tag]}/{name}{ext}"
             self.copied_paths[filepath] = rel_path
             return rel_path
 
