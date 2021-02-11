@@ -281,6 +281,13 @@ int main(int argc, char *argv[]) {
             if (*arg_graphviz)
                 graphviz_output = arg_graphviz->as_string();
         }
+#else
+        ENOKI_MARK_USED(arg_force_optix);
+        ENOKI_MARK_USED(arg_dump_source);
+        ENOKI_MARK_USED(arg_no_optim);
+        ENOKI_MARK_USED(arg_branch);
+        ENOKI_MARK_USED(arg_wavefront);
+        ENOKI_MARK_USED(arg_graphviz);
 #endif
 
         if (profile)
