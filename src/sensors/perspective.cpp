@@ -281,7 +281,7 @@ public:
 
     void traverse(TraversalCallback *callback) override {
         Base::traverse(callback);
-        // TODO x_fov
+        callback->put_parameter("x_fov", m_x_fov);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
