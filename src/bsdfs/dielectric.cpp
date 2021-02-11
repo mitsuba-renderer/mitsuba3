@@ -313,7 +313,7 @@ public:
             weight[selected_t] *= ek::sqr(factor);
         }
 
-        return { bs, ek::select(active, weight, 0.f) };
+        return { bs, weight & active };
     }
 
     Spectrum eval(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,

@@ -147,7 +147,7 @@ public:
         if (m_specular_transmittance && ek::any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
-        return { bs, ek::select(active, unpolarized<Spectrum>(weight), 0.f) };
+        return { bs, unpolarized<Spectrum>(weight) & active };
     }
 
     Spectrum eval(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,
@@ -161,7 +161,7 @@ public:
     }
 
     Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
-                                Mask active) const override {
+                                    Mask active) const override {
 
         Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
 

@@ -163,7 +163,7 @@ public:
         ray.o = trafo.translation();
         ray.d = trafo * d;
 
-        return std::make_pair(ray, wav_weight);
+        return { ray, wav_weight };
     }
 
     std::pair<RayDifferential3f, Spectrum>
@@ -196,7 +196,7 @@ public:
         ray.d_y = trafo * ek::normalize(Vector3f(near_p) + m_dy);
         ray.has_differentials = true;
 
-        return std::make_pair(ray, wav_weight);
+        return { ray, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {

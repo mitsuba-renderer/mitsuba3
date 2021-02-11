@@ -307,7 +307,7 @@ public:
 
         bs.pdf *= ek::abs(dwh_dwo);
 
-        return { bs, ek::select(active, unpolarized<Spectrum>(weight), 0.f) };
+        return { bs, unpolarized<Spectrum>(weight) & active };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,

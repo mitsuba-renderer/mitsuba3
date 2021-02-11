@@ -128,7 +128,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
+        return m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active) & active;
     }
 
 
@@ -143,7 +143,7 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active);
+        return ek::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
     }
 
     std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
@@ -161,7 +161,8 @@ public:
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
-        return m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+        auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
+        return { value & active, ek::select(active, pdf, 0.f) };
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {

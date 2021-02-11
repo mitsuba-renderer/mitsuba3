@@ -64,11 +64,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        return ek::select(
-            Frame3f::cos_theta(si.wi) > 0.f,
-            unpolarized<Spectrum>(m_radiance->eval(si, active)),
-            0.f
-        );
+        return unpolarized<Spectrum>(m_radiance->eval(si, active)) & (Frame3f::cos_theta(si.wi) > 0.f);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -113,10 +109,8 @@ public:
             ENOKI_MARK_USED(wavelength_sample);
         }
 
-        return std::make_pair(
-            Ray3f(si.p, si.to_world(local), time, wavelength),
-            unpolarized<Spectrum>(spec_weight) * (ek::Pi<Float> / pdf)
-        );
+        return { Ray3f(si.p, si.to_world(local), time, wavelength),
+                 unpolarized<Spectrum>(spec_weight) * (ek::Pi<Float> / pdf) };
     }
 
     std::pair<DirectionSample3f, Spectrum>

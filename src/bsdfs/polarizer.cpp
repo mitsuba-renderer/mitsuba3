@@ -117,7 +117,7 @@ public:
 
             return { bs, M };
         } else {
-            return { bs, 0.5f*transmittance };
+            return { bs, 0.5f * transmittance };
         }
     }
 
@@ -165,7 +165,7 @@ public:
 
             return M;
         } else {
-            return 0.5f*transmittance;
+            return 0.5f * transmittance;
         }
     }
 

@@ -98,11 +98,10 @@ public:
         // 3. Set ray direction
         Vector3f d = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
-        return std::make_pair(
-            Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius, d,
-                  time, wavelengths),
-            unpolarized<Spectrum>(weight) *
-                (ek::Pi<Float> * ek::sqr(m_bsphere.radius)));
+        return { Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius,
+                       d, time, wavelengths),
+                 unpolarized<Spectrum>(weight) *
+                     (ek::Pi<Float> * ek::sqr(m_bsphere.radius)) };
     }
 
     std::pair<DirectionSample3f, Spectrum>

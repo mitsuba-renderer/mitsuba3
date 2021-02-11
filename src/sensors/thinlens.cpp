@@ -184,7 +184,7 @@ public:
         ray.o = trafo.transform_affine(aperture_p);
         ray.d = trafo * d;
 
-        return std::make_pair(ray, wav_weight);
+        return { ray, wav_weight };
     }
 
     std::pair<RayDifferential3f, Spectrum>
@@ -228,7 +228,7 @@ public:
         ray.d_y = trafo * ek::normalize(Vector3f(focus_p_y - aperture_p));
         ray.has_differentials = true;
 
-        return std::make_pair(ray, wav_weight);
+        return { ray, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {

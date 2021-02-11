@@ -39,9 +39,11 @@ public:
         ek::set_attr(this, "flags", m_flags);
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                                           Float /*sample1*/, const Point2f & /*sample2*/,
-                                           Mask active) const override {
+    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
+                                             const SurfaceInteraction3f &si,
+                                             Float /*sample1*/,
+                                             const Point2f & /*sample2*/,
+                                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
         bool sample_transmission = ctx.is_enabled(BSDFFlags::Null, 0);
         BSDFSample3f bs = ek::zero<BSDFSample3f>();
@@ -57,8 +59,9 @@ public:
         return { bs, unpolarized<Spectrum>(result) };
     }
 
-    Spectrum eval(const BSDFContext & /*ctx*/, const SurfaceInteraction3f & /*si*/,
-                  const Vector3f & /*wo*/, Mask /*active*/) const override {
+    Spectrum eval(const BSDFContext & /*ctx*/,
+                  const SurfaceInteraction3f & /*si*/, const Vector3f & /*wo*/,
+                  Mask /*active*/) const override {
         return 0.f;
     }
 

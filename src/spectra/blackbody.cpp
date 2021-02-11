@@ -80,7 +80,7 @@ public:
             UnpolarizedSpectrum P = 1e-9f * c0 / (lambda5 *
                     (ek::exp(c1 / (lambda * m_temperature)) - 1.f));
 
-            return ek::select(active, P, 0.f);
+            return P & active;
         } else {
             ENOKI_MARK_USED(wavelengths);
             ENOKI_MARK_USED(active_);
@@ -111,7 +111,7 @@ public:
             Wavelength pdf = 1e-9f * c0 * ek::exp(-c1 / (lambda * m_temperature))
                 / (lambda5 * m_integral);
 
-            return ek::select(active, pdf, 0.f);
+            return pdf & active;
         } else {
             /// TODO : implement reasonable thing to do in mono/RGB mode
             Throw("Not implemented for non-spectral modes");

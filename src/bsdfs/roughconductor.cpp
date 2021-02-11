@@ -481,8 +481,7 @@ public:
         else
             pdf = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
 
-        return { ek::select(active, F * value, 0.f),
-                 ek::select(active, pdf, 0.f) };
+        return { F * value & active, ek::select(active, pdf, 0.f) };
     }
 
     void traverse(TraversalCallback *callback) override {

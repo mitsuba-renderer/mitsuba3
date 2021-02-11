@@ -238,7 +238,7 @@ public:
         if (ek::none_or<false>(active))
             return ek::zero<ResultType>();
         ResultType result = interpolate(p, it.wavelengths, active);
-        return ek::select(active, result, ek::zero<ResultType>());
+        return result & active;
     }
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {

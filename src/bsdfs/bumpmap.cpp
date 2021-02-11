@@ -170,7 +170,7 @@ public:
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
 
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
-        return { ek::select(active, value, 0.f), ek::select(active, pdf, 0.f) };
+        return { value & active, ek::select(active, pdf, 0.f) };
     }
 
     Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {

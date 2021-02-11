@@ -112,7 +112,7 @@ public:
         UnpolarizedSpectrum beam_res = ek::select(cos_theta >= m_cos_beam_width, result,
                                result * ((m_cutoff_angle - ek::acos(cos_theta)) * m_inv_transition_width));
 
-        return ek::select(cos_theta <= m_cos_cutoff_angle, UnpolarizedSpectrum(0.0f), beam_res);
+        return beam_res & (cos_theta > m_cos_cutoff_angle);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,

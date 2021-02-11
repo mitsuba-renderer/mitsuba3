@@ -73,15 +73,15 @@ public:
         // 3. Sample spectrum
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
 
-        return std::make_pair(
+        return {
             RayDifferential3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelengths),
             unpolarized<Spectrum>(wav_weight) * ek::Pi<ScalarFloat>
-        );
+        };
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
-        return std::make_pair(m_shape->sample_direction(it, sample, active), ek::Pi<ScalarFloat>);
+        return { m_shape->sample_direction(it, sample, active), ek::Pi<ScalarFloat> };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,

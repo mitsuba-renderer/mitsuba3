@@ -35,7 +35,7 @@ public:
 
         auto wo  = warp::square_to_uniform_sphere(sample);
         auto pdf = warp::square_to_uniform_sphere_pdf(wo);
-        return std::make_pair(wo, pdf);
+        return { wo, pdf };
     }
 
     Float eval(const PhaseFunctionContext & /* ctx */, const MediumInteraction3f & /* mi */,

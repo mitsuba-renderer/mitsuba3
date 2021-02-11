@@ -106,7 +106,7 @@ public:
         ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
         ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
-        return std::make_pair(ray, wav_weight);
+        return { ray, wav_weight };
     }
 
     std::pair<RayDifferential3f, Spectrum>
@@ -132,7 +132,7 @@ public:
         //    have differentials
         ray.has_differentials = false;
 
-        return std::make_pair(ray, wav_weight);
+        return { ray, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {

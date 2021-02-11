@@ -209,7 +209,7 @@ public:
         prob_diffuse = 1.f - prob_specular;
 
         Mask sample_specular = active && (sample1 < prob_specular),
-             sample_diffuse = active && !sample_specular;
+             sample_diffuse  = active && !sample_specular;
 
         bs.eta = 1.f;
         bs.pdf = 0.f;
@@ -265,7 +265,7 @@ public:
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *
                 m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
 
-        return ek::select(active, unpolarized<Spectrum>(diff), ek::zero<Spectrum>());
+        return unpolarized<Spectrum>(diff) & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,

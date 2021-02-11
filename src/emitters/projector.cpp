@@ -147,8 +147,7 @@ public:
         ray.o = trafo.translation();
         ray.d = trafo * Vector3f(ek::normalize(near_p));
 
-        return std::make_pair(
-            ray, unpolarized<Spectrum>(weight / pdf) & active);
+        return { ray, unpolarized<Spectrum>(weight / pdf) & active };
     }
 
     std::pair<DirectionSample3f, Spectrum>

@@ -99,7 +99,7 @@ public:
 
         UnpolarizedSpectrum value = m_reflectance->eval(si, active);
 
-        return { bs, ek::select(active && bs.pdf > 0.f, unpolarized<Spectrum>(value), 0.f) };
+        return { bs, unpolarized<Spectrum>(value) & (active && bs.pdf > 0.f) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -117,7 +117,7 @@ public:
         UnpolarizedSpectrum value =
             m_reflectance->eval(si, active) * ek::InvPi<Float> * cos_theta_o;
 
-        return ek::select(active, unpolarized<Spectrum>(value), 0.f);
+        return unpolarized<Spectrum>(value) & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -154,8 +154,7 @@ public:
 
         Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
-        return { ek::select(active, unpolarized<Spectrum>(value), 0.f),
-                 ek::select(active, pdf, 0.f) };
+        return { unpolarized<Spectrum>(value) & active, ek::select(active, pdf, 0.f) };
     }
 
     void traverse(TraversalCallback *callback) override {

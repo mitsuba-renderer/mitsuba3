@@ -37,7 +37,7 @@ public:
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         auto value = eval_sigmat(mi);
-        return ek::select(active, value, 0.f);
+        return value & active;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -48,9 +48,7 @@ public:
         auto sigmas                = sigmat * m_albedo->eval(mi, active);
         UnpolarizedSpectrum sigman = 0.f;
 
-        return { ek::select(active, sigmas, 0.f),
-                 sigman,
-                 ek::select(active, sigmat, 0.f) };
+        return { sigmas & active, sigman, sigmat & active };
     }
 
     std::tuple<Mask, Float, Float>

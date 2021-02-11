@@ -73,9 +73,10 @@ public:
         // 3. Sample directional component
         Vector3f v1 = warp::square_to_cosine_hemisphere(sample3);
 
-        return std::make_pair(Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
-                                    Frame3f(-v0).to_world(v1), time, wavelengths),
-                              unpolarized<Spectrum>(weight) * (4.f * ek::sqr(ek::Pi<Float> * m_bsphere.radius)));
+        return { Ray3f(m_bsphere.center + v0 * m_bsphere.radius,
+                       Frame3f(-v0).to_world(v1), time, wavelengths),
+                 unpolarized<Spectrum>(weight) *
+                     (4.f * ek::sqr(ek::Pi<Float> * m_bsphere.radius)) };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -99,10 +100,10 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
 
-        return std::make_pair(
+        return {
             ds,
             unpolarized<Spectrum>(m_radiance->eval(si, active)) / ds.pdf
-        );
+        };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,

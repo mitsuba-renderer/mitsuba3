@@ -212,7 +212,7 @@ public:
         auto [u_m, ndf_pdf] = m_vndf.sample(sample, params, active);
 
         Float phi_m   = u2phi(u_m.y()),
-            theta_m = u2theta(u_m.x());
+              theta_m = u2theta(u_m.x());
 
         if (m_isotropic)
             phi_m += phi_i;
@@ -269,7 +269,7 @@ public:
 
         active &= Frame3f::cos_theta(bs.wo) > 0;
 
-        return { bs, ek::select(active, unpolarized<Spectrum>(spec) / bs.pdf, Spectrum(0.f)) };
+        return { bs, (unpolarized<Spectrum>(spec) / bs.pdf) & active };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
