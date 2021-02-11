@@ -105,7 +105,7 @@ public:
         Result result = ek::zero<Result>();
 
         if (m_brdf[0] == m_brdf[1]) {
-            si.wi.z() = abs(si.wi.z());
+            si.wi.z() = ek::abs(si.wi.z());
             result = m_brdf[0]->sample(ctx, si, sample1, sample2, active);
             result.first.wo.z() = ek::mulsign(result.first.wo.z(), si_.wi.z());
         } else {
@@ -141,7 +141,7 @@ public:
 
         if (m_brdf[0] == m_brdf[1]) {
             wo.z() = ek::mulsign(wo.z(), si.wi.z());
-            si.wi.z() = abs(si.wi.z());
+            si.wi.z() = ek::abs(si.wi.z());
             result = m_brdf[0]->eval(ctx, si, wo, active);
         } else {
             Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
@@ -176,7 +176,7 @@ public:
 
         if (m_brdf[0] == m_brdf[1]) {
             wo.z() = ek::mulsign(wo.z(), si.wi.z());
-            si.wi.z() = abs(si.wi.z());
+            si.wi.z() = ek::abs(si.wi.z());
             result = m_brdf[0]->pdf(ctx, si, wo, active);
         } else {
             Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
@@ -214,7 +214,7 @@ public:
 
         if (m_brdf[0] == m_brdf[1]) {
             wo.z() = ek::mulsign(wo.z(), si.wi.z());
-            si.wi.z() = abs(si.wi.z());
+            si.wi.z() = ek::abs(si.wi.z());
             std::tie(value, pdf) = m_brdf[0]->eval_pdf(ctx, si, wo, active);
         } else {
             Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
