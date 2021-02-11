@@ -6,6 +6,7 @@ import mitsuba
 import pytest
 import enoki as ek
 import numpy as np
+import gc
 from enoki.scalar import ArrayXf as Float
 
 
@@ -33,7 +34,7 @@ EXCLUDE_FOLDERS = [
 # to reduce the time needed to run all tests
 JIT_EXCLUDE_FOLDERS = [
     'instancing', #TODO remove this once nested vcalls are supported
-    'participating_media'
+    'participating_media',
 ]
 
 def get_ref_fname(scene_fname):
@@ -84,11 +85,30 @@ def z_test(mean, sample_count, reference, reference_var):
 
     return p_value
 
+@pytest.fixture
+def gc_collect():
+    gc.collect() # Ensure no leftover instances from other tests in registry
+    gc.collect()
+
+jit_flags_options = [
+    {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1, ek.JitFlag.VCallBranch: 0},
+    {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
+]
 
 @pytest.mark.slow
 @pytest.mark.parametrize(*['scene_fname', scenes])
-def test_render(variants_all, scene_fname):
+@pytest.mark.parametrize("jit_flags", jit_flags_options)
+def test_render(variants_all, gc_collect, scene_fname, jit_flags):
     from mitsuba.core import Bitmap, Struct, Thread, set_thread_count
+
+    if 'scalar' in mitsuba.variant() and not jit_flags == jit_flags_options[0]:
+        pytest.skip('no need to test the other jit flags in scalar mode')
+
+    # Set enoki JIT flags
+    for k, v in jit_flags.items():
+        ek.set_flag(k, v)
 
     scene_dir = dirname(scene_fname)
 
