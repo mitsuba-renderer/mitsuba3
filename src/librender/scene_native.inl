@@ -15,6 +15,11 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     m_accel = nullptr;
 }
 
+MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
+    Throw("accel_parameters_changed_cpu() not supported with Mitsuba native "
+          "kdtree. Embree should be used instead.");
+}
+
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t, Mask active) const {
     const ShapeKDTree *kdtree = (const ShapeKDTree *) m_accel;

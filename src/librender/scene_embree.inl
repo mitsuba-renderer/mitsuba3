@@ -27,6 +27,7 @@ template <typename Float>
 struct EmbreeState {
     MTS_IMPORT_CORE_TYPES()
     RTCScene accel;
+    std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
     RTCIntersectContext llvm_context;
 };
@@ -46,8 +47,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
     s.accel = embree_scene;
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
-    for (Shape *shape : m_shapes)
-         rtcAttachGeometry(embree_scene, shape->embree_geometry(__embree_device));
+    accel_parameters_changed_cpu();
+
+    Log(Info, "Embree ready. (took %s)",
+        util::time_string((float) timer.value()));
 
     if constexpr (ek::is_llvm_array_v<Float>) {
         // Get shapes registry ids
@@ -57,10 +60,19 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*prop
         s.shapes_registry_ids
             = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
+}
 
-    rtcCommitScene(embree_scene);
-    Log(Info, "Embree ready. (took %s)",
-        util::time_string((float) timer.value()));
+MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
+    EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
+    for (int geo : s.geometries)
+        rtcDetachGeometry(s.accel, geo);
+    s.geometries.clear();
+
+    for (Shape *shape : m_shapes)
+        s.geometries.push_back(rtcAttachGeometry(
+            s.accel, shape->embree_geometry(__embree_device)));
+
+    rtcCommitScene(s.accel);
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {

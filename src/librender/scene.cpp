@@ -280,9 +280,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<st
     if (update_accel) {
         if constexpr (ek::is_cuda_array_v<Float>)
             accel_parameters_changed_gpu();
-        else {
-            // TODO update Embree BVH or Mitsuba kdtree if necessary
-        }
+        else
+            accel_parameters_changed_cpu();
     }
 
     // Checks whether any of the shape's parameters require gradient

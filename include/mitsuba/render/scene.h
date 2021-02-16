@@ -197,6 +197,7 @@ protected:
     void accel_init_gpu(const Properties &props);
 
     /// Updates the ray-intersection acceleration data structure
+    void accel_parameters_changed_cpu();
     void accel_parameters_changed_gpu();
 
     /// Release the ray-intersection acceleration data structure
