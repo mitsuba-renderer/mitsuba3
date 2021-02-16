@@ -845,7 +845,59 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, res, wall, jit_flag
 
 
 @fresolver_append_path
-def test19_write_xml(variants_all_rgb):
+def test19_update_geometry(variants_vec_rgb):
+    from mitsuba.core import xml, Transform4f, Float, UInt32, Vector2f, Ray3f, ScalarVector2i
+    from mitsuba.python.util import traverse
+
+    scene = xml.load_dict({
+        'type': 'scene',
+        'rect': {
+            'type': 'ply',
+            'id': 'rect',
+            'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
+        }
+    })
+
+    params = traverse(scene)
+
+    init_vertex_pos = ek.unravel(mitsuba.core.Vector3f, params['rect.vertex_positions'])
+
+    def translate(v):
+        transform = Transform4f.translate(mitsuba.core.Vector3f(v))
+        positions_new = transform.transform_point(init_vertex_pos)
+        params['rect.vertex_positions'] = ek.ravel(positions_new)
+        params.update()
+        ek.eval()
+
+    film_size = ScalarVector2i([4, 4])
+    total_sample_count = ek.hprod(film_size)
+    pos = ek.arange(UInt32, total_sample_count)
+    scale = ek.rcp(Vector2f(film_size))
+    pos = Vector2f(Float(pos %  int(film_size[0])),
+                   Float(pos // int(film_size[0])))
+    pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
+
+    ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0], 0.0, [])
+    init_t = scene.ray_intersect_preliminary(ray).t
+    ek.eval(init_t)
+
+    v = [0, 0, 10]
+    translate(v)
+    ray.o += v
+    t = scene.ray_intersect_preliminary(ray).t
+    ray.o -= v
+    assert(ek.allclose(t, init_t))
+
+    v = [-5, 0, 10]
+    translate(v)
+    ray.o += v
+    t = scene.ray_intersect_preliminary(ray).t
+    ray.o -= v
+    assert(ek.allclose(t, init_t))
+
+
+@fresolver_append_path
+def test20_write_xml(variants_all_rgb):
     from mitsuba.core.xml import load_dict
     from mitsuba.core import Thread
     from mitsuba.python.util import traverse
