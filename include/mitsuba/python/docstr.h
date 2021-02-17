@@ -8370,9 +8370,9 @@ static const char *__doc_mitsuba_cie1931_y =
 R"doc(Evaluate the CIE 1931 Y color matching function given a wavelength in
 nanometers)doc";
 
-static const char *__doc_mitsuba_cie_initialize = R"doc(Allocate GPU memory for the CIE 1931 tables)doc";
+static const char *__doc_mitsuba_cie_static_initialization = R"doc(Allocate GPU memory for the CIE 1931 tables)doc";
 
-static const char *__doc_mitsuba_cie_shutdown = R"doc()doc";
+static const char *__doc_mitsuba_cie_static_shutdown = R"doc()doc";
 
 static const char *__doc_mitsuba_class = R"doc()doc";
 

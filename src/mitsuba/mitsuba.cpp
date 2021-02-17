@@ -236,17 +236,18 @@ int main(int argc, char *argv[]) {
             arg_define = arg_define->next();
         }
         mode = (*arg_mode ? arg_mode->as_string() : MTS_DEFAULT_VARIANT);
+        bool cuda = string::starts_with(mode, "cuda_");
+        bool llvm = string::starts_with(mode, "llvm_");
 
 #if defined(MTS_ENABLE_CUDA)
-        if (string::starts_with(mode, "cuda_")) {
+        if (cuda) {
             jit_init((uint32_t) JitBackend::CUDA);
-            cie_initialize();
             profile = false;
         }
 #endif
 
 #if defined(MTS_ENABLE_LLVM)
-        if (string::starts_with(mode, "llvm_")) {
+        if (llvm) {
             jit_llvm_set_thread_count(__global_thread_count);
             jit_init((uint32_t) JitBackend::LLVM);
             profile = false;
@@ -254,8 +255,7 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
-        if (string::starts_with(mode, "cuda_") ||
-            string::starts_with(mode, "llvm_")) {
+        if (cuda || llvm) {
             jit_set_flag(JitFlag::VCallBranch, false);
 
             if (*arg_force_optix)
@@ -292,6 +292,7 @@ int main(int argc, char *argv[]) {
 
         if (profile)
             Profiler::static_initialization();
+        cie_static_initialization(cuda, llvm);
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
@@ -378,7 +379,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    cie_shutdown();
+    cie_static_shutdown();
     if (profile) {
         Profiler::static_shutdown();
         if (print_profile)

@@ -4,6 +4,7 @@
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
 #include <enoki/matrix.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -128,20 +129,46 @@ struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
 #define MTS_CIE_Y_NORMALIZATION float(1.0 / 106.7502593994140625)
 
 /// Table with fits for \ref cie1931_xyz and \ref cie1931_y
-extern MTS_EXPORT_CORE const float *cie1931_x_cpu_data;
-extern MTS_EXPORT_CORE const float *cie1931_y_cpu_data;
-extern MTS_EXPORT_CORE const float *cie1931_z_cpu_data;
-
-#if defined(MTS_ENABLE_CUDA)
-using FloatC = ek::CUDAArray<float>;
-extern MTS_EXPORT_CORE FloatC cie1931_x_gpu_data;
-extern MTS_EXPORT_CORE FloatC cie1931_y_gpu_data;
-extern MTS_EXPORT_CORE FloatC cie1931_z_gpu_data;
+NAMESPACE_BEGIN(detail)
+template <typename Float> struct CIE1932Table {
+    using FloatStorage = DynamicBuffer<Float>;
+    FloatStorage x, y, z;
+    bool initialized = false;
+    void initialize(const float* ptr) {
+        if (initialized)
+            return;
+        x = ek::load<FloatStorage>(ptr, MTS_CIE_SAMPLES);
+        y = ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES);
+        z = ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES);
+        initialized = true;
+    }
+    void release() {
+        if (!initialized)
+            return;
+        x = y = z = FloatStorage();
+        initialized = false;
+    }
+};
+extern MTS_EXPORT_CORE CIE1932Table<float> cie1931_table_scalar;
+#if defined(MTS_ENABLE_LLVM)
+extern MTS_EXPORT_CORE CIE1932Table<ek::LLVMArray<float>> cie1931_table_llvm;
 #endif
+#if defined(MTS_ENABLE_CUDA)
+extern MTS_EXPORT_CORE CIE1932Table<ek::CUDAArray<float>> cie1931_table_cuda;
+#endif
+template <typename Float> auto get_cie_table() {
+    if constexpr (ek::is_llvm_array_v<Float>)
+        return cie1931_table_llvm;
+    else if constexpr (ek::is_cuda_array_v<Float>)
+        return cie1931_table_cuda;
+    else
+        return cie1931_table_scalar;
+}
+NAMESPACE_END(detail)
 
-/// Allocate GPU memory for the CIE 1931 tables
-extern MTS_EXPORT_CORE void cie_initialize();
-extern MTS_EXPORT_CORE void cie_shutdown();
+/// Allocate arrays for the CIE 1931 tables
+extern MTS_EXPORT_CORE void cie_static_initialization(bool cuda, bool llvm);
+extern MTS_EXPORT_CORE void cie_static_shutdown();
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
@@ -163,26 +190,13 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Float v0_x, v1_x, v0_y, v1_y, v0_z, v1_z;
-#if defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_cuda_array_v<Float>) {
-          v0_x = (Float) ek::gather<Float32>(cie1931_x_gpu_data, i0, active);
-          v1_x = (Float) ek::gather<Float32>(cie1931_x_gpu_data, i1, active);
-          v0_y = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i0, active);
-          v1_y = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i1, active);
-          v0_z = (Float) ek::gather<Float32>(cie1931_z_gpu_data, i0, active);
-          v1_z = (Float) ek::gather<Float32>(cie1931_z_gpu_data, i1, active);
-    }
-#endif
-
-    if constexpr (!ek::is_cuda_array_v<Float>) {
-          v0_x = (Float) ek::gather<Float32>(cie1931_x_cpu_data, i0, active);
-          v1_x = (Float) ek::gather<Float32>(cie1931_x_cpu_data, i1, active);
-          v0_y = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i0, active);
-          v1_y = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i1, active);
-          v0_z = (Float) ek::gather<Float32>(cie1931_z_cpu_data, i0, active);
-          v1_z = (Float) ek::gather<Float32>(cie1931_z_cpu_data, i1, active);
-    }
+    auto cie_table = detail::get_cie_table<Float32>();
+    Float v0_x = (Float) ek::gather<Float32>(cie_table.x, i0, active);
+    Float v1_x = (Float) ek::gather<Float32>(cie_table.x, i1, active);
+    Float v0_y = (Float) ek::gather<Float32>(cie_table.y, i0, active);
+    Float v1_y = (Float) ek::gather<Float32>(cie_table.y, i1, active);
+    Float v0_z = (Float) ek::gather<Float32>(cie_table.z, i0, active);
+    Float v1_z = (Float) ek::gather<Float32>(cie_table.z, i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
@@ -196,7 +210,6 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
  * \brief Evaluate the CIE 1931 Y color matching function given a wavelength in
  * nanometers
  */
-
 template <typename Float>
 Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
     using Int32       = ek::int32_array_t<Float>;
@@ -213,17 +226,9 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
     Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    Float v0, v1;
-#if defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_cuda_array_v<Float>) {
-        v0 = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i0, active);
-        v1 = (Float) ek::gather<Float32>(cie1931_y_gpu_data, i1, active);
-    }
-#endif
-    if constexpr (!ek::is_cuda_array_v<Float>) {
-        v0 = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i0, active);
-        v1 = (Float) ek::gather<Float32>(cie1931_y_cpu_data, i1, active);
-    }
+    auto cie_table = detail::get_cie_table<Float32>();
+    Float v0 = (Float) ek::gather<Float32>(cie_table.y, i0, active);
+    Float v1 = (Float) ek::gather<Float32>(cie_table.y, i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;

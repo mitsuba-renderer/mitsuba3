@@ -184,36 +184,35 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
     Float(0.000000000000), Float(0.000000000000), Float(0.000000000000)
 };
 
-const Float *cie1931_x_cpu_data = cie1931_tbl;
-const Float *cie1931_y_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES;
-const Float *cie1931_z_cpu_data = cie1931_tbl + MTS_CIE_SAMPLES * 2;
-
-#if defined(MTS_ENABLE_CUDA)
-FloatC cie1931_x_gpu_data;
-FloatC cie1931_y_gpu_data;
-FloatC cie1931_z_gpu_data;
+NAMESPACE_BEGIN(detail)
+CIE1932Table<float> cie1931_table_scalar;
+#if defined(MTS_ENABLE_LLVM)
+CIE1932Table<ek::LLVMArray<float>> cie1931_table_llvm;
 #endif
-
-void cie_initialize() {
 #if defined(MTS_ENABLE_CUDA)
-    if (cie1931_x_gpu_data.index() != 0)
-        return;
+CIE1932Table<ek::CUDAArray<float>> cie1931_table_cuda;
+#endif
+NAMESPACE_END(detail)
 
-    cie1931_x_gpu_data = ek::load<FloatC>(cie1931_tbl, MTS_CIE_SAMPLES);
-    cie1931_y_gpu_data = ek::load<FloatC>(cie1931_tbl + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES);
-    cie1931_z_gpu_data = ek::load<FloatC>(cie1931_tbl + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES);
+void cie_static_initialization(bool cuda, bool llvm) {
+    detail::cie1931_table_scalar.initialize(cie1931_tbl);
+#if defined(MTS_ENABLE_LLVM)
+    if (llvm)
+        detail::cie1931_table_llvm.initialize(cie1931_tbl);
+#endif
+#if defined(MTS_ENABLE_CUDA)
+    if (cuda)
+        detail::cie1931_table_cuda.initialize(cie1931_tbl);
 #endif
 }
 
-
-void cie_shutdown() {
+void cie_static_shutdown() {
+    detail::cie1931_table_scalar.release();
+#if defined(MTS_ENABLE_LLVM)
+    detail::cie1931_table_llvm.release();
+#endif
 #if defined(MTS_ENABLE_CUDA)
-    if (cie1931_x_gpu_data.index() == 0)
-        return;
-
-    cie1931_x_gpu_data = FloatC();
-    cie1931_y_gpu_data = FloatC();
-    cie1931_z_gpu_data = FloatC();
+    detail::cie1931_table_cuda.release();
 #endif
 }
 

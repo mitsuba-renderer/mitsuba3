@@ -124,7 +124,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
         py::cpp_function cleanup_callback(
             [](py::handle weakref) {
                 #if defined(MTS_ENABLE_CUDA)
-                    cie_shutdown();
+                    cie_static_shutdown();
                 #endif
                 /* The Enoki python module is responsible for cleaning up the
                    JIT state, so jit_shutdown() shouldn't be called here. */
