@@ -134,8 +134,7 @@ MTS_PY_EXPORT(Object) {
     if constexpr (ek::is_array_v<ObjectPtr>) {
         py::object ek       = py::module_::import("enoki"),
                    ek_array = ek.attr("ArrayBase");
-
-        py::class_<ObjectPtr> cls(m, "ObjectPtr", ek_array);
+        py::class_<ObjectPtr> cls(m, "ObjectPtr", ek_array, py::module_local());
         bind_enoki_ptr_array(cls);
     }
 }
