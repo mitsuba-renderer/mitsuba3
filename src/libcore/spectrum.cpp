@@ -204,6 +204,7 @@ void cie_static_initialization(bool cuda, bool llvm) {
     if (cuda)
         detail::cie1931_table_cuda.initialize(cie1931_tbl);
 #endif
+    (void) cuda; (void) llvm;
 }
 
 void cie_static_shutdown() {

@@ -157,12 +157,17 @@ extern MTS_EXPORT_CORE CIE1932Table<ek::LLVMArray<float>> cie1931_table_llvm;
 extern MTS_EXPORT_CORE CIE1932Table<ek::CUDAArray<float>> cie1931_table_cuda;
 #endif
 template <typename Float> auto get_cie_table() {
+#if defined(MTS_ENABLE_LLVM)
     if constexpr (ek::is_llvm_array_v<Float>)
         return cie1931_table_llvm;
-    else if constexpr (ek::is_cuda_array_v<Float>)
+    else
+#endif
+#if defined(MTS_ENABLE_CUDA)
+    if constexpr (ek::is_cuda_array_v<Float>)
         return cie1931_table_cuda;
     else
-        return cie1931_table_scalar;
+#endif
+    return cie1931_table_scalar;
 }
 NAMESPACE_END(detail)
 
