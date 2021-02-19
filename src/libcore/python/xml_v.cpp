@@ -57,8 +57,7 @@ MTS_PY_EXPORT(xml) {
         [](const py::dict dict) {
             std::map<std::string, ref<Object>> instances;
             auto obj = cast_object(load_dict<Float, Spectrum>(dict, instances));
-            if (string::starts_with(GET_VARIANT(), "cuda_") ||
-                string::starts_with(GET_VARIANT(), "llvm_")) {
+            if constexpr (ek::is_jit_array_v<Float>) {
                 ek::eval();
                 ek::sync_device();
             }
