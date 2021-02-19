@@ -16,7 +16,7 @@ public:
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        SurfaceInteraction3f si;
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t           = 0.f;
         si.uv          = Point2f(0.f, 0.f);
         si.wavelengths = it.wavelengths;
