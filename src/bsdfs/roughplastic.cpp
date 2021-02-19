@@ -298,10 +298,9 @@ public:
 
     Float lerp_gather(const DynamicBuffer<Float> &data, Float x, size_t size,
                       Mask active = true) const {
-        using UInt = ek::uint_array_t<Float>;
+        using UInt32 = ek::uint32_array_t<Float>;
         x *= Float(size - 1);
-
-        UInt index = ek::min(UInt(x), ek::scalar_t<UInt>(size - 2));
+        UInt32 index = ek::min(UInt32(x), uint32_t(size - 2));
 
         Float v0 = ek::gather<Float>(data, index, active),
               v1 = ek::gather<Float>(data, index + 1, active);
