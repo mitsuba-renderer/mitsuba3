@@ -24,14 +24,26 @@ install(
   DESTINATION python/mitsuba
 )
 
+if (MSVC)
+  ro_copy(${CMAKE_CURRENT_BINARY_DIR}/../../python/mitsuba/config.py python/mitsuba/config.py)
+endif()
+
 # ----------------------------------------------------------
 #   Copy & installation targets for Enoki python bindings
 # ----------------------------------------------------------
 
-set_target_properties(enoki-python
-  PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki
-)
+if (MSVC)
+  set_target_properties(enoki-python
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MTS_BINARY_DIR}/python/enoki
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/enoki
+    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/enoki
+    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/enoki)
+else()
+  set_target_properties(enoki-python
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki)
+endif()
 
 install(TARGETS enoki-python
   LIBRARY DESTINATION python/enoki
