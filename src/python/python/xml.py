@@ -26,7 +26,7 @@ class WriteXML:
         'height': 'resy'
     }
 
-    def __init__(self, path, split_files=False):
+    def __init__(self, path, subfolders, split_files=False):
         from mitsuba import variant
         if not variant():
             mitsuba.set_variant('scalar_rgb')
@@ -48,6 +48,7 @@ class WriteXML:
         self.file_stack = []
         self.current_file = Files.MAIN
         self.directory = '' # scene foler
+        self.subfolders = subfolders
         self.set_filename(path)
 
     def data_add(self, key, value, file=Files.MAIN):
@@ -152,9 +153,9 @@ class WriteXML:
         print('Scene Folder: %s' % self.directory)
 
         # Set texture directory name
-        self.textures_folder = os.path.join(self.directory, "textures")
+        self.textures_folder = os.path.join(self.directory, self.subfolders['texture'])
         # Create geometry export directory
-        geometry_folder = os.path.join(self.directory, "meshes")
+        geometry_folder = os.path.join(self.directory, self.subfolders['shape'])
         if not os.path.isdir(geometry_folder):
             os.mkdir(geometry_folder)
 
@@ -498,17 +499,15 @@ class WriteXML:
         filepath: the path to the given file
         tag: the tag this path property belongs to in (shape, texture, spectrum)
         '''
-        #TODO: centralize subdir names somewhere
-        subfolders = {'texture': 'textures', 'emitter': 'textures', 'shape': 'meshes', 'spectrum': 'spectra'}
 
-        if tag not in subfolders:
+        if tag not in self.subfolders:
             raise ValueError("Unsupported tag for a filename: %s" % tag)
-        abs_path = os.path.join(self.directory, subfolders[tag])
+        abs_path = os.path.join(self.directory, self.subfolders[tag])
         filepath = os.path.abspath(filepath) # We may have a relative path here, convert to absolute first
         if not os.path.isfile(filepath):
             raise ValueError("File '%s' not found!" % filepath)
         if abs_path in filepath: # The file is at the proper place already
-            return f"{subfolders[tag]}/{os.path.basename(filepath)}"
+            return f"{self.subfolders[tag]}/{os.path.basename(filepath)}"
         else: # We need to copy the file in the scene directory
             if filepath in self.copied_paths: # File was already copied, don't copy it again
                 return self.copied_paths[filepath]
@@ -523,7 +522,7 @@ class WriteXML:
                 self.copy_count[base_name] = 1
             target_path = os.path.join(abs_path, "%s%s" % (name, ext))
             copy2(filepath, target_path)
-            rel_path = f"{subfolders[tag]}/{name}{ext}"
+            rel_path = f"{self.subfolders[tag]}/{name}{ext}"
             self.copied_paths[filepath] = rel_path
             return rel_path
 
