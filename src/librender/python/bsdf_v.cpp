@@ -8,7 +8,7 @@ MTS_PY_EXPORT(BSDFSample) {
 
     m.def("has_flag", [](UInt32 flags, BSDFFlags f) { return has_flag(flags, f); });
 
-    py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3))
+    auto bs = py::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3))
         .def(py::init<>())
         .def(py::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3))
         .def(py::init<const BSDFSample3f &>(), "bs"_a, "Copy constructor")
@@ -18,6 +18,8 @@ MTS_PY_EXPORT(BSDFSample) {
         .def_readwrite("sampled_type", &BSDFSample3f::sampled_type, D(BSDFSample3, sampled_type))
         .def_readwrite("sampled_component", &BSDFSample3f::sampled_component, D(BSDFSample3, sampled_component))
         .def_repr(BSDFSample3f);
+
+    MTS_PY_ENOKI_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
 }
 
 /// Trampoline for derived types implemented in Python
