@@ -256,6 +256,23 @@ public:
                         value(i, j) = tmp;
                     }
                 }
+
+                /* Invalid configurations such as transmission directions are encoded as NaNs.
+                   Make sure these values don't end up in the interpolated value. */
+                ek::masked(value, ek::any(ek::isnan(value(0,0)))) = 0.f;
+
+                // Make sure intensity is non-negative
+                value(0, 0) = ek::max(0.f, value(0,0));
+
+                // Reverse phi rotation from above on Stokes reference frames
+                Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
+                         xi_hat = rotate_vector(xi_std, Vector3f(0, 0, 1), phi_std);
+
+                /* Rotate in/out reference vector of value s.t. it aligns with the
+                   implicit Stokes bases of -wo_hat & wi_hat. */
+                value = mueller::rotate_mueller_basis(value,
+                                                      -wo_hat, xo_hat, mueller::stokes_basis(-wo_hat),
+                                                       wi_hat, xi_hat, mueller::stokes_basis(wi_hat));
             } else {
                 for (int i = 0; i < 4; ++i) {
                     for (int j = 0; j < 4; ++j) {
