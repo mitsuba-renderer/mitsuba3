@@ -1199,7 +1199,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
                                           param, arg_counter, 0).second;
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
 
-#if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
+#if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
         if (ctx.is_jit()) {
             ek::eval();
             ek::sync_device();
@@ -1278,7 +1278,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
 
-#if defined(MTS_ENABLE_CUDA) or defined(MTS_ENABLE_LLVM)
+#if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
         if (ctx.is_jit()) {
             ek::eval();
             ek::sync_device();

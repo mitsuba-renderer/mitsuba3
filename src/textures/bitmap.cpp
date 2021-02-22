@@ -203,7 +203,7 @@ public:
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!", m_name);
 
-        m_mean = ek::opaque<Float>(mean / pixel_count);
+        m_mean = ek::opaque<Float>(ScalarFloat(mean / pixel_count));
     }
 
     /**
@@ -648,7 +648,7 @@ protected:
         }
 
         if (init_mean)
-            m_mean = ek::opaque<Float>(mean / pixel_count);
+            m_mean = ek::opaque<Float>(ScalarFloat(mean / pixel_count));
 
         if (bad)
             Log(Warn,

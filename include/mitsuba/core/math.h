@@ -344,7 +344,7 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
 
     /* Check if the quadratic equation is solvable */
     Value discrim = ek::fmsub(b, b, Scalar(4) * a * c);
-    active &= linear_case || (discrim >= 0);
+    active &= linear_case || (discrim >= Scalar(0));
 
     if (likely(ek::any_or<true>(active))) {
         Value sqrt_discrim = ek::sqrt(discrim);

@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM)
         if (llvm) {
-            jit_llvm_set_thread_count(__global_thread_count);
+            jit_llvm_set_thread_count((uint32_t) __global_thread_count);
             jit_init((uint32_t) JitBackend::LLVM);
             profile = false;
         }

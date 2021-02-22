@@ -386,8 +386,7 @@ public:
 
             for (uint32_t slice = 0; slice < m_slices; ++slice) {
                 ScalarFloat *p = m_levels[0].data.data();
-                uint32_t size = m_levels[0].size,
-                         offset = size * slice;
+                uint32_t offset = m_levels[0].size * slice;
 
                 ScalarFloat scale = 1.f;
                 if (normalize) {
@@ -397,7 +396,7 @@ public:
                     scale = ek::hprod(n_patches) / (ScalarFloat) sum;
                 }
 
-                for (uint32_t i = 0; i < size; ++i)
+                for (uint32_t i = 0; i < m_levels[0].size; ++i)
                     p[offset + i] = data[offset + i] * scale;
 
                 m_levels[0].ready();

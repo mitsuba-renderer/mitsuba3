@@ -293,10 +293,10 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
         auto &out = Base::m_graphviz_output;
         if (!out.empty()) {
-            ref<FileStream> out = new FileStream(Base::m_graphviz_output,
-                                                 FileStream::ETruncReadWrite);
+            ref<FileStream> out_stream =
+                new FileStream(out, FileStream::ETruncReadWrite);
             const char *graph = jit_var_graphviz();
-            out->write(graph, strlen(graph));
+            out_stream->write(graph, strlen(graph));
         }
 
         ek::eval(block->data());

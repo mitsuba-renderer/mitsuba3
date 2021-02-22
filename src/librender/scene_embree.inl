@@ -283,4 +283,9 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
     }
 }
 
+MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
+    return ray_intersect_cpu(ray, +HitComputeFlags::All, active);
+}
+
 NAMESPACE_END(mitsuba)

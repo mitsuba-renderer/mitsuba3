@@ -153,7 +153,7 @@ public:
         // Is intersection within ray segment and disk?
         active = active && t >= ray.mint
                         && t <= ray.maxt
-                        && local.x()*local.x() + local.y()*local.y() <= 1;
+                        && local.x() * local.x() + local.y() * local.y() <= 1.f;
 
         return { ek::select(active, t, ek::Infinity<FloatP>),
                  Point<FloatP, 2>(local.x(), local.y()) };
@@ -171,7 +171,7 @@ public:
         // Is intersection within ray segment and rectangle?
         return active && t >= ray.mint
                       && t <= ray.maxt
-                      && local.x()*local.x() + local.y()*local.y() <= 1;
+                      && local.x() * local.x() + local.y() * local.y() <= 1.f;
     }
 
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()

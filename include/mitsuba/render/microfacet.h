@@ -483,9 +483,9 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
 
         FloatP result_p = 0.f;
 
-        for (size_t i = 0; i < ek::width(nodes_x); ++i) {
-            ScalarVector2f node = { nodes_x[i], nodes_y[i] };
-            ScalarVector2f weight = { weights_x[i], weights_y[i] };
+        for (size_t j = 0; j < ek::width(nodes_x); ++j) {
+            ScalarVector2f node = { nodes_x[j], nodes_y[j] };
+            ScalarVector2f weight = { weights_x[j], weights_y[j] };
             node = ek::fmadd(node, 0.5f, 0.5f);
 
             Normal3fP m = std::get<0>(distr.sample(wi_p, node));
@@ -536,9 +536,9 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
 
         FloatP result_p = 0.f;
 
-        for (size_t i = 0; i < ek::width(nodes_x); ++i) {
-            ScalarVector2f node = { nodes_x[i], nodes_y[i] };
-            ScalarVector2f weight = { weights_x[i], weights_y[i] };
+        for (size_t j = 0; j < ek::width(nodes_x); ++j) {
+            ScalarVector2f node = { nodes_x[j], nodes_y[j] };
+            ScalarVector2f weight = { weights_x[j], weights_y[j] };
             node = ek::fmadd(node, 0.5f, 0.5f);
 
             Normal3fP m = std::get<0>(distr.sample(wi_p, node));

@@ -198,8 +198,8 @@ public:
         si.sh_frame.n = m_frame.n;
         si.dp_du      = m_frame.s;
         si.dp_dv      = m_frame.t;
-        si.uv         = Point2f(ek::fmadd(pi.prim_uv.x(), .5f, .5f),
-                                ek::fmadd(pi.prim_uv.y(), .5f, .5f));
+        si.uv         = Point2f(ek::fmadd(pi.prim_uv.x(), 0.5f, 0.5f),
+                                ek::fmadd(pi.prim_uv.y(), 0.5f, 0.5f));
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
         si.shape    = this;

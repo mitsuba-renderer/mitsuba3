@@ -100,9 +100,9 @@ public:
         }
 
         m_name     = props.string("name");
-        short mat_nr(props.int_("mat_nr"));
-        size_t vertex_count(props.int_("vert_count"));
-        size_t loop_tri_count(props.int_("loop_tri_count"));
+        short mat_nr = (short) props.int_("mat_nr");
+        size_t vertex_count = props.int_("vert_count");
+        size_t loop_tri_count = props.int_("loop_tri_count");
         const blender::MLoop *loops =
             reinterpret_cast<const blender::MLoop *>(props.long_("loops"));
         const blender::MLoopTri *tri_loops =

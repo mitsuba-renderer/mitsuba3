@@ -17,6 +17,10 @@ NAMESPACE_BEGIN(mitsuba)
 #  define MTS_OPTIX_DEBUG 1
 #endif
 
+#ifdef _MSC_VER
+#  define strdup(x) _strdup(x)
+#endif
+
 static constexpr size_t ProgramGroupCount = 2 + custom_optix_shapes_count;
 
 template <typename Float>
@@ -48,15 +52,15 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         bool scene_has_others = false;
         bool scene_has_instances = false;
 
-        for (auto& s : m_shapes) {
-            scene_has_meshes    |= s->is_mesh();
-            scene_has_others    |= !s->is_mesh() && !s->is_instance();
-            scene_has_instances |= s->is_instance();
+        for (auto& shape : m_shapes) {
+            scene_has_meshes    |= shape->is_mesh();
+            scene_has_others    |= !shape->is_mesh() && !shape->is_instance();
+            scene_has_instances |= shape->is_instance();
         }
 
-        for (auto& s : m_shapegroups) {
-            scene_has_meshes |= !s->has_meshes();
-            scene_has_others |= !s->has_others();
+        for (auto& shape : m_shapegroups) {
+            scene_has_meshes |= !shape->has_meshes();
+            scene_has_others |= !shape->has_others();
         }
 
         // =====================================================
