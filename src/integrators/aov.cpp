@@ -170,7 +170,7 @@ public:
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
                 case Type::Depth:
-                    *aovs++ = si.t;
+                    *aovs++ = ek::select(si.is_valid(), si.t, 0.f);
                     break;
 
                 case Type::Position:
