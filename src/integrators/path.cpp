@@ -195,7 +195,7 @@ public:
 
                 Float mis = mis_weight(bs.pdf, emitter_pdf);
                 EmitterPtr emitter_b = si_bsdf.emitter(scene, active);
-                if (ek::any_or<true>(ek::neq(emitter, nullptr)))
+                if (ek::any_or<true>(ek::neq(emitter_b, nullptr)))
                     result[active] += mis * throughput * emitter_b->eval(si_bsdf, active);
             }
 
