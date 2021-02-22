@@ -146,14 +146,14 @@ def render(scene,
         primal output (i.e. the image) along with derivative output. When the
         rendering algorithm and objective are jointly differentiated, we end up
         with expectations of products that do *not* satisfy the equality
-        :math:`\mathbb{E}[X Y]=\mathbb{E}[X]\, \mathbb{E}[Y]` due to
+        :math:`\\mathbb{E}[X Y]=\\mathbb{E}[X]\, \\mathbb{E}[Y]` due to
         correlations between :math:`X` and :math:`Y` that result from this
         sample re-use.
 
         When ``unbiased=True``, the ``render()`` function will generate an
         *unbiased* estimate that de-correlates primal and derivative
         components, which boils down to rendering the image twice and naturally
-        comes at some cost in performance :math:`(\sim 1.6 \times\!)`. Often,
+        comes at some cost in performance :math:`(\\sim 1.6 \\times\!)`. Often,
         biased gradients are good enough, in which case ``unbiased=False``
         should be specified instead.
 
