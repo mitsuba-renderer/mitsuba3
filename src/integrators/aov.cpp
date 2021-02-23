@@ -91,7 +91,7 @@ public:
 
             if (item[1] == "depth") {
                 m_aov_types.push_back(Type::Depth);
-                m_aov_names.push_back(item[0]);
+                m_aov_names.push_back(item[0] + ".T");
             } else if (item[1] == "position") {
                 m_aov_types.push_back(Type::Position);
                 m_aov_names.push_back(item[0] + ".X");

@@ -253,3 +253,49 @@ def test_accumulate(variant_scalar_rgb):
     # but (row, column) in arrays.
     b1.accumulate(b2, [5, 3], [3, 1], [1, 5])
     assert np.all(np.array(b1, copy=False) == ref)
+
+def test_split(variant_scalar_rgb):
+    from mitsuba.core import Bitmap, Struct
+    channels = ["R", "G", "B", "A", "im.X", "im.Y", "im.Z", "im.A", "depth.T", "val.U", "val.V", "test.Y", "test.R", "test.M", "multi.X", "multi.B", "multi.A", "lum.Y", "lum.A"]
+    bmp = Bitmap(
+        Bitmap.PixelFormat.MultiChannel,
+        Struct.Type.Float32,
+        [10, 10],
+        len(channels),
+        channels
+    )
+    splits = bmp.split()
+
+    fields = {
+        "<root>": set(["R", "G", "B", "A"]),
+        "im": set(["X", "Y", "Z", "A"]),
+        "depth": set("T"),
+        "val": set(["U", "V"]),
+        "test": set(["M", "R", "Y"]),
+        "multi": set(["X", "B", "A"]),
+        "lum": set(["Y", "A"])
+    }
+    #print(splits)
+
+    assert len(splits) == len(fields.keys())
+    assert set([split[0] for split in splits]) == set(fields.keys())
+
+    for split in splits:
+        assert set([f.name for f in split[1].struct_()]) == fields[split[0]]
+
+        if split[0] == "<root>":
+            assert split[1].pixel_format() == Bitmap.PixelFormat.RGBA
+        elif split[0] == "im":
+            assert split[1].pixel_format() == Bitmap.PixelFormat.XYZA
+        elif split[0] == "lum":
+            assert split[1].pixel_format() == Bitmap.PixelFormat.YA
+        else:
+            assert split[1].pixel_format() == Bitmap.PixelFormat.MultiChannel
+
+        for f in split[1].struct_():
+            if f.name == "A" and split[1].pixel_format() != Bitmap.PixelFormat.MultiChannel:
+                assert f.flags == 64
+            elif f.name == "W":
+                assert f.flags == 16
+            else:
+                assert f.flags == 32

@@ -41,8 +41,8 @@ MTS_PY_EXPORT(Bitmap) {
         .value("Unpremultiply", Bitmap::AlphaTransform::Unpremultiply,
                 D(Bitmap, AlphaTransform, Unpremultiply));
 
-    bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2u &, size_t>(),
-            "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0,
+    bitmap.def(py::init<Bitmap::PixelFormat, Struct::Type, const Vector2u &, size_t, std::vector<std::string>>(),
+            "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, "channel_names"_a = std::vector<std::string>(),
             D(Bitmap, Bitmap))
 
         .def(py::init([](py::array obj, py::object pixel_format_) {

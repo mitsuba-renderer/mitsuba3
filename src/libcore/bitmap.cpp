@@ -64,7 +64,8 @@ extern "C" {
 NAMESPACE_BEGIN(mitsuba)
 
 Bitmap::Bitmap(PixelFormat pixel_format, Struct::Type component_format,
-               const Vector2u &size, size_t channel_count, uint8_t *data)
+               const Vector2u &size, size_t channel_count,
+               const std::vector<std::string> &channel_names, uint8_t *data)
     : m_data(data), m_pixel_format(pixel_format),
       m_component_format(component_format), m_size(size), m_owns_data(false) {
 
@@ -76,7 +77,7 @@ Bitmap::Bitmap(PixelFormat pixel_format, Struct::Type component_format,
     // By default assume alpha to be premultiplied (since that's how we render)
     m_premultiplied_alpha = true;
 
-    rebuild_struct(channel_count);
+    rebuild_struct(channel_count, channel_names);
 
     if (!m_data) {
         m_data = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size()]);
@@ -159,7 +160,7 @@ void Bitmap::clear() {
     memset(m_data.get(), 0, buffer_size());
 }
 
-void Bitmap::rebuild_struct(size_t channel_count) {
+void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string> &channel_names) {
     std::vector<std::string> channels;
 
     switch (m_pixel_format) {
@@ -170,9 +171,20 @@ void Bitmap::rebuild_struct(size_t channel_count) {
         case PixelFormat::XYZ:   channels = { "X", "Y", "Z"};           break;
         case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
         case PixelFormat::XYZAW: channels = { "X", "Y", "Z", "A", "W"}; break;
-        case PixelFormat::MultiChannel: {
+        case PixelFormat::MultiChannel:
+            if (channel_names.size() == 0) {
                 for (size_t i = 0; i < channel_count; ++i)
                     channels.push_back(tfm::format("ch%i", i));
+            }
+            else {
+                std::vector<std::string> channels_sorted = channel_names;
+                std::sort(channels_sorted.begin(), channels_sorted.end());
+                for (size_t i = 1; i < channels_sorted.size(); ++i) {
+                    if (channels_sorted[i] == channels_sorted[i - 1])
+                        Throw("Bitmap::rebuild_struct(): duplicate channel name \"%s\"", channels_sorted[i]);
+                }
+                for (size_t i = 0; i < channel_count; ++i)
+                    channels.push_back(channel_names[i]);
             }
             break;
         default: Throw("Unknown pixel format!");
@@ -184,12 +196,13 @@ void Bitmap::rebuild_struct(size_t channel_count) {
 
     m_struct = new Struct();
     for (auto ch: channels) {
+        bool is_alpha = ch == "A" && m_pixel_format != PixelFormat::MultiChannel;
         uint32_t flags = +Struct::Flags::None;
-        if (ch != "A" && ch != "W" && m_srgb_gamma)
+        if (!is_alpha && ch != "W" && m_srgb_gamma)
             flags |= +Struct::Flags::Gamma;
-        if (ch != "A" && ch != "W" && m_premultiplied_alpha)
+        if (!is_alpha && ch != "W" && m_premultiplied_alpha)
             flags |= +Struct::Flags::PremultipliedAlpha;
-        if (ch == "A")
+        if (is_alpha)
             flags |= +Struct::Flags::Alpha;
         if (ch == "W")
             flags |= +Struct::Flags::Weight;
@@ -587,99 +600,75 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         std::string prefix = it->first;
         auto range = fields.equal_range(prefix);
 
-        FieldMap::iterator r = fields.end(), g = fields.end(),
-                           b = fields.end(), a = fields.end(),
-                           x = fields.end(), y = fields.end(),
-                           z = fields.end();
+        bool has_rgb = true,
+             has_xyz = true,
+             has_y   = false,
+             has_a   = false;
 
+        std::vector<std::string> field_names;
         for (auto it2 = range.first; it2 != range.second; ++it2) {
-            if (it2->second.first == "R")
-                r = it2;
-            else if (it2->second.first == "G")
-                g = it2;
-            else if (it2->second.first == "B")
-                b = it2;
-            else if (it2->second.first == "A")
-                a = it2;
-            else if (it2->second.first == "X")
-                x = it2;
-            else if (it2->second.first == "Y")
-                y = it2;
-            else if (it2->second.first == "Z")
-                z = it2;
+            if (it2->second.first == "Y")
+                has_y = true;
+            if (it2->second.first == "A")
+                has_a = true;
+            else {
+                if (std::string("RGB").find(it2->second.first) == std::string::npos){
+                    has_rgb = false;
+                }
+                if (std::string("XYZ").find(it2->second.first) == std::string::npos){
+                    has_xyz = false;
+                }
+
+            if (it2->second.first == "W" && prefix != "<root>")
+                Throw("Bitmap::split: Unexpected weight channel in image '%s'", prefix);
+            }
+
+            field_names.push_back(it2->second.first);
         }
+        has_xyz &= has_a ? field_names.size() == 4 : field_names.size() == 3;
+        has_rgb &= has_a ? field_names.size() == 4 : field_names.size() == 3;
+        has_y &= !has_xyz && (has_a ? field_names.size() == 2 : field_names.size() == 1);
 
-        bool has_rgb = r != fields.end() &&
-                       g != fields.end() &&
-                       b != fields.end(),
-             has_xyz = x != fields.end() &&
-                       y != fields.end() &&
-                       z != fields.end(),
-             has_y   = y != fields.end() && !has_xyz,
-             has_a   = a != fields.end();
-
+        ref<Bitmap> target;
         if (has_rgb || has_xyz || has_y) {
-            ref<Bitmap> target = new Bitmap(
+            target = new Bitmap(
                 has_rgb
                 ? (has_a ? PixelFormat::RGBA
-                         : PixelFormat::RGB)
+                        : PixelFormat::RGB)
                 : (has_xyz
-                   ? (has_a ? PixelFormat::XYZA
+                ? (has_a ? PixelFormat::XYZA
                             : PixelFormat::XYZ)
-                   : (has_a ? PixelFormat::YA
+                : (has_a ? PixelFormat::YA
                             : PixelFormat::Y)),
                 m_component_format,
                 m_size
             );
-            target->set_srgb_gamma(m_srgb_gamma);
-            target->set_premultiplied_alpha(m_premultiplied_alpha);
-
-            ref<Struct> target_struct = new Struct(*target->struct_());
-            auto link_field = [&](const char *l, FieldMap::iterator it) {
-                target_struct->field(l).name = it->second.second->name;
-                fields.erase(it);
-            };
-
-            if (has_rgb) {
-                link_field("R", r);
-                link_field("G", g);
-                link_field("B", b);
-            } else if (has_xyz) {
-                link_field("X", x);
-                link_field("Y", y);
-                link_field("Z", z);
-            } else {
-                link_field("Y", y);
-            }
-            if (has_a)
-                link_field("A", a);
-
-            StructConverter conv(m_struct, target_struct, true);
-            bool rv = conv.convert_2d(m_size.x(), m_size.y(),
-                                      uint8_data(), target->uint8_data());
-            if (!rv)
-                Throw("Bitmap::split(): conversion kernel indicated a failure!");
-            result.push_back({ prefix, target });
         }
-
-        it = range.second;
-    }
-
-    for (auto it = fields.begin(); it != fields.end(); ++it) {
-        ref<Bitmap> target = new Bitmap(
-            PixelFormat::Y,
-            m_component_format,
-            m_size
-        );
+        else {
+            target = new Bitmap (
+                PixelFormat::MultiChannel,
+                m_component_format,
+                m_size,
+                field_names.size(),
+                field_names
+            );
+        }
         target->set_srgb_gamma(m_srgb_gamma);
+        target->set_premultiplied_alpha(m_premultiplied_alpha);
+
         ref<Struct> target_struct = new Struct(*target->struct_());
-        target_struct->field("Y").name = it->second.second->name;
+
+        for (auto it2 = range.first; it2 != range.second; ++it2)
+            target_struct->field(it2->second.first).name = it->second.second->name;
+
         StructConverter conv(m_struct, target_struct, true);
         bool rv = conv.convert_2d(m_size.x(), m_size.y(),
-                                  uint8_data(), target->uint8_data());
+                                    uint8_data(), target->uint8_data());
         if (!rv)
             Throw("Bitmap::split(): conversion kernel indicated a failure!");
-        result.push_back({ it->first + "." + it->second.first, target });
+        result.push_back({ prefix, target });
+
+        it = range.second;
     }
 
     std::sort(result.begin(), result.end(),
@@ -687,7 +676,6 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
                  const std::pair<std::string, ref<Bitmap>> &v2) {
                   return v1.first < v2.first;
               });
-
     return result;
 }
 

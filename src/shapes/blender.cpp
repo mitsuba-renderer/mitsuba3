@@ -323,7 +323,6 @@ public:
         }
 
         set_children();
-
     }
 
     MTS_DECLARE_CLASS()

@@ -182,17 +182,17 @@ public:
     // ======================================================================
 
     /**
-     * \brief Create a bitmap of the specified type and allocate
-     * the necessary amount of memory
+     * \brief Create a bitmap of the specified type and allocate the necessary
+     * amount of memory
      *
      * \param pixel_format
      *    Specifies the pixel format (e.g. RGBA or Luminance-only)
      *
      * \param component_format
-     *    Specifies how the per-pixel components are encoded
-     *    (e.g. unsigned 8 bit integers or 32-bit floating point values).
-     *    The component format struct_type_v<Float> will be translated to the
-     *    corresponding compile-time precision type (Float32 or Float64).
+     *    Specifies how the per-pixel components are encoded (e.g. unsigned 8
+     *    bit integers or 32-bit floating point values). The component format
+     *    struct_type_v<Float> will be translated to the corresponding
+     *    compile-time precision type (Float32 or Float64).
      *
      * \param size
      *    Specifies the horizontal and vertical bitmap size in pixels
@@ -200,6 +200,10 @@ public:
      * \param channel_count
      *    Channel count of the image. This parameter is only required when
      *    \c pixel_format = \ref PixelFormat::MultiChannel
+     *
+     * \param channel_names
+     *    Channel names of the image. This parameter is optional, and only used
+     *    when \c pixel_format = \ref PixelFormat::MultiChannel
      *
      * \param data
      *    External pointer to the image data. If set to \c nullptr, the
@@ -209,6 +213,7 @@ public:
            Struct::Type component_format,
            const Vector2u &size,
            size_t channel_count = 0,
+           const std::vector<std::string> &channel_names = {},
            uint8_t *data = nullptr);
 
     /**
@@ -585,7 +590,7 @@ public:
      virtual ~Bitmap();
 
      /// Rebuild the 'm_struct' field based on the pixel format etc.
-     void rebuild_struct(size_t channel_count = 0);
+     void rebuild_struct(size_t channel_count = 0, const std::vector<std::string> &channel_names = {});
 
      /// Read a file from a stream
      void read(Stream *stream, FileFormat format);

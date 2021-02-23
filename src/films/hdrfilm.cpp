@@ -256,7 +256,7 @@ public:
         ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
                                                                : Bitmap::PixelFormat::XYZAW,
                           struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
-                          (uint8_t *) storage.data());
+                          m_channels, (uint8_t *) storage.data());
 
         if (raw)
             return source;
@@ -310,8 +310,6 @@ public:
                         dest_field.name = m_channels[i];
                         break;
                 }
-
-                source_field.name = m_channels[i];
             }
         }
 
