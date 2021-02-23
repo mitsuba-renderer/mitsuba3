@@ -716,5 +716,9 @@ class WriteXML:
         return params
 
 def dict_to_xml(scene_dict, filename, split_files=False):
-    writer = WriteXML(filename, split_files)
-    writer.process(scene_dict)
+    writer = WriteXML(filename, split_files=split_files)
+    try:
+        writer.process(scene_dict)
+    except Exception as e:
+        writer.exit() # Close all files in case of a failure
+        raise e
