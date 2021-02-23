@@ -158,10 +158,15 @@ if (NOT MSVC)
                    ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
 else()
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
+    ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
+    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh setpath.sh)
+
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.bat
                    ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat DESTINATION ".")
-    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.sh)
+    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.bat)
 endif()
 
 # ----------------------------------------------------------
@@ -477,14 +482,6 @@ execute_process(
   OUTPUT_VARIABLE GIT_COMMIT_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-
-# Directory for build products
-if (MSVC)
-  # MSVC: .. with generator expression for build type
-  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
-else()
-  set(MTS_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-endif()
 
 # Function for creating Mitsuba plugins
 function(add_plugin)
