@@ -312,6 +312,30 @@ MTS_VARIANT std::string Scene<Float, Spectrum>::to_string() const {
 
 void librender_nop() { }
 
+#if !defined(MTS_ENABLE_CUDA)
+MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &) {
+    NotImplementedError("accel_init_gpu");
+}
+MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
+    NotImplementedError("accel_parameters_changed_gpu");
+}
+MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
+    NotImplementedError("accel_release_gpu");
+}
+MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
+Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &, uint32_t, Mask) const {
+    NotImplementedError("ray_intersect_preliminary_gpu");
+}
+MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &, uint32_t, Mask) const {
+    NotImplementedError("ray_intersect_naive_gpu");
+}
+MTS_VARIANT typename Scene<Float, Spectrum>::Mask
+Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, uint32_t, Mask) const {
+    NotImplementedError("ray_test_gpu");
+}
+#endif
+
 MTS_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
 MTS_INSTANTIATE_CLASS(Scene)
 NAMESPACE_END(mitsuba)
