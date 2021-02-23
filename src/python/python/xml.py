@@ -26,7 +26,7 @@ class WriteXML:
         'height': 'resy'
     }
 
-    def __init__(self, path, subfolders, split_files=False):
+    def __init__(self, path, subfolders=None, split_files=False):
         from mitsuba import variant
         if not variant():
             mitsuba.set_variant('scalar_rgb')
@@ -48,7 +48,15 @@ class WriteXML:
         self.file_stack = []
         self.current_file = Files.MAIN
         self.directory = '' # scene foler
-        self.subfolders = subfolders
+        if subfolders is not None:
+            self.subfolders = subfolders
+        else:
+            self.subfolders = {
+                'texture': 'textures',
+                'emitter': 'textures',
+                'shape': 'meshes',
+                'spectrum': 'spectra'
+                }
         self.set_filename(path)
 
     def data_add(self, key, value, file=Files.MAIN):

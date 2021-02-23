@@ -410,6 +410,7 @@ def test11_xml_spectrum(variants_all_scalar):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_dict, load_file
     from mitsuba.core import Thread
+    from re import escape
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
     filepath = os.path.join(mts_root, 'resources/data/scenes/dict11/dict.xml')
@@ -507,7 +508,7 @@ def test11_xml_spectrum(variants_all_scalar):
     with pytest.raises(ValueError) as e:
         dict_to_xml(d5, filepath)
     try:
-        e.match("File '%s' not found!" % os.path.abspath(d5['light']['intensity']['filename']))
+        e.match(escape(f"File '{os.path.abspath(d5['light']['intensity']['filename'])}' not found!"))
     except AssertionError as err:
         rmtree(os.path.split(filepath)[0])
         raise err
