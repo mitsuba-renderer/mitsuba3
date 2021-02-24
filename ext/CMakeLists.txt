@@ -140,15 +140,22 @@ if (WIN32)
   set(ZLIB_LIBRARY zlib)
   set(ZLIB_INCLUDE_DIR
       ${CMAKE_CURRENT_SOURCE_DIR}/zlib
-      ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+      ${CMAKE_CURRENT_BINARY_DIR}/zlib
+      CACHE BOOL " " FORCE)
 endif()
 
+# Prevents openexr to set the DEBUG_POSTFIX "_d"
+set(CMAKE_DEBUG_POSTFIX "" CACHE STRING " " FORCE)
 set(PYILMBASE_ENABLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(openexr)
 
 set_property(TARGET
   IexMath IlmThread Half Iex Imath IlmImf
   PROPERTY FOLDER "dependencies/openexr")
+
+set_property(TARGET
+  IexMath IlmThread Half Iex Imath IlmImf
+  PROPERTY PUBLIC_HEADER "")
 
 set(OPENEXR_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}/openexr/IlmBase/Imath
