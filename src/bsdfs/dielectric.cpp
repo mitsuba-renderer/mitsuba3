@@ -233,7 +233,7 @@ public:
 
         bs.sampled_component = ek::select(selected_r, UInt32(0), UInt32(1));
         bs.sampled_type      = ek::select(selected_r, UInt32(+BSDFFlags::DeltaReflection),
-                                                  UInt32(+BSDFFlags::DeltaTransmission));
+                                                      UInt32(+BSDFFlags::DeltaTransmission));
 
         bs.wo = ek::select(selected_r,
                        reflect(si.wi),
@@ -269,14 +269,15 @@ public:
             }
 
             /* Apply frame reflection, according to "Stellar Polarimetry" by
-               David Clarke, Appendix A.2 (A26) */
-            weight = mueller::reverse(weight);
+               David Clarke, Appendix A.2 (A26). Doesn't apply to refraction. */
+            if (ek::any_or<true>(selected_r))
+                weight[selected_r] = mueller::reverse(weight);
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in = normalize(cross(n, -wi_hat)),
-                     s_axis_out = normalize(cross(n, wo_hat));
+            Vector3f s_axis_in  = ek::normalize(cross(n, -wi_hat)),
+                     s_axis_out = ek::normalize(cross(n, wo_hat));
 
             /* Rotate in/out reference vector of weight s.t. it aligns with the
                implicit Stokes bases of -wi_hat & wo_hat. */

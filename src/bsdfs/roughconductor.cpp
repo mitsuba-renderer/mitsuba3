@@ -334,8 +334,8 @@ public:
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
-            Vector3f s_axis_in  = normalize(cross(H, -wi_hat)),
-                     s_axis_out = normalize(cross(H, wo_hat));
+            Vector3f s_axis_in  = ek::normalize(cross(H, -wi_hat)),
+                     s_axis_out = ek::normalize(cross(H, wo_hat));
 
             /* Rotate in/out reference vector of F s.t. it aligns with the implicit
                Stokes bases of -wi_hat & wo_hat. */

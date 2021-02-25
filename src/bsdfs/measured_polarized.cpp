@@ -235,12 +235,12 @@ public:
                 /* The Stokes reference frame vector of this matrix lies in the plane
                    of reflection. See Figure 4. */
                 Vector3f zi_std = -wi_std,
-                         ti_std = normalize(cross(wi_std - wo_std, zi_std)),
-                         yi_std = normalize(cross(ti_std, zi_std)),
+                         ti_std = ek::normalize(cross(wi_std - wo_std, zi_std)),
+                         yi_std = ek::normalize(cross(ti_std, zi_std)),
                          xi_std = cross(yi_std, zi_std),
                          zo_std = wo_std,
-                         to_std = normalize(cross(wo_std - wi_std, zo_std)),
-                         yo_std = normalize(cross(to_std, zo_std)),
+                         to_std = ek::normalize(cross(wo_std - wi_std, zo_std)),
+                         yo_std = ek::normalize(cross(to_std, zo_std)),
                          xo_std = cross(yo_std, zo_std);
 
                 if (m_wavelength == -1.f) {
@@ -271,10 +271,10 @@ public:
 
                 /* Invalid configurations such as transmission directions are encoded as NaNs.
                    Make sure these values don't end up in the interpolated value. */
-                ek::masked(value, any(isnan(value(0,0)))) = 0.f;
+                ek::masked(value, ek::any(isnan(value(0,0)))) = 0.f;
 
                 // Make sure intensity is non-negative
-                value(0,0) = max(0.f, value(0,0));
+                value(0,0) = ek::max(0.f, value(0,0));
 
                 // Reverse phi rotation from above on Stokes reference frames
                 Vector3f xi_hat = rotate_vector(xi_std, Vector3f(0,0,1), phi_std),
@@ -304,7 +304,7 @@ public:
                 }
 
                 // Make sure BRDF is non-negative
-                value = max(0.f, value);
+                value = ek::max(0.f, value);
             }
         }
 
@@ -324,7 +324,7 @@ public:
         MicrofacetDistribution distr(MicrofacetType::GGX,
                                      m_alpha_sample, m_alpha_sample, true);
 
-        Vector3f H = normalize(wo + si.wi);
+        Vector3f H = ek::normalize(wo + si.wi);
 
         Float pdf_diffuse = warp::square_to_cosine_hemisphere_pdf(wo);
         Float pdf_microfacet = distr.pdf(si.wi, H) / (4.f * dot(wo, H));
@@ -356,7 +356,7 @@ private:
     template <typename Vector3, typename Value = ek::value_t<Vector3>>
     MTS_INLINE
     Vector3 rotate_vector(const Vector3 &v, const Vector3 &axis_, Value angle) const {
-        Vector3 axis = normalize(axis_);
+        Vector3 axis = ek::normalize(axis_);
         auto [sin_angle, cos_angle] = ek::sincos(angle);
         return v*cos_angle + axis*dot(v, axis)*(1.f - cos_angle) + sin_angle*cross(axis, v);
     }
@@ -364,16 +364,16 @@ private:
     template <typename Vector3, typename Value = ek::value_t<Vector3>>
     MTS_INLINE
     std::tuple<Value, Value, Value> directions_to_rusinkiewicz(const Vector3 &i, const Vector3 &o) const {
-        Vector3 h = normalize(i + o);
+        Vector3 h = ek::normalize(i + o);
 
         Vector3 n(0, 0, 1);
-        Vector3 b = normalize(cross(n, h)),
-                t = normalize(cross(b, h));
+        Vector3 b = ek::normalize(cross(n, h)),
+                t = ek::normalize(cross(b, h));
 
         Value td = ek::safe_acos(dot(h, i)),
               th = ek::safe_acos(dot(n, h));
 
-        Vector3 i_prj = normalize(i - dot(i, h)*h);
+        Vector3 i_prj = ek::normalize(i - dot(i, h)*h);
         Value cos_phi_d = ek::clamp(dot(t, i_prj), -1.f, 1.f),
               sin_phi_d = ek::clamp(dot(b, i_prj), -1.f, 1.f);
 
