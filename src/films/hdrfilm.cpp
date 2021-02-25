@@ -193,9 +193,9 @@ public:
         channels_sorted.push_back("G");
         channels_sorted.push_back("B");
         std::sort(channels_sorted.begin(), channels_sorted.end());
-        for (size_t i = 1; i < channels.size(); ++i) {
-            if (channels[i] == channels[i - 1])
-                Throw("Film::prepare(): duplicate channel name \"%s\"", channels[i]);
+        for (size_t i = 1; i < channels_sorted.size(); ++i) {
+            if (channels_sorted[i] == channels_sorted[i - 1])
+                Throw("Film::prepare(): duplicate channel name \"%s\"", channels_sorted[i]);
         }
 
         m_storage = new ImageBlock(m_crop_size, channels.size());
