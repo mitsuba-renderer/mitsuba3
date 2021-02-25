@@ -399,9 +399,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
 endif()
 
 if (MSVC)
-  # Disable checked iterators
-  add_definitions(-D_ITERATOR_DEBUG_LEVEL=0)
-
   # Don't issue implicit linking pragmas for TBB
   add_definitions(-D__TBB_NO_IMPLICIT_LINKAGE)
 
