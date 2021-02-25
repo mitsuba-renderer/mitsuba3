@@ -595,7 +595,7 @@ set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Installation targets
 set(MTS_DEPEND
-  asmjit IlmImf IlmThread Imath Iex Half tbb pugixml
+  asmjit IlmImf IlmThread Imath Iex IexMath Half tbb pugixml
 )
 
 if (WIN32 OR APPLE)

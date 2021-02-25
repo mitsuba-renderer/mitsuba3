@@ -155,11 +155,11 @@ set(PYILMBASE_ENABLE           OFF CACHE BOOL "" FORCE)
 add_subdirectory(openexr)
 
 set_property(TARGET
-  IexMath IlmThread Half Iex Imath IlmImf
+  IexMath IlmThread Half Iex Imath IlmImf IexMath
   PROPERTY FOLDER "dependencies/openexr")
 
 set_property(TARGET
-  IexMath IlmThread Half Iex Imath IlmImf
+  IexMath IlmThread Half Iex Imath IlmImf IexMath
   PROPERTY PUBLIC_HEADER "")
 
 set(OPENEXR_INCLUDE_DIRS
