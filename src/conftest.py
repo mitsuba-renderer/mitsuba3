@@ -6,6 +6,7 @@
 import pytest
 import re
 import mitsuba
+import gc
 
 re1 = re.compile(r'<built-in method (\w*) of PyCapsule object at 0x[0-9a-f]*>')
 re2 = re.compile(r'<bound method PyCapsule.(\w*)[^>]*>')
@@ -21,6 +22,10 @@ def patch_tb(tb):  # tb: ReprTraceback
     for entry in tb.reprentries:
         entry.lines = [patch_line(l) for l in entry.lines]
 
+@pytest.fixture
+def gc_collect():
+    gc.collect() # Ensure no leftover instances from other tests in registry
+    gc.collect()
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):

@@ -6,29 +6,22 @@ import mitsuba
 import pytest
 import enoki as ek
 import numpy as np
-import gc
 from enoki.scalar import ArrayXf as Float
 
 
-@pytest.fixture(params=mitsuba.variants())
-def variants_all(request):
-    try:
-        mitsuba.set_variant(request.param)
-    except:
-        pytest.skip("%s mode not enabled" % request.param)
-    return request.param
-
-
 color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
+
 
 TEST_SCENE_DIR = realpath(join(os.path.dirname(
     __file__), '../../../resources/data/tests/scenes'))
 scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
+
 # List of test scene folders to exclude
 EXCLUDE_FOLDERS = [
     'orthographic_sensor', #TODO remove this after rebase onto master
 ]
+
 
 # Don't test participating media in GPU modes
 # to reduce the time needed to run all tests
@@ -36,6 +29,7 @@ JIT_EXCLUDE_FOLDERS = [
     'instancing', #TODO remove this once nested vcalls are supported
     'participating_media',
 ]
+
 
 def get_ref_fname(scene_fname):
     for color_mode in color_modes:
@@ -67,7 +61,6 @@ def bitmap_extract(bmp):
 
 
 def z_test(mean, sample_count, reference, reference_var):
-
     # Sanitize the variance images
     reference_var = np.maximum(reference_var, 1e-4)
 
@@ -85,10 +78,6 @@ def z_test(mean, sample_count, reference, reference_var):
 
     return p_value
 
-@pytest.fixture
-def gc_collect():
-    gc.collect() # Ensure no leftover instances from other tests in registry
-    gc.collect()
 
 if hasattr(ek, 'JitFlag'):
     jit_flags_options = [
@@ -99,6 +88,7 @@ if hasattr(ek, 'JitFlag'):
     ]
 else:
     jit_flags_options = []
+
 
 @pytest.mark.slow
 @pytest.mark.parametrize(*['scene_fname', scenes])

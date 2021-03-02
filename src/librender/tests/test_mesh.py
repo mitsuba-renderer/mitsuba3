@@ -1,6 +1,5 @@
 import mitsuba
 import pytest
-import gc
 import enoki as ek
 from enoki.scalar import ArrayXf as Float
 
@@ -761,16 +760,11 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # TODO add tests for normals on curved mesh (sticky normals shouldn't move)
 
 
-@pytest.fixture
-def collect():
-    gc.collect() # Ensure no leftover Shape instances from other tests in registry
-    gc.collect()
-
 @fresolver_append_path
 @pytest.mark.parametrize("res", [4, 7])
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, collect, res, wall, jit_flags):
+def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, gc_collect, res, wall, jit_flags):
     from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Transform4f, Ray3f
     from mitsuba.render import HitComputeFlags
     from mitsuba.python.util import traverse

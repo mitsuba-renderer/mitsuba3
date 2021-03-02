@@ -1,7 +1,6 @@
 import mitsuba
 import pytest
 import enoki as ek
-import gc
 
 
 def make_simple_scene(res=1, integrator="path"):
@@ -45,6 +44,7 @@ def make_simple_scene(res=1, integrator="path"):
         }
     })
 
+
 if hasattr(ek, 'JitFlag'):
     jit_flags_options = [
         {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
@@ -54,14 +54,10 @@ if hasattr(ek, 'JitFlag'):
 else:
     jit_flags_options = []
 
-@pytest.fixture
-def collect():
-    gc.collect() # Ensure no leftover BSDF instances from other tests in registry
-    gc.collect()
 
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4, 44])
-def test01_bsdf_reflectance_backward(variants_all_ad_rgb, collect, jit_flags, spp):
+def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags, spp):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
@@ -104,7 +100,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, collect, jit_flags, sp
 
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4])
-def test02_bsdf_reflectance_forward(variants_all_ad_rgb, collect, jit_flags, spp):
+def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, spp):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
@@ -154,7 +150,7 @@ from mitsuba.python.autodiff import Adam, SGD
 @pytest.mark.parametrize("res", [3])
 @pytest.mark.parametrize("unbiased", [False]) # TODO refactoring
 @pytest.mark.parametrize("opt_conf", [(SGD, [200.5, 0.9])])
-def test03_optimizer(variants_all_ad_rgb, collect, spp, res, unbiased, opt_conf):
+def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, unbiased, opt_conf):
     from mitsuba.core import Float, Color3f
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render
@@ -217,7 +213,7 @@ def test03_optimizer(variants_all_ad_rgb, collect, spp, res, unbiased, opt_conf)
 @pytest.mark.parametrize("eval_grad", [False, True])
 @pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, collect, eval_grad, N, jit_flags):
+def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, gc_collect, eval_grad, N, jit_flags):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
@@ -295,7 +291,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, coll
 @pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("indirect", [False, True])
-def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, collect, mode, eval_grad, N, jit_flags, indirect):
+def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, gc_collect, mode, eval_grad, N, jit_flags, indirect):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
