@@ -224,12 +224,13 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
  */
 template <typename Float>
 std::tuple<ek::Complex<Float>, ek::Complex<Float>, Float, ek::Complex<Float>, ek::Complex<Float>>
-fresnel_polarized(Float cos_theta_i, ek::Complex<Float> eta_) {
+fresnel_polarized(Float cos_theta_i, ek::Complex<Float> eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
     /* Polarized Fresnel equations here assume that 'kappa' is negative, which
-       is flipped from the usual convention used by Mitsuba. */
-    ek::Complex<Float> eta = ek::conj(eta_);
+       is flipped from the usual convention used by Mitsuba that is more common
+       in computer graphics. */
+    ek::masked(eta, ek::imag(eta) > 0.f) = ek::conj(eta);
 
     ek::Complex<Float> rcp_eta = ek::rcp(eta),
                        eta_it  = ek::select(outside_mask, eta, rcp_eta),

@@ -179,6 +179,7 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
     std::tie(a_s, a_p, std::ignore, std::ignore, std::ignore) =
         fresnel_polarized(cos_theta_i, eta);
 
+    // Compute Sine and Cosine of the phase delay delta = arg(a_s) - arg(a_p).
     Float sin_delta, cos_delta;
     std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_s, a_p);
 
