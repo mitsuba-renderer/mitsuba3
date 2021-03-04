@@ -89,7 +89,7 @@ public:
 
         for (size_t y = 0; y < bitmap->size().y(); ++y) {
             ScalarFloat sin_theta =
-                std::sin(y / ScalarFloat(bitmap->size().y() - 1) * ek::Pi<ScalarFloat>);
+                ek::sin(y / ScalarFloat(bitmap->size().y() - 1) * ek::Pi<ScalarFloat>);
 
             for (size_t x = 0; x < bitmap->size().x(); ++x) {
                 ScalarColor3f rgb = ek::load<ScalarVector3f>(ptr);
@@ -237,7 +237,7 @@ public:
 
             for (size_t y = 0; y < m_resolution.y(); ++y) {
                 ScalarFloat sin_theta =
-                    std::sin(y / ScalarFloat(m_resolution.y() - 1) * ek::Pi<ScalarFloat>);
+                    ek::sin(y / ScalarFloat(m_resolution.y() - 1) * ek::Pi<ScalarFloat>);
 
                 for (size_t x = 0; x < m_resolution.x(); ++x) {
                     ScalarVector4f coeff = ek::load_aligned<ScalarVector4f>(ptr);

@@ -95,8 +95,8 @@ public:
             const AnimatedTransform *transform = sensor->world_transform();
             Vector3f horizontal = transform->eval(ray.time) * Vector3f(1.f, 0.f, 0.f);
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
-            Vector3f tmp = cross(horizontal, ray.d),
-                     target_basis = cross(ray.d, tmp);
+            Vector3f tmp = ek::cross(horizontal, ray.d),
+                     target_basis = ek::cross(ray.d, tmp);
             spec = mueller::rotate_stokes_basis(-ray.d,
                                                  current_basis,
                                                  target_basis) * spec;

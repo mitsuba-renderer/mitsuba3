@@ -235,13 +235,13 @@ public:
                 /* The Stokes reference frame vector of this matrix lies in the plane
                    of reflection. See Figure 4. */
                 Vector3f zi_std = -wi_std,
-                         ti_std = ek::normalize(cross(wi_std - wo_std, zi_std)),
-                         yi_std = ek::normalize(cross(ti_std, zi_std)),
-                         xi_std = cross(yi_std, zi_std),
+                         ti_std = ek::normalize(ek::cross(wi_std - wo_std, zi_std)),
+                         yi_std = ek::normalize(ek::cross(ti_std, zi_std)),
+                         xi_std = ek::cross(yi_std, zi_std),
                          zo_std = wo_std,
-                         to_std = ek::normalize(cross(wo_std - wi_std, zo_std)),
-                         yo_std = ek::normalize(cross(to_std, zo_std)),
-                         xo_std = cross(yo_std, zo_std);
+                         to_std = ek::normalize(ek::cross(wo_std - wi_std, zo_std)),
+                         yo_std = ek::normalize(ek::cross(to_std, zo_std)),
+                         xo_std = ek::cross(yo_std, zo_std);
 
                 if (m_wavelength == -1.f) {
                     for (int i = 0; i < 4; ++i) {
@@ -327,7 +327,7 @@ public:
         Vector3f H = ek::normalize(wo + si.wi);
 
         Float pdf_diffuse = warp::square_to_cosine_hemisphere_pdf(wo);
-        Float pdf_microfacet = distr.pdf(si.wi, H) / (4.f * dot(wo, H));
+        Float pdf_microfacet = distr.pdf(si.wi, H) / (4.f * ek::dot(wo, H));
 
         Float pdf = 0.f;
         pdf += pdf_diffuse * COSINE_HEMISPHERE_PDF_WEIGHT;
@@ -348,7 +348,7 @@ private:
     template <typename Vector3,
               typename Value = ek::value_t<Vector3>>
     Value phi(const Vector3 &v) const {
-        Value p = atan2(v.y(), v.x());
+        Value p = ek::atan2(v.y(), v.x());
         ek::masked(p, p < 0) += 2.f*ek::Pi<Float>;
         return p;
     }
@@ -358,7 +358,7 @@ private:
     Vector3 rotate_vector(const Vector3 &v, const Vector3 &axis_, Value angle) const {
         Vector3 axis = ek::normalize(axis_);
         auto [sin_angle, cos_angle] = ek::sincos(angle);
-        return v*cos_angle + axis*dot(v, axis)*(1.f - cos_angle) + sin_angle*cross(axis, v);
+        return v*cos_angle + axis*ek::dot(v, axis)*(1.f - cos_angle) + sin_angle*ek::cross(axis, v);
     }
 
     template <typename Vector3, typename Value = ek::value_t<Vector3>>
@@ -367,17 +367,17 @@ private:
         Vector3 h = ek::normalize(i + o);
 
         Vector3 n(0, 0, 1);
-        Vector3 b = ek::normalize(cross(n, h)),
-                t = ek::normalize(cross(b, h));
+        Vector3 b = ek::normalize(ek::cross(n, h)),
+                t = ek::normalize(ek::cross(b, h));
 
-        Value td = ek::safe_acos(dot(h, i)),
-              th = ek::safe_acos(dot(n, h));
+        Value td = ek::safe_acos(ek::dot(h, i)),
+              th = ek::safe_acos(ek::dot(n, h));
 
-        Vector3 i_prj = ek::normalize(i - dot(i, h)*h);
-        Value cos_phi_d = ek::clamp(dot(t, i_prj), -1.f, 1.f),
-              sin_phi_d = ek::clamp(dot(b, i_prj), -1.f, 1.f);
+        Vector3 i_prj = ek::normalize(i - ek::dot(i, h)*h);
+        Value cos_phi_d = ek::clamp(ek::dot(t, i_prj), -1.f, 1.f),
+              sin_phi_d = ek::clamp(ek::dot(b, i_prj), -1.f, 1.f);
 
-        Value pd = atan2(sin_phi_d, cos_phi_d);
+        Value pd = ek::atan2(sin_phi_d, cos_phi_d);
 
         return std::make_tuple(pd, th, td);
     }
