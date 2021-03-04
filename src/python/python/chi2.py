@@ -1,5 +1,6 @@
 import mitsuba
 import enoki as ek
+import numpy as np
 import time
 
 
@@ -253,8 +254,8 @@ class ChiSquareTest:
         if self.pdf is None:
             self.tabulate_pdf()
 
-        index = UInt32([i[0] for i in sorted(enumerate(self.pdf),
-                                             key=lambda x: x[1])])
+        index = UInt32(np.array([i[0] for i in sorted(enumerate(self.pdf.numpy()),
+                                                      key=lambda x: x[1])]))
 
         # Sort entries by expected frequency (increasing)
         pdf = Float64(ek.gather(Float, self.pdf, index))
