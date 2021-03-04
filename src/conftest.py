@@ -7,6 +7,7 @@ import pytest
 import re
 import mitsuba
 import gc
+import enoki as ek
 
 re1 = re.compile(r'<built-in method (\w*) of PyCapsule object at 0x[0-9a-f]*>')
 re2 = re.compile(r'<bound method PyCapsule.(\w*)[^>]*>')
@@ -22,10 +23,12 @@ def patch_tb(tb):  # tb: ReprTraceback
     for entry in tb.reprentries:
         entry.lines = [patch_line(l) for l in entry.lines]
 
+
 @pytest.fixture
 def gc_collect():
     gc.collect() # Ensure no leftover instances from other tests in registry
     gc.collect()
+
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
@@ -60,12 +63,15 @@ del generate_fixture
 def generate_fixture_group(name, variants):
     @pytest.fixture(params=variants)
     def fixture(request):
+        variant = request.param
         try:
             import mitsuba
-            mitsuba.set_variant(request.param)
+            mitsuba.set_variant(variant)
+            if variant.startswith('llvm') or variant.startswith('cuda'):
+                ek.registry_trim()
         except Exception:
-            pytest.skip('Mitsuba variant "%s" is not enabled!' % request.param)
-        return request.param
+            pytest.skip('Mitsuba variant "%s" is not enabled!' % variant)
+        return variant
     globals()['variants_' + name] = fixture
 
 any_scalar = next((x for x in mitsuba.variants() if x.startswith('scalar')), 'scalar_rgb')
