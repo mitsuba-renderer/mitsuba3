@@ -121,6 +121,11 @@ if (MTS_ENABLE_EMBREE)
   set(CMAKE_CXX_FLAGS "${MTS_CXX_FLAGS_BACKUP}")
   set(EMBREE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/embree/include" PARENT_SCOPE)
 
+  if (WIN32)
+    # Don't complain about ignored alignment specifier
+    target_compile_options(embree PRIVATE "/wd4359")
+  endif()
+
   set_property(TARGET
     algorithms lexers math simd sys tasking embree ${EMBREE_TARGET}
     PROPERTY FOLDER "dependencies/embree")
