@@ -121,7 +121,7 @@ if (MTS_ENABLE_EMBREE)
   set(CMAKE_CXX_FLAGS "${MTS_CXX_FLAGS_BACKUP}")
   set(EMBREE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/embree/include" PARENT_SCOPE)
 
-  if (WIN32)
+  if (MSVC)
     # Don't complain about ignored alignment specifier
     target_compile_options(embree PRIVATE "/wd4359")
   endif()
@@ -290,6 +290,8 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   set_property(TARGET asmjit PROPERTY FOLDER "dependencies")
   if (MSVC)
     target_compile_options(asmjit PRIVATE "/wd4804" "/wd4838")
+    # Don't complain about ignoring '/INCREMENTAL'
+    set_target_properties(asmjit PROPERTIES LINK_FLAGS "/ignore:4075")
   endif()
   # Avoid name clashes with pytorch (which also includes asmjit)
   set_property(TARGET asmjit PROPERTY OUTPUT_NAME "asmjit-mitsuba")
