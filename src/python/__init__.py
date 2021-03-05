@@ -112,7 +112,7 @@ class MitsubaModule(types.ModuleType):
 
 # Register the modules and submodules
 for name in ['core', 'render', 'core.xml', 'core.warp', 'core.math',
-             'core.spline', 'render.mueller']:
+             'core.spline', 'core.quad', 'render.mueller']:
     name = 'mitsuba.' + name
     sys.modules[name] = MitsubaModule(name)
 

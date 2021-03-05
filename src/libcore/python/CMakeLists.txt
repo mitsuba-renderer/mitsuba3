@@ -27,6 +27,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     vector_v.cpp
     warp_v.cpp
     xml_v.cpp
+    quad_v.cpp
   )
 
   target_compile_definitions(${TARGET_NAME} PRIVATE
@@ -69,7 +70,6 @@ pybind11_add_module(core_ext
   mmap.cpp
   object.cpp
   progress.cpp
-  quad.cpp
   rfilter.cpp
   stream.cpp
   struct.cpp

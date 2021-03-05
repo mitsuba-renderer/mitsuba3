@@ -10,7 +10,6 @@
 
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(filesystem);
-MTS_PY_DECLARE(quad);
 MTS_PY_DECLARE(Object);
 MTS_PY_DECLARE(Cast);
 MTS_PY_DECLARE(Struct);
@@ -97,7 +96,6 @@ PYBIND11_MODULE(core_ext, m) {
     // Register python modules
     MTS_PY_IMPORT(atomic);
     MTS_PY_IMPORT(filesystem);
-    MTS_PY_IMPORT(quad);
     MTS_PY_IMPORT(Object);
     MTS_PY_IMPORT(Cast);
     MTS_PY_IMPORT(Struct);

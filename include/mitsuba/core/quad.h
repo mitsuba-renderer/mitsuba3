@@ -18,21 +18,20 @@ NAMESPACE_BEGIN(quad)
  *
  * \param n
  *     Desired number of evalution points
+ *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>
 std::pair<Float, Float> gauss_legendre(int n) {
-    static_assert(ek::is_dynamic_array_v<Float> && !ek::is_cuda_array_v<Float>,
-                  "template type must be a dynamic array.");
+    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
     using ScalarFloat = ek::scalar_t<Float>;
 
     if (n < 1)
         throw std::runtime_error("gauss_legendre(): n must be >= 1");
 
-    Float nodes   = ek::empty<Float>(n);
-    Float weights = ek::empty<Float>(n);
+    std::vector<ScalarFloat> nodes(n), weights(n);
 
     n--;
 
@@ -80,7 +79,10 @@ std::pair<Float, Float> gauss_legendre(int n) {
         nodes[n/2] = (ScalarFloat) 0;
     }
 
-    return { nodes, weights };
+    return {
+        ek::load<Float>(nodes.data(), n),
+        ek::load<Float>(weights.data(), n)
+    };
 }
 
 /**
@@ -101,6 +103,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
  *
  * \param n
  *     Desired number of evalution points
+ *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
@@ -113,8 +116,7 @@ std::pair<Float, Float> gauss_lobatto(int n) {
     if (n < 2)
         throw std::runtime_error("gauss_lobatto(): n must be >= 2");
 
-    Float nodes   = ek::empty<Float>(n);
-    Float weights = ek::empty<Float>(n);
+    std::vector<ScalarFloat> nodes(n), weights(n);
 
     n--;
     nodes[0] = -1;
@@ -159,7 +161,11 @@ std::pair<Float, Float> gauss_lobatto(int n) {
         weights[n / 2] = (ScalarFloat) (2 / ((n * (n + 1)) * l_n * l_n));
         nodes[n/2] = 0;
     }
-    return { nodes, weights };
+
+    return {
+        ek::load<Float>(nodes.data(), n),
+        ek::load<Float>(weights.data(), n)
+    };
 }
 
 /**
@@ -173,20 +179,20 @@ std::pair<Float, Float> gauss_lobatto(int n) {
  *
  * \param n
  *     Desired number of evalution points. Must be an odd number bigger than 3.
+ *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>
 std::pair<Float, Float> composite_simpson(int n){
-    static_assert(ek::is_dynamic_array_v<Float> && !ek::is_cuda_array_v<Float>, "template type must be a dynamic array.");
+    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
     using ScalarFloat = ek::scalar_t<Float>;
 
     if (n % 2 != 1 || n < 3)
         throw std::runtime_error("composite_simpson(): n must be >= 3 and odd");
 
-    Float nodes   = ek::empty<Float>(n);
-    Float weights = ek::empty<Float>(n);
+    std::vector<ScalarFloat> nodes(n), weights(n);
 
     n = (n - 1) / 2;
 
@@ -203,7 +209,11 @@ std::pair<Float, Float> composite_simpson(int n){
 
     nodes[2*n] = 1;
     weights[2*n] = weight;
-    return { nodes, weights };
+
+    return {
+        ek::load<Float>(nodes.data(), n),
+        ek::load<Float>(weights.data(), n)
+    };
 }
 
 /**
@@ -217,20 +227,20 @@ std::pair<Float, Float> composite_simpson(int n){
  *
  * \param n
  *     Desired number of evalution points. Must be an odd number bigger than 3.
+ *
  * \return
  *     A tuple (nodes, weights) storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>
 std::pair<Float, Float> composite_simpson_38(int n){
-    static_assert(ek::is_dynamic_array_v<Float> && !ek::is_cuda_array_v<Float>, "template type must be a dynamic array.");
+    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
     using ScalarFloat = ek::scalar_t<Float>;
 
     if ((n - 1) % 3 != 0 || n < 4)
         throw std::runtime_error("composite_simpson_38(): n-1 must be divisible by 3");
 
-    Float nodes   = ek::empty<Float>(n);
-    Float weights = ek::empty<Float>(n);
+    std::vector<ScalarFloat> nodes(n), weights(n);
 
     n = (n - 1) / 3;
 
@@ -249,7 +259,11 @@ std::pair<Float, Float> composite_simpson_38(int n){
 
     nodes[3*n] = 1;
     weights[3*n] = weight;
-    return { nodes, weights };
+
+    return {
+        ek::load<Float>(nodes.data(), n),
+        ek::load<Float>(weights.data(), n)
+    };
 }
 
 NAMESPACE_END(quad)
