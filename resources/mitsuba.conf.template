@@ -15,15 +15,16 @@
     #      easiest to understand and therefore preferred for fixing
     #      compilation errors and debugging the renderer.
     #
-    #    - 'llvm': Computation is done on the CPU using Enoki's
-    #      Just-in-time compiler to generate LLVM kernels on the fly.
-    #      In this case, Mitsuba becomes a wavefront path tracer that
-    #      simultaneously propagates many rays at a time.
+    #    - 'llvm': The computation required to render a scene is 
+    #      just-in-time compiled to parallel CPU kernels that process
+    #      many rays at the same time. This uses the LLVM compiler
+    #      framework, which is detected and loaded at runtime.
     #
-    #    - 'cuda': Computation is done on the GPU using Enoki's
-    #      Just-in-time compiler to generate CUDA kernels on the fly.
-    #      In this case, Mitsuba becomes a wavefront path tracer,
-    #      and ray tracing is performed via NVIDIA's OptiX library.
+    #    - 'gpu': The computation required to render a scene is 
+    #      just-in-time compiled to parallel GPU kernels that process
+    #      many rays at the same time. A somewhat recent (Maxwell or
+    #      newer) NVIDIA graphics card is required to use this mode,
+    #      along with driver version 455.28 or newer.
     #
     # 2. Automatic Differentiation (optional)
     #
