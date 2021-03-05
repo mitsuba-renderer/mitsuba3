@@ -226,10 +226,15 @@ public:
      * \brief Draw a sample from the microfacet normal distribution
      *  and return the associated probability density
      *
+     * \param wi
+     *    The incident direction. Only used if
+     *    visible normal sampling is enabled.
+     *
      * \param sample
      *    A uniformly distributed 2D sample
-     * \param pdf
-     *    The probability density wrt. solid angles
+     *
+     * \return A tuple consisting of the sampled microfacet normal
+     *         and the associated solid angle density
      */
     std::pair<Normal3f, Float> sample(const Vector3f &wi,
                                       const Point2f &sample) const {
@@ -245,8 +250,8 @@ public:
                 Float ratio  = m_alpha_v / m_alpha_u,
                       tmp    = ratio * ek::tan((2.f * ek::Pi<Float>) * sample.y());
 
-                cos_phi = ek::rsqrt(ek::fmadd(tmp, tmp, 1));
-                cos_phi = ek::mulsign(cos_phi, ek::abs(sample.y() - 0.5f) - 0.25f);
+                cos_phi = ek::rsqrt(ek::fmadd(tmp, tmp, 1.f));
+                cos_phi = ek::mulsign(cos_phi, ek::abs(sample.y() - .5f) - .25f);
 
                 sin_phi = cos_phi * tmp;
 
