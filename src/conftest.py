@@ -47,6 +47,8 @@ def generate_fixture(variant):
         try:
             import mitsuba
             mitsuba.set_variant(variant)
+            if variant.startswith('llvm') or variant.startswith('cuda'):
+                ek.registry_trim()
         except Exception:
             pytest.skip('Mitsuba variant "%s" is not enabled!' % variant)
     globals()['variant_' + variant] = fixture
