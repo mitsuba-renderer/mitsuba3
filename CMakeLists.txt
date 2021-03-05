@@ -159,7 +159,7 @@ if (NOT MSVC)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
 else()
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
-    ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
+                   ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
     ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh setpath.sh)
 
@@ -661,14 +661,19 @@ install(
   DESTINATION data
 )
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior
-     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/data)
+add_custom_target(copy-resources ALL DEPENDS ${MTS_COPY_FILES})
+
+file(GLOB IOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior/*spd")
+add_custom_command(
+    TARGET copy-resources DEPENDS IOR_FILES
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior"
+    "${MTS_BINARY_DIR}/data/ior"
+)
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/ior
   DESTINATION data
 )
-
-add_custom_target(copy-resources ALL DEPENDS ${MTS_COPY_FILES})
 
 mark_as_advanced(
   ZLIB_BUILD_AMD64
