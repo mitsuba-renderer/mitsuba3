@@ -76,12 +76,12 @@ std::pair<Float, Float> gauss_legendre(int n) {
     if ((n % 2) == 0) {
         std::pair<double, double> L = math::legendre_pd(n+1, 0.0);
         weights[n / 2] = (ScalarFloat) (2.0 / (L.second * L.second));
-        nodes[n/2] = (ScalarFloat) 0;
+        nodes[n / 2] = (ScalarFloat) 0;
     }
 
     return {
-        ek::load<Float>(nodes.data(), n),
-        ek::load<Float>(weights.data(), n)
+        ek::load<Float>(nodes.data(), nodes.size()),
+        ek::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -163,8 +163,8 @@ std::pair<Float, Float> gauss_lobatto(int n) {
     }
 
     return {
-        ek::load<Float>(nodes.data(), n),
-        ek::load<Float>(weights.data(), n)
+        ek::load<Float>(nodes.data(), nodes.size()),
+        ek::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -211,8 +211,8 @@ std::pair<Float, Float> composite_simpson(int n){
     weights[2*n] = weight;
 
     return {
-        ek::load<Float>(nodes.data(), n),
-        ek::load<Float>(weights.data(), n)
+        ek::load<Float>(nodes.data(), nodes.size()),
+        ek::load<Float>(weights.data(), weights.size())
     };
 }
 
@@ -261,8 +261,8 @@ std::pair<Float, Float> composite_simpson_38(int n){
     weights[3*n] = weight;
 
     return {
-        ek::load<Float>(nodes.data(), n),
-        ek::load<Float>(weights.data(), n)
+        ek::load<Float>(nodes.data(), nodes.size()),
+        ek::load<Float>(weights.data(), weights.size())
     };
 }
 
