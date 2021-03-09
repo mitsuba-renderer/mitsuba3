@@ -185,7 +185,7 @@ std::pair<Float, Float> gauss_lobatto(int n) {
  *     quadrature rule.
  */
 template <typename Float>
-std::pair<Float, Float> composite_simpson(int n){
+std::pair<Float, Float> composite_simpson(int n) {
     static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
     using ScalarFloat = ek::scalar_t<Float>;
 
@@ -233,7 +233,7 @@ std::pair<Float, Float> composite_simpson(int n){
  *     quadrature rule.
  */
 template <typename Float>
-std::pair<Float, Float> composite_simpson_38(int n){
+std::pair<Float, Float> composite_simpson_38(int n) {
     static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
     using ScalarFloat = ek::scalar_t<Float>;
 
@@ -264,6 +264,22 @@ std::pair<Float, Float> composite_simpson_38(int n){
         ek::load<Float>(nodes.data(), nodes.size()),
         ek::load<Float>(weights.data(), weights.size())
     };
+}
+
+/**
+ * \brief Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
+ * polynomials of the first kind
+ *
+ * The output array contains positions on the interval \f$[-1, 1]\f$.
+ *
+ * \param n
+ *     Desired number of points
+ */
+template <typename Float> Float chebyshev(int n) {
+    using ScalarFloat = ek::scalar_t<Float>;
+    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
+    ScalarFloat eps = 1 / ScalarFloat(2 * n);
+    return -ek::cos(ek::linspace<Float>(eps, 1 - eps, n) * ek::Pi<Float>);
 }
 
 NAMESPACE_END(quad)

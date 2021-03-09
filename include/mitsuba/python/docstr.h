@@ -9413,6 +9413,8 @@ Returns:
     A tuple (nodes, weights) storing the nodes and weights of the
     quadrature rule.)doc";
 
+static const char *__doc_mitsuba_quad_chebyshev = "";
+
 static const char *__doc_mitsuba_radical_inverse_2 = R"doc(Van der Corput radical inverse in base 2)doc";
 
 static const char *__doc_mitsuba_ref =
