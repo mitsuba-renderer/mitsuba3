@@ -106,7 +106,7 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from light source.
+            // Forward direction is always away from the light source side.
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
             /* To account for non-perpendicular incidence, we compute the effective
@@ -158,7 +158,7 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from light source.
+            // Forward direction is always away from the light source side.
             Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
 
             /* To account for non-perpendicular incidence, we compute the effective

@@ -251,18 +251,17 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
  * In Mitsuba, these reference frames are never explicitly stored but instead
  * can be computed on the fly using this function.
  *
- * \param w
+ * \param forward
  *      Direction of travel for Stokes vector (normalized)
  *
  * \return
  *      The (implicitly defined) reference coordinate system basis for the
- *      Stokes vector travelling along \ref w.
+ *      Stokes vector travelling along \ref forward.
  *
  */
 template <typename Vector3>
-Vector3 stokes_basis(const Vector3 &w) {
-    auto [s, t] = coordinate_system(w);
-    return s;
+Vector3 stokes_basis(const Vector3 &forward) {
+    return coordinate_system(forward).first;
 }
 
 /**

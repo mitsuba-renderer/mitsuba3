@@ -214,34 +214,34 @@ public:
 
         /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
            always evaluated w.r.t. the actual light propagation direction, no
-           matter the transport mode. In the following, 'wi_hat' is toward the
-           light source. */
-        Vector3f wi_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
-                 wo_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
+           matter the transport mode. In the following, 'wo_hat' is towards the
+           light source side. */
+        Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
+                 wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
         /* We now transform both directions to the standard frame defined in
            Figure 3. Here, one of the directions is aligned with the x-axis. */
-        Float phi_std = phi(wo_hat);
-        Vector3f wi_std = rotate_vector(wi_hat, Vector3f(0,0,1), -phi_std),
-                 wo_std = rotate_vector(wo_hat, Vector3f(0,0,1), -phi_std);
+        Float phi_std = phi(wi_hat);
+        Vector3f wo_std = rotate_vector(wo_hat, Vector3f(0,0,1), -phi_std),
+                 wi_std = rotate_vector(wi_hat, Vector3f(0,0,1), -phi_std);
 
         /* This representation can be turned into the (isotropic) Rusinkiewicz
            parameterization. */
-        auto [phi_d, theta_h, theta_d] = directions_to_rusinkiewicz(wi_std, wo_std);
+        auto [phi_d, theta_h, theta_d] = directions_to_rusinkiewicz(wo_std, wi_std);
 
         Spectrum value;
         if constexpr (is_spectral_v<Spectrum>) {
             if constexpr (is_polarized_v<Spectrum>) {
                 /* The Stokes reference frame vector of this matrix lies in the plane
                    of reflection. See Figure 4. */
-                Vector3f zi_std = -wi_std,
-                         ti_std = ek::normalize(ek::cross(wi_std - wo_std, zi_std)),
-                         yi_std = ek::normalize(ek::cross(ti_std, zi_std)),
-                         xi_std = ek::cross(yi_std, zi_std),
-                         zo_std = wo_std,
+                Vector3f zo_std = -wo_std,
                          to_std = ek::normalize(ek::cross(wo_std - wi_std, zo_std)),
                          yo_std = ek::normalize(ek::cross(to_std, zo_std)),
-                         xo_std = ek::cross(yo_std, zo_std);
+                         xo_std = ek::cross(yo_std, zo_std),
+                         zi_std = wi_std,
+                         ti_std = ek::normalize(ek::cross(wi_std - wo_std, zi_std)),
+                         yi_std = ek::normalize(ek::cross(ti_std, zi_std)),
+                         xi_std = ek::cross(yi_std, zi_std);
 
                 if (m_wavelength == -1.f) {
                     for (int i = 0; i < 4; ++i) {
@@ -264,7 +264,7 @@ public:
                                 phi_d, theta_d, theta_h,
                                 Float(m_wavelength)
                             };
-                            value(i,j) = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
+                            value(i, j) = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
                         }
                     }
                 }
@@ -274,17 +274,17 @@ public:
                 ek::masked(value, ek::any(isnan(value(0,0)))) = 0.f;
 
                 // Make sure intensity is non-negative
-                value(0,0) = ek::max(0.f, value(0,0));
+                value(0, 0) = ek::max(0.f, value(0,0));
 
                 // Reverse phi rotation from above on Stokes reference frames
-                Vector3f xi_hat = rotate_vector(xi_std, Vector3f(0,0,1), phi_std),
-                         xo_hat = rotate_vector(xo_std, Vector3f(0,0,1), phi_std);
+                Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
+                         xi_hat = rotate_vector(xi_std, Vector3f(0, 0, 1), phi_std);
 
                 /* Rotate in/out reference vector of value s.t. it aligns with the
-                   implicit Stokes bases of -wi_hat & wo_hat. */
+                   implicit Stokes bases of -wo_hat & wi_hat. */
                 value = mueller::rotate_mueller_basis(value,
-                                                      -wi_hat, xi_hat, mueller::stokes_basis(-wi_hat),
-                                                       wo_hat, xo_hat, mueller::stokes_basis(wo_hat));
+                                                      -wo_hat, xo_hat, mueller::stokes_basis(-wo_hat),
+                                                       wi_hat, xi_hat, mueller::stokes_basis(wi_hat));
             } else {
                 if (m_wavelength == -1.f) {
                     for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {

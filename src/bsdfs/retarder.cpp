@@ -99,7 +99,7 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from light source.
+            // Forward direction is always away from the light source side.
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
             // Rotate in/out basis of M s.t. it aligns with BSDF coordinate frame
@@ -147,7 +147,7 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from light source.
+            // Forward direction is always away from the light source side.
             Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
 
             // Rotate in/out basis of M s.t. it aligns with BSDF coordinate frame

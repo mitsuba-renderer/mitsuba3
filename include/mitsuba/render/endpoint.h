@@ -31,6 +31,12 @@ NAMESPACE_BEGIN(mitsuba)
  * what medium surrounds the sensors and light sources. For this reason, every
  * endpoint instance keeps a reference to a medium (which may be set to \c
  * nullptr when it is surrounded by vacuum).
+ *
+ * For polarized rendering algorithms, the emitter and sensor sides are less
+ * symmetric as they use either Stokes vector or Mueller matrix representations.
+ * This is avoided here by also useing Mueller matrices for Stokes vectors where
+ * only their first column is non-zero. This comes at the cost of some
+ * additional arithmetic but simplifies the API.
  */
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Endpoint : public Object {

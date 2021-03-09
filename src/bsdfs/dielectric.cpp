@@ -251,15 +251,15 @@ public:
         if constexpr (is_polarized_v<Spectrum>) {
             /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
                always evaluated w.r.t. the actual light propagation direction, no
-               matter the transport mode. In the following, 'wi_hat' is toward the
-               light source. */
-            Vector3f wi_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
-                     wo_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
+               matter the transport mode. In the following, 'wo_hat' is towards the
+               light source side. */
+            Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
+                     wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
 
             /* BSDF weights are Mueller matrices now. */
-            Float cos_theta_i_hat = Frame3f::cos_theta(wi_hat);
-            Spectrum R = mueller::specular_reflection(UnpolarizedSpectrum(cos_theta_i_hat), UnpolarizedSpectrum(m_eta)),
-                     T = mueller::specular_transmission(UnpolarizedSpectrum(cos_theta_i_hat), UnpolarizedSpectrum(m_eta));
+            Float cos_theta_o_hat = Frame3f::cos_theta(wo_hat);
+            Spectrum R = mueller::specular_reflection(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta)),
+                     T = mueller::specular_transmission(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta));
 
             if (likely(has_reflection && has_transmission)) {
                 weight = ek::select(selected_r, R, T) / bs.pdf;
@@ -276,14 +276,14 @@ public:
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
             Vector3f n(0, 0, 1);
-            Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wi_hat)),
-                     s_axis_out = ek::normalize(ek::cross(n, wo_hat));
+            Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_hat)),
+                     s_axis_out = ek::normalize(ek::cross(n, wi_hat));
 
-            /* Rotate in/out reference vector of weight s.t. it aligns with the
-               implicit Stokes bases of -wi_hat & wo_hat. */
+            /* Rotate in/out reference vector of M s.t. it aligns with the implicit
+               Stokes bases of -wo_hat & wi_hat. */
             weight = mueller::rotate_mueller_basis(weight,
-                                                   -wi_hat, s_axis_in, mueller::stokes_basis(-wi_hat),
-                                                    wo_hat, s_axis_out, mueller::stokes_basis(wo_hat));
+                                                   -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
+                                                    wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
 
             if (ek::any_or<true>(selected_r))
                 weight[selected_r] *= mueller::absorber(reflectance);
