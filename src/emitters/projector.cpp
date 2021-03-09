@@ -97,7 +97,8 @@ public:
         m_x_fov = parse_fov(props, size.x() / (float) size.y());
 
         m_camera_to_sample = perspective_projection(size, size, 0, m_x_fov,
-                                                    1e-4f, 1e4f);
+                                                    (ScalarFloat) 1e-4f,
+                                                    (ScalarFloat) 1e4f);
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 

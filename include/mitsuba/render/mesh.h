@@ -74,32 +74,37 @@ public:
     }
 
     /// Add an attribute buffer with the given \c name and \c dim
-    void add_attribute(const std::string& name, size_t dim, const std::vector<InputFloat>& buf);
+    void add_attribute(const std::string &name, size_t dim,
+                       const std::vector<InputFloat> &buf);
 
     /// Returns the face indices associated with triangle \c index
     template <typename Index>
-    MTS_INLINE auto face_indices(Index index, ek::mask_t<Index> active = true) const {
+    MTS_INLINE auto face_indices(Index index,
+                                 ek::mask_t<Index> active = true) const {
         using Result = ek::Array<ek::uint32_array_t<Index>, 3>;
         return ek::gather<Result>(m_faces, index, active);
     }
 
     /// Returns the world-space position of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_position(Index index, ek::mask_t<Index> active = true) const {
+    MTS_INLINE auto vertex_position(Index index,
+                                    ek::mask_t<Index> active = true) const {
         using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 3>;
         return ek::gather<Result>(m_vertex_positions, index, active);
     }
 
     /// Returns the normal direction of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_normal(Index index, ek::mask_t<Index> active = true) const {
+    MTS_INLINE auto vertex_normal(Index index,
+                                  ek::mask_t<Index> active = true) const {
         using Result = Normal<ek::replace_scalar_t<Index, InputFloat>, 3>;
         return ek::gather<Result>(m_vertex_normals, index, active);
     }
 
     /// Returns the UV texture coordinates of the vertex with index \c index
     template <typename Index>
-    MTS_INLINE auto vertex_texcoord(Index index, ek::mask_t<Index> active = true) const {
+    MTS_INLINE auto vertex_texcoord(Index index,
+                                    ek::mask_t<Index> active = true) const {
         using Result = Point<ek::replace_scalar_t<Index, InputFloat>, 2>;
         return ek::gather<Result>(m_vertex_texcoords, index, active);
     }

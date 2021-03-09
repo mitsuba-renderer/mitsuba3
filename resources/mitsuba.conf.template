@@ -61,11 +61,17 @@
     # 5. Higher precision (optional)
     #
     #    - 'double': Mitsuba normally relies on single precision arithmetic.
-    #       When this flag is specified, double precision will be used for
-    #       everything: ray tracing, radiance evaluation, etc. This can be
-    #       useful to check if an issue arises due to insufficient accuracy.
-    #       Note that this flag is only available in 'scalar' mode, and it
-    #       furthermore requires that Embree is disabled.
+    #       When this flag is specified, double precision will be used
+    #       instead, which can be useful to check if an issue arises due to 
+    #       insufficient numerical accuracy. Note that Embree and OptiX don't
+    #       support double precision, and single precision will still be used
+    #       for ray tracing in those modes. The only way to enable double
+    #       precision for everything including ray tracing is to use 'scalar'
+    #       mode and disabling Embree.
+    #
+    #       Double precision variants are not provided for CUDA backends at
+    #       the moment, simply because double precision arithmetic is
+    #       prohibitively slow on consumer NVIDIA GPUs.
     #
     # As mentioned earlier, these 5 "feature dimensions" can be concatenated
     # into longer variant names like "cuda_ad_spectral_polarized" that are
@@ -167,8 +173,18 @@
         "spectrum": "Color<Float, 1>"
     },
 
+    "llvm_mono_double": {
+        "float": "ek::LLVMArray<double>",
+        "spectrum": "Color<Float, 1>"
+    },
+
     "llvm_mono_polarized": {
         "float": "ek::LLVMArray<float>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "llvm_mono_polarized_double": {
+        "float": "ek::LLVMArray<double>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
@@ -177,8 +193,18 @@
         "spectrum": "Color<Float, 3>"
     },
 
+    "llvm_rgb_double": {
+        "float": "ek::LLVMArray<double>",
+        "spectrum": "Color<Float, 3>"
+    },
+
     "llvm_rgb_polarized": {
         "float": "ek::LLVMArray<float>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
+    "llvm_rgb_polarized_double": {
+        "float": "ek::LLVMArray<double>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
@@ -187,8 +213,18 @@
         "spectrum": "Spectrum<Float, 4>"
     },
 
+    "llvm_spectral_double": {
+        "float": "ek::LLVMArray<double>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
     "llvm_spectral_polarized": {
         "float": "ek::LLVMArray<float>",
+        "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
+    },
+
+    "llvm_spectral_polarized_double": {
+        "float": "ek::LLVMArray<double>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
@@ -197,8 +233,18 @@
         "spectrum": "Color<Float, 1>"
     },
 
+    "llvm_ad_mono_double": {
+        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "spectrum": "Color<Float, 1>"
+    },
+
     "llvm_ad_mono_polarized": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
+    "llvm_ad_mono_polarized_double": {
+        "float": "ek::DiffArray<ek::LLVMArray<double>>",
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
@@ -207,8 +253,18 @@
         "spectrum": "Color<Float, 3>"
     },
 
+    "llvm_ad_rgb_double": {
+        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "spectrum": "Color<Float, 3>"
+    },
+
     "llvm_ad_rgb_polarized": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
+    "llvm_ad_rgb_polarized_double": {
+        "float": "ek::DiffArray<ek::LLVMArray<double>>",
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
@@ -217,8 +273,18 @@
         "spectrum": "Spectrum<Float, 4>"
     },
 
+    "llvm_ad_spectral_double": {
+        "float": "ek::DiffArray<ek::LLVMArray<double>>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
     "llvm_ad_spectral_polarized": {
         "float": "ek::DiffArray<ek::LLVMArray<float>>",
+        "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
+    },
+
+    "llvm_ad_spectral_polarized_double": {
+        "float": "ek::DiffArray<ek::LLVMArray<double>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 

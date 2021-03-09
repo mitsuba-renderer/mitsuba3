@@ -260,15 +260,15 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
                           vertex_position(fi[1]),
                           vertex_position(fi[2]) };
 
-        auto n = ek::normalize(ek::cross(v[1] - v[0], v[2] - v[0]));
+        Vector3f n = ek::normalize(ek::cross(v[1] - v[0], v[2] - v[0]));
 
         Vector3f normals = ek::zero<Vector3f>(m_vertex_count);
         for (int i = 0; i < 3; ++i) {
-            auto d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
-            auto d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
-            auto face_angle = ek::safe_acos(ek::dot(d0, d1));
+            Vector3f d0 = ek::normalize(v[(i + 1) % 3] - v[i]);
+            Vector3f d1 = ek::normalize(v[(i + 2) % 3] - v[i]);
+            Float face_angle = ek::safe_acos(ek::dot(d0, d1));
 
-            auto nn =  n * face_angle;
+            Vector3f nn = n * face_angle;
             for (int j = 0; j < 3; ++j)
                 ek::scatter_reduce(ReduceOp::Add, normals[j], nn[j], fi[i]);
         }
@@ -276,7 +276,8 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
 
         auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
         for (size_t i = 0; i < 3; ++i)
-            ek::scatter(m_vertex_normals, normals[i], ni + i);
+            ek::scatter(m_vertex_normals,
+                        ek::float32_array_t<Vector3f>(normals[i]), ni + i);
     }
 }
 
@@ -285,7 +286,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
     if constexpr (ek::is_jit_array_v<Float>)
         ek::sync_thread();
 
-    const ScalarFloat *ptr = vertex_positions.data();
+    const InputFloat *ptr = vertex_positions.data();
 
     m_bbox.reset();
     for (ScalarSize i = 0; i < m_vertex_count; ++i)
@@ -307,16 +308,16 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     if constexpr (ek::is_jit_array_v<Float>)
         ek::sync_thread();
 
-    const ScalarFloat *pos_p = vertex_positions.data();
+    const InputFloat *pos_p = vertex_positions.data();
     const ScalarIndex *idx_p = faces.data();
 
     std::vector<ScalarFloat> table(m_face_count);
     for (ScalarIndex i = 0; i < m_face_count; i++) {
         ScalarPoint3u idx = ek::load<ScalarPoint3u>(idx_p + 3 * i);
 
-        ScalarPoint3f p0 = ek::load<ScalarPoint3f>(pos_p + 3 * idx.x()),
-                      p1 = ek::load<ScalarPoint3f>(pos_p + 3 * idx.y()),
-                      p2 = ek::load<ScalarPoint3f>(pos_p + 3 * idx.z());
+        ScalarPoint3f p0 = ek::load<InputPoint3f>(pos_p + 3 * idx.x()),
+                      p1 = ek::load<InputPoint3f>(pos_p + 3 * idx.y()),
+                      p2 = ek::load<InputPoint3f>(pos_p + 3 * idx.z());
 
         table[i] = .5f * ek::norm(ek::cross(p1 - p0, p2 - p0));
     }
@@ -345,12 +346,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     if constexpr (ek::is_jit_array_v<Float>)
         ek::sync_thread();
 
-    const ScalarFloat *ptr = vertex_texcoords.data();
+    const InputFloat *ptr = vertex_texcoords.data();
 
     std::vector<ScalarFloat> pos_out(m_vertex_count * 3);
     ScalarBoundingBox3f bbox;
     for (size_t i = 0; i < m_vertex_count; ++i) {
-        ScalarFloat u = ptr[2*i + 0], v = ptr[2*i + 1];
+        ScalarFloat u = ptr[2*i + 0],
+                    v = ptr[2*i + 1];
         pos_out[i*3 + 0] = u;
         pos_out[i*3 + 1] = v;
         pos_out[i*3 + 2] = 0.f;

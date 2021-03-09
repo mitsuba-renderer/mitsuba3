@@ -32,8 +32,8 @@ struct EmbreeState {
     RTCIntersectContext llvm_context;
 };
 
-MTS_VARIANT void Scene<Float, Spectrum>::accel_init_cpu(const Properties &/*props*/) {
-    static_assert(std::is_same_v<ek::scalar_t<Float>, float>, "Embree is not supported in double precision mode.");
+MTS_VARIANT void
+Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     if (!__embree_device)
         __embree_device = rtcNewDevice("");
 
@@ -83,7 +83,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
-Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t hit_flags, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
+                                                      uint32_t hit_flags,
+                                                      Mask active) const {
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
     if constexpr (!ek::is_jit_array_v<Float>) {
@@ -97,19 +99,19 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
         RTCRayHit rh = {};
-        rh.ray.org_x = ray.o.x();
-        rh.ray.org_y = ray.o.y();
-        rh.ray.org_z = ray.o.z();
-        rh.ray.dir_x = ray.d.x();
-        rh.ray.dir_y = ray.d.y();
-        rh.ray.dir_z = ray.d.z();
-        rh.ray.tnear = ray.mint;
-        rh.ray.tfar  = ray.maxt;
-        rh.ray.time  = ray.time;
+        rh.ray.org_x = (float) ray.o.x();
+        rh.ray.org_y = (float) ray.o.y();
+        rh.ray.org_z = (float) ray.o.z();
+        rh.ray.dir_x = (float) ray.d.x();
+        rh.ray.dir_y = (float) ray.d.y();
+        rh.ray.dir_z = (float) ray.d.z();
+        rh.ray.tnear = (float) ray.mint;
+        rh.ray.tfar  = (float) ray.maxt;
+        rh.ray.time  = (float) ray.time;
 
         rtcIntersect1(s.accel, &context, &rh);
 
-        if (rh.ray.tfar != ray.maxt) {
+        if ((Float) rh.ray.tfar != ray.maxt) {
             uint32_t shape_index = rh.hit.geomID;
             uint32_t prim_index  = rh.hit.primID;
 
@@ -161,24 +163,28 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
 
-        uint32_t in[13] = { valid.index(),      ray.o.x().index(),
-                            ray.o.y().index(),  ray.o.z().index(),
-                            ray.mint.index(),   ray.d.x().index(),
-                            ray.d.y().index(),  ray.d.z().index(),
-                            ray.time.index(),   ray.maxt.index(),
+        using Single = ek::float32_array_t<Float>;
+        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+
+        uint32_t in[13] = { valid.index(),      ray_o.x().index(),
+                            ray_o.y().index(),  ray_o.z().index(),
+                            ray_mint.index(),   ray_d.x().index(),
+                            ray_d.y().index(),  ray_d.z().index(),
+                            ray_time.index(),   ray_maxt.index(),
                             zero.index(),       zero.index(),
                             zero.index() };
 
         uint32_t out[6] { };
 
-        jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
-                         0, in, out);
+        jit_embree_trace(func_v.index(), ctx_v.index(),
+                         scene_v.index(), 0, in, out);
 
         PreliminaryIntersection3f pi;
 
-        Float t(Float::steal(out[0]));
-        pi.prim_uv = Vector2f(Float::steal(out[1]),
-                              Float::steal(out[2]));
+        Float t(Single::steal(out[0]));
+        pi.prim_uv = Vector2f(Single::steal(out[1]),
+                              Single::steal(out[2]));
 
         pi.prim_index  = UInt32::steal(out[3]);
         pi.shape_index = UInt32::steal(out[4]);
@@ -228,19 +234,19 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
             context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
         RTCRay ray2 = {};
-        ray2.org_x = ray.o.x();
-        ray2.org_y = ray.o.y();
-        ray2.org_z = ray.o.z();
-        ray2.dir_x = ray.d.x();
-        ray2.dir_y = ray.d.y();
-        ray2.dir_z = ray.d.z();
-        ray2.tnear = ray.mint;
-        ray2.tfar  = ray.maxt;
-        ray2.time  = ray.time;
+        ray2.org_x = (float) ray.o.x();
+        ray2.org_y = (float) ray.o.y();
+        ray2.org_z = (float) ray.o.z();
+        ray2.dir_x = (float) ray.d.x();
+        ray2.dir_y = (float) ray.d.y();
+        ray2.dir_z = (float) ray.d.z();
+        ray2.tnear = (float) ray.mint;
+        ray2.tfar  = (float) ray.maxt;
+        ray2.time  = (float) ray.time;
 
         rtcOccluded1(s.accel, &context, &ray2);
 
-        return ray2.tfar != ray.maxt;
+        return (Float) ray2.tfar != ray.maxt;
     } else if constexpr (ek::is_llvm_array_v<Float>) {
         if (jit_llvm_vector_width() != MTS_RAY_WIDTH)
             Throw("ray_test_cpu(): LLVM backend and "
@@ -264,27 +270,34 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
 
-        uint32_t in[13] = { valid.index(),      ray.o.x().index(),
-                            ray.o.y().index(),  ray.o.z().index(),
-                            ray.mint.index(),   ray.d.x().index(),
-                            ray.d.y().index(),  ray.d.z().index(),
-                            ray.time.index(),   ray.maxt.index(),
+        // Conversion, in case this is a double precision build
+        using Single = ek::float32_array_t<Float>;
+        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+
+        uint32_t in[13] = { valid.index(),      ray_o.x().index(),
+                            ray_o.y().index(),  ray_o.z().index(),
+                            ray_mint.index(),   ray_d.x().index(),
+                            ray_d.y().index(),  ray_d.z().index(),
+                            ray_time.index(),   ray_maxt.index(),
                             zero.index(),       zero.index(),
                             zero.index() };
 
+
         uint32_t out[1] { };
 
-        jit_embree_trace(func_v.index(), ctx_v.index(), scene_v.index(),
-                         1, in, out);
+        jit_embree_trace(func_v.index(), ctx_v.index(),
+                         scene_v.index(), 1, in, out);
 
-        return active && ek::neq(Float::steal(out[0]), ray.maxt);
+        return active && ek::neq(Single::steal(out[0]), ray_maxt);
     } else {
         Throw("ray_test_cpu() should only be called in CPU mode.");
     }
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
-Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) const {
+Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray,
+                                                Mask active) const {
     return ray_intersect_cpu(ray, +HitComputeFlags::All, active);
 }
 
