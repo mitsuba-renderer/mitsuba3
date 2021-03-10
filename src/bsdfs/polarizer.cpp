@@ -106,7 +106,9 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from the light source side.
+            /* The `forward` direction here is always along the direction that
+               light travels. This is needed for the coordinate system rotation
+               below. */
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
             /* To account for non-perpendicular incidence, we compute the effective
@@ -158,8 +160,10 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from the light source side.
-            Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
+            /* The `forward` direction here is always along the direction that
+               light travels. This is needed for the coordinate system rotation
+               below. */
+            Vector3f forward = si.wi;   // Note: Should be reversed for TransportMode::Importance.
 
             /* To account for non-perpendicular incidence, we compute the effective
                transmitting axis based on "The polarization properties of a tilted polarizer"

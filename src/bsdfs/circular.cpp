@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _bsdf-circular:
 
 Circular polarizer material (:monosp:`circular`)
------------------------------------------------
+------------------------------------------------
 
 .. pluginparameters::
 
@@ -92,7 +92,9 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from the light source side.
+            /* The `forward` direction here is always along the direction that
+               light travels. This is needed for the coordinate system rotation
+               below. */
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
             // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
@@ -137,8 +139,10 @@ public:
             // Rotate optical element by specified angle
             M = mueller::rotated_element(theta, M);
 
-            // Forward direction is always away from the light source side.
-            Vector3f forward = si.wi;   // Note: when tracing Importance, this should be reversed.
+            /* The `forward` direction here is always along the direction that
+               light travels. This is needed for the coordinate system rotation
+               below. */
+            Vector3f forward = si.wi;   // Note: Should be reversed for TransportMode::Importance.
 
             // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame
             M = mueller::rotate_mueller_basis_collinear(M, forward,

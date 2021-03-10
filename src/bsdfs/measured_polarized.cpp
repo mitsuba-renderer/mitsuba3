@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _bsdf-measured_polarized:
 
 Measured polarized material (:monosp:`measured_polarized`)
--------------------------------------------
+----------------------------------------------------------
 
 .. pluginparameters::
 
@@ -99,14 +99,14 @@ public:
     using Interpolator = Marginal2D<Float, 4, true>;
 
     MeasuredPolarized(const Properties &props) : Base(props) {
-        if constexpr (!is_spectral_v<Spectrum>)
-            Throw("The measured polarized BSDF model is only supported in spectral modes!");
-
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
 
         m_alpha_sample = props.float_("alpha_sample", 0.1f);
         m_wavelength = props.float_("wavelength", -1.f);
+
+        if (!is_spectral_v<Spectrum> && m_wavelength == -1.f)
+            Throw("In non-spectral modes, the measured polarized plugin can only render a specific wavelength specified by the `wavelength` parameter.");
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));
@@ -212,10 +212,10 @@ public:
         if (unlikely(ek::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
             return 0.f;
 
-        /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
-           always evaluated w.r.t. the actual light propagation direction, no
-           matter the transport mode. In the following, 'wo_hat' is towards the
-           light source side. */
+        /* Due to the coordinate system rotations for polarization-aware
+           pBSDFs below we need to know the propagation direction of light.
+           In the following, light arrives along `-wo_hat` and leaves along
+           `+wi_hat`. */
         Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
                  wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
@@ -230,82 +230,80 @@ public:
         auto [phi_d, theta_h, theta_d] = directions_to_rusinkiewicz(wo_std, wi_std);
 
         Spectrum value;
-        if constexpr (is_spectral_v<Spectrum>) {
-            if constexpr (is_polarized_v<Spectrum>) {
-                /* The Stokes reference frame vector of this matrix lies in the plane
-                   of reflection. See Figure 4. */
-                Vector3f zo_std = -wo_std,
-                         to_std = ek::normalize(ek::cross(wo_std - wi_std, zo_std)),
-                         yo_std = ek::normalize(ek::cross(to_std, zo_std)),
-                         xo_std = ek::cross(yo_std, zo_std),
-                         zi_std = wi_std,
-                         ti_std = ek::normalize(ek::cross(wi_std - wo_std, zi_std)),
-                         yi_std = ek::normalize(ek::cross(ti_std, zi_std)),
-                         xi_std = ek::cross(yi_std, zi_std);
+        if constexpr (is_polarized_v<Spectrum>) {
+            /* The Stokes reference frame vector of this matrix lies in the plane
+               of reflection. See Figure 4. */
+            Vector3f zo_std = -wo_std,
+                     to_std = ek::normalize(ek::cross(wo_std - wi_std, zo_std)),
+                     yo_std = ek::normalize(ek::cross(to_std, zo_std)),
+                     xo_std = ek::cross(yo_std, zo_std),
+                     zi_std = wi_std,
+                     ti_std = ek::normalize(ek::cross(wi_std - wo_std, zi_std)),
+                     yi_std = ek::normalize(ek::cross(ti_std, zi_std)),
+                     xi_std = ek::cross(yi_std, zi_std);
 
-                if (m_wavelength == -1.f) {
-                    for (int i = 0; i < 4; ++i) {
-                        for (int j = 0; j < 4; ++j) {
-                            UnpolarizedSpectrum tmp(0.f);
-                            for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {
-                                Float params[4] = {
-                                    phi_d, theta_d, theta_h,
-                                    si.wavelengths[k]
-                                };
-                                tmp[k] = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
-                            }
-                            value(i, j) = tmp;
-                        }
-                    }
-                } else {
-                    for (int i = 0; i < 4; ++i) {
-                        for (int j = 0; j < 4; ++j) {
+            if (m_wavelength == -1.f) {
+                for (int i = 0; i < 4; ++i) {
+                    for (int j = 0; j < 4; ++j) {
+                        UnpolarizedSpectrum tmp(0.f);
+                        for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {
                             Float params[4] = {
                                 phi_d, theta_d, theta_h,
-                                Float(m_wavelength)
+                                si.wavelengths[k]
                             };
-                            value(i, j) = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
+                            tmp[k] = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
                         }
+                        value(i, j) = tmp;
                     }
                 }
-
-                /* Invalid configurations such as transmission directions are encoded as NaNs.
-                   Make sure these values don't end up in the interpolated value. */
-                ek::masked(value, ek::any(isnan(value(0,0)))) = 0.f;
-
-                // Make sure intensity is non-negative
-                value(0, 0) = ek::max(0.f, value(0,0));
-
-                // Reverse phi rotation from above on Stokes reference frames
-                Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
-                         xi_hat = rotate_vector(xi_std, Vector3f(0, 0, 1), phi_std);
-
-                /* Rotate in/out reference vector of value s.t. it aligns with the
-                   implicit Stokes bases of -wo_hat & wi_hat. */
-                value = mueller::rotate_mueller_basis(value,
-                                                      -wo_hat, xo_hat, mueller::stokes_basis(-wo_hat),
-                                                       wi_hat, xi_hat, mueller::stokes_basis(wi_hat));
             } else {
-                if (m_wavelength == -1.f) {
-                    for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {
+                for (int i = 0; i < 4; ++i) {
+                    for (int j = 0; j < 4; ++j) {
                         Float params[4] = {
                             phi_d, theta_d, theta_h,
-                            si.wavelengths[k]
+                            Float(m_wavelength)
                         };
-                        value[k] = m_interpolator.eval(Point2f(0.f, 0.f), params, active);
+                        value(i, j) = m_interpolator.eval(Point2f(Float(j)/3.f, Float(i)/3.f), params, active);
                     }
-                } else {
+                }
+            }
+
+            /* Invalid configurations such as transmission directions are encoded as NaNs.
+               Make sure these values don't end up in the interpolated value. */
+            ek::masked(value, ek::any(isnan(value(0,0)))) = 0.f;
+
+            // Make sure intensity is non-negative
+            value(0, 0) = ek::max(0.f, value(0,0));
+
+            // Reverse phi rotation from above on Stokes reference frames
+            Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
+                     xi_hat = rotate_vector(xi_std, Vector3f(0, 0, 1), phi_std);
+
+            /* Rotate in/out reference vector of `value` s.t. it aligns with the
+               implicit Stokes bases of -wo_hat & wi_hat. */
+            value = mueller::rotate_mueller_basis(value,
+                                                  -wo_hat, xo_hat, mueller::stokes_basis(-wo_hat),
+                                                   wi_hat, xi_hat, mueller::stokes_basis(wi_hat));
+        } else {
+            if (m_wavelength == -1.f) {
+                for (size_t k = 0; k < ek::array_size_v<UnpolarizedSpectrum>; ++k) {
                     Float params[4] = {
                         phi_d, theta_d, theta_h,
-                        Float(m_wavelength)
+                        si.wavelengths[k]
                     };
-                    Float value_ = m_interpolator.eval(Point2f(0.f, 0.f), params, active);
-                    value = Spectrum(value_);
+                    value[k] = m_interpolator.eval(Point2f(0.f, 0.f), params, active);
                 }
-
-                // Make sure BRDF is non-negative
-                value = ek::max(0.f, value);
+            } else {
+                Float params[4] = {
+                    phi_d, theta_d, theta_h,
+                    Float(m_wavelength)
+                };
+                Float value_ = m_interpolator.eval(Point2f(0.f, 0.f), params, active);
+                value = Spectrum(value_);
             }
+
+            // Make sure BRDF is non-negative
+            value = ek::max(0.f, value);
         }
 
         return (value * cos_theta_o) & active;

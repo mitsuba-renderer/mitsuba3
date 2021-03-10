@@ -249,10 +249,10 @@ public:
 
         Spectrum weight;
         if constexpr (is_polarized_v<Spectrum>) {
-            /* Due to lack of reciprocity in polarization-aware pBRDFs, they are
-               always evaluated w.r.t. the actual light propagation direction, no
-               matter the transport mode. In the following, 'wo_hat' is towards the
-               light source side. */
+            /* Due to the coordinate system rotations for polarization-aware
+               pBSDFs below we need to know the propagation direction of light.
+               In the following, light arrives along `-wo_hat` and leaves along
+               `+wi_hat`. */
             Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
 
@@ -279,8 +279,8 @@ public:
             Vector3f s_axis_in  = ek::normalize(ek::cross(n, -wo_hat)),
                      s_axis_out = ek::normalize(ek::cross(n, wi_hat));
 
-            /* Rotate in/out reference vector of M s.t. it aligns with the implicit
-               Stokes bases of -wo_hat & wi_hat. */
+            /* Rotate in/out reference vector of `weight` s.t. it aligns with the
+               implicit Stokes bases of -wo_hat & wi_hat. */
             weight = mueller::rotate_mueller_basis(weight,
                                                    -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                     wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
