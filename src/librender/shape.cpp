@@ -324,7 +324,9 @@ void Shape<Float, Spectrum>::optix_fill_hitgroup_records(std::vector<HitGroupSbt
     optix_prepare_geometry();
     // Set hitgroup record data
     hitgroup_records.push_back(HitGroupSbtRecord());
-    hitgroup_records.back().data = { jit_registry_get_id(this), m_optix_data_ptr };
+    hitgroup_records.back().data = {
+        jit_registry_get_id(JitBackend::CUDA, this), m_optix_data_ptr
+    };
 
     size_t program_group_idx = (is_mesh() ? 1 : 2 + get_shape_descr_idx(this));
     // Setup the hitgroup record and copy it to the hitgroup records array

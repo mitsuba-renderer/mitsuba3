@@ -59,8 +59,9 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
         for (size_t i = 0; i < m_shapes.size(); i++)
-            data[i] = jit_registry_get_id(m_shapes[i]);
-        m_shapes_registry_ids = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+            data[i] = jit_registry_get_id(ek::backend_v<Float>, m_shapes[i]);
+        m_shapes_registry_ids =
+            ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
 }
 

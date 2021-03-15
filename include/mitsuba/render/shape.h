@@ -506,7 +506,7 @@ public:
     //! @}
     // =============================================================
 
-    ENOKI_VCALL_REGISTER_IF(mitsuba::Shape, ek::is_jit_array_v<Float>)
+    ENOKI_VCALL_REGISTER(Float, mitsuba::Shape)
 
     MTS_DECLARE_CLASS()
 protected:

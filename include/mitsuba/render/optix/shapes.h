@@ -219,7 +219,7 @@ void prepare_ias(const OptixDeviceContext &context,
     // Apply the same process to every shape instances
     for (Shape* shape: shapes) {
         if (shape->is_instance())
-            shape->optix_prepare_ias(context, out_instances, jit_registry_get_id(shape), transf);
+            shape->optix_prepare_ias(context, out_instances, jit_registry_get_id(JitBackend::CUDA, shape), transf);
     }
 }
 
