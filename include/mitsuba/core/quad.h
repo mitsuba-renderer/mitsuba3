@@ -110,7 +110,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
  */
 template <typename Float>
 std::pair<Float, Float> gauss_lobatto(int n) {
-    static_assert(ek::is_dynamic_array_v<Float> && !ek::is_cuda_array_v<Float>, "template type must be a dynamic array.");
+    static_assert(ek::is_dynamic_v<Float>, "Template type must be dynamic!");
     using ScalarFloat = ek::scalar_t<Float>;
 
     if (n < 2)
