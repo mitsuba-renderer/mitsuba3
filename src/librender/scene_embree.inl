@@ -111,7 +111,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         rtcIntersect1(s.accel, &context, &rh);
 
-        if ((Float) rh.ray.tfar != ray.maxt) {
+        if (rh.ray.tfar != (float) ray.maxt) {
             uint32_t shape_index = rh.hit.geomID;
             uint32_t prim_index  = rh.hit.primID;
 
@@ -246,7 +246,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
 
         rtcOccluded1(s.accel, &context, &ray2);
 
-        return (Float) ray2.tfar != ray.maxt;
+        return ray2.tfar != (float) ray.maxt;
     } else if constexpr (ek::is_llvm_array_v<Float>) {
         if (jit_llvm_vector_width() != MTS_RAY_WIDTH)
             Throw("ray_test_cpu(): LLVM backend and "
