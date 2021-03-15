@@ -153,7 +153,7 @@ def render(scene,
         When ``unbiased=True``, the ``render()`` function will generate an
         *unbiased* estimate that de-correlates primal and derivative
         components, which boils down to rendering the image twice and naturally
-        comes at some cost in performance :math:`(\\sim 1.6 \\times\!)`. Often,
+        comes at some cost in performance :math:`(\\sim 1.6 \\times\\!)`. Often,
         biased gradients are good enough, in which case ``unbiased=False``
         should be specified instead.
 
