@@ -96,7 +96,7 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
     trans = ScalarVector3f([0, 1, 0])
     angle = 15
 
-    for scale in [0.5, 2.7]:
+    for scale in [0.57, 2.7]:
         s, s_inst = example_scene(shape, scale, trans, angle)
 
         # grid size
