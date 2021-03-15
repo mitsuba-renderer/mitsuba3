@@ -4,7 +4,7 @@ from mitsuba.python.chi2 import ChiSquareTest, BSDFAdapter, SphericalDomain
 
 # TODO this is way too slow
 # @pytest.mark.slow
-# def test01_chi2_smooth(variant_llvm_rgb):
+# def test01_chi2_smooth(variants_vec_backends_once_rgb):
 #     from mitsuba.core import ScalarVector3f
 #     xml = """<float name="alpha" value="0.05"/>"""
 #     wi = ek.normalize(ScalarVector3f(0.8, 0.3, 0.05))
