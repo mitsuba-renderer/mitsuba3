@@ -146,7 +146,7 @@ def render(scene,
         primal output (i.e. the image) along with derivative output. When the
         rendering algorithm and objective are jointly differentiated, we end up
         with expectations of products that do *not* satisfy the equality
-        :math:`\\mathbb{E}[X Y]=\\mathbb{E}[X]\, \\mathbb{E}[Y]` due to
+        :math:`\\mathbb{E}[X Y]=\\mathbb{E}[X]\\, \\mathbb{E}[Y]` due to
         correlations between :math:`X` and :math:`Y` that result from this
         sample re-use.
 
