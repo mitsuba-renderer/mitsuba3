@@ -277,7 +277,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_vertex_normals() {
         auto ni = 3 * ek::arange<UInt32>(m_vertex_count);
         for (size_t i = 0; i < 3; ++i)
             ek::scatter(m_vertex_normals,
-                        ek::float32_array_t<Vector3f>(normals[i]), ni + i);
+                        ek::float32_array_t<Float>(normals[i]), ni + i);
     }
 }
 
