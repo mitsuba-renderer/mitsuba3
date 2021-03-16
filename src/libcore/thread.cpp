@@ -521,7 +521,7 @@ size_t Thread::thread_count() { return __global_thread_count; }
 
 void Thread::set_thread_count(size_t count) {
     __global_thread_count = count;
-    jit_llvm_set_thread_count(count);
+    pool_set_size(nullptr, count);
 }
 
 ThreadEnvironment::ThreadEnvironment() {

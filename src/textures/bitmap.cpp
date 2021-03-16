@@ -8,6 +8,7 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <enoki/dynamic.h>
+#include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
 
