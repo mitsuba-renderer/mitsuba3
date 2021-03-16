@@ -87,7 +87,7 @@ if hasattr(ek, 'JitFlag'):
         {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
     ]
 else:
-    jit_flags_options = []
+    jit_flags_options = ["dummy"]
 
 
 @pytest.mark.slow
@@ -96,12 +96,13 @@ else:
 def test_render(variants_all, gc_collect, scene_fname, jit_flags):
     from mitsuba.core import Bitmap, Struct, Thread, set_thread_count
 
-    if 'scalar' in mitsuba.variant() and not jit_flags == jit_flags_options[0]:
-        pytest.skip('no need to test the other jit flags in scalar mode')
+    if hasattr(ek, 'JitFlag'):
+        if 'scalar' in mitsuba.variant() and not jit_flags == jit_flags_options[0]:
+            pytest.skip('no need to test the other jit flags in scalar mode')
 
-    # Set enoki JIT flags
-    for k, v in jit_flags.items():
-        ek.set_flag(k, v)
+        # Set enoki JIT flags
+        for k, v in jit_flags.items():
+            ek.set_flag(k, v)
 
     scene_dir = dirname(scene_fname)
 
