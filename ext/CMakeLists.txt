@@ -45,6 +45,11 @@ endif()
 
 add_subdirectory(enoki)
 
+if (NOT MTS_ENABLE_JIT)
+  add_subdirectory(enoki/ext/enoki-jit/ext/enoki-thread)
+  set_target_properties(enoki-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/enoki")
+endif()
+
 set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
 
 if (MTS_ENABLE_JIT)
