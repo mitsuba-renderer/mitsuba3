@@ -167,8 +167,6 @@ const FileResolver* Thread::file_resolver() const {
 }
 
 Thread* Thread::thread() {
-    // if (!self)
-        // Thread::register_external_thread("worker");
     return self;
 }
 
@@ -521,7 +519,7 @@ size_t Thread::thread_count() { return __global_thread_count; }
 
 void Thread::set_thread_count(size_t count) {
     __global_thread_count = count;
-    pool_set_size(nullptr, count);
+    pool_set_size(nullptr, (uint32_t) count);
 }
 
 ThreadEnvironment::ThreadEnvironment() {

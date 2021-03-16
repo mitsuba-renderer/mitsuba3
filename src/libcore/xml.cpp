@@ -347,7 +347,7 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
         // Upgrade all attribute names from camelCase to underscore_case
         for (pugi::xpath_node result: node.select_nodes("//*[@name]")) {
             pugi::xml_node n = result.node();
-            if (std::strcmp(n.name(), "default") == 0)
+            if (strcmp(n.name(), "default") == 0)
                 continue;
             pugi::xml_attribute name_attrib = n.attribute("name");
             std::string name = name_attrib.value();

@@ -7,7 +7,6 @@ MTS_PY_EXPORT(MicrofacetDistribution) {
     MTS_PY_IMPORT_TYPES(MicrofacetDistribution)
 
     py::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
-        // TODO is this needed?
         .def(py::init([](MicrofacetType t, ScalarFloat alpha, bool sv) {
             return MicrofacetDistribution(t, alpha, sv);
         }), "type"_a, "alpha"_a, "sample_visible"_a = true)
