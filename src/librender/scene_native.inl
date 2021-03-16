@@ -43,11 +43,11 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
     PreliminaryIntersection3f pi =
         kdtree->template ray_intersect_naive<false>(ray, active);
 
-    return pi.compute_surface_interaction(ray, hit_flags, active);
+    return pi.compute_surface_interaction(ray, +HitComputeFlags::All, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t Mask active) const {
+Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, Mask active) const {
     const ShapeKDTree *kdtree = (ShapeKDTree *) m_accel;
     return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
 }

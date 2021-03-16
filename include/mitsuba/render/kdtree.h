@@ -110,9 +110,12 @@ public:
     using Point       = typename BoundingBox::Point;
     using Vector      = typename BoundingBox::Vector;
     using Scalar      = ek::value_t<Vector>;
+    using SizedInt    = ek::uint_array_t<Scalar>;
     using IndexVector = std::vector<Index>;
 
-    static constexpr size_t Dimension = Vector::Size;
+    static constexpr size_t Dimension     = Vector::Size;
+    static constexpr int MantissaBits     = sizeof(Scalar) == 4 ? 23: 52;
+    static constexpr int ExponentSignBits = sizeof(Scalar) == 4 ? 9 : 12;
 
     /* ==================================================================== */
     /*                     Public kd-tree interface                         */
@@ -234,16 +237,16 @@ protected:
             struct ENOKI_PACK {
                 #if defined(LITTLE_ENDIAN)
                     /// How many primitives does this leaf reference?
-                    unsigned int prim_count : (sizeof(Scalar) == 4 ? 23: 52);
+                    SizedInt prim_count : MantissaBits;
 
                     /// Mask bits (all 1s for leaf nodes)
-                    unsigned int mask : (sizeof(Scalar) == 4 ? 9 : 12);
+                    SizedInt mask : ExponentSignBits;
                 #else /* Swap for big endian machines */
                     /// Mask bits (all 1s for leaf nodes)
-                    unsigned int mask : (sizeof(Scalar) == 4 ? 9 : 12);
+                    SizedInt mask : ExponentSignBits;
 
                     /// How many primitives does this leaf reference?
-                    unsigned int prim_count : (sizeof(Scalar) == 4 ? 23: 52);
+                    SizedInt prim_count : MantissaBits;
                 #endif
 
                 /// Start offset of the primitive list

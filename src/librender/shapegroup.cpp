@@ -8,7 +8,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     m_id = props.id();
 
 #if !defined(MTS_ENABLE_EMBREE)
-    if constexpr (ek::is_llvm_array<Float>)
+    if constexpr (ek::is_llvm_array_v<Float>)
         Throw("LLVM variant with native KDTree is not supported");
     if constexpr (!ek::is_cuda_array_v<Float>)
         m_kdtree = new ShapeKDTree(props);
@@ -55,6 +55,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_jit_array_v<Float>) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
@@ -63,6 +64,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         m_shapes_registry_ids =
             ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
+#endif
 }
 
 MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
