@@ -972,10 +972,9 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
         Throw("reference to unknown object \"%s\"!", id);
 
     auto &inst = it->second;
-    inst.mutex.lock();
+    std::lock_guard<std::mutex> lock(inst.mutex);
 
     if (inst.object) {
-        inst.mutex.unlock();
         return inst.object;
     } else if (!inst.alias.empty()) {
         std::string alias = inst.alias;
@@ -1057,7 +1056,6 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
               string::to_lower(inst.class_->name()), props.plugin_name());
     }
 
-    inst.mutex.unlock();
     return inst.object;
 }
 
