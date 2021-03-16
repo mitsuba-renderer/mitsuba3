@@ -8,8 +8,6 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <enoki/dynamic.h>
-#include <mutex>
-#include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -478,7 +476,7 @@ public:
                                               Mask active = true) const override {
         if (!m_distr2d) {
             // Construct 2D distribution upon first access, avoid races
-            std::lock_guard<tbb::spin_mutex> guard(m_mutex);
+            std::lock_guard<std::mutex> lock(m_mutex);
             if (!m_distr2d) {
                 auto self = const_cast<BitmapTextureImpl *>(this);
                 self->rebuild_internals(false, true);
@@ -518,7 +516,7 @@ public:
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
         if (!m_distr2d) {
             // Construct 2D distribution upon first access, avoid races
-            std::lock_guard<tbb::spin_mutex> guard(m_mutex);
+            std::lock_guard<std::mutex> lock(m_mutex);
             if (!m_distr2d) {
                 auto self = const_cast<BitmapTextureImpl *>(this);
                 self->rebuild_internals(false, true);
@@ -668,7 +666,7 @@ protected:
     WrapMode m_wrap_mode;
 
     // Optional: distribution for importance sampling
-    mutable tbb::spin_mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 };
 

@@ -5,9 +5,6 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/python/python.h>
 
-#define __TBB_show_deprecation_message_task_scheduler_init_H 1
-#include <tbb/task_scheduler_init.h>
-
 MTS_PY_DECLARE(atomic);
 MTS_PY_DECLARE(filesystem);
 MTS_PY_DECLARE(Object);
@@ -73,25 +70,26 @@ PYBIND11_MODULE(core_ext, m) {
     if (!fr->contains(base_path))
         fr->append(base_path);
 
-    /* Holds a pointer to the current TBB task scheduler to enable
-       later changes via set_thread_count(). Cleaned up in
-       \ref cleanup_callback. */
-    std::unique_ptr<tbb::task_scheduler_init> *task_scheduler_holder =
-        new std::unique_ptr<tbb::task_scheduler_init>(
-            new tbb::task_scheduler_init());
-    m.def(
-        "set_thread_count",
-        [task_scheduler_holder](int count) {
-            if (count < 0)
-                count = util::core_count();
-            // Make sure the previous scheduler is deleted first.
-            task_scheduler_holder->reset(nullptr);
-            task_scheduler_holder->reset(new tbb::task_scheduler_init(count));
-            __global_thread_count = count;
-        },
-        "count"_a = -1,
-        "Sets the maximum number of threads to be used for parallelized "
-        "execution of Mitsuba code. Defaults to -1 (automatic).");
+    // TODO remove this?
+    // /* Holds a pointer to the current TBB task scheduler to enable
+    //    later changes via set_thread_count(). Cleaned up in
+    //    \ref cleanup_callback. */
+    // std::unique_ptr<tbb::task_scheduler_init> *task_scheduler_holder =
+    //     new std::unique_ptr<tbb::task_scheduler_init>(
+    //         new tbb::task_scheduler_init());
+    // m.def(
+    //     "set_thread_count",
+    //     [task_scheduler_holder](int count) {
+    //         if (count < 0)
+    //             count = util::core_count();
+    //         // Make sure the previous scheduler is deleted first.
+    //         task_scheduler_holder->reset(nullptr);
+    //         task_scheduler_holder->reset(new tbb::task_scheduler_init(count));
+    //         __global_thread_count = count;
+    //     },
+    //     "count"_a = -1,
+    //     "Sets the maximum number of threads to be used for parallelized "
+    //     "execution of Mitsuba code. Defaults to -1 (automatic).");
 
     // Register python modules
     MTS_PY_IMPORT(atomic);
@@ -119,9 +117,7 @@ PYBIND11_MODULE(core_ext, m) {
     /* Register a cleanup callback function that is invoked when
        the 'mitsuba::Object' Python type is garbage collected */
     py::cpp_function cleanup_callback(
-        [task_scheduler_holder](py::handle weakref) {
-            delete task_scheduler_holder;
-
+        [](py::handle weakref) {
             Bitmap::static_shutdown();
             Logger::static_shutdown();
             Thread::static_shutdown();

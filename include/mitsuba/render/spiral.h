@@ -4,7 +4,6 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
-#include <tbb/spin_mutex.h>
 
 #if !defined(MTS_BLOCK_SIZE)
 #  define MTS_BLOCK_SIZE 32
@@ -85,7 +84,7 @@ protected:
     size_t m_remaining_passes;
 
     /// Protects the spiral's state (thread safety).
-    tbb::spin_mutex m_mutex;
+    std::mutex m_mutex;
 };
 
 NAMESPACE_END(mitsuba)

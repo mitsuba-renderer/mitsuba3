@@ -8,7 +8,6 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
-#include <mutex>
 
 #if defined(MTS_ENABLE_EMBREE)
     #include <embree3/rtcore.h>
@@ -295,7 +294,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
-    std::lock_guard<tbb::spin_mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     if (!m_area_pmf.empty())
         return; // already built!
@@ -329,7 +328,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
-    std::lock_guard<tbb::spin_mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_parameterization)
         return; // already built!
 

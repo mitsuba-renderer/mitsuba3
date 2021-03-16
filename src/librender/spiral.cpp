@@ -1,7 +1,6 @@
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/render/spiral.h>
 #include <mitsuba/mitsuba.h>
-#include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -26,7 +25,7 @@ void Spiral::reset() {
 
 std::tuple<Spiral::Vector2i, Spiral::Vector2i, size_t> Spiral::next_block() {
     // Reimplementation of the spiraling block generator by Adam Arbree.
-    std::lock_guard<tbb::spin_mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
 
     if (m_block_count == m_block_counter) {
         if (m_remaining_passes > 1) {

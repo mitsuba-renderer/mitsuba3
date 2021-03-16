@@ -4,7 +4,6 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/profiler.h>
-#include <tbb/task_scheduler_observer.h>
 #include <condition_variable>
 #include <thread>
 #include <sstream>
@@ -19,10 +18,17 @@
 #  include <windows.h>
 #endif
 
+// TODO
+#ifdef _SC_NPROCESSORS_CONF
+    #define NPROCESSORS_COUNT sysconf(_SC_NPROCESSORS_CONF)
+#else
+    #define NPROCESSORS_COUNT 1
+#endif
+
 NAMESPACE_BEGIN(mitsuba)
 
 size_t __global_thread_count = 0;
-static ThreadLocal<Thread> *self = nullptr;
+static thread_local Thread *self = nullptr;
 static std::atomic<uint32_t> thread_ctr { 0 };
 #if defined(__LINUX__) || defined(__OSX__)
 static pthread_key_t this_thread_id;
@@ -85,12 +91,30 @@ protected:
 
 std::atomic<uint32_t> WorkerThread::m_counter{0};
 
+struct ThreadRegistrator {
+    ThreadRegistrator() {
+        // Do not register the main thread
+        if (m_counter > 0)
+            Thread::register_external_thread("worker");
+        m_counter++;
+    }
+    ~ThreadRegistrator() {
+        if (self)
+            Thread::unregister_external_thread();
+        m_counter--;
+    }
+    static std::atomic<uint32_t> m_counter;
+}
+
+static thread_local ThreadRegistrator;
+std::atomic<uint32_t> ThreadRegistrator::m_counter{0};
+
 struct Thread::ThreadPrivate {
     std::thread thread;
     std::thread::native_handle_type native_handle;
     std::string name;
     bool running = false;
-    bool tbb_thread = false;
+    bool external_thread = false;
     bool critical = false;
     int core_affinity = -1;
     Thread::EPriority priority;
@@ -146,7 +170,9 @@ const FileResolver* Thread::file_resolver() const {
 }
 
 Thread* Thread::thread() {
-    return *self;
+    // if (!self)
+        // Thread::register_external_thread("worker");
+    return self;
 }
 
 bool Thread::is_running() const {
@@ -252,7 +278,7 @@ void Thread::set_core_affinity(int core_id) {
 #if defined(__OSX__)
     /* CPU affinity not supported on OSX */
 #elif defined(__LINUX__)
-    int core_count = sysconf(_SC_NPROCESSORS_CONF),
+    int core_count = NPROCESSORS_COUNT,
         logical_core_count = core_count;
 
     size_t size = 0;
@@ -367,8 +393,6 @@ void Thread::start() {
 void Thread::dispatch() {
     d->native_handle = d->thread.native_handle();
 
-    ThreadLocalBase::register_thread();
-
     uint32_t id = thread_ctr++;
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
@@ -376,7 +400,7 @@ void Thread::dispatch() {
         this_thread_id = id;
     #endif
 
-    *self = this;
+    self = this;
 
     if (d->priority != ENormalPriority)
         set_priority(d->priority);
@@ -405,14 +429,12 @@ void Thread::dispatch() {
     }
 
     exit();
-
 }
 
 void Thread::exit() {
     Log(Debug, "Thread \"%s\" has finished", d->name);
     d->running = false;
-    Assert(*self == this);
-    ThreadLocalBase::unregister_thread();
+    Assert(self == this);
     dec_ref();
 }
 
@@ -444,23 +466,19 @@ std::string Thread::to_string() const {
 }
 
 bool Thread::register_external_thread(const std::string &prefix) {
-    if (!ThreadLocalBase::register_thread())
-        return false;
-
     uint32_t id = thread_ctr++;
-    WorkerThread *thr = new WorkerThread(prefix);
+    self = new WorkerThread(prefix);
     #if defined(__LINUX__) || defined(__OSX__)
-        thr->d->native_handle = pthread_self();
+        self->d->native_handle = pthread_self();
         pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
     #elif defined(__WINDOWS__)
-        thr->d->native_handle = GetCurrentThread();
+        self->d->native_handle = GetCurrentThread();
         this_thread_id = id;
     #endif
-    thr->d->running = true;
-    thr->d->tbb_thread = true;
-    *self = thr;
+    self->d->running = true;
+    self->d->external_thread = true;
 
-    const std::string &thread_name = thr->name();
+    const std::string &thread_name = self->name();
     #if defined(__LINUX__)
         pthread_setname_np(pthread_self(), thread_name.c_str());
     #elif defined(__OSX__)
@@ -473,81 +491,38 @@ bool Thread::register_external_thread(const std::string &prefix) {
 }
 
 bool Thread::unregister_external_thread() {
-    Thread *thr = *self;
-    if (!thr || !thr->d->tbb_thread)
+    if (!self || !self->d->external_thread)
         return false;
-    thr->d->running = false;
-    ThreadLocalBase::unregister_thread();
+    self->d->running = false;
     return true;
 }
-
-class Thread::TaskObserver : public tbb::task_scheduler_observer {
-public:
-    TaskObserver() {
-        observe();
-    }
-
-    void on_scheduler_entry(bool) {
-        if (register_external_thread("tbb")) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_started_counter++;
-        }
-    }
-
-    void on_scheduler_exit(bool) {
-        if (unregister_external_thread()) {
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_stopped_counter++;
-            m_cv.notify_all();
-        }
-    }
-
-    void wait() {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        while (m_started_counter != m_stopped_counter)
-            m_cv.wait(lock);
-    }
-private:
-    uint32_t m_started_counter{0};
-    uint32_t m_stopped_counter{0};
-    std::condition_variable m_cv;
-    std::mutex m_mutex;
-};
-
-static std::unique_ptr<Thread::TaskObserver> observer;
 
 void Thread::static_initialization() {
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_create(&this_thread_id, nullptr);
     #endif
-    ThreadLocalBase::static_initialization();
-    ThreadLocalBase::register_thread();
 
     __global_thread_count = util::core_count();
 
-    self = new ThreadLocal<Thread>();
-    Thread *main_thread = new MainThread();
-
-    main_thread->d->running = true;
-    main_thread->d->fresolver = new FileResolver();
-    *self = main_thread;
-
-    observer = std::unique_ptr<Thread::TaskObserver>(
-        new Thread::TaskObserver());
+    self = new MainThread();
+    self->d->running = true;
+    self->d->fresolver = new FileResolver();
+    self->inc_ref();
 }
 
 void Thread::static_shutdown() {
-    observer->wait();
-    observer.reset();
     thread()->d->running = false;
-    ThreadLocalBase::unregister_thread();
     delete self;
     self = nullptr;
-    ThreadLocalBase::static_shutdown();
-
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_delete(this_thread_id);
     #endif
+}
+
+size_t Thread::thread_count() { return __global_thread_count; }
+
+void Thread::set_thread_count(size_t count) {
+    __global_thread_count = count;
 }
 
 ThreadEnvironment::ThreadEnvironment() {

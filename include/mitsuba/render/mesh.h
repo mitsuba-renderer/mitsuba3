@@ -7,7 +7,6 @@
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/distr_1d.h>
 #include <mitsuba/core/properties.h>
-#include <tbb/spin_mutex.h>
 #include <unordered_map>
 #include <enoki/dynamic.h>
 
@@ -360,7 +359,7 @@ protected:
     /* Surface area distribution -- generated on demand when \ref
        prepare_area_pmf() is first called. */
     DiscreteDistribution<Float> m_area_pmf;
-    tbb::spin_mutex m_mutex;
+    std::mutex m_mutex;
 
     /// Optional: used in eval_parameterization()
     ref<Scene<Float, Spectrum>> m_parameterization;

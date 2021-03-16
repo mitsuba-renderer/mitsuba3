@@ -566,8 +566,6 @@ protected:
         ThreadEnvironment env;
         tbb::concurrent_vector<KDNode> node_storage;
         tbb::concurrent_vector<Index> index_storage;
-        ThreadLocal<LocalBuildContext> local;
-
         /* Keep some statistics about the build process */
         std::atomic<size_t> bad_refines {0};
         std::atomic<size_t> retracted_splits {0};
@@ -865,7 +863,7 @@ protected:
                          max_bin = m_max_bin[axis],
                          inv_bin_size = m_inv_bin_size[axis];
 
-            tbb::spin_mutex mutex;
+            std::mutex mutex;
             IndexVector left_indices(split.left_count);
             IndexVector right_indices(split.right_count);
             Size left_count = 0, right_count = 0;
@@ -911,7 +909,7 @@ protected:
                     Index *target_left = nullptr, *target_right = nullptr;
 
                     /* critical section */ {
-                        tbb::spin_mutex::scoped_lock lock(mutex);
+                        std::lock_guard<std::mutex> lock(mutex);
                         if (!left_indices_local.empty()) {
                             target_left = &left_indices[left_count];
                             left_count += (Index)left_indices_local.size();
@@ -970,7 +968,7 @@ protected:
         BuildContext &m_ctx;
 
         /// Local context with thread local variables
-        LocalBuildContext *m_local = nullptr;
+        static thread_local LocalBuildContext m_local;
 
         /// Node to be initialized by this task
         NodeIterator m_node;
@@ -1281,7 +1279,7 @@ protected:
             /*                      Primitive Classification                        */
             /* ==================================================================== */
 
-            auto &classification = m_local->classification_storage;
+            auto &classification = m_local.classification_storage;
 
             /* Initially mark all prims as being located on both sides */
             for (auto event = events_by_dimension[best.axis];
@@ -1339,8 +1337,8 @@ protected:
 
             Size pruned_left = 0, pruned_right = 0;
 
-            auto &left_alloc = m_local->left_alloc;
-            auto &right_alloc = m_local->right_alloc;
+            auto &left_alloc  = m_local.left_alloc;
+            auto &right_alloc = m_local.right_alloc;
 
             EdgeEvent *left_events_start, *right_events_start,
                       *left_events_end, *right_events_end;
@@ -1575,7 +1573,7 @@ protected:
         /// Create an initial sorted edge event list and start the O(N log N) builder
         Scalar transition_to_nlogn() {
             const auto &derived = m_ctx.derived;
-            m_local = &((LocalBuildContext &) m_ctx.local);
+            // m_local = &m_ctx.local; // TODO remove this
 
             Size prim_count = Size(m_indices.size()), final_prim_count = prim_count;
 
@@ -1584,7 +1582,7 @@ protected:
             Size initial_size = prim_count * 2 * Dimension;
 
             EdgeEvent *events_start =
-                m_local->left_alloc.template allocate<EdgeEvent>(initial_size),
+                m_local.left_alloc.template allocate<EdgeEvent>(initial_size),
                 *events_end = events_start + initial_size;
 
             for (Size i = 0; i<prim_count; ++i) {
@@ -1622,15 +1620,15 @@ protected:
             while (events_start != events_end && !(events_end-1)->valid())
                 --events_end;
 
-            m_local->left_alloc.template shrink_allocation<EdgeEvent>(
+            m_local.left_alloc.template shrink_allocation<EdgeEvent>(
                 events_start, events_end - events_start);
-            m_local->classification_storage.resize(derived.primitive_count());
-            m_local->ctx = &m_ctx;
+            m_local.classification_storage.resize(derived.primitive_count());
+            m_local.ctx = &m_ctx;
 
             Scalar cost = build_nlogn(m_node, final_prim_count, events_start,
                                       events_end, m_bbox, m_depth, 0);
 
-            m_local->left_alloc.release(events_start);
+            m_local.left_alloc.release(events_start);
 
             return cost;
         }
@@ -1827,7 +1825,7 @@ protected:
             compute_statistics(ctx, m_nodes.get(), m_bbox, 0);
 
             // Trigger per-thread data release
-            ctx.local.clear();
+            // ctx.local.clear(); // TODO is this necessary?
 
             ctx.exp_traversal_steps /= (double) CostModel::eval(m_bbox);
             ctx.exp_leaves_visited /= (double) CostModel::eval(m_bbox);

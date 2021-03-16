@@ -344,7 +344,6 @@ include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${ENOKI_INCLUDE_DIRS}
-  ${TBB_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
@@ -399,9 +398,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
 endif()
 
 if (MSVC)
-  # Don't issue implicit linking pragmas for TBB
-  add_definitions(-D__TBB_NO_IMPLICIT_LINKAGE)
-
   # Disable problematic windows.h min/max macros
   add_definitions(-DNOMINMAX)
 
@@ -485,7 +481,7 @@ function(add_plugin)
   list(GET ARGV 0 TARGET)
   list(REMOVE_AT ARGV 0)
   add_library(${TARGET} SHARED ${ARGV})
-  target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render tbb)
+  target_link_libraries(${TARGET} PRIVATE mitsuba-core mitsuba-render)
   set_target_properties(${TARGET} PROPERTIES
     PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/plugins
@@ -595,7 +591,7 @@ set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Installation targets
 set(MTS_DEPEND
-  asmjit IlmImf IlmThread Imath Iex IexMath Half tbb pugixml
+  asmjit IlmImf IlmThread Imath Iex IexMath Half pugixml
 )
 
 if (WIN32 OR APPLE)
@@ -610,11 +606,12 @@ if (MTS_ENABLE_EMBREE)
   list(APPEND MTS_DEPEND embree)
 endif()
 
+list(APPEND MTS_DEPEND enoki-thread)
+set_target_properties(enoki-thread PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
+
 if (MTS_ENABLE_JIT)
-  list(APPEND MTS_DEPEND enoki-jit enoki-thread)
+  list(APPEND MTS_DEPEND enoki-jit)
   set_target_properties(enoki-jit PROPERTIES
-    INSTALL_RPATH "${MTS_ORIGIN}")
-  set_target_properties(enoki-thread PROPERTIES
     INSTALL_RPATH "${MTS_ORIGIN}")
 endif()
 

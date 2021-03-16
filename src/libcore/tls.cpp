@@ -1,5 +1,6 @@
+#if 0
 #include <mitsuba/core/tls.h>
-#include <tbb/spin_mutex.h>
+#include <mitsuba/core/thread.h>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -19,7 +20,7 @@ struct TLSEntry {
 };
 
 struct PerThreadData {
-    tbb::spin_mutex mutex;
+    std::mutex mutex;
     std::unordered_map<ThreadLocalBase *, TLSEntry> entries;
     std::list<TLSEntry *> entries_ordered;
     uint32_t ref_count = 1;
@@ -52,17 +53,18 @@ void ThreadLocalBase::clear() {
 
     /* For every thread */
     for (auto ptd : ptd_global) {
-        tbb::spin_mutex::scoped_lock guard2(ptd->mutex);
+        ptd->mutex.lock();
 
         /* If the current TLS object is referenced, destroy the contents */
         auto it2 = ptd->entries.find(this);
         if (it2 == ptd->entries.end())
+            ptd->mutex.unlock();
             continue;
 
         auto entry = it2->second;
         ptd->entries_ordered.erase(entry.iterator);
         ptd->entries.erase(it2);
-        guard2.release();
+        ptd->mutex.unlock();
         m_destruct_functor(entry.data);
     }
 }
@@ -82,7 +84,7 @@ void *ThreadLocalBase::get() {
             "construction of thread-specific data structures!");
 
     /* This is an uncontended thread-local lock (i.e. not to worry) */
-    tbb::spin_mutex::scoped_lock guard(ptd->mutex);
+    std::lock_guard<std::mutex> guard(ptd->mutex);
 
     auto it = ptd->entries.find(this);
     if (likely(it != ptd->entries.end()))
@@ -156,12 +158,12 @@ bool ThreadLocalBase::unregister_thread() {
     ptd->ref_count--;
 
     if (ptd->ref_count == 0) {
-        tbb::spin_mutex::scoped_lock local_guard(ptd->mutex);
+        ptd->mutex.lock();
         for (auto it = ptd->entries_ordered.rbegin();
              it != ptd->entries_ordered.rend(); ++it)
             (*it)->destruct((*it)->data);
 
-        local_guard.release();
+        ptd->mutex.unlock();
         ptd_global.erase(ptd);
         delete ptd;
 
@@ -175,3 +177,4 @@ bool ThreadLocalBase::unregister_thread() {
 }
 
 NAMESPACE_END(mitsuba)
+#endif

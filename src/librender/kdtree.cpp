@@ -4,6 +4,10 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+template <typename B, typename I, typename C, typename D>
+thread_local typename TShapeKDTree<B, I, C, D>::LocalBuildContext
+    TShapeKDTree<B, I, C, D>::BuildTask::m_local = {};
+
 MTS_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
     : Base(SurfaceAreaHeuristic3f(
           /* kd-tree construction: Relative cost of a shape intersection

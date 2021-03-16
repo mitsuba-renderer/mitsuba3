@@ -19,8 +19,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/xml.h>
 #include <pugixml.hpp>
-#include <tbb/spin_mutex.h>
-#include <tbb/parallel_for.h>
+#include <enoki-thread/thread.h>
 
 /// Linux <sys/sysmacros.h> defines these as macros .. :(
 #if defined(major)
@@ -233,7 +232,7 @@ struct XMLObject {
     std::function<std::string(ptrdiff_t)> offset;
     size_t location = 0;
     ref<Object> object;
-    tbb::spin_mutex mutex;
+    std::mutex mutex;
 };
 
 enum class ColorMode {
@@ -972,66 +971,63 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
         Throw("reference to unknown object \"%s\"!", id);
 
     auto &inst = it->second;
-    tbb::spin_mutex::scoped_lock lock(inst.mutex);
+    inst.mutex.lock();
 
     if (inst.object) {
+        inst.mutex.unlock();
         return inst.object;
     } else if (!inst.alias.empty()) {
         std::string alias = inst.alias;
-        lock.release();
+        inst.mutex.unlock();
         return instantiate_node(ctx, alias);
     }
 
     Properties &props = inst.props;
     const auto &named_references = props.named_references();
 
-    ThreadEnvironment env;
+    if (!named_references.empty()) {
+        ThreadEnvironment env;
+        uint32_t task_size = ctx.parallelize ? 1 : (uint32_t) named_references.size();
 
-    auto functor = [&](const tbb::blocked_range<uint32_t> &range) {
-        ScopedSetThreadEnvironment set_env(env);
+        // TODO enable parallelized node instantiation (need to fix deadlock)
+        // uint32_t task_size = (uint32_t) named_references.size();
 
-        for (uint32_t i = range.begin(); i != range.end(); ++i) {
-            auto &kv = named_references[i];
-            try {
-                ref<Object> obj;
-                auto instantiate_recursively = [&]() {
-                    obj = instantiate_node(ctx, kv.second);
-                };
+        ek::parallel_for(
+            ek::blocked_range<uint32_t>(0u, (uint32_t) named_references.size(), task_size),
+            [&](const ek::blocked_range<uint32_t> &range) {
+                ScopedSetThreadEnvironment set_env(env);
 
-                // Potentially isolate from parent tasks to prevent deadlocks
-                if (ctx.parallelize)
-                    tbb::this_task_arena::isolate(instantiate_recursively);
-                else
-                    instantiate_recursively();
+                for (uint32_t i = range.begin(); i != range.end(); ++i) {
+                    auto &kv = named_references[i];
+                    try {
+                        ref<Object> obj = instantiate_node(ctx, kv.second);
 
-                // Give the object a chance to recursively expand into sub-objects
-                std::vector<ref<Object>> children = obj->expand();
-
-                if (children.empty()) {
-                    props.set_object(kv.first, obj, false);
-                } else if (children.size() == 1) {
-                    props.set_object(kv.first, children[0], false);
-                } else {
-                    int ctr = 0;
-                    for (auto c : children)
-                        props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
+                        // Give the object a chance to recursively expand into
+                        // sub-objects
+                        std::vector<ref<Object>> children = obj->expand();
+                        if (children.empty()) {
+                            props.set_object(kv.first, obj, false);
+                        } else if (children.size() == 1) {
+                            props.set_object(kv.first, children[0], false);
+                        } else {
+                            int ctr = 0;
+                            for (auto c : children)
+                                props.set_object(kv.first + "_" +
+                                                     std::to_string(ctr++),
+                                                 c, false);
+                        }
+                    } catch (const std::exception &e) {
+                        if (strstr(e.what(), "Error while loading") == nullptr)
+                            Throw("Error while loading \"%s\" (near %s): %s",
+                                inst.src_id, inst.offset(inst.location),
+                                e.what());
+                        else
+                            throw;
+                    }
                 }
-            } catch (const std::exception &e) {
-                if (strstr(e.what(), "Error while loading") == nullptr)
-                    Throw("Error while loading \"%s\" (near %s): %s",
-                          inst.src_id, inst.offset(inst.location), e.what());
-                else
-                    throw;
             }
-        }
-    };
-
-    tbb::blocked_range<uint32_t> range(0u, (uint32_t) named_references.size(), 1);
-
-    if (ctx.parallelize)
-        tbb::parallel_for(range, functor);
-    else
-        functor(range);
+        );
+    }
 
     try {
         inst.object = PluginManager::instance()->create_object(props, inst.class_);
@@ -1062,6 +1058,8 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
               unqueried.size() > 1 ? "properties" : "property", unqueried,
               string::to_lower(inst.class_->name()), props.plugin_name());
     }
+
+    inst.mutex.unlock();
     return inst.object;
 }
 

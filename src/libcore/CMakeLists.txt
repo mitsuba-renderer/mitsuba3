@@ -85,8 +85,9 @@ target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
   ${PNG_LIBRARIES}
   ${ZLIB_LIBRARY}
-  # Link to Intel's Thread Building Blocks and the pugixml parser
-  tbb pugixml asmjit
+  enoki-thread
+  # Link pugixml parser
+  pugixml asmjit
   # Image libraries: link to libjpeg, libpng, OpenEXR
   ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
 )

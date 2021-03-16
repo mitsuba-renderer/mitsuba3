@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/core/object.h>
+#include <enoki-thread/thread.h>
 #include <memory>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -16,7 +17,6 @@ NAMESPACE_BEGIN(mitsuba)
 class MTS_EXPORT_CORE Thread : public Object {
 public:
 
-    class TaskObserver; /* Used internally to keep track of TBB threads */
     friend class ScopedThreadEnvironment;
 
     /// Possible priority values for \ref Thread::set_priority()
@@ -104,9 +104,6 @@ public:
     /// Return the thread's logger instance
     Logger *logger();
 
-    /// Return the current thread
-    static Thread *thread();
-
     /// Is this thread still running?
     bool is_running() const;
 
@@ -128,6 +125,9 @@ public:
     /// Return a string representation
     virtual std::string to_string() const override;
 
+    /// Return the current thread
+    static Thread *thread();
+
     /// Sleep for a certain amount of time (in milliseconds)
     static void sleep(uint32_t ms);
 
@@ -137,13 +137,19 @@ public:
     /// Shut down the threading system
     static void static_shutdown();
 
+    /// Return the global thread count
+    static size_t thread_count();
+
+    /// Set the global thread count (e.g. spawn new threads in thread pool)
+    static void set_thread_count(size_t);
+
     /**
-     * \brief Register a new thread (e.g. TBB, Python) with Mituba thread system.
+     * \brief Register a new thread (e.g. Enoki, Python) with Mituba thread system.
      * Returns true upon success.
      */
     static bool register_external_thread(const std::string &prefix);
 
-    /// Unregister a thread (e.g. TBB, Python) from Mitsuba's thread system.
+    /// Unregister a thread (e.g. Enoki, Python) from Mitsuba's thread system.
     static bool unregister_external_thread();
 
     MTS_DECLARE_CLASS()

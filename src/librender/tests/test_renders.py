@@ -94,7 +94,7 @@ else:
 @pytest.mark.parametrize(*['scene_fname', scenes])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test_render(variants_all, gc_collect, scene_fname, jit_flags):
-    from mitsuba.core import Bitmap, Struct, Thread, set_thread_count
+    from mitsuba.core import Bitmap, Struct, Thread
 
     if hasattr(ek, 'JitFlag'):
         if 'scalar' in mitsuba.variant() and not jit_flags == jit_flags_options[0]:
@@ -217,7 +217,7 @@ if __name__ == '__main__':
                 continue
 
             mitsuba.set_variant(variant)
-            from mitsuba.core import Bitmap, Struct, Thread, set_thread_count
+            from mitsuba.core import Bitmap, Struct, Thread
 
             ref_fname, var_fname = get_ref_fname(scene_fname)
             if exists(ref_fname) and exists(var_fname) and not overwrite:

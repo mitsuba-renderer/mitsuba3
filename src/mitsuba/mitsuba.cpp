@@ -14,10 +14,6 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 
-#define __TBB_show_deprecation_message_task_scheduler_init_H 1
-#include <tbb/task_scheduler_init.h>
-
-
 #if !defined(__WINDOWS__)
 #  include <signal.h>
 #endif
@@ -223,8 +219,8 @@ int main(int argc, char *argv[]) {
 
         // Initialize Intel Thread Building Blocks with the requested number of threads
         if (*arg_threads)
-            __global_thread_count = arg_threads->as_int();
-        tbb::task_scheduler_init scheduler(std::max(1, (int) __global_thread_count));
+            Thread::set_thread_count(std::max(1, arg_threads->as_int()));
+        jit_llvm_set_thread_count(Thread::thread_count());
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();

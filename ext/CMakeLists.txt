@@ -45,9 +45,10 @@ endif()
 
 add_subdirectory(enoki)
 
+set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
+
 if (MTS_ENABLE_JIT)
   set_target_properties(enoki-jit PROPERTIES FOLDER "enoki")
-  set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
 endif()
 
 if (MTS_ENABLE_AUTODIFF)
@@ -61,6 +62,7 @@ endif()
 set(ENOKI_INCLUDE_DIRS
     ${CMAKE_CURRENT_SOURCE_DIR}/enoki/include
     ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/ext/enoki-thread/include
     PARENT_SCOPE)
 
 # ----------------------------------------------------------

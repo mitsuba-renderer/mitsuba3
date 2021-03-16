@@ -1,3 +1,4 @@
+#if 0
 #pragma once
 
 #include <mitsuba/mitsuba.h>
@@ -148,3 +149,4 @@ public:
 };
 
 NAMESPACE_END(mitsuba)
+#endif

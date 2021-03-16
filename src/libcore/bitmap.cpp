@@ -8,12 +8,8 @@
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/profiler.h>
 #include <unordered_map>
-#include <tbb/parallel_for.h>
-#include <tbb/blocked_range.h>
 
-#define __TBB_show_deprecation_message_task_H 1
-#include <tbb/task.h>
-
+#include <enoki-thread/thread.h>
 #include <enoki/half.h>
 
 /* libpng */
@@ -292,9 +288,9 @@ resample(Bitmap *target, const Bitmap *source,
             }
         }
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, source->height(), 100),
-            [&](const tbb::blocked_range<size_t> &range) {
+        ek::parallel_for(
+            ek::blocked_range<size_t>(0, source->height(), 100),
+            [&](const ek::blocked_range<size_t> &range) {
                 for (auto y = range.begin(); y != range.end(); ++y) {
                     const Scalar *s = (const Scalar *) source->uint8_data() +
                                       y * (size_t) source->width() * channels;
@@ -315,9 +311,9 @@ resample(Bitmap *target, const Bitmap *source,
         r.set_boundary_condition(bc.second);
         r.set_clamp(clamp);
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, source->width(), 100),
-            [&](const tbb::blocked_range<size_t> &range) {
+        ek::parallel_for(
+            ek::blocked_range<size_t>(0, source->width(), 100),
+            [&](const ek::blocked_range<size_t> &range) {
                 for (auto x = range.begin(); x != range.end(); ++x) {
                     const Scalar *s = (const Scalar *) source->uint8_data() +
                                       x * channels;
@@ -796,26 +792,10 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
     }
 }
 
-void Bitmap::write_async(const fs::path &path_, FileFormat format_, int quality_) const {
-    class WriteTask : public tbb::task {
-        ref<const Bitmap> bitmap;
-        fs::path path;
-        FileFormat format;
-        int quality;
-
-    public:
-        WriteTask(const Bitmap *bitmap, fs::path path, FileFormat format, int quality)
-            : bitmap(bitmap), path(path), format(format), quality(quality) { }
-
-        tbb::task* execute() override {
-            bitmap->write(path, format, quality);
-            return nullptr;
-        }
-    };
-
-    WriteTask *t = new (tbb::task::allocate_root())
-        WriteTask(this, path_, format_, quality_);
-    tbb::task::enqueue(*t);
+void Bitmap::write_async(const fs::path &path, FileFormat format, int quality) const {
+    ek::do_async([&](){
+        write(path, format, quality);
+    });
 }
 
 bool Bitmap::operator==(const Bitmap &bitmap) const {

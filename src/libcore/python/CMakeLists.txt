@@ -36,7 +36,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
   )
 
-  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core tbb)
+  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core)
 
   if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
     target_link_libraries(${TARGET_NAME} PRIVATE asmjit)
@@ -77,7 +77,7 @@ pybind11_add_module(core_ext
   util.cpp
 )
 
-target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render tbb asmjit)
+target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render asmjit)
 set_target_properties(core_ext PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}/../..")
 
 set_target_properties(core_ext

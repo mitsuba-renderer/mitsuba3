@@ -39,12 +39,10 @@ class StreamAppender;
 class Struct;
 class StructConverter;
 class Thread;
-class ThreadLocalBase;
 class TraversalCallback;
 class ZStream;
 enum LogLevel : int;
 
-template <typename, typename> class ThreadLocal;
 template <typename> class AtomicFloat;
 
 //! @}

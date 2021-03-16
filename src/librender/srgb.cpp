@@ -4,18 +4,17 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
 #include <rgb2spec.h>
-#include <tbb/spin_mutex.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 static RGB2Spec *model = nullptr;
-static tbb::spin_mutex model_mutex;
+static std::mutex model_mutex;
 
 ek::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
     using Array3f = ek::Array<float, 3>;
 
     if (unlikely(model == nullptr)) {
-        tbb::spin_mutex::scoped_lock sl(model_mutex);
+        std::lock_guard<std::mutex> lock(model_mutex);
         if (model == nullptr) {
             FileResolver *fr = Thread::thread()->file_resolver();
             std::string fname = fr->resolve("data/srgb.coeff").string();

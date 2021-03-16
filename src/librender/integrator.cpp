@@ -14,8 +14,6 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -108,9 +106,9 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         size_t total_blocks = spiral.block_count() * n_passes,
                blocks_done = 0;
 
-        tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, total_blocks, 1),
-            [&](const tbb::blocked_range<size_t> &range) {
+        ek::parallel_for(
+            ek::blocked_range<size_t>(0, total_blocks, 1),
+            [&](const ek::blocked_range<size_t> &range) {
                 ScopedSetThreadEnvironment set_env(env);
                 ref<Sampler> sampler = sensor->sampler()->clone();
                 ref<ImageBlock> block = new ImageBlock(m_block_size, channels.size(),

@@ -36,7 +36,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
   )
 
-  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-render tbb)
+  target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-render)
 
   set_target_properties(${TARGET_NAME}
     PROPERTIES
@@ -61,7 +61,7 @@ pybind11_add_module(render_ext
   spiral.cpp
 )
 
-target_link_libraries(render_ext PRIVATE mitsuba-render tbb)
+target_link_libraries(render_ext PRIVATE mitsuba-render)
 
 set_target_properties(render_ext
   PROPERTIES

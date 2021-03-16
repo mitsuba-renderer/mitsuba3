@@ -74,9 +74,9 @@ set_target_properties(mitsuba-render PROPERTIES
   INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Link to Intel's Thread Building Blocks
-target_link_libraries(mitsuba-render 
+target_link_libraries(mitsuba-render
   PUBLIC mitsuba-core
-  PRIVATE tbb rgb2spec
+  PRIVATE rgb2spec
 )
 
 # Link to Embree
