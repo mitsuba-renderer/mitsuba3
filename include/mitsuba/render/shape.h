@@ -349,7 +349,7 @@ public:
     std::string id() const override;
 
     /// Is this shape a triangle mesh?
-    bool is_mesh() const { return class_()->derives_from(Mesh<Float, Spectrum>::m_class); }
+    bool is_mesh() const;
 
     /// Is this shape a shapegroup?
     bool is_shapegroup() const { return class_()->name() == "ShapeGroupPlugin"; };

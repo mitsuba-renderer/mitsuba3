@@ -1,5 +1,6 @@
-#include <mitsuba/render/kdtree.h>
+
 #include <mitsuba/core/properties.h>
+#include <mitsuba/render/mesh.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/sensor.h>
@@ -7,8 +8,11 @@
 #include <mitsuba/core/plugin.h>
 
 #if defined(MTS_ENABLE_EMBREE)
-    #include <embree3/rtcore.h>
+#  include <embree3/rtcore.h>
+#else
+#  include <mitsuba/render/kdtree.h>
 #endif
+
 #if defined(MTS_ENABLE_CUDA)
 #  include <mitsuba/render/optix/shapes.h>
 #endif
@@ -96,6 +100,10 @@ MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
 
 MTS_VARIANT std::string Shape<Float, Spectrum>::id() const {
     return m_id;
+}
+
+MTS_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
+    return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
 }
 
 MTS_VARIANT typename Shape<Float, Spectrum>::PositionSample3f

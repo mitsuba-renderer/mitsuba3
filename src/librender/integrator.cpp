@@ -306,6 +306,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         }
 
         ek::sync_thread();
+    } else {
+        ENOKI_MARK_USED(timer);
     }
 
     sampler->advance();

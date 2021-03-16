@@ -1054,7 +1054,7 @@ protected:
             model.set_bounding_box(m_bbox);
             auto best = bins.best_candidate(prim_count, model);
 
-            Assert(std::isfinite(best.cost));
+            Assert(ek::isfinite(best.cost));
             Assert(best.split >= m_bbox.min[best.axis]);
             Assert(best.split <= m_bbox.max[best.axis]);
 
@@ -1266,7 +1266,7 @@ protected:
             if (best.cost >= leaf_cost) {
                 if ((best.cost > 4 * leaf_cost && prim_count < 16)
                     || bad_refines >= derived.max_bad_refines()
-                    || !std::isfinite(best.cost)) {
+                    || !ek::isfinite(best.cost)) {
                     make_leaf(node, prim_count, events_start, events_end);
                     return leaf_cost;
                 }
@@ -2115,8 +2115,8 @@ public:
 
                 bool left_first  = (ray.o[axis] < split) ||
                                    (ray.o[axis] == split && ray.d[axis] >= 0.f),
-                     start_after = t_plane < mint,
-                     end_before  = t_plane > maxt || t_plane < 0.f || !std::isfinite(t_plane),
+                     start_after = t_plane<mint, end_before = t_plane> maxt ||
+                                   t_plane < 0.f || !ek::isfinite(t_plane),
                      single_node = start_after || end_before;
 
                 /* If we only need to visit one node, just pick the correct one and continue */

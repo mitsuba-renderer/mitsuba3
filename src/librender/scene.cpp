@@ -3,12 +3,12 @@
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/render/kdtree.h>
 #include <mitsuba/render/integrator.h>
 
 #if defined(MTS_ENABLE_EMBREE)
 #  include "scene_embree.inl"
 #else
+#  include <mitsuba/render/kdtree.h>
 #  include "scene_native.inl"
 #endif
 

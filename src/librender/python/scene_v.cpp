@@ -2,9 +2,12 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/render/kdtree.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/python/python.h>
+
+#if !defined(MTS_ENABLE_EMBREE)
+#  include <mitsuba/render/kdtree.h>
+#endif
 
 MTS_PY_EXPORT(ShapeKDTree) {
     MTS_PY_IMPORT_TYPES(ShapeKDTree, Shape, Mesh)

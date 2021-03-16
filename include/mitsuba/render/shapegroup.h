@@ -1,12 +1,15 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/render/fwd.h>
-#include <mitsuba/render/kdtree.h>
+#include <mitsuba/render/shape.h>
 
 #if defined(MTS_ENABLE_EMBREE)
-    #include <embree3/rtcore.h>
+#  include <embree3/rtcore.h>
+#else
+#  include <mitsuba/render/kdtree.h>
 #endif
+
 #if defined(MTS_ENABLE_CUDA)
-    #include <mitsuba/render/optix/shapes.h>
+#  include <mitsuba/render/optix/shapes.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
