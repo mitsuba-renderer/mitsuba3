@@ -175,8 +175,7 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
             if (channel_names.size() == 0) {
                 for (size_t i = 0; i < channel_count; ++i)
                     channels.push_back(tfm::format("ch%i", i));
-            }
-            else {
+            } else {
                 std::vector<std::string> channels_sorted = channel_names;
                 std::sort(channels_sorted.begin(), channels_sorted.end());
                 for (size_t i = 1; i < channels_sorted.size(); ++i) {
@@ -625,26 +624,21 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
 
             field_names.push_back(it2->second.first);
         }
+
         has_xyz &= has_a ? field_names.size() == 4 : field_names.size() == 3;
         has_rgb &= has_a ? field_names.size() == 4 : field_names.size() == 3;
-        has_y &= !has_xyz && (has_a ? field_names.size() == 2 : field_names.size() == 1);
+        has_y &= !has_xyz &&
+                 (has_a ? field_names.size() == 2 : field_names.size() == 1);
 
         ref<Bitmap> target;
         if (has_rgb || has_xyz || has_y) {
             target = new Bitmap(
                 has_rgb
-                ? (has_a ? PixelFormat::RGBA
-                        : PixelFormat::RGB)
-                : (has_xyz
-                ? (has_a ? PixelFormat::XYZA
-                            : PixelFormat::XYZ)
-                : (has_a ? PixelFormat::YA
-                            : PixelFormat::Y)),
-                m_component_format,
-                m_size
-            );
-        }
-        else {
+                    ? (has_a ? PixelFormat::RGBA : PixelFormat::RGB)
+                    : (has_xyz ? (has_a ? PixelFormat::XYZA : PixelFormat::XYZ)
+                               : (has_a ? PixelFormat::YA : PixelFormat::Y)),
+                m_component_format, m_size);
+        } else {
             target = new Bitmap (
                 PixelFormat::MultiChannel,
                 m_component_format,
@@ -659,15 +653,16 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         ref<Struct> target_struct = new Struct(*target->struct_());
 
         for (auto it2 = range.first; it2 != range.second; ++it2)
-            target_struct->field(it2->second.first).name = it->second.second->name;
+            target_struct->field(it2->second.first).name =
+                it2->second.second->name;
 
         StructConverter conv(m_struct, target_struct, true);
-        bool rv = conv.convert_2d(m_size.x(), m_size.y(),
-                                    uint8_data(), target->uint8_data());
+        bool rv = conv.convert_2d(m_size.x(), m_size.y(), uint8_data(),
+                                  target->uint8_data());
         if (!rv)
             Throw("Bitmap::split(): conversion kernel indicated a failure!");
-        result.push_back({ prefix, target });
 
+        result.emplace_back(prefix, target);
         it = range.second;
     }
 

@@ -254,6 +254,7 @@ def test_accumulate(variant_scalar_rgb):
     b1.accumulate(b2, [5, 3], [3, 1], [1, 5])
     assert np.all(np.array(b1, copy=False) == ref)
 
+
 def test_split(variant_scalar_rgb):
     from mitsuba.core import Bitmap, Struct
     channels = ["R", "G", "B", "A", "im.X", "im.Y", "im.Z", "im.A", "depth.T", "val.U", "val.V", "test.Y", "test.R", "test.M", "multi.X", "multi.B", "multi.A", "lum.Y", "lum.A"]
@@ -299,3 +300,18 @@ def test_split(variant_scalar_rgb):
                 assert f.flags == 16
             else:
                 assert f.flags == 32
+
+
+def test_split_data(variant_scalar_rgb):
+    from mitsuba.core import Bitmap
+
+    b_multi = Bitmap(find_resource('resources/data/tests/bitmap/spot_multi.exr'))
+    b_0 = Bitmap(find_resource('resources/data/tests/bitmap/spot_0.exr'))
+    b_1 = Bitmap(find_resource('resources/data/tests/bitmap/spot_1.exr'))
+    b_2 = Bitmap(find_resource('resources/data/tests/bitmap/spot_2.exr'))
+
+    split = b_multi.split()
+
+    assert np.allclose(np.array(split[0][1]), np.array(b_0))
+    assert np.allclose(np.array(split[1][1]), np.array(b_1))
+    assert np.allclose(np.array(split[2][1]), np.array(b_2))
