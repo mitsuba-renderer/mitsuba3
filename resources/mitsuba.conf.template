@@ -88,9 +88,7 @@
     ],
 
     # If mitsuba is launched without any specific mode parameter,
-    # the configuration below will be used by default
-
-    "default": "scalar_spectral",
+    # the first variant of the list above will be used.
 
     # The variant below will automatically be set when importing the Python
     # mitsuba module. If the value is "", the desired variant will need to be

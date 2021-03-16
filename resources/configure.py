@@ -144,8 +144,7 @@ if __name__ == '__main__':
         configurations = json.loads(s)
 
     # Let's start with some validation
-    assert 'enabled' in configurations and 'default' in configurations
-    assert isinstance(configurations['default'], str)
+    assert 'enabled' in configurations
     assert isinstance(configurations['enabled'], list)
 
     # Extract enabled configurations
@@ -164,8 +163,8 @@ if __name__ == '__main__':
         raise ValueError('mitsuba.conf: there must be at least one '
                          'enabled build configuration!')
 
-    # Use first configuration if default mode is not specified
-    default_variant = configurations.get('default', enabled[0][0])
+    # Use first configuration
+    default_variant = enabled[0][0]
     default_variant_python = configurations.get('python-default', '')
 
     if default_variant not in configurations['enabled']:
