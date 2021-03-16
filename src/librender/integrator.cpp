@@ -133,7 +133,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
                     /* Critical section: update progress bar */ {
                         std::lock_guard<std::mutex> lock(mutex);
                         blocks_done++;
-                        progress->update(blocks_done / (ScalarFloat) total_blocks);
+                        progress->update(blocks_done / (float) total_blocks);
                     }
                 }
             }

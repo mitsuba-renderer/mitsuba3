@@ -86,7 +86,7 @@ public:
                 scaled_data_ptr += 4;
             }
             m_metadata.mean = mean;
-            m_metadata.max = max;
+            m_metadata.max = (float) max;
             m_data = ek::load<DynamicBuffer<Float>>(scaled_data.get(), size * 4);
         } else {
             m_data = ek::load<DynamicBuffer<Float>>(raw_data.get(), size * m_metadata.channel_count);
@@ -392,7 +392,7 @@ public:
         auto sum = ek::hsum(ek::hsum(ek::detach(m_data)));
         m_metadata.mean = (double) sum / (double) (m_size * 3);
         if (!m_fixed_max) {
-            m_metadata.max = ek::hmax(ek::hmax(ek::detach(m_data)));
+            m_metadata.max = (float) ek::hmax(ek::hmax(ek::detach(m_data)));
         }
     }
 

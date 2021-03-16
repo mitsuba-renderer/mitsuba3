@@ -123,12 +123,12 @@ void embree_bbox(const struct RTCBoundsFunctionArguments* args) {
     const Shape* shape = (const Shape*) args->geometryUserPtr;
     ScalarBoundingBox3f bbox = shape->bbox();
     RTCBounds* bounds_o = args->bounds_o;
-    bounds_o->lower_x = bbox.min.x();
-    bounds_o->lower_y = bbox.min.y();
-    bounds_o->lower_z = bbox.min.z();
-    bounds_o->upper_x = bbox.max.x();
-    bounds_o->upper_y = bbox.max.y();
-    bounds_o->upper_z = bbox.max.z();
+    bounds_o->lower_x = (float) bbox.min.x();
+    bounds_o->lower_y = (float) bbox.min.y();
+    bounds_o->lower_z = (float) bbox.min.z();
+    bounds_o->upper_x = (float) bbox.max.x();
+    bounds_o->upper_y = (float) bbox.max.y();
+    bounds_o->upper_z = (float) bbox.max.z();
 }
 
 template <typename Float, typename Spectrum>
@@ -161,16 +161,16 @@ void embree_intersect_scalar(int* valid,
     if (rtc_hit) {
         PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray);
         if (ek::all(pi.is_valid())) {
-            rtc_ray->tfar      = ek::hsum(pi.t);
-            rtc_hit->u         = ek::hsum(pi.prim_uv.x());
-            rtc_hit->v         = ek::hsum(pi.prim_uv.y());
+            rtc_ray->tfar      = (float) ek::hsum(pi.t);
+            rtc_hit->u         = (float) ek::hsum(pi.prim_uv.x());
+            rtc_hit->v         = (float) ek::hsum(pi.prim_uv.y());
             rtc_hit->geomID    = geomID;
             rtc_hit->primID    = 0;
             rtc_hit->instID[0] = instID;
         }
     } else {
         if (ek::all(shape->ray_test(ray)))
-            rtc_ray->tfar = -ek::Infinity<Float>;
+            rtc_ray->tfar = -ek::Infinity<float>;
     }
 }
 

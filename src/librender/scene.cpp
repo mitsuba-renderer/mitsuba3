@@ -71,10 +71,10 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             ScalarFloat distance =
                 ek::hmax(extents) / (2.f * ek::tan(45.f * .5f * ek::Pi<ScalarFloat> / 180.f));
 
-            sensor_props.set_float("far_clip", ek::hmax(extents) * 5 + distance);
-            sensor_props.set_float("near_clip", distance / 100);
+            sensor_props.set_float("far_clip", (float) (ek::hmax(extents) * 5 + distance));
+            sensor_props.set_float("near_clip", (float) distance / 100);
 
-            sensor_props.set_float("focus_distance", distance + extents.z() / 2);
+            sensor_props.set_float("focus_distance", (float) (distance + extents.z() / 2));
             sensor_props.set_transform(
                 "to_world", ScalarTransform4f::translate(ScalarVector3f(
                                 center.x(), center.y(), m_bbox.min.z() - distance)));

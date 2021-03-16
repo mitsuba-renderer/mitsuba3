@@ -95,7 +95,7 @@ MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties
     /* Distance to the far clipping plane */
     m_far_clip = props.float_("far_clip", 1e4f);
     /* Distance to the focal plane */
-    m_focus_distance = props.float_("focus_distance", m_far_clip);
+    m_focus_distance = props.float_("focus_distance", (float) m_far_clip);
 
     if (m_near_clip <= 0.f)
         Throw("The 'near_clip' parameter must be greater than zero!");
