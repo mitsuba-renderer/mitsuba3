@@ -55,7 +55,6 @@ add_library(mitsuba-core SHARED
   struct.cpp           ${INC_DIR}/struct.h
   thread.cpp           ${INC_DIR}/thread.h
                        ${INC_DIR}/timer.h
-  tls.cpp              ${INC_DIR}/tls.h
   transform.cpp        ${INC_DIR}/transform.h
                        ${INC_DIR}/traits.h
   util.cpp             ${INC_DIR}/util.h

@@ -8,7 +8,6 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/timer.h>
-#include <mitsuba/core/tls.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/interaction.h>

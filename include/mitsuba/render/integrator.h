@@ -6,7 +6,6 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/filesystem.h>
-#include <mitsuba/core/tls.h>
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>

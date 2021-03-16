@@ -1,6 +1,5 @@
 #include <mitsuba/core/thread.h>
 #include <mitsuba/core/logger.h>
-#include <mitsuba/core/tls.h>
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/profiler.h>

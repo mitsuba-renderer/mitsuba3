@@ -1,7 +1,6 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/thread.h>
-#include <mitsuba/core/tls.h>
 #include <mitsuba/python/python.h>
 
 #if defined(__APPLE__) || defined(__linux__)
