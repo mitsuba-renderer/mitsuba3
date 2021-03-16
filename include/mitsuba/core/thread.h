@@ -160,10 +160,7 @@ protected:
     /// Initialize thread execution environment and then call \ref run()
     void dispatch();
 
-    /**
-     * Exit the thread, should be called from
-     * inside the thread
-     */
+    /// Exit the thread, should be called from inside the thread
     void exit();
 
     /// Yield to another processor

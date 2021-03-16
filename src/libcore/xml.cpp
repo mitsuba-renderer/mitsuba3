@@ -988,46 +988,43 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
 
     if (!named_references.empty()) {
         ThreadEnvironment env;
-        uint32_t task_size = ctx.parallelize ? 1 : (uint32_t) named_references.size();
 
-        // TODO enable parallelized node instantiation (need to fix deadlock)
-        // uint32_t task_size = (uint32_t) named_references.size();
-
-        ek::parallel_for(
-            ek::blocked_range<uint32_t>(0u, (uint32_t) named_references.size(), task_size),
-            [&](const ek::blocked_range<uint32_t> &range) {
-                ScopedSetThreadEnvironment set_env(env);
-
-                for (uint32_t i = range.begin(); i != range.end(); ++i) {
-                    auto &kv = named_references[i];
-                    try {
-                        ref<Object> obj = instantiate_node(ctx, kv.second);
-
-                        // Give the object a chance to recursively expand into
-                        // sub-objects
-                        std::vector<ref<Object>> children = obj->expand();
-                        if (children.empty()) {
-                            props.set_object(kv.first, obj, false);
-                        } else if (children.size() == 1) {
-                            props.set_object(kv.first, children[0], false);
-                        } else {
-                            int ctr = 0;
-                            for (auto c : children)
-                                props.set_object(kv.first + "_" +
-                                                     std::to_string(ctr++),
-                                                 c, false);
-                        }
-                    } catch (const std::exception &e) {
-                        if (strstr(e.what(), "Error while loading") == nullptr)
-                            Throw("Error while loading \"%s\" (near %s): %s",
-                                inst.src_id, inst.offset(inst.location),
-                                e.what());
-                        else
-                            throw;
+        auto instantiation = [&](const ek::blocked_range<uint32_t> &range) {
+            ScopedSetThreadEnvironment set_env(env);
+            for (uint32_t i = range.begin(); i != range.end(); ++i) {
+                auto &kv = named_references[i];
+                try {
+                    ref<Object> obj = instantiate_node(ctx, kv.second);
+                    // Give the object a chance to recursively expand into sub-objects
+                    std::vector<ref<Object>> children = obj->expand();
+                    if (children.empty()) {
+                        props.set_object(kv.first, obj, false);
+                    } else if (children.size() == 1) {
+                        props.set_object(kv.first, children[0], false);
+                    } else {
+                        int ctr = 0;
+                        for (auto c : children)
+                            props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
                     }
+                } catch (const std::exception &e) {
+                    if (strstr(e.what(), "Error while loading") == nullptr)
+                        Throw("Error while loading \"%s\" (near %s): %s",
+                            inst.src_id, inst.offset(inst.location),
+                            e.what());
+                    else
+                        throw;
                 }
             }
-        );
+        };
+
+        // TODO re-enable parallelized node instantiation (need to fix deadlock)
+        ctx.parallelize = false;
+
+        ek::blocked_range<uint32_t> range(0u, (uint32_t) named_references.size(), 1);
+        if (ctx.parallelize)
+            ek::parallel_for(range, std::move(instantiation));
+        else
+            instantiation(range);
     }
 
     try {

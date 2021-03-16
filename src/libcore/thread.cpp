@@ -11,17 +11,15 @@
 // Required for native thread functions
 #if defined(__LINUX__)
 #  include <sys/prctl.h>
+#  ifdef _SC_NPROCESSORS_CONF
+#    define NPROCESSORS_COUNT sysconf(_SC_NPROCESSORS_CONF)
+#  else
+#    define NPROCESSORS_COUNT 1
+#  endif
 #elif defined(__OSX__)
 #  include <pthread.h>
 #elif defined(__WINDOWS__)
 #  include <windows.h>
-#endif
-
-// TODO
-#ifdef _SC_NPROCESSORS_CONF
-    #define NPROCESSORS_COUNT sysconf(_SC_NPROCESSORS_CONF)
-#else
-    #define NPROCESSORS_COUNT 1
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -90,14 +88,14 @@ protected:
 
 std::atomic<uint32_t> WorkerThread::m_counter{0};
 
-struct ThreadRegistrator {
-    ThreadRegistrator() {
+struct ThreadNotifier {
+    ThreadNotifier() {
         // Do not register the main thread
         if (m_counter > 0)
-            Thread::register_external_thread("worker");
+            Thread::register_external_thread("wrk_");
         m_counter++;
     }
-    ~ThreadRegistrator() {
+    ~ThreadNotifier() {
         if (self)
             Thread::unregister_external_thread();
         m_counter--;
@@ -105,8 +103,8 @@ struct ThreadRegistrator {
     static std::atomic<uint32_t> m_counter;
 }
 
-static thread_local ThreadRegistrator;
-std::atomic<uint32_t> ThreadRegistrator::m_counter{0};
+static thread_local ThreadNotifier;
+std::atomic<uint32_t> ThreadNotifier::m_counter{0};
 
 struct Thread::ThreadPrivate {
     std::thread thread;
@@ -434,6 +432,7 @@ void Thread::exit() {
     Log(Debug, "Thread \"%s\" has finished", d->name);
     d->running = false;
     Assert(self == this);
+    self = nullptr;
     dec_ref();
 }
 
@@ -522,6 +521,7 @@ size_t Thread::thread_count() { return __global_thread_count; }
 
 void Thread::set_thread_count(size_t count) {
     __global_thread_count = count;
+    jit_llvm_set_thread_count(count);
 }
 
 ThreadEnvironment::ThreadEnvironment() {
