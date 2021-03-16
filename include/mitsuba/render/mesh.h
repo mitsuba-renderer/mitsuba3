@@ -8,6 +8,7 @@
 #include <mitsuba/core/distr_1d.h>
 #include <mitsuba/core/properties.h>
 #include <unordered_map>
+#include <mutex>
 #include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)

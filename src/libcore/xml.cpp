@@ -2,6 +2,7 @@
 #include <fstream>
 #include <set>
 #include <unordered_map>
+#include <mutex>
 
 #include <mitsuba/core/class.h>
 #include <mitsuba/core/config.h>

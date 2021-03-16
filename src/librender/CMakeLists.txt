@@ -33,6 +33,10 @@ include_directories(
   ${RGB2SPEC_INCLUDE_DIRS}
 )
 
+if (NOT MTS_ENABLE_EMBREE)
+    set(LIBRENDER_EXTRA_SRC kdtree.cpp ${INC_DIR}/kdtree.h LIBRENDER_EXTRA_SRC)
+endif()
+
 add_library(mitsuba-render SHARED
   ${INC_DIR}/fwd.h
   ${INC_DIR}/ior.h
@@ -48,7 +52,6 @@ add_library(mitsuba-render SHARED
   imageblock.cpp   ${INC_DIR}/imageblock.h
   integrator.cpp   ${INC_DIR}/integrator.h
                    ${INC_DIR}/interaction.h
-  kdtree.cpp       ${INC_DIR}/kdtree.h
   medium.cpp       ${INC_DIR}/medium.h
   mesh.cpp         ${INC_DIR}/mesh.h
   microfacet.cpp   ${INC_DIR}/microfacet.h
@@ -73,10 +76,10 @@ set_target_properties(mitsuba-render PROPERTIES
   INTERPROCEDURAL_OPTIMIZATION ON
   INSTALL_RPATH "${MTS_ORIGIN}")
 
-# Link to Intel's Thread Building Blocks
+# Link to enoki-thread
 target_link_libraries(mitsuba-render
   PUBLIC mitsuba-core
-  PRIVATE rgb2spec
+  PRIVATE enoki-thread rgb2spec
 )
 
 # Link to Embree

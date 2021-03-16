@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
+#include <mutex>
 
 #if !defined(MTS_BLOCK_SIZE)
 #  define MTS_BLOCK_SIZE 32
