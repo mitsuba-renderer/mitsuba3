@@ -11,11 +11,7 @@
 // Required for native thread functions
 #if defined(__LINUX__)
 #  include <sys/prctl.h>
-#  ifdef _SC_NPROCESSORS_CONF
-#    define NPROCESSORS_COUNT sysconf(_SC_NPROCESSORS_CONF)
-#  else
-#    define NPROCESSORS_COUNT 1
-#  endif
+#  include <unistd.h>
 #elif defined(__OSX__)
 #  include <pthread.h>
 #elif defined(__WINDOWS__)
@@ -101,10 +97,10 @@ struct ThreadNotifier {
         m_counter--;
     }
     static std::atomic<uint32_t> m_counter;
-}
+};
 
-static thread_local ThreadNotifier;
 std::atomic<uint32_t> ThreadNotifier::m_counter{0};
+static thread_local ThreadNotifier notifier{};
 
 struct Thread::ThreadPrivate {
     std::thread thread;
@@ -167,6 +163,7 @@ const FileResolver* Thread::file_resolver() const {
 }
 
 Thread* Thread::thread() {
+    Assert(self);
     return self;
 }
 
@@ -273,7 +270,7 @@ void Thread::set_core_affinity(int core_id) {
 #if defined(__OSX__)
     /* CPU affinity not supported on OSX */
 #elif defined(__LINUX__)
-    int core_count = NPROCESSORS_COUNT,
+    int core_count = sysconf(_SC_NPROCESSORS_CONF),
         logical_core_count = core_count;
 
     size_t size = 0;
