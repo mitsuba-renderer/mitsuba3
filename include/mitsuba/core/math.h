@@ -14,7 +14,11 @@ NAMESPACE_BEGIN(math)
 //! @{ \name Useful constants in various precisions
 // -----------------------------------------------------------------------
 
-template <typename T> constexpr auto RayEpsilon    = ek::Epsilon<ek::float32_array_t<T>> * 1500;
+#if (MTS_ENABLE_EMBREE)
+template <typename T> constexpr auto RayEpsilon = ek::Epsilon<ek::float32_array_t<T>> * 1500;
+#else
+template <typename T> constexpr auto RayEpsilon = ek::Epsilon<T> * 1500;
+#endif
 template <typename T> constexpr auto ShadowEpsilon = RayEpsilon<T> * 10;
 
 //! @}
