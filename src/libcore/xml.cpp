@@ -259,12 +259,10 @@ struct XMLParseContext {
     std::unordered_map<std::string, XMLObject> instances;
     Transform4f transform;
     size_t id_counter = 0;
-    bool parallelize;
     ColorMode color_mode;
 
     XMLParseContext(const std::string &variant) : variant(variant) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
-        parallelize = !is_jit(); // TODO this shouldn't be necessary
     }
 
     std::string variant;
@@ -970,7 +968,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 static Task* instantiate_node_rec(XMLParseContext &ctx,
                                   const std::string &id,
                                   ThreadEnvironment &env,
-                                  std::map<std::string, Task*> &task_map) {
+                                  std::unordered_map<std::string, Task*> &task_map) {
     if (task_map.find(id) != task_map.end())
         return task_map.find(id)->second;
 
@@ -988,8 +986,8 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
 
     // Recursive graph traversal to gather dependency tasks
     std::vector<Task *> deps;
-    for (size_t i = 0; i < named_references.size(); i++) {
-        const std::string& child_id = named_references[i].second;
+    for (auto &kv : named_references) {
+        const std::string& child_id = kv.second;
         if (task_map.find(child_id) == task_map.end()) {
             Task *task = instantiate_node_rec(ctx, child_id, env, task_map);
             task_map.insert({child_id, task});
@@ -1008,9 +1006,8 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
             const auto &named_references = props.named_references();
 
             ScopedSetThreadEnvironment set_env(env);
-            // Update the Properties with the already instantiated child objects
-            for (size_t i = 0; i < named_references.size(); i++) {
-                auto &kv = named_references[i];
+            // Populate props with the already instantiated child objects
+            for (auto &kv : named_references) {
                 const std::string& child_id = kv.second;
                 auto it2 = ctx.instances.find(child_id);
                 if (it2 == ctx.instances.end())
@@ -1034,6 +1031,12 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
             // Instantiate this object
             try {
                 inst.object = PluginManager::instance()->create_object(props, inst.class_);
+                #if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
+                    if (ctx.is_jit()) {
+                        ek::eval();
+                        ek::sync_thread();
+                    }
+                #endif
             } catch (const std::exception &e) {
                 Throw("Error while loading \"%s\" (near %s): could not instantiate "
                     "%s plugin of type \"%s\": %s", inst.src_id, inst.offset(inst.location),
@@ -1041,7 +1044,6 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
                     e.what());
             }
 
-            // Sanity check
             auto unqueried = props.unqueried();
             if (!unqueried.empty()) {
                 for (auto &v : unqueried) {
@@ -1071,7 +1073,7 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
 
 static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id) {
     ThreadEnvironment env;
-    std::map<std::string, Task*> task_map;
+    std::unordered_map<std::string, Task*> task_map;
 
     Task* task = instantiate_node_rec(ctx, id, env, task_map);
 
@@ -1219,13 +1221,6 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
                                           param, arg_counter, 0).second;
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
 
-#if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
-        if (ctx.is_jit()) {
-            ek::eval();
-            ek::sync_device();
-        }
-#endif
-
         Thread::thread()->set_file_resolver(fs_backup.get());
         return obj;
     } catch(...) {
@@ -1297,13 +1292,6 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
         }
 
         ref<Object> obj = detail::instantiate_node(ctx, scene_id);
-
-#if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
-        if (ctx.is_jit()) {
-            ek::eval();
-            ek::sync_device();
-        }
-#endif
 
         Thread::thread()->set_file_resolver(fs_backup.get());
         return obj;
