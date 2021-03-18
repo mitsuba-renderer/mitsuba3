@@ -284,7 +284,7 @@ struct ConcurrentVector {
         #endif
     }
 
-    uint32_t size() const {
+    uint64_t size() const {
         return m_size_and_capacity.load(std::memory_order_acquire);
     }
 
@@ -1672,7 +1672,7 @@ protected:
                 std::unordered_set<Index> temp;
                 traverse(node, temp);
 
-                Size offset =  m_ctx.index_storage.grow_by(temp.size());
+                Size offset = m_ctx.index_storage.grow_by((Size) temp.size());
 
                 if (!m_ctx.node_storage[node].set_leaf_node(offset, temp.size()))
                     Throw("Internal error: could not create leaf node with %i "
@@ -1753,7 +1753,7 @@ protected:
 
         /// Create a leaf node using the given set of indices (called by min-max binning)
         template <typename T> void make_leaf(T &&indices) {
-            Size offset = m_ctx.index_storage.grow_by(indices.size());
+            Size offset = m_ctx.index_storage.grow_by((Size) indices.size());
 
             if (!m_ctx.node_storage[m_node].set_leaf_node(offset, indices.size()))
                 Throw("Internal error: could not create leaf node with %i "
@@ -1905,8 +1905,8 @@ protected:
         /*     Store the node and index lists in a compact contiguous format    */
         /* ==================================================================== */
 
-        m_node_count  = ctx.node_storage.size();
-        m_index_count = ctx.index_storage.size();
+        m_node_count  = (Index) ctx.node_storage.size();
+        m_index_count = (Index) ctx.index_storage.size();
 
         m_indices.reset(new Index[m_index_count]);
         ek::parallel_for(
