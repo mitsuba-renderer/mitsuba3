@@ -52,13 +52,13 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
     s, s_inst = example_scene(shape)
 
     # grid size
-    n = 21
+    n = 11
     inv_n = 1.0 / n
 
     for x in range(n):
         for y in range(n):
-            x_coord = (2 * (x * inv_n) - 1)
-            y_coord = (2 * (y * inv_n) - 1)
+            x_coord = (2 * (x * inv_n) - 1) + 0.014
+            y_coord = (2 * (y * inv_n) - 1) + 0.057
             ray = Ray3f(o=[x_coord, y_coord + 1, -8], d=[0.0, 0.0, 1.0],
                         time=0.0, wavelengths=[])
 
@@ -100,7 +100,7 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
         s, s_inst = example_scene(shape, scale, trans, angle)
 
         # grid size
-        n = 21
+        n = 11
         inv_n = 1.0 / n
 
         for x in range(n):
