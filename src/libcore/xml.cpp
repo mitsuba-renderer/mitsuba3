@@ -995,80 +995,86 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
         deps.push_back(task_map.find(child_id)->second);
     }
 
-    Task *task = ek::do_async(
-        [&ctx, &env, id]() {
-            auto it = ctx.instances.find(id);
-            if (it == ctx.instances.end())
-                Throw("reference to unknown object \"%s\"!", id);
+    auto instantiate = [&ctx, &env, id]() {
+        ScopedSetThreadEnvironment set_env(env);
 
-            auto &inst = it->second;
-            Properties &props = inst.props;
-            const auto &named_references = props.named_references();
+        auto it = ctx.instances.find(id);
+        if (it == ctx.instances.end())
+            Throw("reference to unknown object \"%s\"!", id);
 
-            ScopedSetThreadEnvironment set_env(env);
-            // Populate props with the already instantiated child objects
-            for (auto &kv : named_references) {
-                const std::string& child_id = kv.second;
-                auto it2 = ctx.instances.find(child_id);
-                if (it2 == ctx.instances.end())
-                    Throw("reference to unknown object \"%s\"!", child_id);
-                ref<Object> obj = it2->second.object;
-                Assert(obj);
+        auto &inst = it->second;
+        Properties &props = inst.props;
+        const auto &named_references = props.named_references();
 
-                // Give the object a chance to recursively expand into sub-objects
-                std::vector<ref<Object>> children = obj->expand();
-                if (children.empty()) {
-                    props.set_object(kv.first, obj, false);
-                } else if (children.size() == 1) {
-                    props.set_object(kv.first, children[0], false);
+        // Populate props with the already instantiated child objects
+        for (auto &kv : named_references) {
+            const std::string& child_id = kv.second;
+            auto it2 = ctx.instances.find(child_id);
+            if (it2 == ctx.instances.end())
+                Throw("reference to unknown object \"%s\"!", child_id);
+            ref<Object> obj = it2->second.object;
+            Assert(obj);
+
+            // Give the object a chance to recursively expand into sub-objects
+            std::vector<ref<Object>> children = obj->expand();
+            if (children.empty()) {
+                props.set_object(kv.first, obj, false);
+            } else if (children.size() == 1) {
+                props.set_object(kv.first, children[0], false);
+            } else {
+                int ctr = 0;
+                for (auto c : children)
+                    props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
+            }
+        }
+
+        try {
+            inst.object = PluginManager::instance()->create_object(props, inst.class_);
+            #if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
+                if (ctx.is_jit()) {
+                    ek::eval();
+                    ek::sync_thread();
+                }
+            #endif
+        } catch (const std::exception &e) {
+            Throw("Error while loading \"%s\" (near %s): could not instantiate "
+                "%s plugin of type \"%s\": %s", inst.src_id, inst.offset(inst.location),
+                string::to_lower(inst.class_->name()), props.plugin_name(),
+                e.what());
+        }
+
+        auto unqueried = props.unqueried();
+        if (!unqueried.empty()) {
+            for (auto &v : unqueried) {
+                if (props.type(v) == Properties::Type::Object) {
+                    const auto &obj = props.object(v);
+                    Throw("Error while loading \"%s\" (near %s): unreferenced "
+                        "object %s (within %s of type \"%s\")",
+                        inst.src_id, inst.offset(inst.location),
+                        obj, string::to_lower(inst.class_->name()),
+                        inst.props.plugin_name());
                 } else {
-                    int ctr = 0;
-                    for (auto c : children)
-                        props.set_object(kv.first + "_" + std::to_string(ctr++), c, false);
+                    v = "\"" + v + "\"";
                 }
             }
+            Throw("Error while loading \"%s\" (near %s): unreferenced %s "
+                "%s in %s plugin of type \"%s\"",
+                inst.src_id, inst.offset(inst.location),
+                unqueried.size() > 1 ? "properties" : "property", unqueried,
+                string::to_lower(inst.class_->name()), props.plugin_name());
+        }
+    };
 
-            // Instantiate this object
-            try {
-                inst.object = PluginManager::instance()->create_object(props, inst.class_);
-                #if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
-                    if (ctx.is_jit()) {
-                        ek::eval();
-                        ek::sync_thread();
-                    }
-                #endif
-            } catch (const std::exception &e) {
-                Throw("Error while loading \"%s\" (near %s): could not instantiate "
-                    "%s plugin of type \"%s\": %s", inst.src_id, inst.offset(inst.location),
-                    string::to_lower(inst.class_->name()), props.plugin_name(),
-                    e.what());
-            }
-
-            auto unqueried = props.unqueried();
-            if (!unqueried.empty()) {
-                for (auto &v : unqueried) {
-                    if (props.type(v) == Properties::Type::Object) {
-                        const auto &obj = props.object(v);
-                        Throw("Error while loading \"%s\" (near %s): unreferenced "
-                            "object %s (within %s of type \"%s\")",
-                            inst.src_id, inst.offset(inst.location),
-                            obj, string::to_lower(inst.class_->name()),
-                            inst.props.plugin_name());
-                    } else {
-                        v = "\"" + v + "\"";
-                    }
-                }
-                Throw("Error while loading \"%s\" (near %s): unreferenced %s "
-                    "%s in %s plugin of type \"%s\"",
-                    inst.src_id, inst.offset(inst.location),
-                    unqueried.size() > 1 ? "properties" : "property", unqueried,
-                    string::to_lower(inst.class_->name()), props.plugin_name());
-            }
-        },
-        deps.data(), deps.size()
-    );
-
-    return task;
+    if (inst.class_->name() == "Scene") {
+        // Scene must be instantiated on the main thread (Optix pipeline)
+        for (auto& task : deps)
+            task_wait_and_release(task);
+        instantiate();
+        return nullptr;
+    } else {
+        // Instantiate object asynchronously
+        return ek::do_async(instantiate, deps.data(), deps.size());
+    }
 }
 
 static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id) {
@@ -1076,13 +1082,13 @@ static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id)
     std::unordered_map<std::string, Task*> task_map;
 
     Task* task = instantiate_node_rec(ctx, id, env, task_map);
-
-    for (auto& kv : task_map) {
-        if (kv.first != id)
-            task_release(kv.second);
+    if (task) {
+        for (auto& kv : task_map) {
+            if (kv.first != id)
+                task_release(kv.second);
+        }
+        task_wait_and_release(task);
     }
-
-    task_wait_and_release(task);
 
     return ctx.instances.find(id)->second.object;
 }
