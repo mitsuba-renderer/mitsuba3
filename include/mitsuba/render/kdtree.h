@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_set>
+#include <atomic>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>
@@ -12,13 +13,6 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/concurrent_vector.h>
-
-#define __TBB_show_deprecation_message_task_H 1
-#include <tbb/task.h>
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MTS_KD_MAXDEPTH 48u
@@ -26,7 +20,7 @@
 /// OrderedChunkAllocator: don't create chunks smaller than 5MiB
 #define MTS_KD_MIN_ALLOC 5*1024u*1024u
 
-/// Grain size for TBB parallelization
+/// Grain size for parallelization
 #define MTS_KD_GRAIN_SIZE 10240u
 
 /**
@@ -541,6 +535,125 @@ protected:
     /*                    Build-related data structures                     */
     /* ==================================================================== */
 
+    /* Append-only concurrent vector, whose storage is arranged into slices
+       with increasing powers of two. Max 2^32 entries supported. */
+    template <typename Value>
+    struct concurrent_vector {
+        concurrent_vector() : m_size_and_capacity(0) { }
+        ~concurrent_vector() { release(); }
+
+        void reserve(Size size) {
+            if (size == 0)
+                return;
+
+            Size slices     = log2i(size) + 1,
+                 slice_size = 1,
+                 capacity   = 0;
+
+            bool changed = false;
+            for (Index i = 0; i < slices; ++i) {
+                Value *cur = m_slices[i].load(std::memory_order_acquire);
+                if (!cur) {
+                    Value *val = new Value[slice_size];
+                    if (m_slices[i].compare_exchange_strong(cur, val))
+                        changed = true;
+                    else
+                        delete[] val;
+                }
+                capacity += slice_size;
+                slice_size *= 2;
+            }
+
+            if (changed) {
+                uint64_t size_and_capacity =
+                    m_size_and_capacity.load(std::memory_order_acquire);
+
+                while (true) {
+                    Size cur_size     = (Size) size_and_capacity,
+                         cur_capacity = (Size) (size_and_capacity >> 32);
+
+                    if (cur_capacity >= capacity)
+                        break;
+
+                    uint64_t size_and_capacity_new =
+                        (uint64_t) cur_size + (((uint64_t) capacity) << 32);
+
+                    if (m_size_and_capacity.compare_exchange_weak(
+                            size_and_capacity, size_and_capacity_new,
+                            std::memory_order_release, std::memory_order_relaxed))
+                        break;
+                }
+            }
+        }
+
+        Value &operator[](Index index) {
+            index += 1;
+            Index slice  = log2i((Index) index),
+                  offset = 1u << slice;
+            return m_slices[slice][index - offset];
+        }
+
+        const Value &operator[](Index index) const {
+            index += 1;
+            Index slice  = log2i(index),
+                  offset = 1u << slice;
+            return m_slices[slice][index - offset];
+        }
+
+        Size grow_by(Size amount) {
+            uint64_t size_and_capacity =
+                m_size_and_capacity.load(std::memory_order_acquire);
+
+            while (true) {
+                Size size     = (Size) size_and_capacity,
+                     capacity = (Size) (size_and_capacity >> 32),
+                     new_size = size + amount;
+
+                if (new_size > capacity) {
+                    reserve(new_size);
+                    size_and_capacity =
+                        m_size_and_capacity.load(std::memory_order_acquire);
+                    continue;
+                }
+
+                uint64_t size_and_capacity_new =
+                    (uint64_t) new_size + (((uint64_t) capacity) << 32);
+
+                if (m_size_and_capacity.compare_exchange_weak(
+                        size_and_capacity, size_and_capacity_new,
+                        std::memory_order_release, std::memory_order_relaxed))
+                    return size;
+            }
+        }
+
+        Size log2i(Size x) {
+            #if defined(_MSC_VER)
+                unsigned long y;
+                _BitScanReverse(&y, (unsigned long)x);
+                return (uint32_t) y;
+            #else
+                return 31u - __builtin_clz(x);
+            #endif
+        }
+
+        Size size() const {
+            return m_size_and_capacity.load(std::memory_order_acquire);
+        }
+
+        void release() {
+            for (int i = 0; i < 32; ++i) {
+                if (m_slices[i].load()) {
+                    delete[] m_slices[i].load();
+                    m_slices[i].store(nullptr);
+                }
+            }
+        }
+
+    private:
+        std::atomic<uint64_t> m_size_and_capacity;
+        std::atomic<Value *> m_slices[32] { };
+    };
+
     struct BuildContext;
 
     /// Helper data structure used during tree construction (used by a single thread)
@@ -563,8 +676,8 @@ protected:
     struct BuildContext {
         const Derived &derived;
         ThreadEnvironment env;
-        tbb::concurrent_vector<KDNode> node_storage;
-        tbb::concurrent_vector<Index> index_storage;
+        concurrent_vector<KDNode> node_storage;
+        concurrent_vector<Index> index_storage;
         /* Keep some statistics about the build process */
         std::atomic<size_t> bad_refines {0};
         std::atomic<size_t> retracted_splits {0};
@@ -868,14 +981,15 @@ protected:
             Size left_count = 0, right_count = 0;
             BoundingBox left_bounds, right_bounds;
 
-            tbb::parallel_for(
-                tbb::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
-                [&](const tbb::blocked_range<Index> &range) {
+            ek::parallel_for(
+                ek::blocked_range<Size>(0u, Size(indices.size()), MTS_KD_GRAIN_SIZE),
+                [&](const ek::blocked_range<Index> &range) {
                     IndexVector left_indices_local, right_indices_local;
                     BoundingBox left_bounds_local, right_bounds_local;
 
-                    left_indices_local.reserve(range.size());
-                    right_indices_local.reserve(range.size());
+                    Index range_size = Index(range.end()) - Index(range.begin());
+                    left_indices_local.reserve(range_size);
+                    right_indices_local.reserve(range_size);
 
                     for (Size i = range.begin(); i != range.end(); ++i) {
                         const Index prim_index = indices[i];
@@ -946,7 +1060,7 @@ protected:
 
 
     /**
-     * \brief TBB task for building subtrees in parallel
+     * \brief Build task for building subtrees in parallel
      *
      * This class is responsible for building a subtree of the final kd-tree.
      * It recursively spawns new tasks for its respective subtrees to enable
@@ -958,11 +1072,8 @@ protected:
      * which uses normal recursion on the stack (i.e. it does not spawn further
      * parallel pieces of work).
      */
-    class BuildTask : public tbb::task {
+    class BuildTask {
     public:
-        using NodeIterator  = typename tbb::concurrent_vector<KDNode>::iterator;
-        using IndexIterator = typename tbb::concurrent_vector<Index>::iterator;
-
         /// Context with build-specific variables (shared by all threads/tasks)
         BuildContext &m_ctx;
 
@@ -970,7 +1081,7 @@ protected:
         static thread_local LocalBuildContext m_local;
 
         /// Node to be initialized by this task
-        NodeIterator m_node;
+        Index m_node;
 
         /// Index list of primitives to be organized
         IndexVector m_indices;
@@ -990,10 +1101,9 @@ protected:
         /// This scalar should be set to the final cost when done
         Scalar *m_cost;
 
-        BuildTask(BuildContext &ctx, const NodeIterator &node,
-                  IndexVector &&indices, const BoundingBox bbox,
-                  const BoundingBox &tight_bbox, Index depth, Size bad_refines,
-                  Scalar *cost)
+        BuildTask(BuildContext &ctx, Index node, IndexVector &&indices,
+                  const BoundingBox bbox, const BoundingBox &tight_bbox,
+                  Index depth, Size bad_refines, Scalar *cost)
             : m_ctx(ctx), m_node(node), m_indices(std::move(indices)),
               m_bbox(bbox), m_tight_bbox(tight_bbox), m_depth(depth),
               m_bad_refines(bad_refines), m_cost(cost) {
@@ -1001,7 +1111,7 @@ protected:
         }
 
         /// Run one iteration of min-max binning and spawn recursive tasks
-        task *execute() {
+        void execute() {
             ScopedSetThreadEnvironment env(m_ctx.env);
             Size prim_count = Size(m_indices.size());
             const Derived &derived = m_ctx.derived;
@@ -1015,12 +1125,12 @@ protected:
             if (prim_count <= derived.stop_primitives() ||
                 m_depth >= derived.max_depth() || m_tight_bbox.collapsed()) {
                 make_leaf(std::move(m_indices));
-                return nullptr;
+                return;
             }
 
             if (prim_count <= derived.exact_primitive_threshold()) {
                 *m_cost = transition_to_nlogn();
-                return nullptr;
+                return;
             }
 
             /* ==================================================================== */
@@ -1028,21 +1138,16 @@ protected:
             /* ==================================================================== */
 
             /* Accumulate all shapes into bins */
-            MinMaxBins bins = tbb::parallel_reduce(
-                tbb::blocked_range<Size>(0u, prim_count, MTS_KD_GRAIN_SIZE),
-                MinMaxBins(derived.min_max_bins(), m_tight_bbox),
-
-                /* MAP: Bin a number of shapes and return the resulting 'MinMaxBins' data structure */
-                [&](const tbb::blocked_range<Index> &range, MinMaxBins bins) {
+            MinMaxBins bins(derived.min_max_bins(), m_tight_bbox);
+            std::mutex bins_mutex;
+            ek::parallel_for(
+                ek::blocked_range<Size>(0u, prim_count, MTS_KD_GRAIN_SIZE),
+                [&](const ek::blocked_range<Index> &range) {
+                    MinMaxBins bins_local(derived.min_max_bins(), m_tight_bbox);
                     for (Index i = range.begin(); i != range.end(); ++i)
-                        bins.put(derived.bbox(m_indices[i]));
-                    return bins;
-                },
-
-                /* REDUCE: Combine two 'MinMaxBins' data structures */
-                [](MinMaxBins b1, const MinMaxBins &b2) {
-                    b1 += b2;
-                    return b1;
+                        bins_local.put(derived.bbox(m_indices[i]));
+                    std::lock_guard<std::mutex> lock(bins_mutex);
+                    bins += bins_local;
                 }
             );
 
@@ -1064,7 +1169,7 @@ protected:
                 if ((best.cost > 4 * leaf_cost && prim_count < 16)
                     || m_bad_refines >= derived.max_bad_refines()) {
                     make_leaf(std::move(m_indices));
-                    return nullptr;
+                    return;
                 }
                 ++m_bad_refines;
                 m_ctx.bad_refines++;
@@ -1083,10 +1188,10 @@ protected:
             /*                              Recursion                               */
             /* ==================================================================== */
 
-            NodeIterator children = m_ctx.node_storage.grow_by(2);
-            Size left_offset((Size) std::distance(m_node, children));
+            Size children = m_ctx.node_storage.grow_by(2);
+            Size left_offset = children - m_node;
 
-            if (!m_node->set_inner_node(best.axis, best.split, left_offset))
+            if (!m_ctx.node_storage[m_node].set_inner_node(best.axis, best.split, left_offset))
                 Throw("Internal error during kd-tree construction: unable to store "
                       "overly large offset to left child node (%i)", left_offset);
 
@@ -1100,20 +1205,21 @@ protected:
 
             Scalar left_cost = 0, right_cost = 0;
 
-            BuildTask &left_task = *new (allocate_child()) BuildTask(
+            BuildTask left_task = BuildTask(
                 m_ctx, children, std::move(partition.left_indices),
                 left_bounds, partition.left_bounds, m_depth+1,
                 m_bad_refines, &left_cost);
 
-            BuildTask &right_task = *new (allocate_child()) BuildTask(
-                m_ctx, std::next(children), std::move(partition.right_indices),
+            BuildTask right_task = BuildTask(
+                m_ctx, children + 1, std::move(partition.right_indices),
                 right_bounds, partition.right_bounds, m_depth + 1,
                 m_bad_refines, &right_cost);
 
-            set_ref_count(3);
-            spawn(left_task);
-            spawn(right_task);
-            wait_for_all();
+            Task *left_ek_task = ek::do_async([&](){ left_task.execute(); });
+            Task *right_ek_task = ek::do_async([&](){ right_task.execute(); });
+
+            task_wait_and_release(left_ek_task);
+            task_wait_and_release(right_ek_task);
 
             /* ==================================================================== */
             /*                           Final decision                             */
@@ -1132,12 +1238,10 @@ protected:
                 m_ctx.retracted_splits++;
                 make_leaf(std::move(temp));
             }
-
-            return nullptr;
         }
 
         /// Recursively run the O(N log N builder)
-        Scalar build_nlogn(NodeIterator node, Size prim_count,
+        Scalar build_nlogn(Index node, Size prim_count,
                            EdgeEvent *events_start, EdgeEvent *events_end,
                            const BoundingBox &bbox, Size depth,
                            Size bad_refines, bool left_child = true) {
@@ -1518,11 +1622,10 @@ protected:
             /*                              Recursion                               */
             /* ==================================================================== */
 
-            NodeIterator children = m_ctx.node_storage.grow_by(2);
+            Size children = m_ctx.node_storage.grow_by(2);
+            Size left_offset = children - node;
 
-            Size left_offset((Size) std::distance(node, children));
-
-            if (!node->set_inner_node(best.axis, best.split, left_offset))
+            if (!m_ctx.node_storage[node].set_inner_node(best.axis, best.split, left_offset))
                 Throw("Internal error during kd-tree construction: unable "
                       "to store overly large offset to left child node (%i)",
                       left_offset);
@@ -1533,7 +1636,7 @@ protected:
                             depth + 1, bad_refines, true);
 
             Scalar right_cost =
-                build_nlogn(std::next(children), best.right_count - pruned_right,
+                build_nlogn(children + 1, best.right_count - pruned_right,
                             right_events_start, right_events_end, right_bbox,
                             depth + 1, bad_refines, false);
 
@@ -1555,10 +1658,9 @@ protected:
                 std::unordered_set<Index> temp;
                 traverse(node, temp);
 
-                auto it = m_ctx.index_storage.grow_by(temp.begin(), temp.end());
-                Size offset((Size) std::distance(m_ctx.index_storage.begin(), it));
+                Size offset =  m_ctx.index_storage.grow_by(temp.size());
 
-                if (!node->set_leaf_node(offset, temp.size()))
+                if (!m_ctx.node_storage[node].set_leaf_node(offset, temp.size()))
                     Throw("Internal error: could not create leaf node with %i "
                           "primitives -- too much geometry?", m_indices.size());
 
@@ -1634,10 +1736,9 @@ protected:
 
         /// Create a leaf node using the given set of indices (called by min-max binning)
         template <typename T> void make_leaf(T &&indices) {
-            auto it = m_ctx.index_storage.grow_by(indices.begin(), indices.end());
-            Size offset((Size) std::distance(m_ctx.index_storage.begin(), it));
+            Size offset = m_ctx.index_storage.grow_by(indices.size());
 
-            if (!m_node->set_leaf_node(offset, indices.size()))
+            if (!m_ctx.node_storage[m_node].set_leaf_node(offset, indices.size()))
                 Throw("Internal error: could not create leaf node with %i "
                       "primitives -- too much geometry?", m_indices.size());
 
@@ -1645,12 +1746,11 @@ protected:
         }
 
         /// Create a leaf node using the given edge event list (called by the O(N log N) builder)
-        void make_leaf(NodeIterator node, Size prim_count, EdgeEvent *events_start,
-                      EdgeEvent *events_end) const {
-            auto it = m_ctx.index_storage.grow_by(prim_count);
-            Size offset((Size) std::distance(m_ctx.index_storage.begin(), it));
+        void make_leaf(Index node, Size prim_count, EdgeEvent *events_start,
+                       EdgeEvent *events_end) const {
+            auto offset = m_ctx.index_storage.grow_by(prim_count);
 
-            if (!node->set_leaf_node(offset, prim_count))
+            if (!m_ctx.node_storage[node].set_leaf_node(offset, prim_count))
                 Throw("Internal error: could not create leaf node with %i "
                       "primitives -- too much geometry?", prim_count);
 
@@ -1660,7 +1760,7 @@ protected:
                 if (event->type == EdgeEvent::Type::EdgeStart ||
                     event->type == EdgeEvent::Type::EdgePlanar) {
                     Assert(--prim_count >= 0);
-                    *it++ = event->index;
+                    m_ctx.index_storage[offset++] = event->index;
                 }
             }
 
@@ -1668,13 +1768,14 @@ protected:
         }
 
         /// Traverse a subtree and collect all encountered primitive references in a set
-        void traverse(NodeIterator node, std::unordered_set<Index> &result) {
-            if (node->leaf()) {
-                for (Size i = 0; i < node->primitive_count(); ++i)
-                    result.insert(m_ctx.index_storage[node->primitive_offset() + i]);
+        void traverse(Index node_index, std::unordered_set<Index> &result) {
+            auto& node = m_ctx.node_storage[node_index];
+            if (node.leaf()) {
+                for (Size i = 0; i < node.primitive_count(); ++i)
+                    result.insert(m_ctx.index_storage[node.primitive_offset() + i]);
             } else {
-                NodeIterator left_child = node + node->left_offset(),
-                             right_child = left_child + 1;
+                Index left_child  = node_index + node.left_offset(),
+                      right_child = left_child + 1;
                 traverse(left_child, result);
                 traverse(right_child, result);
             }
@@ -1773,11 +1874,9 @@ protected:
             for (size_t i = 0; i < prim_count; ++i)
                 indices[i] = (Index) i;
 
-            BuildTask &task = *new (tbb::task::allocate_root()) BuildTask(
-                ctx, ctx.node_storage.begin(), std::move(indices),
-                m_bbox, m_bbox, 0, 0, &final_cost);
-
-            tbb::task::spawn_root_and_wait(task);
+            BuildTask task = BuildTask(ctx, 0, std::move(indices), m_bbox,
+                                       m_bbox, 0, 0, &final_cost);
+            task.execute();
         }
 
         Log(m_log_level, "Structural kd-tree statistics:");
@@ -1786,29 +1885,28 @@ protected:
         /*     Store the node and index lists in a compact contiguous format    */
         /* ==================================================================== */
 
-        m_node_count = Size(ctx.node_storage.size());
-        m_index_count = Size(ctx.index_storage.size());
+        m_node_count  = ctx.node_storage.size();
+        m_index_count = ctx.index_storage.size();
 
         m_indices.reset(new Index[m_index_count]);
-        tbb::parallel_for(
-            tbb::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
-            [&](const tbb::blocked_range<Size> &range) {
+        ek::parallel_for(
+            ek::blocked_range<Size>(0u, m_index_count, MTS_KD_GRAIN_SIZE),
+            [&](const ek::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
                     m_indices[i] = ctx.index_storage[i];
             }
         );
-
-        tbb::concurrent_vector<Index>().swap(ctx.index_storage);
+        ctx.index_storage.release();
 
         m_nodes.reset(new KDNode[m_node_count]);
-        tbb::parallel_for(
-            tbb::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
-            [&](const tbb::blocked_range<Size> &range) {
+        ek::parallel_for(
+            ek::blocked_range<Size>(0u, m_node_count, MTS_KD_GRAIN_SIZE),
+            [&](const ek::blocked_range<Size> &range) {
                 for (Size i = range.begin(); i != range.end(); ++i)
                     m_nodes[i] = ctx.node_storage[i];
             }
         );
-        tbb::concurrent_vector<KDNode>().swap(ctx.node_storage);
+        ctx.node_storage.release();
 
         /* Slightly avoid the bounding box to avoid numerical issues
            involving geometry that exactly lies on the boundary */

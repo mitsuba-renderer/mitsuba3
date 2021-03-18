@@ -34,7 +34,7 @@ include_directories(
 )
 
 if (NOT MTS_ENABLE_EMBREE)
-    set(LIBRENDER_EXTRA_SRC kdtree.cpp ${INC_DIR}/kdtree.h LIBRENDER_EXTRA_SRC)
+    set(LIBRENDER_EXTRA_SRC kdtree.cpp ${INC_DIR}/kdtree.h ${LIBRENDER_EXTRA_SRC})
 endif()
 
 add_library(mitsuba-render SHARED
