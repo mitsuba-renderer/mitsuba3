@@ -1,6 +1,3 @@
-[submodule "ext/tbb"]
-    path = ext/tbb
-    url = https://github.com/wjakob/tbb
 [submodule "ext/zlib"]
     path = ext/zlib
     url = https://github.com/mitsuba-renderer/zlib

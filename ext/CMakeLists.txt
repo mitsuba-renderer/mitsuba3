@@ -1,21 +1,4 @@
 # ----------------------------------------------------------
-#  Intel Thread Building Blocks (TBB)
-# ----------------------------------------------------------
-
-# Build Thread Building Blocks (main shared libraries only)
-set(TBB_BUILD_SHARED          ON  CACHE BOOL " " FORCE)
-set(TBB_BUILD_STATIC          OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TESTS           OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TBBMALLOC       OFF CACHE BOOL " " FORCE)
-set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
-set(TBB_INSTALL_TARGETS       OFF CACHE BOOL " " FORCE)
-add_subdirectory(tbb)
-set_property(TARGET tbb tbb_def_files PROPERTY FOLDER "dependencies")
-set(TBB_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/tbb/include)
-set(TBB_INCLUDE_DIRS ${TBB_INCLUDE_DIRS} PARENT_SCOPE)
-set_property(TARGET tbb PROPERTY OUTPUT_NAME "tbb-mitsuba")
-
-# ----------------------------------------------------------
 #  Intel ITT (profiler events for VTune, optional)
 # ----------------------------------------------------------
 

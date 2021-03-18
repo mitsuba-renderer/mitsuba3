@@ -13,7 +13,7 @@ add_definitions(-DMTS_BRANCH="${GIT_BRANCH}")
 add_definitions(-DMTS_HASH="${GIT_COMMIT_HASH}")
 
 add_executable(mtsgui mtsgui.cpp)
-target_link_libraries(mtsgui PRIVATE mitsuba-core mitsuba-render mitsuba-ui tbb)
+target_link_libraries(mtsgui PRIVATE mitsuba-core mitsuba-render mitsuba-ui)
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
   target_link_libraries(mtsgui PRIVATE asmjit)
