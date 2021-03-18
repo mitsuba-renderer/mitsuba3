@@ -965,10 +965,11 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
     return std::make_pair("", "");
 }
 
-static Task* instantiate_node_rec(XMLParseContext &ctx,
-                                  const std::string &id,
-                                  ThreadEnvironment &env,
-                                  std::unordered_map<std::string, Task*> &task_map) {
+static Task *instantiate_node(XMLParseContext &ctx,
+                              const std::string &id,
+                              ThreadEnvironment &env,
+                              std::unordered_map<std::string, Task *> &task_map,
+                              bool top_node) {
     if (task_map.find(id) != task_map.end())
         return task_map.find(id)->second;
 
@@ -979,7 +980,7 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
     auto &inst = it->second;
 
     if (!inst.alias.empty())
-        return instantiate_node_rec(ctx, inst.alias, env, task_map);
+        return instantiate_node(ctx, inst.alias, env, task_map, top_node);
 
     Properties &props = inst.props;
     const auto &named_references = props.named_references();
@@ -989,7 +990,7 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
     for (auto &kv : named_references) {
         const std::string& child_id = kv.second;
         if (task_map.find(child_id) == task_map.end()) {
-            Task *task = instantiate_node_rec(ctx, child_id, env, task_map);
+            Task *task = instantiate_node(ctx, child_id, env, task_map, false);
             task_map.insert({child_id, task});
         }
         deps.push_back(task_map.find(child_id)->second);
@@ -1065,10 +1066,12 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
         }
     };
 
-    if (inst.class_->name() == "Scene") {
-        // Scene must be instantiated on the main thread (Optix pipeline)
+    if (top_node) {
+        // Top node always instantiated on the main thread
         for (auto& task : deps)
-            task_wait_and_release(task);
+            task_wait(task);
+        for (auto& kv : task_map)
+            task_release(kv.second);
         instantiate();
         return nullptr;
     } else {
@@ -1077,19 +1080,10 @@ static Task* instantiate_node_rec(XMLParseContext &ctx,
     }
 }
 
-static ref<Object> instantiate_node(XMLParseContext &ctx, const std::string &id) {
+static ref<Object> instantiate_top_node(XMLParseContext &ctx, const std::string &id) {
     ThreadEnvironment env;
     std::unordered_map<std::string, Task*> task_map;
-
-    Task* task = instantiate_node_rec(ctx, id, env, task_map);
-    if (task) {
-        for (auto& kv : task_map) {
-            if (kv.first != id)
-                task_release(kv.second);
-        }
-        task_wait_and_release(task);
-    }
-
+    instantiate_node(ctx, id, env, task_map, true);
     return ctx.instances.find(id)->second.object;
 }
 
@@ -1225,7 +1219,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
         size_t arg_counter; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
                                           param, arg_counter, 0).second;
-        ref<Object> obj = detail::instantiate_node(ctx, scene_id);
+        ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
         return obj;
@@ -1297,7 +1291,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
             filename = backup;
         }
 
-        ref<Object> obj = detail::instantiate_node(ctx, scene_id);
+        ref<Object> obj = detail::instantiate_top_node(ctx, scene_id);
 
         Thread::thread()->set_file_resolver(fs_backup.get());
         return obj;

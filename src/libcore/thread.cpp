@@ -72,7 +72,7 @@ protected:
 /// Dummy class to associate a thread identity with a worker thread
 class WorkerThread : public Thread {
 public:
-    WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%02i", prefix, m_counter++)) { }
+    WorkerThread(const std::string &prefix) : Thread(tfm::format("%s%i", prefix, m_counter++)) { }
 
     virtual void run() override { Throw("The worker thread is already running!"); }
 
@@ -88,7 +88,7 @@ struct ThreadNotifier {
     ThreadNotifier() {
         // Do not register the main thread
         if (m_counter > 0)
-            Thread::register_external_thread("wrk_");
+            Thread::register_external_thread("wrk");
         m_counter++;
     }
     ~ThreadNotifier() {
