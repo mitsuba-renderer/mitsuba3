@@ -1210,11 +1210,6 @@ protected:
 
             Scalar left_cost = 0, right_cost = 0;
 
-            // Switch to serial execution when tasks become small enough
-            bool serial_exec =
-                std::max(partition.left_indices.size(),
-                         partition.right_indices.size()) < MTS_KD_GRAIN_SIZE;
-
             BuildTask left_task = BuildTask(
                 m_ctx, children, std::move(partition.left_indices),
                 left_bounds, partition.left_bounds, m_depth+1,
@@ -1225,15 +1220,10 @@ protected:
                 right_bounds, partition.right_bounds, m_depth + 1,
                 m_bad_refines, &right_cost);
 
-            if (serial_exec) {
-                left_task.execute();
-                right_task.execute();
-            } else {
-                Task *left_ek_task =
-                    ek::do_async([&]() { left_task.execute(); });
-                right_task.execute();
-                task_wait_and_release(left_ek_task);
-            }
+            Task *left_ek_task =
+                ek::do_async([&]() { left_task.execute(); });
+            right_task.execute();
+            task_wait_and_release(left_ek_task);
 
             /* ==================================================================== */
             /*                           Final decision                             */
