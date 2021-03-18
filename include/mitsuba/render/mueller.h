@@ -147,20 +147,6 @@ MuellerMatrix<Float> rotated_element(Float theta,
 }
 
 /**
- * \brief Reverse direction of propagation of the electric field. Also used for
- * reflecting reference frames.
- */
-template <typename Float>
-MuellerMatrix<Float> reverse(const MuellerMatrix<Float> &M) {
-    return MuellerMatrix<Float>(
-        1, 0,  0,  0,
-        0, 1,  0,  0,
-        0, 0, -1,  0,
-        0, 0,  0, -1
-    ) * M;
-}
-
-/**
  * \brief Calculates the Mueller matrix of a specular reflection at an
  * interface between two dielectrics or conductors.
  *
@@ -179,9 +165,9 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
     std::tie(a_s, a_p, std::ignore, std::ignore, std::ignore) =
         fresnel_polarized(cos_theta_i, eta);
 
-    // Compute Sine and Cosine of the phase delay delta = arg(a_s) - arg(a_p).
+    // Compute Sine and Cosine of the phase delay delta = arg(a_p) - arg(a_s).
     Float sin_delta, cos_delta;
-    std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_s, a_p);
+    std::tie(sin_delta, cos_delta) = sincos_arg_diff(a_p, a_s);
 
     Float r_s = ek::abs(ek::sqr(a_s)),
           r_p = ek::abs(ek::sqr(a_p)),
@@ -195,8 +181,8 @@ MuellerMatrix<Float> specular_reflection(Float cos_theta_i, Eta eta) {
     return MuellerMatrix<Float>(
         a, b, 0, 0,
         b, a, 0, 0,
-        0, 0,  c * cos_delta, c * sin_delta,
-        0, 0, -c * sin_delta, c * cos_delta
+        0, 0, c * cos_delta, -c * sin_delta,
+        0, 0, c * sin_delta,  c * cos_delta
     );
 }
 
@@ -225,8 +211,8 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
                                     cos_theta_t / cos_theta_i, 0.f);
 
     // Compute transmission amplitudes
-    Float a_s_r = real(a_s) + 1.f,
-          a_p_r = (1.f - real(a_p)) * eta_ti;
+    Float a_s_r = 1.f + real(a_s),
+          a_p_r = (1.f + real(a_p)) * eta_ti;
 
     Float t_s = ek::sqr(a_s_r),
           t_p = ek::sqr(a_p_r),

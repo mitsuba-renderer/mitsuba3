@@ -87,47 +87,100 @@ def test04_snell(variants_vec_backends_once):
     assert ek.allclose(ek.sin(theta_i) - 1.5 * ek.sin(theta_t), ek.zero(Float, 20), atol=1e-5)
 
 
-def test05_phase(variant_scalar_rgb):
+def test05_amplitudes_external_reflection(variant_scalar_rgb):
     from mitsuba.render import fresnel_polarized
 
-    # 180 deg phase shift for perpendicularly arriving light (air -> glass)
+    # External reflection case (air -> glass)
+    # Compare with Fig. 4.49 in "Optics, 5th edition" by Eugene Hecht.
+
+    brewster = ek.atan(1.5)
+
+    # Perpendicularly arriving light: check signs and relative phase shift 180 deg.
     a_s, a_p, _, _, _ = fresnel_polarized(1, 1.5)
-    assert ek.real(a_s) < 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
-
-    # 180 deg phase shift only for s-polarized light below brewster's angle (air -> glass)
-    a_s, a_p, _, _, _ = fresnel_polarized(.1, 1.5)
     assert ek.real(a_s) < 0 and ek.real(a_p) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), ek.Pi, atol=1e-5)
 
-    # No phase shift for perpendicularly arriving light (glass -> air)
+    # Just below Brewster's angle: same as above still.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(brewster - 0.01), 1.5)
+    assert ek.real(a_s) < 0 and ek.real(a_p) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), ek.Pi)
+
+    # At Brewster's angle: p-polarized light is zero.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(brewster), 1.5)
+    assert ek.allclose(ek.real(a_p), 0, atol=1e-5)
+    assert ek.real(a_s) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+
+    # Just above Brewster's angle: both amplitudes have the same sign and no more relative phase shift.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(brewster + 0.01), 1.5)
+    assert ek.real(a_s) < 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), 0, atol=1e-5)
+
+    # At grazing angle: both amplitudes go to minus one.
+    a_s, a_p, _, _, _ = fresnel_polarized(0, 1/1.5)
+    assert ek.allclose(ek.real(a_s), -1, atol=1e-3) and ek.allclose(ek.real(a_p), -1, atol=1e-3)
+    assert ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), 0, atol=1e-5)
+
+def test06_amplitudes_internal_reflection(variant_scalar_rgb):
+    from mitsuba.render import fresnel_polarized
+
+    # Internal reflection case, but before TIR (glass -> air)
+    # Compare with Fig. 4.50 in "Optics, 5th edition" by Eugene Hecht.
+
+    brewster = ek.atan(1/1.5)
+    critical = ek.asin(1/1.5)
+
+    # Perpendicularly arriving light: check signs and relative phase shift 180 deg.
     a_s, a_p, _, _, _ = fresnel_polarized(1, 1/1.5)
-    assert ek.real(a_s) > 0 and ek.real(a_p) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
-
-    # 180 deg phase shift only for s-polarized light below brewster's angle (glass -> air)
-    b = ek.atan(1/1.5)
-    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(b+0.01), 1/1.5)
     assert ek.real(a_s) > 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), ek.Pi, atol=1e-5)
 
+    # Just below Brewster's angle: same as above still.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(brewster - 0.01), 1/1.5)
+    assert ek.real(a_s) > 0 and ek.real(a_p) < 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), ek.Pi, atol=1e-5)
+
+    # At Brewster's angle: p-polarized light is zero.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(brewster), 1/1.5)
+    assert ek.allclose(ek.real(a_p), 0, atol=1e-5)
+    assert ek.real(a_s) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+
+    # Just above Brewster's angle: both amplitudes have the same sign and no more relative phase shift.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(brewster + 0.01), 1/1.5)
+    assert ek.real(a_s) > 0 and ek.real(a_p) > 0 and ek.imag(a_s) == 0 and ek.imag(a_p) == 0
+    assert ek.allclose(ek.abs(ek.arg(a_p) - ek.arg(a_s)), 0, atol=1e-5)
+
+    # At critical angle: both amplitudes go to one.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(critical), 1/1.5)
+    assert ek.allclose(ek.real(a_s), 1, atol=1e-3) and ek.allclose(ek.real(a_p), 1, atol=1e-3)
+    assert ek.imag(a_s) == 0 and ek.imag(a_p) == 0
 
 def test06_phase_tir(variant_scalar_rgb):
-    import numpy as np
     from mitsuba.render import fresnel_polarized
 
+    # Internal reflection case with TIR (glass -> air)
+    # Compare with Fig. 1 in
+    # "Phase shifts that accompany total internal reflection at a dielectric-
+    #  dielectric interface" by R.M.A. Azzam 2004.
+
     eta = 1/1.5
-    # Check phase shift at critical angle (total internal reflection case)
-    crit = ek.asin(eta)
-    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(crit), eta)
+    critical = ek.asin(eta)
 
+    # At critcal angle: both phases are zero.
+    a_s, a_p, _, _, _ = fresnel_polarized(ek.cos(critical), eta)
     assert ek.allclose(ek.arg(a_s), 0.0)
-    assert ek.allclose(ek.arg(a_p), ek.Pi) or ek.allclose(ek.arg(a_p), -ek.Pi)
-
-    # Check phase shift at grazing angle (total internal reflection case)
-    a_s, a_p, _, _, _ = fresnel_polarized(0.0, eta)
-
-    assert ek.allclose(ek.arg(a_s), ek.Pi) or ek.allclose(ek.arg(a_s), -ek.Pi)
     assert ek.allclose(ek.arg(a_p), 0.0)
 
-    # Location of minimum phase difference
-    cos_theta_min = ek.sqrt((1 - eta**2) / (1 + eta**2))
-    phi_delta = 4*ek.atan(eta)
-    a_s, a_p, _, _, _ = fresnel_polarized(cos_theta_min, eta)
-    assert ek.allclose(ek.arg(a_s) - ek.arg(a_p), phi_delta)
+    # At grazing angle: both phases are 180 deg.
+    a_s, a_p, _, _, _ = fresnel_polarized(0, eta)
+    assert ek.allclose(ek.arg(a_s), ek.Pi, atol=1e-5)
+    assert ek.allclose(ek.arg(a_p), ek.Pi, atol=1e-5)
+
+    # Location of the maximal phase difference
+    # Azzam, Eq. (11)
+    cos_theta_max = ek.sqrt((1 - eta**2) / (1 + eta**2))
+    # Value of the maximal phase difference
+    delta_max = 2*ek.atan((1 - eta**2) / (2*eta))
+
+    a_s, a_p, _, _, _ = fresnel_polarized(cos_theta_max, eta)
+    assert ek.allclose(ek.arg(a_p) - ek.arg(a_s), delta_max)

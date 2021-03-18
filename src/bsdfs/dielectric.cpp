@@ -268,11 +268,6 @@ public:
                 bs.pdf = 1.f;
             }
 
-            /* Apply frame reflection, according to "Stellar Polarimetry" by
-               David Clarke, Appendix A.2 (A26). Doesn't apply to refraction. */
-            if (ek::any_or<true>(selected_r))
-                weight[selected_r] = mueller::reverse(weight);
-
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
             Vector3f n(0, 0, 1);

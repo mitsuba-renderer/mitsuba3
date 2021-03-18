@@ -167,14 +167,13 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
        "Stellar Polarimetry" by David Clarke) */
     cos_theta_t = ek::mulsign(ek::Array<Float, 2>(cos_theta_t), cos_theta_t_sqr);
 
-    /* Amplitudes of reflected waves. The sign convention of 'a_p' used here
-       matches Fresnel's original paper from 1823 and is different from some
-       contemporary references. See appendix A.1 of "Stellar Polarimetry" by
-       David Clarke for a historical perspective. */
-    ek::Complex<Float> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
-                             ( eta_it * cos_theta_t + cos_theta_i_abs);
-    ek::Complex<Float> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
-                             ( eta_it * cos_theta_i_abs + cos_theta_t);
+    /* Amplitudes of reflected waves. The sign of 'a_p' used here is referred
+       to as the "Verdet convention" which more common in the literature
+       compared to Fresnel's original formulation from 1823. */
+    ek::Complex<Float> a_s = (cos_theta_i_abs - eta_it * cos_theta_t) /
+                             (cos_theta_i_abs + eta_it * cos_theta_t);
+    ek::Complex<Float> a_p = (eta_it * cos_theta_i_abs - cos_theta_t) /
+                             (eta_it * cos_theta_i_abs + cos_theta_t);
 
     auto index_matched = ek::eq(eta, 1.f);
     auto invalid       = ek::eq(eta, 0.f);
@@ -250,14 +249,13 @@ fresnel_polarized(Float cos_theta_i, ek::Complex<Float> eta) {
        "Stellar Polarimetry" by David Clarke) */
     cos_theta_t = ek::mulsign(ek::Array<Float, 2>(cos_theta_t), ek::real(cos_theta_t_sqr));
 
-    /* Amplitudes of reflected waves. The sign convention of 'a_p' used here
-       matches Fresnel's original paper from 1823 and is different from some
-       contemporary references. See appendix A.1 of "Stellar Polarimetry" by
-       David Clarke for a historical perspective. */
-    ek::Complex<Float> a_s = (-eta_it * cos_theta_t + cos_theta_i_abs) /
-                         ( eta_it * cos_theta_t + cos_theta_i_abs);
-    ek::Complex<Float> a_p = (-eta_it * cos_theta_i_abs + cos_theta_t) /
-                         ( eta_it * cos_theta_i_abs + cos_theta_t);
+    /* Amplitudes of reflected waves. The sign of 'a_p' used here is referred
+       to as the "Verdet convention" which more common in the literature
+       compared to Fresnel's original formulation from 1823. */
+    ek::Complex<Float> a_s = (cos_theta_i_abs - eta_it * cos_theta_t) /
+                             (cos_theta_i_abs + eta_it * cos_theta_t);
+    ek::Complex<Float> a_p = (eta_it * cos_theta_i_abs - cos_theta_t) /
+                             (eta_it * cos_theta_i_abs + cos_theta_t);
 
     auto index_matched = ek::eq(ek::squared_norm(eta), 1.f) && ek::eq(ek::imag(eta), 0.f);
     auto invalid       = ek::eq(ek::squared_norm(eta), 0.f);

@@ -254,10 +254,6 @@ public:
             // Mueller matrix for specular reflection.
             F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wo_hat)), eta_c);
 
-            /* Apply frame reflection, according to "Stellar Polarimetry" by
-               David Clarke, Appendix A.2 (A26) */
-            F = mueller::reverse(F);
-
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
             Vector3f s_axis_in  = ek::normalize(ek::cross(m, -wo_hat)),
@@ -327,10 +323,6 @@ public:
 
             // Mueller matrix for specular reflection.
             F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wo_hat)), eta_c);
-
-            /* Apply frame reflection, according to "Stellar Polarimetry" by
-               David Clarke, Appendix A.2 (A26) */
-            F = mueller::reverse(F);
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
@@ -446,10 +438,6 @@ public:
 
             // Mueller matrix for specular reflection.
             F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wo_hat)), eta_c);
-
-            /* Apply frame reflection, according to "Stellar Polarimetry" by
-               David Clarke, Appendix A.2 (A26) */
-            F = mueller::reverse(F);
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */

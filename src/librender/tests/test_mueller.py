@@ -54,36 +54,42 @@ def test04_linear_polarizer_rotated(variant_scalar_rgb):
 
 def test05_specular_reflection(variant_scalar_rgb):
     from mitsuba.core import Matrix4f
-    from mitsuba.render.mueller import specular_reflection
+    from mitsuba.render.mueller import specular_reflection, linear_retarder
     import numpy as np
 
-    # Identity matrix (and no phase shift) at perpendicular incidence
-    assert ek.allclose(specular_reflection(1, 1.5),   ek.identity(Matrix4f)*0.04)
-    assert ek.allclose(specular_reflection(1, 1/1.5), ek.identity(Matrix4f)*0.04)
+    # Perpendicular incidence: 180 deg phase shift
+    assert ek.allclose(specular_reflection(1, 1.5),   linear_retarder(ek.Pi)*0.04)
+    assert ek.allclose(specular_reflection(1, 1/1.5), linear_retarder(ek.Pi)*0.04)
 
-    # 180 deg phase shift at grazing incidence
-    assert ek.allclose(specular_reflection(0, 1.5),   [[1,0,0,0],[0,1,0,0],[0,0,-1,0],[0,0,0,-1]], atol=1e-6)
-    assert ek.allclose(specular_reflection(0, 1/1.5), [[1,0,0,0],[0,1,0,0],[0,0,-1,0],[0,0,0,-1]], atol=1e-6)
+    # Just before Brewster's angle: 180 deg phase shift
+    M = specular_reflection(ek.cos(ek.atan(1.5) - 0.01), 1.5)
+    assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] < 0 and M[3, 3] < 0
+    M = specular_reflection(ek.cos(ek.atan(1/1.5) - 0.01), 1/1.5)
+    assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] < 0 and M[3, 3] < 0
 
-    # Perfect linear polarization at Brewster's angle
+    # Brewster's angle: perfect linear polarization
     M = np.zeros((4, 4))
     M[0:2, 0:2] = 0.0739645
     assert ek.allclose(specular_reflection(ek.cos(ek.atan(1/1.5)), 1/1.5), M, atol=1e-6)
     assert ek.allclose(specular_reflection(ek.cos(ek.atan(1.5)), 1.5), M, atol=1e-6)
 
-    # 180 deg phase shift just below Brewster's angle (air -> glass)
-    M = specular_reflection(ek.cos(ek.atan(1.5)+1e-4), 1.5)
-    assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] < 0 and M[3, 3] < 0
-    M = specular_reflection(ek.cos(ek.atan(1/1.5)+1e-4), 1/1.5)
-    assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] < 0 and M[3, 3] < 0
+    # Just after Brewster's angle: no phase shift
+    M = specular_reflection(ek.cos(ek.atan(1.5) + 0.01), 1.5)
+    assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] > 0 and M[3, 3] > 0
+    M = specular_reflection(ek.cos(ek.atan(1/1.5) + 0.01), 1/1.5)
+    assert M[0, 0] > 0 and M[1, 1] > 0 and M[2, 2] > 0 and M[3, 3] > 0
+
+    # Grazing incidence: identity matrix and no phase shift
+    assert ek.allclose(specular_reflection(0, 1.5),   ek.identity(Matrix4f), atol=1e-6)
+    assert ek.allclose(specular_reflection(0, 1/1.5), ek.identity(Matrix4f), atol=1e-6)
 
     # Complex phase shift in the total internal reflection case
     eta = 1/1.5
-    cos_theta_min = ek.sqrt((1 - eta**2) / (1 + eta**2))
-    M = specular_reflection(cos_theta_min, eta).numpy()
+    cos_theta_max = ek.sqrt((1 - eta**2) / (1 + eta**2))
+    M = specular_reflection(cos_theta_max, eta).numpy()
     assert np.all(M[0:2, 2:4] == 0) and np.all(M[2:4, 0:2] == 0) and ek.allclose(M[0:2, 0:2], np.eye(2), atol=1e-6)
-    phi_delta = 4*ek.atan(eta)
-    assert ek.allclose(M[2:4, 2:4], [[ek.cos(phi_delta), ek.sin(phi_delta)], [-ek.sin(phi_delta), ek.cos(phi_delta)]])
+    delta_max = 2*ek.atan((1 - eta**2) / (2*eta))
+    assert ek.allclose(M[2:4, 2:4], [[ek.cos(delta_max), -ek.sin(delta_max)], [ek.sin(delta_max), ek.cos(delta_max)]], atol=1e-5)
 
 
 def test06_specular_transmission(variant_scalar_rgb):
