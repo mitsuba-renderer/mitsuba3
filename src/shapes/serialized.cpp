@@ -299,8 +299,9 @@ public:
         InputFloat* position_ptr = vertex_positions.get();
         InputFloat* normal_ptr   = vertex_normals.get();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            InputPoint3f p = ek::load<InputPoint3f>(position_ptr);
-            ek::store(position_ptr, m_to_world.transform_affine(p));
+            InputPoint3f p = m_to_world.transform_affine(
+                ek::load<InputPoint3f>(position_ptr));
+            ek::store(position_ptr, p);
             position_ptr += 3;
             m_bbox.expand(p);
 
