@@ -31,6 +31,279 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+NAMESPACE_BEGIN(detail)
+/**
+ * During kd-tree construction, large amounts of memory are required to
+ * temporarily hold index and edge event lists. When not implemented
+ * properly, these allocations can become a critical bottleneck. The class
+ * \ref OrderedChunkAllocator provides a specialized memory allocator,
+ * which reserves memory in chunks of at least 512KiB (this number is
+ * configurable). An important assumption made by the allocator is that
+ * memory will be released in the exact same order in which it was
+ * previously allocated. This makes it possible to create an implementation
+ * with a very low memory overhead. Note that no locking is done, hence
+ * each thread will need its own allocator.
+ */
+class OrderedChunkAllocator {
+public:
+    OrderedChunkAllocator(size_t min_allocation = MTS_KD_MIN_ALLOC)
+        : m_min_allocation(min_allocation) {
+        m_chunks.reserve(4);
+    }
+
+    ~OrderedChunkAllocator() {
+        m_chunks.clear();
+    }
+
+    /**
+     * \brief Request a block of memory from the allocator
+     *
+     * Walks through the list of chunks to find one with enough
+     * free memory. If no chunk could be found, a new one is created.
+     */
+    template <typename T> ENOKI_MALLOC T * allocate(size_t size) {
+        size *= sizeof(T);
+
+        for (auto &chunk : m_chunks) {
+            if (chunk.remainder() >= size) {
+                T* result = reinterpret_cast<T *>(chunk.cur);
+                chunk.cur += size;
+                return result;
+            }
+        }
+
+        /* No chunk had enough free memory */
+        size_t alloc_size = std::max(size, m_min_allocation);
+
+        std::unique_ptr<uint8_t[]> data(new uint8_t[alloc_size]);
+        uint8_t *start = data.get(), *cur = start + size;
+        m_chunks.emplace_back(std::move(data), cur, alloc_size);
+
+        return reinterpret_cast<T *>(start);
+    }
+
+    template <typename T> void release(T *ptr_) {
+        auto ptr = reinterpret_cast<uint8_t *>(ptr_);
+
+        for (auto &chunk: m_chunks) {
+            if (chunk.contains(ptr)) {
+                chunk.cur = ptr;
+                return;
+            }
+        }
+
+        #if !defined(NDEBUG)
+            for (auto const &chunk : m_chunks) {
+                if (ptr == chunk.start.get() + chunk.size)
+                    return; /* Potentially 0-sized buffer, don't be too stringent */
+            }
+
+            Throw("OrderedChunkAllocator: Internal error while releasing memory");
+        #endif
+    }
+
+    /**
+     * \brief Shrink the size of the last allocated chunk
+     */
+    template <typename T> void shrink_allocation(T *ptr_, size_t new_size) {
+        auto ptr = reinterpret_cast<uint8_t *>(ptr_);
+        new_size *= sizeof(T);
+
+        for (auto &chunk: m_chunks) {
+            if (chunk.contains(ptr)) {
+                chunk.cur = ptr + new_size;
+                return;
+            }
+        }
+
+        #if !defined(NDEBUG)
+            if (new_size == 0) {
+                for (auto const &chunk : m_chunks) {
+                    if (ptr == chunk.start.get() + chunk.size)
+                        return; /* Potentially 0-sized buffer, don't be too stringent */
+                }
+            }
+
+            Throw("OrderedChunkAllocator: Internal error while releasing memory");
+        #endif
+    }
+
+    /// Return the currently allocated number of chunks
+    size_t chunk_count() const { return m_chunks.size(); }
+
+    /// Return the total amount of chunk memory in bytes
+    size_t size() const {
+        size_t result = 0;
+        for (auto const &chunk : m_chunks)
+            result += chunk.size;
+        return result;
+    }
+
+    /// Return the total amount of used memory in bytes
+    size_t used() const {
+        size_t result = 0;
+        for (auto const &chunk : m_chunks)
+            result += chunk.used();
+        return result;
+    }
+
+    /// Return a string representation of the chunks
+    friend std::ostream& operator<<(std::ostream &os, const OrderedChunkAllocator &o) {
+        os << "OrderedChunkAllocator[" << std::endl;
+        for (size_t i = 0; i < o.m_chunks.size(); ++i)
+            os << "    Chunk " << i << ": " << o.m_chunks[i] << std::endl;
+        os << "]";
+        return os;
+    }
+
+private:
+    struct Chunk {
+        std::unique_ptr<uint8_t[]> start;
+        uint8_t *cur;
+        size_t size;
+
+        Chunk(std::unique_ptr<uint8_t[]> &&start, uint8_t *cur, size_t size)
+            : start(std::move(start)), cur(cur), size(size) { }
+
+        size_t used() const { return (size_t) (cur - start.get()); }
+        size_t remainder() const { return size - used(); }
+
+        bool contains(uint8_t *ptr) const {
+            return ptr >= start.get() && ptr < start.get() + size;
+        }
+
+        friend std::ostream& operator<<(std::ostream &os, const Chunk &ch) {
+            os << (const void *) ch.start.get() << "-" << (const void *) (ch.start.get() + ch.size)
+            << " (size = " << ch.size << ", remainder = " << ch.remainder() << ")";
+            return os;
+        }
+    };
+
+    size_t m_min_allocation;
+    std::vector<Chunk> m_chunks;
+};
+
+/* Append-only concurrent vector, whose storage is arranged into slices
+   with increasing powers of two. Max 2^32 entries supported. */
+template <typename Value>
+struct ConcurrentVector {
+    ConcurrentVector() : m_size_and_capacity(0) { }
+    ~ConcurrentVector() { release(); }
+
+    void reserve(uint32_t size) {
+        if (size == 0)
+            return;
+
+        uint32_t slices     = log2i(size) + 1,
+                 slice_size = 1,
+                 capacity   = 0;
+
+        bool changed = false;
+        for (uint32_t i = 0; i < slices; ++i) {
+            Value *cur = m_slices[i].load(std::memory_order_acquire);
+            if (!cur) {
+                Value *val = new Value[slice_size];
+                if (m_slices[i].compare_exchange_strong(cur, val))
+                    changed = true;
+                else
+                    delete[] val;
+            }
+            capacity += slice_size;
+            slice_size *= 2;
+        }
+
+        if (changed) {
+            uint64_t size_and_capacity =
+                     m_size_and_capacity.load(std::memory_order_acquire);
+
+            while (true) {
+                uint32_t cur_size     = (uint32_t) size_and_capacity,
+                         cur_capacity = (uint32_t) (size_and_capacity >> 32);
+
+                if (cur_capacity >= capacity)
+                    break;
+
+                uint64_t size_and_capacity_new =
+                    (uint64_t) cur_size + (((uint64_t) capacity) << 32);
+
+                if (m_size_and_capacity.compare_exchange_weak(
+                        size_and_capacity, size_and_capacity_new,
+                        std::memory_order_release, std::memory_order_relaxed))
+                    break;
+            }
+        }
+    }
+
+    Value &operator[](uint32_t index) {
+        index += 1;
+        uint32_t slice  = log2i((uint32_t) index),
+                 offset = 1u << slice;
+        return m_slices[slice][index - offset];
+    }
+
+    const Value &operator[](uint32_t index) const {
+        index += 1;
+        uint32_t slice  = log2i(index),
+                 offset = 1u << slice;
+        return m_slices[slice][index - offset];
+    }
+
+    uint32_t grow_by(uint32_t amount) {
+        uint64_t size_and_capacity =
+            m_size_and_capacity.load(std::memory_order_acquire);
+
+        while (true) {
+            uint32_t size     = (uint32_t) size_and_capacity,
+                     capacity = (uint32_t) (size_and_capacity >> 32),
+                     new_size = size + amount;
+
+            if (new_size > capacity) {
+                reserve(new_size);
+                size_and_capacity =
+                    m_size_and_capacity.load(std::memory_order_acquire);
+                continue;
+            }
+
+            uint64_t size_and_capacity_new =
+                (uint64_t) new_size + (((uint64_t) capacity) << 32);
+
+            if (m_size_and_capacity.compare_exchange_weak(
+                    size_and_capacity, size_and_capacity_new,
+                    std::memory_order_release, std::memory_order_relaxed))
+                return size;
+        }
+    }
+
+    uint32_t log2i(uint32_t x) {
+        #if defined(_MSC_VER)
+            unsigned long y;
+            _BitScanReverse(&y, (unsigned long)x);
+            return (uint32_t) y;
+        #else
+            return 31u - __builtin_clz(x);
+        #endif
+    }
+
+    uint32_t size() const {
+        return m_size_and_capacity.load(std::memory_order_acquire);
+    }
+
+    void release() {
+        for (int i = 0; i < 32; ++i) {
+            if (m_slices[i].load()) {
+                delete[] m_slices[i].load();
+                m_slices[i].store(nullptr);
+            }
+        }
+    }
+
+private:
+    std::atomic<uint64_t> m_size_and_capacity;
+    std::atomic<Value *> m_slices[32] { };
+};
+NAMESPACE_END(detail)
+
+
 /**
  * \brief Optimized KD-tree acceleration data structure for n-dimensional
  * (n<=4) shapes and various queries involving them.
@@ -382,285 +655,17 @@ protected:
         Size m_count = 0;
     };
 
-    /**
-     * During kd-tree construction, large amounts of memory are required to
-     * temporarily hold index and edge event lists. When not implemented
-     * properly, these allocations can become a critical bottleneck. The class
-     * \ref OrderedChunkAllocator provides a specialized memory allocator,
-     * which reserves memory in chunks of at least 512KiB (this number is
-     * configurable). An important assumption made by the allocator is that
-     * memory will be released in the exact same order in which it was
-     * previously allocated. This makes it possible to create an implementation
-     * with a very low memory overhead. Note that no locking is done, hence
-     * each thread will need its own allocator.
-     */
-    class OrderedChunkAllocator {
-    public:
-        OrderedChunkAllocator(size_t min_allocation = MTS_KD_MIN_ALLOC)
-                : m_min_allocation(min_allocation) {
-            m_chunks.reserve(4);
-        }
-
-        ~OrderedChunkAllocator() {
-            m_chunks.clear();
-        }
-
-        /**
-         * \brief Request a block of memory from the allocator
-         *
-         * Walks through the list of chunks to find one with enough
-         * free memory. If no chunk could be found, a new one is created.
-         */
-        template <typename T> ENOKI_MALLOC T * allocate(size_t size) {
-            size *= sizeof(T);
-
-            for (auto &chunk : m_chunks) {
-                if (chunk.remainder() >= size) {
-                    T* result = reinterpret_cast<T *>(chunk.cur);
-                    chunk.cur += size;
-                    return result;
-                }
-            }
-
-            /* No chunk had enough free memory */
-            size_t alloc_size = std::max(size, m_min_allocation);
-
-            std::unique_ptr<uint8_t[]> data(new uint8_t[alloc_size]);
-            uint8_t *start = data.get(), *cur = start + size;
-            m_chunks.emplace_back(std::move(data), cur, alloc_size);
-
-            return reinterpret_cast<T *>(start);
-        }
-
-        template <typename T> void release(T *ptr_) {
-            auto ptr = reinterpret_cast<uint8_t *>(ptr_);
-
-            for (auto &chunk: m_chunks) {
-                if (chunk.contains(ptr)) {
-                    chunk.cur = ptr;
-                    return;
-                }
-            }
-
-            #if !defined(NDEBUG)
-                for (auto const &chunk : m_chunks) {
-                    if (ptr == chunk.start.get() + chunk.size)
-                        return; /* Potentially 0-sized buffer, don't be too stringent */
-                }
-
-                Throw("OrderedChunkAllocator: Internal error while releasing memory");
-            #endif
-        }
-
-        /**
-         * \brief Shrink the size of the last allocated chunk
-         */
-        template <typename T> void shrink_allocation(T *ptr_, size_t new_size) {
-            auto ptr = reinterpret_cast<uint8_t *>(ptr_);
-            new_size *= sizeof(T);
-
-            for (auto &chunk: m_chunks) {
-                if (chunk.contains(ptr)) {
-                    chunk.cur = ptr + new_size;
-                    return;
-                }
-            }
-
-            #if !defined(NDEBUG)
-                if (new_size == 0) {
-                    for (auto const &chunk : m_chunks) {
-                        if (ptr == chunk.start.get() + chunk.size)
-                            return; /* Potentially 0-sized buffer, don't be too stringent */
-                    }
-                }
-
-                Throw("OrderedChunkAllocator: Internal error while releasing memory");
-            #endif
-        }
-
-        /// Return the currently allocated number of chunks
-        size_t chunk_count() const { return m_chunks.size(); }
-
-        /// Return the total amount of chunk memory in bytes
-        size_t size() const {
-            size_t result = 0;
-            for (auto const &chunk : m_chunks)
-                result += chunk.size;
-            return result;
-        }
-
-        /// Return the total amount of used memory in bytes
-        size_t used() const {
-            size_t result = 0;
-            for (auto const &chunk : m_chunks)
-                result += chunk.used();
-            return result;
-        }
-
-        /// Return a string representation of the chunks
-        friend std::ostream& operator<<(std::ostream &os, const OrderedChunkAllocator &o) {
-            os << "OrderedChunkAllocator[" << std::endl;
-            for (size_t i = 0; i < o.m_chunks.size(); ++i)
-                os << "    Chunk " << i << ": " << o.m_chunks[i] << std::endl;
-            os << "]";
-            return os;
-        }
-
-    private:
-        struct Chunk {
-            std::unique_ptr<uint8_t[]> start;
-            uint8_t *cur;
-            size_t size;
-
-            Chunk(std::unique_ptr<uint8_t[]> &&start, uint8_t *cur, size_t size)
-                : start(std::move(start)), cur(cur), size(size) { }
-
-            size_t used() const { return (size_t) (cur - start.get()); }
-            size_t remainder() const { return size - used(); }
-
-            bool contains(uint8_t *ptr) const { return ptr >= start.get() && ptr < start.get() + size; }
-
-            friend std::ostream& operator<<(std::ostream &os, const Chunk &ch) {
-                os << (const void *) ch.start.get() << "-" << (const void *) (ch.start.get() + ch.size)
-                   << " (size = " << ch.size << ", remainder = " << ch.remainder() << ")";
-                return os;
-            }
-        };
-
-        size_t m_min_allocation;
-        std::vector<Chunk> m_chunks;
-    };
-
     /* ==================================================================== */
     /*                    Build-related data structures                     */
     /* ==================================================================== */
-
-    /* Append-only concurrent vector, whose storage is arranged into slices
-       with increasing powers of two. Max 2^32 entries supported. */
-    template <typename Value>
-    struct concurrent_vector {
-        concurrent_vector() : m_size_and_capacity(0) { }
-        ~concurrent_vector() { release(); }
-
-        void reserve(Size size) {
-            if (size == 0)
-                return;
-
-            Size slices     = log2i(size) + 1,
-                 slice_size = 1,
-                 capacity   = 0;
-
-            bool changed = false;
-            for (Index i = 0; i < slices; ++i) {
-                Value *cur = m_slices[i].load(std::memory_order_acquire);
-                if (!cur) {
-                    Value *val = new Value[slice_size];
-                    if (m_slices[i].compare_exchange_strong(cur, val))
-                        changed = true;
-                    else
-                        delete[] val;
-                }
-                capacity += slice_size;
-                slice_size *= 2;
-            }
-
-            if (changed) {
-                uint64_t size_and_capacity =
-                    m_size_and_capacity.load(std::memory_order_acquire);
-
-                while (true) {
-                    Size cur_size     = (Size) size_and_capacity,
-                         cur_capacity = (Size) (size_and_capacity >> 32);
-
-                    if (cur_capacity >= capacity)
-                        break;
-
-                    uint64_t size_and_capacity_new =
-                        (uint64_t) cur_size + (((uint64_t) capacity) << 32);
-
-                    if (m_size_and_capacity.compare_exchange_weak(
-                            size_and_capacity, size_and_capacity_new,
-                            std::memory_order_release, std::memory_order_relaxed))
-                        break;
-                }
-            }
-        }
-
-        Value &operator[](Index index) {
-            index += 1;
-            Index slice  = log2i((Index) index),
-                  offset = 1u << slice;
-            return m_slices[slice][index - offset];
-        }
-
-        const Value &operator[](Index index) const {
-            index += 1;
-            Index slice  = log2i(index),
-                  offset = 1u << slice;
-            return m_slices[slice][index - offset];
-        }
-
-        Size grow_by(Size amount) {
-            uint64_t size_and_capacity =
-                m_size_and_capacity.load(std::memory_order_acquire);
-
-            while (true) {
-                Size size     = (Size) size_and_capacity,
-                     capacity = (Size) (size_and_capacity >> 32),
-                     new_size = size + amount;
-
-                if (new_size > capacity) {
-                    reserve(new_size);
-                    size_and_capacity =
-                        m_size_and_capacity.load(std::memory_order_acquire);
-                    continue;
-                }
-
-                uint64_t size_and_capacity_new =
-                    (uint64_t) new_size + (((uint64_t) capacity) << 32);
-
-                if (m_size_and_capacity.compare_exchange_weak(
-                        size_and_capacity, size_and_capacity_new,
-                        std::memory_order_release, std::memory_order_relaxed))
-                    return size;
-            }
-        }
-
-        Size log2i(Size x) {
-            #if defined(_MSC_VER)
-                unsigned long y;
-                _BitScanReverse(&y, (unsigned long)x);
-                return (uint32_t) y;
-            #else
-                return 31u - __builtin_clz(x);
-            #endif
-        }
-
-        Size size() const {
-            return m_size_and_capacity.load(std::memory_order_acquire);
-        }
-
-        void release() {
-            for (int i = 0; i < 32; ++i) {
-                if (m_slices[i].load()) {
-                    delete[] m_slices[i].load();
-                    m_slices[i].store(nullptr);
-                }
-            }
-        }
-
-    private:
-        std::atomic<uint64_t> m_size_and_capacity;
-        std::atomic<Value *> m_slices[32] { };
-    };
 
     struct BuildContext;
 
     /// Helper data structure used during tree construction (used by a single thread)
     struct LocalBuildContext {
         ClassificationStorage classification_storage;
-        OrderedChunkAllocator left_alloc;
-        OrderedChunkAllocator right_alloc;
+        detail::OrderedChunkAllocator left_alloc;
+        detail::OrderedChunkAllocator right_alloc;
         BuildContext *ctx = nullptr;
 
         ~LocalBuildContext() {
@@ -676,8 +681,8 @@ protected:
     struct BuildContext {
         const Derived &derived;
         ThreadEnvironment env;
-        concurrent_vector<KDNode> node_storage;
-        concurrent_vector<Index> index_storage;
+        detail::ConcurrentVector<KDNode> node_storage;
+        detail::ConcurrentVector<Index> index_storage;
         /* Keep some statistics about the build process */
         std::atomic<size_t> bad_refines {0};
         std::atomic<size_t> retracted_splits {0};
@@ -1205,6 +1210,11 @@ protected:
 
             Scalar left_cost = 0, right_cost = 0;
 
+            // Switch to serial execution when tasks become small enough
+            bool serial_exec =
+                std::max(partition.left_indices.size(),
+                         partition.right_indices.size()) < MTS_KD_GRAIN_SIZE;
+
             BuildTask left_task = BuildTask(
                 m_ctx, children, std::move(partition.left_indices),
                 left_bounds, partition.left_bounds, m_depth+1,
@@ -1215,11 +1225,15 @@ protected:
                 right_bounds, partition.right_bounds, m_depth + 1,
                 m_bad_refines, &right_cost);
 
-            Task *left_ek_task = ek::do_async([&](){ left_task.execute(); });
-            Task *right_ek_task = ek::do_async([&](){ right_task.execute(); });
-
-            task_wait_and_release(left_ek_task);
-            task_wait_and_release(right_ek_task);
+            if (serial_exec) {
+                left_task.execute();
+                right_task.execute();
+            } else {
+                Task *left_ek_task =
+                    ek::do_async([&]() { left_task.execute(); });
+                right_task.execute();
+                task_wait_and_release(left_ek_task);
+            }
 
             /* ==================================================================== */
             /*                           Final decision                             */
@@ -1664,6 +1678,9 @@ protected:
                     Throw("Internal error: could not create leaf node with %i "
                           "primitives -- too much geometry?", m_indices.size());
 
+                for(auto it = temp.begin(); it != temp.end(); it++)
+                    m_ctx.index_storage[offset++] = *it;
+
                 m_ctx.retracted_splits++;
                 return leaf_cost;
             }
@@ -1741,6 +1758,9 @@ protected:
             if (!m_ctx.node_storage[m_node].set_leaf_node(offset, indices.size()))
                 Throw("Internal error: could not create leaf node with %i "
                       "primitives -- too much geometry?", m_indices.size());
+
+            for(auto it = indices.begin(); it != indices.end(); it++)
+                m_ctx.index_storage[offset++] = *it;
 
             *m_cost = m_ctx.derived.cost_model().leaf_cost(Size(indices.size()));
         }

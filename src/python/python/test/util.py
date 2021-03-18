@@ -112,6 +112,9 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
     spectral_variant = mitsuba.variant().replace("scalar", "")
     variants = list(set(mitsuba.variants()) & set([m + spectral_variant for m in modes]))
 
+    if not variants:
+        pytest.skip(f"No vectorized variants available")
+
     # If argument dimensions not provided, look at kernel argument annotations
     if arg_dims == []:
         params = signature(kernel).parameters
