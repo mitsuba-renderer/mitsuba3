@@ -228,6 +228,12 @@ public:
     virtual Vector3f eval_3(const Interaction3f &si, Mask active = true) const;
 
     /**
+     * Ealuate this texture as a six-channel quantity with no color processing
+     * (e.g. the parameters of an SGGX phase function)
+     */
+    virtual Vector<Float, 6> eval_6(const Interaction3f &si, Mask active = true) const;
+
+    /**
      * Evaluate the texture at the given surface interaction,
      * and compute the gradients of the linear interpolant as well.
      */

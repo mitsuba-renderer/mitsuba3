@@ -72,7 +72,7 @@ public:
 
         Float sin_theta = ek::safe_sqrt(1.0f - cos_theta * cos_theta);
         auto [sin_phi, cos_phi] = ek::sincos(2 * ek::Pi<ScalarFloat> * sample2.y());
-        auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
+        auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, -cos_theta);
         wo = mi.to_world(wo);
         Float pdf = eval_hg(-cos_theta);
         return { wo, pdf };

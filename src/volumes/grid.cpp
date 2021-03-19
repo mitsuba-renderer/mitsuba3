@@ -199,8 +199,12 @@ public:
                 result = m_raw ? (Object *) new Impl<3, true>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode)
                                : (Object *) new Impl<3, false>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode);
                 break;
+            case 6:
+                result = m_raw ? (Object *) new Impl<6, true>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode)
+                               : (Object *) new Impl<6, false>(m_props, m_metadata, m_data, m_filter_type, m_wrap_mode);
+                break;
             default:
-                Throw("Unsupported channel count: %d (expected 1 or 3)", m_metadata.channel_count);
+                Throw("Unsupported channel count: %d (expected 1, 3, or 6)", m_metadata.channel_count);
         }
         return { result };
     }
@@ -305,6 +309,18 @@ public:
         }
     }
 
+
+    Vector<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const override {
+        ENOKI_MARK_USED(it);
+        ENOKI_MARK_USED(active);
+
+        if constexpr (Channels != 6) {
+            Throw("eval_6(): The GridVolume texture %s was queried for a 6D vector,"
+                  " but it has %s channel(s)", to_string(), Channels);
+        } else {
+            return eval_impl(it, active);
+        }
+    }
 
 
     MTS_INLINE auto eval_impl(const Interaction3f &it, Mask active) const {
@@ -511,13 +527,17 @@ constexpr const char * gridvolume_class_name() {
     if constexpr (!Raw) {
         if constexpr (Channels == 1)
             return "GridVolumeImpl_1_0";
-        else
+        else if constexpr (Channels == 3)
             return "GridVolumeImpl_3_0";
+        else
+            return "GridVolumeImpl_6_0";
     } else {
         if constexpr (Channels == 1)
             return "GridVolumeImpl_1_1";
-        else
+        else if constexpr (Channels == 3)
             return "GridVolumeImpl_3_1";
+        else
+            return "GridVolumeImpl_6_1";
     }
 }
 NAMESPACE_END(detail)
