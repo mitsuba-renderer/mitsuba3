@@ -581,7 +581,8 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
     def make_context(n):
         mi = ek.zero(MediumInteraction3f, n)
         mi.wi = wi
-        mi.sh_frame = Frame3f(-mi.wi)
+        mi.sh_frame = Frame3f(mi.wi)
+        mi.p = mitsuba.core.Point3f(0, 0, 0)
         return mi, ctx
 
     def instantiate(args):

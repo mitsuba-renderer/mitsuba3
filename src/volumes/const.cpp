@@ -52,7 +52,29 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     ConstVolume(const Properties &props) : Base(props) {
-        m_color = props.texture<Texture>("color", 1.f);
+        if (props.type("value") == Properties::Type::String) {
+            std::vector<std::string> values_str =
+                string::tokenize(props.string("value"), " ,");
+
+            if (values_str.size() != 6)
+                Throw("String values parsing currently only supported for 6 "
+                      "values (got %s)", values_str.size());
+
+            std::vector<ScalarFloat> values;
+            values.reserve(values_str.size());
+            for (size_t i = 0; i < values_str.size(); ++i) {
+                try {
+                    values.push_back((ScalarFloat) std::stod(values_str[i]));
+                } catch (...) {
+                    Throw("Could not parse floating point value '%s'",
+                          values_str[i]);
+                }
+            }
+            m_vector = Vector<Float, 6>(values[0], values[1], values[2],
+                                        values[3], values[4], values[5]);
+        } else {
+            m_color = props.texture<Texture>("value", 1.f);
+        }
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
@@ -68,6 +90,10 @@ public:
 
     Float eval_1(const Interaction3f & /* it */, Mask /* active */) const override {
         return m_color->mean();
+    }
+
+    Vector<Float, 6> eval_6(const Interaction3f & /* it */, Mask /* active */) const override {
+        return m_vector;
     }
 
     Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
@@ -93,6 +119,7 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_color;
+    Vector<Float, 6> m_vector;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)

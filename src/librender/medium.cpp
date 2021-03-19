@@ -41,8 +41,8 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 
     // initialize basic medium interaction fields
     MediumInteraction3f mi;
-    mi.sh_frame    = Frame3f(ray.d);
     mi.wi          = -ray.d;
+    mi.sh_frame    = Frame3f(mi.wi);
     mi.time        = ray.time;
     mi.wavelengths = ray.wavelengths;
 

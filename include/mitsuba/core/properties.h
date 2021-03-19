@@ -332,12 +332,12 @@ public:  // Type-specific getters and setters ----------------------------------
                 return (Volume *) object.get();
             } else {
                 Properties props("constvolume");
-                props.set_object("color", object);
+                props.set_object("value", object);
                 return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
             }
         } else if (p_type == Properties::Type::Float) {
             Properties props("constvolume");
-            props.set_float("color", float_(name));
+            props.set_float("value", float_(name));
             return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
         } else {
             Throw("The property \"%s\" has the wrong type (expected "
@@ -357,7 +357,7 @@ public:  // Type-specific getters and setters ----------------------------------
     ref<Volume> volume(const std::string &name, Float def_val) const {
         if (!has_property(name)) {
             Properties props("constvolume");
-            props.set_float("color", def_val);
+            props.set_float("value", def_val);
             return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
         }
         return volume<Volume>(name);

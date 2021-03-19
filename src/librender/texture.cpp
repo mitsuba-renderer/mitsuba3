@@ -105,6 +105,11 @@ Volume<Float, Spectrum>::eval_3(const Interaction3f &, Mask) const {
     NotImplementedError("eval_3");
 }
 
+MTS_VARIANT Vector<Float, 6>
+Volume<Float, Spectrum>::eval_6(const Interaction3f &, Mask) const {
+    NotImplementedError("eval_6");
+}
+
 MTS_VARIANT std::pair<typename Volume<Float, Spectrum>::UnpolarizedSpectrum,
                       typename Volume<Float, Spectrum>::Vector3f>
 Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*active*/) const {
