@@ -31,6 +31,7 @@ add_subdirectory(sensors)
 add_subdirectory(shapes)
 add_subdirectory(spectra)
 add_subdirectory(textures)
+add_subdirectory(volumes)
 
 if (MTS_ENABLE_PYTHON)
   add_subdirectory(python)
