@@ -4,6 +4,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/phase.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
@@ -13,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -28,23 +29,25 @@ public:
         ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
-    MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi) const {
-        return m_sigmat->eval(mi) * m_scale;
+    MTS_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {
+        auto sigmat = m_sigmat->eval(mi) * m_scale;
+        if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
+            sigmat *= m_phase_function->projected_area(mi, active);
+        return sigmat;
     }
 
     UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f &mi,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        auto value = eval_sigmat(mi);
-        return value & active;
+        return eval_sigmat(mi, active) & active;
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        auto sigmat                = eval_sigmat(mi);
+        auto sigmat                = eval_sigmat(mi, active);
         auto sigmas                = sigmat * m_albedo->eval(mi, active);
         UnpolarizedSpectrum sigman = 0.f;
 
