@@ -4,6 +4,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/phase.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
@@ -13,7 +14,8 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
+                    m_phase_function)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
@@ -34,7 +36,6 @@ public:
     UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f & /* mi */,
                             Mask active) const override {
-        // TODO: This could be a spectral quantity (at least in RGB mode)
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return m_max_density;
     }
@@ -43,7 +44,11 @@ public:
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+
         auto sigmat = m_scale * m_sigmat->eval(mi, active);
+        if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
+            sigmat *= m_phase_function->projected_area(mi, active);
+
         auto sigmas = sigmat * m_albedo->eval(mi, active);
         auto sigman = get_combined_extinction(mi, active) - sigmat;
         return { sigmas, sigman, sigmat };
