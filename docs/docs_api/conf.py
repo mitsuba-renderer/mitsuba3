@@ -50,6 +50,7 @@ rst_prolog = r"""
 .. |bsdf| replace:: :paramtype:`bsdf`
 .. |point| replace:: :paramtype:`point`
 .. |transform| replace:: :paramtype:`transform`
+.. |volume| replace:: :paramtype:`volume`
 
 .. |enoki| replace:: :monosp:`enoki`
 .. |numpy| replace:: :monosp:`numpy`

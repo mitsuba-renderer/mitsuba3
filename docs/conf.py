@@ -61,6 +61,7 @@ rst_prolog = r"""
 .. |point| replace:: :paramtype:`point`
 .. |vector| replace:: :paramtype:`vector`
 .. |transform| replace:: :paramtype:`transform`
+.. |volume| replace:: :paramtype:`volume`
 
 .. |enoki| replace:: :monosp:`enoki`
 .. |numpy| replace:: :monosp:`numpy`
@@ -79,7 +80,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'mitsuba2'
-copyright = '2019, Realistic Graphics Lab (RGL), EPFL'
+copyright = '2021, Realistic Graphics Lab (RGL), EPFL'
 author = 'Realistic Graphics Lab, EPFL'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -168,6 +169,7 @@ extensions.append('sphinx.ext.todo')
 todo_include_todos = True
 
 extensions.append('sphinxcontrib.bibtex')
+bibtex_bibfiles = ['references.bib']
 
 extensions.append('nbsphinx')
 nbsphinx_execute = 'never'

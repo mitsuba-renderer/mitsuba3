@@ -14,6 +14,88 @@ NAMESPACE_BEGIN(mitsuba)
 enum class FilterType { Nearest, Trilinear };
 enum class WrapMode { Repeat, Mirror, Clamp };
 
+/**!
+.. _volume-gridvolume:
+
+Grid-based volume data source (:monosp:`gridvolume`)
+----------------------------------------------------------
+
+.. pluginparameters::
+
+ * - filename
+   - |string|
+   - Filename of the volume to be loaded
+
+ * - filter_type
+   - |string|
+   - Specifies how voxel values are interpolated. The following options are currently available:
+
+     - ``trilinear`` (default): perform trilinear interpolation.
+
+     - ``nearest``: disable interpolation. In this mode, the plugin
+       performs nearest neighbor lookups of volume values.
+
+ * - wrap_mode
+   - |string|
+   - Controls the behavior of volume evaluations that fall outside of the
+     :math:`[0, 1]` range. The following options are currently available:
+
+     - ``clamp`` (default): clamp coordinates to the edge of the volume.
+
+     - ``repeat``: tile the volume infinitely.
+
+     - ``mirror``: mirror the volume along its boundaries.
+
+ * - raw
+   - |bool|
+   - Should the transformation to the stored color data (e.g. sRGB to linear,
+     spectral upsampling) be disabled? You will want to enable this when working
+     with non-color, 3-channel volume data. Currently, no plugin needs this option
+     to be set to true (Default: false)
+
+ * - to_world
+   - |transform|
+   - Specifies an optional 4x4 transformation matrix that will be applied to volume coordinates.
+
+
+
+This class implements access to volume data stored on a 3D grid using a
+simple binary exchange format (compatible with Mitsuba 0.6). The format uses a little endian
+encoding and is specified as follows:
+
+.. list-table:: Volume file format
+   :widths: 8 30
+   :header-rows: 1
+
+   * - Position
+     - Content
+   * - Bytes 1-3
+     - ASCII Bytes ’V’, ’O’, and ’L’
+   * - Byte 4
+     - File format version number (currently 3)
+   * - Bytes 5-8
+     - Encoding identified (32-bit integer). Currently, only a value of 1 is
+       supported (float32-based representation)
+   * - Bytes 9-12
+     - Number of cells along the X axis (32 bit integer)
+   * - Bytes 13-16
+     - Number of cells along the Y axis (32 bit integer)
+   * - Bytes 17-20
+     - Number of cells along the Z axis (32 bit integer)
+   * - Bytes 21-24
+     - Number of channels (32 bit integer, supported values: 1, 3 or 6)
+   * - Bytes 25-48
+     - Axis-aligned bounding box of the data stored in single precision (order:
+       xmin, ymin, zmin, xmax, ymax, zmax)
+   * - Bytes 49-*
+     - Binary data of the volume stored in the specified encoding. The data
+       are ordered so that the following C-style indexing operation makes sense
+       after the file has been loaded into memory:
+       `data[((zpos*yres + ypos)*xres + xpos)*channels + chan]`
+       where (xpos, ypos, zpos, chan) denotes the lookup location.
+
+*/
+
 
 // Forward declaration of specialized GridVolume
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>

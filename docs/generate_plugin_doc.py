@@ -79,7 +79,12 @@ RFILTER_ORDERING = ['box',
                     'lanczos']
 
 PHASE_ORDERING = ['isotropic',
-                  'hg']
+                  'hg',
+                  'sggx']
+
+VOLUME_ORDERING = ['constant3d',
+                   'grid3d']
+
 
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
@@ -156,16 +161,13 @@ def generate(build_dir):
                 ('integrators', INTEGRATOR_ORDERING),
                 ('samplers',    SAMPLER_ORDERING),
                 ('films',       FILM_ORDERING),
-                ('rfilters',    RFILTER_ORDERING)]
+                ('rfilters',    RFILTER_ORDERING),
+                ('volumes',     VOLUME_ORDERING)]
 
     for section, ordering in sections:
 
         with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w') as f:
             process_src(f, section, ordering)
-
-        # process_src(f, 'subsurface')
-        # process_src(f, 'medium')
-        # process_src(f, 'volume')
 
     os.chdir(original_wd)
 
