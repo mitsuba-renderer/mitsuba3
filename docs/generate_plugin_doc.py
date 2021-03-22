@@ -78,6 +78,9 @@ RFILTER_ORDERING = ['box',
                     'catmullrom',
                     'lanczos']
 
+MEDIUM_ORDERING = ['homogeneous',
+                   'heterogeneous']
+
 PHASE_ORDERING = ['isotropic',
                   'hg',
                   'sggx']
@@ -153,6 +156,7 @@ def generate(build_dir):
 
     sections = [('shapes',      SHAPE_ORDERING),
                 ('bsdfs',       BSDF_ORDERING),
+                ('media',       MEDIUM_ORDERING),
                 ('phase',       PHASE_ORDERING),
                 ('emitters',    EMITTER_ORDERING),
                 ('sensors',     SENSOR_ORDERING),

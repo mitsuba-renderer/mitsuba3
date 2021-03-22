@@ -1,4 +1,4 @@
-.. _sec-phase:
+.. _sec-phasefunctions:
 
 Phase functions
 ===============

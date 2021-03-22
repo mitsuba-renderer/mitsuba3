@@ -60,8 +60,12 @@ Grid-based volume data source (:monosp:`gridvolume`)
 
 
 This class implements access to volume data stored on a 3D grid using a
-simple binary exchange format (compatible with Mitsuba 0.6). The format uses a little endian
-encoding and is specified as follows:
+simple binary exchange format (compatible with Mitsuba 0.6). When appropriate,
+spectral upsampling is applied at loading time to convert RGB values to
+spectra that can be used in the renderer.
+We provide a small `helper utility <https://github.com/mitsuba-renderer/mitsuba2-vdb-converter>`_
+to convert OpenVDB files to this format. The format uses a
+little endian encoding and is specified as follows:
 
 .. list-table:: Volume file format
    :widths: 8 30
@@ -91,7 +95,7 @@ encoding and is specified as follows:
      - Binary data of the volume stored in the specified encoding. The data
        are ordered so that the following C-style indexing operation makes sense
        after the file has been loaded into memory:
-       `data[((zpos*yres + ypos)*xres + xpos)*channels + chan]`
+       :code:`data[((zpos*yres + ypos)*xres + xpos)*channels + chan]`
        where (xpos, ypos, zpos, chan) denotes the lookup location.
 
 */
