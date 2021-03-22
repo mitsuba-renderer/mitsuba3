@@ -82,9 +82,9 @@
 
     # Which variants should be compiled?
     "enabled": [
+        "scalar_spectral",
         # The "scalar_rgb" variant *must* be included at the moment.
-        "scalar_rgb",
-        "scalar_spectral"
+        "scalar_rgb"
     ],
 
     # If mitsuba is launched without any specific mode parameter,
