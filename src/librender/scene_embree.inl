@@ -34,8 +34,11 @@ struct EmbreeState {
 
 MTS_VARIANT void
 Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
-    if (!__embree_device)
-        __embree_device = rtcNewDevice("");
+    if (!__embree_device) {
+        __embree_device = rtcNewDevice(
+            tfm::format("threads=%i,user_threads=%i", pool_size(), pool_size())
+                .c_str());
+    }
 
     Timer timer;
     RTCScene embree_scene = rtcNewScene(__embree_device);
@@ -72,7 +75,12 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
         s.geometries.push_back(rtcAttachGeometry(
             s.accel, shape->embree_geometry(__embree_device)));
 
-    rtcCommitScene(s.accel);
+    ek::parallel_for(
+        ek::blocked_range<size_t>(0, pool_size(), 1),
+        [&](const ek::blocked_range<size_t> &) {
+            rtcJoinCommitScene(s.accel);
+        }
+    );
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
