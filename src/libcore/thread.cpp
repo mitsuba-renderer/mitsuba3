@@ -85,22 +85,18 @@ protected:
 std::atomic<uint32_t> WorkerThread::m_counter{0};
 
 struct ThreadNotifier {
-    ThreadNotifier() : m_initialized(false) { }
+    ThreadNotifier() {
+        // Do not register the main thread
+        if (m_counter > 0)
+            Thread::register_external_thread("wrk");
+        m_counter++;
+    }
     ~ThreadNotifier() {
         if (self)
             Thread::unregister_external_thread();
         m_counter--;
     }
-    void initialize() {
-        if (!m_initialized) {
-            // Do not register the main thread
-            if (m_counter > 0)
-                Thread::register_external_thread("wrk");
-            m_counter++;
-            m_initialized = true;
-        }
-    }
-    bool m_initialized;
+    void ensure_initialized() {}
     static std::atomic<uint32_t> m_counter;
 };
 
@@ -168,8 +164,7 @@ const FileResolver* Thread::file_resolver() const {
 }
 
 Thread* Thread::thread() {
-    // Ensure this thread is properly registered
-    notifier.initialize();
+    notifier.ensure_initialized();
     Thread *self_val = self;
     assert(self_val);
     return self_val;
