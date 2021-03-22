@@ -35,10 +35,9 @@ auto bbox_transform(const BoundingBox<Point<Float, 3>> &bbox) {
 NAMESPACE_END(detail)
 
 /**
- * Reads a Mitsuba binary volume file.
+ * Reads a Mitsuba binary volume file. See the documentation of the "GridVolume"
+ * (grid3d.cpp) plugin for a specification of the format.
  */
-// TODO: document data format.
-// TODO: what if Float is a GPU array, should we upload to it directly?
 template <typename Float>
 std::pair<VolumeMetadata, std::unique_ptr<ek::scalar_t<Float>[]>>
 read_binary_volume_data(const std::string &filename) {
