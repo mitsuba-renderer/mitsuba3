@@ -130,12 +130,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
             bool hit_instance = (inst_index != RTC_INVALID_GEOMETRY_ID);
             uint32_t index = hit_instance ? inst_index : shape_index;
 
-            ShapePtr shape;
-            if constexpr (!ek::is_array_v<Float>)
-                shape = m_shapes[index];
-            else
-                shape = ek::gather<UInt32>(s.shapes_registry_ids, index);
-
+            ShapePtr shape = m_shapes[index];
             if (hit_instance)
                 pi.instance = shape;
             else
@@ -174,8 +169,6 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
-        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
-            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
         uint32_t in[13] = { valid.index(),      ray_o.x().index(),
                             ray_o.y().index(),  ray_o.z().index(),
@@ -290,8 +283,6 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
         Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
-        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
-            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
         uint32_t in[13] = { valid.index(),      ray_o.x().index(),
                             ray_o.y().index(),  ray_o.z().index(),
