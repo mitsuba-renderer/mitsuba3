@@ -335,7 +335,6 @@ public:
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
         auto p = m_world_to_local * it.p;
-        active &= ek::all((p >= 0) && (p <= 1));
 
         if (ek::none_or<false>(active))
             return ek::zero<ResultType>();
