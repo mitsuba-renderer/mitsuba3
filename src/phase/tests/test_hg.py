@@ -19,6 +19,4 @@ def test02_chi2(variants_vec_backends_once_rgb):
         sample_dim=3,
     )
 
-    result = chi2.run(0.1)
-    chi2._dump_tables()
-    assert result
+    assert chi2.run()
