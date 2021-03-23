@@ -201,7 +201,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
-        Mask hit = active && ek::neq(t, ray.maxt);
+        Mask hit = active && ek::neq(t, ray_maxt);
 
         pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
