@@ -343,11 +343,17 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
         // Instance index is initialized to 0 when there is no instancing in the scene
         UInt32 payload_inst_index(m_shapegroups.empty() ? 0u : 1u);
 
+        using Single = ek::float32_array_t<Float>;
+        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
+            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
+
         uint32_t trace_args[] {
             handle.index(),
-            ray.o.x().index(), ray.o.y().index(), ray.o.z().index(),
-            ray.d.x().index(), ray.d.y().index(), ray.d.z().index(),
-            ray.mint.index(), ray.maxt.index(), ray.time.index(),
+            ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
+            ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
+            ray_mint.index(), ray_maxt.index(), ray_time.index(),
             ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
             miss_sbt_index.index(),
@@ -363,9 +369,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
                         trace_args, active.index());
 
         PreliminaryIntersection3f pi;
-        pi.t          = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[15]));
-        pi.prim_uv[0] = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[16]));
-        pi.prim_uv[1] = ek::reinterpret_array<Float, UInt32>(UInt32::steal(trace_args[17]));
+        pi.t          = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
+        pi.prim_uv[0] = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[16]));
+        pi.prim_uv[1] = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[17]));
         pi.prim_index = UInt32::steal(trace_args[18]);
         pi.shape      = ShapePtr::steal(trace_args[19]);
         pi.instance   = ShapePtr::steal(trace_args[20]);
@@ -418,11 +424,17 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) co
 
         UInt32 payload_hit(1);
 
+        using Single = ek::float32_array_t<Float>;
+        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+        if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
+            ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
+
         uint32_t trace_args[] {
             handle.index(),
-            ray.o.x().index(), ray.o.y().index(), ray.o.z().index(),
-            ray.d.x().index(), ray.d.y().index(), ray.d.z().index(),
-            ray.mint.index(), ray.maxt.index(), ray.time.index(),
+            ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
+            ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
+            ray_mint.index(), ray_maxt.index(), ray_time.index(),
             ray_mask.index(), ray_flags.index(),
             sbt_offset.index(), sbt_stride.index(),
             miss_sbt_index.index(), payload_hit.index()

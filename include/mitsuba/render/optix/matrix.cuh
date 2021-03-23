@@ -120,8 +120,10 @@ struct Transform4f {
 #ifndef __CUDACC__
     Transform4f() = default;
 
-    Transform4f(const mitsuba::Transform<mitsuba::Point<float, 4>> &t)
-        : matrix(t.matrix), inverse_transpose(t.inverse_transpose) {}
+    template <typename T>
+    Transform4f(const mitsuba::Transform<mitsuba::Point<T, 4>> &t)
+        : matrix((Matrix4f) t.matrix),
+          inverse_transpose((Matrix4f) t.inverse_transpose) {}
 #else
     DEVICE Transform4f() { }
 

@@ -442,7 +442,8 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSphereData));
 
-            OptixSphereData data = { bbox(), m_center, m_radius };
+            OptixSphereData data = { bbox(), (Vector<float, 3>) m_center,
+                                     (float) m_radius };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixSphereData));

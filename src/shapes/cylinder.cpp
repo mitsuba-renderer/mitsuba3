@@ -422,7 +422,8 @@ public:
                 m_optix_data_ptr
                     = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
-            OptixCylinderData data = { bbox(), m_to_object, m_length, m_radius };
+            OptixCylinderData data = { bbox(),  m_to_object,
+                                       (float) m_length, (float) m_radius };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixCylinderData));
