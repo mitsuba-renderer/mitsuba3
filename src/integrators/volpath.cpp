@@ -11,6 +11,47 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**!
+
+.. _integrator-volpath:
+
+Volumetric path tracer (:monosp:`volpath`)
+-------------------------------------------
+
+.. pluginparameters::
+
+ * - max_depth
+   - |int|
+   - Specifies the longest path depth in the generated output image (where -1 corresponds to
+     :math:`\infty`). A value of 1 will only render directly visible light sources. 2 will lead
+     to single-bounce (direct-only) illumination, and so on. (Default: -1)
+ * - rr_depth
+   - |int|
+   - Specifies the minimum path depth, after which the implementation will start to use the
+     *russian roulette* path termination criterion. (Default: 5)
+ * - hide_emitters
+   - |bool|
+   - Hide directly visible emitters. (Default: no, i.e. |false|)
+
+This plugin provides a volumetric path tracer that can be used to compute approximate solutions
+of the radiative transfer equation. Its implementation makes use of multiple importance sampling
+to combine BSDF and phase function sampling with direct illumination sampling strategies. On
+surfaces, it behaves exactly like the standard path tracer.
+
+This integrator has special support for index-matched transmission events (i.e. surface scattering
+events that do not change the direction of light). As a consequence, participating media enclosed by
+a stencil shape are rendered considerably more efficiently when this shape
+has a :ref:`null <bsdf-null>` or :ref:`thin dielectric <bsdf-thindielectric>` BSDF assigned
+to it (as compared to, say, a :ref:`dielectric <bsdf-dielectric>` or
+:ref:`roughdielectric <bsdf-roughdielectric>` BSDF).
+
+.. note:: This integrator does not implement good sampling strategies to render
+    participating media with a spectrally varying extinction coefficient. For these cases,
+    it is better to use the more advanced :ref:`volumetric path tracer with
+    spectral MIS <integrator-volpathmis>`, which will produce in a significantly less noisy
+    rendered image.
+
+*/
 template <typename Float, typename Spectrum>
 class VolumetricPathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 

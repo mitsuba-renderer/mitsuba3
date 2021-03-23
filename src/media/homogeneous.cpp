@@ -49,6 +49,11 @@ Homogeneous medium (:monosp:`homogeneous`)
      render time. This can reduce render time up to 50% when rendering objects
      with subsurface scattering.
 
+ * - (Nested plugin)
+   - |phase|
+   - A nested phase function that describes the directional scattering properties of
+     the medium. When none is specified, the renderer will automatically use an instance of
+     isotropic.
 
 This class implements a homogeneous participating medium with support for arbitrary
 phase functions. This medium can be used to model effects such as fog or subsurface scattering.
@@ -56,9 +61,18 @@ phase functions. This medium can be used to model effects such as fog or subsurf
 The medium is parametrized by the single scattering albedo and the extinction coefficient
 :math:`\sigma_t`. The extinction coefficient should be provided in inverse scene units.
 For instance, when a world-space distance of 1 unit corresponds to a meter, the
-scattering coefficents should have units of inverse meters. For convenience,
+extinction coefficent should have units of inverse meters. For convenience,
 the scale parameter can be used to correct the units. For instance, when the scene is in
 meters and the coefficients are in inverse millimeters, set scale to 1000.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/render/medium_homogeneous_sss.jpg
+   :caption: Homogeneous medium with constant albedo
+.. subfigure:: ../../resources/data/docs/images/render/medium_homogeneous_sss_textured.jpg
+   :caption: Homogeneous medium with spatially varying albedo
+.. subfigend::
+   :label: fig-homogeneous
+
 
 The homogeneous medium assumes the extinction coefficient to be constant throughout the medium.
 However, it supports the use of a spatially varying albedo.
@@ -87,9 +101,6 @@ However, it supports the use of a spatially varying albedo.
             <float name="g" value="0.7"/>
         </phase>
     </medium>
-
-
-
 
 */
 
