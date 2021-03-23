@@ -182,9 +182,7 @@ public:
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = false;
-        if constexpr (ek::is_diff_array_v<Float>)
-            differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
+        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
         if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))

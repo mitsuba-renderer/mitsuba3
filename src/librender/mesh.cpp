@@ -483,9 +483,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    bool differentiable = false;
-    if constexpr (ek::is_diff_array_v<Float>)
-        differentiable = ek::grad_enabled(m_vertex_positions) || ek::grad_enabled(ray);
+    bool differentiable =
+        ek::grad_enabled(m_vertex_positions) || ek::grad_enabled(ray);
 
     // Recompute ray intersection to get differentiable prim_uv and t
     if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
@@ -905,17 +904,13 @@ MTS_VARIANT void Mesh<Float, Spectrum>::set_grad_suspended(bool state) {
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
-    if constexpr (ek::is_diff_array_v<Float>) {
-        bool result = false;
-        for (auto &[name, attribute]: m_mesh_attributes)
-            result |= ek::grad_enabled(attribute.buf);
-        result |= ek::grad_enabled(m_vertex_positions);
-        result |= ek::grad_enabled(m_vertex_normals);
-        result |= ek::grad_enabled(m_vertex_texcoords);
-        return result;
-    }
-
-    return false;
+    bool result = false;
+    for (auto &[name, attribute]: m_mesh_attributes)
+        result |= ek::grad_enabled(attribute.buf);
+    result |= ek::grad_enabled(m_vertex_positions);
+    result |= ek::grad_enabled(m_vertex_normals);
+    result |= ek::grad_enabled(m_vertex_texcoords);
+    return result;
 }
 
 MTS_IMPLEMENT_CLASS_VARIANT(Mesh, Shape)
