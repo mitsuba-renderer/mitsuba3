@@ -219,19 +219,19 @@ public:
     // ======================================================================
 
     /// Evaluate the texture at the given surface interaction, with color processing.
-    virtual UnpolarizedSpectrum eval(const Interaction3f &si, Mask active = true) const;
+    virtual UnpolarizedSpectrum eval(const Interaction3f &it, Mask active = true) const;
 
     /// Evaluate this texture as a single-channel quantity.
-    virtual Float eval_1(const Interaction3f &si, Mask active = true) const;
+    virtual Float eval_1(const Interaction3f &it, Mask active = true) const;
 
     /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
-    virtual Vector3f eval_3(const Interaction3f &si, Mask active = true) const;
+    virtual Vector3f eval_3(const Interaction3f &it, Mask active = true) const;
 
     /**
      * Ealuate this texture as a six-channel quantity with no color processing
      * (e.g. the parameters of an SGGX phase function)
      */
-    virtual Vector<Float, 6> eval_6(const Interaction3f &si, Mask active = true) const;
+    virtual Vector<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
      * Evaluate the texture at the given surface interaction,

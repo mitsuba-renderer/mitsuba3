@@ -462,10 +462,9 @@ public:
 
             // Integer voxel positions for lookup
             Vector3i p_i   = ek::floor2int<Vector3i>(p),
-                    p_i_w = wrap(p_i);
+                     p_i_w = wrap(p_i);
 
-            Int32 index = ek::fmadd(ek::fmadd(p_i_w.z(), ny, p_i_w.y()), nx, p_i_w.x());
-
+            Int32 index = (p_i_w.z() * ny + p_i_w.y()) * nx + p_i_w.x();
             StorageType v = ek::gather<StorageType>(m_data, index, active);
 
             if constexpr (uses_srgb_model)
