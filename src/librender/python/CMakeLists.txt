@@ -59,6 +59,7 @@ pybind11_add_module(render_ext
   microfacet.cpp
   phase.cpp
   spiral.cpp
+  volumegrid.cpp
 )
 
 target_link_libraries(render_ext PRIVATE mitsuba-render)
