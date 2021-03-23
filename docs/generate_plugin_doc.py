@@ -67,7 +67,9 @@ SAMPLER_ORDERING = ['independent',
 
 INTEGRATOR_ORDERING = ['direct',
                        'path',
-                       'aov']
+                       'aov',
+                       'volpath',
+                       'volpathmis']
 
 FILM_ORDERING = ['hdrfilm']
 

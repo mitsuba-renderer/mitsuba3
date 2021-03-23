@@ -15,15 +15,39 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum, bool SpectralMis>
 class VolpathMisIntegratorImpl;
 
-
 /**!
 
-.. _integrator-volpath:
+.. _integrator-volpathmis:
 
-Volumetric path tracer with null scattering (:monosp:`volpath`)
+Volumetric path tracer with spectral MIS (:monosp:`volpathmis`)
 ---------------------------------------------------------------
 
-.. todo:: Not documented yet.
+.. pluginparameters::
+
+ * - max_depth
+   - |int|
+   - Specifies the longest path depth in the generated output image (where -1 corresponds to
+     :math:`\infty`). A value of 1 will only render directly visible light sources. 2 will lead
+     to single-bounce (direct-only) illumination, and so on. (Default: -1)
+ * - rr_depth
+   - |int|
+   - Specifies the minimum path depth, after which the implementation will start to use the
+     *russian roulette* path termination criterion. (Default: 5)
+ * - hide_emitters
+   - |bool|
+   - Hide directly visible emitters. (Default: no, i.e. |false|)
+
+
+This plugin provides a volumetric path tracer that can be used to compute approximate solutions
+of the radiative transfer equation. Its implementation performs MIS both for directional sampling
+as well as free-flight distance sampling. In particular, this integrator is well suited
+to render media with a spectrally varying extinction coefficient.
+The implementation is based on the method proposed by Miller et al. :cite:`Miller19null`
+and is only marginally slower than the simple volumetric path tracer.
+
+Similar to the simple volumetric path tracer, this integrator has special
+support for index-matched transmission event.
+
 */
 template <typename Float, typename Spectrum>
 class VolumetricMisPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
