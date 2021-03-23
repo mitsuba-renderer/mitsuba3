@@ -307,7 +307,8 @@ public:
 
             if (has_normals) {
                 InputNormal3f n = ek::load<InputNormal3f>(normal_ptr);
-                ek::store(normal_ptr, ek::normalize(m_to_world.transform_affine(n)));
+                n = ek::normalize(m_to_world.transform_affine(n));
+                ek::store(normal_ptr, n);
                 normal_ptr += 3;
             }
         }
