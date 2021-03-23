@@ -188,7 +188,11 @@ int main(int argc, char *argv[]) {
         // Parse all command line options
         parser.parse(argc, argv);
 
+#if defined(NDEBUG)
         int log_level = 0;
+#else
+        int log_level = 1;
+#endif
         auto arg = arg_verbose;
         while (arg && *arg) {
             log_level++;
