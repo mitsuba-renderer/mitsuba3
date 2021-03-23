@@ -54,10 +54,12 @@ def generate_fixture(variant):
     globals()['variant_' + variant] = fixture
 
 
-for variant in ['scalar_rgb', 'scalar_spectral', 'scalar_spectral_polarized',
-                'scalar_mono_polarized', 'llvm_rgb',
-                'llvm_spectral', 'cuda_rgb', 'cuda_spectral',
-                'llvm_ad_rgb', 'cuda_ad_rgb']:
+# Compute set of valid variants
+suffix_variants = [a + b for a in ["_mono", "_mono_polarized", "_rgb", "_spectral", "_spectral_polarized"] for b in ["", "_double"]]
+scalar_variants = ["scalar" + s for s in suffix_variants]
+other_variants  = [a + b + c for a in ["llvm", "cuda"] for b in ["", "_ad"] for c in suffix_variants]
+
+for variant in scalar_variants + other_variants:
     generate_fixture(variant)
 del generate_fixture
 
