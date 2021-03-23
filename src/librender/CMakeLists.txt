@@ -42,7 +42,6 @@ add_library(mitsuba-render SHARED
   ${INC_DIR}/ior.h
   ${INC_DIR}/microfacet.h
   ${INC_DIR}/records.h
-  ${INC_DIR}/volume_texture.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
   emitter.cpp      ${INC_DIR}/emitter.h
@@ -68,6 +67,7 @@ add_library(mitsuba-render SHARED
                    ${INC_DIR}/optix/common.h
   optix_api.cpp    ${INC_DIR}/optix_api.h
   shapegroup.cpp   ${INC_DIR}/shapegroup.h
+  volumegrid.cpp   ${INC_DIR}/volumegrid.h
   ${LIBRENDER_EXTRA_SRC}
 )
 
