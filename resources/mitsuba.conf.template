@@ -64,31 +64,29 @@
     #       When this flag is specified, double precision will be used
     #       instead, which can be useful to check if an issue arises due to
     #       insufficient numerical accuracy. Note that Embree and OptiX don't
-    #       support double precision, and single precision will still be used
-    #       for ray tracing in those modes. The only way to enable double
-    #       precision for everything including ray tracing is to use 'scalar'
-    #       mode and disabling Embree.
-    #
-    #       Double precision variants are not provided for CUDA backends at
-    #       the moment, simply because double precision arithmetic is
-    #       prohibitively slow on consumer NVIDIA GPUs.
+    #       support double precision, hence ray-tracing operations will run in
+    #       reduced (single) precision in those modes. The only way to use
+    #       precision for everything including ray tracing is to render on the
+    #       CPU and disable Embree in CMake. Also note that double precision
+    #       arithmetic runs with greatly reduced throughput (1/64th of FP32) on
+    #       recent NVIDIA GPUs.
     #
     # As mentioned earlier, these 5 "feature dimensions" can be concatenated
-    # into longer variant names like "cuda_ad_spectral_polarized" that are
-    # defined in more detail in the remainder of this file. Note that it is
+    # into longer variant names like "llvm_ad_spectral_polarized_double" that
+    # are defined in more detail in the remainder of this file. Note that it is
     # possible to create additional variants that are not explicitly mentioned
     # here. To do so, you will have to create a corresponding entry specifying
     # 'float' and 'spectrum' C++ types.
 
     # Which variants should be compiled?
+    # If mitsuba is launched without any specific mode parameter,
+    # the first variant of the list below will be used.
+
     "enabled": [
         "scalar_spectral",
         # The "scalar_rgb" variant *must* be included at the moment.
         "scalar_rgb"
     ],
-
-    # If mitsuba is launched without any specific mode parameter,
-    # the first variant of the list above will be used.
 
     # The variant below will automatically be set when importing the Python
     # mitsuba module. If the value is "", the desired variant will need to be
@@ -163,8 +161,7 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    # LLVM variants (note: currently no double precision variants since
-    # double precision ray tracing is not supported by Embree)
+    # LLVM variant definitions
 
     "llvm_mono": {
         "float": "ek::LLVMArray<float>",
@@ -286,11 +283,15 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
-    # GPU variants (note: currently no double precision variants since
-    # double precision ray tracing is not supported by OptiX)
+    # CUDA variant definitions
 
     "cuda_mono": {
         "float": "ek::CUDAArray<float>",
+        "spectrum": "Color<Float, 1>"
+    },
+
+    "cuda_mono_double": {
+        "float": "ek::CUDAArray<double>",
         "spectrum": "Color<Float, 1>"
     },
 
@@ -299,8 +300,18 @@
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
+    "cuda_mono_polarized_double": {
+        "float": "ek::CUDAArray<double>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
     "cuda_rgb": {
         "float": "ek::CUDAArray<float>",
+        "spectrum": "Color<Float, 3>"
+    },
+
+    "cuda_rgb_double": {
+        "float": "ek::CUDAArray<double>",
         "spectrum": "Color<Float, 3>"
     },
 
@@ -309,8 +320,18 @@
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
+    "cuda_rgb_polarized_double": {
+        "float": "ek::CUDAArray<double>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
     "cuda_spectral": {
         "float": "ek::CUDAArray<float>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
+    "cuda_spectral_double": {
+        "float": "ek::CUDAArray<double>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
@@ -319,8 +340,18 @@
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     },
 
+    "cuda_spectral_polarized_double": {
+        "float": "ek::CUDAArray<double>",
+        "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
+    },
+
     "cuda_ad_mono": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "spectrum": "Color<Float, 1>"
+    },
+
+    "cuda_ad_mono_double": {
+        "float": "ek::DiffArray<ek::CUDAArray<double>>",
         "spectrum": "Color<Float, 1>"
     },
 
@@ -329,8 +360,18 @@
         "spectrum": "MuellerMatrix<Color<Float, 1>>"
     },
 
+    "cuda_ad_mono_polarized_double": {
+        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "spectrum": "MuellerMatrix<Color<Float, 1>>"
+    },
+
     "cuda_ad_rgb": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "spectrum": "Color<Float, 3>"
+    },
+
+    "cuda_ad_rgb_double": {
+        "float": "ek::DiffArray<ek::CUDAArray<double>>",
         "spectrum": "Color<Float, 3>"
     },
 
@@ -339,13 +380,28 @@
         "spectrum": "MuellerMatrix<Color<Float, 3>>"
     },
 
+    "cuda_ad_rgb_polarized_double": {
+        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "spectrum": "MuellerMatrix<Color<Float, 3>>"
+    },
+
     "cuda_ad_spectral": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
         "spectrum": "Spectrum<Float, 4>"
     },
 
+    "cuda_ad_spectral_double": {
+        "float": "ek::DiffArray<ek::CUDAArray<double>>",
+        "spectrum": "Spectrum<Float, 4>"
+    },
+
     "cuda_ad_spectral_polarized": {
         "float": "ek::DiffArray<ek::CUDAArray<float>>",
+        "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
+    },
+
+    "cuda_ad_spectral_polarized_double": {
+        "float": "ek::DiffArray<ek::CUDAArray<double>>",
         "spectrum": "MuellerMatrix<Spectrum<Float, 4>>"
     }
 }

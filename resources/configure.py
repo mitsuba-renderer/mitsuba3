@@ -95,7 +95,7 @@ def write_core_config_cpp(f, enabled, default_variant):
         w('        %s (variant == "%s")' % (iff, name))
         w('            return func<%s, %s>(__VA_ARGS__);' % (float_, spectrum))
     w('        else')
-    w('            Throw("Unsupported variant: %s", variant);')
+    w('            Throw("Unsupported variant: \\\"%%s\\\". Must be one of %s!", variant);' % (", ".join([v[0] for v in enabled])))
     w('    }()')
     f.write('\n')
 
