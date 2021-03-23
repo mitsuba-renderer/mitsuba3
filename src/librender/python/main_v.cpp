@@ -25,6 +25,7 @@ static py::object caster(Object *o) {
     PY_TRY_CAST(Mesh);
     PY_TRY_CAST(Shape);
     PY_TRY_CAST(Texture);
+    PY_TRY_CAST(Volume);
     PY_TRY_CAST(ReconstructionFilter);
 
     PY_TRY_CAST(ProjectiveCamera);
@@ -110,7 +111,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(ShapeKDTree);
     MTS_PY_IMPORT(srgb);
     MTS_PY_IMPORT(Texture);
-    // MTS_PY_IMPORT(Volume);
+    MTS_PY_IMPORT(Volume);
 
     /// Register the variant-specific caster with the 'core_ext' module
     auto casters = (std::vector<void *> *) (py::capsule)(
