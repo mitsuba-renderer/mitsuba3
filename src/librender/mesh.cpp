@@ -347,11 +347,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
 
     const InputFloat *ptr = vertex_texcoords.data();
 
-    std::vector<ScalarFloat> pos_out(m_vertex_count * 3);
+    std::vector<InputFloat> pos_out(m_vertex_count * 3);
     ScalarBoundingBox3f bbox;
     for (size_t i = 0; i < m_vertex_count; ++i) {
-        ScalarFloat u = ptr[2*i + 0],
-                    v = ptr[2*i + 1];
+        InputFloat u = ptr[2*i + 0],
+                   v = ptr[2*i + 1];
         pos_out[i*3 + 0] = u;
         pos_out[i*3 + 1] = v;
         pos_out[i*3 + 2] = 0.f;
