@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
 
         int log_level = 0;
         auto arg = arg_verbose;
-        while (arg) {
+        while (arg && *arg) {
             log_level++;
             arg = arg->next();
         }
