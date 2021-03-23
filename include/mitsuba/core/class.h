@@ -212,13 +212,13 @@ public:                                             \
 
 NAMESPACE_BEGIN(detail)
 template <typename, typename Arg, typename = void>
-struct is_constructiblee : std::false_type { };
+struct is_constructible : std::false_type { };
 
 template <typename T, typename Arg>
-struct is_constructiblee<T, Arg, std::void_t<decltype(new T(std::declval<Arg>()))> > : std::true_type { };
+struct is_constructible<T, Arg, std::void_t<decltype(new T(std::declval<Arg>()))> > : std::true_type { };
 
 template <typename T, typename Arg>
-constexpr bool is_constructible_v = is_constructiblee<T, Arg>::value;
+constexpr bool is_constructible_v = is_constructible<T, Arg>::value;
 
 template <typename T, std::enable_if_t<is_constructible_v<T, const Properties&>, int> = 0>
 Class::ConstructFunctor get_construct_functor() { return [](const Properties& p) -> Object* { return new T(p); }; }
