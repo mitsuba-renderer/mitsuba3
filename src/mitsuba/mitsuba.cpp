@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
         // Initialize Intel Thread Building Blocks with the requested number of threads
         size_t thread_count = Thread::thread_count();
         if (*arg_threads)
-            thread_count = std::max(1, arg_threads->as_int());
+            thread_count = std::max(0, arg_threads->as_int());
         Thread::set_thread_count(thread_count);
 
         while (arg_define && *arg_define) {
