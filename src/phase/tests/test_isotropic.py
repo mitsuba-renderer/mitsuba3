@@ -40,4 +40,4 @@ def test03_chi2(variants_vec_backends_once_rgb):
         sample_dim=3,
     )
 
-    assert chi2.run(0.1)
+    assert chi2.run()
