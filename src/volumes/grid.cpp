@@ -122,7 +122,7 @@ template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Volume, m_world_to_local)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props), m_props(props) {
         std::string filter_type = props.string("filter_type", "trilinear");

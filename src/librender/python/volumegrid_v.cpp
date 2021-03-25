@@ -5,11 +5,8 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(VolumeGrid) {
-    using Float = typename VolumeGrid::Float;
-    MTS_IMPORT_CORE_TYPES()
-
-    auto volumegrid = MTS_PY_CLASS(VolumeGrid, Object);
-    volumegrid.def(py::init([](py::array obj, bool compute_max=true) {
+    MTS_PY_IMPORT_TYPES(VolumeGrid)
+    MTS_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array obj, bool compute_max=true) {
             if (!obj.dtype().is(py::dtype("f")))
                 throw py::type_error("Expected floating point (float32) array");
 

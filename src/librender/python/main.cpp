@@ -18,7 +18,6 @@ PYBIND11_MODULE(render_ext, m) {
     MTS_PY_IMPORT(MicrofacetType);
     MTS_PY_IMPORT(PhaseFunctionExtras);
     MTS_PY_IMPORT(Spiral);
-    MTS_PY_IMPORT(VolumeGrid);
 
     // Change module name back to correct value
     m.attr("__name__") = "mitsuba.render_ext";
