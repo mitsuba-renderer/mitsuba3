@@ -28,6 +28,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     srgb_v.cpp
     texture_v.cpp
     volume_v.cpp
+    volumegrid_v.cpp
   )
 
   target_compile_definitions(${TARGET_NAME} PRIVATE
@@ -59,7 +60,6 @@ pybind11_add_module(render_ext
   microfacet.cpp
   phase.cpp
   spiral.cpp
-  volumegrid.cpp
 )
 
 target_link_libraries(render_ext PRIVATE mitsuba-render)

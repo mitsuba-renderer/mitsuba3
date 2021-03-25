@@ -15,14 +15,13 @@ NAMESPACE_BEGIN(mitsuba)
  * Please see the documentation of gridvolume (grid3d.cpp) for the file format
  * specification.
  */
+MTS_VARIANT
 class MTS_EXPORT_RENDER VolumeGrid : public Object {
 public:
-    using Float = float;
     MTS_IMPORT_CORE_TYPES()
 
     /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
     ScalarTransform4f bbox_transform() const {
-        MTS_IMPORT_CORE_TYPES()
         ScalarVector3f d  = ek::rcp(m_bbox.max - m_bbox.min);
         auto scale_transf = ScalarTransform4f::scale(d);
         ScalarVector3f t  = -1.f * ScalarVector3f(m_bbox.min.x(), m_bbox.min.y(), m_bbox.min.z());
@@ -51,10 +50,10 @@ public:
     VolumeGrid(ScalarVector3i size, ScalarUInt32 channel_count);
 
     /// Return a pointer to the underlying volume storage
-    Float *data() { return m_data.get(); }
+    ScalarFloat *data() { return m_data.get(); }
 
     /// Return a pointer to the underlying volume storage
-    const Float *data() const { return m_data.get(); }
+    const ScalarFloat *data() const { return m_data.get(); }
 
     /// Return the resolution of the voxel grid
     ScalarVector3i size() const { return m_size; }
@@ -105,9 +104,9 @@ protected:
 
     ScalarVector3i m_size;
     ScalarUInt32 m_channel_count;
-    BoundingBox3f m_bbox;
+    ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
 };
 
-
+MTS_EXTERN_CLASS_RENDER(VolumeGrid)
 NAMESPACE_END(mitsuba)
