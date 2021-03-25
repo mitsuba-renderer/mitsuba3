@@ -283,12 +283,12 @@ public:
         ek::mask_t<FloatX> in_bounds = near_t < mint && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds &&
-                  ((z_pos_near >= 0.0 && z_pos_near <= length && near_t >= mint) ||
-                   (z_pos_far  >= 0.0 && z_pos_far <= length  && far_t <= maxt));
+                  ((z_pos_near >= Double(0.0) && z_pos_near <= length && near_t >= mint) ||
+                   (z_pos_far  >= Double(0.0) && z_pos_far <= length  && far_t <= maxt));
 
         FloatX t =
             ek::select(active,
-                       ek::select(z_pos_near >= 0.0 && z_pos_near <= length &&
+                       ek::select(z_pos_near >= Double(0.0) && z_pos_near <= length &&
                                       near_t >= mint,
                                   FloatX(near_t), FloatX(far_t)),
                        ek::Infinity<FloatX>);
@@ -336,8 +336,8 @@ public:
 
         ek::mask_t<FloatX> valid_intersection =
             active && solution_found && !out_bounds && !in_bounds &&
-            ((z_pos_near >= 0.0 && z_pos_near <= length && near_t >= mint) ||
-             (z_pos_far >= 0.0 && z_pos_far <= length && far_t <= maxt));
+            ((z_pos_near >= Double(0.0) && z_pos_near <= length && near_t >= mint) ||
+             (z_pos_far >= Double(0.0) && z_pos_far <= length && far_t <= maxt));
 
         return valid_intersection;
     }

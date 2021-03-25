@@ -2124,9 +2124,7 @@ class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<ek::
 public:
     MTS_IMPORT_TYPES(Shape, Mesh)
 
-    using ScalarSpectrum = ek::replace_value_t<Spectrum, ScalarFloat>;
-    using ScalarRay3f = Ray<Point<ScalarFloat, 3>, ScalarSpectrum>;
-    using ScalarPreliminaryIntersection3f = PreliminaryIntersection<ScalarFloat, ScalarSpectrum>;
+    using ScalarRay3f = Ray<Point<ScalarFloat, 3>, Spectrum>;
 
     using SurfaceAreaHeuristic3f = SurfaceAreaHeuristic3<ScalarFloat>;
     using Size                   = uint32_t;
@@ -2181,8 +2179,35 @@ public:
         return m_shapes[shape_index]->bbox(i, clip);
     }
 
+    struct KDTreePreliminaryIntersection3f {
+        ScalarFloat t = ek::Infinity<ScalarFloat>;
+        /// 2D coordinates on the primitive surface parameterization
+        ScalarPoint2f prim_uv;
+        /// Primitive index, e.g. the triangle ID (if applicable)
+        Index prim_index;
+        /// Shape index, e.g. the shape ID in shapegroup (if applicable)
+        Index shape_index;
+        /// Pointer to the associated shape
+        const Shape* shape = nullptr;
+        /// Stores a pointer to the parent instance (if applicable)
+        const Shape* instance = nullptr;
+
+        bool is_valid() { return t != ek::Infinity<ScalarFloat>; }
+
+        operator PreliminaryIntersection3f() const {
+            PreliminaryIntersection3f pi;
+            pi.t = t;
+            pi.prim_uv = prim_uv;
+            pi.prim_index = prim_index;
+            pi.shape_index = shape_index;
+            pi.shape = shape;
+            pi.instance = instance;
+            return pi;
+        }
+    };
+
     template <bool ShadowRay>
-    MTS_INLINE ScalarPreliminaryIntersection3f ray_intersect_preliminary(const ScalarRay3f &ray,
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                    Mask active) const {
         ENOKI_MARK_USED(active);
         if constexpr (!ek::is_array_v<Float>)
@@ -2192,11 +2217,11 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE ScalarPreliminaryIntersection3f ray_intersect_scalar(Ray3f ray) const {
+    MTS_INLINE KDTreePreliminaryIntersection3f ray_intersect_scalar(ScalarRay3f ray) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
-            Float mint, maxt;
+            ScalarFloat mint, maxt;
             // Pointer to the far child
             const KDNode *node;
         };
@@ -2206,24 +2231,24 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        ScalarPreliminaryIntersection3f pi = ek::zero<ScalarPreliminaryIntersection3f>();
+        KDTreePreliminaryIntersection3f pi;
 
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
 
-        Float mint = std::max(ray.mint, std::get<1>(bbox_result)),
-              maxt = std::min(ray.maxt, std::get<2>(bbox_result));
+        ScalarFloat mint = std::max(ray.mint, std::get<1>(bbox_result)),
+                    maxt = std::min(ray.maxt, std::get<2>(bbox_result));
 
-        Vector d_rcp = ek::rcp(ray.d);
+        ScalarVector3f d_rcp = ek::rcp(ray.d);
 
         const KDNode *node = m_nodes.get();
         while (mint <= maxt) {
             if (likely(!node->leaf())) { // Inner node
-                const Float split   = node->split();
-                const uint32_t axis = node->axis();
+                const ScalarFloat split = node->split();
+                const uint32_t axis     = node->axis();
 
                 /* Compute parametric distance along the rays to the split plane */
-                Float t_plane = (split - ray.o[axis]) * d_rcp[axis];
+                ScalarFloat t_plane = (split - ray.o[axis]) * d_rcp[axis];
 
                 bool left_first  = (ray.o[axis] < split) ||
                                    (ray.o[axis] == split && ray.d[axis] >= 0.f),
@@ -2260,8 +2285,8 @@ public:
                 for (Index i = prim_start; i < prim_end; i++) {
                     Index prim_index = m_indices[i];
 
-                    ScalarPreliminaryIntersection3f prim_pi =
-                        intersect_prim<ShadowRay>(prim_index, ray, true);
+                    KDTreePreliminaryIntersection3f prim_pi =
+                        intersect_prim<ShadowRay>(prim_index, ray);
 
                     if (unlikely(prim_pi.is_valid())) {
                         if constexpr (ShadowRay)
@@ -2418,26 +2443,28 @@ public:
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
-    MTS_INLINE ScalarPreliminaryIntersection3f ray_intersect_naive(ScalarRay3f ray,
-                                                             Mask active) const {
-        ScalarPreliminaryIntersection3f pi = ek::zero<ScalarPreliminaryIntersection3f>();
+    MTS_INLINE PreliminaryIntersection3f ray_intersect_naive(Ray3f ray, Mask active) const {
+        if constexpr (!ek::is_array_v<Float>) {
+            PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
-        for (Size i = 0; i < primitive_count(); ++i) {
-            ScalarPreliminaryIntersection3f prim_pi =
-                intersect_prim<ShadowRay>(i, ray, active);
+            for (Size i = 0; i < primitive_count(); ++i) {
+                PreliminaryIntersection3f prim_pi = intersect_prim<ShadowRay>(i, ray);
 
-            if constexpr (ek::is_array_v<Float>) {
-                ek::masked(pi, prim_pi.is_valid()) = prim_pi;
-            } else if (prim_pi.is_valid()) {
-                pi = prim_pi;
-                ray.maxt = prim_pi.t;
+                if constexpr (ek::is_array_v<Float>) {
+                    ek::masked(pi, prim_pi.is_valid()) = prim_pi;
+                } else if (prim_pi.is_valid()) {
+                    pi = prim_pi;
+                    ray.maxt = prim_pi.t;
+                }
+
+                if (ShadowRay && ek::all(pi.is_valid() || !active))
+                    break;
             }
 
-            if (ShadowRay && ek::all(pi.is_valid() || !active))
-                break;
+            return pi;
+        } else {
+            Throw("kdtree should only be used in scalar mode");
         }
-
-        return pi;
     }
 
     /// Return a human-readable string representation of the scene contents.
@@ -2479,29 +2506,28 @@ protected:
      * create a detailed intersection record.
      */
     template <bool ShadowRay = false>
-    MTS_INLINE PreliminaryIntersection3f
-    intersect_prim(Index prim_index, const Ray3f &ray, Mask active) const {
+    MTS_INLINE KDTreePreliminaryIntersection3f
+    intersect_prim(Index prim_index, const ScalarRay3f &ray) const {
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
+        const Mesh *mesh = (const Mesh *) shape;
 
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        KDTreePreliminaryIntersection3f pi;
 
         if constexpr (ShadowRay) {
             Mask hit;
-            if (shape->is_mesh()) {
-                const Mesh *mesh = (const Mesh *) shape;
-                hit = mesh->ray_intersect_triangle(prim_index, ray, active).is_valid();
-            } else {
-                hit = shape->ray_test(ray, active);
-            }
+            if (shape->is_mesh())
+                hit = mesh->ray_intersect_triangle_scalar(prim_index, ray).first != ek::Infinity<ScalarFloat>;
+            else
+                hit = shape->ray_test_scalar(ray);
             ek::masked(pi.t, hit) = 0.f;
         } else {
-            if (shape->is_mesh()) {
-                const Mesh *mesh = (const Mesh *) shape;
-                pi = mesh->ray_intersect_triangle(prim_index, ray, active);
-            } else {
-                pi = shape->ray_intersect_preliminary(ray, active);
-            }
+            if (shape->is_mesh())
+                std::tie(pi.t, pi.prim_uv) = mesh->ray_intersect_triangle_scalar(prim_index, ray);
+            else
+                std::tie(pi.t, pi.prim_uv) = shape->ray_intersect_preliminary_scalar(ray);
+            pi.prim_index = prim_index;
+            pi.shape = shape;
         }
 
         return pi;

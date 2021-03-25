@@ -397,6 +397,13 @@ Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, Mask /*
     NotImplementedError("ray_intersect_preliminary");
 }
 
+MTS_VARIANT
+std::pair<typename Shape<Float, Spectrum>::ScalarFloat,
+          typename Shape<Float, Spectrum>::ScalarPoint2f>
+Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*ray*/) const {
+    NotImplementedError("ray_intersect_preliminary_scalar");
+}
+
 #define MTS_DEFAULT_RAY_INTERSECT_PACKET(N)                                    \
     MTS_VARIANT std::pair<typename Shape<Float, Spectrum>::FloatP##N,          \
                           typename Shape<Float, Spectrum>::Point2fP##N>        \
@@ -421,6 +428,10 @@ Shape<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
     return ray_intersect_preliminary(ray, active).is_valid();
 }
 
+MTS_VARIANT
+bool Shape<Float, Spectrum>::ray_test_scalar(const ScalarRay3f & /*ray*/) const {
+    NotImplementedError("ray_intersect_test_scalar");
+}
 
 MTS_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
