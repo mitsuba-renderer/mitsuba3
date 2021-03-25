@@ -42,7 +42,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 template <typename Float, typename Spectrum, bool ShadowRay>
-void kdtree_embree_func_wrapper(const int* /*valid*/, void* ptr, void* /*context*/, void** args) {
+void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, ek::scalar_t<Float>* args) {
     MTS_IMPORT_TYPES()
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
     using ShapeKDTree = ShapeKDTree<Float, Spectrum>;
@@ -52,38 +52,38 @@ void kdtree_embree_func_wrapper(const int* /*valid*/, void* ptr, void* /*context
 
     uint32_t width = jit_llvm_vector_width();
     for (size_t i = 0; i < width; i++) {
-        ScalarPoint3f ray_o  = { ((ScalarFloat *) args[1])[i],
-                                 ((ScalarFloat *) args[2])[i],
-                                 ((ScalarFloat *) args[3])[i] };
-        ScalarVector3f ray_d = { ((ScalarFloat *) args[5])[i],
-                                 ((ScalarFloat *) args[6])[i],
-                                 ((ScalarFloat *) args[7])[i] };
+        ScalarPoint3f ray_o  = { args[0 * width + i],
+                                 args[1 * width + i],
+                                 args[2 * width + i] };
+        ScalarVector3f ray_d = { args[4 * width + i],
+                                 args[5 * width + i],
+                                 args[6 * width + i] };
 
         ScalarRay3f ray = ScalarRay3f(
             ray_o, ray_d,
-            ((ScalarFloat*) args[4])[i], // mint
-            ((ScalarFloat*) args[9])[i], // maxt
-            ((ScalarFloat*) args[8])[i], // time
+            args[3 * width + i], // mint
+            args[8 * width + i], // maxt
+            args[7 * width + i], // time
             wavelength_t<Spectrum>()
         );
 
-        bool active = ((int32_t*) args[0])[i] == -1; // TODO use valid?
+        bool active = valid[i] == -1;
         if (!active)
             continue;
 
         if constexpr (ShadowRay) {
             bool hit = kdtree->template ray_intersect_scalar<true>(ray).is_valid();
             if (hit)
-                ((ScalarFloat*) args[9])[i]  = 0.f;
+                args[8 * width + i] = 0.f;
         } else {
             auto pi = kdtree->template ray_intersect_scalar<false>(ray);
             // Write outputs
-            ((ScalarFloat*) args[9])[i]  = pi.t;
-            ((ScalarFloat*) args[16])[i] = pi.prim_uv[0];
-            ((ScalarFloat*) args[17])[i] = pi.prim_uv[1];
-            ((ScalarUInt32*) args[18])[i] = pi.prim_index;
-            ((ScalarUInt32*) args[19])[i] = pi.shape_index;
-            ((ScalarUInt32*) args[20])[i] = ((unsigned int)-1); // TODO
+            args[8 * width + i]  = pi.t;
+            args[15 * width + i] = pi.prim_uv[0];
+            args[16 * width + i] = pi.prim_uv[1];
+            ((ScalarUInt32*) args)[17 * width + i] = pi.prim_index;
+            ((ScalarUInt32*) args)[18 * width + i] = pi.shape_index;
+            ((ScalarUInt32*) args)[19 * width + i] = ((unsigned int)-1); // TODO
         }
     }
 }
@@ -143,7 +143,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = hit && ek::neq(inst_index, ((unsigned int)-1));
+        Mask hit_inst = false; // hit && ek::neq(inst_index, ((unsigned int)-1));
         UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
 
         ShapePtr shape = ek::gather<UInt32>(s->shapes_registry_ids, index, hit);
