@@ -2124,6 +2124,10 @@ class MTS_EXPORT_RENDER ShapeKDTree : public TShapeKDTree<BoundingBox<Point<ek::
 public:
     MTS_IMPORT_TYPES(Shape, Mesh)
 
+    using ScalarSpectrum = ek::replace_value_t<Spectrum, ScalarFloat>;
+    using ScalarRay3f = Ray<Point<ScalarFloat, 3>, ScalarSpectrum>;
+    using ScalarPreliminaryIntersection3f = PreliminaryIntersection<ScalarFloat, ScalarSpectrum>;
+
     using SurfaceAreaHeuristic3f = SurfaceAreaHeuristic3<ScalarFloat>;
     using Size                   = uint32_t;
     using Index                  = uint32_t;
@@ -2178,7 +2182,7 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
+    MTS_INLINE ScalarPreliminaryIntersection3f ray_intersect_preliminary(const ScalarRay3f &ray,
                                                                    Mask active) const {
         ENOKI_MARK_USED(active);
         if constexpr (!ek::is_array_v<Float>)
@@ -2188,7 +2192,7 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_scalar(Ray3f ray) const {
+    MTS_INLINE ScalarPreliminaryIntersection3f ray_intersect_scalar(Ray3f ray) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2202,7 +2206,7 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        ScalarPreliminaryIntersection3f pi = ek::zero<ScalarPreliminaryIntersection3f>();
 
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
@@ -2256,7 +2260,7 @@ public:
                 for (Index i = prim_start; i < prim_end; i++) {
                     Index prim_index = m_indices[i];
 
-                    PreliminaryIntersection3f prim_pi =
+                    ScalarPreliminaryIntersection3f prim_pi =
                         intersect_prim<ShadowRay>(prim_index, ray, true);
 
                     if (unlikely(prim_pi.is_valid())) {
@@ -2414,12 +2418,12 @@ public:
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_naive(Ray3f ray,
+    MTS_INLINE ScalarPreliminaryIntersection3f ray_intersect_naive(ScalarRay3f ray,
                                                              Mask active) const {
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
+        ScalarPreliminaryIntersection3f pi = ek::zero<ScalarPreliminaryIntersection3f>();
 
         for (Size i = 0; i < primitive_count(); ++i) {
-            PreliminaryIntersection3f prim_pi =
+            ScalarPreliminaryIntersection3f prim_pi =
                 intersect_prim<ShadowRay>(i, ray, active);
 
             if constexpr (ek::is_array_v<Float>) {
