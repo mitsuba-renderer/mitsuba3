@@ -186,39 +186,72 @@ public:
      *    \c v contains the first two components of the intersection in
      *    barycentric coordinates
      */
-    MTS_INLINE PreliminaryIntersection3f
-    ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
-                           Mask active = true) const {
+    template <typename T, typename Ray3>
+    std::pair<T, Point<T, 2>>
+    ray_intersect_triangle_impl(const ek::uint32_array_t<T> &index,
+                                const Ray3 &ray,
+                                ek::mask_t<T> active = true) const {
+        using Point3T  = Point<T, 3>;
+        using Vector3T = Vector<T, 3>;
+
         auto fi = face_indices(index, active);
 
-        Point3f p0 = vertex_position(fi[0], active),
+        Point3T p0 = vertex_position(fi[0], active),
                 p1 = vertex_position(fi[1], active),
                 p2 = vertex_position(fi[2], active);
 
-        Vector3f e1 = p1 - p0, e2 = p2 - p0;
+        Vector3T e1 = p1 - p0, e2 = p2 - p0;
 
-        Vector3f pvec = ek::cross(ray.d, e2);
-        Float inv_det = ek::rcp(ek::dot(e1, pvec));
+        Vector3T pvec = ek::cross(ray.d, e2);
+        T inv_det = ek::rcp(ek::dot(e1, pvec));
 
-        Vector3f tvec = ray.o - p0;
-        Float u = ek::dot(tvec, pvec) * inv_det;
+        Vector3T tvec = ray.o - p0;
+        T u = ek::dot(tvec, pvec) * inv_det;
         active &= u >= 0.f && u <= 1.f;
 
-        Vector3f qvec = ek::cross(tvec, e1);
-        Float v = ek::dot(ray.d, qvec) * inv_det;
+        Vector3T qvec = ek::cross(tvec, e1);
+        T v = ek::dot(ray.d, qvec) * inv_det;
         active &= v >= 0.f && u + v <= 1.f;
 
-        Float t = ek::dot(e2, qvec) * inv_det;
+        T t = ek::dot(e2, qvec) * inv_det;
         active &= t >= ray.mint && t <= ray.maxt;
 
+        return { ek::select(active, t, ek::Infinity<T>), { u, v } };
+    }
+
+    MTS_INLINE PreliminaryIntersection3f
+    ray_intersect_triangle(const UInt32 &index, const Ray3f &ray,
+                           Mask active = true) const {
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
-        pi.t = ek::select(active, t, ek::Infinity<Float>);
-        pi.prim_uv = Point2f(u, v);
+        std::tie(pi.t, pi.prim_uv) = ray_intersect_triangle_impl<Float>(index, ray, active);
         pi.prim_index = index;
         pi.shape = this;
-
         return pi;
     }
+
+    using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
+    MTS_INLINE std::pair<ScalarFloat, ScalarPoint2f>
+    ray_intersect_triangle_scalar(const ScalarUInt32 &index, const ScalarRay3f &ray) const {
+        return ray_intersect_triangle_impl<ScalarFloat>(index, ray, true);
+    }
+
+#define MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(N)                            \
+    using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;                \
+    using MaskP##N    = ek::mask_t<FloatP##N>;                             \
+    using UInt32P##N  = ek::uint32_array_t<FloatP##N>;                     \
+    using Point2fP##N = Point<FloatP##N, 2>;                               \
+    using Point3fP##N = Point<FloatP##N, 3>;                               \
+    using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                        \
+    virtual std::pair<FloatP##N, Point2fP##N>                              \
+    ray_intersect_triangle_packet(const UInt32P##N &index,                 \
+                                  const Ray3fP##N &ray,                    \
+                                  MaskP##N active = true) const {          \
+        return ray_intersect_triangle_impl<FloatP##N>(index, ray, active); \
+    }
+
+    MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(4)
+    MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(8)
+    MTS_DECLARE_RAY_INTERSECT_TRI_PACKET(16)
 
 #if defined(MTS_ENABLE_EMBREE)
     /// Return the Embree version of this shape

@@ -29,6 +29,7 @@ public:
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
     using ScalarSize  = uint32_t;
+    using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
 
     // =============================================================
     //! @{ \name Sampling routines
@@ -199,6 +200,10 @@ public:
     // =============================================================
     //! @{ \name Packet versions of ray test/intersection routines
     // =============================================================
+
+    virtual std::pair<ScalarFloat, ScalarPoint2f>
+    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const;
+    virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
     #define MTS_DECLARE_RAY_INTERSECT_PACKET(N)                         \
         using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;         \
@@ -568,6 +573,14 @@ NAMESPACE_END(mitsuba)
     Mask ray_test(const Ray3f &ray, Mask active) const override {                        \
         MTS_MASK_ARGUMENT(active);                                                       \
         return ray_test_impl<Float>(ray, active);                                        \
+    }                                                                                    \
+    using typename Base::ScalarRay3f;                                                    \
+    std::pair<ScalarFloat, ScalarPoint2f>                                                \
+    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {            \
+        return ray_intersect_preliminary_impl<ScalarFloat>(ray, true);                   \
+    }                                                                                    \
+    ScalarMask ray_test_scalar(const ScalarRay3f &ray ) const override {                 \
+        return ray_test_impl<ScalarFloat>(ray, true);                                    \
     }                                                                                    \
     MTS_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                                \
     MTS_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                                \
