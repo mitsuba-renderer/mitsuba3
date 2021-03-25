@@ -359,9 +359,9 @@ endif()
 
 if (MTS_ENABLE_LLVM)
   add_definitions(-DMTS_ENABLE_LLVM=1)
-  if (NOT MTS_ENABLE_EMBREE)
-    message(FATAL_ERROR "Compiling a LLVM variant also requires that Embree is enabled! (-DMTS_ENABLE_EMBREE=1)")
-  endif()
+#   if (NOT MTS_ENABLE_EMBREE)
+#     message(FATAL_ERROR "Compiling a LLVM variant also requires that Embree is enabled! (-DMTS_ENABLE_EMBREE=1)")
+#   endif()
 endif()
 
 if (MTS_ENABLE_AUTODIFF)
