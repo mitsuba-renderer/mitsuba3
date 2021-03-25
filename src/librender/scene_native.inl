@@ -47,7 +47,8 @@ void kdtree_embree_func_wrapper(const int* /*valid*/, void* ptr, void* /*context
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
     using ShapeKDTree = ShapeKDTree<Float, Spectrum>;
 
-    const ShapeKDTree *kdtree = (const ShapeKDTree *) ptr;
+    NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) ptr;
+    const ShapeKDTree *kdtree = s->accel;
 
     uint32_t width = jit_llvm_vector_width();
     for (size_t i = 0; i < width; i++) {
@@ -66,7 +67,7 @@ void kdtree_embree_func_wrapper(const int* /*valid*/, void* ptr, void* /*context
             wavelength_t<Spectrum>()
         );
 
-        bool active = ((bool*) args[0])[i]; // TODO use valid?
+        bool active = ((int32_t*) args[0])[i] == -1; // TODO use valid?
         if (!active)
             continue;
 
@@ -186,8 +187,39 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, M
     if constexpr (!ek::is_jit_array_v<Float>) {
         return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
     } else {
-        // TODO
-        return true;
+        void *func_ptr  = (void *) kdtree_embree_func_wrapper<Float, Spectrum, true>,
+             *ctx_ptr   = nullptr,
+             *scene_ptr = m_accel;
+
+        UInt64 func_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
+               ctx_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, ctx_ptr, 0, 0)),
+               scene_v = UInt64::steal(
+                   jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
+
+        Int32 valid = ek::select(active, (int32_t) -1, 0);
+        UInt32 zero = ek::zero<UInt32>();
+
+        using Single = ek::float32_array_t<Float>;
+        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
+        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+
+        uint32_t in[13] = { valid.index(),      ray_o.x().index(),
+                            ray_o.y().index(),  ray_o.z().index(),
+                            ray_mint.index(),   ray_d.x().index(),
+                            ray_d.y().index(),  ray_d.z().index(),
+                            ray_time.index(),   ray_maxt.index(),
+                            zero.index(),       zero.index(),
+                            zero.index() };
+
+
+        uint32_t out[1] { };
+
+        jit_embree_trace(func_v.index(), ctx_v.index(),
+                         scene_v.index(), 1, in, out);
+
+        return active && ek::neq(Single::steal(out[0]), ray_maxt);
     }
 }
 

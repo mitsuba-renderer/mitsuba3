@@ -2515,12 +2515,13 @@ protected:
         KDTreePreliminaryIntersection3f pi;
 
         if constexpr (ShadowRay) {
-            Mask hit;
+            bool hit;
             if (shape->is_mesh())
                 hit = mesh->ray_intersect_triangle_scalar(prim_index, ray).first != ek::Infinity<ScalarFloat>;
             else
                 hit = shape->ray_test_scalar(ray);
-            ek::masked(pi.t, hit) = 0.f;
+
+            pi.t = ek::select(hit, 0.f , pi.t);
         } else {
             if (shape->is_mesh())
                 std::tie(pi.t, pi.prim_uv) = mesh->ray_intersect_triangle_scalar(prim_index, ray);
