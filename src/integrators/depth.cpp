@@ -24,11 +24,12 @@ public:
                                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        SurfaceInteraction3f si = scene->ray_intersect(ray, active);
+        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
+            ray, +HitComputeFlags::Coherent, active);
 
         return {
-            ek::select(si.is_valid(), si.t, 0.f),
-            si.is_valid()
+            ek::select(pi.is_valid(), pi.t, 0.f),
+            pi.is_valid()
         };
     }
 
