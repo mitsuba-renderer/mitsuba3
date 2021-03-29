@@ -42,7 +42,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 template <typename Float, typename Spectrum, bool ShadowRay>
-void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, ek::scalar_t<Float>* args) {
+void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, uint8_t* args) {
     MTS_IMPORT_TYPES()
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
     using ShapeKDTree = ShapeKDTree<Float, Spectrum>;
@@ -50,40 +50,55 @@ void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, 
     NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) ptr;
     const ShapeKDTree *kdtree = s->accel;
 
+    struct Args {
+        ScalarFloat o_x, o_y, o_z, tnear, d_x, d_y, d_z, time, tfar;
+        ScalarUInt32 mask, id, flags;
+        ScalarFloat ng_x, ng_y, ng_z, u, v;
+        ScalarUInt32 prim_id, geom_id, inst_id;
+    }__attribute__((packed));
+
     uint32_t width = jit_llvm_vector_width();
     for (size_t i = 0; i < width; i++) {
         if (valid[i] == 0)
             continue;
 
-        ScalarPoint3f ray_o  = { args[0 * width + i],
-                                 args[1 * width + i],
-                                 args[2 * width + i] };
-        ScalarVector3f ray_d = { args[4 * width + i],
-                                 args[5 * width + i],
-                                 args[6 * width + i] };
+        ScalarPoint3f ray_o;
+        ray_o[0] = ((ScalarFloat*) &args[offsetof(Args, o_x) * width])[i];
+        ray_o[1] = ((ScalarFloat*) &args[offsetof(Args, o_y) * width])[i];
+        ray_o[2] = ((ScalarFloat*) &args[offsetof(Args, o_z) * width])[i];
 
-        ScalarRay3f ray = ScalarRay3f(
-            ray_o, ray_d,
-            args[3 * width + i], // mint
-            args[8 * width + i], // maxt
-            args[7 * width + i], // time
-            wavelength_t<Spectrum>()
-        );
+        ScalarPoint3f ray_d;
+        ray_d[0] = ((ScalarFloat*) &args[offsetof(Args, d_x) * width])[i];
+        ray_d[1] = ((ScalarFloat*) &args[offsetof(Args, d_y) * width])[i];
+        ray_d[2] = ((ScalarFloat*) &args[offsetof(Args, d_z) * width])[i];
+
+        ScalarFloat& ray_mint = ((ScalarFloat*) &args[offsetof(Args, tnear) * width])[i];
+        ScalarFloat& ray_maxt = ((ScalarFloat*) &args[offsetof(Args, tfar) * width])[i];
+        ScalarFloat& ray_time = ((ScalarFloat*) &args[offsetof(Args, time) * width])[i];
+
+        ScalarRay3f ray = ScalarRay3f(ray_o, ray_d, ray_mint, ray_maxt,
+                                      ray_time, wavelength_t<Spectrum>());
 
         if constexpr (ShadowRay) {
             bool hit = kdtree->template ray_intersect_scalar<true>(ray).is_valid();
             if (hit)
-                args[8 * width + i] = 0.f;
+                ray_maxt = 0.f;
         } else {
             auto pi = kdtree->template ray_intersect_scalar<false>(ray);
             if (pi.is_valid()) {
+                ScalarFloat& prim_u = ((ScalarFloat*) &args[offsetof(Args, u) * width])[i];
+                ScalarFloat& prim_v = ((ScalarFloat*) &args[offsetof(Args, v) * width])[i];
+                ScalarUInt32& prim_id = ((ScalarUInt32*) &args[offsetof(Args, prim_id) * width])[i];
+                ScalarUInt32& geom_id = ((ScalarUInt32*) &args[offsetof(Args, geom_id) * width])[i];
+                ScalarUInt32& inst_id = ((ScalarUInt32*) &args[offsetof(Args, inst_id) * width])[i];
+
                 // Write outputs
-                args[8 * width + i]  = pi.t;
-                args[15 * width + i] = pi.prim_uv[0];
-                args[16 * width + i] = pi.prim_uv[1];
-                ((ScalarUInt32*) args)[17 * width + i] = pi.prim_index;
-                ((ScalarUInt32*) args)[18 * width + i] = pi.shape_index;
-                ((ScalarUInt32*) args)[19 * width + i] = ((unsigned int)-1); // TODO
+                ray_maxt  = pi.t;
+                prim_u = pi.prim_uv[0];
+                prim_v = pi.prim_uv[1];
+                prim_id = pi.prim_index;
+                geom_id = pi.shape_index;
+                inst_id = ((unsigned int)-1); // TODO
             }
         }
     }
@@ -111,15 +126,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
 
-        using Single = ek::float32_array_t<Float>;
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
-
-        uint32_t in[13] = { valid.index(),      ray_o.x().index(),
-                            ray_o.y().index(),  ray_o.z().index(),
-                            ray_mint.index(),   ray_d.x().index(),
-                            ray_d.y().index(),  ray_d.z().index(),
-                            ray_time.index(),   ray_maxt.index(),
+        uint32_t in[13] = { valid.index(),      ray.o.x().index(),
+                            ray.o.y().index(),  ray.o.z().index(),
+                            ray.mint.index(),   ray.d.x().index(),
+                            ray.d.y().index(),  ray.d.z().index(),
+                            ray.time.index(),   ray.maxt.index(),
                             zero.index(),       zero.index(),
                             zero.index() };
 
@@ -130,20 +141,21 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
 
         PreliminaryIntersection3f pi;
 
-        Float t(Single::steal(out[0]));
-        pi.prim_uv = Vector2f(Single::steal(out[1]), Single::steal(out[2]));
+        Float t(Float::steal(out[0]));
+
+        pi.prim_uv = Vector2f(Float::steal(out[1]), Float::steal(out[2]));
 
         pi.prim_index  = UInt32::steal(out[3]);
         pi.shape_index = UInt32::steal(out[4]);
 
         UInt32 inst_index = UInt32::steal(out[5]);
 
-        Mask hit = active && ek::neq(t, ray_maxt);
+        Mask hit = active && ek::neq(t, ray.maxt);
 
         pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = false; // hit && ek::neq(inst_index, ((unsigned int)-1));
+        Mask hit_inst = false; // TODO hit && ek::neq(inst_index, ((unsigned int)-1));
         UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
 
         ShapePtr shape = ek::gather<UInt32>(s->shapes_registry_ids, index, hit);
@@ -201,15 +213,11 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, M
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
 
-        using Single = ek::float32_array_t<Float>;
-        ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
-
-        uint32_t in[13] = { valid.index(),      ray_o.x().index(),
-                            ray_o.y().index(),  ray_o.z().index(),
-                            ray_mint.index(),   ray_d.x().index(),
-                            ray_d.y().index(),  ray_d.z().index(),
-                            ray_time.index(),   ray_maxt.index(),
+        uint32_t in[13] = { valid.index(),      ray.o.x().index(),
+                            ray.o.y().index(),  ray.o.z().index(),
+                            ray.mint.index(),   ray.d.x().index(),
+                            ray.d.y().index(),  ray.d.z().index(),
+                            ray.time.index(),   ray.maxt.index(),
                             zero.index(),       zero.index(),
                             zero.index() };
 
@@ -219,7 +227,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, M
         jit_embree_trace(func_v.index(), ctx_v.index(),
                          scene_v.index(), 1, in, out);
 
-        return active && ek::neq(Single::steal(out[0]), ray_maxt);
+        return active && ek::neq(Float::steal(out[0]), ray.maxt);
     }
 }
 
