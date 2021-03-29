@@ -52,6 +52,9 @@ void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, 
 
     uint32_t width = jit_llvm_vector_width();
     for (size_t i = 0; i < width; i++) {
+        if (valid[i] == 0)
+            continue;
+
         ScalarPoint3f ray_o  = { args[0 * width + i],
                                  args[1 * width + i],
                                  args[2 * width + i] };
@@ -67,23 +70,21 @@ void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, 
             wavelength_t<Spectrum>()
         );
 
-        bool active = valid[i] == -1;
-        if (!active)
-            continue;
-
         if constexpr (ShadowRay) {
             bool hit = kdtree->template ray_intersect_scalar<true>(ray).is_valid();
             if (hit)
                 args[8 * width + i] = 0.f;
         } else {
             auto pi = kdtree->template ray_intersect_scalar<false>(ray);
-            // Write outputs
-            args[8 * width + i]  = pi.t;
-            args[15 * width + i] = pi.prim_uv[0];
-            args[16 * width + i] = pi.prim_uv[1];
-            ((ScalarUInt32*) args)[17 * width + i] = pi.prim_index;
-            ((ScalarUInt32*) args)[18 * width + i] = pi.shape_index;
-            ((ScalarUInt32*) args)[19 * width + i] = ((unsigned int)-1); // TODO
+            if (pi.is_valid()) {
+                // Write outputs
+                args[8 * width + i]  = pi.t;
+                args[15 * width + i] = pi.prim_uv[0];
+                args[16 * width + i] = pi.prim_uv[1];
+                ((ScalarUInt32*) args)[17 * width + i] = pi.prim_index;
+                ((ScalarUInt32*) args)[18 * width + i] = pi.shape_index;
+                ((ScalarUInt32*) args)[19 * width + i] = ((unsigned int)-1); // TODO
+            }
         }
     }
 }
@@ -130,8 +131,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         PreliminaryIntersection3f pi;
 
         Float t(Single::steal(out[0]));
-        pi.prim_uv = Vector2f(Single::steal(out[1]),
-                              Single::steal(out[2]));
+        pi.prim_uv = Vector2f(Single::steal(out[1]), Single::steal(out[2]));
 
         pi.prim_index  = UInt32::steal(out[3]);
         pi.shape_index = UInt32::steal(out[4]);

@@ -2529,6 +2529,7 @@ protected:
                 std::tie(pi.t, pi.prim_uv) = shape->ray_intersect_preliminary_scalar(ray);
             pi.prim_index = prim_index;
             pi.shape = shape;
+            pi.shape_index = shape_index;
         }
 
         return pi;
