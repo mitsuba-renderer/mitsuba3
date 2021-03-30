@@ -16,7 +16,7 @@ VolumeGrid<Float, Spectrum>::VolumeGrid(const fs::path &filename) {
 }
 
 MTS_VARIANT
-VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3i size,
+VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3u size,
                                         ScalarUInt32 channel_count)
     : m_size(size), m_channel_count(channel_count),
       m_bbox(ScalarBoundingBox3f(ScalarPoint3f(0.f), ScalarPoint3f(1.f))) {
@@ -47,9 +47,9 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
     stream->read(size_x);
     stream->read(size_y);
     stream->read(size_z);
-    m_size.x() = size_x;
-    m_size.y() = size_y;
-    m_size.z() = size_z;
+    m_size.x() = uint32_t(size_x);
+    m_size.y() = uint32_t(size_y);
+    m_size.z() = uint32_t(size_z);
 
     size_t size    = ek::hprod(m_size);
     if (size < 8)
