@@ -104,22 +104,31 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        Mask active) const override {
+    template <typename FloatP, typename Ray3fP>
+    std::tuple<FloatP, Point<FloatP, 2>, ek::uint32_array_t<FloatP>,
+               ek::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                   ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
-
-        PreliminaryIntersection3f pi = m_shapegroup->ray_intersect_preliminary(
-            m_to_object.transform_affine(ray), active);
-
-        pi.instance = this;
-
-        return pi;
+        if constexpr (!ek::is_array_v<FloatP>) {
+            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.transform_affine(ray));
+        } else {
+            Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
+        }
     }
 
-    Mask ray_test(const Ray3f &ray, Mask active) const override {
+    template <typename FloatP, typename Ray3fP>
+    ek::mask_t<FloatP> ray_test_impl(const Ray3fP &ray, ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
-        return m_shapegroup->ray_test(m_to_object.transform_affine(ray), active);
+
+        if constexpr (!ek::is_array_v<FloatP>) {
+            return m_shapegroup->ray_test_scalar(m_to_object.transform_affine(ray));
+        } else {
+            Throw("Instance::ray_test_impl() should only be called with scalar types.");
+        }
     }
+
+    MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,

@@ -42,7 +42,15 @@ Mesh<Float, Spectrum>::Mesh(const std::string &name, ScalarSize vertex_count,
         m_vertex_normals = ek::zero<FloatStorage>(m_vertex_count * 3);
     if (has_vertex_texcoords)
         m_vertex_texcoords = ek::zero<FloatStorage>(m_vertex_count * 2);
+    initialize();
+}
 
+MTS_VARIANT
+void Mesh<Float, Spectrum>::initialize() {
+#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+    m_vertex_positions_ptr = m_vertex_positions.data();
+    m_faces_ptr = m_faces.data();
+#endif
     set_children();
 }
 
@@ -360,6 +368,7 @@ MTS_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     mesh->m_vertex_positions =
         ek::load<FloatStorage>(pos_out.data(), m_vertex_count * 3);
     mesh->m_bbox = bbox;
+    mesh->initialize();
 
     props.set_object("mesh", mesh.get());
     m_parameterization = new Scene<Float, Spectrum>(props);
@@ -894,6 +903,11 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
 
         if (m_parameterization)
             m_parameterization = nullptr;
+
+#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+        m_vertex_positions_ptr = m_vertex_positions.data();
+        m_faces_ptr = m_faces.data();
+#endif
 
         Base::parameters_changed();
     }

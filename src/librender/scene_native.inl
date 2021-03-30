@@ -98,7 +98,7 @@ void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, 
                 prim_v = pi.prim_uv[1];
                 prim_id = pi.prim_index;
                 geom_id = pi.shape_index;
-                inst_id = ((unsigned int)-1); // TODO
+                inst_id = pi.inst_index;
             }
         }
     }
@@ -155,7 +155,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         pi.t = ek::select(hit, t, ek::Infinity<Float>);
 
         // Set si.instance and si.shape
-        Mask hit_inst = false; // TODO hit && ek::neq(inst_index, ((unsigned int)-1));
+        Mask hit_inst = hit && ek::neq(inst_index, ((uint32_t)-1));
         UInt32 index = ek::select(hit_inst, inst_index, pi.shape_index);
 
         ShapePtr shape = ek::gather<UInt32>(s->shapes_registry_ids, index, hit);

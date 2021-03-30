@@ -200,21 +200,35 @@ public:
     // =============================================================
     //! @{ \name Packet versions of ray test/intersection routines
     // =============================================================
-
-    virtual std::pair<ScalarFloat, ScalarPoint2f>
+    /**
+     * \brief Scalar test for an intersection and return detailed information
+     *
+     * This operation is used by the KDTree acceleration structure.
+     *
+     * \param ray
+     *     The ray to be tested for an intersection
+     *
+     * \return
+     *     A tuple containing the following field: \c t, \c uv, \c shape_index,
+     *     \c prim_index. The \c shape_index should be only used by the
+     *     \ref ShapeGroup class and be set to \c (uint32_t)-1 otherwise.
+     */
+    virtual std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const;
     virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
-    #define MTS_DECLARE_RAY_INTERSECT_PACKET(N)                         \
-        using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;         \
-        using MaskP##N    = ek::mask_t<FloatP##N>;                      \
-        using Point2fP##N = Point<FloatP##N, 2>;                        \
-        using Point3fP##N = Point<FloatP##N, 3>;                        \
-        using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                 \
-        virtual std::pair<FloatP##N, Point2fP##N>                       \
-        ray_intersect_preliminary_packet(const Ray3fP##N &ray,          \
-                                         MaskP##N active = true) const; \
-        virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,          \
+    /// Macro to declare packet versions of the scalar routine above
+    #define MTS_DECLARE_RAY_INTERSECT_PACKET(N)                            \
+        using FloatP##N   = ek::Packet<ek::scalar_t<Float>, N>;            \
+        using UInt32P##N  = ek::uint32_array_t<FloatP##N>;                 \
+        using MaskP##N    = ek::mask_t<FloatP##N>;                         \
+        using Point2fP##N = Point<FloatP##N, 2>;                           \
+        using Point3fP##N = Point<FloatP##N, 3>;                           \
+        using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                    \
+        virtual std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N> \
+        ray_intersect_preliminary_packet(const Ray3fP##N &ray,             \
+                                         MaskP##N active = true) const;    \
+        virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,             \
                                          MaskP##N active = true) const;
 
     MTS_DECLARE_RAY_INTERSECT_PACKET(4)
@@ -547,11 +561,13 @@ NAMESPACE_END(mitsuba)
 
 #define MTS_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                  \
     using typename Base::FloatP##N;                                            \
+    using typename Base::UInt32P##N;                                           \
     using typename Base::MaskP##N;                                             \
     using typename Base::Point2fP##N;                                          \
     using typename Base::Point3fP##N;                                          \
     using typename Base::Ray3fP##N;                                            \
-    std::pair<FloatP##N, Point2fP##N> ray_intersect_preliminary_packet(        \
+    std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                 \
+    ray_intersect_preliminary_packet(                                          \
         const Ray3fP##N &ray, MaskP##N active) const override {                \
         return ray_intersect_preliminary_impl<FloatP##N>(ray, active);         \
     }                                                                          \
@@ -561,29 +577,30 @@ NAMESPACE_END(mitsuba)
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
-#define MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                         \
-    PreliminaryIntersection3f                                                            \
-    ray_intersect_preliminary(const Ray3f &ray, Mask active) const override {            \
-        MTS_MASK_ARGUMENT(active);                                                       \
-        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();            \
-        std::tie(pi.t, pi.prim_uv) = ray_intersect_preliminary_impl<Float>(ray, active); \
-        pi.shape = this;                                                                 \
-        return pi;                                                                       \
-    }                                                                                    \
-    Mask ray_test(const Ray3f &ray, Mask active) const override {                        \
-        MTS_MASK_ARGUMENT(active);                                                       \
-        return ray_test_impl<Float>(ray, active);                                        \
-    }                                                                                    \
-    using typename Base::ScalarRay3f;                                                    \
-    std::pair<ScalarFloat, ScalarPoint2f>                                                \
-    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {            \
-        return ray_intersect_preliminary_impl<ScalarFloat>(ray, true);                   \
-    }                                                                                    \
-    ScalarMask ray_test_scalar(const ScalarRay3f &ray ) const override {                 \
-        return ray_test_impl<ScalarFloat>(ray, true);                                    \
-    }                                                                                    \
-    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                                \
-    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                                \
+#define MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                               \
+    PreliminaryIntersection3f ray_intersect_preliminary(                       \
+        const Ray3f &ray, Mask active) const override {                        \
+        MTS_MASK_ARGUMENT(active);                                             \
+        PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();  \
+        std::tie(pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =            \
+            ray_intersect_preliminary_impl<Float>(ray, active);                \
+        pi.shape = this;                                                       \
+        return pi;                                                             \
+    }                                                                          \
+    Mask ray_test(const Ray3f &ray, Mask active) const override {              \
+        MTS_MASK_ARGUMENT(active);                                             \
+        return ray_test_impl<Float>(ray, active);                              \
+    }                                                                          \
+    using typename Base::ScalarRay3f;                                          \
+    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>         \
+    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override {  \
+        return ray_intersect_preliminary_impl<ScalarFloat>(ray, true);         \
+    }                                                                          \
+    ScalarMask ray_test_scalar(const ScalarRay3f &ray) const override {        \
+        return ray_test_impl<ScalarFloat>(ray, true);                          \
+    }                                                                          \
+    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                      \
+    MTS_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                      \
     MTS_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------

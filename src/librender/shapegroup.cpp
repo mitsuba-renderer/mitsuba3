@@ -8,8 +8,6 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     m_id = props.id();
 
 #if !defined(MTS_ENABLE_EMBREE)
-    if constexpr (ek::is_llvm_array_v<Float>)
-        Throw("LLVM variant with native KDTree is not supported");
     if constexpr (!ek::is_cuda_array_v<Float>)
         m_kdtree = new ShapeKDTree(props);
 #endif
@@ -31,10 +29,12 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
             if (shape->is_sensor())
                 Throw("Instancing of sensors is not supported");
             else {
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
                 m_shapes.push_back(shape);
+
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
                 m_bbox.expand(shape->bbox());
 #endif
+
 #if !defined(MTS_ENABLE_EMBREE)
                 if constexpr (!ek::is_cuda_array_v<Float>)
                     m_kdtree->add_shape(shape);
@@ -55,7 +55,6 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_jit_array_v<Float>) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
@@ -64,7 +63,6 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         m_shapes_registry_ids =
             ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
-#endif
 }
 
 MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -94,25 +92,19 @@ MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice d
     }
 }
 #else
-MTS_VARIANT typename ShapeGroup<Float, Spectrum>::PreliminaryIntersection3f
-ShapeGroup<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
-                                                       Mask active) const {
-    MTS_MASK_ARGUMENT(active);
-
-    if constexpr (ek::is_cuda_array_v<Float>)
-        Throw("ShapeGroup::ray_intersect_preliminary() should only be called in CPU mode.");
-
-    return m_kdtree->template ray_intersect_preliminary<false>(ray, active);
+MTS_VARIANT
+std::tuple<typename ShapeGroup<Float, Spectrum>::ScalarFloat,
+           typename ShapeGroup<Float, Spectrum>::ScalarPoint2f,
+           typename ShapeGroup<Float, Spectrum>::ScalarUInt32,
+           typename ShapeGroup<Float, Spectrum>::ScalarUInt32>
+ShapeGroup<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const {
+    auto pi = m_kdtree->template ray_intersect_scalar<false>(ray);
+    return { pi.t, pi.prim_uv, pi.shape_index, pi.prim_index };
 }
 
-MTS_VARIANT typename ShapeGroup<Float, Spectrum>::Mask
-ShapeGroup<Float, Spectrum>::ray_test(const Ray3f &ray, Mask active) const {
-    MTS_MASK_ARGUMENT(active);
-
-    if constexpr (ek::is_cuda_array_v<Float>)
-        Throw("ShapeGroup::ray_test() should only be called in CPU mode.");
-
-    return m_kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
+MTS_VARIANT
+bool ShapeGroup<Float, Spectrum>::ray_test_scalar(const ScalarRay3f &ray) const {
+    return m_kdtree->template ray_intersect_scalar<true>(ray).is_valid();
 }
 #endif
 
@@ -124,11 +116,12 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     MTS_MASK_ARGUMENT(active);
 
     if constexpr (ek::is_jit_array_v<Float>) {
-        if (jit_flag(JitFlag::VCallRecord))
-            Throw("Instances are only supported in wavefront mode!");
+        if (jit_flag(JitFlag::VCallRecord) || jit_flag(JitFlag::LoopRecord))
+            Throw(
+                "Instancing should only be used in wavefront mode as nested "
+                "vcalls aren't supported in the current version of enoki-jit.");
     }
 
-#if defined(MTS_ENABLE_EMBREE)
     if constexpr (!ek::is_cuda_array_v<Float>) {
         if constexpr (!ek::is_array_v<Float>) {
             Assert(pi.shape_index < m_shapes.size());
@@ -137,13 +130,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Assert(ek::all(pi.shape_index < m_shapes.size()));
             pi.shape = ek::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
         }
-
-        SurfaceInteraction3f si = pi.shape->compute_surface_interaction(ray, pi, hit_flags, active);
-        si.shape = pi.shape;
-
-        return si;
     }
-#endif
 
     return pi.shape->compute_surface_interaction(ray, pi, hit_flags, active);
 }

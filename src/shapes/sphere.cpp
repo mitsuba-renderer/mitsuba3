@@ -269,15 +269,16 @@ public:
     //! @{ \name Ray tracing routines
     // =============================================================
 
-    template <typename FloatX, typename Ray3fX>
-    std::pair<FloatX, Point<FloatX, 2>>
-    ray_intersect_preliminary_impl(const Ray3fX &ray,
-                                   ek::mask_t<FloatX> active) const {
+    template <typename FloatP, typename Ray3fP>
+    std::tuple<FloatP, Point<FloatP, 2>, ek::uint32_array_t<FloatP>,
+               ek::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                   ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX> ||
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
                                               ek::is_diff_array_v<Float>,
-                                          FloatX, ek::float64_array_t<FloatX>>;
+                                          FloatP, ek::float64_array_t<FloatP>>;
         using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
@@ -294,28 +295,28 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        ek::mask_t<FloatX> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
-        ek::mask_t<FloatX> in_bounds = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatP> in_bounds = near_t < mint && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds;
 
-        FloatX t = ek::select(
-            active, ek::select(near_t < mint, FloatX(far_t), FloatX(near_t)),
-            ek::Infinity<FloatX>);
+        FloatP t = ek::select(
+            active, ek::select(near_t < mint, FloatP(far_t), FloatP(near_t)),
+            ek::Infinity<FloatP>);
 
-        return { t, ek::zero<Point<FloatX, 2>>() };
+        return { t, ek::zero<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
     }
 
-    template <typename FloatX, typename Ray3fX>
-    ek::mask_t<FloatX> ray_test_impl(const Ray3fX &ray,
-                                     ek::mask_t<FloatX> active) const {
+    template <typename FloatP, typename Ray3fP>
+    ek::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
+                                     ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<FloatX> ||
+        using Double = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
                                               ek::is_diff_array_v<Float>,
-                                          FloatX, ek::float64_array_t<FloatX>>;
+                                          FloatP, ek::float64_array_t<FloatP>>;
         using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
         using Double3 = Vector<Double, 3>;
 
@@ -332,10 +333,10 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        ek::mask_t<FloatX> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
-        ek::mask_t<FloatX> in_bounds  = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatP> in_bounds  = near_t < mint && far_t > maxt;
 
         return solution_found && !out_bounds && !in_bounds && active;
     }

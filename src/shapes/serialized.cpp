@@ -147,7 +147,7 @@ public:
                     m_vertex_texcoords, m_faces, m_disable_vertex_normals,
                     has_vertex_normals, has_vertex_texcoords,
                     recompute_vertex_normals, vertex_position, vertex_normal,
-                    set_children)
+                    initialize)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -340,7 +340,7 @@ public:
                 util::time_string((float) timer2.value()));
         }
 
-        set_children();
+        initialize();
     }
 
     void read_helper(Stream *stream, bool dp, InputFloat* dst, size_t dim) {
