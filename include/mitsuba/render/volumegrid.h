@@ -47,7 +47,7 @@ public:
      */
     VolumeGrid(Stream *stream);
 
-    VolumeGrid(ScalarVector3i size, ScalarUInt32 channel_count);
+    VolumeGrid(ScalarVector3u size, ScalarUInt32 channel_count);
 
     /// Return a pointer to the underlying volume storage
     ScalarFloat *data() { return m_data.get(); }
@@ -56,7 +56,7 @@ public:
     const ScalarFloat *data() const { return m_data.get(); }
 
     /// Return the resolution of the voxel grid
-    ScalarVector3i size() const { return m_size; }
+    ScalarVector3u size() const { return m_size; }
 
     /// Return the number of channels
     size_t channel_count() const { return m_channel_count; }
@@ -102,7 +102,7 @@ protected:
 protected:
     std::unique_ptr<ScalarFloat[]> m_data;
 
-    ScalarVector3i m_size;
+    ScalarVector3u m_size;
     ScalarUInt32 m_channel_count;
     ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
