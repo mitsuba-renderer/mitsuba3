@@ -2187,6 +2187,8 @@ public:
         Index prim_index;
         /// Shape index, e.g. the shape ID in shapegroup (if applicable)
         Index shape_index;
+        /// Index to the parent instance (if applicable)
+        Index inst_index = ((uint32_t) -1);
         /// Pointer to the associated shape
         const Shape* shape = nullptr;
         /// Stores a pointer to the parent instance (if applicable)
@@ -2520,16 +2522,21 @@ protected:
                 hit = mesh->ray_intersect_triangle_scalar(prim_index, ray).first != ek::Infinity<ScalarFloat>;
             else
                 hit = shape->ray_test_scalar(ray);
-
             pi.t = ek::select(hit, 0.f , pi.t);
         } else {
+            uint32_t inst_index = (uint32_t) -1;
             if (shape->is_mesh())
                 std::tie(pi.t, pi.prim_uv) = mesh->ray_intersect_triangle_scalar(prim_index, ray);
             else
-                std::tie(pi.t, pi.prim_uv) = shape->ray_intersect_preliminary_scalar(ray);
+                std::tie(pi.t, pi.prim_uv, inst_index, prim_index) =
+                    shape->ray_intersect_preliminary_scalar(ray);
             pi.prim_index = prim_index;
-            pi.shape = shape;
-            pi.shape_index = shape_index;
+
+            bool hit_inst = (inst_index != (uint32_t) -1);
+            pi.shape    = !hit_inst ? shape : nullptr;
+            pi.instance =  hit_inst ? shape : nullptr;
+            pi.shape_index = hit_inst ? inst_index : shape_index;
+            pi.inst_index  = hit_inst ? shape_index : (uint32_t) -1;
         }
 
         return pi;

@@ -72,7 +72,7 @@ public:
                     m_vertex_texcoords, m_faces, add_attribute,
                     m_disable_vertex_normals, has_vertex_normals,
                     has_vertex_texcoords, recompute_vertex_normals,
-                    set_children)
+                    initialize)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -381,7 +381,7 @@ public:
                 util::time_string((float) timer2.value()));
         }
 
-        set_children();
+        initialize();
     }
 
 private:

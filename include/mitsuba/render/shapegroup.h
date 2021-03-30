@@ -21,6 +21,7 @@ public:
     MTS_IMPORT_TYPES(ShapeKDTree)
 
     using typename Base::ScalarSize;
+    using typename Base::ScalarRay3f;
 
     ShapeGroup(const Properties &props);
     ~ShapeGroup();
@@ -28,10 +29,9 @@ public:
 #if defined(MTS_ENABLE_EMBREE)
     RTCGeometry embree_geometry(RTCDevice device) override;
 #else
-    PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                        Mask active) const override;
-
-    Mask ray_test(const Ray3f &ray, Mask active) const override;
+    std::tuple<ScalarFloat, ScalarPoint2f, ScalarUInt32, ScalarUInt32>
+    ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const override;
+    bool ray_test_scalar(const ScalarRay3f &ray) const override;
 #endif
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
@@ -75,9 +75,9 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ScalarBoundingBox3f m_bbox;
-
-#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     std::vector<ref<Base>> m_shapes;
+
+#if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
     DynamicBuffer<UInt32> m_shapes_registry_ids;
 #endif
 

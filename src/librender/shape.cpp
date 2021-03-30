@@ -207,7 +207,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
-        auto [t, prim_uv] = shape->ray_intersect_preliminary_packet(ray, active);
+        auto [t, prim_uv, s_idx, p_idx] = shape->ray_intersect_preliminary_packet(ray, active);
         active &= ek::neq(t, ek::Infinity<Float>);
         ek::store_aligned(rtc_ray->tfar,      Float32P(ek::select(active, t,           ray.maxt)));
         ek::store_aligned(rtc_hit->u,         Float32P(ek::select(active, prim_uv.x(), ek::load_aligned<Float32P>(rtc_hit->u))));
@@ -398,15 +398,19 @@ Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/, Mask /*
 }
 
 MTS_VARIANT
-std::pair<typename Shape<Float, Spectrum>::ScalarFloat,
-          typename Shape<Float, Spectrum>::ScalarPoint2f>
+std::tuple<typename Shape<Float, Spectrum>::ScalarFloat,
+           typename Shape<Float, Spectrum>::ScalarPoint2f,
+           typename Shape<Float, Spectrum>::ScalarUInt32,
+           typename Shape<Float, Spectrum>::ScalarUInt32>
 Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*ray*/) const {
     NotImplementedError("ray_intersect_preliminary_scalar");
 }
 
 #define MTS_DEFAULT_RAY_INTERSECT_PACKET(N)                                    \
-    MTS_VARIANT std::pair<typename Shape<Float, Spectrum>::FloatP##N,          \
-                          typename Shape<Float, Spectrum>::Point2fP##N>        \
+    MTS_VARIANT std::tuple<typename Shape<Float, Spectrum>::FloatP##N,         \
+                           typename Shape<Float, Spectrum>::Point2fP##N,       \
+                           typename Shape<Float, Spectrum>::UInt32P##N,        \
+                           typename Shape<Float, Spectrum>::UInt32P##N>        \
     Shape<Float, Spectrum>::ray_intersect_preliminary_packet(                  \
         const Ray3fP##N & /*ray*/, MaskP##N /*active*/) const {                \
         NotImplementedError("ray_intersect_preliminary_packet");               \
@@ -414,8 +418,8 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
     MTS_VARIANT typename Shape<Float, Spectrum>::MaskP##N                      \
     Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,              \
                                             MaskP##N active) const {           \
-        return ek::neq(ray_intersect_preliminary_packet(ray, active).first,    \
-                       ek::Infinity<Float>);                                   \
+        auto res = ray_intersect_preliminary_packet(ray, active);              \
+        return ek::neq(std::get<0>(res), ek::Infinity<Float>);                 \
     }
 
 MTS_DEFAULT_RAY_INTERSECT_PACKET(4)

@@ -80,7 +80,7 @@ public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
                     m_vertex_texcoords, m_faces, m_disable_vertex_normals,
-                    recompute_vertex_normals, has_vertex_normals, set_children)
+                    recompute_vertex_normals, has_vertex_normals, initialize)
     MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -342,7 +342,7 @@ public:
                 util::time_string((float) timer2.value()));
         }
 
-        set_children();
+        initialize();
     }
 
     MTS_DECLARE_CLASS()

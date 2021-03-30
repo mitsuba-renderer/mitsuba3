@@ -64,7 +64,8 @@ class BlenderMesh final : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
                     m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_disable_vertex_normals, add_attribute, set_children)
+                    m_vertex_texcoords, m_faces, m_disable_vertex_normals,
+                    add_attribute, initialize)
     MTS_IMPORT_TYPES()
 
     using typename Base::MeshAttributeType;
@@ -322,7 +323,7 @@ public:
                 add_attribute(cols[p].first, 3, tmp_cols[p]);
         }
 
-        set_children();
+        initialize();
     }
 
     MTS_DECLARE_CLASS()

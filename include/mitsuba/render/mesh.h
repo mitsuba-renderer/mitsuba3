@@ -36,6 +36,9 @@ public:
          ScalarSize face_count, const Properties &props = Properties(),
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
+    /// Must be called at the end of the constructor of Mesh plugins
+    void initialize();
+
     // =========================================================================
     //! @{ \name Accessors (vertices, faces, normals, etc)
     // =========================================================================
@@ -193,12 +196,25 @@ public:
                                 ek::mask_t<T> active = true) const {
         using Point3T  = Point<T, 3>;
         using Vector3T = Vector<T, 3>;
+        using Faces    = ek::Array<ek::uint32_array_t<T>, 3>;
 
-        auto fi = face_indices(index, active);
-
-        Point3T p0 = vertex_position(fi[0], active),
-                p1 = vertex_position(fi[1], active),
-                p2 = vertex_position(fi[2], active);
+        Faces fi;
+        Point3T p0, p1, p2;
+#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+        // Ensure we don't rely on enoki-jit when called from an LLVM kernel
+        if constexpr (!ek::is_array_v<T> && ek::is_llvm_array_v<Float>) {
+            fi = ek::gather<Faces>(m_faces_ptr, index, active);
+            p0 = ek::gather<Point3T>(m_vertex_positions_ptr, fi[0], active),
+            p1 = ek::gather<Point3T>(m_vertex_positions_ptr, fi[1], active),
+            p2 = ek::gather<Point3T>(m_vertex_positions_ptr, fi[2], active);
+        } else
+#endif
+        {
+            fi = face_indices(index, active);
+            p0 = vertex_position(fi[0], active),
+            p1 = vertex_position(fi[1], active),
+            p2 = vertex_position(fi[2], active);
+        }
 
         Vector3T e1 = p1 - p0, e2 = p2 - p0;
 
@@ -380,6 +396,13 @@ protected:
     mutable FloatStorage m_vertex_texcoords;
 
     mutable DynamicBuffer<UInt32> m_faces;
+
+#if defined(MTS_ENABLE_LLVM) && !defined(MTS_ENABLE_EMBREE)
+    /* Data pointer to ensure triangle intersection routine doesn't rely on
+       enoki-jit when called from an LLVM kernel */
+    float* m_vertex_positions_ptr;
+    uint32_t* m_faces_ptr;
+#endif
 
     std::unordered_map<std::string, MeshAttribute> m_mesh_attributes;
 

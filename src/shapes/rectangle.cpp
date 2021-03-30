@@ -137,7 +137,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::pair<FloatP, Point<FloatP, 2>>
+    std::tuple<FloatP, Point<FloatP, 2>, ek::uint32_array_t<FloatP>,
+               ek::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ek::mask_t<FloatP> active) const {
         Ray3fP ray = m_to_object.transform_affine(ray_);
@@ -151,7 +152,7 @@ public:
                         && ek::abs(local.y()) <= 1.f;
 
         return { ek::select(active, t, ek::Infinity<FloatP>),
-                 Point<FloatP, 2>(local.x(), local.y()) };
+                 Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
     }
 
     template <typename FloatP, typename Ray3fP>
