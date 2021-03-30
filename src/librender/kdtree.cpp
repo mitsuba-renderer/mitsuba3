@@ -51,6 +51,17 @@ MTS_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
     m_primitive_map.push_back(0);
 }
 
+MTS_VARIANT void ShapeKDTree<Float, Spectrum>::clear() {
+    m_shapes.clear();
+    m_primitive_map.clear();
+    m_primitive_map.push_back(0);
+    m_bbox.reset();
+    m_nodes.release();
+    m_indices.release();
+    m_node_count = 0;
+    m_index_count = 0;
+}
+
 MTS_VARIANT void ShapeKDTree<Float, Spectrum>::build() {
     Timer timer;
     Log(Info, "Building a SAH kd-tree (%i primitives) ..",

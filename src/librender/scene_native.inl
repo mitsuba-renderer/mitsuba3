@@ -37,8 +37,12 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
-    Throw("accel_parameters_changed_cpu() not supported with Mitsuba native "
-          "kdtree. Embree should be used instead.");
+    NativeState<Float, Spectrum> *s = (NativeState<Float, Spectrum> *) m_accel;
+    ShapeKDTree *kdtree = s->accel;
+    kdtree->clear();
+    for (Shape *shape : m_shapes)
+        kdtree->add_shape(shape);
+    kdtree->build();
 }
 
 template <typename Float, typename Spectrum, bool ShadowRay>
