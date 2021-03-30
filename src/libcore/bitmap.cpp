@@ -793,9 +793,12 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
 }
 
 void Bitmap::write_async(const fs::path &path, FileFormat format, int quality) const {
-    ek::do_async([&](){
+    this->inc_ref();
+    Task *task = ek::do_async([path, format, quality, this](){
         write(path, format, quality);
+        this->dec_ref();
     });
+    Thread::register_task(task);
 }
 
 bool Bitmap::operator==(const Bitmap &bitmap) const {

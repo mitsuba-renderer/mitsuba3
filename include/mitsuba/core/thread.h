@@ -152,6 +152,9 @@ public:
     /// Unregister a thread (e.g. Enoki, Python) from Mitsuba's thread system.
     static bool unregister_external_thread();
 
+    /// Register enoki-thread Task to prevent internal resources leakage
+    static void register_task(Task *task);
+
     MTS_DECLARE_CLASS()
 protected:
     /// Protected destructor

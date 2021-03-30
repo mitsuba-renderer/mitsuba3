@@ -5,6 +5,8 @@
 #include <mitsuba/core/profiler.h>
 #include <condition_variable>
 #include <thread>
+#include <mutex>
+#include <vector>
 #include <sstream>
 #include <chrono>
 
@@ -28,6 +30,8 @@ static pthread_key_t this_thread_id;
 #elif defined(__WINDOWS__)
 static __declspec(thread) int this_thread_id;
 #endif
+static std::mutex task_mutex;
+static std::vector<Task *> registered_tasks;
 
 #if defined(_MSC_VER)
 namespace {
@@ -493,6 +497,11 @@ bool Thread::unregister_external_thread() {
     return true;
 }
 
+void Thread::register_task(Task *task) {
+    std::lock_guard guard(task_mutex);
+    registered_tasks.push_back(task);
+}
+
 void Thread::static_initialization() {
     #if defined(__LINUX__) || defined(__OSX__)
         pthread_key_create(&this_thread_id, nullptr);
@@ -507,6 +516,10 @@ void Thread::static_initialization() {
 }
 
 void Thread::static_shutdown() {
+    for (auto& task : registered_tasks)
+        task_wait_and_release(task);
+    registered_tasks.clear();
+
     thread()->d->running = false;
     delete self;
     self = nullptr;
