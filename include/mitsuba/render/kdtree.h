@@ -2149,6 +2149,9 @@ public:
     /// Create an empty kd-tree and take build-related parameters from \c props.
     ShapeKDTree(const Properties &props);
 
+    /// Clear the kd-tree (build-related parameters remain)
+    void clear();
+
     /// Register a new shape with the kd-tree (to be called before \ref build())
     void add_shape(Shape *shape);
 
