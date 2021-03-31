@@ -89,11 +89,12 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
 
     /// Construct from a Ray instance
     RayDifferential(const Base &ray)
-        : Base(ray), has_differentials(false) { }
+        : Base(ray), o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {}
 
     /// Construct a new ray (o, d) at time 'time'
     RayDifferential(const Point &o_, const Vector &d_, Float time_,
-                    const Wavelength &wavelengths_) {
+                    const Wavelength &wavelengths_)
+        : o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {
         o           = o_;
         d           = d_;
         time        = time_;
