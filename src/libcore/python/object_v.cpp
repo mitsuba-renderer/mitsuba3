@@ -18,10 +18,12 @@ MTS_PY_EXPORT(Object) {
 
     m.def("get_property", [](const void *ptr, void *type_, py::handle parent) -> py::object {
         const std::type_info &type = *(const std::type_info *) type_;
-        GET_ATTR(Float);
+        GET_ATTR(Float32);
+        GET_ATTR(Float64);
         GET_ATTR(Int32);
         GET_ATTR(UInt32);
-        GET_ATTR(DynamicBuffer<Float>);
+        GET_ATTR(DynamicBuffer<Float32>);
+        GET_ATTR(DynamicBuffer<Float64>);
         GET_ATTR(DynamicBuffer<Int32>);
         GET_ATTR(DynamicBuffer<UInt32>);
         GET_ATTR(Color1f);
@@ -36,6 +38,7 @@ MTS_PY_EXPORT(Object) {
         GET_ATTR(Point3f);
         GET_ATTR(Vector2f);
         GET_ATTR(Vector3f);
+        GET_ATTR(Vector4f);
         GET_ATTR(Normal3f);
         GET_ATTR(Frame3f);
         GET_ATTR(Matrix3f);
@@ -46,7 +49,8 @@ MTS_PY_EXPORT(Object) {
         GET_ATTR(AnimatedTransform);
 
         if constexpr (!std::is_same_v<Float, ScalarFloat>) {
-            GET_ATTR(ScalarFloat);
+            GET_ATTR(ScalarFloat32);
+            GET_ATTR(ScalarFloat64);
             GET_ATTR(ScalarInt32);
             GET_ATTR(ScalarUInt32);
             GET_ATTR(ScalarColor1f);
@@ -61,6 +65,7 @@ MTS_PY_EXPORT(Object) {
             GET_ATTR(ScalarPoint3f);
             GET_ATTR(ScalarVector2f);
             GET_ATTR(ScalarVector3f);
+            GET_ATTR(ScalarVector4f);
             GET_ATTR(ScalarNormal3f);
             GET_ATTR(ScalarFrame3f);
             GET_ATTR(ScalarMatrix3f);
@@ -78,7 +83,8 @@ MTS_PY_EXPORT(Object) {
     m.def("set_property", [](const void *ptr, void *type_, py::handle handle) {
         const std::type_info &type = *(const std::type_info *) type_;
 
-        SET_ATTR(DynamicBuffer<Float>);
+        SET_ATTR(DynamicBuffer<Float32>);
+        SET_ATTR(DynamicBuffer<Float64>);
         SET_ATTR(DynamicBuffer<Int32>);
         SET_ATTR(DynamicBuffer<UInt32>);
         SET_ATTR(Color1f);
@@ -102,7 +108,8 @@ MTS_PY_EXPORT(Object) {
         SET_ATTR(Mask);
 
         if constexpr (!std::is_same_v<Float, ScalarFloat>) {
-            SET_ATTR(ScalarFloat);
+            SET_ATTR(ScalarFloat32);
+            SET_ATTR(ScalarFloat64);
             SET_ATTR(ScalarInt32);
             SET_ATTR(ScalarUInt32);
             SET_ATTR(ScalarColor1f);
