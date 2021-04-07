@@ -19,8 +19,6 @@ NAMESPACE_BEGIN(mitsuba)
 #define rtcIntersectW     JOIN(rtcIntersect, MTS_RAY_WIDTH)
 #define rtcOccludedW      JOIN(rtcOccluded,  MTS_RAY_WIDTH)
 
-#define PARALLEL_LLVM_RAY_INTERSECT 1
-
 static RTCDevice __embree_device = nullptr;
 
 template <typename Float>
