@@ -182,7 +182,7 @@ public:
         Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::RayEpsilon<Float>) :
                                                         (1.f - math::RayEpsilon<Float>));
         Mask outside_mask = active && dc_2 > ek::sqr(radius_adj);
-        if (likely(ek::any(outside_mask))) {
+        if (likely(ek::any_or<true>(outside_mask))) {
             Float inv_dc            = ek::rsqrt(dc_2),
                   sin_theta_max     = m_radius * inv_dc,
                   sin_theta_max_2   = ek::sqr(sin_theta_max),
