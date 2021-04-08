@@ -6,13 +6,12 @@
 NAMESPACE_BEGIN(mitsuba)
 
 void Object::dec_ref(bool dealloc) const noexcept {
-    --m_ref_count;
-    if (m_ref_count == 0 && dealloc) {
-        delete this;
-    } else if (m_ref_count < 0) {
+    uint32_t ref_count = m_ref_count.fetch_sub(1);
+    if (ref_count <= 0) {
         fprintf(stderr, "Internal error: Object reference count < 0!\n");
         abort();
-    }
+    } else if (ref_count == 1 && dealloc)
+        delete this;
 }
 
 std::vector<ref<Object>> Object::expand() const {
