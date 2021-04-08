@@ -127,6 +127,11 @@ public:
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (jit_flag(JitFlag::VCallRecord))
+                Throw("Instances are only supported in wavefront mode!");
+        }
+
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
             m_to_object.transform_affine(ray), pi, hit_flags, active);
 
@@ -183,7 +188,8 @@ public:
         if constexpr (!ek::is_cuda_array_v<Float>) {
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
-            rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &m_to_world.matrix);
+            ek::Matrix<ScalarFloat32, 4> matrix(m_to_world.matrix);
+            rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &matrix);
             rtcCommitGeometry(instance);
             return instance;
         } else {

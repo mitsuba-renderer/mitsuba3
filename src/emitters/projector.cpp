@@ -172,15 +172,15 @@ public:
 
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
         DirectionSample3f ds;
-        ds.p = trafo.translation();
-        ds.n = trafo * ScalarVector3f(0, 0, 1);
-        ds.uv = uv;
-        ds.time = it.time;
-        ds.pdf = 1.f;
-        ds.delta = true;
-        ds.emitter   = this;
 
-        ds.d = ds.p - it.p;
+        ds.p       = trafo.translation();
+        ds.n       = trafo * ScalarVector3f(0, 0, 1);
+        ds.uv      = uv;
+        ds.time    = it.time;
+        ds.pdf     = 1.f;
+        ds.delta   = true;
+        ds.emitter = this;
+        ds.d       = ds.p - it.p;
         Float dist_squared = ek::squared_norm(ds.d);
         ds.dist = ek::sqrt(dist_squared);
         ds.d *= ek::rcp(ds.dist);

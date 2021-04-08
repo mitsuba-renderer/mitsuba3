@@ -123,6 +123,11 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
+    if constexpr (ek::is_jit_array_v<Float>) {
+        if (jit_flag(JitFlag::VCallRecord))
+            Throw("Instances are only supported in wavefront mode!");
+    }
+
 #if defined(MTS_ENABLE_EMBREE)
     if constexpr (!ek::is_cuda_array_v<Float>) {
         if constexpr (!ek::is_array_v<Float>) {

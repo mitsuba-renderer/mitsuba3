@@ -27,7 +27,6 @@ struct EmbreeState {
     RTCScene accel;
     std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
-    RTCIntersectContext llvm_context;
 };
 
 MTS_VARIANT void
@@ -88,6 +87,19 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     m_accel = nullptr;
 }
 
+template <bool ShadowRay, bool Coherent>
+void embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, uint8_t* args) {
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    if (Coherent)
+        context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+
+    if constexpr (ShadowRay)
+        rtcOccludedW(valid, (RTCScene) ptr, &context, (RTCRayW*) args);
+    else
+        rtcIntersectW(valid, (RTCScene) ptr, &context, (RTCRayHitW*) args);
+}
+
 MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                                                       uint32_t hit_flags,
@@ -146,13 +158,14 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
             Throw("ray_intersect_preliminary_cpu(): LLVM backend and "
                   "Mitsuba/Embree don't have matching vector widths!");
 
-        rtcInitIntersectContext(&s.llvm_context);
-        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
-            s.llvm_context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+        void *ctx_ptr   = nullptr,
+             *scene_ptr = (void *) s.accel,
+             *func_ptr  = nullptr;
 
-        void *func_ptr  = (void *) rtcIntersectW,
-             *ctx_ptr   = (void *) &s.llvm_context,
-             *scene_ptr = (void *) s.accel;
+        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+            func_ptr = (void *) embree_func_wrapper<false, true>;
+        else
+            func_ptr = (void *) embree_func_wrapper<false, false>;
 
         UInt64 func_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
@@ -259,13 +272,14 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
             Throw("ray_test_cpu(): LLVM backend and "
                   "Mitsuba/Embree don't have matching vector widths!");
 
-        rtcInitIntersectContext(&s.llvm_context);
-        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
-            s.llvm_context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
+        void *ctx_ptr   = nullptr,
+             *scene_ptr = (void *) s.accel,
+             *func_ptr  = nullptr;
 
-        void *func_ptr  = (void *) rtcOccludedW,
-             *ctx_ptr   = (void *) &s.llvm_context,
-             *scene_ptr = (void *) s.accel;
+        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+            func_ptr = (void *) embree_func_wrapper<true, true>;
+        else
+            func_ptr = (void *) embree_func_wrapper<true, false>;
 
         UInt64 func_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
@@ -289,7 +303,6 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
                             ray_time.index(),   ray_maxt.index(),
                             zero.index(),       zero.index(),
                             zero.index() };
-
 
         uint32_t out[1] { };
 

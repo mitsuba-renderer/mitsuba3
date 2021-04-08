@@ -73,7 +73,7 @@ Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
 
 MTS_VARIANT void Mesh<Float, Spectrum>::write_ply(const std::string &filename) const {
     auto&& vertex_positions = ek::migrate(m_vertex_positions, AllocType::Host);
-    auto&& vertex_normals = ek::migrate(m_vertex_normals, AllocType::Host);
+    auto&& vertex_normals   = ek::migrate(m_vertex_normals, AllocType::Host);
     auto&& vertex_texcoords = ek::migrate(m_vertex_texcoords, AllocType::Host);
     auto&& faces = ek::migrate(m_faces, AllocType::Host);
 

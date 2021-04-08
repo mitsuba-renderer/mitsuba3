@@ -188,6 +188,9 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
     using Ray3fP   = Ray<Point<FloatP, 3>, Spectrum>;
     using UInt32P  = ek::uint32_array_t<FloatP>;
 
+    using Float32  = ek::float32_array_t<Float>;
+    using Float32P = ek::Packet<ek::scalar_t<Float32>, N>;
+
     const Shape* shape = (const Shape*) geometryUserPtr;
 
     MaskP active = ek::neq(ek::load_aligned<UInt32P>(valid), 0);
@@ -196,29 +199,29 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
 
     // Create Mitsuba ray
     Ray3fP ray;
-    ray.o.x() = ek::load_aligned<FloatP>(rtc_ray->org_x);
-    ray.o.y() = ek::load_aligned<FloatP>(rtc_ray->org_y);
-    ray.o.z() = ek::load_aligned<FloatP>(rtc_ray->org_z);
-    ray.d.x() = ek::load_aligned<FloatP>(rtc_ray->dir_x);
-    ray.d.y() = ek::load_aligned<FloatP>(rtc_ray->dir_y);
-    ray.d.z() = ek::load_aligned<FloatP>(rtc_ray->dir_z);
-    ray.mint  = ek::load_aligned<FloatP>(rtc_ray->tnear);
-    ray.maxt  = ek::load_aligned<FloatP>(rtc_ray->tfar);
-    ray.time  = ek::load_aligned<FloatP>(rtc_ray->time);
+    ray.o.x() = ek::load_aligned<Float32P>(rtc_ray->org_x);
+    ray.o.y() = ek::load_aligned<Float32P>(rtc_ray->org_y);
+    ray.o.z() = ek::load_aligned<Float32P>(rtc_ray->org_z);
+    ray.d.x() = ek::load_aligned<Float32P>(rtc_ray->dir_x);
+    ray.d.y() = ek::load_aligned<Float32P>(rtc_ray->dir_y);
+    ray.d.z() = ek::load_aligned<Float32P>(rtc_ray->dir_z);
+    ray.mint  = ek::load_aligned<Float32P>(rtc_ray->tnear);
+    ray.maxt  = ek::load_aligned<Float32P>(rtc_ray->tfar);
+    ray.time  = ek::load_aligned<Float32P>(rtc_ray->time);
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
         auto [t, prim_uv] = shape->ray_intersect_preliminary_packet(ray, active);
         active &= ek::neq(t, ek::Infinity<Float>);
-        ek::store_aligned(rtc_ray->tfar,      ek::select(active, t,               ek::load_aligned<FloatP>(rtc_ray->tfar)));
-        ek::store_aligned(rtc_hit->u,         ek::select(active, prim_uv.x(),     ek::load_aligned<FloatP>(rtc_hit->u)));
-        ek::store_aligned(rtc_hit->v,         ek::select(active, prim_uv.y(),     ek::load_aligned<FloatP>(rtc_hit->v)));
+        ek::store_aligned(rtc_ray->tfar,      Float32P(ek::select(active, t,           ray.maxt)));
+        ek::store_aligned(rtc_hit->u,         Float32P(ek::select(active, prim_uv.x(), ek::load_aligned<Float32P>(rtc_hit->u))));
+        ek::store_aligned(rtc_hit->v,         Float32P(ek::select(active, prim_uv.y(), ek::load_aligned<Float32P>(rtc_hit->v))));
         ek::store_aligned(rtc_hit->geomID,    ek::select(active, UInt32P(geomID), ek::load_aligned<UInt32P>(rtc_hit->geomID)));
         ek::store_aligned(rtc_hit->primID,    ek::select(active, UInt32P(0),      ek::load_aligned<UInt32P>(rtc_hit->primID)));
         ek::store_aligned(rtc_hit->instID[0], ek::select(active, UInt32P(instID), ek::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
         active &= shape->ray_test_packet(ray, active);
-        ek::store_aligned(rtc_ray->tfar, ek::select(active, -ek::Infinity<Float>, ray.maxt));
+        ek::store_aligned(rtc_ray->tfar, Float32P(ek::select(active, -ek::Infinity<Float>, ray.maxt)));
     }
 }
 

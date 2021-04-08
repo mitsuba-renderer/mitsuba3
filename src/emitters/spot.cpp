@@ -85,12 +85,12 @@ public:
         ek::set_attr(this, "flags", m_flags);
 
         m_cutoff_angle = props.float_("cutoff_angle", 20.0f);
-        m_beam_width = props.float_("beam_width", m_cutoff_angle * 3.0f / 4.0f);
+        m_beam_width   = props.float_("beam_width", m_cutoff_angle * 3.0f / 4.0f);
         m_cutoff_angle = ek::deg_to_rad(m_cutoff_angle);
-        m_beam_width = ek::deg_to_rad(m_beam_width);
+        m_beam_width   = ek::deg_to_rad(m_beam_width);
         m_inv_transition_width = 1.0f / (m_cutoff_angle - m_beam_width);
         m_cos_cutoff_angle = ek::cos(m_cutoff_angle);
-        m_cos_beam_width = ek::cos(m_beam_width);
+        m_cos_beam_width   = ek::cos(m_beam_width);
         Assert(m_cutoff_angle >= m_beam_width);
         m_uv_factor = ek::tan(m_cutoff_angle);
     }
@@ -134,7 +134,7 @@ public:
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_dir, wavelengths, active);
 
         return { Ray3f(trafo.translation(), trafo * local_dir, time, wavelengths),
-                unpolarized<Spectrum>(falloff_spec / pdf_dir) };
+                 unpolarized<Spectrum>(falloff_spec / pdf_dir) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -148,10 +148,10 @@ public:
         ds.p        = trafo.translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
-        ds.pdf      = 1.0f;
+        ds.pdf      = 1.f;
         ds.time     = it.time;
         ds.delta    = true;
-        ds.emitter   = this;
+        ds.emitter  = this;
         ds.d        = ds.p - it.p;
         ds.dist     = ek::norm(ds.d);
         Float inv_dist = ek::rcp(ds.dist);
