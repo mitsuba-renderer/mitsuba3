@@ -138,7 +138,6 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         );
     } else {
         Log(Info, "Start rendering...");
-        // jit_optix_set_launch_size(film_size.x(), film_size.y(), samples_per_pass);
 
         ref<Sampler> sampler = sensor->sampler();
         sampler->set_samples_per_wavefront((uint32_t) samples_per_pass);
@@ -203,7 +202,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                               pos, diff_scale_factor);
             }
         }
-    } else if constexpr (ek::is_array_v<Float> && !ek::is_cuda_array_v<Float>) {
+    } else if constexpr (ek::is_array_v<Float> && !ek::is_jit_array_v<Float>) {
         // Ensure that the sample generation is fully deterministic
         sampler->seed(block_id);
 
@@ -223,7 +222,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         ENOKI_MARK_USED(pixel_count);
         ENOKI_MARK_USED(sample_count);
         ENOKI_MARK_USED(block_id);
-        Throw("Not implemented for CUDA arrays.");
+        Throw("Not implemented for JIT arrays.");
     }
 }
 
