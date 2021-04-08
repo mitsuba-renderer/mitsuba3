@@ -52,15 +52,12 @@ public:
     MTS_IMPORT_TYPES()
 
     /**
-     * \brief Create a clone of this sampler
+     * \brief Create a clone of this sampler.
      *
-     * The clone is allowed to be different to some extent, e.g. a pseudorandom
-     * generator should be based on a different random seed compared to the
-     * original. All other parameters are copied exactly.
+     * A subsequent call to \c seed() is necessary to properly initialize
+     * the internal state of the sampler.
      *
-     * May throw an exception if not supported. Cloning may also change the
-     * state of the original sampler (e.g. by using the next 1D sample as a
-     * seed for the clone).
+     * May throw an exception if not supported.
      */
     virtual ref<Sampler> clone() = 0;
 
