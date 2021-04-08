@@ -2,20 +2,17 @@ import enoki as ek
 import pytest
 import mitsuba
 import os
-from shutil import rmtree, copy
+from shutil import copy
 
 from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
-def test01_xml_save_plugin(variants_all_rgb):
+def test01_xml_save_plugin(variants_all_rgb, tmp_path):
     from mitsuba.core import xml
-    from mitsuba.core import Thread
     from mitsuba.python.xml import dict_to_xml
-    fr = Thread.thread().file_resolver()
-    # Add the path to the mitsuba root folder, so that files are always saved in mitsuba/resources/...
-    # This way we know where to look for the file in case the unit test fails
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict01/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test01_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
             "type": "sphere",
             "center" : [0, 0, -10],
@@ -31,20 +28,16 @@ def test01_xml_save_plugin(variants_all_rgb):
             }
         })
     s2 = xml.load_file(filepath)
-    try:
-        assert str(s1) == str(s2)
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+
+    assert str(s1) == str(s2)
+
 
 @fresolver_append_path
-def test02_xml_missing_type(variants_all_rgb):
+def test02_xml_missing_type(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict02/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test02_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'my_bsdf':{
             'type':'diffuse'
@@ -52,21 +45,16 @@ def test02_xml_missing_type(variants_all_rgb):
     }
     with pytest.raises(ValueError) as e:
         dict_to_xml(scene_dict, filepath)
-    try:
-        e.match("Missing key: 'type'!")
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    e.match("Missing key: 'type'!")
+
 
 @fresolver_append_path
-def test03_xml_references(variants_all_rgb):
+def test03_xml_references(variants_all_rgb, tmp_path):
     from mitsuba.core import xml
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict03/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test03_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'type': 'scene',
         'bsdf1': {
@@ -107,22 +95,17 @@ def test03_xml_references(variants_all_rgb):
     dict_to_xml(scene_dict, filepath)
     s2 = xml.load_file(filepath)
 
-    try:
-        assert str(s1.shapes()[0].bsdf()) == str(s2.shapes()[0].bsdf())
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    assert str(s1.shapes()[0].bsdf()) == str(s2.shapes()[0].bsdf())
+
 
 @fresolver_append_path
-def test04_xml_point(variants_all_rgb):
+def test04_xml_point(variants_all_rgb, tmp_path):
     from mitsuba.core import xml, ScalarPoint3f
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
     import numpy as np
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict04/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test04_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'type': 'scene',
         'light':{
@@ -150,23 +133,19 @@ def test04_xml_point(variants_all_rgb):
     }
     dict_to_xml(scene_dict, filepath)
     s3 = xml.load_file(filepath)
-    try:
-        assert str(s1) == str(s2)
-        assert str(s1) == str(s3)
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+
+    assert str(s1) == str(s2)
+    assert str(s1) == str(s3)
+
 
 @fresolver_append_path
-def test05_xml_split(variants_all_rgb):
+def test05_xml_split(variants_all_rgb, tmp_path):
     from mitsuba.core import xml, ScalarPoint3f
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
     import numpy as np
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict05/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test05_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'type': 'scene',
         'bsdf1': {
@@ -188,20 +167,16 @@ def test05_xml_split(variants_all_rgb):
     s1 = xml.load_file(filepath)
     dict_to_xml(scene_dict, filepath, split_files=True)
     s2 = xml.load_file(filepath)
-    try:
-        assert str(s1) == str(s2)
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+
+    assert str(s1) == str(s2)
+
 
 @fresolver_append_path
-def test06_xml_duplicate_id(variants_all_rgb):
+def test06_xml_duplicate_id(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict06/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test06_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'type': 'scene',
         'my-bsdf': {
@@ -212,22 +187,18 @@ def test06_xml_duplicate_id(variants_all_rgb):
             'id': 'my-bsdf'
         }
     }
+
     with pytest.raises(ValueError) as e:
         dict_to_xml(scene_dict, filepath)
-    try:
-        e.match("Id: my-bsdf is already used!")
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    e.match("Id: my-bsdf is already used!")
+
 
 @fresolver_append_path
-def test07_xml_invalid_ref(variants_all_rgb):
+def test07_xml_invalid_ref(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict07/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test07_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'type': 'scene',
         'bsdf': {
@@ -241,23 +212,19 @@ def test07_xml_invalid_ref(variants_all_rgb):
             }
         }
     }
+
     with pytest.raises(ValueError) as e:
         dict_to_xml(scene_dict, filepath)
-    try:
-        e.match("Id: my-bsdf referenced before export.")
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    e.match("Id: my-bsdf referenced before export.")
+
 
 @fresolver_append_path
-def test08_xml_defaults(variants_all_rgb):
+def test08_xml_defaults(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
-    from mitsuba.core import Thread
     from mitsuba.core.xml import load_dict, load_file
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict08/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test08_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     spp = 250
     resx = 1920
     resy = 1080
@@ -282,12 +249,9 @@ def test08_xml_defaults(variants_all_rgb):
     # Load a file using default values
     s1 = load_file(filepath)
     s2 = load_dict(scene_dict)
-    try:
-        assert str(s1.sensors()[0].film()) == str(s2.sensors()[0].film())
-        assert str(s1.sensors()[0].sampler()) == str(s2.sensors()[0].sampler())
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    assert str(s1.sensors()[0].film()) == str(s2.sensors()[0].film())
+    assert str(s1.sensors()[0].sampler()) == str(s2.sensors()[0].sampler())
+
     # Set new parameters
     spp = 45
     resx = 2048
@@ -298,22 +262,18 @@ def test08_xml_defaults(variants_all_rgb):
     scene_dict['cam']['film']['width'] = resx
     scene_dict['cam']['film']['height'] = resy
     s4 = load_dict(scene_dict)
-    try:
-        assert str(s3.sensors()[0].film()) == str(s4.sensors()[0].film())
-        assert str(s3.sensors()[0].sampler()) == str(s4.sensors()[0].sampler())
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    assert str(s3.sensors()[0].film()) == str(s4.sensors()[0].film())
+    assert str(s3.sensors()[0].sampler()) == str(s4.sensors()[0].sampler())
+
 
 @fresolver_append_path
-def test09_xml_decompose_transform(variants_all_rgb):
+def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_dict, load_file
     from mitsuba.core import ScalarTransform4f, ScalarVector3f, Thread
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict09/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test09_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     scene_dict = {
         'type': 'scene',
         'cam': {
@@ -333,22 +293,18 @@ def test09_xml_decompose_transform(variants_all_rgb):
     ]
     tr1 = s1.sensors()[0].world_transform().eval(0)
     tr2 = s2.sensors()[0].world_transform().eval(0)
-    try:
-        for vec in vects:
-            assert ek.allclose(tr1.transform_point(vec), tr2.transform_point(vec))
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    for vec in vects:
+        assert ek.allclose(tr1.transform_point(vec), tr2.transform_point(vec))
+
 
 @fresolver_append_path
-def test10_xml_rgb(variants_all_scalar):
+def test10_xml_rgb(variants_all_scalar, tmp_path):
     from mitsuba.python.xml import dict_to_xml
+    from mitsuba.core import ScalarColor3f
     from mitsuba.core.xml import load_dict, load_file
-    from mitsuba.core import Thread, ScalarColor3f
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict10/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test10_output.xml')
+    print(f"Output temporary file: {filepath}")
+
 
     d1 = {
         'type': 'scene',
@@ -377,12 +333,8 @@ def test10_xml_rgb(variants_all_scalar):
     dict_to_xml(d2, filepath)
     s2 = load_file(filepath)
     s3 = load_dict(d1)
-    try:
-        assert str(s1) == str(s2)
-        assert str(s1) == str(s3)
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    assert str(s1) == str(s2)
+    assert str(s1) == str(s3)
 
     d1 = {
         'type': 'scene',
@@ -398,22 +350,21 @@ def test10_xml_rgb(variants_all_scalar):
     dict_to_xml(d1, filepath)
     s1 = load_file(filepath)
     s2 = load_dict(d1)
-    try:
-        assert str(s1) == str(s2)
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    assert str(s1) == str(s2)
+
 
 @fresolver_append_path
-def test11_xml_spectrum(variants_all_scalar):
+def test11_xml_spectrum(variants_all_scalar, tmp_path):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_dict, load_file
-    from mitsuba.core import Thread
     from re import escape
+    from mitsuba.core import Thread
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict11/dict.xml')
+
+    filepath = str(tmp_path / 'test_write_xml-test11_output.xml')
+    print(f"Output temporary file: {filepath}")
+
     d1 = {
          'type': 'scene',
         'light': {
@@ -428,11 +379,7 @@ def test11_xml_spectrum(variants_all_scalar):
     s1 = load_file(filepath)
     s2 = load_dict(d1)
 
-    try:
-        assert str(s1.emitters()[0]) == str(s2.emitters()[0])
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    assert str(s1.emitters()[0]) == str(s2.emitters()[0])
 
     d2 = {
         'type': 'scene',
@@ -448,12 +395,7 @@ def test11_xml_spectrum(variants_all_scalar):
     dict_to_xml(d2, filepath)
     s1 = load_file(filepath)
     s2 = load_dict(d2)
-
-    try:
-        assert str(s1.emitters()[0]) == str(s2.emitters()[0])
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    assert str(s1.emitters()[0]) == str(s2.emitters()[0])
 
     d3 = {
         'type': 'scene',
@@ -467,11 +409,7 @@ def test11_xml_spectrum(variants_all_scalar):
     }
     with pytest.raises(ValueError) as e:
         dict_to_xml(d3, filepath)
-    try:
-        e.match("Wavelengths must be sorted in strictly increasing order!")
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    e.match("Wavelengths must be sorted in strictly increasing order!")
 
     #wavelengths file
     d4 = {
@@ -488,12 +426,7 @@ def test11_xml_spectrum(variants_all_scalar):
     dict_to_xml(d4, filepath)
     s1 = load_file(filepath)
     s2 = load_dict(d4)
-
-    try:
-        assert str(s1.emitters()[0]) == str(s2.emitters()[0])
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    assert str(s1.emitters()[0]) == str(s2.emitters()[0])
 
     d5 = {
         'type': 'scene',
@@ -507,22 +440,22 @@ def test11_xml_spectrum(variants_all_scalar):
     }
     with pytest.raises(ValueError) as e:
         dict_to_xml(d5, filepath)
-    try:
-        e.match(escape(f"File '{os.path.abspath(d5['light']['intensity']['filename'])}' not found!"))
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    e.match(escape(f"File '{os.path.abspath(d5['light']['intensity']['filename'])}' not found!"))
+
+
 
 @fresolver_append_path
-def test12_xml_duplicate_files(variants_all_scalar):
+def test12_xml_duplicate_files(variants_all_scalar, tmp_path):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core import Thread
     fr = Thread.thread().file_resolver()
     mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict12/dict.xml')
+
+    filepath = str(tmp_path / 'test_write_xml-test12_output.xml')
+    print(f"Output temporary file: {filepath}")
 
     spectrum_path = os.path.join(mts_root, 'resources/data/ior/Al.eta.spd')
+
     #Export the same file twice, this should only copy it once
     scene_dict = {
         'type': 'scene',
@@ -544,15 +477,11 @@ def test12_xml_duplicate_files(variants_all_scalar):
     dict_to_xml(scene_dict, filepath)
     spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
 
-    try:
-        assert len(spectra_files) == 1 and spectra_files[0] == "Al.eta.spd"
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
+    assert len(spectra_files) == 1 and spectra_files[0] == "Al.eta.spd"
 
-    spectrum_path2 = os.path.join(mts_root, 'resources/data/scenes/dict12/Al.eta.spd')
+    spectrum_path2 = str(tmp_path / 'test_write_xml-test12_Al.eta.spd')
     copy(spectrum_path, spectrum_path2)
-    #Export two files having the same name
+    # Export two files having the same name
     scene_dict = {
         'type': 'scene',
         'light': {
@@ -574,21 +503,17 @@ def test12_xml_duplicate_files(variants_all_scalar):
 
     spectra_files = os.listdir(os.path.join(os.path.split(filepath)[0], 'spectra'))
 
-    try:
-        assert len(spectra_files) == 2 and "Al.eta.spd" and "Al.eta(1).spd" in spectra_files
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-    rmtree(os.path.split(filepath)[0])
+    assert len(spectra_files) == 2
+    assert "Al.eta.spd" in spectra_files
+    assert "test_write_xml-test12_Al.eta.spd" in spectra_files
+
 
 @fresolver_append_path
-def test13_xml_multiple_defaults(variants_all_rgb):
+def test13_xml_multiple_defaults(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_file
-    from mitsuba.core import Thread
-    fr = Thread.thread().file_resolver()
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/dict13/dict.xml')
+    filepath = str(tmp_path / 'test_write_xml-test13_output.xml')
+    print(f"Output temporary file: {filepath}")
 
     scene_dict = {
         'type' : 'scene',
@@ -610,11 +535,5 @@ def test13_xml_multiple_defaults(variants_all_rgb):
     dict_to_xml(scene_dict, filepath)
     scene = load_file(filepath, spp=45)
 
-    try:
-        assert scene.sensors()[0].sampler().sample_count() == scene.sensors()[1].sampler().sample_count()
-        assert scene.sensors()[1].sampler().sample_count() == 45
-    except AssertionError as err:
-        rmtree(os.path.split(filepath)[0])
-        raise err
-
-    rmtree(os.path.split(filepath)[0])
+    assert scene.sensors()[0].sampler().sample_count() == scene.sensors()[1].sampler().sample_count()
+    assert scene.sensors()[1].sampler().sample_count() == 45
