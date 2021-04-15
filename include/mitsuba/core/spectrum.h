@@ -181,7 +181,7 @@ extern MTS_EXPORT_CORE void cie_static_shutdown();
  */
 template <typename Float, typename Result = Color<Float, 3>>
 Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
-    using Int32       = ek::int32_array_t<Float>;
+    using UInt32      = ek::uint32_array_t<Float>;
     using Float32     = ek::float32_array_t<Float>;
     using ScalarFloat = ek::scalar_t<Float>;
 
@@ -192,8 +192,8 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
-          i1 = i0 + 1;
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+           i1 = i0 + 1;
 
     auto cie_table = detail::get_cie_table<Float32>();
     Float v0_x = (Float) ek::gather<Float32>(cie_table.x, i0, active);
@@ -217,7 +217,7 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
  */
 template <typename Float>
 Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
-    using Int32       = ek::int32_array_t<Float>;
+    using UInt32      = ek::uint32_array_t<Float>;
     using Float32     = ek::float32_array_t<Float>;
     using ScalarFloat = ek::scalar_t<Float>;
 
@@ -228,7 +228,7 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
     active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
               wavelength <= (ScalarFloat) MTS_CIE_MAX;
 
-    Int32 i0 = ek::clamp(Int32(t), ek::zero<Int32>(), Int32(MTS_CIE_SAMPLES - 2)),
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
     auto cie_table = detail::get_cie_table<Float32>();
