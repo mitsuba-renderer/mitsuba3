@@ -46,7 +46,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 template <typename Float, typename Spectrum, bool ShadowRay>
-void kdtree_embree_func_wrapper(const int* valid, void* ptr, void* /*context*/, uint8_t* args) {
+void kdtree_embree_func_wrapper(const int* valid, void* ptr, uint8_t* args) {
     MTS_IMPORT_TYPES()
     using ScalarRay3f = Ray<ScalarPoint3f, Spectrum>;
     using ShapeKDTree = ShapeKDTree<Float, Spectrum>;
@@ -117,13 +117,10 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
         return kdtree->template ray_intersect_preliminary<false>(ray, active);
     } else {
         void *func_ptr  = (void *) kdtree_embree_func_wrapper<Float, Spectrum, false>,
-             *ctx_ptr   = nullptr,
              *scene_ptr = m_accel;
 
         UInt64 func_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
-               ctx_v = UInt64::steal(
-                   jit_var_new_pointer(JitBackend::LLVM, ctx_ptr, 0, 0)),
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
@@ -140,8 +137,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
 
         uint32_t out[6] { };
 
-        jit_embree_trace(func_v.index(), ctx_v.index(),
-                         scene_v.index(), 0, in, out);
+        jit_llvm_ray_trace(func_v.index(), scene_v.index(), 0, in, out);
 
         PreliminaryIntersection3f pi;
 
@@ -204,13 +200,10 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, M
         return kdtree->template ray_intersect_preliminary<true>(ray, active).is_valid();
     } else {
         void *func_ptr  = (void *) kdtree_embree_func_wrapper<Float, Spectrum, true>,
-             *ctx_ptr   = nullptr,
              *scene_ptr = m_accel;
 
         UInt64 func_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
-               ctx_v = UInt64::steal(
-                   jit_var_new_pointer(JitBackend::LLVM, ctx_ptr, 0, 0)),
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
@@ -228,8 +221,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, M
 
         uint32_t out[1] { };
 
-        jit_embree_trace(func_v.index(), ctx_v.index(),
-                         scene_v.index(), 1, in, out);
+        jit_llvm_ray_trace(func_v.index(), scene_v.index(), 1, in, out);
 
         return active && ek::neq(Float::steal(out[0]), ray.maxt);
     }
