@@ -20,4 +20,4 @@ __pycache__
 /build*
 
 # Auto-generated documentation files
-/docs/generated/plugins.rst
+/docs/generated/plugins_*.rst

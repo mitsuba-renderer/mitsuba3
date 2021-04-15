@@ -131,9 +131,8 @@ def process(path, target, ordering):
         extract(target, entry[1])
 
 
-def process_src(target, src_subdir, section=None, ordering=None):
-    if section is None:
-        section = "section_" + src_subdir
+def process_src(target, src_subdir, ordering=None):
+    section = "section_" + src_subdir
 
     # Copy paste the contents of the appropriate section file
     with open('src/plugin_reference/' + section + '.rst', 'r') as f:
@@ -144,21 +143,27 @@ def process_src(target, src_subdir, section=None, ordering=None):
 def generate(build_dir):
     original_wd = os.getcwd()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(build_dir, 'plugins.rst'), 'w') as f:
-        process_src(f, 'shapes', 'section_shape', SHAPE_ORDERING)
-        process_src(f, 'bsdfs', 'section_bsdf', BSDF_ORDERING)
+
+    sections = [('shapes',      SHAPE_ORDERING),
+                ('bsdfs',       BSDF_ORDERING),
+                ('phase',       PHASE_ORDERING),
+                ('emitters',    EMITTER_ORDERING),
+                ('sensors',     SENSOR_ORDERING),
+                ('textures',    TEXTURE_ORDERING),
+                ('spectra',     SPECTRUM_ORDERING),
+                ('integrators', INTEGRATOR_ORDERING),
+                ('samplers',    SAMPLER_ORDERING),
+                ('films',       FILM_ORDERING),
+                ('rfilters',    RFILTER_ORDERING)]
+
+    for section, ordering in sections:
+
+        with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w') as f:
+            process_src(f, section, ordering)
+
         # process_src(f, 'subsurface')
-        # process_src(f, 'medium', 'section_media')
-        process_src(f, 'phase', ordering=PHASE_ORDERING)
-        # process_src(f, 'volume', 'section_volumes')
-        process_src(f, 'emitters', 'section_emitter', EMITTER_ORDERING)
-        process_src(f, 'sensors', 'section_sensor', SENSOR_ORDERING)
-        process_src(f, 'textures', 'section_texture', TEXTURE_ORDERING)
-        process_src(f, 'spectra', 'section_spectrum', SPECTRUM_ORDERING)
-        process_src(f, 'integrators', 'section_integrator', INTEGRATOR_ORDERING)
-        process_src(f, 'samplers', 'section_sampler', SAMPLER_ORDERING)
-        process_src(f, 'films', 'section_film', FILM_ORDERING)
-        process_src(f, 'rfilters', 'section_rfilter', RFILTER_ORDERING)
+        # process_src(f, 'medium')
+        # process_src(f, 'volume')
 
     os.chdir(original_wd)
 
