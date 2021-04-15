@@ -11,27 +11,59 @@ from enoki.scalar import ArrayXf as Float
 
 color_modes = ['mono', 'rgb', 'spectral_polarized', 'spectral']
 
-
-TEST_SCENE_DIR = realpath(join(os.path.dirname(
-    __file__), '../../../resources/data/tests/scenes'))
-scenes = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
-
+# List all the XML scenes in the tests/scenes folder
+TEST_SCENE_DIR = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/scenes'))
+SCENES = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 
 # List of test scene folders to exclude
 EXCLUDE_FOLDERS = [
     'orthographic_sensor', #TODO remove this after rebase onto master
 ]
 
-
-# Don't test participating media in GPU modes
-# to reduce the time needed to run all tests
+# List of test scene folders to exclude for JIT modes
 JIT_EXCLUDE_FOLDERS = [
-    'instancing', #TODO remove this once nested vcalls are supported
     'participating_media',
 ]
 
+# List of test scene folders to exclude for symbolic modes
+SYMBOLIC_EXCLUDE_FOLDERS = [
+    'instancing', #TODO remove this once nested vcalls are supported
+]
+
+if hasattr(ek, 'JitFlag'):
+    JIT_FLAG_OPTIONS = [
+        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1, ek.JitFlag.VCallBranch: 0},
+        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
+    ]
+
+def list_all_render_test_configs():
+    """
+    Return a list of (variant, scene_fname, jit_flags) for all the valid render
+    tests given the list of exclusion above.
+    """
+    configs = []
+    for variant in mitsuba.variants():
+        is_jit = "cuda" in variant or "llvm" in variant
+        for scene in SCENES:
+            if any(ex in scene for ex in EXCLUDE_FOLDERS):
+                continue
+            if is_jit and any(ex in scene for ex in JIT_EXCLUDE_FOLDERS):
+                continue
+            if not is_jit:
+                configs.append((variant, scene, {}))
+            else:
+                for flags in JIT_FLAG_OPTIONS:
+                    is_symbolic = flags[ek.JitFlag.VCallRecord] == 1
+                    if is_symbolic and any(ex in scene for ex in SYMBOLIC_EXCLUDE_FOLDERS):
+                        continue
+                    configs.append((variant, scene, flags))
+    return configs
+
 
 def get_ref_fname(scene_fname):
+    """Give a scene filename, return the path to the reference and variance images"""
     for color_mode in color_modes:
         if color_mode in mitsuba.variant():
             ref_fname = join(dirname(scene_fname), 'refs', splitext(
@@ -42,17 +74,20 @@ def get_ref_fname(scene_fname):
 
 
 def xyz_to_rgb_bmp(arr):
+    """Convert an XYZ image to RGB"""
     from mitsuba.core import Bitmap, Struct
     xyz_bmp = Bitmap(arr, Bitmap.PixelFormat.XYZ)
     return xyz_bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
 
 
 def read_rgb_bmp_to_xyz(fname):
+    """Load and convert RGB image to XYZ bitmap"""
     from mitsuba.core import Bitmap, Struct
     return Bitmap(fname).convert(Bitmap.PixelFormat.XYZ, Struct.Type.Float32, False)
 
 
 def bitmap_extract(bmp):
+    """Extract different channels from moment integrator AOVs"""
     # AVOs from the moment integrator are in XYZ (float32)
     split = bmp.split()
     img = np.array(split[1][1], copy=False)
@@ -61,6 +96,7 @@ def bitmap_extract(bmp):
 
 
 def z_test(mean, sample_count, reference, reference_var):
+    """Implementation of the Z-test statistical test"""
     # Sanitize the variance images
     reference_var = np.maximum(reference_var, 1e-4)
 
@@ -79,43 +115,20 @@ def z_test(mean, sample_count, reference, reference_var):
     return p_value
 
 
-if hasattr(ek, 'JitFlag'):
-    jit_flags_options = [
-        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
-    ]
-else:
-    jit_flags_options = ["dummy"]
-
-
 @pytest.mark.slow
-@pytest.mark.parametrize(*['scene_fname', scenes])
-@pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test_render(variants_all, gc_collect, scene_fname, jit_flags):
-    from mitsuba.core import Bitmap, Struct, Thread
+@pytest.mark.parametrize("variant, scene_fname, jit_flags", list_all_render_test_configs())
+def test_render(gc_collect, variant, scene_fname, jit_flags):
+    mitsuba.set_variant(variant)
 
     if hasattr(ek, 'JitFlag'):
-        if 'scalar' in mitsuba.variant() and not jit_flags == jit_flags_options[0]:
-            pytest.skip('no need to test the other jit flags in scalar mode')
-
-        # Set enoki JIT flags
         for k, v in jit_flags.items():
             ek.set_flag(k, v)
-
-    scene_dir = dirname(scene_fname)
-
-    if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
-        pytest.skip(f"Skip rendering scene {scene_fname}")
-
-    is_jit = 'cuda' in mitsuba.variant() or 'llvm' in mitsuba.variant()
-    if is_jit and os.path.split(scene_dir)[1] in JIT_EXCLUDE_FOLDERS:
-        pytest.skip(f"Skip rendering scene {scene_fname} in JIT mode")
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
     if not (exists(ref_fname) and exists(ref_var_fname)):
         pytest.skip("Non-existent reference data.")
+
+    from mitsuba.core import Bitmap, Struct, Thread
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
     ref_img = np.array(ref_bmp, copy=False)
@@ -155,7 +168,7 @@ def test_render(variants_all, gc_collect, scene_fname, jit_flags):
         print('Reject the null hypothesis (min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
 
-        output_dir = join(scene_dir, 'error_output')
+        output_dir = join(dirname(scene_fname), 'error_output')
 
         if not exists(output_dir):
             os.makedirs(output_dir)
