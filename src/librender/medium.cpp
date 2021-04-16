@@ -41,8 +41,8 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 
     // initialize basic medium interaction fields
     MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
+    mi.sh_frame    = Frame3f(ray.d);
     mi.wi          = -ray.d;
-    mi.sh_frame    = Frame3f(mi.wi);
     mi.time        = ray.time;
     mi.wavelengths = ray.wavelengths;
 
@@ -75,6 +75,103 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         get_scattering_coefficients(mi, valid_mi);
     mi.combined_extinction = combined_extinction;
     return mi;
+}
+
+MTS_VARIANT
+std::pair<typename Medium<Float, Spectrum>::MediumInteraction3f, Spectrum>
+Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
+                                                Sampler *sampler,
+                                                UInt32 channel,
+                                                Mask active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+
+    // Initialize basic medium interaction fields
+    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
+    mi.sh_frame    = Frame3f(ray.d);
+    mi.wi          = -ray.d;
+    mi.time        = ray.time;
+    mi.wavelengths = ray.wavelengths;
+
+    auto [aabb_its, mint, maxt] = intersect_aabb(ray);
+    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
+    active &= aabb_its;
+    ek::masked(mint, !active) = 0.f;
+    ek::masked(maxt, !active) = ek::Infinity<Float>;
+
+    mint = ek::max(ray.mint, mint);
+    maxt = ek::min(ray.maxt, maxt);
+
+    mi.medium = this;
+    mi.mint   = mint;
+
+    // Get majorant
+    auto combined_extinction = get_combined_extinction(mi, active);
+    Float m                  = combined_extinction[0];
+    if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
+        ek::masked(m, ek::eq(channel, 1u)) = combined_extinction[1];
+        ek::masked(m, ek::eq(channel, 2u)) = combined_extinction[2];
+    } else {
+        ENOKI_MARK_USED(channel);
+    }
+
+    // Sample proportional to transmittance only using reservoir sampling
+    MediumInteraction3f mi_sub = mi;
+    Float transmittance = 1.f;
+    Float running_t = mint;
+    Float acc_weight = 0.f;
+    Float sampled_t = ek::NaN<Float>;
+    Float sampled_t_step = ek::NaN<Float>;
+    Float sampling_weight = ek::NaN<Float>;
+
+    ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction_drt");
+    loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
+             running_t, mi_sub, transmittance);
+    sampler->loop_register(loop);
+    loop.init();
+    while (loop(ek::detach(active))) {
+        Float dt = -ek::log(1 - sampler->next_1d(active)) / m;
+        Float dt_clamped = ek::min(dt, maxt - mint);
+
+        // Reservoir sampling with replacement
+        Float current_weight = transmittance * dt_clamped;
+        acc_weight += current_weight;
+
+        // Note: this will always trigger at the first step
+        Mask did_interact =
+            (sampler->next_1d(active) * acc_weight) < current_weight;
+        // Adopt step with replacement
+        ek::masked(sampled_t, active & did_interact) = running_t;
+        ek::masked(sampled_t_step, active & did_interact) = dt_clamped;
+        ek::masked(sampling_weight, active) = acc_weight;
+
+        // Continue stepping
+        running_t += dt;
+        {
+            // TODO: refactor this
+            mi_sub.t    = running_t;
+            mi_sub.p    = ray(running_t);
+            mi_sub.mint = mint;
+            auto [current_sigma_s, current_sigma_n, current_sigma_t] =
+                get_scattering_coefficients(mi_sub, active);
+            Float s = current_sigma_t[0];
+            if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
+                ek::masked(m, ek::eq(channel, 1u)) = current_sigma_t[1];
+                ek::masked(m, ek::eq(channel, 2u)) = current_sigma_t[2];
+            }
+            transmittance *= (1.f - (s / m));
+        }
+        // Recall that replacement is possible in this loop!
+        active &= (running_t < maxt);
+    }
+
+    Mask valid_mi   = (sampled_t <= maxt);
+    mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
+    mi.p            = ray(sampled_t);
+    std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
+        get_scattering_coefficients(mi, valid_mi);
+    mi.combined_extinction = combined_extinction;
+
+    return { mi, sampling_weight };
 }
 
 MTS_VARIANT

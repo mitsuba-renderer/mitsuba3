@@ -51,6 +51,16 @@ public:
                                            UInt32 channel, Mask active) const;
 
     /**
+     * Sample an interaction with Differential Ratio Tracking.
+     * Intended for adjoint integration.
+     *
+     * Returns the interaction record and a sampling weight.
+     */
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_drt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                           Mask active) const;
+
+    /**
      * \brief Compute the transmittance and PDF
      *
      * This function evaluates the transmittance and PDF of sampling a certain
@@ -125,6 +135,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_METHOD(get_combined_extinction)
     ENOKI_VCALL_METHOD(intersect_aabb)
     ENOKI_VCALL_METHOD(sample_interaction)
+    ENOKI_VCALL_METHOD(sample_interaction_drt)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)
     ENOKI_VCALL_METHOD(get_scattering_coefficients)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)

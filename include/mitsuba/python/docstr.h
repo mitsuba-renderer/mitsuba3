@@ -3681,6 +3681,8 @@ static const char *__doc_mitsuba_Medium_operator_new_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
 
+static const char *__doc_mitsuba_Medium_sample_interaction_drt = R"doc()doc";
+
 static const char *__doc_mitsuba_Medium_sample_interaction =
 R"doc(Sample a free-flight distance in the medium.
 
