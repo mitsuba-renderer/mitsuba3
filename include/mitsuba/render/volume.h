@@ -62,7 +62,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Volume[" << std::endl
-            << "  to_local = " << m_to_local << std::endl
+            << "  to_local = " << m_to_local << "," << std::endl
+            << "  bbox = " << string::indent(m_bbox) << std::endl
             << "]";
         return oss.str();
     }
@@ -76,7 +77,8 @@ protected:
         ScalarTransform4f to_world = m_to_local.inverse();
         ScalarPoint3f a = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
         ScalarPoint3f b = to_world * ScalarPoint3f(1.f, 1.f, 1.f);
-        m_bbox = ScalarBoundingBox3f(a, b);
+        m_bbox = ScalarBoundingBox3f(a);
+        m_bbox.expand(b);
     }
 
 protected:

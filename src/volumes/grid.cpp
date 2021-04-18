@@ -122,7 +122,7 @@ class GridVolumeImpl;
 template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, m_to_local)
+    MTS_IMPORT_BASE(Volume, m_to_local, m_bbox)
     MTS_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props), m_props(props) {
@@ -190,6 +190,12 @@ public:
         props.mark_queried("max_value");
     }
 
+    Mask is_inside(const Interaction3f & /*it*/, Mask /*active*/) const override {
+       return true; // dummy implementation
+    }
+
+    template <uint32_t Channels, bool Raw> using Impl = GridVolumeImpl<Float, Spectrum, Channels, Raw>;
+
     /**
      * Recursively expand into an implementation specialized to the actual loaded grid.
      */
@@ -253,14 +259,15 @@ public:
         m_inv_resolution_y = ek::divisor<int32_t>(res.y());
         m_inv_resolution_z = ek::divisor<int32_t>(res.z());
 
+        m_size = ek::hprod(m_resolution);
         if (props.get<bool>("use_grid_bbox", false)) {
             m_to_local = bbox_transform * m_to_local;
             update_bbox();
         }
 
         if (props.has_property("max_value")) {
-            m_fixed_max    = true;
-            m_max = props.get<ScalarFloat>("max_value");
+            m_fixed_max = true;
+            m_max       = props.get<ScalarFloat>("max_value");
         }
     }
 
@@ -496,6 +503,7 @@ public:
         if (!m_fixed_max)
             m_max = (float) ek::hmax_nested(ek::detach(m_data.array()));
     }
+
 
     std::string to_string() const override {
         std::ostringstream oss;
