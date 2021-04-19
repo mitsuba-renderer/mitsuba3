@@ -22,7 +22,7 @@ public:
         PYBIND11_OVERRIDE_PURE(
             void,          // Return value
             Appender,      // Parent class
-            append,        // Function
+            log_progress,  // Function
             progress, name, formatted, eta, ptr // Arguments
         );
     }
