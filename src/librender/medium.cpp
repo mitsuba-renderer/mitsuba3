@@ -150,7 +150,6 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
             // TODO: refactor this
             mi_sub.t    = running_t;
             mi_sub.p    = ray(running_t);
-            mi_sub.mint = mint;
             auto [current_sigma_s, current_sigma_n, current_sigma_t] =
                 get_scattering_coefficients(mi_sub, active);
             Float s = current_sigma_t[0];
@@ -163,6 +162,8 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
         // Recall that replacement is possible in this loop!
         active &= (running_t < maxt);
     }
+
+    sampled_t = sampled_t + sampler->next_1d() * sampled_t_step;
 
     Mask valid_mi   = (sampled_t <= maxt);
     mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
