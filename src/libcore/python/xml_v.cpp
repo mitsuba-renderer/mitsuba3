@@ -12,7 +12,7 @@ extern Caster cast_object;
 
 // Forward declaration
 template <typename Float, typename Spectrum>
-ref<Object> load_dict(const py::dict& dict, std::map<std::string, ref<Object>> &instances);
+ref<Object> load_dict(const std::string& dict_key, const py::dict& dict, std::map<std::string, ref<Object>> &instances);
 
 /// Shorthand notation for accessing the MTS_VARIANT string
 #define GET_VARIANT() mitsuba::detail::get_variant<Float, Spectrum>()
@@ -56,7 +56,7 @@ MTS_PY_EXPORT(xml) {
         "load_dict",
         [](const py::dict dict) {
             std::map<std::string, ref<Object>> instances;
-            auto obj = cast_object(load_dict<Float, Spectrum>(dict, instances));
+            auto obj = cast_object(load_dict<Float, Spectrum>("", dict, instances));
             if constexpr (ek::is_jit_array_v<Float>) {
                 ek::eval();
                 ek::sync_device();
@@ -102,8 +102,8 @@ void expand_and_set_object(Properties &props, const std::string &name, const ref
 }
 
 template <typename Float, typename Spectrum>
-ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &instances) {
-
+ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
+                      std::map<std::string, ref<Object>> &instances) {
     MTS_IMPORT_CORE_TYPES()
     using ScalarArray3f = ek::Array<ScalarFloat, 3>;
 
@@ -228,7 +228,7 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
             }
 
             // Load the dictionary recursively
-            ref<Object> obj = load_dict<Float, Spectrum>(dict2, instances);
+            ref<Object> obj = load_dict<Float, Spectrum>(key, dict2, instances);
             expand_and_set_object(props, key, obj);
 
             // Add instanced object to the instance map for later references
@@ -259,6 +259,7 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
         // Try to cast entry to an object
         try {
             auto obj = value.template cast<ref<Object>>();
+            obj->set_id(key);
             expand_and_set_object(props, key, obj);
             continue;
         } catch (const pybind11::cast_error &) { }
@@ -266,6 +267,10 @@ ref<Object> load_dict(const py::dict &dict, std::map<std::string, ref<Object>> &
         // Didn't match any of the other types above
         Throw("Unkown value type: %s", value.get_type());
     }
+
+    // Use the dict key as id (if available) if no id was already set
+    if (props.id().empty() && !dict_key.empty())
+        props.set_id(dict_key);
 
     // Construct the object with the parsed Properties
     auto obj = PluginManager::instance()->create_object(props, class_);

@@ -54,6 +54,7 @@ MTS_PY_EXPORT(Object) {
         .def(py::init<>(), D(Object, Object))
         .def(py::init<const Object &>(), D(Object, Object, 2))
         .def_method(Object, id)
+        .def_method(Object, set_id, "id"_a)
         .def_method(Object, ref_count)
         .def_method(Object, inc_ref)
         .def_method(Object, dec_ref, "dealloc"_a = true)

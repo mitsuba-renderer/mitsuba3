@@ -24,6 +24,8 @@ void Object::parameters_changed(const std::vector<std::string> &/*keys*/) { }
 
 std::string Object::id() const { return std::string(); }
 
+void Object::set_id(const std::string&/*id*/) { }
+
 std::string Object::to_string() const {
     std::ostringstream oss;
     oss << class_()->name() << "[" << (void *) this << "]";

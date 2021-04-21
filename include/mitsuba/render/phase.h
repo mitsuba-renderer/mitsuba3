@@ -163,6 +163,9 @@ public:
     /// Return a string identifier
     std::string id() const override { return m_id; }
 
+    /// Set a string identifier
+    void set_id(const std::string& id) override { m_id = id; };
+
     /// Return a human-readable representation of the phase function
     std::string to_string() const override = 0;
 

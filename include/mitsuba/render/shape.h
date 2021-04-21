@@ -346,7 +346,10 @@ public:
     // =============================================================
 
     /// Return a string identifier
-    std::string id() const override;
+    std::string id() const override { return m_id; }
+
+    /// Set a string identifier
+    void set_id(const std::string& id) override { m_id = id; };
 
     /// Is this shape a triangle mesh?
     bool is_mesh() const;

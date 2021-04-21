@@ -98,10 +98,6 @@ MTS_VARIANT Shape<Float, Spectrum>::~Shape() {
 #endif
 }
 
-MTS_VARIANT std::string Shape<Float, Spectrum>::id() const {
-    return m_id;
-}
-
 MTS_VARIANT bool Shape<Float, Spectrum>::is_mesh() const {
     return class_()->derives_from(Mesh<Float, Spectrum>::m_class);
 }

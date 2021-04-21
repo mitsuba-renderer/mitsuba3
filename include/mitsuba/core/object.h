@@ -104,6 +104,9 @@ public:
     /// Return an identifier of the current instance (if available)
     virtual std::string id() const;
 
+    /// Set an identifier to the current instance (if applicable)
+    virtual void set_id(const std::string& id);
+
     /**
      * \brief Return a human-readable string representation of the object's
      * contents.

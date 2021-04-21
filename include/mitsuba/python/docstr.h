@@ -4256,6 +4256,8 @@ supported by any Mitsuba object, hence it is located this level.)doc";
 
 static const char *__doc_mitsuba_Object_id = R"doc(Return an identifier of the current instance (if available))doc";
 
+static const char *__doc_mitsuba_Object_set_id = R"doc(Set an identifier to the current instance (if applicable)doc";
+
 static const char *__doc_mitsuba_Object_inc_ref = R"doc(Increase the object's reference count by one)doc";
 
 static const char *__doc_mitsuba_Object_m_ref_count = R"doc()doc";
