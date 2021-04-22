@@ -232,3 +232,14 @@ def suspend_gradients(node: 'mitsuba.core.Object', state: 'bool') -> None:
 
     cb = SuspendCallback(node, state)
     node.traverse(cb)
+
+
+def render(scene: 'mitsuba.render.Scene', sensor_idx: int = 0) -> 'mitsuba.core.Bitmap':
+    """
+    Helper routine for rendering scene in Python
+    """
+    from mitsuba.core import Bitmap, Struct
+    sensor = scene.sensors()[sensor_idx]
+    scene.integrator().render(scene, sensor)
+    bmp = sensor.film().bitmap(raw=True)
+    return bmp.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, srgb_gamma=True)
