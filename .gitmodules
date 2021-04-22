@@ -28,6 +28,7 @@
 [submodule "resources/data"]
     path = resources/data
     url = https://github.com/mitsuba-renderer/mitsuba-data
+    shallow = true
 [submodule "ext/embree"]
     path = ext/embree
     url = https://github.com/mitsuba-renderer/embree
