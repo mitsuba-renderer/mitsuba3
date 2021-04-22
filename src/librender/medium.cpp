@@ -36,40 +36,18 @@ MTS_VARIANT Medium<Float, Spectrum>::~Medium() {}
 MTS_VARIANT
 typename Medium<Float, Spectrum>::MediumInteraction3f
 Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
-                                            UInt32 channel, Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+                                            UInt32 channel, Mask _active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
 
-    // initialize basic medium interaction fields
-    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-    mi.sh_frame    = Frame3f(ray.d);
-    mi.wi          = -ray.d;
-    mi.time        = ray.time;
-    mi.wavelengths = ray.wavelengths;
-
-    auto [aabb_its, mint, maxt] = intersect_aabb(ray);
-    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
-    active &= aabb_its;
-    ek::masked(mint, !active) = 0.f;
-    ek::masked(maxt, !active) = ek::Infinity<Float>;
-
-    mint = ek::max(0.f, mint);
-    maxt = ek::min(ray.maxt, maxt);
+    auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
 
     auto combined_extinction = get_combined_extinction(mi, active);
-    Float m                  = combined_extinction[0];
-    if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-        ek::masked(m, ek::eq(channel, 1u)) = combined_extinction[1];
-        ek::masked(m, ek::eq(channel, 2u)) = combined_extinction[2];
-    } else {
-        ENOKI_MARK_USED(channel);
-    }
+    Float m                  = extract_channel(combined_extinction, channel);
 
     Float sampled_t = mint + (-ek::log(1 - sample) / m);
     Mask valid_mi   = active && (sampled_t <= maxt);
     mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p            = ray(sampled_t);
-    mi.medium       = this;
-    mi.mint         = mint;
 
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
         get_scattering_coefficients(mi, valid_mi);
@@ -79,40 +57,63 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 
 MTS_VARIANT
 std::pair<typename Medium<Float, Spectrum>::MediumInteraction3f, Spectrum>
+Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &ray,
+                                                 Sampler *sampler,
+                                                 UInt32 channel,
+                                                 Mask _active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
+
+    auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
+    // Get majorant
+    auto combined_extinction = get_combined_extinction(mi, active);
+    Float m                  = extract_channel(combined_extinction, channel);
+    mi.combined_extinction   = combined_extinction;
+
+    MediumInteraction3f mi_next = mi;
+    active = active && ek::full<Mask>(true, ek::width(ray));
+    Mask escaped = !active;
+    ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction");
+    loop.put(active, mi, mi_next, escaped);
+    sampler->loop_register(loop);
+    loop.init();
+
+    while (loop(ek::detach(active))) {
+        // Repeatedly sample from homogenized medium
+        Float sampled_t = mi_next.mint + (-ek::log(1 - sampler->next_1d(active)) / m);
+        Mask valid_mi = active && (sampled_t < maxt);
+        mi_next.t     = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
+        mi_next.p     = ray(sampled_t);
+        std::tie(mi_next.sigma_s, mi_next.sigma_n, mi_next.sigma_t) =
+            get_scattering_coefficients(mi_next, valid_mi);
+
+        // Determine whether it was a real or null interaction
+        Float r = extract_channel(mi_next.sigma_t, channel) / m;
+        Mask did_scatter = active && (sampler->next_1d(active) < r);
+        mi[did_scatter] = mi_next;
+
+        mi_next.mint = sampled_t;
+        escaped |= active && (mi_next.mint >= maxt);
+        active &= !did_scatter && !escaped;
+    }
+
+    ek::masked(mi.t, escaped) = ek::Infinity<Float>;
+    ek::masked(mi.p, escaped) = ek::Infinity<Float>;
+
+    return { mi, Spectrum(1.f) };
+}
+
+MTS_VARIANT
+std::pair<typename Medium<Float, Spectrum>::MediumInteraction3f, Spectrum>
 Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
                                                 Sampler *sampler,
                                                 UInt32 channel,
-                                                Mask active) const {
-    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+                                                Mask _active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
 
-    // Initialize basic medium interaction fields
-    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-    mi.sh_frame    = Frame3f(ray.d);
-    mi.wi          = -ray.d;
-    mi.time        = ray.time;
-    mi.wavelengths = ray.wavelengths;
-
-    auto [aabb_its, mint, maxt] = intersect_aabb(ray);
-    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
-    active &= aabb_its;
-    ek::masked(mint, !active) = 0.f;
-    ek::masked(maxt, !active) = ek::Infinity<Float>;
-
-    mint = ek::max(ray.mint, mint);
-    maxt = ek::min(ray.maxt, maxt);
-
-    mi.medium = this;
-    mi.mint   = mint;
-
+    auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
     // Get majorant
     auto combined_extinction = get_combined_extinction(mi, active);
-    Float m                  = combined_extinction[0];
-    if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-        ek::masked(m, ek::eq(channel, 1u)) = combined_extinction[1];
-        ek::masked(m, ek::eq(channel, 2u)) = combined_extinction[2];
-    } else {
-        ENOKI_MARK_USED(channel);
-    }
+    Float m                  = extract_channel(combined_extinction, channel);
 
     // Sample proportional to transmittance only using reservoir sampling
     MediumInteraction3f mi_sub = mi;
@@ -146,20 +147,13 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
 
         // Continue stepping
         running_t += dt;
-        {
-            // TODO: refactor this
-            mi_sub.t    = running_t;
-            mi_sub.p    = ray(running_t);
-            auto [current_sigma_s, current_sigma_n, current_sigma_t] =
-                get_scattering_coefficients(mi_sub, active);
-            Float s = current_sigma_t[0];
-            if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
-                ek::masked(m, ek::eq(channel, 1u)) = current_sigma_t[1];
-                ek::masked(m, ek::eq(channel, 2u)) = current_sigma_t[2];
-            }
-            transmittance *= (1.f - (s / m));
-        }
-        // Recall that replacement is possible in this loop!
+
+        mi_sub.t = running_t;
+        mi_sub.p = ray(running_t);
+        auto [_1, _2, current_sigma_t] = get_scattering_coefficients(mi_sub, active);
+        Float s = extract_channel(current_sigma_t, channel);
+        transmittance *= (1.f - (s / m));
+        // Recall that replacement is possible in this loop.
         active &= (running_t < maxt);
     }
 
@@ -187,6 +181,44 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
     UnpolarizedSpectrum tr  = ek::exp(-t * mi.combined_extinction);
     UnpolarizedSpectrum pdf = ek::select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };
+}
+
+MTS_VARIANT
+MTS_INLINE auto
+Medium<Float, Spectrum>::prepare_interaction_sampling(const Ray3f &ray,
+                                                      Mask active) const {
+    // Initialize basic medium interaction fields
+    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
+    mi.sh_frame    = Frame3f(ray.d);
+    mi.wi          = -ray.d;
+    mi.time        = ray.time;
+    mi.wavelengths = ray.wavelengths;
+    mi.medium      = this;
+
+    auto [aabb_its, mint, maxt] = intersect_aabb(ray);
+    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
+    active &= aabb_its;
+    ek::masked(mint, !active) = 0.f;
+    ek::masked(maxt, !active) = ek::Infinity<Float>;
+
+    mint = ek::max(ray.mint, mint);
+    maxt = ek::min(ray.maxt, maxt);
+    mi.mint   = mint;
+
+    return std::make_tuple(mi, mint, maxt, active);
+}
+
+MTS_VARIANT
+MTS_INLINE Float
+Medium<Float, Spectrum>::extract_channel(Spectrum value, UInt32 channel) const {
+    Float result = value[0];
+    if constexpr (is_rgb_v<Spectrum>) { // Handle RGB rendering
+        ek::masked(result, ek::eq(channel, 1u)) = value[1];
+        ek::masked(result, ek::eq(channel, 2u)) = value[2];
+    } else {
+        ENOKI_MARK_USED(channel);
+    }
+    return result;
 }
 
 MTS_IMPLEMENT_CLASS_VARIANT(Medium, Object, "medium")

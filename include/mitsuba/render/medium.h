@@ -51,6 +51,14 @@ public:
                                            UInt32 channel, Mask active) const;
 
     /**
+     * Similar to \ref sample_interaction, but ensures that a real interaction
+     * is sampled.
+     */
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_real(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                            Mask active) const;
+
+    /**
      * Sample an interaction with Differential Ratio Tracking.
      * Intended for adjoint integration.
      *
@@ -112,6 +120,9 @@ protected:
     Medium(const Properties &props);
     virtual ~Medium();
 
+    auto prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
+    Float extract_channel(Spectrum value, UInt32 channel) const;
+
 protected:
     ref<PhaseFunction> m_phase_function;
     bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
@@ -135,6 +146,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_METHOD(get_combined_extinction)
     ENOKI_VCALL_METHOD(intersect_aabb)
     ENOKI_VCALL_METHOD(sample_interaction)
+    ENOKI_VCALL_METHOD(sample_interaction_real)
     ENOKI_VCALL_METHOD(sample_interaction_drt)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)
     ENOKI_VCALL_METHOD(get_scattering_coefficients)
