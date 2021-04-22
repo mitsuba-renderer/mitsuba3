@@ -24,10 +24,9 @@ Mitsuba 2: A Retargetable Forward and Inverse Renderer
 .. toctree::
     :maxdepth: 1
     :caption: Tutorials
-    :titlesonly:
-    :glob:
 
-    tutorials/basics/*
+    tutorials/basics/index
+    tutorials/inverse_rendering/index
 
 .. toctree::
     :maxdepth: 1
