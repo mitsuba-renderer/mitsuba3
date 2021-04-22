@@ -106,9 +106,12 @@ language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['.build', 'release.rst',
+exclude_patterns = ['.build',
+                    'release.rst',
                     'src/plugin_reference/section_*.rst',
-                    'docs_api/*', 'generated/extracted_rst_api.rst']
+                    'docs_api/*',
+                    'generated/extracted_rst_api.rst',
+                    '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -126,7 +129,9 @@ default_role = 'any'
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-#pygments_style = 'monokai'
+# pygments_style = 'colorful'
+# pygments_style = 'tango'
+# pygments_style = 'lovelace'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
@@ -163,6 +168,34 @@ extensions.append('sphinx.ext.todo')
 todo_include_todos = True
 
 extensions.append('sphinxcontrib.bibtex')
+
+extensions.append('nbsphinx')
+nbsphinx_execute = 'never'
+
+# nbsphinx_input_prompt = 'In [%s]:'
+# nbsphinx_output_prompt = 'Out [%s]:'
+nbsphinx_prolog = """
+.. raw:: html
+
+    <style>
+
+    </style>
+
+    <div id="nb_link" class="alert alert-block alert-success">
+        <a href="#">
+            <center>📑⬇️ Download Jupyter notebook</center>
+        </a>
+    </div>
+
+    <script>
+        var path = window.location.pathname;
+        var pos = path.lastIndexOf("/");
+        var name = path.slice(pos + 1, -5);
+        var tuto_url = "https://github.com/mitsuba-renderer/mitsuba2/tree/master/docs/tutorials/";
+        var elem = document.getElementById("nb_link").firstElementChild;
+        elem.href = tuto_url + name + ".ipynb";
+    </script>
+"""
 
 # Touch the bibliography file to force a rebuild of it
 Path('zz_bibliography.rst').touch()
