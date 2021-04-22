@@ -189,9 +189,9 @@ nbsphinx_prolog = """
 
     <script>
         var path = window.location.pathname;
-        var pos = path.lastIndexOf("/");
-        var name = path.slice(pos + 1, -5);
-        var tuto_url = "https://github.com/mitsuba-renderer/mitsuba2/tree/master/docs/tutorials/";
+        var pos = path.lastIndexOf("/tutorials/");
+        var name = path.slice(pos + 11, -5);
+        var tuto_url = "https://github.com/mitsuba-renderer/mitsuba-tutorials/blob/master/";
         var elem = document.getElementById("nb_link").firstElementChild;
         elem.href = tuto_url + name + ".ipynb";
     </script>
