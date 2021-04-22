@@ -114,9 +114,9 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
     if (is_scene)
         class_ = Class::for_name("Scene", GET_VARIANT());
     else
-        class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT());
+        class_ = PluginManager::instance()->get_plugin_class(type, GET_VARIANT())->parent();
 
-    bool within_emitter = (!is_scene && class_->parent()->alias() == "emitter");
+    bool within_emitter = (!is_scene && class_->alias() == "emitter");
     Properties props(type);
 
     for (auto& [k, value] : dict) {
