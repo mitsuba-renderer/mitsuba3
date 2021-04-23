@@ -1,5 +1,5 @@
 sphinx>=2.4
 guzzle_sphinx_theme
 pygments-mathematica
-sphinxcontrib-bibtex
+sphinxcontrib-bibtex<2.0.0
 pybtex
