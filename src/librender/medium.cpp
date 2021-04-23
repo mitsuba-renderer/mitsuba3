@@ -70,10 +70,10 @@ Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &ray,
     mi.combined_extinction   = combined_extinction;
 
     MediumInteraction3f mi_next = mi;
-    active = active && ek::full<Mask>(true, ek::width(ray));
     Mask escaped = !active;
+    Spectrum weight = ek::full<Spectrum>(1.f, ek::width(ray));
     ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction");
-    loop.put(active, mi, mi_next, escaped);
+    loop.put(active, mi, mi_next, escaped, weight);
     sampler->loop_register(loop);
     loop.init();
 
@@ -81,15 +81,19 @@ Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &ray,
         // Repeatedly sample from homogenized medium
         Float sampled_t = mi_next.mint + (-ek::log(1 - sampler->next_1d(active)) / m);
         Mask valid_mi = active && (sampled_t < maxt);
-        mi_next.t     = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
+        mi_next.t     = sampled_t;
         mi_next.p     = ray(sampled_t);
         std::tie(mi_next.sigma_s, mi_next.sigma_n, mi_next.sigma_t) =
             get_scattering_coefficients(mi_next, valid_mi);
 
         // Determine whether it was a real or null interaction
         Float r = extract_channel(mi_next.sigma_t, channel) / m;
-        Mask did_scatter = active && (sampler->next_1d(active) < r);
+        Mask did_scatter = valid_mi && (sampler->next_1d(valid_mi) < r);
         mi[did_scatter] = mi_next;
+
+        Spectrum event_pdf = mi_next.sigma_t / m;
+        event_pdf = ek::select(did_scatter, event_pdf, 1.f - event_pdf);
+        weight[active] *= event_pdf / ek::detach(event_pdf);
 
         mi_next.mint = sampled_t;
         escaped |= active && (mi_next.mint >= maxt);
@@ -97,9 +101,9 @@ Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &ray,
     }
 
     ek::masked(mi.t, escaped) = ek::Infinity<Float>;
-    ek::masked(mi.p, escaped) = ek::Infinity<Float>;
+    mi.p                      = ray(mi.t);
 
-    return { mi, Spectrum(1.f) };
+    return { mi, weight };
 }
 
 MTS_VARIANT
