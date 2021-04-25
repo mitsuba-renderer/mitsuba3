@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _phase-isotropic:
 
 Isotropic phase function (:monosp:`isotropic`)
------------------------------------------------
+----------------------------------------------
 
 This phase function simulates completely uniform scattering,
 where all directionality is lost after a single scattering
@@ -20,20 +20,23 @@ interaction. It does not have any parameters.
 template <typename Float, typename Spectrum>
 class IsotropicPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags)
+    MTS_IMPORT_BASE(PhaseFunction, m_flags, m_components)
     MTS_IMPORT_TYPES(PhaseFunctionContext)
 
     IsotropicPhaseFunction(const Properties & props) : Base(props) {
         m_flags = +PhaseFunctionFlags::Isotropic;
         ek::set_attr(this, "flags", m_flags);
+        m_components.push_back(m_flags);
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f & /* mi */, const Point2f &sample,
+                                      const MediumInteraction3f & /* mi */,
+                                      Float /* sample1 */,
+                                      const Point2f &sample2,
                                       Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
-        auto wo  = warp::square_to_uniform_sphere(sample);
+        auto wo  = warp::square_to_uniform_sphere(sample2);
         auto pdf = warp::square_to_uniform_sphere_pdf(wo);
         return { wo, pdf };
     }

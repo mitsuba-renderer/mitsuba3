@@ -11,10 +11,11 @@ public:
     PyPhaseFunction(const Properties &props) : PhaseFunction(props) {}
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext &ctx,
-                    const MediumInteraction3f &mi, const Point2f &sample,
+                    const MediumInteraction3f &mi,
+                    Float sample1, const Point2f &sample2,
                     Mask active) const override {
         using Return = std::pair<Vector3f, Float>;
-        PYBIND11_OVERRIDE_PURE(Return, PhaseFunction, sample, ctx, mi, sample, active);
+        PYBIND11_OVERRIDE_PURE(Return, PhaseFunction, sample, ctx, mi, sample1, sample2, active);
     }
 
     Float eval(const PhaseFunctionContext &ctx, const MediumInteraction3f &mi,
@@ -33,6 +34,9 @@ public:
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, PhaseFunction, to_string, );
     }
+
+    using PhaseFunction::m_flags;
+    using PhaseFunction::m_components;
 };
 
 template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
@@ -40,9 +44,9 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
 
     cls.def("sample",
             [](Ptr ptr, const PhaseFunctionContext &ctx,
-               const MediumInteraction3f &mi, const Point2f &s,
-               Mask active) { return ptr->sample(ctx, mi, s, active); },
-            "ctx"_a, "mi"_a, "sample"_a, "active"_a = true,
+               const MediumInteraction3f &mi, const Float &s1, const Point2f &s2,
+               Mask active) { return ptr->sample(ctx, mi, s1, s2, active); },
+            "ctx"_a, "mi"_a, "sample1"_a, "sample2"_a, "active"_a = true,
             D(PhaseFunction, sample))
        .def("eval",
             [](Ptr ptr, const PhaseFunctionContext &ctx,
@@ -59,7 +63,9 @@ template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {
             [](Ptr ptr) { return ptr->max_projected_area(); },
             D(PhaseFunction, max_projected_area))
        .def("flags", [](Ptr ptr, Mask active) { return ptr->flags(active); },
-            "active"_a = true, D(PhaseFunction, flags));
+            "active"_a = true, D(PhaseFunction, flags))
+       .def("component_count", [](Ptr ptr, Mask active) { return ptr->component_count(active); },
+            "active"_a = true, D(PhaseFunction, component_count));
 
     if constexpr (ek::is_array_v<Ptr>)
         bind_enoki_ptr_array(cls);
@@ -76,12 +82,15 @@ MTS_PY_EXPORT(PhaseFunction) {
                 "mode"_a = TransportMode::Radiance, D(PhaseFunctionContext, PhaseFunctionContext))
         .def_method(PhaseFunctionContext, reverse)
         .def_field(PhaseFunctionContext, sampler, D(PhaseFunctionContext, sampler))
+        .def_field(PhaseFunctionContext, component, D(PhaseFunctionContext, component))
         .def_repr(PhaseFunctionContext);
 
     auto phase =
         py::class_<PhaseFunction, PyPhaseFunction, Object, ref<PhaseFunction>>(
             m, "PhaseFunction", D(PhaseFunction))
             .def(py::init<const Properties &>())
+            .def("flags", py::overload_cast<size_t, Mask>(&PhaseFunction::flags, py::const_),
+                 "index"_a, "active"_a = true, D(PhaseFunction, flags, 2))
             .def_method(PhaseFunction, id)
             .def("__repr__", &PhaseFunction::to_string);
 

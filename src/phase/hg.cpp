@@ -37,7 +37,7 @@ isotropic- (g=0) to forward (g>0) scattering.
 template <typename Float, typename Spectrum>
 class HGPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PhaseFunction, m_flags)
+    MTS_IMPORT_BASE(PhaseFunction, m_flags, m_components)
     MTS_IMPORT_TYPES(PhaseFunctionContext)
 
     HGPhaseFunction(const Properties &props) : Base(props) {
@@ -47,6 +47,7 @@ public:
 
         m_flags = +PhaseFunctionFlags::Anisotropic;
         ek::set_attr(this, "flags", m_flags);
+        m_components.push_back(m_flags); // TODO: check
     }
 
     MTS_INLINE Float eval_hg(Float cos_theta) const {
@@ -55,20 +56,22 @@ public:
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
-                                      const MediumInteraction3f &mi, const Point2f &sample,
+                                      const MediumInteraction3f &mi,
+                                      Float /* sample1 */,
+                                      const Point2f &sample2,
                                       Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
         Float cos_theta;
         if (ek::abs(m_g) < ek::Epsilon<ScalarFloat>) {
-            cos_theta = 1 - 2 * sample.x();
+            cos_theta = 1 - 2 * sample2.x();
         } else {
-            Float sqr_term = (1 - m_g * m_g) / (1 - m_g + 2 * m_g * sample.x());
+            Float sqr_term = (1 - m_g * m_g) / (1 - m_g + 2 * m_g * sample2.x());
             cos_theta = (1 + m_g * m_g - sqr_term * sqr_term) / (2 * m_g);
         }
 
         Float sin_theta = ek::safe_sqrt(1.0f - cos_theta * cos_theta);
-        auto [sin_phi, cos_phi] = ek::sincos(2 * ek::Pi<ScalarFloat> * sample.y());
+        auto [sin_phi, cos_phi] = ek::sincos(2 * ek::Pi<ScalarFloat> * sample2.y());
         auto wo = Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
         wo = mi.to_world(wo);
         Float pdf = eval_hg(-cos_theta);

@@ -234,7 +234,10 @@ public:
 
                     // ------------------ Phase function sampling -----------------
                     ek::masked(phase, !act_medium_scatter) = nullptr;
-                    auto [wo, phase_pdf] = phase->sample(phase_ctx, mi, sampler->next_2d(act_medium_scatter), act_medium_scatter);
+                    auto [wo, phase_pdf] = phase->sample(phase_ctx, mi,
+                        sampler->next_1d(act_medium_scatter),
+                        sampler->next_2d(act_medium_scatter),
+                        act_medium_scatter);
                     Ray3f new_ray  = mi.spawn_ray(wo);
                     new_ray.mint = 0.0f;
                     ek::masked(ray, act_medium_scatter) = new_ray;

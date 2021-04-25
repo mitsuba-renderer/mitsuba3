@@ -18,8 +18,8 @@ def create_phasefunction():
             PhaseFunction.__init__(self, props)
             self.m_flags = PhaseFunctionFlags.Isotropic
 
-        def sample(self, ctx, mi, sample1, active=True):
-            wo = warp.square_to_uniform_sphere(sample1)
+        def sample(self, ctx, mi, sample1, sample2, active=True):
+            wo = warp.square_to_uniform_sphere(sample2)
             pdf = warp.square_to_uniform_sphere_pdf(wo)
             return (wo, pdf)
 
