@@ -2,6 +2,7 @@
 
 #include <mitsuba/core/vector.h>
 #include <mitsuba/core/ray.h>
+#include <mitsuba/core/bsphere.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -326,8 +327,7 @@ template <typename Point_> struct BoundingBox {
     }
 
     /// Create a bounding sphere, which contains the axis-aligned box
-    template <typename Result = BoundingSphere<Point>>
-    Result bounding_sphere() const {
+    BoundingSphere<Point> bounding_sphere() const {
         Point c = center();
         return { c, ek::norm(c - max) };
     }

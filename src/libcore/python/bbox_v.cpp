@@ -69,11 +69,14 @@ template <typename BBox, typename Ray> auto bind_bbox(py::module &m, const char 
                 .def_readwrite("max", &BBox::max)
                 .def_repr(BBox);
 
-            if constexpr (ek::array_size_v<Point> == 3)
+            if constexpr (ek::array_size_v<Point> == 3) {
                 bbox.def("ray_intersect",
                          [](const BBox &self, const Ray &ray) {
                              return self.ray_intersect(ray);
                          }, D(BoundingBox, ray_intersect), "ray"_a);
+                bbox.def("bounding_sphere", &BBox::bounding_sphere,
+                         D(BoundingBox, bounding_sphere));
+            }
     }
 }
 
