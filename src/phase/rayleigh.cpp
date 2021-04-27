@@ -39,8 +39,7 @@ public:
     }
 
     MTS_INLINE Float eval_rayleigh(Float cos_theta) const {
-        return (3.f / 16.f) * ek::InvPi<Float> *
-               (1.f + enoki::sqr(cos_theta));
+        return (3.f / 16.f) * ek::InvPi<Float> * (1.f + ek::sqr(cos_theta));
     }
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
@@ -49,17 +48,17 @@ public:
                                       Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
 
-        Float z         = 2.f * (2.f * sample.x() - 1.f);
-        Float tmp       = enoki::sqrt(enoki::sqr(z) + 1.f);
-        Float A         = enoki::cbrt(z + tmp);
-        Float B         = enoki::cbrt(z - tmp);
+        Float z   = 2.f * (2.f * sample.x() - 1.f);
+        Float tmp = ek::sqrt(ek::sqr(z) + 1.f);
+        Float A   = ek::cbrt(z + tmp);
+        Float B   = ek::cbrt(z - tmp);
         Float cos_theta = A + B;
-        Float sin_theta = enoki::safe_sqrt(1.0f - enoki::sqr(cos_theta));
-        auto [sin_phi, cos_phi] = enoki::sincos(ek::TwoPi<Float> * sample.y());
+        Float sin_theta = ek::safe_sqrt(1.0f - ek::sqr(cos_theta));
+        auto [sin_phi, cos_phi] = ek::sincos(ek::TwoPi<Float> * sample.y());
 
         auto wo = Vector3f{ sin_theta * cos_phi, sin_theta * sin_phi, cos_theta };
 
-        wo        = mi.to_world(wo);
+        wo = mi.to_world(wo);
         Float pdf = eval_rayleigh(-cos_theta);
         return { wo, pdf };
     }
