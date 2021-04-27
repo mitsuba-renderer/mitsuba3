@@ -2,8 +2,8 @@
 
 REM ***************************************************************
 REM * This script adds Mitsuba to the current path on Windows.
-REM * It assumes that Mitsuba is either compiled within a
-REM * subdirectory named 'build'.
+REM * It assumes that Mitsuba is compiled within a subdirectory
+REM * named 'build'.
 REM ***************************************************************
 
 set MITSUBA_DIR=%~dp0

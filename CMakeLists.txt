@@ -167,6 +167,11 @@ else()
                    ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat DESTINATION ".")
     ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.bat)
+
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.ps1
+                   ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 DESTINATION ".")
+    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 setpath.ps1)
 endif()
 
 # ----------------------------------------------------------
