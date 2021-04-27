@@ -47,6 +47,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
 
         // Methods
         .def(py::init<>(), D(SurfaceInteraction, SurfaceInteraction))
+        .def(py::init<const SurfaceInteraction3f &>(), D(SurfaceInteraction, SurfaceInteraction), "other"_a)
         .def(py::init<const PositionSample3f &, const Wavelength &>(), "ps"_a,
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
         .def("initialize_sh_frame", &SurfaceInteraction3f::initialize_sh_frame,
