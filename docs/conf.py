@@ -197,6 +197,9 @@ nbsphinx_prolog = """
     </script>
 """
 
+# Add bibfile
+bibtex_bibfiles = ['references.bib']
+
 # Touch the bibliography file to force a rebuild of it
 Path('zz_bibliography.rst').touch()
 
