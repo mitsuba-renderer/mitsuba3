@@ -44,6 +44,7 @@ public:
 
     std::pair<Vector3f, Float> sample(const PhaseFunctionContext & /* ctx */,
                                       const MediumInteraction3f &mi,
+                                      Float /* sample1 */,
                                       const Point2f &sample,
                                       Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionSample, active);
@@ -73,8 +74,6 @@ public:
     std::string to_string() const override { return "RayleighPhaseFunction[]"; }
 
     MTS_DECLARE_CLASS()
-
-private:
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(RayleighPhaseFunction, PhaseFunction)
