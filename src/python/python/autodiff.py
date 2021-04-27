@@ -417,7 +417,7 @@ class SGD(Optimizer):
 
     def __repr__(self):
         return ('SGD[\n  params = %s,\n  lr = %s,\n  momentum = %.2g\n]') % \
-            (list(self.keys()), self.lr, self.momentum)
+            (list(self.keys()), dict(self.lr, default=self.lr_default), self.momentum)
 
 
 class Adam(Optimizer):
@@ -494,7 +494,8 @@ class Adam(Optimizer):
                 '  lr = %s,\n'
                 '  betas = (%g, %g),\n'
                 '  eps = %g\n'
-                ']' % (list(self.keys()), self.lr, self.beta_1, self.beta_2, self.epsilon))
+                ']' % (list(self.keys()), dict(self.lr, default=self.lr_default),
+                       self.beta_1, self.beta_2, self.epsilon))
 
 
 # TODO refactoring
