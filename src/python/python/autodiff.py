@@ -416,7 +416,7 @@ class SGD(Optimizer):
         self.state[key] = ek.zero(ek.detached_t(p), size)
 
     def __repr__(self):
-        return ('SGD[\n  params = %s,\n  lr = %.2g,\n  momentum = %.2g\n]') % \
+        return ('SGD[\n  params = %s,\n  lr = %s,\n  momentum = %.2g\n]') % \
             (list(self.keys()), self.lr, self.momentum)
 
 
@@ -491,7 +491,7 @@ class Adam(Optimizer):
     def __repr__(self):
         return ('Adam[\n'
                 '  params = %s,\n'
-                '  lr = %g,\n'
+                '  lr = %s,\n'
                 '  betas = (%g, %g),\n'
                 '  eps = %g\n'
                 ']' % (list(self.keys()), self.lr, self.beta_1, self.beta_2, self.epsilon))
