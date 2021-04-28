@@ -136,6 +136,13 @@ public:
         return eval_sigmat(mi, active) & active;
     }
 
+    UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
+                                   Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        auto value = m_albedo->eval(mi, active);
+        return value & active;
+    }
+
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active) const override {

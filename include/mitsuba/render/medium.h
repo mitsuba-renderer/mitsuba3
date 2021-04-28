@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Medium : public Object {
 public:
-    MTS_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MTS_IMPORT_TYPES(PhaseFunction, MediumPtr, Sampler, Scene, Texture);
 
     /// Intersets a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -21,6 +21,16 @@ public:
     virtual UnpolarizedSpectrum
     get_combined_extinction(const MediumInteraction3f &mi,
                             Mask active = true) const = 0;
+
+    /**
+     * Returns the medium's albedo, independently of other quantities.
+     * May not be supported by all media.
+     *
+     * Becomes necessary when we need to evaluate the albedo at a
+     * location where sigma_t = 0.
+     */
+    virtual UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
+                                           Mask active = true) const = 0;
 
     /// Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
     /// at a given MediumInteraction mi
@@ -67,6 +77,16 @@ public:
     std::pair<MediumInteraction3f, Spectrum>
     sample_interaction_drt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
                            Mask active) const;
+
+    /**
+     * Static variant of \ref sample_interaction_drt to try and
+     * work around some ek::Loop limitations.
+     */
+    // TODO: remove this
+    static std::pair<MediumInteraction3f, Spectrum>
+    static_sample_interaction_drt(const MediumPtr medium, const Ray3f &ray,
+                                  Sampler *sampler, UInt32 channel,
+                                  Mask active);
 
     /**
      * \brief Compute the transmittance and PDF
@@ -121,7 +141,7 @@ protected:
     virtual ~Medium();
 
     auto prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
-    Float extract_channel(Spectrum value, UInt32 channel) const;
+    static Float extract_channel(Spectrum value, UInt32 channel);
 
 protected:
     ref<PhaseFunction> m_phase_function;
@@ -144,12 +164,13 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_GETTER(is_homogeneous, bool)
     ENOKI_VCALL_GETTER(has_spectral_extinction, bool)
     ENOKI_VCALL_METHOD(get_combined_extinction)
+    ENOKI_VCALL_METHOD(get_albedo)
+    ENOKI_VCALL_METHOD(get_scattering_coefficients)
     ENOKI_VCALL_METHOD(intersect_aabb)
     ENOKI_VCALL_METHOD(sample_interaction)
     ENOKI_VCALL_METHOD(sample_interaction_real)
     ENOKI_VCALL_METHOD(sample_interaction_drt)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)
-    ENOKI_VCALL_METHOD(get_scattering_coefficients)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}

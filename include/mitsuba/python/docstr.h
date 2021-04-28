@@ -3649,6 +3649,13 @@ Returns:
 
 static const char *__doc_mitsuba_Medium_get_combined_extinction = R"doc(Returns the medium's majorant used for delta tracking)doc";
 
+static const char *__doc_mitsuba_Medium_get_albedo =
+R"doc(Returns the medium's albedo, independently of other quantities.
+May not be supported by all media.
+
+Becomes necessary when we need to evaluate the albedo at a
+location where sigma_t = 0.)doc";
+
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
 at a given MediumInteraction mi)doc";

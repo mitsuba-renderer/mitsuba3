@@ -20,6 +20,10 @@ public:
         PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_combined_extinction, mi, active);
     }
 
+    UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi, Mask active = true) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_albedo, mi, active);
+    }
+
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const override {
         using Return = std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>;
@@ -75,12 +79,23 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->sample_interaction_drt(ray, sampler, channel, active); },
             "ray"_a, "sampler"_a, "channel"_a, "active"_a,
             D(Medium, sample_interaction_drt))
+       .def_static("static_sample_interaction_drt",
+            [](MediumPtr medium, const Ray3f &ray, Sampler *sampler, UInt32 channel, Mask active) {
+                return Medium::static_sample_interaction_drt(medium, ray, sampler, channel, active);
+            },
+            "medium"_a, "ray"_a, "sampler"_a, "channel"_a, "active"_a,
+            D(Medium, sample_interaction_drt))
        .def("eval_tr_and_pdf",
             [](Ptr ptr, const MediumInteraction3f &mi,
                const SurfaceInteraction3f &si, Mask active) {
                 return ptr->eval_tr_and_pdf(mi, si, active); },
             "mi"_a, "si"_a, "active"_a,
             D(Medium, eval_tr_and_pdf))
+       .def("get_albedo",
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
+                return ptr->get_albedo(mi, active); },
+            "mi"_a, "active"_a=true,
+            D(Medium, get_albedo))
        .def("get_scattering_coefficients",
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_scattering_coefficients(mi, active); },
