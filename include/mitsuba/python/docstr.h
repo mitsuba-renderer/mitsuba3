@@ -3692,6 +3692,8 @@ static const char *__doc_mitsuba_Medium_sample_interaction_real = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_sample_interaction_drt = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_sample_interaction_drrt = R"doc()doc";
+
 static const char *__doc_mitsuba_Medium_sample_interaction =
 R"doc(Sample a free-flight distance in the medium.
 

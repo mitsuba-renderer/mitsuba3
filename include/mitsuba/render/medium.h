@@ -89,6 +89,16 @@ public:
                                   Mask active);
 
     /**
+     * Static variant of \ref sample_interaction_drrt to try and
+     * work around some ek::Loop limitations.
+     */
+    // TODO: remove this
+    static std::pair<MediumInteraction3f, Spectrum>
+    static_sample_interaction_drrt(const MediumPtr medium, const Ray3f &ray,
+                                   Sampler *sampler, UInt32 channel,
+                                   Mask active);
+
+    /**
      * \brief Compute the transmittance and PDF
      *
      * This function evaluates the transmittance and PDF of sampling a certain

@@ -85,6 +85,12 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             },
             "medium"_a, "ray"_a, "sampler"_a, "channel"_a, "active"_a,
             D(Medium, sample_interaction_drt))
+       .def_static("static_sample_interaction_drrt",
+            [](MediumPtr medium, const Ray3f &ray, Sampler *sampler, UInt32 channel, Mask active) {
+                return Medium::static_sample_interaction_drrt(medium, ray, sampler, channel, active);
+            },
+            "medium"_a, "ray"_a, "sampler"_a, "channel"_a, "active"_a,
+            D(Medium, sample_interaction_drrt))
        .def("eval_tr_and_pdf",
             [](Ptr ptr, const MediumInteraction3f &mi,
                const SurfaceInteraction3f &si, Mask active) {
