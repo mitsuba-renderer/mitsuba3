@@ -122,7 +122,7 @@ class GridVolumeImpl;
 template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, m_to_local, m_bbox)
+    MTS_IMPORT_BASE(Volume, m_to_local)
     MTS_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props), m_props(props) {
