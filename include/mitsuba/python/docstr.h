@@ -7978,6 +7978,10 @@ Parameter ``frame``:
 
 static const char *__doc_mitsuba_coordinate_system = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
+static const char *__doc_mitsuba_denoise = R"doc(Denoise a given bitmap using albedo and normals map and the OptiX denoiser)doc";
+
+static const char *__doc_mitsuba_denoise_2 = R"doc(Denoise a given bitmap using the OptiX denoiser)doc";
+
 static const char *__doc_mitsuba_depolarize =
 R"doc(Return the (1,1) entry of a Mueller matrix. Identity function for all
 other-types.)doc";
