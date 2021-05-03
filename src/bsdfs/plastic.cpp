@@ -337,6 +337,11 @@ public:
 
         if (m_specular_reflectance)
             callback->put_object("specular_reflectance", m_specular_reflectance.get());
+    }   
+    
+    /// Return the diffuse reflectance value (if any)
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si, Mask active) const override {
+        return m_diffuse_reflectance->eval(si, active);
     }
 
     std::string to_string() const override {

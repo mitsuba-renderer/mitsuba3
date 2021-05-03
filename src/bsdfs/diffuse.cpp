@@ -160,6 +160,11 @@ public:
     void traverse(TraversalCallback *callback) override {
         callback->put_object("reflectance", m_reflectance.get());
     }
+ 
+    /// Return the diffuse reflectance value (if any)
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si, Mask active) const override {
+        return m_reflectance->eval(si, active);
+    }
 
     std::string to_string() const override {
         std::ostringstream oss;

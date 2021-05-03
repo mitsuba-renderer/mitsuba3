@@ -1,7 +1,6 @@
 /*
     Mitsuba 2: A Retargetable Forward and Inverse Renderer
     Copyright 2019, Realistic Graphics Lab, EPFL.
-
     All rights reserved. Use of this source code is governed by a
     BSD-style license that can be found in the LICENSE.txt file.
 */
@@ -477,6 +476,9 @@ public:
     /// Set a string identifier
     void set_id(const std::string& id) override { m_id = id; };
 
+    /// Return the diffuse reflectance value (if any)
+    virtual Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si, Mask active = true) const;
+
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
@@ -556,6 +558,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     ENOKI_VCALL_METHOD(eval_null_transmission)
     ENOKI_VCALL_METHOD(pdf)
     ENOKI_VCALL_METHOD(eval_pdf)
+    ENOKI_VCALL_METHOD(get_diffuse_reflectance)
     ENOKI_VCALL_GETTER(flags, uint32_t)
     auto needs_differentials() const {
         return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials);
