@@ -21,6 +21,13 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
     return 0.f;
 }
 
+MI_VARIANT Spectrum BSDF<Float, Spectrum>::get_diffuse_reflectance(
+    const SurfaceInteraction3f &si, Mask active) const {
+    Vector3f placeholder = Vector3f(0.0f, 0.0f, 1.0f);
+    BSDFContext ctx;
+    return eval(ctx, si, placeholder, active) * 3.14159265358979323846; //M_PI
+}
+
 template <typename Index>
 std::string type_mask_to_string(Index type_mask) {
     std::ostringstream oss;

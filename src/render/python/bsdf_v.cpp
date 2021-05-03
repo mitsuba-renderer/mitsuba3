@@ -60,6 +60,11 @@ public:
         PYBIND11_OVERRIDE_PURE(Return, BSDF, eval_pdf, ctx, si, wo, active);
     }
 
+    Spectrum get_diffuse_reflectance(const SurfaceInteraction3f &si,
+              Mask active) const override {
+        PYBIND11_OVERRIDE_PURE(Spectrum, BSDF, get_diffuse_reflectance, si, active);
+    }
+
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, BSDF, to_string,);
     }
@@ -96,6 +101,10 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
              [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
                  return bsdf->eval_null_transmission(si, active);
              }, "si"_a, "active"_a = true, D(BSDF, eval_null_transmission))
+        .def("get_diffuse_reflectance",
+             [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
+                 return bsdf->get_diffuse_reflectance(si, active);
+             }, "si"_a, "active"_a = true)
         .def("flags", [](Ptr bsdf) { return bsdf->flags(); }, D(BSDF, flags))
         .def("needs_differentials",
              [](Ptr bsdf) { return bsdf->needs_differentials(); },
