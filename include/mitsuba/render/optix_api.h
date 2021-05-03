@@ -231,6 +231,120 @@ struct OptixShaderBindingTable {
     unsigned int callablesRecordCount;
 };
 
+/// Various sizes related to the denoiser.
+///
+/// \see #optixDenoiserComputeMemoryResources()
+struct OptixDenoiserSizes
+{
+    size_t       stateSizeInBytes;
+    size_t       withOverlapScratchSizeInBytes;
+    size_t       withoutOverlapScratchSizeInBytes;
+    unsigned int overlapWindowSizeInPixels;
+};
+
+/// Various parameters used by the denoiser
+///
+/// \see #optixDenoiserInvoke()
+/// \see #optixDenoiserComputeIntensity()
+/// \see #optixDenoiserComputeAverageColor()
+struct OptixDenoiserParams
+{
+    /// if set to nonzero value, denoise alpha channel (if present) in first inputLayer image
+    unsigned int denoiseAlpha;
+
+    /// average log intensity of input image (default null pointer). points to a single float.
+    /// with the default (null pointer) denoised results will not be optimal for very dark or
+    /// bright input images.
+    CUdeviceptr  hdrIntensity;
+
+    /// blend factor.
+    /// If set to 0 the output is 100% of the denoised input. If set to 1, the output is 100% of
+    /// the unmodified input. Values between 0 and 1 will linearly interpolate between the denoised
+    /// and unmodified input.
+    float        blendFactor;
+
+    /// this parameter is used when the OPTIX_DENOISER_MODEL_KIND_AOV model kind is set.
+    /// average log color of input image, separate for RGB channels (default null pointer).
+    /// points to three floats. with the default (null pointer) denoised results will not be
+    /// optimal.
+    CUdeviceptr  hdrAverageColor;
+};
+
+/// Input kinds used by the denoiser.
+///
+/// RGB(A) values less than zero will be clamped to zero.
+/// Albedo values must be in the range [0..1] (values less than zero will be clamped to zero).
+/// The normals must be transformed into screen space. The z component is not used.
+/// \see #OptixDenoiserOptions::inputKind
+enum OptixDenoiserInputKind
+{
+    OPTIX_DENOISER_INPUT_RGB               = 0x2301,
+    OPTIX_DENOISER_INPUT_RGB_ALBEDO        = 0x2302,
+    OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL = 0x2303,
+};
+
+/// Model kind used by the denoiser.
+///
+/// \see #optixDenoiserSetModel()
+enum OptixDenoiserModelKind
+{
+    /// Use the model provided by the associated pointer.  See the programming guide for a
+    /// description of how to format the data.
+    OPTIX_DENOISER_MODEL_KIND_USER = 0x2321,
+
+    /// Use the built-in model appropriate for low dynamic range input.
+    OPTIX_DENOISER_MODEL_KIND_LDR = 0x2322,
+
+    /// Use the built-in model appropriate for high dynamic range input.
+    OPTIX_DENOISER_MODEL_KIND_HDR = 0x2323,
+
+    /// Use the built-in model appropriate for high dynamic range input and support for AOVs
+    OPTIX_DENOISER_MODEL_KIND_AOV = 0x2324,
+
+};
+
+/// Options used by the denoiser
+///
+/// \see #optixDenoiserCreate()
+struct OptixDenoiserOptions
+{
+    /// The kind of denoiser input.
+    OptixDenoiserInputKind inputKind;
+};
+
+/// Pixel formats used by the denoiser.
+///
+/// \see #OptixImage2D::format
+enum OptixPixelFormat
+{
+    OPTIX_PIXEL_FORMAT_HALF3  = 0x2201,  ///< three halfs, RGB
+    OPTIX_PIXEL_FORMAT_HALF4  = 0x2202,  ///< four halfs, RGBA
+    OPTIX_PIXEL_FORMAT_FLOAT3 = 0x2203,  ///< three floats, RGB
+    OPTIX_PIXEL_FORMAT_FLOAT4 = 0x2204,  ///< four floats, RGBA
+    OPTIX_PIXEL_FORMAT_UCHAR3 = 0x2205,  ///< three unsigned chars, RGB
+    OPTIX_PIXEL_FORMAT_UCHAR4 = 0x2206   ///< four unsigned chars, RGBA
+};
+
+/// Image descriptor used by the denoiser.
+///
+/// \see #optixDenoiserInvoke(), #optixDenoiserComputeIntensity()
+struct OptixImage2D
+{
+    /// Pointer to the actual pixel data.
+    CUdeviceptr data;
+    /// Width of the image (in pixels)
+    unsigned int width;
+    /// Height of the image (in pixels)
+    unsigned int height;
+    /// Stride between subsequent rows of the image (in bytes).
+    unsigned int rowStrideInBytes;
+    /// Stride between subsequent pixels of the image (in bytes).
+    /// For now, only 0 or the value that corresponds to a dense packing of pixels (no gaps) is supported.
+    unsigned int pixelStrideInBytes;
+    /// Pixel format.
+    OptixPixelFormat format;
+};
+
 // =====================================================
 //             Commonly used OptiX functions
 // =====================================================
