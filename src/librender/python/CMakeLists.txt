@@ -9,6 +9,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     THIN_LTO OPT_SIZE
     main_v.cpp
     bsdf_v.cpp
+    denoiser_v.cpp
     emitter_v.cpp
     endpoint_v.cpp
     film_v.cpp

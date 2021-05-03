@@ -50,6 +50,7 @@ static py::object caster(Object *o) {
 
 MTS_PY_DECLARE(BSDFSample);
 MTS_PY_DECLARE(BSDF);
+MTS_PY_DECLARE(denoise);
 MTS_PY_DECLARE(Emitter);
 MTS_PY_DECLARE(Endpoint);
 MTS_PY_DECLARE(Film);
@@ -98,6 +99,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(DirectionSample);
     MTS_PY_IMPORT(BSDFSample);
     MTS_PY_IMPORT(BSDF);
+    MTS_PY_IMPORT(denoise);
     MTS_PY_IMPORT(Film);
     MTS_PY_IMPORT(fresnel);
     MTS_PY_IMPORT(ImageBlock);
