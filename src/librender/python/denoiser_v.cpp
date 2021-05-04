@@ -4,9 +4,9 @@
 MTS_PY_EXPORT(denoiser) {
     MTS_PY_IMPORT_TYPES()
     m.def("denoise",
-        py::overload_cast<Bitmap &>(&denoise),
+        py::overload_cast<Bitmap &>(&denoise<Float>),
         "noisy"_a, D(denoise))
     .def("denoise",
-        py::overload_cast<Bitmap &, const Bitmap *, const Bitmap *>(&denoise),
+        py::overload_cast<Bitmap &, const Bitmap *, const Bitmap *>(&denoise<Float>),
         "noisy"_a, "albedo"_a, "normals"_a, D(denoise, 2));
 }
