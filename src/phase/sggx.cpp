@@ -51,7 +51,6 @@ class SGGXPhaseFunction final : public PhaseFunction<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(PhaseFunction, m_flags)
     MTS_IMPORT_TYPES(PhaseFunctionContext, Volume)
-    using Vector6f = Vector<Float, 6>;
 
     SGGXPhaseFunction(const Properties &props) : Base(props) {
         // m_diffuse    = props.bool_("diffuse", false);
@@ -61,7 +60,7 @@ public:
     }
 
     MTS_INLINE
-    Vector6f eval_ndf_params(const MediumInteraction3f &mi, Mask active) const {
+    ek::Array<Float, 6> eval_ndf_params(const MediumInteraction3f &mi, Mask active) const {
         return m_ndf_params->eval_6(mi, active);
     }
 

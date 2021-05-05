@@ -35,7 +35,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float>
 Normal<Float, 3> sggx_sample_vndf(const Frame<Float> &sh_frame,
                                   const Point<Float, 2> &sample,
-                                  const Vector<Float, 6> &s) {
+                                  const ek::Array<Float, 6> &s) {
     constexpr size_t XX = 0, YY = 1, ZZ = 2, XY = 3, XZ = 4, YZ = 5;
     constexpr size_t k = 0, j = 1, i = 2;
 
@@ -62,7 +62,7 @@ Normal<Float, 3> sggx_sample_vndf(const Frame<Float> &sh_frame,
 template <typename Float>
 Normal<Float, 3> sggx_sample_vndf(const Vector<Float, 3> &wi,
                                   const Point<Float, 2> &sample,
-                                  const Vector<Float, 6> &s) {
+                                  const ek::Array<Float, 6> &s) {
     return sggx_sample_vndf(Frame<Float>(wi), sample, s);
 }
 
@@ -83,7 +83,7 @@ Normal<Float, 3> sggx_sample_vndf(const Vector<Float, 3> &wi,
  * \return The probablity of sampling a certain normal
  */
 template <typename Float>
-Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const Vector<Float, 6> &s) {
+Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const ek::Array<Float, 6> &s) {
     const size_t XX = 0, YY = 1, ZZ = 2, XY = 3, XZ = 4, YZ = 5;
 
     Float det_s = abs(s[XX] * s[YY] * s[ZZ] - s[XX] * s[YZ] * s[YZ] -
@@ -116,7 +116,7 @@ Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const Vector<Float, 6> &s) {
  */
 template <typename Float>
 MTS_INLINE Float sggx_projected_area(const Vector<Float, 3> &wi,
-                                     const Vector<Float, 6> &s) {
+                                     const ek::Array<Float, 6> &s) {
     const size_t XX = 0, YY = 1, ZZ = 2, XY = 3, XZ = 4, YZ = 5;
 
     // Computes sqrt(wi^T * S * wi)
