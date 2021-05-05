@@ -1,8 +1,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/phase.h>
-#include <mitsuba/render/fresnel.h>
-#include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 #include <mitsuba/render/sggx.h>
 
 NAMESPACE_BEGIN(mitsuba)

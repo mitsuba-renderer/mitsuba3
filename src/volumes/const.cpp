@@ -1,6 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
-#include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 
 NAMESPACE_BEGIN(mitsuba)
 

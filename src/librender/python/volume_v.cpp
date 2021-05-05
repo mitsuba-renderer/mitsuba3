@@ -1,4 +1,4 @@
-#include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(Volume) {
