@@ -319,7 +319,7 @@ public:
         }
     }
 
-    Vector<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const override {
+    ek::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const override {
         ENOKI_MARK_USED(it);
         ENOKI_MARK_USED(active);
 

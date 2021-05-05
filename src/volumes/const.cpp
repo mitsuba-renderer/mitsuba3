@@ -70,8 +70,8 @@ public:
                           values_str[i]);
                 }
             }
-            m_vector = Vector<Float, 6>(values[0], values[1], values[2],
-                                        values[3], values[4], values[5]);
+            m_vector = ek::Array<Float, 6>(values[0], values[1], values[2],
+                                           values[3], values[4], values[5]);
         } else {
             m_color = props.texture<Texture>("value", 1.f);
         }
@@ -92,7 +92,7 @@ public:
         return m_color->mean();
     }
 
-    Vector<Float, 6> eval_6(const Interaction3f & /* it */, Mask /* active */) const override {
+    ek::Array<Float, 6> eval_6(const Interaction3f & /* it */, Mask /* active */) const override {
         return m_vector;
     }
 
@@ -119,7 +119,7 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     ref<Texture> m_color;
-    Vector<Float, 6> m_vector;
+    ek::Array<Float, 6> m_vector;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(ConstVolume, Volume)
