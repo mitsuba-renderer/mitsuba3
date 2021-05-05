@@ -67,6 +67,7 @@ add_library(mitsuba-render SHARED
                    ${INC_DIR}/optix/common.h
   optix_api.cpp    ${INC_DIR}/optix_api.h
   shapegroup.cpp   ${INC_DIR}/shapegroup.h
+  volume.cpp       ${INC_DIR}/volume.h
   volumegrid.cpp   ${INC_DIR}/volumegrid.h
   ${LIBRENDER_EXTRA_SRC}
 )

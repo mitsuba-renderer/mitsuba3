@@ -4,6 +4,7 @@
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/phase.h>

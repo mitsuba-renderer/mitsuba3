@@ -5,7 +5,7 @@
 #include <mitsuba/core/transform.h>
 
 #include <mitsuba/render/srgb.h>
-#include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
 #include <enoki/dynamic.h>
 
