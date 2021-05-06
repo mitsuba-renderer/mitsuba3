@@ -1,15 +1,20 @@
 #pragma once
 
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/platform.h>
 #include <mitsuba/render/optix_api.h>
 #include <enoki-jit/optix.h>
 #include <enoki/array.h>
+#include <iostream>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float>
 void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
+    std::cout << "In denoiser" << std::endl;
     OptixDeviceContext context = jit_optix_context();
+    if(context == nullptr)
+        std::cout << "null context" << std::endl;
 
     OptixDenoiser* denoiser = new OptixDenoiser();        
     OptixDenoiserSizes* sizes = new OptixDenoiserSizes();
@@ -17,6 +22,8 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
     OptixDenoiserOptions* options = new OptixDenoiserOptions();
     OptixDenoiserModelKind modelKind = OPTIX_DENOISER_MODEL_KIND_AOV;
     options->inputKind = OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL;
+
+    std::cout << "vars created" << std::endl;
 
     uint32_t scratch_size = 0;
     uint32_t state_size = 0;
@@ -26,10 +33,15 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
     OptixImage2D output;
 
     //TODO check result
+    std::cout << "Creating denoiser" << std::endl;
     OptixResult result = optixDenoiserCreate(context, options, denoiser); 
+    std::cout << "Denoiser created" << std::endl;
     result = optixDenoiserSetModel(denoiser, modelKind, nullptr, 0);
+    std::cout << "Model set" << std::endl;
     result = optixDenoiserComputeMemoryResources(denoiser, noisy.width(), noisy.height(), sizes);
+    std::cout << "Mem computed" << std::endl;
     scratch_size = static_cast<uint32_t>(sizes->withoutOverlapScratchSizeInBytes / sizeof(float));
+    std::cout << "Scratch size set" << std::endl;
 
     ek::Array<Float> int_float = ek::zero<Float>(1);
     ek::Array<Float> scratch_float = ek::zero<Float>(scratch_size);
