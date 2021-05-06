@@ -56,7 +56,28 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                const SurfaceInteraction3f &si, const Mask &active) {
                 return shape->eval_attribute_3(name, si, active);
             },
-            "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_3));
+            "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_3))
+       .def("ray_intersect_preliminary",
+            [](Ptr shape, const Ray3f &ray, const Mask &active) {
+                return shape->ray_intersect_preliminary(ray, active);
+            },
+            "ray"_a, "active"_a = true, D(Shape, ray_intersect_preliminary))
+       .def("ray_intersect_preliminary",
+            [](Ptr shape, const Ray3f &ray, const Mask &active) {
+                return shape->ray_intersect_preliminary(ray, active);
+            },
+            "ray"_a, "active"_a = true, D(Shape, ray_intersect_preliminary))
+       .def("ray_intersect",
+            [](Ptr shape, const Ray3f &ray, uint32_t flags, const Mask &active) {
+                return shape->ray_intersect(ray, flags, active);
+            },
+            "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
+            D(Shape, ray_intersect))
+       .def("ray_test",
+            [](Ptr shape, const Ray3f &ray, const Mask &active) {
+                return shape->ray_test(ray, active);
+            },
+            "ray"_a, "active"_a = true, D(Shape, ray_test));
 
     if constexpr (ek::is_array_v<Ptr>)
         bind_enoki_ptr_array(cls);
@@ -74,13 +95,6 @@ MTS_PY_EXPORT(Shape) {
             "it"_a, "sample"_a, "active"_a = true, D(Shape, sample_direction))
         .def("pdf_direction", &Shape::pdf_direction,
             "it"_a, "ps"_a, "active"_a = true, D(Shape, pdf_direction))
-        .def("ray_intersect_preliminary", &Shape::ray_intersect_preliminary,
-             "ray"_a, "active"_a = true,
-             D(Shape, ray_intersect_preliminary))
-        .def("ray_intersect", &Shape::ray_intersect,
-             "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
-             D(Shape, ray_intersect))
-        .def("ray_test", &Shape::ray_test, "ray"_a, "active"_a = true)
         .def("bbox", py::overload_cast<>(
             &Shape::bbox, py::const_), D(Shape, bbox))
         .def("bbox", py::overload_cast<ScalarUInt32>(
