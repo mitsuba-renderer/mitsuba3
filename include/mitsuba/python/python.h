@@ -187,17 +187,22 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
         cls.def("set_index_", [](Array &a, uint32_t index) { *ek::detach(a).index_ptr() = index; });
     }
 
-    cls.def_static("gather_",
-            [](const Array &source, const UInt32 &index, const Mask &mask, bool permute) {
-                if (permute)
-                    return ek::gather<Array, true>(source, index, mask);
-                else
-                    return ek::gather<Array, false>(source, index, mask);
-            });
+    cls.def_static("gather_", [](const Array &source, const UInt32 &index,
+                                 const Mask &mask, bool permute) {
+        if (permute)
+            return ek::gather<Array, true>(source, index, mask);
+        else
+            return ek::gather<Array, false>(source, index, mask);
+    });
 
     cls.def_static("select_",
                    [](const Mask &m, const Array &t, const Array &f) {
                        return ek::select(m, t, f);
+                   });
+
+    cls.def_static("reinterpret_array_",
+                   [](const ek::uint32_array_t<Array> &a) {
+                       return ek::reinterpret_array<Array>(a);
                    });
 }
 
