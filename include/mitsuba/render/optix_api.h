@@ -226,20 +226,20 @@ struct OptixShaderBindingTable {
 /// Various sizes related to the denoiser.
 ///
 /// \see #optixDenoiserComputeMemoryResources()
-typedef struct OptixDenoiserSizes
+struct OptixDenoiserSizes
 {
     size_t       stateSizeInBytes;
     size_t       withOverlapScratchSizeInBytes;
     size_t       withoutOverlapScratchSizeInBytes;
     unsigned int overlapWindowSizeInPixels;
-} OptixDenoiserSizes;
+};
 
 /// Various parameters used by the denoiser
 ///
 /// \see #optixDenoiserInvoke()
 /// \see #optixDenoiserComputeIntensity()
 /// \see #optixDenoiserComputeAverageColor()
-typedef struct OptixDenoiserParams
+struct OptixDenoiserParams
 {
     /// if set to nonzero value, denoise alpha channel (if present) in first inputLayer image
     unsigned int denoiseAlpha;
@@ -260,7 +260,7 @@ typedef struct OptixDenoiserParams
     /// points to three floats. with the default (null pointer) denoised results will not be
     /// optimal.
     CUdeviceptr  hdrAverageColor;
-} OptixDenoiserParams;
+};
 
 /// Input kinds used by the denoiser.
 ///
@@ -268,17 +268,17 @@ typedef struct OptixDenoiserParams
 /// Albedo values must be in the range [0..1] (values less than zero will be clamped to zero).
 /// The normals must be transformed into screen space. The z component is not used.
 /// \see #OptixDenoiserOptions::inputKind
-typedef enum OptixDenoiserInputKind
+enum OptixDenoiserInputKind
 {
     OPTIX_DENOISER_INPUT_RGB               = 0x2301,
     OPTIX_DENOISER_INPUT_RGB_ALBEDO        = 0x2302,
     OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL = 0x2303,
-} OptixDenoiserInputKind;
+};
 
 /// Model kind used by the denoiser.
 ///
 /// \see #optixDenoiserSetModel()
-typedef enum OptixDenoiserModelKind
+enum OptixDenoiserModelKind
 {
     /// Use the model provided by the associated pointer.  See the programming guide for a
     /// description of how to format the data.
@@ -293,21 +293,21 @@ typedef enum OptixDenoiserModelKind
     /// Use the built-in model appropriate for high dynamic range input and support for AOVs
     OPTIX_DENOISER_MODEL_KIND_AOV = 0x2324,
 
-} OptixDenoiserModelKind;
+};
 
 /// Options used by the denoiser
 ///
 /// \see #optixDenoiserCreate()
-typedef struct OptixDenoiserOptions
+struct OptixDenoiserOptions
 {
     /// The kind of denoiser input.
     OptixDenoiserInputKind inputKind;
-} OptixDenoiserOptions;
+};
 
 /// Pixel formats used by the denoiser.
 ///
 /// \see #OptixImage2D::format
-typedef enum OptixPixelFormat
+enum OptixPixelFormat
 {
     OPTIX_PIXEL_FORMAT_HALF3  = 0x2201,  ///< three halfs, RGB
     OPTIX_PIXEL_FORMAT_HALF4  = 0x2202,  ///< four halfs, RGBA
@@ -315,12 +315,12 @@ typedef enum OptixPixelFormat
     OPTIX_PIXEL_FORMAT_FLOAT4 = 0x2204,  ///< four floats, RGBA
     OPTIX_PIXEL_FORMAT_UCHAR3 = 0x2205,  ///< three unsigned chars, RGB
     OPTIX_PIXEL_FORMAT_UCHAR4 = 0x2206   ///< four unsigned chars, RGBA
-} OptixPixelFormat;
+};
 
 /// Image descriptor used by the denoiser.
 ///
 /// \see #optixDenoiserInvoke(), #optixDenoiserComputeIntensity()
-typedef struct OptixImage2D
+struct OptixImage2D
 {
     /// Pointer to the actual pixel data.
     CUdeviceptr data;
@@ -335,7 +335,7 @@ typedef struct OptixImage2D
     unsigned int pixelStrideInBytes;
     /// Pixel format.
     OptixPixelFormat format;
-} OptixImage2D;
+};
 
 // =====================================================
 //             Commonly used OptiX functions

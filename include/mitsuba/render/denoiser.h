@@ -1,4 +1,4 @@
-#pragma once
+// #prsagma once
 
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/platform.h>
@@ -11,17 +11,21 @@ NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float>
 void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
-    std::cout << "In denoiser" << std::endl;
+    std::cout << "In denoiser " << std::endl;
     OptixDeviceContext context = jit_optix_context();
     if(context == nullptr)
         std::cout << "null context" << std::endl;
 
-    OptixDenoiser* denoiser = new OptixDenoiser();        
-    OptixDenoiserSizes* sizes = new OptixDenoiserSizes();
-    OptixDenoiserParams* params = new OptixDenoiserParams();
-    OptixDenoiserOptions* options = new OptixDenoiserOptions();
+    OptixDenoiser denoiser = nullptr;//new OptixDenoiser();   
+    OptixDenoiserSizes sizes = {};// = new OptixDenoiserSizes();   
+    OptixDenoiserParams params = {};// = new OptixDenoiserParams();   
+    OptixDenoiserOptions options = {};// = new OptixDenoiserOptions();
+    // OptixDenoiser* denoiser = (OptixDenoiser*) jit_malloc(AllocType::Device, sizeof(OptixDenoiser));   
+    // OptixDenoiserSizes* sizes = (OptixDenoiserSizes*) jit_malloc(AllocType::Device, sizeof(OptixDenoiserSizes));   
+    // OptixDenoiserParams* params = (OptixDenoiserParams*) jit_malloc(AllocType::Device, sizeof(OptixDenoiserParams));   
+    // OptixDenoiserOptions* options = (OptixDenoiserOptions*) jit_malloc(AllocType::Device, sizeof(OptixDenoiserOptions));    
     OptixDenoiserModelKind modelKind = OPTIX_DENOISER_MODEL_KIND_AOV;
-    options->inputKind = OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL;
+    options.inputKind = OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL;
 
     std::cout << "vars created" << std::endl;
 
@@ -33,19 +37,19 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
     OptixImage2D output;
 
     //TODO check result
-    std::cout << "Creating denoiser" << std::endl;
-    OptixResult result = optixDenoiserCreate(context, options, denoiser); 
-    std::cout << "Denoiser created" << std::endl;
+    std::cout << "Creating denoiser " << context << std::endl;
+    OptixResult result = optixDenoiserCreate(context, &options, &denoiser); 
+    std::cout << "Denoiser created " << std::endl;
     result = optixDenoiserSetModel(denoiser, modelKind, nullptr, 0);
     std::cout << "Model set" << std::endl;
-    result = optixDenoiserComputeMemoryResources(denoiser, noisy.width(), noisy.height(), sizes);
+    result = optixDenoiserComputeMemoryResources(denoiser, noisy.width(), noisy.height(), &sizes);
     std::cout << "Mem computed" << std::endl;
-    scratch_size = static_cast<uint32_t>(sizes->withoutOverlapScratchSizeInBytes / sizeof(float));
+    scratch_size = static_cast<uint32_t>(sizes.withoutOverlapScratchSizeInBytes);
     std::cout << "Scratch size set" << std::endl;
 
     ek::Array<Float> int_float = ek::zero<Float>(1);
     ek::Array<Float> scratch_float = ek::zero<Float>(scratch_size);
-    ek::Array<Float> state_float = ek::zero<Float>(sizes->stateSizeInBytes / sizeof(float));
+    ek::Array<Float> state_float = ek::zero<Float>(sizes.stateSizeInBytes);
     ek::Array<Float> noisy_data = ek::zero<Float>(frame_size);
     ek::Array<Float> normals_data = ek::zero<Float>(frame_size);
     ek::Array<Float> albedo_data = ek::zero<Float>(frame_size);
@@ -60,6 +64,7 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
     CUdeviceptr intensity = (CUdeviceptr) int_float.data();
     CUdeviceptr scratch = (CUdeviceptr) scratch_float.data();
     CUdeviceptr state = (CUdeviceptr) state_float.data();
+    std::cout << "CUdeviceptr set" << std::endl;
 
     inputs[0].data = noisy.data();
     inputs[0].width = noisy.width();
@@ -69,7 +74,7 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
     inputs[0].pixelStrideInBytes = 4 * sizeof(Float);
 
     unsigned int nb_channels = 1;
-    if(albedo!= nullptr) {
+    if(albedo != nullptr) {
         inputs[1].data = (void*) albedo->data();
         inputs[1].width = albedo->width();
         inputs[1].height = albedo->height();
@@ -87,6 +92,7 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
         inputs[2].pixelStrideInBytes = 4 * sizeof(Float);
         nb_channels++;
     }
+    std::cout << "inputs set" << std::endl;
 
     output.data = output_data.data();
     output.width = noisy.width();
@@ -95,27 +101,40 @@ void denoise (Bitmap& noisy, const Bitmap* albedo, const Bitmap* normals) {
     output.rowStrideInBytes = noisy.width() * 4 * sizeof(Float);
     output.pixelStrideInBytes = 4 * sizeof(Float);
 
+    std::cout << "outputs set" << std::endl;
+
     result = optixDenoiserSetup(denoiser, 0, noisy.width(), noisy.height(), state, state_size, scratch, scratch_size);
 
-    params->denoiseAlpha = 0;
-    params->hdrIntensity = intensity;
-    params->blendFactor  = 0.0f;
+    std::cout << "denoiser setup" << std::endl;
+ 
+    params.denoiseAlpha = 0;
+    params.hdrIntensity = intensity;
+    params.blendFactor  = 0.0f;
 
     result = optixDenoiserComputeIntensity(denoiser, 0, inputs, intensity, scratch, scratch_size); 
-    result = optixDenoiserInvoke(denoiser, 0, params, state, state_size, inputs, nb_channels, 0, 0, &output, scratch, scratch_size);
-    if(result != 0)
-        return;
+
+    std::cout << "intensity computed" << std::endl;
+
+    result = optixDenoiserInvoke(denoiser, 0, &params, state, state_size, inputs, nb_channels, 0, 0, &output, scratch, scratch_size);
+
+    std::cout << "invoked" << std::endl;
     
     Float* data_ptr = (Float*) noisy.data();
     Float* output_ptr = (Float*) output.data;
     for(size_t i = 0 ; i < frame_size ; ++i)
         data_ptr[i] = output_ptr[i];
+    
+    std::cout << "data copied" << std::endl;
 
     optixDenoiserDestroy(denoiser);
-    delete options;
-    delete params;
-    delete sizes;
-    delete denoiser;
+
+    std::cout << "denoiser destroyed" << std::endl;
+
+    std::cout << "result : " << (int) result << std::endl;
+    // delete options;
+    // delete params;
+    // delete sizes;
+    // delete denoiser;
 }
 
 template <typename Float>

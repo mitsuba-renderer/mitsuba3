@@ -25,6 +25,13 @@ void optix_initialize() {
     L(optixProgramGroupCreate);
     L(optixProgramGroupDestroy)
     L(optixSbtRecordPackHeader);
+    L(optixDenoiserCreate);
+    L(optixDenoiserSetModel);
+    L(optixDenoiserComputeMemoryResources);
+    L(optixDenoiserSetup);
+    L(optixDenoiserComputeIntensity);
+    L(optixDenoiserInvoke);
+    L(optixDenoiserDestroy);
 
     #undef L
 }
