@@ -171,8 +171,8 @@ public:
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && ek::neq(medium, nullptr);
             Mask active_surface = active && !active_medium;
-            Mask act_null_scatter = false, act_medium_scatter = false,
-                 escaped_medium = false;
+            Mask act_null_scatter = false,  act_emission = false, 
+                 act_medium_scatter = false, escaped_medium = false;
 
             // If the medium does not have a spectrally varying extinction,
             // we can perform a few optimizations to speed up rendering
@@ -204,10 +204,39 @@ public:
             }
 
             if (ek::any_or<true>(active_medium)) {
-                Mask null_scatter = sampler->next_1d(active_medium) >= index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel);
-                act_null_scatter |= null_scatter && active_medium;
-                act_medium_scatter |= !act_null_scatter && active_medium;
-                last_event_was_null = act_null_scatter;
+                // Generate random variable for sampling events
+                auto medium_sample_eta = sampler->next_1d(active_medium);
+
+                // Calculate the probability of events using modified analogue probabilities
+                UnpolarizedSpectrum prob_emission = mi.radiance;
+                UnpolarizedSpectrum prob_scatter  = mi.sigma_t;
+                UnpolarizedSpectrum prob_null     = mi.sigma_n;
+
+                UnpolarizedSpectrum c = prob_emission + prob_scatter + prob_null;
+                ek::masked(c, eq(c, 0.f))            = 1.f;
+                prob_emission /= c;
+                prob_scatter  /= c;
+                prob_null     /= c;
+
+                Mask emission_interaction = medium_sample_eta < index_spectrum(prob_emission, channel);
+                Mask null_interaction     = medium_sample_eta < index_spectrum(prob_emission + prob_null, channel) && !emission_interaction;
+                Mask scatter_interaction  = !emission_interaction && !null_interaction;
+
+                act_emission       |= emission_interaction && active_medium;
+
+                if (ek::any_or<true>(act_emission)) {
+                    update_weights(p_over_f, prob_emission, 1.f, channel, act_emission);
+                    if (ek::any_or<true>(not_spectral)) {
+                        update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_emission);
+                    }
+                    ek::masked(result, act_emission) += mis_weight(p_over_f) * mi.radiance;
+                }
+                
+                active        &= !act_emission;
+                active_medium &= !act_emission;
+                
+                act_medium_scatter |= scatter_interaction  && active_medium;
+                act_null_scatter   |= null_interaction     && active_medium;
 
                 // Count this as a bounce
                 ek::masked(depth, act_medium_scatter) += 1;
@@ -220,12 +249,12 @@ public:
                 specular_chain |= act_medium_scatter && !sample_emitters;
 
                 if (ek::any_or<true>(act_null_scatter)) {
+                    update_weights(p_over_f, prob_null, mi.sigma_n, channel, act_null_scatter);
                     if (ek::any_or<true>(is_spectral)) {
-                        update_weights(p_over_f, mi.sigma_n / mi.combined_extinction, mi.sigma_n, channel, is_spectral && act_null_scatter);
                         update_weights(p_over_f_nee, 1.0f, mi.sigma_n, channel, is_spectral && act_null_scatter);
                     }
                     if (ek::any_or<true>(not_spectral)) {
-                       update_weights(p_over_f, mi.sigma_n, mi.sigma_n, channel, not_spectral && act_null_scatter);
+                       update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_null_scatter);
                        update_weights(p_over_f_nee, 1.0f, mi.sigma_n / mi.combined_extinction, channel, not_spectral && act_null_scatter);
                     }
 
@@ -234,10 +263,9 @@ public:
                 }
 
                 if (ek::any_or<true>(act_medium_scatter)) {
-                    if (ek::any_or<true>(is_spectral))
-                        update_weights(p_over_f, mi.sigma_t / mi.combined_extinction, mi.sigma_s, channel, is_spectral && act_medium_scatter);
+                    update_weights(p_over_f, prob_scatter, mi.sigma_s, channel, act_medium_scatter);
                     if (ek::any_or<true>(not_spectral))
-                        update_weights(p_over_f, mi.sigma_t, mi.sigma_s, channel, not_spectral && act_medium_scatter);
+                        update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_medium_scatter);
 
                     PhaseFunctionContext phase_ctx(sampler);
                     auto phase = mi.medium->phase_function();
@@ -418,13 +446,24 @@ public:
                     ek::masked(ray.o, active_medium)    = mi.p;
                     // Update si.t since we continue the ray into the same direction
                     ek::masked(si.t, active_medium) = si.t - mi.t;
+
+                    UnpolarizedSpectrum prob_emission = mi.radiance;
+                    UnpolarizedSpectrum prob_scatter  = mi.sigma_t;
+                    UnpolarizedSpectrum prob_null     = mi.sigma_n;
+
+                    UnpolarizedSpectrum c = prob_emission + prob_scatter + prob_null;
+                    ek::masked(c, eq(c, 0.f))            = 1.f;
+                    prob_emission /= c;
+                    prob_scatter  /= c;
+                    prob_null     /= c;
+
+                    update_weights(p_over_f_uni, prob_null, mi.sigma_n, channel, is_spectral || not_spectral);
                     if (ek::any_or<true>(is_spectral)) {
                         update_weights(p_over_f_nee, 1.f, mi.sigma_n, channel, is_spectral);
-                        update_weights(p_over_f_uni, mi.sigma_n / mi.combined_extinction, mi.sigma_n, channel, is_spectral);
                     }
                     if (ek::any_or<true>(not_spectral)) {
                         update_weights(p_over_f_nee, 1.f, mi.sigma_n / mi.combined_extinction, channel, not_spectral);
-                        update_weights(p_over_f_uni, mi.sigma_n, mi.sigma_n, channel, not_spectral);
+                        update_weights(p_over_f_uni, mi.combined_extinction, 1.f, channel, not_spectral);
                     }
                 }
             }

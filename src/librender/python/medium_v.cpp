@@ -20,6 +20,10 @@ public:
         PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_combined_extinction, mi, active);
     }
 
+    UnpolarizedSpectrum get_radiance(const MediumInteraction3f &mi, Mask active = true) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_radiance, mi, active);
+    }
+
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi, Mask active = true) const override {
         using Return = std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>;
@@ -55,6 +59,11 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->get_combined_extinction(mi, active); },
             "mi"_a, "active"_a=true,
             D(Medium, get_combined_extinction))
+       .def("get_radiance",
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
+                return ptr->get_radiance(mi, active); },
+            "mi"_a, "active"_a=true,
+            D(Medium, get_radiance))
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
                 return ptr->intersect_aabb(ray); },

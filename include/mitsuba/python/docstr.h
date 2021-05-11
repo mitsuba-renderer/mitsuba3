@@ -3506,6 +3506,8 @@ static const char *__doc_mitsuba_MediumInteraction_sigma_s = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumInteraction_sigma_t = R"doc()doc";
 
+static const char *__doc_mitsuba_MediumInteraction_radiance = R"doc()doc";
+
 static const char *__doc_mitsuba_MediumInteraction_to_local = R"doc(Convert a world-space vector into local shading coordinates)doc";
 
 static const char *__doc_mitsuba_MediumInteraction_to_world = R"doc(Convert a local shading-space vector into world space)doc";
@@ -3534,6 +3536,8 @@ Returns:
     This method returns a pair of (Transmittance, PDF).)doc";
 
 static const char *__doc_mitsuba_Medium_get_combined_extinction = R"doc(Returns the medium's majorant used for delta tracking)doc";
+
+static const char *__doc_mitsuba_Medium_get_radiance = R"doc(Returns the medium radiance evaluated at a given MediumInteraction mi)doc";
 
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated

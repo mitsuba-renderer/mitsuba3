@@ -118,6 +118,7 @@ public:
         m_is_homogeneous = false;
         m_albedo = props.volume<Volume>("albedo", 0.75f);
         m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_radiance = props.volume<Volume>("radiance", 0.f);
 
         m_scale = props.float_("scale", 1.0f);
         m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
@@ -133,6 +134,13 @@ public:
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return m_max_density;
+    }
+
+    UnpolarizedSpectrum
+    get_radiance(const MediumInteraction3f & mi ,
+                 Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        return m_radiance->eval(mi, active);
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -162,22 +170,24 @@ public:
         callback->put_parameter("scale", m_scale);
         callback->put_object("albedo", m_albedo.get());
         callback->put_object("sigma_t", m_sigmat.get());
+        callback->put_object("radiance", m_radiance.get());
         Base::traverse(callback);
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
-            << "  albedo  = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << std::endl
-            << "  scale   = " << string::indent(m_scale) << std::endl
+            << "  albedo   = " << string::indent(m_albedo) << std::endl
+            << "  sigma_t  = " << string::indent(m_sigmat) << std::endl
+            << "  radiance = " << string::indent(m_radiance) << std::endl
+            << "  scale    = " << string::indent(m_scale) << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    ref<Volume> m_sigmat, m_albedo;
+    ref<Volume> m_sigmat, m_albedo, m_radiance;
     ScalarFloat m_scale;
 
     ScalarFloat m_max_density;

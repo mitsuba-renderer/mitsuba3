@@ -98,6 +98,7 @@ MTS_PY_EXPORT(MediumInteraction) {
         .def_field(MediumInteraction3f, sigma_s,    D(MediumInteraction, sigma_s))
         .def_field(MediumInteraction3f, sigma_n,    D(MediumInteraction, sigma_n))
         .def_field(MediumInteraction3f, sigma_t,    D(MediumInteraction, sigma_t))
+        .def_field(MediumInteraction3f, radiance,   D(MediumInteraction, radiance))
         .def_field(MediumInteraction3f, combined_extinction, D(MediumInteraction, combined_extinction))
         .def_field(MediumInteraction3f, mint, D(MediumInteraction, mint))
 
@@ -109,7 +110,7 @@ MTS_PY_EXPORT(MediumInteraction) {
 
     MTS_PY_ENOKI_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
                         medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
-                        combined_extinction, mint)
+                        radiance, combined_extinction, mint)
 }
 
 MTS_PY_EXPORT(PreliminaryIntersection) {

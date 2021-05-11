@@ -29,6 +29,12 @@ public:
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active = true) const = 0;
 
+    /// Returns the medium radiance evaluated
+    /// at a given MediumInteraction mi
+    virtual UnpolarizedSpectrum
+    get_radiance(const MediumInteraction3f &mi,
+                 Mask active = true) const = 0;
+
     /**
      * \brief Sample a free-flight distance in the medium.
      *
@@ -127,6 +133,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_METHOD(sample_interaction)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)
     ENOKI_VCALL_METHOD(get_scattering_coefficients)
+    ENOKI_VCALL_METHOD(get_radiance)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}

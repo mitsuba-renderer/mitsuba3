@@ -83,7 +83,7 @@ struct Version {
 // Check if the name corresponds to an unbounded spectrum property which require
 // special handling
 bool is_unbounded_spectrum(const std::string &name) {
-    return name == "eta" || name == "k" || name == "int_ior" || name == "ext_ior";
+    return name == "eta" || name == "k" || name == "int_ior" || name == "ext_ior" || name == "radiance";
 }
 
 NAMESPACE_BEGIN(detail)
@@ -561,7 +561,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         auto [arg_name, nested_id] =
                             parse_xml(src, ctx, ch, tag, props_nested, param,
                                       arg_counter_nested, depth + 1,
-                                      node_name == "emitter",
+                                      (node_name == "emitter" || node_name == "radiance"),
                                       node_name == "spectrum");
                         if (!nested_id.empty())
                             props_nested.set_named_reference(arg_name, nested_id);
@@ -789,7 +789,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     if (!within_spectrum) {
                         std::string name = node.attribute("name").value();
                         ref<Object> obj = detail::create_texture_from_rgb(
-                            name, color, ctx.variant, within_emitter);
+                            name, color, ctx.variant, within_emitter || name == "radiance");
                         props.set_object(name, obj);
                     } else {
                         props.set_color("color", color);
@@ -847,7 +847,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                     ref<Object> obj = detail::create_texture_from_spectrum(
                         name, const_value, wavelengths, values, ctx.variant,
-                        within_emitter,
+                        within_emitter || name == "radiance",
                         ctx.color_mode == ColorMode::Spectral,
                         ctx.color_mode == ColorMode::Monochromatic);
 
@@ -1094,10 +1094,10 @@ ref<Object> create_texture_from_rgb(const std::string &name,
                                     Color<float, 3> color,
                                     const std::string &variant,
                                     bool within_emitter) {
-    Properties props(within_emitter ? "srgb_d65" : "srgb");
+    Properties props((within_emitter || name == "radiance") ? "srgb_d65" : "srgb");
     props.set_color("color", color);
 
-    if (!within_emitter && is_unbounded_spectrum(name))
+    if (!(within_emitter || name == "radiance") && is_unbounded_spectrum(name))
         props.set_bool("unbounded", true);
 
     return PluginManager::instance()->create_object(
@@ -1116,7 +1116,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 
     if (wavelengths.empty()) {
         Properties props("uniform");
-        if (within_emitter && is_spectral_mode) {
+        if ((within_emitter || name == "radiance") && is_spectral_mode) {
             props.set_plugin_name("d65");
             props.set_float("scale", const_value);
         } else {
@@ -1133,7 +1133,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         /* Values are scaled so that integrating the spectrum against the CIE curves
             and converting to sRGB yields (1, 1, 1) for D65. */
         float unit_conversion = 1.f;
-        if (within_emitter || !is_spectral_mode)
+        if ((within_emitter || name == "radiance") || !is_spectral_mode)
             unit_conversion = MTS_CIE_Y_NORMALIZATION;
 
         /* Detect whether wavelengths are regularly sampled and potentially
@@ -1174,17 +1174,17 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
         } else {
             // In non-spectral mode, pre-integrate against the CIE matching curves
             Color3f color = spectrum_list_to_srgb(
-                wavelengths, values, !(within_emitter || is_unbounded_spectrum(name)));
+                wavelengths, values, !(within_emitter || is_unbounded_spectrum(name) || name == "radiance"));
 
             Properties props;
             if (is_monochromatic_mode) {
                 props = Properties("uniform");
                 props.set_float("value", luminance(color));
             } else {
-                props = Properties(within_emitter ? "srgb_d65" : "srgb");
+                props = Properties((within_emitter || name == "radiance") ? "srgb_d65" : "srgb");
                 props.set_color("color", color);
 
-                if (!within_emitter && is_unbounded_spectrum(name))
+                if (!(within_emitter || name == "radiance") && is_unbounded_spectrum(name))
                     props.set_bool("unbounded", true);
             }
 
