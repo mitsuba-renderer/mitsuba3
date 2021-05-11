@@ -208,12 +208,12 @@ public:
                 auto medium_sample_eta = sampler->next_1d(active_medium);
 
                 // Calculate the probability of events using modified analogue probabilities
-                UnpolarizedSpectrum prob_emission = mi.radiance;
+                UnpolarizedSpectrum prob_emission = ek::select(ek::hmean(mi.radiance) > 0.f, mi.sigma_t, 0.f);
                 UnpolarizedSpectrum prob_scatter  = mi.sigma_t;
                 UnpolarizedSpectrum prob_null     = mi.sigma_n;
 
                 UnpolarizedSpectrum c = prob_emission + prob_scatter + prob_null;
-                ek::masked(c, eq(c, 0.f))            = 1.f;
+                ek::masked(c, ek::eq(c, 0.f))            = 1.f;
                 prob_emission /= c;
                 prob_scatter  /= c;
                 prob_null     /= c;
@@ -447,12 +447,12 @@ public:
                     // Update si.t since we continue the ray into the same direction
                     ek::masked(si.t, active_medium) = si.t - mi.t;
 
-                    UnpolarizedSpectrum prob_emission = mi.radiance;
+                    UnpolarizedSpectrum prob_emission = ek::select(ek::hmean(mi.radiance) > 0.f, mi.sigma_t, 0.f);
                     UnpolarizedSpectrum prob_scatter  = mi.sigma_t;
                     UnpolarizedSpectrum prob_null     = mi.sigma_n;
 
                     UnpolarizedSpectrum c = prob_emission + prob_scatter + prob_null;
-                    ek::masked(c, eq(c, 0.f))            = 1.f;
+                    ek::masked(c, ek::eq(c, 0.f)) = 1.f;
                     prob_emission /= c;
                     prob_scatter  /= c;
                     prob_null     /= c;
