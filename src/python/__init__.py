@@ -13,7 +13,7 @@ try:
     _import('mitsuba.core_ext')
     _import('mitsuba.render_ext')
     _tls = threading.local()
-except ImportError as e:
+except (ImportError, ModuleNotFoundError) as e:
     from .config import PYTHON_EXECUTABLE
     import sys
 
