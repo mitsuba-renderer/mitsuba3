@@ -68,7 +68,7 @@ class Rectangle final : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(ShapePtr)
 
     using typename Base::ScalarSize;
 
@@ -100,7 +100,7 @@ public:
         return bbox;
     }
 
-    ScalarFloat surface_area() const override {
+    Float surface_area() const override {
         return ek::norm(ek::cross(m_frame.s, m_frame.t));
     }
 
@@ -201,7 +201,7 @@ public:
                                 ek::fmadd(pi.prim_uv.y(), 0.5f, 0.5f));
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
-        si.shape    = this;
+        si.shape    = ek::opaque<ShapePtr>(this);
         si.instance = nullptr;
 
         return si;
@@ -249,7 +249,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ScalarFrame3f m_frame;
-    ScalarFloat m_inv_surface_area;
+    Float m_inv_surface_area;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Rectangle, Shape)

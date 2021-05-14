@@ -40,7 +40,7 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 MTS_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform, m_needs_sample_3)
-    MTS_IMPORT_TYPES(Scene, Texture)
+    MTS_IMPORT_TYPES(Scene, Texture, EmitterPtr)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -120,7 +120,7 @@ public:
         ds.time   = it.time;
         ds.pdf    = 1.f;
         ds.delta  = true;
-        ds.emitter = this;
+        ds.emitter = ek::opaque<EmitterPtr>(this);
         ds.d      = -d;
         ds.dist   = dist;
 

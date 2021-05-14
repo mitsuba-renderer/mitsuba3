@@ -89,7 +89,7 @@ class Sphere final : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(ShapePtr)
 
     using typename Base::ScalarSize;
 
@@ -116,29 +116,36 @@ public:
         if (!(ek::abs(S[0][0] - S[1][1]) < 1e-6f && ek::abs(S[0][0] - S[2][2]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
 
-        m_center = T;
-        m_radius = S[0][0];
+        float radius = S[0][0];
 
-        if (m_radius <= 0.f) {
-            m_radius = ek::abs(m_radius);
+        if (radius <= 0.f) {
+            radius = ek::abs(radius);
             m_flip_normals = !m_flip_normals;
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(m_radius), Q, T);
+        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(radius), Q, T);
         m_to_object = m_to_world.inverse();
 
+        // m_radius = ek::opaque<Float>(radius);
+        // m_center = ek::opaque<Point3f>(T);
+        // m_inv_surface_area = ek::opaque<Float>(ek::rcp(surface_area()));
+
+        m_radius = radius;
+        m_center = T;
         m_inv_surface_area = ek::rcp(surface_area());
     }
 
     ScalarBoundingBox3f bbox() const override {
+        ScalarFloat radius   = ek::get_slice(m_radius);
+        ScalarPoint3f center = ek::get_slice(m_center);
         ScalarBoundingBox3f bbox;
-        bbox.min = m_center - m_radius;
-        bbox.max = m_center + m_radius;
+        bbox.min = center - radius;
+        bbox.max = center + radius;
         return bbox;
     }
 
-    ScalarFloat surface_area() const override {
+    Float surface_area() const override {
         return 4.f * ek::Pi<ScalarFloat> * m_radius * m_radius;
     }
 
@@ -276,21 +283,30 @@ public:
                                    ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
+        using Value = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
                                               ek::is_diff_array_v<Float>,
-                                          FloatP, ek::float64_array_t<FloatP>>;
-        using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
-        using Double3 = Vector<Double, 3>;
+                                          ek::float32_array_t<FloatP>, ek::float64_array_t<FloatP>>;
+        using Value3 = Vector<Value, 3>;
 
-        Double mint = Double(ray.mint);
-        Double maxt = Double(ray.maxt);
+        Value radius;
+        Value3 center;
+        if constexpr (!ek::is_jit_array_v<Value>) {
+            radius = (Value) ek::get_slice(m_radius);
+            center = (Value3) ek::get_slice(m_center);
+        } else {
+            radius = Value(m_radius);
+            center = Value3(m_center);
+        }
 
-        Double3 o = Double3(ray.o) - ScalarDouble3(m_center);
-        Double3 d(ray.d);
+        Value mint = Value(ray.mint);
+        Value maxt = Value(ray.maxt);
 
-        Double A = ek::squared_norm(d);
-        Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
-        Double C = ek::squared_norm(o) - ek::sqr((ek::scalar_t<Double>) m_radius);
+        Value3 o = Value3(ray.o) - center;
+        Value3 d(ray.d);
+
+        Value A = ek::squared_norm(d);
+        Value B = ek::scalar_t<Value>(2.f) * ek::dot(o, d);
+        Value C = ek::squared_norm(o) - ek::sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -314,21 +330,30 @@ public:
                                      ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        using Double = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
+        using Value = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
                                               ek::is_diff_array_v<Float>,
-                                          FloatP, ek::float64_array_t<FloatP>>;
-        using ScalarDouble3 = Vector<ek::scalar_t<Double>, 3>;
-        using Double3 = Vector<Double, 3>;
+                                          ek::float32_array_t<FloatP>, ek::float64_array_t<FloatP>>;
+        using Value3 = Vector<Value, 3>;
 
-        Double mint = Double(ray.mint);
-        Double maxt = Double(ray.maxt);
+        Value radius;
+        Value3 center;
+        if constexpr (!ek::is_jit_array_v<Value>) {
+            radius = (Value) ek::get_slice(m_radius);
+            center = (Value3) ek::get_slice(m_center);
+        } else {
+            radius = Value(m_radius);
+            center = Value3(m_center);
+        }
 
-        Double3 o = Double3(ray.o) - ScalarDouble3(m_center);
-        Double3 d(ray.d);
+        Value mint = Value(ray.mint);
+        Value maxt = Value(ray.maxt);
 
-        Double A = ek::squared_norm(d);
-        Double B = ek::scalar_t<Double>(2.f) * ek::dot(o, d);
-        Double C = ek::squared_norm(o) - ek::sqr((ek::scalar_t<Double>) m_radius);
+        Value3 o = Value3(ray.o) - center;
+        Value3 d(ray.d);
+
+        Value A = ek::squared_norm(d);
+        Value B = ek::scalar_t<Value>(2.f) * ek::dot(o, d);
+        Value C = ek::squared_norm(o) - ek::sqr(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -409,12 +434,12 @@ public:
         si.n = si.sh_frame.n;
 
         if (need_dn_duv) {
-            ScalarFloat inv_radius = (m_flip_normals ? -1.f : 1.f) / m_radius;
+            Float inv_radius = (m_flip_normals ? -1.f : 1.f) * ek::rcp(m_radius);
             si.dn_du = si.dp_du * inv_radius;
             si.dn_dv = si.dp_dv * inv_radius;
         }
 
-        si.shape    = this;
+        si.shape    = ek::opaque<ShapePtr>(this);
         si.instance = nullptr;
 
         return si;
@@ -443,8 +468,9 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSphereData));
 
-            OptixSphereData data = { bbox(), (Vector<float, 3>) m_center,
-                                     (float) m_radius };
+            float radius = (float) ek::get_slice(m_radius);
+            Vector<float, 3> center = (Vector<float, 3>) ek::get_slice(m_center);
+            OptixSphereData data = { bbox(), center, radius };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixSphereData));
@@ -467,11 +493,11 @@ public:
     MTS_DECLARE_CLASS()
 private:
     /// Center in world-space
-    ScalarPoint3f m_center;
+    Point3f m_center;
     /// Radius in world-space
-    ScalarFloat m_radius;
+    Float m_radius;
 
-    ScalarFloat m_inv_surface_area;
+    Float m_inv_surface_area;
 
     bool m_flip_normals;
 };

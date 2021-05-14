@@ -87,7 +87,7 @@ operation remains efficient even if only a single pixel is turned on.
 MTS_VARIANT class Projector final : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform, m_needs_sample_3)
-    MTS_IMPORT_TYPES(Texture)
+    MTS_IMPORT_TYPES(Texture, EmitterPtr)
 
     Projector(const Properties &props) : Base(props) {
         m_intensity = Texture::D65(props.float_("scale", 1));
@@ -179,7 +179,7 @@ public:
         ds.time    = it.time;
         ds.pdf     = 1.f;
         ds.delta   = true;
-        ds.emitter = this;
+        ds.emitter = ek::opaque<EmitterPtr>(this);
         ds.d       = ds.p - it.p;
         Float dist_squared = ek::squared_norm(ds.d);
         ds.dist = ek::sqrt(dist_squared);

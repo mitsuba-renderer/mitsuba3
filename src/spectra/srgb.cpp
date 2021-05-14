@@ -37,7 +37,7 @@ public:
         else
             m_value = luminance(color);
 
-        ek::eval(m_value);
+        m_value = ek::opaque(m_value);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {

@@ -68,7 +68,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     Mask valid_mi   = active && (sampled_t <= maxt);
     mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p            = ray(sampled_t);
-    mi.medium       = this;
+    mi.medium       = ek::opaque<MediumPtr>(this);
     mi.mint         = mint;
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
         get_scattering_coefficients(mi, valid_mi);

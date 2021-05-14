@@ -470,8 +470,7 @@ Shape<Float, Spectrum>::eval_attribute_3(const std::string& /*name*/,
     NotImplementedError("eval_attribute_3");
 }
 
-MTS_VARIANT typename Shape<Float, Spectrum>::ScalarFloat
-Shape<Float, Spectrum>::surface_area() const {
+MTS_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
     NotImplementedError("surface_area");
 }
 
