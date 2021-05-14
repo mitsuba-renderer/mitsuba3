@@ -63,7 +63,7 @@ template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture, EmitterPtr)
 
     using Warp = Hierarchical2D<Float, 0>;
 
@@ -182,7 +182,7 @@ public:
         ds.time   = it.time;
         ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))), 0.f);
         ds.delta  = false;
-        ds.emitter = this;
+        ds.emitter = ek::opaque<EmitterPtr>(this);
         ds.d      = d;
         ds.dist   = dist;
 

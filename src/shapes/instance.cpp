@@ -52,7 +52,7 @@ template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object)
-    MTS_IMPORT_TYPES(BSDF)
+    MTS_IMPORT_TYPES(BSDF, ShapePtr)
 
     using typename Base::ScalarSize;
     using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
@@ -174,7 +174,7 @@ public:
             si.dn_dv -= tn * ek::dot(tn, si.dn_dv);
         }
 
-        si.instance = this;
+        si.instance = ek::opaque<ShapePtr>(this);
 
         return si;
     }

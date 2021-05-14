@@ -43,7 +43,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override{ return m_bbox; }
 
-    ScalarFloat surface_area() const override { return 0.f; }
+    Float surface_area() const override { return 0.f; }
 
     MTS_INLINE ScalarSize effective_primitive_count() const override { return 0; }
 

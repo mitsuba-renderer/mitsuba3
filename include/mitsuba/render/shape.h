@@ -276,7 +276,7 @@ public:
      *
      * The default implementation throws an exception.
      */
-    virtual ScalarFloat surface_area() const;
+    virtual Float surface_area() const;
 
     /**
      * \brief Evaluate a specific shape attribute at the given surface interaction.

@@ -40,7 +40,7 @@ template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_world_transform)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture, EmitterPtr)
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
@@ -92,7 +92,7 @@ public:
         ds.time  = it.time;
         ds.pdf   = 1.f;
         ds.delta = true;
-        ds.emitter = this;
+        ds.emitter = ek::opaque<EmitterPtr>(this);
         ds.d     = ds.p - it.p;
         ds.dist  = ek::norm(ds.d);
 

@@ -68,7 +68,7 @@ class Disk final : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(ShapePtr)
 
     using typename Base::ScalarSize;
 
@@ -83,16 +83,16 @@ public:
     void update() {
         m_to_object = m_to_world.inverse();
 
-        ScalarVector3f dp_du = m_to_world * ScalarVector3f(1.f, 0.f, 0.f);
-        ScalarVector3f dp_dv = m_to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        Vector3f dp_du = m_to_world * ScalarVector3f(1.f, 0.f, 0.f);
+        Vector3f dp_dv = m_to_world * ScalarVector3f(0.f, 1.f, 0.f);
 
         m_du = ek::norm(dp_du);
         m_dv = ek::norm(dp_dv);
 
-        ScalarNormal3f n = ek::normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
-        m_frame = ScalarFrame3f(dp_du / m_du, dp_dv / m_dv, n);
+        Normal3f n = ek::normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
 
-        m_inv_surface_area = 1.f / surface_area();
+        m_inv_surface_area = ek::rcp(surface_area());
    }
 
     ScalarBoundingBox3f bbox() const override {
@@ -104,9 +104,9 @@ public:
         return bbox;
     }
 
-    ScalarFloat surface_area() const override {
+    Float surface_area() const override {
         // First compute height of the ellipse
-        ScalarFloat h = ek::sqrt(ek::sqr(m_dv) - ek::sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
+        Float h = ek::sqrt(ek::sqr(m_dv) - ek::sqr(ek::dot(m_dv * m_frame.t, m_frame.s)));
         return ek::Pi<ScalarFloat> * m_du * h;
     }
 
@@ -219,7 +219,7 @@ public:
         si.sh_frame.n = m_frame.n;
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
-        si.shape    = this;
+        si.shape    = ek::opaque<ShapePtr>(this);
         si.instance = nullptr;
 
         return si;
@@ -266,9 +266,9 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarFrame3f m_frame;
-    ScalarFloat m_du, m_dv;
-    ScalarFloat m_inv_surface_area;
+    Frame3f m_frame;
+    Float m_du, m_dv;
+    Float m_inv_surface_area;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Disk, Shape)

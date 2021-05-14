@@ -379,8 +379,7 @@ Mesh<Float, Spectrum>::primitive_count() const {
     return face_count();
 }
 
-MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarFloat
-Mesh<Float, Spectrum>::surface_area() const {
+MTS_VARIANT Float Mesh<Float, Spectrum>::surface_area() const {
     ensure_pmf_built();
     return ek::hsum(m_area_pmf.sum());
 }
@@ -448,7 +447,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     if (ek::none_or<false>(pi.is_valid()))
         return ek::zero<SurfaceInteraction3f>();
 
-    pi.shape = this;
+    pi.shape = ek::opaque<ShapePtr>(this);
 
     return pi.compute_surface_interaction(ray, hit_flags, active);
 }
@@ -596,7 +595,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         si.sh_frame.n = si.n;
     }
 
-    si.shape    = this;
+    si.shape    = ek::opaque<ShapePtr>(this);
     si.instance = nullptr;
 
     return si;

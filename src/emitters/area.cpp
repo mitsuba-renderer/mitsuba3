@@ -45,7 +45,7 @@ template <typename Float, typename Spectrum>
 class AreaLight final : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_shape, m_medium)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture, EmitterPtr)
 
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
@@ -156,7 +156,7 @@ public:
             spec = m_radiance->eval(si, active) / ds.pdf;
         }
 
-        ds.emitter = this;
+        ds.emitter = ek::opaque<EmitterPtr>(this);
         return { ds, unpolarized<Spectrum>(spec) & active };
     }
 

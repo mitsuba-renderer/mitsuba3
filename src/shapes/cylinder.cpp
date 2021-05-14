@@ -77,7 +77,7 @@ class Cylinder final : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES()
+    MTS_IMPORT_TYPES(ShapePtr)
 
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
@@ -199,7 +199,7 @@ public:
                               Point3fP8(-ek::Infinity<ScalarFloat>))));
     }
 
-    ScalarFloat surface_area() const override {
+    Float surface_area() const override {
         return 2.f * ek::Pi<ScalarFloat> * m_radius * m_length;
     }
 
@@ -318,7 +318,7 @@ public:
                dz = Double(ray.d.z());
 
         ek::scalar_t<Double> radius = ek::scalar_t<Double>(m_radius),
-                         length = ek::scalar_t<Double>(m_length);
+                             length = ek::scalar_t<Double>(m_length);
 
         Double A = ek::sqr(dx) + ek::sqr(dy),
                B = ek::scalar_t<Double>(2.f) * (dx * ox + dy * oy),
@@ -393,7 +393,7 @@ public:
             si.dn_dv = Vector3f(0.f);
         }
 
-        si.shape    = this;
+        si.shape    = ek::opaque<ShapePtr>(this);
         si.instance = nullptr;
 
         return si;
@@ -447,7 +447,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ScalarFloat m_radius, m_length;
-    ScalarFloat m_inv_surface_area;
+    Float m_inv_surface_area;
     bool m_flip_normals;
 };
 
