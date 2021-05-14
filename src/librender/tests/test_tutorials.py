@@ -35,7 +35,7 @@ tutorials_dir = realpath(join(dirname(__file__), '../../../docs/tutorials'))
 tutorials = glob.glob(join(tutorials_dir, '*', '**.ipynb'))
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 @pytest.mark.parametrize("notebook", tutorials)
 def test_tutorials(notebook, tmp_path):
     nb = run_notebook(notebook, tmp_path)
