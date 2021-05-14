@@ -457,7 +457,7 @@ public:
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
             using FloatX = DynamicBuffer<ScalarFloat>;
             using Vector3fX = Vector<FloatX, 3>;
-            ScalarFloat eta = ek::hsum(m_eta), alpha = ek::hsum(m_alpha);
+            ScalarFloat eta = ek::get_slice(m_eta), alpha = ek::get_slice(m_alpha);
 
             using FloatP = ek::Packet<ek::scalar_t<Float>>;
             mitsuba::MicrofacetDistribution<FloatP, Spectrum> distr(m_type, alpha);

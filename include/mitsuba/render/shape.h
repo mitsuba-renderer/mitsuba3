@@ -569,11 +569,17 @@ NAMESPACE_END(mitsuba)
     std::tuple<FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                 \
     ray_intersect_preliminary_packet(                                          \
         const Ray3fP##N &ray, MaskP##N active) const override {                \
-        return ray_intersect_preliminary_impl<FloatP##N>(ray, active);         \
+        if constexpr (!ek::is_cuda_array_v<Float>)                             \
+            return ray_intersect_preliminary_impl<FloatP##N>(ray, active);     \
+        else                                                                   \
+            Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
     }                                                                          \
     MaskP##N ray_test_packet(const Ray3fP##N &ray, MaskP##N active)            \
         const override {                                                       \
-        return ray_test_impl<FloatP##N>(ray, active);                          \
+        if constexpr (!ek::is_cuda_array_v<Float>)                             \
+            return ray_test_impl<FloatP##N>(ray, active);                      \
+        else                                                                   \
+            Throw("ray_intersect_preliminary_packet() CUDA not supported");    \
     }
 
 // Macro to define ray intersection methods given an *_impl() templated implementation
