@@ -43,9 +43,9 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
 
     for (auto &[name, obj] : props.objects(false)) {
         Emitter *emitter = dynamic_cast<Emitter *>(obj.get());
-        Sensor *sensor = dynamic_cast<Sensor *>(obj.get());
-        BSDF *bsdf = dynamic_cast<BSDF *>(obj.get());
-        Medium *medium = dynamic_cast<Medium *>(obj.get());
+        Sensor *sensor   = dynamic_cast<Sensor *>(obj.get());
+        BSDF *bsdf       = dynamic_cast<BSDF *>(obj.get());
+        Medium *medium   = dynamic_cast<Medium *>(obj.get());
 
         if (emitter) {
             if (m_emitter)
@@ -497,8 +497,6 @@ Shape<Float, Spectrum>::effective_primitive_count() const {
 }
 
 MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
-    callback->put_parameter("to_world", m_to_world);
-
     callback->put_object("bsdf", m_bsdf.get());
     if (m_emitter)
         callback->put_object("emitter", m_emitter.get());

@@ -54,7 +54,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert ek.allclose(camera.shutter_open_time(), s_time)
     assert camera.needs_aperture_sample()
     assert camera.bbox() == BoundingBox3f(origin, origin)
-    assert ek.allclose(camera.world_transform().eval(0).matrix,
+    assert ek.allclose(camera.world_transform().matrix,
                        Transform4f.look_at(origin, Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 

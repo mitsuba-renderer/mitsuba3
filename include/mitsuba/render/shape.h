@@ -547,8 +547,8 @@ protected:
     ref<Medium> m_exterior_medium;
     std::string m_id;
 
-    ScalarTransform4f m_to_world;
-    ScalarTransform4f m_to_object;
+    Transform4f m_to_world;
+    Transform4f m_to_object;
 
 #if defined(MTS_ENABLE_CUDA)
     /// OptiX hitgroup data buffer

@@ -39,7 +39,7 @@ def test_construct(variant_scalar_rgb):
     ))
     assert not sensor.bbox().valid()  # Degenerate bounding box
     assert ek.allclose(
-        sensor.world_transform().eval(0.).matrix,
+        sensor.world_transform().matrix,
         [[-1, 0, 0, 0],
          [0, 0, 1, 0],
          [0, 1, 0, 0],
@@ -50,7 +50,7 @@ def test_construct(variant_scalar_rgb):
     sensor = make_sensor(origin=[0, 0, 0], direction=[0, 1, 0])
     assert not sensor.bbox().valid()  # Degenerate bounding box
     assert ek.allclose(
-        sensor.world_transform().eval(0.).matrix,
+        sensor.world_transform().matrix,
         [[0, 1, 0, 0],
          [0, 0, 1, 0],
          [1, 0, 0, 0],
@@ -69,7 +69,7 @@ def test_construct(variant_scalar_rgb):
     )
     assert not sensor.bbox().valid()  # Degenerate bounding box
     assert ek.allclose(
-        sensor.world_transform().eval(0.).matrix,
+        sensor.world_transform().matrix,
         [[-1, 0, 0, 0],
          [0, 0, 1, 0],
          [0, 1, 0, 0],

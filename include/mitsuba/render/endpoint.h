@@ -164,8 +164,8 @@ public:
 
 
     /// Return the local space to world space transformation
-    const AnimatedTransform *world_transform() const {
-        return m_world_transform.get();
+    Transform4f world_transform() const {
+        return m_to_world;
     }
 
     /**
@@ -238,7 +238,7 @@ protected:
     virtual ~Endpoint();
 
 protected:
-    ref<const AnimatedTransform> m_world_transform;
+    Transform4f m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;

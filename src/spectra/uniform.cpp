@@ -70,6 +70,10 @@ public:
 
     Float mean() const override { return ek::hmean(m_value); }
 
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        ek::make_opaque(m_value);
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("value", m_value);
     }

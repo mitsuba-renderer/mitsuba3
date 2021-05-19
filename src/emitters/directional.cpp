@@ -39,8 +39,8 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
 MTS_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform, m_needs_sample_3)
-    MTS_IMPORT_TYPES(Scene, Texture, EmitterPtr)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MTS_IMPORT_TYPES(Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -55,9 +55,8 @@ public:
             ScalarVector3f direction(ek::normalize(props.vector3f("direction")));
             auto [up, unused] = coordinate_system(direction);
 
-            m_world_transform =
-                new AnimatedTransform(ScalarTransform4f::look_at(
-                    ScalarPoint3f(0.0f), ScalarPoint3f(direction), up));
+            m_to_world = ScalarTransform4f::look_at(0.0f, ScalarPoint3f(direction), up);
+            ek::make_opaque(m_to_world);
         }
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
@@ -89,14 +88,13 @@ public:
             sample_wavelength<Float, Spectrum>(wavelength_sample);
 
         // 2. Sample spatial component
-        const Transform4f &trafo = m_world_transform->eval(time, active);
         Point2f offset =
             warp::square_to_uniform_disk_concentric(spatial_sample);
         Vector3f perp_offset =
-            trafo.transform_affine(Vector3f{ offset.x(), offset.y(), 0.f });
+            m_to_world.transform_affine(Vector3f{ offset.x(), offset.y(), 0.f });
 
         // 3. Set ray direction
-        Vector3f d = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        Vector3f d = m_to_world.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
         return { Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius,
                        d, time, wavelengths),
@@ -109,8 +107,7 @@ public:
                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = m_world_transform->eval(it.time, active)
-                         .transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        Vector3f d = m_to_world.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
         Float dist = 2.f * m_bsphere.radius;
 
         DirectionSample3f ds;
@@ -120,7 +117,7 @@ public:
         ds.time   = it.time;
         ds.pdf    = 1.f;
         ds.delta  = true;
-        ds.emitter = ek::opaque<EmitterPtr>(this);
+        ds.emitter = this;
         ds.d      = -d;
         ds.dist   = dist;
 

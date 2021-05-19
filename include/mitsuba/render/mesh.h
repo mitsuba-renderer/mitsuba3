@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(ShapePtr)
+    MTS_IMPORT_TYPES()
     MTS_IMPORT_BASE(Shape, m_to_world, set_children)
 
     // Mesh is always stored in single precision

@@ -52,17 +52,12 @@ template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_id, m_to_world, m_to_object)
-    MTS_IMPORT_TYPES(BSDF, ShapePtr)
+    MTS_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
     using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
 
-    Instance(const Properties &props) {
-        m_id = props.id();
-
-        m_to_world = props.transform("to_world", ScalarTransform4f());
-        m_to_object = m_to_world.inverse();
-
+    Instance(const Properties &props) : Base(props) {
         for (auto &kv : props.objects()) {
             Base *shape = dynamic_cast<Base *>(kv.second.get());
             if (shape && shape->is_shapegroup()) {
@@ -76,9 +71,12 @@ public:
 
         if (!m_shapegroup)
             Throw("A reference to a 'shapegroup' must be specified!");
+
+        ek::make_opaque(m_to_world, m_to_object);
     }
 
     ScalarBoundingBox3f bbox() const override {
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
         const ScalarBoundingBox3f &bbox = m_shapegroup->bbox();
 
         // If the shape group is empty, return the invalid bbox
@@ -87,7 +85,7 @@ public:
 
         ScalarBoundingBox3f result;
         for (int i = 0; i < 8; ++i)
-            result.expand(m_to_world * bbox.corner(i));
+            result.expand(to_world * bbox.corner(i));
         return result;
     }
 
@@ -174,7 +172,7 @@ public:
             si.dn_dv -= tn * ek::dot(tn, si.dn_dv);
         }
 
-        si.instance = ek::opaque<ShapePtr>(this);
+        si.instance = this;
 
         return si;
     }
@@ -195,9 +193,10 @@ public:
     RTCGeometry embree_geometry(RTCDevice device) override {
         ENOKI_MARK_USED(device);
         if constexpr (!ek::is_cuda_array_v<Float>) {
+            auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
-            ek::Matrix<ScalarFloat32, 4> matrix(m_to_world.matrix);
+            ek::Matrix<ScalarFloat32, 4> matrix(to_world.matrix);
             rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &matrix);
             rtcCommitGeometry(instance);
             return instance;
@@ -212,7 +211,8 @@ public:
                                    std::vector<OptixInstance>& instances,
                                    uint32_t instance_id,
                                    const ScalarTransform4f& transf) override {
-        m_shapegroup->optix_prepare_ias(context, instances, instance_id, transf * m_to_world);
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
+        m_shapegroup->optix_prepare_ias(context, instances, instance_id, transf * to_world);
     }
 
     virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &,

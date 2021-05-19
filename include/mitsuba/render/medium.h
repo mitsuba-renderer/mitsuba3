@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Medium : public Object {
 public:
-    MTS_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture, MediumPtr);
+    MTS_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
 
     /// Intersets a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>

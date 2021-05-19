@@ -198,7 +198,8 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_inv_eta = 1.f / m_eta;
+        m_inv_eta = ek::rcp(m_eta);
+        ek::make_opaque(m_eta, m_inv_eta);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -239,7 +240,7 @@ public:
         active &= ek::neq(bs.pdf, 0.f);
 
         auto [F, cos_theta_t, eta_it, eta_ti] =
-            fresnel(ek::dot(si.wi, m), Float(m_eta));
+            fresnel(ek::dot(si.wi, m), m_eta);
 
         // Select the lobe to be sampled
         UnpolarizedSpectrum weight;
@@ -327,8 +328,8 @@ public:
         Mask reflect = cos_theta_i * cos_theta_o > 0.f;
 
         // Determine the relative index of refraction
-        Float eta     = ek::select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta)),
-              inv_eta = ek::select(cos_theta_i > 0.f, Float(m_inv_eta), Float(m_eta));
+        Float eta     = ek::select(cos_theta_i > 0.f, m_eta, m_inv_eta),
+              inv_eta = ek::select(cos_theta_i > 0.f, m_inv_eta, m_eta);
 
         // Compute the half-vector
         Vector3f m = ek::normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
@@ -347,7 +348,7 @@ public:
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(ek::dot(si.wi, m), Float(m_eta)));
+        Float F = std::get<0>(fresnel(ek::dot(si.wi, m), m_eta));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
@@ -405,7 +406,7 @@ public:
                   (Mask(has_transmission) && !reflect);
 
         // Determine the relative index of refraction
-        Float eta = ek::select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta));
+        Float eta = ek::select(cos_theta_i > 0.f, m_eta, m_inv_eta);
 
         // Compute the half-vector
         Vector3f m = ek::normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
@@ -444,7 +445,7 @@ public:
         Float prob = sample_distr.pdf(ek::mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
 
         if (likely(has_transmission && has_reflection)) {
-            Float F = std::get<0>(fresnel(ek::dot(si.wi, m), Float(m_eta)));
+            Float F = std::get<0>(fresnel(ek::dot(si.wi, m), m_eta));
             prob *= ek::select(reflect, F, 1.f - F);
         }
 
@@ -473,8 +474,8 @@ public:
                   (Mask(has_transmission) && !reflect);
 
         // Determine the relative index of refraction
-        Float eta     = ek::select(cos_theta_i > 0.f, Float(m_eta), Float(m_inv_eta)),
-              inv_eta = ek::select(cos_theta_i > 0.f, Float(m_inv_eta), Float(m_eta));
+        Float eta     = ek::select(cos_theta_i > 0.f, m_eta, m_inv_eta),
+              inv_eta = ek::select(cos_theta_i > 0.f, m_inv_eta, m_eta);
 
         // Compute the half-vector
         Vector3f m = ek::normalize(si.wi + wo * ek::select(reflect, Float(1.f), eta));
@@ -503,7 +504,7 @@ public:
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(dot_wi_m, Float(m_eta)));
+        Float F = std::get<0>(fresnel(dot_wi_m, m_eta));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
@@ -604,7 +605,7 @@ private:
     ref<Texture> m_specular_transmittance;
     MicrofacetType m_type;
     ref<Texture> m_alpha_u, m_alpha_v;
-    ScalarFloat m_eta, m_inv_eta;
+    Float m_eta, m_inv_eta;
     bool m_sample_visible;
 };
 

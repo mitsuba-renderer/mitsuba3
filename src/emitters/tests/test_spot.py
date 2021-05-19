@@ -53,7 +53,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     inv_transition_width = 1 / (cutoff_angle_rad - beam_width_rad)
     emitter, spectrum = create_emitter_and_spectrum(lookat, cutoff_angle, spectrum_key)
     eval_t = 0.3
-    trafo = Transform4f(emitter.world_transform().eval(eval_t))
+    trafo = Transform4f(emitter.world_transform())
 
     # Create a surface iteration
     it = ek.zero(SurfaceInteraction3f)
@@ -110,7 +110,7 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     emitter, spectrum = create_emitter_and_spectrum(
         lookat, cutoff_angle, spectrum_key)
     eval_t = 0.3
-    trafo = Transform4f(emitter.world_transform().eval(eval_t))
+    trafo = Transform4f(emitter.world_transform())
 
     # Sample a local direction and calculate local angle
     dir_sample = pos_sample  # not being used anyway

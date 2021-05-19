@@ -98,7 +98,7 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(ProjectiveCamera, m_world_transform, m_needs_sample_3, m_film, m_sampler,
+    MTS_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3, m_film, m_sampler,
                     m_resolution, m_shutter_open, m_shutter_open_time, m_near_clip,
                     m_far_clip, m_focus_distance)
     MTS_IMPORT_TYPES()
@@ -118,7 +118,7 @@ public:
             m_aperture_radius = ek::Epsilon<Float>;
         }
 
-        if (m_world_transform->has_scale())
+        if (ek::any(m_to_world.has_scale()))
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         m_camera_to_sample = perspective_projection(
@@ -180,9 +180,8 @@ public:
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
-        auto trafo = m_world_transform->eval(ray.time, active);
-        ray.o = trafo.transform_affine(aperture_p);
-        ray.d = trafo * d;
+        ray.o = m_to_world.transform_affine(aperture_p);
+        ray.d = m_to_world * d;
 
         return { ray, wav_weight };
     }
@@ -218,21 +217,22 @@ public:
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
-        auto trafo = m_world_transform->eval(ray.time, active);
-        ray.o = trafo.transform_affine(aperture_p);
-        ray.d = trafo * d;
+        ray.o = m_to_world.transform_affine(aperture_p);
+        ray.d = m_to_world * d;
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = trafo * ek::normalize(Vector3f(focus_p_x - aperture_p));
-        ray.d_y = trafo * ek::normalize(Vector3f(focus_p_y - aperture_p));
+        ray.d_x = m_to_world * ek::normalize(Vector3f(focus_p_x - aperture_p));
+        ray.d_y = m_to_world * ek::normalize(Vector3f(focus_p_y - aperture_p));
         ray.has_differentials = true;
 
         return { ray, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {
-        return m_world_transform->translation_bounds();
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
+        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        return ScalarBoundingBox3f(p, p);
     }
 
     //! @}
@@ -262,7 +262,7 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
-            << "  world_transform = " << indent(m_world_transform)  << std::endl
+            << "  to_world = " << indent(m_to_world)  << std::endl
             << "]";
         return oss.str();
     }

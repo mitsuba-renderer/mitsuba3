@@ -392,7 +392,7 @@ public:
 
         m_specular_sampling_weight = s_mean / (d_mean + s_mean);
 
-        ek::eval(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
+        ek::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
     }
 
     std::string to_string() const override {

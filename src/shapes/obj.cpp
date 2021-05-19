@@ -140,6 +140,8 @@ public:
         triangles.reserve(vertex_guess * 2);
         vertex_map.resize(vertex_guess);
 
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
+
         ScalarIndex vertex_ctr = 0;
 
         const char *ptr = (const char *) mmap->data();
@@ -173,7 +175,7 @@ public:
                     p[i] = strtof(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                p = m_to_world.transform_affine(p);
+                p = to_world.transform_affine(p);
                 if (unlikely(!all(ek::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
                 m_bbox.expand(p);
@@ -187,7 +189,7 @@ public:
                     n[i] = strtof(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
-                n = ek::normalize(m_to_world.transform_affine(n));
+                n = ek::normalize(to_world.transform_affine(n));
                 if (unlikely(!all(ek::isfinite(n))))
                     fail("mesh contains invalid vertex normal data");
                 normals.push_back(n);

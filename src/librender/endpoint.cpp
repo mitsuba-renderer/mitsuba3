@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(props.id()) {
-    m_world_transform = props.animated_transform("to_world", ScalarTransform4f()).get();
+    m_to_world = props.transform("to_world", ScalarTransform4f());
 
     for (auto &[name, obj] : props.objects(false)) {
         Medium *medium = dynamic_cast<Medium *>(obj.get());

@@ -42,7 +42,7 @@ simply instantiate the desired sensor shape and specify an
 
 MTS_VARIANT class IrradianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_film, m_world_transform, m_shape)
+    MTS_IMPORT_BASE(Sensor, m_film, m_shape)
     MTS_IMPORT_TYPES(Shape)
 
     IrradianceMeter(const Properties &props) : Base(props) {
