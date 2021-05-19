@@ -39,8 +39,8 @@ uniformly radiates illumination into all directions.
 template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_world_transform)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture, EmitterPtr)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_to_world)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     PointLight(const Properties &props) : Base(props) {
         if (props.has_property("position")) {
@@ -48,8 +48,8 @@ public:
                 Throw("Only one of the parameters 'position' and 'to_world' "
                       "can be specified at the same time!'");
 
-            m_world_transform = new AnimatedTransform(
-                ScalarTransform4f::translate(ScalarVector3f(props.point3f("position"))));
+            m_to_world = ScalarTransform4f::translate(ScalarVector3f(props.point3f("position")));
+            ek::make_opaque(m_to_world);
         }
 
         m_intensity = props.texture<Texture>("intensity", Texture::D65(1.f));
@@ -69,9 +69,7 @@ public:
 
         spec_weight *= 4.f * ek::Pi<Float>;
 
-        const auto &trafo = m_world_transform->eval(time);
-
-        Ray3f ray(trafo * Point3f(0.f),
+        Ray3f ray(m_to_world * Point3f(0.f),
                   warp::square_to_uniform_sphere(dir_sample),
                   time, wavelengths);
 
@@ -83,16 +81,14 @@ public:
                                                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        auto trafo = m_world_transform->eval(it.time, active);
-
         DirectionSample3f ds;
-        ds.p     = trafo.translation();
+        ds.p     = m_to_world.translation();
         ds.n     = 0.f;
         ds.uv    = 0.f;
         ds.time  = it.time;
         ds.pdf   = 1.f;
         ds.delta = true;
-        ds.emitter = ek::opaque<EmitterPtr>(this);
+        ds.emitter = this;
         ds.d     = ds.p - it.p;
         ds.dist  = ek::norm(ds.d);
 
@@ -118,7 +114,9 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        return m_world_transform->translation_bounds();
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
+        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        return ScalarBoundingBox3f(p, p);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -128,7 +126,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "PointLight[" << std::endl
-            << "  world_transform = " << string::indent(m_world_transform) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  medium = " << (m_medium ? string::indent(m_medium) : "")
             << "]";

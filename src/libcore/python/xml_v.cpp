@@ -59,7 +59,7 @@ MTS_PY_EXPORT(xml) {
             auto obj = cast_object(load_dict<Float, Spectrum>("", dict, instances));
             if constexpr (ek::is_jit_array_v<Float>) {
                 ek::eval();
-                ek::sync_device();
+                ek::sync_thread();
             }
             return obj;
         },

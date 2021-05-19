@@ -86,8 +86,8 @@ operation remains efficient even if only a single pixel is turned on.
 
 MTS_VARIANT class Projector final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform, m_needs_sample_3)
-    MTS_IMPORT_TYPES(Texture, EmitterPtr)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MTS_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
         m_intensity = Texture::D65(props.float_("scale", 1));
@@ -140,13 +140,11 @@ public:
         Point3f near_p = m_sample_to_camera * Point3f(uv.x(), uv.y(), 0.f);
 
         // 5. Generate transformed ray
-        Transform4f trafo = m_world_transform->eval(time, active);
-
         Ray3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;
-        ray.o = trafo.translation();
-        ray.d = trafo * Vector3f(ek::normalize(near_p));
+        ray.o = m_to_world.translation();
+        ray.d = m_to_world * Vector3f(ek::normalize(near_p));
 
         return { ray, unpolarized<Spectrum>(weight / pdf) & active };
     }
@@ -157,8 +155,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        Transform4f trafo = m_world_transform->eval(it.time, active);
-        Point it_local = trafo.inverse().transform_affine(it.p);
+        Point it_local = m_to_world.inverse().transform_affine(it.p);
 
         // 2. Map to UV coordinates
         Point2f uv = ek::head<2>(m_camera_to_sample * it_local);
@@ -173,13 +170,13 @@ public:
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
         DirectionSample3f ds;
 
-        ds.p       = trafo.translation();
-        ds.n       = trafo * ScalarVector3f(0, 0, 1);
+        ds.p       = m_to_world.translation();
+        ds.n       = m_to_world * ScalarVector3f(0, 0, 1);
         ds.uv      = uv;
         ds.time    = it.time;
         ds.pdf     = 1.f;
         ds.delta   = true;
-        ds.emitter = ek::opaque<EmitterPtr>(this);
+        ds.emitter = this;
         ds.d       = ds.p - it.p;
         Float dist_squared = ek::squared_norm(ds.d);
         ds.dist = ek::sqrt(dist_squared);
@@ -207,7 +204,7 @@ public:
         oss << "Projector[" << std::endl
             << "  x_fov = " << m_x_fov << "," << std::endl
             << "  irradiance = " << string::indent(m_irradiance) << "," << std::endl
-            << "  world_transform = " << string::indent(m_world_transform) << std::endl
+            << "  to_world = " << string::indent(m_to_world) << std::endl
             << "]";
         return oss.str();
     }

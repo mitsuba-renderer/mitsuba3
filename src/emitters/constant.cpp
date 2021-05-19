@@ -33,7 +33,7 @@ template <typename Float, typename Spectrum>
 class ConstantBackgroundEmitter final : public Emitter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Emitter, m_flags)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture, EmitterPtr)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
         /* Until `set_scene` is called, we have no information
@@ -93,7 +93,7 @@ public:
         ds.time   = it.time;
         ds.pdf    = warp::square_to_uniform_sphere_pdf(d);
         ds.delta  = false;
-        ds.emitter = ek::opaque<EmitterPtr>(this);
+        ds.emitter = this;
         ds.d      = d;
         ds.dist   = dist;
 

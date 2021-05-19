@@ -66,7 +66,7 @@ after which it remains at the maximum value. A projection texture may optionally
 template <typename Float, typename Spectrum>
 class SpotLight final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_world_transform)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
     MTS_IMPORT_TYPES(Scene, Texture)
 
     SpotLight(const Properties &props) : Base(props) {
@@ -122,7 +122,6 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample directional component
-        const Transform4f &trafo = m_world_transform->eval(time, active);
         Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float)m_cos_cutoff_angle);
         Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float)m_cos_cutoff_angle);
 
@@ -133,7 +132,7 @@ public:
 
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_dir, wavelengths, active);
 
-        return { Ray3f(trafo.translation(), trafo * local_dir, time, wavelengths),
+        return { Ray3f(m_to_world.translation(), m_to_world * local_dir, time, wavelengths),
                  unpolarized<Spectrum>(falloff_spec / pdf_dir) };
     }
 
@@ -142,10 +141,8 @@ public:
                                                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Transform4f trafo = m_world_transform->eval(it.time, active);
-
         DirectionSample3f ds;
-        ds.p        = trafo.translation();
+        ds.p        = m_to_world.translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
         ds.pdf      = 1.f;
@@ -156,7 +153,7 @@ public:
         ds.dist     = ek::norm(ds.d);
         Float inv_dist = ek::rcp(ds.dist);
         ds.d        *= inv_dist;
-        Vector3f local_d = trafo.inverse() * -ds.d;
+        Vector3f local_d = m_to_world.inverse() * -ds.d;
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);
 
         return { ds, unpolarized<Spectrum>(falloff_spec * (inv_dist * inv_dist)) };
@@ -169,7 +166,9 @@ public:
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
 
     ScalarBoundingBox3f bbox() const override {
-        return m_world_transform->translation_bounds();
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
+        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        return ScalarBoundingBox3f(p, p);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -180,7 +179,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SpotLight[" << std::endl
-            << "  world_transform = " << string::indent(m_world_transform) << "," << std::endl
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  cutoff_angle = " << m_cutoff_angle << "," << std::endl
             << "  beam_width = " << m_beam_width << "," << std::endl

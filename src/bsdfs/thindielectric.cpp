@@ -109,7 +109,7 @@ public:
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);
 
-        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
+        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), m_eta));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -163,7 +163,7 @@ public:
     Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
                                     Mask active) const override {
 
-        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), Float(m_eta)));
+        Float r = std::get<0>(fresnel(ek::abs(Frame3f::cos_theta(si.wi)), m_eta));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -174,6 +174,10 @@ public:
             value *= m_specular_transmittance->eval(si, active);
 
         return unpolarized<Spectrum>(value);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        ek::make_opaque(m_eta);
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -198,7 +202,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ScalarFloat m_eta;
+    Float m_eta;
     ref<Texture> m_specular_transmittance;
     ref<Texture> m_specular_reflectance;
 };

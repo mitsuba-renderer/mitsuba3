@@ -49,7 +49,7 @@ public:
             m_value = luminance(color);
         }
 
-        ek::eval(m_value);
+        ek::make_opaque(m_value);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -66,8 +66,8 @@ public:
         callback->put_parameter("value", m_value);
     }
 
-    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        ek::eval(m_value);
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        ek::make_opaque(m_value);
     }
 
     std::string to_string() const override {

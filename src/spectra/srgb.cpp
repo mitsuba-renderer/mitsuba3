@@ -37,7 +37,7 @@ public:
         else
             m_value = luminance(color);
 
-        m_value = ek::opaque(m_value);
+        ek::make_opaque(m_value);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -54,6 +54,10 @@ public:
             return ek::hmean(srgb_model_mean(m_value));
         else
             return ek::hmean(hmean(m_value));
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        ek::make_opaque(m_value);
     }
 
     void traverse(TraversalCallback *callback) override {

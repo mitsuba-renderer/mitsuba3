@@ -447,7 +447,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
     if (ek::none_or<false>(pi.is_valid()))
         return ek::zero<SurfaceInteraction3f>();
 
-    pi.shape = ek::opaque<ShapePtr>(this);
+    pi.shape = this;
 
     return pi.compute_surface_interaction(ray, hit_flags, active);
 }
@@ -595,7 +595,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         si.sh_frame.n = si.n;
     }
 
-    si.shape    = ek::opaque<ShapePtr>(this);
+    si.shape    = this;
     si.instance = nullptr;
 
     return si;

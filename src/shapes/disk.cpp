@@ -68,7 +68,7 @@ class Disk final : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES(ShapePtr)
+    MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
@@ -83,24 +83,27 @@ public:
     void update() {
         m_to_object = m_to_world.inverse();
 
-        Vector3f dp_du = m_to_world * ScalarVector3f(1.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world * ScalarVector3f(0.f, 1.f, 0.f);
+        Vector3f dp_du = m_to_world * Vector3f(1.f, 0.f, 0.f);
+        Vector3f dp_dv = m_to_world * Vector3f(0.f, 1.f, 0.f);
 
         m_du = ek::norm(dp_du);
         m_dv = ek::norm(dp_dv);
 
-        Normal3f n = ek::normalize(m_to_world * ScalarNormal3f(0.f, 0.f, 1.f));
+        Normal3f n = ek::normalize(m_to_world * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
-
         m_inv_surface_area = ek::rcp(surface_area());
+
+        ek::make_opaque(m_frame, m_inv_surface_area);
+        ek::make_opaque(m_to_world, m_to_object);
    }
 
     ScalarBoundingBox3f bbox() const override {
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
         ScalarBoundingBox3f bbox;
-        bbox.expand(m_to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(m_to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
-        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(m_to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
+        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
         return bbox;
     }
 
@@ -147,7 +150,13 @@ public:
                ek::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ek::mask_t<FloatP> active) const {
-        Ray3fP ray = m_to_object.transform_affine(ray_);
+        Transform<Point<FloatP, 4>> to_object;
+        if constexpr (!ek::is_jit_array_v<FloatP>)
+            to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+        else
+            to_object = m_to_object;
+
+        Ray3fP ray = to_object.transform_affine(ray_);
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -165,7 +174,13 @@ public:
                                      ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
 
-        Ray3fP ray = m_to_object.transform_affine(ray_);
+        Transform<Point<FloatP, 4>> to_object;
+        if constexpr (!ek::is_jit_array_v<FloatP>)
+            to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+        else
+            to_object = m_to_object;
+
+        Ray3fP ray = to_object.transform_affine(ray_);
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
@@ -219,13 +234,14 @@ public:
         si.sh_frame.n = m_frame.n;
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
-        si.shape    = ek::opaque<ShapePtr>(this);
+        si.shape    = this;
         si.instance = nullptr;
 
         return si;
     }
 
     void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("to_world", m_to_world);
         Base::traverse(callback);
     }
 
@@ -245,10 +261,9 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
 
-            OptixDiskData data = { bbox(), m_to_object };
+            OptixDiskData data = { bbox(), ek::get_slice<ScalarTransform4f>(m_to_object) };
 
-            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
-                       sizeof(OptixDiskData));
+            jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixDiskData));
         }
     }
 #endif

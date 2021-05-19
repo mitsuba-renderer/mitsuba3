@@ -89,7 +89,7 @@ class Sphere final : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
                     get_children_string, parameters_grad_enabled)
-    MTS_IMPORT_TYPES(ShapePtr)
+    MTS_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
 
@@ -106,8 +106,10 @@ public:
     }
 
     void update() {
+        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
+
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = ek::transform_decompose(m_to_world.matrix, 25);
+        auto [S, Q, T] = ek::transform_decompose(to_world.matrix, 25);
 
         if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
             ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
@@ -124,21 +126,23 @@ public:
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(radius), Q, T);
-        m_to_object = m_to_world.inverse();
+        to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(radius), Q, T);
+        ScalarTransform4f to_object = to_world.inverse();
 
-        // m_radius = ek::opaque<Float>(radius);
-        // m_center = ek::opaque<Point3f>(T);
-        // m_inv_surface_area = ek::opaque<Float>(ek::rcp(surface_area()));
-
+        m_to_world  = to_world;
+        m_to_object = to_object;
         m_radius = radius;
         m_center = T;
         m_inv_surface_area = ek::rcp(surface_area());
+
+        ek::make_opaque(m_radius, m_center, m_inv_surface_area);
+        ek::make_opaque(m_to_world, m_to_object);
     }
 
     ScalarBoundingBox3f bbox() const override {
         ScalarFloat radius   = ek::get_slice(m_radius);
         ScalarPoint3f center = ek::get_slice(m_center);
+
         ScalarBoundingBox3f bbox;
         bbox.min = center - radius;
         bbox.max = center + radius;
@@ -285,17 +289,20 @@ public:
 
         using Value = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
                                               ek::is_diff_array_v<Float>,
-                                          ek::float32_array_t<FloatP>, ek::float64_array_t<FloatP>>;
+                                          ek::float32_array_t<FloatP>,
+                                          ek::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
+        using ScalarValue  = ek::scalar_t<Value>;
+        using ScalarValue3 = Vector<ScalarValue, 3>;
 
         Value radius;
         Value3 center;
         if constexpr (!ek::is_jit_array_v<Value>) {
-            radius = (Value) ek::get_slice(m_radius);
-            center = (Value3) ek::get_slice(m_center);
+            radius = (ScalarValue)  ek::get_slice(m_radius, 0, true);
+            center = (ScalarValue3) ek::get_slice(m_center, 0, true);
         } else {
-            radius = Value(m_radius);
-            center = Value3(m_center);
+            radius = (Value) m_radius;
+            center = (Value3) m_center;
         }
 
         Value mint = Value(ray.mint);
@@ -332,17 +339,20 @@ public:
 
         using Value = std::conditional_t<ek::is_cuda_array_v<FloatP> ||
                                               ek::is_diff_array_v<Float>,
-                                          ek::float32_array_t<FloatP>, ek::float64_array_t<FloatP>>;
+                                          ek::float32_array_t<FloatP>,
+                                          ek::float64_array_t<FloatP>>;
         using Value3 = Vector<Value, 3>;
+        using ScalarValue  = ek::scalar_t<Value>;
+        using ScalarValue3 = Vector<ScalarValue, 3>;
 
         Value radius;
         Value3 center;
         if constexpr (!ek::is_jit_array_v<Value>) {
-            radius = (Value) ek::get_slice(m_radius);
-            center = (Value3) ek::get_slice(m_center);
+            radius = (ScalarValue)  ek::get_slice(m_radius, 0, true);
+            center = (ScalarValue3) ek::get_slice(m_center, 0, true);
         } else {
-            radius = Value(m_radius);
-            center = Value3(m_center);
+            radius = (Value) m_radius;
+            center = (Value3) m_center;
         }
 
         Value mint = Value(ray.mint);
@@ -439,7 +449,7 @@ public:
             si.dn_dv = si.dp_dv * inv_radius;
         }
 
-        si.shape    = ek::opaque<ShapePtr>(this);
+        si.shape    = this;
         si.instance = nullptr;
 
         return si;
@@ -449,6 +459,7 @@ public:
     // =============================================================
 
     void traverse(TraversalCallback *callback) override {
+        callback->put_parameter("to_world", m_to_world);
         Base::traverse(callback);
     }
 

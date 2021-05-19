@@ -92,9 +92,8 @@ public:
                with the implicit Stokes frame used for the ray direction. Apply
                one last rotation here s.t. it alignes with the sensor's x-axis. */
             auto sensor = scene->sensors()[0];
-            const AnimatedTransform *transform = sensor->world_transform();
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
-            Vector3f vertical = transform->eval(ray.time) * Vector3f(0.f, 1.f, 0.f);
+            Vector3f vertical = sensor->world_transform() * Vector3f(0.f, 1.f, 0.f);
             Vector3f target_basis = ek::cross(ray.d, vertical);
             spec = mueller::rotate_stokes_basis(-ray.d,
                                                  current_basis,

@@ -475,8 +475,8 @@ public:
             m_internal_reflectance =
                 ek::hmean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
-        ek::eval(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
-                 m_internal_reflectance);
+        ek::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_specular_sampling_weight,
+                        m_internal_reflectance);
     }
 
     std::string to_string() const override {

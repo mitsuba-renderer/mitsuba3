@@ -48,7 +48,7 @@ priority.
 
 MTS_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_film, m_world_transform, m_needs_sample_2,
+    MTS_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
                     m_needs_sample_3)
     MTS_IMPORT_TYPES()
 
@@ -71,8 +71,8 @@ public:
                 ScalarPoint3f target     = origin + direction;
                 auto [up, unused]        = coordinate_system(ek::normalize(direction));
 
-                m_world_transform = new AnimatedTransform(
-                    ScalarTransform4f::look_at(origin, target, up));
+                m_to_world = ScalarTransform4f::look_at(origin, target, up);
+                ek::make_opaque(m_to_world);
             }
         }
 
@@ -102,9 +102,8 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        auto trafo = m_world_transform->eval(time, active);
-        ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
-        ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.o = m_to_world.transform_affine(Point3f(0.f, 0.f, 0.f));
+        ray.d = m_to_world.transform_affine(Vector3f(0.f, 0.f, 1.f));
 
         return { ray, wav_weight };
     }
@@ -124,9 +123,8 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        auto trafo = m_world_transform->eval(time, active);
-        ray.o      = trafo.transform_affine(Point3f{ 0.f, 0.f, 0.f });
-        ray.d      = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.o = m_to_world.transform_affine(Point3f(0.f, 0.f, 0.f));
+        ray.d = m_to_world.transform_affine(Vector3f(0.f, 0.f, 1.f));
 
         // 3. Set differentials; since the film size is always 1x1, we don't
         //    have differentials
@@ -143,7 +141,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RadianceMeter[" << std::endl
-            << "  world_transform = " << m_world_transform << "," << std::endl
+            << "  to_world = " << m_to_world << "," << std::endl
             << "  film = " << m_film << "," << std::endl
             << "]";
         return oss.str();

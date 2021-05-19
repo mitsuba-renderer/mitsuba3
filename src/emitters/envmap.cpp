@@ -62,8 +62,8 @@ High quality free light probes are available on
 template <typename Float, typename Spectrum>
 class EnvironmentMapEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Emitter, m_flags, m_world_transform)
-    MTS_IMPORT_TYPES(Scene, Shape, Texture, EmitterPtr)
+    MTS_IMPORT_BASE(Emitter, m_flags, m_to_world)
+    MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
     using Warp = Hierarchical2D<Float, 0>;
 
@@ -137,9 +137,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f v = m_world_transform->eval(si.time, active)
-                         .inverse()
-                         .transform_affine(-si.wi);
+        Vector3f v = m_to_world.inverse().transform_affine(-si.wi);
 
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
@@ -173,7 +171,7 @@ public:
         Float inv_sin_theta =
             ek::safe_rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
 
-        d = m_world_transform->eval(it.time, active).transform_affine(d);
+        d = m_to_world.transform_affine(d);
 
         DirectionSample3f ds;
         ds.p      = it.p + d * dist;
@@ -182,7 +180,7 @@ public:
         ds.time   = it.time;
         ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))), 0.f);
         ds.delta  = false;
-        ds.emitter = ek::opaque<EmitterPtr>(this);
+        ds.emitter = this;
         ds.d      = d;
         ds.dist   = dist;
 
@@ -192,13 +190,12 @@ public:
         };
     }
 
-    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
+    Float pdf_direction(const Interaction3f &/*it*/,
+                        const DirectionSample3f &ds,
                         Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f d = m_world_transform->eval(it.time, active)
-                         .inverse()
-                         .transform_affine(ds.d);
+        Vector3f d = m_to_world.inverse().transform_affine(ds.d);
 
         /* Convert to latitude-longitude texture coordinates */
         Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,

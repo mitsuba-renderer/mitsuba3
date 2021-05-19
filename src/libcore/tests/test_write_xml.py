@@ -291,8 +291,8 @@ def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
         ScalarVector3f(0,1,0),
         ScalarVector3f(1,0,0)
     ]
-    tr1 = s1.sensors()[0].world_transform().eval(0)
-    tr2 = s2.sensors()[0].world_transform().eval(0)
+    tr1 = s1.sensors()[0].world_transform()
+    tr2 = s2.sensors()[0].world_transform()
     for vec in vects:
         assert ek.allclose(tr1.transform_point(vec), tr2.transform_point(vec))
 
