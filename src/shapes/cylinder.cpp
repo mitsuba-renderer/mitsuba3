@@ -463,8 +463,10 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
-            OptixCylinderData data = { bbox(), ek::get_slice<ScalarTransform4f>(m_to_object),
-                                       (float) m_length, (float) m_radius };
+            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object);
+            OptixCylinderData data = { bbox(), to_object,
+                                       (float) ek::get_slice(m_length),
+                                       (float) ek::get_slice(m_radius) };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }
