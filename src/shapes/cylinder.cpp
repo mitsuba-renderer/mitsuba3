@@ -272,7 +272,7 @@ public:
                                           ek::float64_array_t<FloatP>>;
         using ScalarValue = ek::scalar_t<Value>;
 
-        Ray3fX ray;
+        Ray3fP ray;
         Value radius;
         Value length;
         if constexpr (!ek::is_jit_array_v<Value>) {
@@ -312,12 +312,12 @@ public:
         ek::mask_t<FloatP> in_bounds = near_t < mint && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds &&
-                  ((z_pos_near >= Double(0.0) && z_pos_near <= length && near_t >= mint) ||
-                   (z_pos_far  >= Double(0.0) && z_pos_far <= length  && far_t <= maxt));
+                  ((z_pos_near >= Value(0.0) && z_pos_near <= length && near_t >= mint) ||
+                   (z_pos_far  >= Value(0.0) && z_pos_far <= length  && far_t <= maxt));
 
         FloatP t =
             ek::select(active,
-                       ek::select(z_pos_near >= Double(0.0) && z_pos_near <= length &&
+                       ek::select(z_pos_near >= Value(0.0) && z_pos_near <= length &&
                                       near_t >= mint,
                                   FloatP(near_t), FloatP(far_t)),
                        ek::Infinity<FloatP>);
@@ -336,7 +336,7 @@ public:
                                           ek::float64_array_t<FloatP>>;
         using ScalarValue = ek::scalar_t<Value>;
 
-        Ray3fX ray;
+        Ray3fP ray;
         Value radius;
         Value length;
         if constexpr (!ek::is_jit_array_v<Value>) {
@@ -377,8 +377,8 @@ public:
 
         ek::mask_t<FloatP> valid_intersection =
             active && solution_found && !out_bounds && !in_bounds &&
-            ((z_pos_near >= Double(0.0) && z_pos_near <= length && near_t >= mint) ||
-             (z_pos_far >= Double(0.0) && z_pos_far <= length && far_t <= maxt));
+            ((z_pos_near >= Value(0.0) && z_pos_near <= length && near_t >= mint) ||
+             (z_pos_far  >= Value(0.0) && z_pos_far  <= length && far_t  <= maxt));
 
         return valid_intersection;
     }

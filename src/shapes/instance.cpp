@@ -109,7 +109,8 @@ public:
                                    ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
         if constexpr (!ek::is_array_v<FloatP>) {
-            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.transform_affine(ray));
+            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+            return m_shapegroup->ray_intersect_preliminary_scalar(to_object.transform_affine(ray));
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -120,7 +121,8 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         if constexpr (!ek::is_array_v<FloatP>) {
-            return m_shapegroup->ray_test_scalar(m_to_object.transform_affine(ray));
+            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+            return m_shapegroup->ray_test_scalar(to_object.transform_affine(ray));
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
