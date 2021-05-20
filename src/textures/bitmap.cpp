@@ -565,6 +565,9 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        m_inv_resolution_x = ek::divisor<int32_t>(m_resolution.x());
+        m_inv_resolution_y = ek::divisor<int32_t>(m_resolution.y());
+
         if (keys.empty() || string::contains(keys, "data")) {
             /// Convert m_data into a managed array (available in CPU/GPU address space)
             rebuild_internals(true, m_distr2d != nullptr);
