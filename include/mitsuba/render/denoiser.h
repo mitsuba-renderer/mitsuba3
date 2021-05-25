@@ -15,7 +15,6 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float>
 Float denoise (const Bitmap& noisy, Bitmap* albedo, Bitmap* normals) {
     if constexpr (ek::is_array_v<Float>) {
-        // std::cout << "In denoiser " << std::endl;
         OptixDeviceContext context = jit_optix_context();
 
         OptixDenoiser denoiser = nullptr;  
@@ -27,7 +26,6 @@ Float denoise (const Bitmap& noisy, Bitmap* albedo, Bitmap* normals) {
 
         uint32_t scratch_size = 0;
         uint32_t state_size = 0;
-        const uint64_t frame_size = noisy.pixel_count();
 
         OptixImage2D inputs[3] = {};
         OptixImage2D output;
@@ -37,15 +35,17 @@ Float denoise (const Bitmap& noisy, Bitmap* albedo, Bitmap* normals) {
         optix_check(optixDenoiserComputeMemoryResources(denoiser, noisy.width(), noisy.height(), &sizes));
         scratch_size = static_cast<uint32_t>(sizes.withoutOverlapScratchSizeInBytes);
         state_size = static_cast<uint32_t>(sizes.stateSizeInBytes);
+        // const uint64_t frame_size = noisy.pixel_count() * noisy.bytes_per_pixel();
+
+        std::cout << scratch_size << std::endl;
+        std::cout << state_size << std::endl;
 
         Float intensity_float = ek::zero<Float>(1);
-        Float scratch_float = ek::zero<Float>(scratch_size);
-        Float state_float = ek::zero<Float>(state_size);
-        Float output_data = ek::zero<Float>(frame_size * noisy.channel_count());
-        ek::eval(intensity_float);
-        ek::eval(scratch_float);
-        ek::eval(state_float);
-        ek::eval(output_data);
+        Float scratch_float = ek::zero<Float>(scratch_size / sizeof(float));
+        Float state_float = ek::zero<Float>(state_size / sizeof(float));
+        Float output_data = ek::zero<Float>(noisy.pixel_count() * noisy.channel_count());
+        ek::eval(intensity_float, scratch_float, state_float, output_data);
+        ek::sync_thread();
 
         CUdeviceptr intensity = 0;
         CUdeviceptr scratch = 0;
@@ -58,15 +58,21 @@ Float denoise (const Bitmap& noisy, Bitmap* albedo, Bitmap* normals) {
         output.width = noisy.width();
         output.height = noisy.height();
         output.format = OPTIX_PIXEL_FORMAT_FLOAT4;
-        output.rowStrideInBytes = noisy.width() * 4 * sizeof(Float);
-        output.pixelStrideInBytes = 4 * sizeof(Float);
+        output.rowStrideInBytes = noisy.width() * noisy.bytes_per_pixel();
+        output.pixelStrideInBytes = noisy.bytes_per_pixel();
         DynamicBuffer<Float> noisy_data = ek::load<DynamicBuffer<Float>>(noisy.data(), noisy.pixel_count() * noisy.channel_count());
         inputs[0].data = noisy_data.data();
         inputs[0].width = noisy.width();
         inputs[0].height = noisy.height();
         inputs[0].format = OPTIX_PIXEL_FORMAT_FLOAT4;
-        inputs[0].rowStrideInBytes = noisy.width() * 4 * sizeof(Float);
-        inputs[0].pixelStrideInBytes = 4 * sizeof(Float);
+        inputs[0].rowStrideInBytes = noisy.width() * noisy.bytes_per_pixel();
+        inputs[0].pixelStrideInBytes = noisy.bytes_per_pixel();
+
+        // std::cout << noisy.pixel_format() << std::endl;
+        // std::cout << noisy.has_alpha() << std::endl;
+        // std::cout << noisy.bytes_per_pixel() << std::endl;
+        std::cout << noisy_data << std::endl;
+        
 
         unsigned int nb_channels = 1;
         if(albedo != nullptr) {
@@ -76,8 +82,8 @@ Float denoise (const Bitmap& noisy, Bitmap* albedo, Bitmap* normals) {
             inputs[1].width = albedo->width();
             inputs[1].height = albedo->height();
             inputs[1].format = OPTIX_PIXEL_FORMAT_FLOAT4;
-            inputs[1].rowStrideInBytes = albedo->width() * 4 * sizeof(Float);
-            inputs[1].pixelStrideInBytes = 4 * sizeof(Float);
+            inputs[1].rowStrideInBytes = albedo->width() * albedo->bytes_per_pixel();
+            inputs[1].pixelStrideInBytes = albedo->bytes_per_pixel();
             nb_channels++;
         }
         if(normals != nullptr) {
@@ -86,18 +92,28 @@ Float denoise (const Bitmap& noisy, Bitmap* albedo, Bitmap* normals) {
             inputs[2].width = normals->width();
             inputs[2].height = normals->height();
             inputs[2].format = OPTIX_PIXEL_FORMAT_FLOAT4;
-            inputs[2].rowStrideInBytes = normals->width() * 4 * sizeof(Float);
-            inputs[2].pixelStrideInBytes = 4 * sizeof(Float);
+            inputs[2].rowStrideInBytes = normals->width() * normals->bytes_per_pixel();
+            inputs[2].pixelStrideInBytes = normals->bytes_per_pixel();
             nb_channels++;
         }
 
         optix_check(optixDenoiserSetup(denoiser, 0, noisy.width(), noisy.height(), state, state_size, scratch, scratch_size));
+
+        params.denoiseAlpha = 0;
+        params.hdrIntensity = intensity;
+        params.blendFactor  = 0.0f;
+
         optix_check(optixDenoiserComputeIntensity(denoiser, 0, inputs, intensity, scratch, scratch_size)); 
         optix_check(optixDenoiserInvoke(denoiser, 0, &params, state, state_size, inputs, nb_channels, 
                                         0, 0, &output, scratch, scratch_size));
 
         Float denoised_data = ek::map<Float>(output.data, noisy.pixel_count() * noisy.channel_count());
+        // Float denoised_data = ek::map<Float>(output.data, 114688);
 
+        ek::eval();
+        ek::sync_thread();
+
+        std::cout << denoised_data << std::endl;
         optix_check(optixDenoiserDestroy(denoiser));
         return denoised_data;
     }
