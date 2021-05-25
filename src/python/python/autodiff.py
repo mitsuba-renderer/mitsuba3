@@ -44,6 +44,8 @@ def _render_helper(scene, spp=None, sensor_index=0):
     spec *= weights
     del mask
 
+    sampler.schedule_state()
+
     if is_polarized:
         from mitsuba.core import depolarize
         spec = depolarize(spec)

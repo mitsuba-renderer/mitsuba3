@@ -162,6 +162,7 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         for (size_t i = 0; i < n_passes; i++)
             render_sample(scene, sensor, sampler, block, aovs.data(),
                           pos, diff_scale_factor);
+        sampler->schedule_state();
 
         film->put(block);
     }
