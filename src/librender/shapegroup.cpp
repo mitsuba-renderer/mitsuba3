@@ -130,8 +130,10 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             Assert(pi.shape_index < m_shapes.size());
             pi.shape = m_shapes[pi.shape_index];
         } else {
+#if defined(MTS_ENABLE_LLVM)
             Assert(ek::all(pi.shape_index < m_shapes.size()));
             pi.shape = ek::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
+#endif
         }
     }
 #endif
