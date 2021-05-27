@@ -132,7 +132,8 @@ public:
 
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_dir, wavelengths, active);
 
-        return { Ray3f(m_to_world.translation(), m_to_world * local_dir, time, wavelengths),
+        return { Ray3f(m_to_world.value().translation(),
+                       m_to_world.value() * local_dir, time, wavelengths),
                  unpolarized<Spectrum>(falloff_spec / pdf_dir) };
     }
 
@@ -142,7 +143,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        ds.p        = m_to_world.translation();
+        ds.p        = m_to_world.value().translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
         ds.pdf      = 1.f;
@@ -153,7 +154,7 @@ public:
         ds.dist     = ek::norm(ds.d);
         Float inv_dist = ek::rcp(ds.dist);
         ds.d        *= inv_dist;
-        Vector3f local_d = m_to_world.inverse() * -ds.d;
+        Vector3f local_d = m_to_world.value().inverse() * -ds.d;
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);
 
         return { ds, unpolarized<Spectrum>(falloff_spec * (inv_dist * inv_dist)) };
@@ -166,8 +167,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
     }
 

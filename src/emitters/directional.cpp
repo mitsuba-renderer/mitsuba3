@@ -91,10 +91,10 @@ public:
         Point2f offset =
             warp::square_to_uniform_disk_concentric(spatial_sample);
         Vector3f perp_offset =
-            m_to_world.transform_affine(Vector3f{ offset.x(), offset.y(), 0.f });
+            m_to_world.value().transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
 
         // 3. Set ray direction
-        Vector3f d = m_to_world.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        Vector3f d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
 
         return { Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius,
                        d, time, wavelengths),
@@ -107,7 +107,7 @@ public:
                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = m_to_world.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        Vector3f d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
         Float dist = 2.f * m_bsphere.radius;
 
         DirectionSample3f ds;

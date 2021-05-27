@@ -51,7 +51,7 @@ void Mesh<Float, Spectrum>::initialize() {
     m_vertex_positions_ptr = m_vertex_positions.data();
     m_faces_ptr = m_faces.data();
 #endif
-    set_children();
+    Base::initialize();
 }
 
 MTS_VARIANT Mesh<Float, Spectrum>::~Mesh() { }

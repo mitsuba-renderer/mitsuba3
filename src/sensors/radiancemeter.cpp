@@ -102,8 +102,8 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.transform_affine(Point3f(0.f, 0.f, 0.f));
-        ray.d = m_to_world.transform_affine(Vector3f(0.f, 0.f, 1.f));
+        ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
+        ray.d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
 
         return { ray, wav_weight };
     }
@@ -123,8 +123,8 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.transform_affine(Point3f(0.f, 0.f, 0.f));
-        ray.d = m_to_world.transform_affine(Vector3f(0.f, 0.f, 1.f));
+        ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
+        ray.d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
 
         // 3. Set differentials; since the film size is always 1x1, we don't
         //    have differentials

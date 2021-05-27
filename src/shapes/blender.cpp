@@ -87,8 +87,6 @@ public:
     * \param props Contains counters and pointers to blender's data structures
     */
     BlenderMesh(const Properties &props) : Base(props) {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-
         auto fail = [&](const char *descr, auto... args) {
             Throw(("Error while loading Blender mesh \"%s\": " + std::string(descr))
                     .c_str(),
@@ -224,7 +222,7 @@ public:
                 // Flat shading, use per face normals (only if the mesh is not globally flat)
                 const InputVector3f e1 = face_points[1] - face_points[0];
                 const InputVector3f e2 = face_points[2] - face_points[0];
-                normal = to_world.transform_affine(ek::cross(e1, e2));
+                normal = m_to_world.scalar().transform_affine(ek::cross(e1, e2));
                 if(unlikely(ek::all(ek::eq(normal, 0.f))))
                     continue; // Degenerate triangle, ignore it
                 else
@@ -244,7 +242,7 @@ public:
                 Key vert_key;
                 if (blender::ME_SMOOTH & face.flag || m_disable_vertex_normals) {
                     // Store per vertex normals if the face is smooth or if the mesh is globally flat
-                    normal = to_world.transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
+                    normal = m_to_world.scalar().transform_affine(InputNormal3f(vert.no[0], vert.no[1], vert.no[2]));
                     if(unlikely(ek::all(ek::eq(normal, 0.f))))
                         fail("Mesh has invalid normals!");
                     else
@@ -283,7 +281,7 @@ public:
                     map_entry->value   = vert_id;
                     map_entry->is_init = true;
                     // Add stuff to the temporary buffers
-                    InputPoint3f pt = to_world.transform_affine(face_points[i]);
+                    InputPoint3f pt = m_to_world.scalar().transform_affine(face_points[i]);
                     tmp_vertices.push_back({pt.x(), pt.y(), pt.z()});
                     if (!m_disable_vertex_normals)
                         tmp_normals.push_back({normal.x(), normal.y(), normal.z()});

@@ -69,7 +69,7 @@ public:
 
         spec_weight *= 4.f * ek::Pi<Float>;
 
-        Ray3f ray(m_to_world * Point3f(0.f),
+        Ray3f ray(m_to_world.value() * Point3f(0.f),
                   warp::square_to_uniform_sphere(dir_sample),
                   time, wavelengths);
 
@@ -82,7 +82,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        ds.p     = m_to_world.translation();
+        ds.p     = m_to_world.value().translation();
         ds.n     = 0.f;
         ds.uv    = 0.f;
         ds.time  = it.time;
@@ -114,8 +114,7 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
     }
 

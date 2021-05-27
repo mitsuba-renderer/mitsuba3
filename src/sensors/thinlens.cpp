@@ -118,7 +118,7 @@ public:
             m_aperture_radius = ek::Epsilon<Float>;
         }
 
-        if (ek::any(m_to_world.has_scale()))
+        if (m_to_world.scalar().has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         m_camera_to_sample = perspective_projection(
@@ -180,8 +180,8 @@ public:
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
-        ray.o = m_to_world.transform_affine(aperture_p);
-        ray.d = m_to_world * d;
+        ray.o = m_to_world.value().transform_affine(aperture_p);
+        ray.d = m_to_world.value() * d;
 
         return { ray, wav_weight };
     }
@@ -217,21 +217,20 @@ public:
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
-        ray.o = m_to_world.transform_affine(aperture_p);
-        ray.d = m_to_world * d;
+        ray.o = m_to_world.value().transform_affine(aperture_p);
+        ray.d = m_to_world.value() * d;
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = m_to_world * ek::normalize(Vector3f(focus_p_x - aperture_p));
-        ray.d_y = m_to_world * ek::normalize(Vector3f(focus_p_y - aperture_p));
+        ray.d_x = m_to_world.value() * ek::normalize(Vector3f(focus_p_x - aperture_p));
+        ray.d_y = m_to_world.value() * ek::normalize(Vector3f(focus_p_y - aperture_p));
         ray.has_differentials = true;
 
         return { ray, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
     }
 

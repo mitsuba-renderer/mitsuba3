@@ -194,8 +194,6 @@ public:
 
         m_name = tfm::format("%s@%i", file_path.filename(), shape_index);
 
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-
         ref<Stream> stream = new FileStream(file_path);
         ScopedPhase phase(ProfilerPhase::LoadGeometry);
         Timer timer;
@@ -301,7 +299,7 @@ public:
         InputFloat* position_ptr = vertex_positions.get();
         InputFloat* normal_ptr   = vertex_normals.get();
         for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            InputPoint3f p = to_world.transform_affine(
+            InputPoint3f p = m_to_world.scalar().transform_affine(
                 ek::load<InputPoint3f>(position_ptr));
             ek::store(position_ptr, p);
             position_ptr += 3;
@@ -309,7 +307,7 @@ public:
 
             if (has_normals) {
                 InputNormal3f n = ek::load<InputNormal3f>(normal_ptr);
-                n = ek::normalize(to_world.transform_affine(n));
+                n = ek::normalize(m_to_world.scalar().transform_affine(n));
                 ek::store(normal_ptr, n);
                 normal_ptr += 3;
             }
