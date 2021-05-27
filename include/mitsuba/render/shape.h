@@ -536,8 +536,7 @@ protected:
     inline Shape() { }
     virtual ~Shape();
 
-    /// Explicitly register this shape as the parent of the provided sub-objects (emitters, etc.)
-    void set_children();
+    virtual void initialize();
     std::string get_children_string() const;
 protected:
     ref<BSDF> m_bsdf;
@@ -547,8 +546,8 @@ protected:
     ref<Medium> m_exterior_medium;
     std::string m_id;
 
-    Transform4f m_to_world;
-    Transform4f m_to_object;
+    field<Transform4f, ScalarTransform4f> m_to_world;
+    field<Transform4f, ScalarTransform4f> m_to_object;
 
 #if defined(MTS_ENABLE_CUDA)
     /// OptiX hitgroup data buffer

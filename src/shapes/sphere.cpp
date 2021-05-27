@@ -87,7 +87,7 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize,
                     get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
@@ -98,18 +98,18 @@ public:
         m_flip_normals = props.bool_("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
-        m_to_world = m_to_world * ScalarTransform4f::translate(props.point3f("center", 0.f));
-        m_to_world = m_to_world * ScalarTransform4f::scale(props.float_("radius", 1.f));
+        m_to_world =
+            m_to_world.scalar() *
+            ScalarTransform4f::translate(props.point3f("center", 0.f)) *
+            ScalarTransform4f::scale(props.float_("radius", 1.f));
 
         update();
-        set_children();
+        initialize();
     }
 
     void update() {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = ek::transform_decompose(to_world.matrix, 25);
+        auto [S, Q, T] = ek::transform_decompose(m_to_world.scalar().matrix, 25);
 
         if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
             ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
@@ -118,39 +118,32 @@ public:
         if (!(ek::abs(S[0][0] - S[1][1]) < 1e-6f && ek::abs(S[0][0] - S[2][2]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling!");
 
-        float radius = S[0][0];
+        m_radius = S[0][0];
+        m_center = ScalarPoint3f(T);
 
-        if (radius <= 0.f) {
-            radius = ek::abs(radius);
+        if (m_radius.scalar() <= 0.f) {
+            m_radius = ek::abs(m_radius.scalar());
             m_flip_normals = !m_flip_normals;
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(radius), Q, T);
-        ScalarTransform4f to_object = to_world.inverse();
+        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(m_radius.scalar()), Q, T);
+        m_to_object = m_to_world.scalar().inverse();
 
-        m_to_world  = to_world;
-        m_to_object = to_object;
-        m_radius = radius;
-        m_center = T;
         m_inv_surface_area = ek::rcp(surface_area());
 
         ek::make_opaque(m_radius, m_center, m_inv_surface_area);
-        ek::make_opaque(m_to_world, m_to_object);
     }
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarFloat radius   = ek::get_slice(m_radius);
-        ScalarPoint3f center = ek::get_slice(m_center);
-
         ScalarBoundingBox3f bbox;
-        bbox.min = center - radius;
-        bbox.max = center + radius;
+        bbox.min = m_center.scalar() - m_radius.scalar();
+        bbox.max = m_center.scalar() + m_radius.scalar();
         return bbox;
     }
 
     Float surface_area() const override {
-        return 4.f * ek::Pi<ScalarFloat> * m_radius * m_radius;
+        return 4.f * ek::Pi<ScalarFloat> * ek::sqr(m_radius.value());
     }
 
     // =============================================================
@@ -164,14 +157,14 @@ public:
         Point3f local = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps;
-        ps.p = ek::fmadd(local, m_radius, m_center);
+        ps.p = ek::fmadd(local, m_radius.value(), m_center.value());
         ps.n = local;
 
         if (m_flip_normals)
             ps.n = -ps.n;
 
         ps.time = time;
-        ps.delta = m_radius == 0.f;
+        ps.delta = m_radius.value() == 0.f;
         ps.pdf = m_inv_surface_area;
 
         return ps;
@@ -187,15 +180,16 @@ public:
         MTS_MASK_ARGUMENT(active);
         DirectionSample3f result = ek::zero<DirectionSample3f>();
 
-        Vector3f dc_v = m_center - it.p;
+        Vector3f dc_v = m_center.value() - it.p;
         Float dc_2 = ek::squared_norm(dc_v);
 
-        Float radius_adj = m_radius * (m_flip_normals ? (1.f + math::RayEpsilon<Float>) :
-                                                        (1.f - math::RayEpsilon<Float>));
+        Float radius_adj = m_radius.value() * (m_flip_normals ?
+                                               (1.f + math::RayEpsilon<Float>) :
+                                               (1.f - math::RayEpsilon<Float>));
         Mask outside_mask = active && dc_2 > ek::sqr(radius_adj);
         if (likely(ek::any_or<true>(outside_mask))) {
             Float inv_dc            = ek::rsqrt(dc_2),
-                  sin_theta_max     = m_radius * inv_dc,
+                  sin_theta_max     = m_radius.value() * inv_dc,
                   sin_theta_max_2   = ek::sqr(sin_theta_max),
                   inv_sin_theta_max = ek::rcp(sin_theta_max),
                   cos_theta_max     = ek::safe_sqrt(1.f - sin_theta_max_2);
@@ -220,7 +214,7 @@ public:
                 cos_alpha));
 
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
-            ds.p        = ek::fmadd(d, m_radius, m_center);
+            ds.p        = ek::fmadd(d, m_radius.value(), m_center.value());
             ds.n        = d;
             ds.d        = ds.p - it.p;
 
@@ -237,7 +231,7 @@ public:
         if (unlikely(ek::any_or<true>(inside_mask))) {
             Vector3f d = warp::square_to_uniform_sphere(sample);
             DirectionSample3f ds = ek::zero<DirectionSample3f>();
-            ds.p        = ek::fmadd(d, m_radius, m_center);
+            ds.p        = ek::fmadd(d, m_radius.value(), m_center.value());
             ds.n        = d;
             ds.d        = ds.p - it.p;
 
@@ -250,7 +244,7 @@ public:
         }
 
         result.time = it.time;
-        result.delta = m_radius == 0.f;
+        result.delta = m_radius.value() == 0.f;
 
         if (m_flip_normals)
             result.n = -result.n;
@@ -263,7 +257,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
-        Float sin_alpha = m_radius * ek::rcp(ek::norm(m_center - it.p)),
+        Float sin_alpha = m_radius.value() * ek::rcp(ek::norm(m_center.value() - it.p)),
               cos_alpha = ek::safe_sqrt(1.f - sin_alpha * sin_alpha);
 
         return ek::select(sin_alpha < ek::OneMinusEpsilon<Float>,
@@ -298,11 +292,11 @@ public:
         Value radius;
         Value3 center;
         if constexpr (!ek::is_jit_array_v<Value>) {
-            radius = (ScalarValue)  ek::get_slice(m_radius, 0, true);
-            center = (ScalarValue3) ek::get_slice(m_center, 0, true);
+            radius = (ScalarValue)  m_radius.scalar();
+            center = (ScalarValue3) m_center.scalar();
         } else {
-            radius = (Value) m_radius;
-            center = (Value3) m_center;
+            radius = (Value)  m_radius.value();
+            center = (Value3) m_center.value();
         }
 
         Value mint = Value(ray.mint);
@@ -348,11 +342,11 @@ public:
         Value radius;
         Value3 center;
         if constexpr (!ek::is_jit_array_v<Value>) {
-            radius = (ScalarValue)  ek::get_slice(m_radius, 0, true);
-            center = (ScalarValue3) ek::get_slice(m_center, 0, true);
+            radius = (ScalarValue)  m_radius.scalar();
+            center = (ScalarValue3) m_center.scalar();
         } else {
-            radius = (Value) m_radius;
-            center = (Value3) m_center;
+            radius = (Value)  m_radius.value();
+            center = (Value3) m_center.value();
         }
 
         Value mint = Value(ray.mint);
@@ -402,13 +396,13 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
-        si.sh_frame.n = ek::normalize(ray(pi.t) - m_center);
+        si.sh_frame.n = ek::normalize(ray(pi.t) - m_center.value());
 
         // Re-project onto the sphere to improve accuracy
-        si.p = ek::fmadd(si.sh_frame.n, m_radius, m_center);
+        si.p = ek::fmadd(si.sh_frame.n, m_radius.value(), m_center.value());
 
         if (likely(need_uv)) {
-            Vector3f local = m_to_object.transform_affine(si.p);
+            Vector3f local = m_to_object.value().transform_affine(si.p);
 
             Float rd_2  = ek::sqr(local.x()) + ek::sqr(local.y()),
                   theta = unit_angle_z(local),
@@ -433,8 +427,8 @@ public:
                 if (unlikely(ek::any_or<true>(singularity_mask)))
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
-                si.dp_du = m_to_world * si.dp_du * (2.f * ek::Pi<Float>);
-                si.dp_dv = m_to_world * si.dp_dv * ek::Pi<Float>;
+                si.dp_du = m_to_world.value() * si.dp_du * (2.f * ek::Pi<Float>);
+                si.dp_dv = m_to_world.value() * si.dp_dv * ek::Pi<Float>;
             }
         }
 
@@ -444,7 +438,8 @@ public:
         si.n = si.sh_frame.n;
 
         if (need_dn_duv) {
-            Float inv_radius = (m_flip_normals ? -1.f : 1.f) * ek::rcp(m_radius);
+            Float inv_radius =
+                (m_flip_normals ? -1.f : 1.f) * ek::rcp(m_radius.value());
             si.dn_du = si.dp_du * inv_radius;
             si.dn_dv = si.dp_dv * inv_radius;
         }
@@ -459,7 +454,7 @@ public:
     // =============================================================
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", m_to_world);
+        callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
     }
 
@@ -479,9 +474,9 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixSphereData));
 
-            float radius = (float) ek::get_slice(m_radius);
-            Vector<float, 3> center = (Vector<float, 3>) ek::get_slice(m_center);
-            OptixSphereData data = { bbox(), center, radius };
+            OptixSphereData data = { bbox(),
+                                     (Vector<float, 3>) m_center.scalar(),
+                                     (float) m_radius.scalar() };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixSphereData));
@@ -504,9 +499,9 @@ public:
     MTS_DECLARE_CLASS()
 private:
     /// Center in world-space
-    Point3f m_center;
+    field<Point3f> m_center;
     /// Radius in world-space
-    Float m_radius;
+    field<Float> m_radius;
 
     Float m_inv_surface_area;
 

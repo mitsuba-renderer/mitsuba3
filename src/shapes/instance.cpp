@@ -76,7 +76,6 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
         const ScalarBoundingBox3f &bbox = m_shapegroup->bbox();
 
         // If the shape group is empty, return the invalid bbox
@@ -85,7 +84,7 @@ public:
 
         ScalarBoundingBox3f result;
         for (int i = 0; i < 8; ++i)
-            result.expand(to_world * bbox.corner(i));
+            result.expand(m_to_world.scalar() * bbox.corner(i));
         return result;
     }
 
@@ -109,8 +108,7 @@ public:
                                    ek::mask_t<FloatP> active) const {
         MTS_MASK_ARGUMENT(active);
         if constexpr (!ek::is_array_v<FloatP>) {
-            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
-            return m_shapegroup->ray_intersect_preliminary_scalar(to_object.transform_affine(ray));
+            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_object.scalar().transform_affine(ray));
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -121,8 +119,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         if constexpr (!ek::is_array_v<FloatP>) {
-            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
-            return m_shapegroup->ray_test_scalar(to_object.transform_affine(ray));
+            return m_shapegroup->ray_test_scalar(m_to_object.scalar().transform_affine(ray));
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
@@ -142,33 +139,33 @@ public:
         }
 
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
-            m_to_object.transform_affine(ray), pi, hit_flags, active);
+            m_to_object.value().transform_affine(ray), pi, hit_flags, active);
 
-        si.p = m_to_world.transform_affine(si.p);
-        si.n = ek::normalize(m_to_world.transform_affine(si.n));
+        si.p = m_to_world.value().transform_affine(si.p);
+        si.n = ek::normalize(m_to_world.value().transform_affine(si.n));
 
         if (likely(has_flag(hit_flags, HitComputeFlags::ShadingFrame))) {
-            si.sh_frame.n = ek::normalize(m_to_world.transform_affine(si.sh_frame.n));
+            si.sh_frame.n = ek::normalize(m_to_world.value().transform_affine(si.sh_frame.n));
             si.initialize_sh_frame();
         }
 
         if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
-            si.dp_du = m_to_world.transform_affine(si.dp_du);
-            si.dp_dv = m_to_world.transform_affine(si.dp_dv);
+            si.dp_du = m_to_world.value().transform_affine(si.dp_du);
+            si.dp_dv = m_to_world.value().transform_affine(si.dp_dv);
         }
 
         if (has_flag(hit_flags, HitComputeFlags::dNGdUV) || has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             Normal3f n = has_flag(hit_flags, HitComputeFlags::dNGdUV) ? si.n : si.sh_frame.n;
 
             // Determine the length of the transformed normal before it was re-normalized
-            Normal3f tn = m_to_world.transform_affine(
-                ek::normalize(m_to_object.transform_affine(n)));
+            Normal3f tn = m_to_world.value().transform_affine(
+                ek::normalize(m_to_object.value().transform_affine(n)));
             Float inv_len = ek::rcp(ek::norm(tn));
             tn *= inv_len;
 
             // Apply transform to dn_du and dn_dv
-            si.dn_du = m_to_world.transform_affine(Normal3f(si.dn_du)) * inv_len;
-            si.dn_dv = m_to_world.transform_affine(Normal3f(si.dn_dv)) * inv_len;
+            si.dn_du = m_to_world.value().transform_affine(Normal3f(si.dn_du)) * inv_len;
+            si.dn_dv = m_to_world.value().transform_affine(Normal3f(si.dn_dv)) * inv_len;
 
             si.dn_du -= tn * ek::dot(tn, si.dn_du);
             si.dn_dv -= tn * ek::dot(tn, si.dn_dv);
@@ -195,10 +192,9 @@ public:
     RTCGeometry embree_geometry(RTCDevice device) override {
         ENOKI_MARK_USED(device);
         if constexpr (!ek::is_cuda_array_v<Float>) {
-            auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
             RTCGeometry instance = m_shapegroup->embree_geometry(device);
             rtcSetGeometryTimeStepCount(instance, 1);
-            ek::Matrix<ScalarFloat32, 4> matrix(to_world.matrix);
+            ek::Matrix<ScalarFloat32, 4> matrix(m_to_world.scalar().matrix);
             rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, &matrix);
             rtcCommitGeometry(instance);
             return instance;
@@ -213,8 +209,8 @@ public:
                                    std::vector<OptixInstance>& instances,
                                    uint32_t instance_id,
                                    const ScalarTransform4f& transf) override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        m_shapegroup->optix_prepare_ias(context, instances, instance_id, transf * to_world);
+        m_shapegroup->optix_prepare_ias(context, instances, instance_id,
+                                        transf * m_to_world.scalar());
     }
 
     virtual void optix_fill_hitgroup_records(std::vector<HitGroupSbtRecord> &,

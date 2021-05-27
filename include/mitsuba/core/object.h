@@ -3,6 +3,7 @@
 #include <atomic>
 #include <stdexcept>
 #include <mitsuba/core/class.h>
+#include <enoki/array_router.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -286,6 +287,87 @@ private:
 };
 
 /**
+ * \brief Field wrapper for variables that must be accessible as scalar
+ *
+ * The \a field template is a simple wrapper to store a variable as well as
+ * a scalar copy of itself. This is often used for plugin members, where
+ * different routines might require to access those variables from the device
+ * or / and the host. This wrapper won't duplicate the storage if the field type
+ * is already a scalar type.
+ */
+template <typename T, typename S = std::decay_t<decltype(ek::get_slice(T()))>, typename = int>
+struct field {
+    field() {}
+    field(const T &v) : m_scalar(v) { }
+    field(T &&v) : m_scalar(v) { }
+    const T& value()  const { return m_scalar; }
+    const T& scalar() const { return m_scalar; }
+    T* ptr() { return &m_scalar; }
+    field& operator=(const field& f) {
+        m_scalar = f.m_scalar;
+        return *this;
+    }
+    field& operator=(field&& f) {
+        m_scalar = std::move(f.m_scalar);
+        return *this;
+    }
+    field& operator=(const T &v) {
+        m_scalar = v;
+        return *this;
+    }
+    field& operator=(T &&v) {
+        m_scalar = v;
+        return *this;
+    }
+private:
+    T m_scalar;
+};
+
+template <typename T, typename S>
+struct field<T, S, ek::enable_if_t<ek::is_jit_array_v<T> || (!std::is_same_v<T, S> && ek::is_enoki_struct_v<T>)>> {
+    static_assert(!(std::is_same_v<T, S> && ek::is_enoki_struct_v<T>),
+                  "scalar type should be specified for enoki struct fields");
+    field() {}
+    field(const S &v) : m_value(v), m_scalar(v) { }
+    field(S &&v) : m_value(v), m_scalar(v) { }
+    const T& value()  const { return m_value; }
+    const S& scalar() const { return m_scalar; }
+    T* ptr() { return &m_value; }
+    field& operator=(const field& f) {
+        m_value  = f.m_value;
+        m_scalar = f.m_scalar;
+        return *this;
+    }
+    field& operator=(field&& f) {
+        m_value  = std::move(f.m_value);
+        m_scalar = std::move(f.m_scalar);
+        return *this;
+    }
+    field& operator=(const S &v) {
+        m_value = m_scalar = v;
+        return *this;
+    }
+    field& operator=(S &&v) {
+        m_value = m_scalar = v;
+        return *this;
+    }
+    field& operator=(const T &v) {
+        m_value = v;
+        m_scalar = ek::get_slice<S>(m_value);
+        return *this;
+    }
+    field& operator=(T &&v) {
+        m_value = v;
+        m_scalar = ek::get_slice<S>(m_value);
+        return *this;
+    }
+    void opaque_() { ek::make_opaque(m_value); }
+private:
+    T m_value;
+    S m_scalar;
+};
+
+/**
  * \brief Abstract class providing an interface for traversing scene graphs
  *
  * This interface can be implemented either in C++ or in Python, to be used in
@@ -318,6 +400,13 @@ MTS_EXPORT_CORE std::ostream& operator<<(std::ostream &os, const Object *object)
 template <typename T>
 std::ostream& operator<<(std::ostream &os, const ref<T> &object) {
     return operator<<(os, object.get());
+}
+
+/// Prints the canonical string representation of a field
+template <typename T, typename S>
+std::ostream& operator<<(std::ostream &os, const field<T, S> &f) {
+    os << f.value();
+    return os;
 }
 
 // This checks that it is safe to reinterpret a \c ref object into the

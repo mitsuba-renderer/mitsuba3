@@ -39,7 +39,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.id()) {
     m_to_world = props.transform("to_world", ScalarTransform4f());
-    m_to_object = m_to_world.inverse();
+    m_to_object = m_to_world.scalar().inverse();
 
     for (auto &[name, obj] : props.objects(false)) {
         Emitter *emitter = dynamic_cast<Emitter *>(obj.get());
@@ -510,6 +510,7 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
+    ek::make_opaque(m_to_world, m_to_object);
     if (m_emitter)
         m_emitter->parameters_changed({"parent"});
     if (m_sensor)
@@ -520,7 +521,9 @@ MTS_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {
     return false;
 }
 
-MTS_VARIANT void Shape<Float, Spectrum>::set_children() {
+MTS_VARIANT void Shape<Float, Spectrum>::initialize() {
+    ek::make_opaque(m_to_world, m_to_object);
+    // Explicitly register this shape as the parent of the provided sub-objects
     if (m_emitter)
         m_emitter->set_shape(this);
     if (m_sensor)

@@ -143,8 +143,8 @@ public:
         Ray3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;
-        ray.o = m_to_world.translation();
-        ray.d = m_to_world * Vector3f(ek::normalize(near_p));
+        ray.o = m_to_world.value().translation();
+        ray.d = m_to_world.value() * Vector3f(ek::normalize(near_p));
 
         return { ray, unpolarized<Spectrum>(weight / pdf) & active };
     }
@@ -155,7 +155,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        Point it_local = m_to_world.inverse().transform_affine(it.p);
+        Point it_local = m_to_world.value().inverse().transform_affine(it.p);
 
         // 2. Map to UV coordinates
         Point2f uv = ek::head<2>(m_camera_to_sample * it_local);
@@ -170,8 +170,8 @@ public:
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
         DirectionSample3f ds;
 
-        ds.p       = m_to_world.translation();
-        ds.n       = m_to_world * ScalarVector3f(0, 0, 1);
+        ds.p       = m_to_world.value().translation();
+        ds.n       = m_to_world.value() * ScalarVector3f(0, 0, 1);
         ds.uv      = uv;
         ds.time    = it.time;
         ds.pdf     = 1.f;

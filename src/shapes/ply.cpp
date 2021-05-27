@@ -119,8 +119,6 @@ public:
         if (!fs::exists(file_path))
             fail("file not found");
 
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-
         ref<Stream> stream = new FileStream(file_path);
         ScopedPhase phase(ProfilerPhase::LoadGeometry);
         Timer timer;
@@ -229,7 +227,7 @@ public:
 
                     for (size_t j = 0; j < count; ++j) {
                         InputPoint3f p = ek::load<InputPoint3f>(target);
-                        p = to_world.transform_affine(p);
+                        p = m_to_world.scalar().transform_affine(p);
                         if (unlikely(!all(ek::isfinite(p))))
                             fail("mesh contains invalid vertex positions/normal data");
                         m_bbox.expand(p);
@@ -239,7 +237,7 @@ public:
                         if (has_vertex_normals) {
                             InputNormal3f n = ek::load<InputNormal3f>(
                                 target + sizeof(InputFloat) * 3);
-                            n = ek::normalize(to_world.transform_affine(n));
+                            n = ek::normalize(m_to_world.scalar().transform_affine(n));
                             ek::store(normal_ptr, n);
                             normal_ptr += 3;
                         }

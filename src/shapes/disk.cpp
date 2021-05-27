@@ -66,7 +66,7 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize,
                     get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
@@ -74,36 +74,36 @@ public:
 
     Disk(const Properties &props) : Base(props) {
         if (props.bool_("flip_normals", false))
-            m_to_world = m_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+            m_to_world =
+                m_to_world.scalar() *
+                ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
         update();
-        set_children();
+        initialize();
     }
 
     void update() {
-        m_to_object = m_to_world.inverse();
+        m_to_object = m_to_world.scalar().inverse();
 
-        Vector3f dp_du = m_to_world * Vector3f(1.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world * Vector3f(0.f, 1.f, 0.f);
+        Vector3f dp_du = m_to_world.scalar() * Vector3f(1.f, 0.f, 0.f);
+        Vector3f dp_dv = m_to_world.scalar() * Vector3f(0.f, 1.f, 0.f);
 
         m_du = ek::norm(dp_du);
         m_dv = ek::norm(dp_dv);
 
-        Normal3f n = ek::normalize(m_to_world * Normal3f(0.f, 0.f, 1.f));
+        Normal3f n = ek::normalize(m_to_world.scalar() * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
         m_inv_surface_area = ek::rcp(surface_area());
 
         ek::make_opaque(m_frame, m_inv_surface_area);
-        ek::make_opaque(m_to_world, m_to_object);
    }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
         ScalarBoundingBox3f bbox;
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
         return bbox;
     }
 
@@ -124,7 +124,7 @@ public:
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps;
-        ps.p    = m_to_world.transform_affine(Point3f(p.x(), p.y(), 0.f));
+        ps.p    = m_to_world.value().transform_affine(Point3f(p.x(), p.y(), 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.time = time;
@@ -152,9 +152,9 @@ public:
                                    ek::mask_t<FloatP> active) const {
         Transform<Point<FloatP, 4>> to_object;
         if constexpr (!ek::is_jit_array_v<FloatP>)
-            to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+            to_object = m_to_object.scalar();
         else
-            to_object = m_to_object;
+            to_object = m_to_object.value();
 
         Ray3fP ray = to_object.transform_affine(ray_);
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -176,9 +176,9 @@ public:
 
         Transform<Point<FloatP, 4>> to_object;
         if constexpr (!ek::is_jit_array_v<FloatP>)
-            to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+            to_object = m_to_object.scalar();
         else
-            to_object = m_to_object;
+            to_object = m_to_object.value();
 
         Ray3fP ray = to_object.transform_affine(ray_);
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -225,8 +225,8 @@ public:
                 Float cos_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
                       sin_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
 
-                si.dp_du = m_to_world * Vector3f( cos_phi, sin_phi, 0.f);
-                si.dp_dv = m_to_world * Vector3f(-sin_phi, cos_phi, 0.f);
+                si.dp_du = m_to_world.value() * Vector3f( cos_phi, sin_phi, 0.f);
+                si.dp_dv = m_to_world.value() * Vector3f(-sin_phi, cos_phi, 0.f);
             }
         }
 
@@ -241,7 +241,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", m_to_world);
+        callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
     }
 
@@ -261,7 +261,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
 
-            OptixDiskData data = { bbox(), ek::get_slice<ScalarTransform4f>(m_to_object) };
+            OptixDiskData data = { bbox(), m_to_object.scalar() };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixDiskData));
         }

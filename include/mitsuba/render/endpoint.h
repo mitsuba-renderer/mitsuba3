@@ -165,7 +165,7 @@ public:
 
     /// Return the local space to world space transformation
     Transform4f world_transform() const {
-        return m_to_world;
+        return m_to_world.value();
     }
 
     /**
@@ -238,7 +238,7 @@ protected:
     virtual ~Endpoint();
 
 protected:
-    Transform4f m_to_world;
+    field<Transform4f, ScalarTransform4f> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;

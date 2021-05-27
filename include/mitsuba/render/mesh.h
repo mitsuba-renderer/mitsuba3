@@ -17,7 +17,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_to_world, set_children)
+    MTS_IMPORT_BASE(Shape, m_to_world)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
@@ -37,7 +37,7 @@ public:
          bool has_vertex_normals = false, bool has_vertex_texcoords = false);
 
     /// Must be called at the end of the constructor of Mesh plugins
-    void initialize();
+    void initialize() override;
 
     // =========================================================================
     //! @{ \name Accessors (vertices, faces, normals, etc)

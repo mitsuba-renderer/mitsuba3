@@ -102,7 +102,7 @@ public:
         ScalarVector2i size = m_film->size();
         m_x_fov = parse_fov(props, size.x() / (float) size.y());
 
-        if (ek::any(m_to_world.has_scale()))
+        if (m_to_world.scalar().has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         update_camera_transforms();
@@ -171,8 +171,8 @@ public:
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
-        ray.o = m_to_world.translation();
-        ray.d = m_to_world * d;
+        ray.o = m_to_world.value().translation();
+        ray.d = m_to_world.value() * d;
 
         return { ray, wav_weight };
     }
@@ -199,21 +199,20 @@ public:
         ray.mint = m_near_clip * inv_z;
         ray.maxt = m_far_clip * inv_z;
 
-        ray.o = m_to_world.transform_affine(Point3f(0.f));
-        ray.d = m_to_world * d;
+        ray.o = m_to_world.value().transform_affine(Point3f(0.f));
+        ray.d = m_to_world.value() * d;
 
         ray.o_x = ray.o_y = ray.o;
 
-        ray.d_x = m_to_world * ek::normalize(Vector3f(near_p) + m_dx);
-        ray.d_y = m_to_world * ek::normalize(Vector3f(near_p) + m_dy);
+        ray.d_x = m_to_world.value() * ek::normalize(Vector3f(near_p) + m_dx);
+        ray.d_y = m_to_world.value() * ek::normalize(Vector3f(near_p) + m_dy);
         ray.has_differentials = true;
 
         return { ray, wav_weight };
     }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        ScalarPoint3f p = to_world * ScalarPoint3f(0.f);
+        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
         return ScalarBoundingBox3f(p, p);
     }
 

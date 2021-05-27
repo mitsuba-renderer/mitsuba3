@@ -75,7 +75,7 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize,
                     get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
@@ -91,18 +91,18 @@ public:
         ScalarPoint3f p0 = props.point3f("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
                       p1 = props.point3f("p1", ScalarPoint3f(0.f, 0.f, 1.f));
 
-        m_to_world = m_to_world * ScalarTransform4f::translate(p0) *
-                                  ScalarTransform4f::to_frame(ScalarFrame3f(p1 - p0)) *
-                                  ScalarTransform4f::scale(ScalarVector3f(radius, radius, 1.f));
+        m_to_world =
+            m_to_world.scalar() * ScalarTransform4f::translate(p0) *
+            ScalarTransform4f::to_frame(ScalarFrame3f(p1 - p0)) *
+            ScalarTransform4f::scale(ScalarVector3f(radius, radius, 1.f));
 
         update();
-        set_children();
+        initialize();
     }
 
     void update() {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
          // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = transform_decompose(to_world.matrix, 25);
+        auto [S, Q, T] = transform_decompose(m_to_world.scalar().matrix, 25);
 
         if (ek::abs(S[0][1]) > 1e-6f || ek::abs(S[0][2]) > 1e-6f || ek::abs(S[1][0]) > 1e-6f ||
             ek::abs(S[1][2]) > 1e-6f || ek::abs(S[2][0]) > 1e-6f || ek::abs(S[2][1]) > 1e-6f)
@@ -111,39 +111,30 @@ public:
         if (!(ek::abs(S[0][0] - S[1][1]) < 1e-6f))
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
 
-        float radius = S[0][0];
-        float length = S[2][2];
+        m_radius = S[0][0];
+        m_length = S[2][2];
 
-        if (radius <= 0.f) {
-            radius = ek::abs(radius);
+        if (m_radius.scalar() <= 0.f) {
+            m_radius = ek::abs(m_radius.scalar());
             m_flip_normals = !m_flip_normals;
         }
 
         // Reconstruct the to_world transform with uniform scaling and no shear
-        to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(1.f), Q, T);
-        ScalarTransform4f to_object = to_world.inverse();
+        m_to_world = ek::transform_compose<ScalarMatrix4f>(ScalarMatrix3f(1.f), Q, T);
+        m_to_object = m_to_world.scalar().inverse();
 
-        m_to_world  = to_world;
-        m_to_object = to_object;
-        m_radius = radius;
-        m_length = length;
         m_inv_surface_area = ek::rcp(surface_area());
 
         ek::make_opaque(m_radius, m_length, m_inv_surface_area);
-        ek::make_opaque(m_to_world, m_to_object);
     }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        ScalarFloat radius = ek::get_slice(m_radius);
-        ScalarFloat length = ek::get_slice(m_length);
-
-        ScalarVector3f x1 = to_world * ScalarVector3f(radius, 0.f, 0.f),
-                       x2 = to_world * ScalarVector3f(0.f, radius, 0.f),
+        ScalarVector3f x1 = m_to_world.scalar() * ScalarVector3f(m_radius.scalar(), 0.f, 0.f),
+                       x2 = m_to_world.scalar() * ScalarVector3f(0.f, m_radius.scalar(), 0.f),
                        x  = ek::sqrt(ek::sqr(x1) + ek::sqr(x2));
 
-        ScalarPoint3f p0 = to_world * ScalarPoint3f(0.f, 0.f, 0.f),
-                      p1 = to_world * ScalarPoint3f(0.f, 0.f, length);
+        ScalarPoint3f p0 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f),
+                      p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, m_length.scalar());
 
         /* To bound the cylinder, it is sufficient to find the
            smallest box containing the two circles at the endpoints. */
@@ -157,13 +148,9 @@ public:
         using Vector3fP8      = Vector<FloatP8, 3>;
         using BoundingBox3fP8 = BoundingBox<Point3fP8>;
 
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
-        ScalarFloat radius = ek::get_slice(m_radius);
-        ScalarFloat length = ek::get_slice(m_length);
-
-        ScalarPoint3f cyl_p = to_world.transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
+        ScalarPoint3f cyl_p = m_to_world.scalar().transform_affine(ScalarPoint3f(0.f, 0.f, 0.f));
         ScalarVector3f cyl_d =
-            to_world.transform_affine(ScalarVector3f(0.f, 0.f, length));
+            m_to_world.scalar().transform_affine(ScalarVector3f(0.f, 0.f, m_length.scalar()));
 
         // Compute a base bounding box
         ScalarBoundingBox3f bbox(this->bbox());
@@ -172,7 +159,7 @@ public:
         /* Now forget about the cylinder ends and intersect an infinite
            cylinder with each bounding box face, then compute a bounding
            box of the resulting ellipses. */
-        Point3fP8 face_p = ek::zero<Point3fP8>();
+        Point3fP8  face_p = ek::zero<Point3fP8>();
         Vector3fP8 face_n = ek::zero<Vector3fP8>();
 
         for (size_t i = 0; i < 3; ++i) {
@@ -194,8 +181,8 @@ public:
         Vector3fP8 v2 = ek::cross(face_n, v1);
 
         // Compute length of axes
-        v1 *= radius / ek::abs(dp);
-        v2 *= radius;
+        v1 *= m_radius.scalar() / ek::abs(dp);
+        v2 *= m_radius.scalar();
 
         // Compute center of ellipse
         FloatP8 t = ek::dot(face_n, face_p - cyl_p) / dp;
@@ -216,7 +203,7 @@ public:
     }
 
     Float surface_area() const override {
-        return 2.f * ek::Pi<ScalarFloat> * m_radius * m_length;
+        return 2.f * ek::Pi<ScalarFloat> * m_radius.value() * m_length.value();
     }
 
     // =============================================================
@@ -229,9 +216,9 @@ public:
 
         auto [sin_theta, cos_theta] = ek::sincos(2.f * ek::Pi<Float> * sample.y());
 
-        Point3f p(cos_theta * m_radius,
-                  sin_theta * m_radius,
-                  sample.x() * m_length);
+        Point3f p(cos_theta * m_radius.value(),
+                  sin_theta * m_radius.value(),
+                  sample.x() * m_length.value());
 
         Normal3f n(cos_theta, sin_theta, 0.f);
 
@@ -239,7 +226,7 @@ public:
             n *= -1;
 
         PositionSample3f ps;
-        ps.p     = m_to_world.transform_affine(p);
+        ps.p     = m_to_world.value().transform_affine(p);
         ps.n     = ek::normalize(n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
@@ -276,14 +263,13 @@ public:
         Value radius;
         Value length;
         if constexpr (!ek::is_jit_array_v<Value>) {
-            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
-            ray = to_object.transform_affine(ray_);
-            radius = (ScalarValue) ek::get_slice(m_radius, 0, true);
-            length = (ScalarValue) ek::get_slice(m_length, 0, true);
+            ray = m_to_object.scalar().transform_affine(ray_);
+            radius = (ScalarValue) m_radius.scalar();
+            length = (ScalarValue) m_length.scalar();
         } else {
-            ray = m_to_object.transform_affine(ray_);
-            radius = Value(m_radius);
-            length = Value(m_length);
+            ray = m_to_object.value().transform_affine(ray_);
+            radius = (Value) m_radius.value();
+            length = (Value) m_length.value();
         }
 
         Value mint = Value(ray.mint),
@@ -340,14 +326,13 @@ public:
         Value radius;
         Value length;
         if constexpr (!ek::is_jit_array_v<Value>) {
-            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
-            ray = to_object.transform_affine(ray_);
-            radius = (ScalarValue) ek::get_slice(m_radius, 0, true);
-            length = (ScalarValue) ek::get_slice(m_length, 0, true);
+            ray = m_to_object.scalar().transform_affine(ray_);
+            radius = (ScalarValue) m_radius.scalar();
+            length = (ScalarValue) m_length.scalar();
         } else {
-            ray = m_to_object.transform_affine(ray_);
-            radius = Value(m_radius);
-            length = Value(m_length);
+            ray = m_to_object.value().transform_affine(ray_);
+            radius = (Value) m_radius.value();
+            length = (Value) m_length.value();
         }
 
         Value mint = Value(ray.mint);
@@ -405,22 +390,22 @@ public:
 
         si.p = ray(pi.t);
 
-        Vector3f local = m_to_object.transform_affine(si.p);
+        Vector3f local = m_to_object.value().transform_affine(si.p);
 
         Float phi = ek::atan2(local.y(), local.x());
         ek::masked(phi, phi < 0.f) += 2.f * ek::Pi<Float>;
 
-        si.uv = Point2f(phi * ek::InvTwoPi<Float>, local.z() / m_length);
+        si.uv = Point2f(phi * ek::InvTwoPi<Float>, local.z() / m_length.value());
 
         Vector3f dp_du = 2.f * ek::Pi<Float> * Vector3f(-local.y(), local.x(), 0.f);
-        Vector3f dp_dv = Vector3f(0.f, 0.f, m_length);
-        si.dp_du = m_to_world.transform_affine(dp_du);
-        si.dp_dv = m_to_world.transform_affine(dp_dv);
+        Vector3f dp_dv = Vector3f(0.f, 0.f, m_length.value());
+        si.dp_du = m_to_world.value().transform_affine(dp_du);
+        si.dp_dv = m_to_world.value().transform_affine(dp_dv);
         si.n = Normal3f(ek::normalize(ek::cross(si.dp_du, si.dp_dv)));
 
         /* Mitigate roundoff error issues by a normal shift of the computed
            intersection point */
-        si.p += si.n * (m_radius - ek::norm(ek::head<2>(local)));
+        si.p += si.n * (m_radius.value() - ek::norm(ek::head<2>(local)));
 
         if (m_flip_normals)
             si.n *= -1.f;
@@ -429,7 +414,7 @@ public:
 
         if (has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
             has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
-            si.dn_du = si.dp_du / (m_radius * (m_flip_normals ? -1.f : 1.f));
+            si.dn_du = si.dp_du / (m_radius.value() * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }
 
@@ -443,7 +428,7 @@ public:
     // =============================================================
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", m_to_world);
+        callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
     }
 
@@ -463,10 +448,9 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixCylinderData));
 
-            auto to_object = ek::get_slice<ScalarTransform4f>(m_to_object);
-            OptixCylinderData data = { bbox(), to_object,
-                                       (float) ek::get_slice(m_length),
-                                       (float) ek::get_slice(m_radius) };
+            OptixCylinderData data = { bbox(), m_to_object.scalar(),
+                                       (float) m_length.scalar(),
+                                       (float) m_radius.scalar() };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data, sizeof(OptixCylinderData));
         }
@@ -487,7 +471,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    Float m_radius, m_length;
+    field<Float> m_radius, m_length;
     Float m_inv_surface_area;
     bool m_flip_normals;
 };

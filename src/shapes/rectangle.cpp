@@ -66,7 +66,7 @@ The following XML snippet showcases a simple example of a textured rectangle:
 template <typename Float, typename Spectrum>
 class Rectangle final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, set_children,
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize,
                     get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
@@ -74,32 +74,32 @@ public:
 
     Rectangle(const Properties &props) : Base(props) {
         if (props.bool_("flip_normals", false))
-            m_to_world = m_to_world * ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+            m_to_world =
+                m_to_world.scalar() *
+                ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
 
         update();
-        set_children();
+        initialize();
     }
 
     void update() {
-        m_to_object = m_to_world.inverse();
+        m_to_object = m_to_world.scalar().inverse();
 
-        Vector3f dp_du = m_to_world * Vector3f(2.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world * Vector3f(0.f, 2.f, 0.f);
-        Normal3f normal = ek::normalize(m_to_world * Normal3f(0.f, 0.f, 1.f));
+        Vector3f dp_du = m_to_world.scalar() * Vector3f(2.f, 0.f, 0.f);
+        Vector3f dp_dv = m_to_world.scalar() * Vector3f(0.f, 2.f, 0.f);
+        Normal3f normal = ek::normalize(m_to_world.scalar() * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame3f(dp_du, dp_dv, normal);
         m_inv_surface_area = ek::rcp(surface_area());
 
         ek::make_opaque(m_frame, m_inv_surface_area);
-        ek::make_opaque(m_to_world, m_to_object);
     }
 
     ScalarBoundingBox3f bbox() const override {
-        auto to_world = ek::get_slice<ScalarTransform4f>(m_to_world);
         ScalarBoundingBox3f bbox;
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
-        bbox.expand(to_world.transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f(-1.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f( 1.f, -1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f( 1.f,  1.f, 0.f)));
+        bbox.expand(m_to_world.scalar().transform_affine(ScalarPoint3f(-1.f,  1.f, 0.f)));
         return bbox;
     }
 
@@ -116,7 +116,7 @@ public:
         MTS_MASK_ARGUMENT(active);
 
         PositionSample3f ps;
-        ps.p = m_to_world.transform_affine(
+        ps.p = m_to_world.value().transform_affine(
             Point3f(sample.x() * 2.f - 1.f, sample.y() * 2.f - 1.f, 0.f));
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
@@ -146,9 +146,9 @@ public:
                                    ek::mask_t<FloatP> active) const {
         Transform<Point<FloatP, 4>> to_object;
         if constexpr (!ek::is_jit_array_v<FloatP>)
-            to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+            to_object = m_to_object.scalar();
         else
-            to_object = m_to_object;
+            to_object = m_to_object.value();
 
         Ray3fP ray = to_object.transform_affine(ray_);
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -171,9 +171,9 @@ public:
 
         Transform<Point<FloatP, 4>> to_object;
         if constexpr (!ek::is_jit_array_v<FloatP>)
-            to_object = ek::get_slice<ScalarTransform4f>(m_to_object, 0, true);
+            to_object = m_to_object.scalar();
         else
-            to_object = m_to_object;
+            to_object = m_to_object.value();
 
         Ray3fP ray     = to_object.transform_affine(ray_);
         FloatP t       = -ray.o.z() / ray.d.z();
@@ -223,7 +223,7 @@ public:
     }
 
     void traverse(TraversalCallback *callback) override {
-        callback->put_parameter("to_world", m_to_world);
+        callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
     }
 
@@ -243,7 +243,7 @@ public:
             if (!m_optix_data_ptr)
                 m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixRectangleData));
 
-            OptixRectangleData data = { bbox(), ek::get_slice<ScalarTransform4f>(m_to_object) };
+            OptixRectangleData data = { bbox(), m_to_object.scalar() };
 
             jit_memcpy(JitBackend::CUDA, m_optix_data_ptr, &data,
                        sizeof(OptixRectangleData));
