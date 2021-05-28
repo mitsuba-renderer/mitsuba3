@@ -112,7 +112,8 @@ void kdtree_trace_func_wrapper(const int* valid, void* ptr, uint8_t* args) {
                 prim_v = pi.prim_uv[1];
                 prim_id = pi.prim_index;
                 geom_id = pi.shape_index;
-                inst_id = pi.inst_index;
+                inst_id = pi.instance ? (ScalarUInt32)(size_t) pi.shape // shape_index
+                                      : (ScalarUInt32) -1;
             }
         }
     }

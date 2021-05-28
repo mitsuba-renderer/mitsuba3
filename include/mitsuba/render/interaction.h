@@ -526,7 +526,7 @@ constexpr auto has_flag(UInt32 flags, HitComputeFlags f) { return ek::neq(flags 
  * If the intersection is deemed relevant, detailed intersection information can later be
  * obtained via the  \ref create_surface_interaction() method.
  */
-template <typename Float_, typename Spectrum_>
+template <typename Float_, typename Shape_>
 struct PreliminaryIntersection {
 
     // =============================================================
@@ -534,13 +534,13 @@ struct PreliminaryIntersection {
     // =============================================================
 
     using Float    = Float_;
-    using Spectrum = Spectrum_;
+    using ShapePtr = ek::replace_scalar_t<Float, const Shape_ *>;
 
-    MTS_IMPORT_RENDER_BASIC_TYPES()
-    MTS_IMPORT_OBJECT_TYPES()
+    MTS_IMPORT_CORE_TYPES()
 
     using Index = typename CoreAliases::UInt32;
-    using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
+    using Ray3f = typename Shape_::Ray3f;
+    using Spectrum = typename Ray3f::Spectrum;
 
     //! @}
     // =============================================================
@@ -598,42 +598,49 @@ struct PreliminaryIntersection {
      * \return
      *      A data structure containing the detailed information
      */
-    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     uint32_t hit_flags,
-                                                     Mask active) {
-        active &= is_valid();
-        if (ek::none_or<false>(active)) {
-            SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-            si.wi = -ray.d;
+    auto compute_surface_interaction(const Ray3f &ray,
+                                     uint32_t hit_flags,
+                                     Mask active) {
+        if constexpr (!std::is_same_v<Shape_, Shape<Float, Spectrum>>) {
+            Throw("PreliminaryIntersection::compute_surface_interaction(): not implemented!");
+        } else {
+            using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
+            using ShapePtr = typename SurfaceInteraction3f::ShapePtr;
+
+            active &= is_valid();
+            if (ek::none_or<false>(active)) {
+                SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+                si.wi = -ray.d;
+                si.wavelengths = ray.wavelengths;
+                return si;
+            }
+
+            ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
+
+            ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
+            SurfaceInteraction3f si =
+                target->compute_surface_interaction(ray, *this, hit_flags, active);
+
+            ek::masked(si.t, !active) = ek::Infinity<Float>;
+            active &= si.is_valid();
+
+            ek::masked(si.shape,    !active) = nullptr;
+            ek::masked(si.instance, !active) = nullptr;
+
+            si.prim_index  = prim_index;
+            si.time        = ray.time;
             si.wavelengths = ray.wavelengths;
+
+            if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
+                si.initialize_sh_frame();
+
+            // Incident direction in local coordinates
+            si.wi = ek::select(active, si.to_local(-ray.d), -ray.d);
+
+            si.duv_dx = si.duv_dy = ek::zero<Point2f>();
+
             return si;
         }
-
-        ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-
-        ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
-        SurfaceInteraction3f si =
-            target->compute_surface_interaction(ray, *this, hit_flags, active);
-
-        ek::masked(si.t, !active) = ek::Infinity<Float>;
-        active &= si.is_valid();
-
-        ek::masked(si.shape,    !active) = nullptr;
-        ek::masked(si.instance, !active) = nullptr;
-
-        si.prim_index  = prim_index;
-        si.time        = ray.time;
-        si.wavelengths = ray.wavelengths;
-
-        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
-            si.initialize_sh_frame();
-
-        // Incident direction in local coordinates
-        si.wi = ek::select(active, si.to_local(-ray.d), -ray.d);
-
-        si.duv_dx = si.duv_dy = ek::zero<Point2f>();
-
-        return si;
     }
 
     //! @}
@@ -711,19 +718,19 @@ std::ostream &operator<<(std::ostream &os, const MediumInteraction<Float, Spectr
     return os;
 }
 
-template <typename Float, typename Spectrum>
-std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, Spectrum> &pi) {
+template <typename Float, typename Shape>
+std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, Shape> &pi) {
     if (ek::none(pi.is_valid())) {
         os << "PreliminaryIntersection[invalid]";
     } else {
         os << "PreliminaryIntersection[" << std::endl
-        << "  t = " << pi.t << "," << std::endl
-        << "  prim_uv = " << pi.prim_uv << "," << std::endl
-        << "  prim_index = " << pi.prim_index << "," << std::endl
-        << "  shape_index = " << pi.shape_index << "," << std::endl
-        << "  shape = " << string::indent(pi.shape, 6) << "," << std::endl
-        << "  instance = " << string::indent(pi.instance, 6) << "," << std::endl
-        << "]";
+           << "  t = " << pi.t << "," << std::endl
+           << "  prim_uv = " << pi.prim_uv << "," << std::endl
+           << "  prim_index = " << pi.prim_index << "," << std::endl
+           << "  shape_index = " << pi.shape_index << "," << std::endl
+           << "  shape = " << string::indent(pi.shape, 6) << "," << std::endl
+           << "  instance = " << string::indent(pi.instance, 6) << "," << std::endl
+           << "]";
     }
     return os;
 }
