@@ -27,16 +27,18 @@ JIT_EXCLUDE_FOLDERS = [
 
 # List of test scene folders to exclude for symbolic modes
 SYMBOLIC_EXCLUDE_FOLDERS = [
-    'instancing', #TODO remove this once nested vcalls are supported
+    'mesh_attributes', #TODO remove this once nested vcalls are supported
+    'instancing',      #TODO remove this once nested vcalls are supported
 ]
 
 if hasattr(ek, 'JitFlag'):
-    JIT_FLAG_OPTIONS = [
-        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
-    ]
+    JIT_FLAG_OPTIONS = {
+        'scalar': {},
+        'jit_flag_option_1' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+        'jit_flag_option_0' : {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
+        'jit_flag_option_2' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1, ek.JitFlag.VCallBranch: 0},
+        'jit_flag_option_3' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
+    }
 
 def list_all_render_test_configs():
     """
@@ -52,13 +54,15 @@ def list_all_render_test_configs():
             if is_jit and any(ex in scene for ex in JIT_EXCLUDE_FOLDERS):
                 continue
             if not is_jit:
-                configs.append((variant, scene, {}))
+                configs.append((variant, scene, 'scalar'))
             else:
-                for flags in JIT_FLAG_OPTIONS:
-                    is_symbolic = flags[ek.JitFlag.VCallRecord] == 1
+                for k, v in JIT_FLAG_OPTIONS.items():
+                    if k == 'scalar':
+                        continue
+                    is_symbolic = v[ek.JitFlag.VCallRecord] == 1
                     if is_symbolic and any(ex in scene for ex in SYMBOLIC_EXCLUDE_FOLDERS):
                         continue
-                    configs.append((variant, scene, flags))
+                    configs.append((variant, scene, k))
     return configs
 
 
@@ -116,12 +120,12 @@ def z_test(mean, sample_count, reference, reference_var):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("variant, scene_fname, jit_flags", list_all_render_test_configs())
-def test_render(gc_collect, variant, scene_fname, jit_flags):
+@pytest.mark.parametrize("variant, scene_fname, jit_flags_key", list_all_render_test_configs())
+def test_render(gc_collect, variant, scene_fname, jit_flags_key):
     mitsuba.set_variant(variant)
 
     if hasattr(ek, 'JitFlag'):
-        for k, v in jit_flags.items():
+        for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
             ek.set_flag(k, v)
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)

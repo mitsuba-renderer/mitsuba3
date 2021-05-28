@@ -74,16 +74,28 @@ public:
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (jit_flag(JitFlag::VCallRecord))
+                Throw("Mesh attributes are only supported in wavefront mode!");
+        }
         return si.shape->eval_attribute(m_name, si, active) * m_scale;
     }
 
     Float eval_1(const SurfaceInteraction3f &si, Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (jit_flag(JitFlag::VCallRecord))
+                Throw("Mesh attributes are only supported in wavefront mode!");
+        }
         return si.shape->eval_attribute_1(m_name, si, active) * m_scale;
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active = true) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (jit_flag(JitFlag::VCallRecord))
+                Throw("Mesh attributes are only supported in wavefront mode!");
+        }
         return si.shape->eval_attribute_3(m_name, si, active) * m_scale;
     }
 
