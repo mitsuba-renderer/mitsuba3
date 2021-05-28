@@ -2182,35 +2182,6 @@ public:
         return m_shapes[shape_index]->bbox(i, clip);
     }
 
-    struct KDTreePreliminaryIntersection3f {
-        ScalarFloat t = ek::Infinity<ScalarFloat>;
-        /// 2D coordinates on the primitive surface parameterization
-        ScalarPoint2f prim_uv;
-        /// Primitive index, e.g. the triangle ID (if applicable)
-        Index prim_index;
-        /// Shape index, e.g. the shape ID in shapegroup (if applicable)
-        Index shape_index;
-        /// Index to the parent instance (if applicable)
-        Index inst_index = ((uint32_t) -1);
-        /// Pointer to the associated shape
-        const Shape* shape = nullptr;
-        /// Stores a pointer to the parent instance (if applicable)
-        const Shape* instance = nullptr;
-
-        bool is_valid() { return t != ek::Infinity<ScalarFloat>; }
-
-        operator PreliminaryIntersection3f() const {
-            PreliminaryIntersection3f pi;
-            pi.t = t;
-            pi.prim_uv = prim_uv;
-            pi.prim_index = prim_index;
-            pi.shape_index = shape_index;
-            pi.shape = shape;
-            pi.instance = instance;
-            return pi;
-        }
-    };
-
     template <bool ShadowRay>
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                                    Mask active) const {
@@ -2222,7 +2193,8 @@ public:
     }
 
     template <bool ShadowRay>
-    MTS_INLINE KDTreePreliminaryIntersection3f ray_intersect_scalar(ScalarRay3f ray) const {
+    MTS_INLINE PreliminaryIntersection<ScalarFloat, Shape>
+    ray_intersect_scalar(ScalarRay3f ray) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2236,7 +2208,7 @@ public:
         int32_t stack_index = 0;
 
         // Resulting intersection struct
-        KDTreePreliminaryIntersection3f pi;
+        PreliminaryIntersection<ScalarFloat, Shape> pi;
 
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
@@ -2290,7 +2262,7 @@ public:
                 for (Index i = prim_start; i < prim_end; i++) {
                     Index prim_index = m_indices[i];
 
-                    KDTreePreliminaryIntersection3f prim_pi =
+                    PreliminaryIntersection<ScalarFloat, Shape> prim_pi =
                         intersect_prim<ShadowRay>(prim_index, ray);
 
                     if (unlikely(prim_pi.is_valid())) {
@@ -2448,7 +2420,8 @@ public:
 
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
-    MTS_INLINE PreliminaryIntersection3f ray_intersect_naive(Ray3f ray, Mask active) const {
+    MTS_INLINE PreliminaryIntersection3f
+    ray_intersect_naive(Ray3f ray, Mask active) const {
         if constexpr (!ek::is_array_v<Float>) {
             PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
 
@@ -2511,13 +2484,13 @@ protected:
      * create a detailed intersection record.
      */
     template <bool ShadowRay = false>
-    MTS_INLINE KDTreePreliminaryIntersection3f
+    MTS_INLINE PreliminaryIntersection<ScalarFloat, Shape>
     intersect_prim(Index prim_index, const ScalarRay3f &ray) const {
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
         const Mesh *mesh = (const Mesh *) shape;
 
-        KDTreePreliminaryIntersection3f pi;
+        PreliminaryIntersection<ScalarFloat, Shape> pi;
 
         if constexpr (ShadowRay) {
             bool hit;
@@ -2535,11 +2508,10 @@ protected:
                     shape->ray_intersect_preliminary_scalar(ray);
             pi.prim_index = prim_index;
 
-            bool hit_inst = (inst_index != (uint32_t) -1);
-            pi.shape    = !hit_inst ? shape : nullptr;
-            pi.instance =  hit_inst ? shape : nullptr;
+            bool hit_inst  = (inst_index != (uint32_t) -1);
+            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape;
+            pi.instance    = hit_inst ? shape : nullptr;
             pi.shape_index = hit_inst ? inst_index : shape_index;
-            pi.inst_index  = hit_inst ? shape_index : (uint32_t) -1;
         }
 
         return pi;
