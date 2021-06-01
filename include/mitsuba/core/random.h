@@ -34,6 +34,7 @@
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/fwd.h>
 #include <enoki/random.h>
+#include <enoki/loop.h>
 
 NAMESPACE_BEGIN(enoki)
 /// Prints the canonical representation of a PCG32 object.
@@ -236,17 +237,8 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
     w |= w >> 8;
     w |= w >> 16;
 
-    // Worst case is when the index is sequentially mapped to every invalid numbers (out
-    // of range) before being mapped into the correct range. E.g. decreasing sequence
-    uint32_t max_iter = 0;
-    if constexpr (ek::is_jit_array_v<UInt32>)
-        max_iter = math::round_to_power_of_two(sample_count) - sample_count + 1;
-
-    uint32_t iter = 0;
-    ek::mask_t<UInt32> invalid = true;
-    UInt32 tmp;
-    do {
-        tmp = index;
+    auto body = [&seed, &w](UInt32 index) {
+        UInt32 tmp = index;
         tmp ^= seed;
         tmp *= 0xe170893d;
         tmp ^= seed >> 16;
@@ -265,9 +257,29 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
         tmp *= 0xc860a3df;
         tmp &= w;
         tmp ^= tmp >> 5;
-        ek::masked(index, invalid) = tmp;
-        invalid = (index >= sample_count);
-    } while (ek::any_or<false>(active && invalid) || (max_iter > ++iter));
+        return tmp;
+    };
+
+    if constexpr (ek::is_jit_array_v<UInt32>) {
+        if (jit_flag(JitFlag::LoopRecord)) {
+            ek::Loop<ek::mask_t<ek::detached_t<UInt32>>> loop("perm", active, index);
+            while (loop(ek::detach(active))) {
+                ek::masked(index, active) = body(index);
+                active &= (index >= sample_count);
+            }
+            return (index + seed) % sample_count;
+        }
+    }
+
+    // Worst case is when the index is sequentially mapped to every invalid numbers (out
+    // of range) before being mapped into the correct range. E.g. decreasing sequence
+    uint32_t iter = 0, max_iter = 0;
+    if constexpr (ek::is_jit_array_v<UInt32>)
+        max_iter = math::round_to_power_of_two(sample_count) - sample_count + 1;
+    do {
+        ek::masked(index, active) = body(index);
+        active &= (index >= sample_count);
+    } while (ek::any_or<false>(active) || (max_iter > ++iter));
 
     return (index + seed) % sample_count;
 }
