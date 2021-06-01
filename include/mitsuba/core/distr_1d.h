@@ -17,10 +17,13 @@ NAMESPACE_BEGIN(mitsuba)
  * initialization. The associated scale factor can be retrieved using the
  * function \ref normalization().
  */
-template <typename Float> struct DiscreteDistribution {
+template <typename Value> struct DiscreteDistribution {
+    using Float = std::conditional_t<ek::is_static_array_v<Value>,
+                                     ek::value_t<Value>, Value>;
     using FloatStorage   = DynamicBuffer<Float>;
-    using Index          = ek::uint32_array_t<Float>;
-    using Mask           = ek::mask_t<Float>;
+    using Index          = ek::uint32_array_t<Value>;
+    using Mask           = ek::mask_t<Value>;
+
     using ScalarFloat    = ek::scalar_t<Float>;
     using ScalarVector2u = ek::Array<uint32_t, 2>;
 
@@ -70,10 +73,10 @@ public:
     const FloatStorage &cdf() const { return m_cdf; }
 
     /// \brief Return the original sum of PMF entries before normalization
-    ScalarFloat sum() const { return m_sum; }
+    Float sum() const { return m_sum; }
 
     /// \brief Return the normalization factor (i.e. the inverse of \ref sum())
-    ScalarFloat normalization() const { return m_normalization; }
+    Float normalization() const { return m_normalization; }
 
     /// Return the number of entries
     size_t size() const { return m_pmf.size(); }
@@ -82,23 +85,23 @@ public:
     bool empty() const { return m_pmf.empty(); }
 
     /// Evaluate the unnormalized probability mass function (PMF) at index \c index
-    Float eval_pmf(Index index, Mask active = true) const {
-        return ek::gather<Float>(m_pmf, index, active);
+    Value eval_pmf(Index index, Mask active = true) const {
+        return ek::gather<Value>(m_pmf, index, active);
     }
 
     /// Evaluate the normalized probability mass function (PMF) at index \c index
-    Float eval_pmf_normalized(Index index, Mask active = true) const {
-        return ek::gather<Float>(m_pmf, index, active) * m_normalization;
+    Value eval_pmf_normalized(Index index, Mask active = true) const {
+        return ek::gather<Value>(m_pmf, index, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at index \c index
-    Float eval_cdf(Index index, Mask active = true) const {
-        return ek::gather<Float>(m_cdf, index, active);
+    Value eval_cdf(Index index, Mask active = true) const {
+        return ek::gather<Value>(m_cdf, index, active);
     }
 
     /// Evaluate the normalized cumulative distribution function (CDF) at index \c index
-    Float eval_cdf_normalized(Index index, Mask active = true) const {
-        return ek::gather<Float>(m_cdf, index, active) * m_normalization;
+    Value eval_cdf_normalized(Index index, Mask active = true) const {
+        return ek::gather<Value>(m_cdf, index, active) * m_normalization;
     }
 
     /**
@@ -111,7 +114,7 @@ public:
      * \return
      *     The discrete index associated with the sample
      */
-    Index sample(Float value, Mask active = true) const {
+    Index sample(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         value *= m_sum;
@@ -119,7 +122,7 @@ public:
         return ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Value>(m_cdf, index, active) < value;
             }
         );
     }
@@ -137,7 +140,7 @@ public:
      *     1. the discrete index associated with the sample, and
      *     2. the normalized probability value of the sample.
      */
-    std::pair<Index, Float> sample_pmf(Float value, Mask active = true) const {
+    std::pair<Index, Value> sample_pmf(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         Index index = sample(value, active);
@@ -160,13 +163,13 @@ public:
      *     1. the discrete index associated with the sample, and
      *     2. the re-scaled sample value.
      */
-    std::pair<Index, Float>
-    sample_reuse(Float value, Mask active = true) const {
+    std::pair<Index, Value>
+    sample_reuse(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         Index index = sample(value, active);
 
-        Float pmf = eval_pmf_normalized(index, active),
+        Value pmf = eval_pmf_normalized(index, active),
               cdf = eval_cdf_normalized(index - 1, active && index > 0);
 
         return { index, (value - cdf) / pmf };
@@ -189,13 +192,13 @@ public:
      *     2. the re-scaled sample value
      *     3. the normalized probability value of the sample
      */
-    std::tuple<Index, Float, Float>
-    sample_reuse_pmf(Float value, Mask active = true) const {
+    std::tuple<Index, Value, Value>
+    sample_reuse_pmf(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         auto [index, pdf] = sample_pmf(value, active);
 
-        Float pmf = eval_pmf_normalized(index, active),
+        Value pmf = eval_pmf_normalized(index, active),
               cdf = eval_cdf_normalized(index - 1, active && index > 0);
 
         return {
@@ -240,16 +243,16 @@ private:
         if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("DiscreteDistribution: no probability mass found!");
 
-        m_sum = ScalarFloat(sum);
-        m_normalization = ScalarFloat(1.0 / sum);
+        m_sum = ek::opaque<Float>(sum);
+        m_normalization = ek::opaque<Float>(1.0 / sum);
         m_cdf = ek::load<FloatStorage>(cdf.data(), size);
     }
 
 private:
     FloatStorage m_pmf;
     FloatStorage m_cdf;
-    ScalarFloat m_sum = 0.f;
-    ScalarFloat m_normalization = 0.f;
+    Float m_sum = 0.f;
+    Float m_normalization = 0.f;
     ScalarVector2u m_valid;
 };
 
@@ -265,10 +268,12 @@ private:
  * initialization. The associated scale factor can be retrieved using the
  * function \ref normalization().
  */
-template <typename Float> struct ContinuousDistribution {
+template <typename Value> struct ContinuousDistribution {
+    using Float = std::conditional_t<ek::is_static_array_v<Value>,
+                                     ek::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = ek::uint32_array_t<Float>;
-    using Mask = ek::mask_t<Float>;
+    using Index = ek::uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
 
     using ScalarFloat = ek::scalar_t<Float>;
     using ScalarVector2f = Vector<ScalarFloat, 2>;
@@ -330,10 +335,10 @@ public:
     const FloatStorage &cdf() const { return m_cdf; }
 
     /// \brief Return the original integral of PDF entries before normalization
-    ScalarFloat integral() const { return m_integral; }
+    Float integral() const { return m_integral; }
 
     /// \brief Return the normalization factor (i.e. the inverse of \ref sum())
-    ScalarFloat normalization() const { return m_normalization; }
+    Float normalization() const { return m_normalization; }
 
     /// Return the number of discretizations
     size_t size() const { return m_pdf.size(); }
@@ -342,7 +347,7 @@ public:
     bool empty() const { return m_pdf.empty(); }
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
-    Float eval_pdf(Float x, Mask active = true) const {
+    Value eval_pdf(Value x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         active &= x >= m_range.x() && x <= m_range.y();
@@ -350,43 +355,43 @@ public:
 
         Index index = ek::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        Float y0 = ek::gather<Float>(m_pdf, index,      active),
-              y1 = ek::gather<Float>(m_pdf, index + 1u, active);
+        Value y0 = ek::gather<Value>(m_pdf, index,      active),
+              y1 = ek::gather<Value>(m_pdf, index + 1u, active);
 
-        Float w1 = x - Float(index),
+        Value w1 = x - Value(index),
               w0 = 1.f - w1;
 
         return ek::fmadd(w0, y0, w1 * y1);
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
-    Float eval_pdf_normalized(Float x, Mask active) const {
+    Value eval_pdf_normalized(Value x, Mask active) const {
         MTS_MASK_ARGUMENT(active);
 
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    Float eval_cdf(Float x_, Mask active = true) const {
+    Value eval_cdf(Value x_, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
-        Float x = (x_ - m_range.x()) * m_inv_interval_size;
+        Value x = (x_ - m_range.x()) * m_inv_interval_size;
 
         Index index = ek::clamp(Index(x), 0u, uint32_t(m_pdf.size() - 2));
 
-        Float y0 = ek::gather<Float>(m_pdf, index,      active),
-              y1 = ek::gather<Float>(m_pdf, index + 1u, active),
-              c0 = ek::gather<Float>(m_cdf, index - 1u, active && index > 0u);
+        Value y0 = ek::gather<Value>(m_pdf, index,      active),
+              y1 = ek::gather<Value>(m_pdf, index + 1u, active),
+              c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0u);
 
 
-        Float t   = ek::clamp(x - Float(index), 0.f, 1.f),
+        Value t   = ek::clamp(x - Value(index), 0.f, 1.f),
               cdf = c0 + t * (y0 + .5f * t * (y1 - y0)) * m_interval_size;
 
         return cdf;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    Float eval_cdf_normalized(Float x, Mask active = true) const {
+    Value eval_cdf_normalized(Value x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         return eval_cdf(x, active) * m_normalization;
@@ -402,7 +407,7 @@ public:
      * \return
      *     The sampled position.
      */
-    Float sample(Float value, Mask active = true) const {
+    Value sample(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         value *= m_integral;
@@ -410,21 +415,21 @@ public:
         Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Float y0 = ek::gather<Float>(m_pdf, index,      active),
-              y1 = ek::gather<Float>(m_pdf, index + 1u, active),
-              c0 = ek::gather<Float>(m_cdf, index - 1u, active && index > 0);
+        Value y0 = ek::gather<Value>(m_pdf, index,      active),
+              y1 = ek::gather<Value>(m_pdf, index + 1u, active),
+              c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
-        return ek::fmadd(Float(index) + t, m_interval_size, m_range.x());
+        return ek::fmadd(Value(index) + t, m_interval_size, m_range.x());
     }
 
     /**
@@ -440,7 +445,7 @@ public:
      *     1. the sampled position.
      *     2. the normalized probability density of the sample.
      */
-    std::pair<Float, Float> sample_pdf(Float value, Mask active = true) const {
+    std::pair<Value, Value> sample_pdf(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         value *= m_integral;
@@ -448,21 +453,21 @@ public:
         Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Float y0 = ek::gather<Float>(m_pdf, index,      active),
-              y1 = ek::gather<Float>(m_pdf, index + 1u, active),
-              c0 = ek::gather<Float>(m_cdf, index - 1u, active && index > 0);
+        Value y0 = ek::gather<Value>(m_pdf, index,      active),
+              y1 = ek::gather<Value>(m_pdf, index + 1u, active),
+              c0 = ek::gather<Value>(m_cdf, index - 1u, active && index > 0);
 
         value = (value - c0) * m_inv_interval_size;
 
-        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
-        return { ek::fmadd(Float(index) + t, m_interval_size, m_range.x()),
+        return { ek::fmadd(Value(index) + t, m_interval_size, m_range.x()),
                  ek::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
@@ -512,20 +517,20 @@ private:
         if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("ContinuousDistribution: no probability mass found!");
 
-        m_integral = ScalarFloat(integral);
-        m_normalization = ScalarFloat(1. / integral);
-        m_interval_size = ScalarFloat(interval_size);
-        m_inv_interval_size = ScalarFloat(1. / interval_size);
+        m_integral = ek::opaque<Float>(integral);
+        m_normalization = ek::opaque<Float>(1. / integral);
+        m_interval_size = ek::opaque<Float>(interval_size);
+        m_inv_interval_size = ek::opaque<Float>(1. / interval_size);
         m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
     }
 
 private:
     FloatStorage m_pdf;
     FloatStorage m_cdf;
-    ScalarFloat m_integral = 0.f;
-    ScalarFloat m_normalization = 0.f;
-    ScalarFloat m_interval_size = 0.f;
-    ScalarFloat m_inv_interval_size = 0.f;
+    Float m_integral = 0.f;
+    Float m_normalization = 0.f;
+    Float m_interval_size = 0.f;
+    Float m_inv_interval_size = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
     ScalarVector2u m_valid;
 };
@@ -542,10 +547,12 @@ private:
  * initialization. The associated scale factor can be retrieved using the
  * function \ref normalization().
  */
-template <typename Float> struct IrregularContinuousDistribution {
+template <typename Value> struct IrregularContinuousDistribution {
+    using Float = std::conditional_t<ek::is_static_array_v<Value>,
+                                     ek::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
-    using Index = ek::uint32_array_t<Float>;
-    using Mask = ek::mask_t<Float>;
+    using Index = ek::uint32_array_t<Value>;
+    using Mask = ek::mask_t<Value>;
 
     using ScalarFloat = ek::scalar_t<Float>;
     using ScalarVector2f = ek::Array<ScalarFloat, 2>;
@@ -612,10 +619,10 @@ public:
     const FloatStorage &cdf() const { return m_cdf; }
 
     /// \brief Return the original integral of PDF entries before normalization
-    ScalarFloat integral() const { return m_integral; }
+    Float integral() const { return m_integral; }
 
     /// \brief Return the normalization factor (i.e. the inverse of \ref sum())
-    ScalarFloat normalization() const { return m_normalization; }
+    Float normalization() const { return m_normalization; }
 
     /// Return the number of discretizations
     size_t size() const { return m_pdf.size(); }
@@ -624,7 +631,7 @@ public:
     bool empty() const { return m_pdf.empty(); }
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
-    Float eval_pdf(Float x, Mask active = true) const {
+    Value eval_pdf(Value x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         active &= x >= m_range.x() && x <= m_range.y();
@@ -632,16 +639,16 @@ public:
         Index index = ek::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_nodes, index, active) < x;
+                return ek::gather<Value>(m_nodes, index, active) < x;
             }
         );
 
         index = ek::max(ek::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        Float x0 = ek::gather<Float>(m_nodes, index,      active),
-              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Float>(m_pdf,   index,      active),
-              y1 = ek::gather<Float>(m_pdf,   index + 1u, active);
+        Value x0 = ek::gather<Value>(m_nodes, index,      active),
+              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Value>(m_pdf,   index,      active),
+              y1 = ek::gather<Value>(m_pdf,   index + 1u, active);
 
         x = (x - x0) / (x1 - x0);
 
@@ -649,32 +656,32 @@ public:
     }
 
     /// Evaluate the normalized probability mass function (PDF) at position \c x
-    Float eval_pdf_normalized(Float x, Mask active) const {
+    Value eval_pdf_normalized(Value x, Mask active) const {
         MTS_MASK_ARGUMENT(active);
 
         return eval_pdf(x, active) * m_normalization;
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    Float eval_cdf(Float x, Mask active = true) const {
+    Value eval_cdf(Value x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         Index index = ek::binary_search<Index>(
             0, (uint32_t) m_nodes.size(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_nodes, index, active) < x;
+                return ek::gather<Value>(m_nodes, index, active) < x;
             }
         );
 
         index = ek::max(ek::min(index, (uint32_t) m_nodes.size() - 1u), 1u) - 1u;
 
-        Float x0 = ek::gather<Float>(m_nodes, index,      active),
-              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Float>(m_pdf,   index,      active),
-              y1 = ek::gather<Float>(m_pdf,   index + 1u, active),
-              c0 = ek::gather<Float>(m_cdf,   index - 1u, active && index > 0u);
+        Value x0 = ek::gather<Value>(m_nodes, index,      active),
+              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Value>(m_pdf,   index,      active),
+              y1 = ek::gather<Value>(m_pdf,   index + 1u, active),
+              c0 = ek::gather<Value>(m_cdf,   index - 1u, active && index > 0u);
 
-        Float w   = x1 - x0,
+        Value w   = x1 - x0,
               t   = ek::clamp((x - x0) / w, 0.f, 1.f),
               cdf = c0 + w * t * (y0 + .5f * t * (y1 - y0));
 
@@ -682,7 +689,7 @@ public:
     }
 
     /// Evaluate the unnormalized cumulative distribution function (CDF) at position \c p
-    Float eval_cdf_normalized(Float x, Mask active = true) const {
+    Value eval_cdf_normalized(Value x, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         return eval_cdf(x, active) * m_normalization;
@@ -698,7 +705,7 @@ public:
      * \return
      *     The sampled position.
      */
-    Float sample(Float value, Mask active = true) const {
+    Value sample(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         value *= m_integral;
@@ -706,20 +713,20 @@ public:
         Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Float x0 = ek::gather<Float>(m_nodes, index,      active),
-              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Float>(m_pdf,   index,      active),
-              y1 = ek::gather<Float>(m_pdf,   index + 1u, active),
-              c0 = ek::gather<Float>(m_cdf,   index - 1u, active && index > 0),
+        Value x0 = ek::gather<Value>(m_nodes, index,      active),
+              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Value>(m_pdf,   index,      active),
+              y1 = ek::gather<Value>(m_pdf,   index + 1u, active),
+              c0 = ek::gather<Value>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
@@ -739,7 +746,7 @@ public:
      *     1. the sampled position.
      *     2. the normalized probability density of the sample.
      */
-    std::pair<Float, Float> sample_pdf(Float value, Mask active = true) const {
+    std::pair<Value, Value> sample_pdf(Value value, Mask active = true) const {
         MTS_MASK_ARGUMENT(active);
 
         value *= m_integral;
@@ -747,20 +754,20 @@ public:
         Index index = ek::binary_search<Index>(
             m_valid.x(), m_valid.y(),
             [&](Index index) ENOKI_INLINE_LAMBDA {
-                return ek::gather<Float>(m_cdf, index, active) < value;
+                return ek::gather<Value>(m_cdf, index, active) < value;
             }
         );
 
-        Float x0 = ek::gather<Float>(m_nodes, index,      active),
-              x1 = ek::gather<Float>(m_nodes, index + 1u, active),
-              y0 = ek::gather<Float>(m_pdf,   index,      active),
-              y1 = ek::gather<Float>(m_pdf,   index + 1u, active),
-              c0 = ek::gather<Float>(m_cdf,   index - 1u, active && index > 0),
+        Value x0 = ek::gather<Value>(m_nodes, index,      active),
+              x1 = ek::gather<Value>(m_nodes, index + 1u, active),
+              y0 = ek::gather<Value>(m_pdf,   index,      active),
+              y1 = ek::gather<Value>(m_pdf,   index + 1u, active),
+              c0 = ek::gather<Value>(m_cdf,   index - 1u, active && index > 0),
               w  = x1 - x0;
 
         value = (value - c0) / w;
 
-        Float t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
+        Value t_linear = (y0 - ek::safe_sqrt(ek::sqr(y0) + 2.f * value * (y1 - y0))) / (y0 - y1),
               t_const  = value / y0,
               t        = ek::select(ek::eq(y0, y1), t_const, t_linear);
 
@@ -821,8 +828,8 @@ private:
         if (ek::any(ek::eq(m_valid, (uint32_t) -1)))
             Throw("IrregularContinuousDistribution: no probability mass found!");
 
-        m_integral = ScalarFloat(integral);
-        m_normalization = ScalarFloat(1. / integral);
+        m_integral = ek::opaque<Float>(integral);
+        m_normalization = ek::opaque<Float>(1. / integral);
         m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
     }
 
@@ -830,14 +837,14 @@ private:
     FloatStorage m_nodes;
     FloatStorage m_pdf;
     FloatStorage m_cdf;
-    ScalarFloat m_integral = 0.f;
-    ScalarFloat m_normalization = 0.f;
+    Float m_integral = 0.f;
+    Float m_normalization = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
     ScalarVector2u m_valid;
 };
 
-template <typename Float>
-std::ostream &operator<<(std::ostream &os, const DiscreteDistribution<Float> &distr) {
+template <typename Value>
+std::ostream &operator<<(std::ostream &os, const DiscreteDistribution<Value> &distr) {
     os << "DiscreteDistribution[" << std::endl
         << "  size = " << distr.size() << "," << std::endl
         << "  sum = " << distr.sum() << "," << std::endl
@@ -846,8 +853,8 @@ std::ostream &operator<<(std::ostream &os, const DiscreteDistribution<Float> &di
     return os;
 }
 
-template <typename Float>
-std::ostream &operator<<(std::ostream &os, const ContinuousDistribution<Float> &distr) {
+template <typename Value>
+std::ostream &operator<<(std::ostream &os, const ContinuousDistribution<Value> &distr) {
     os << "ContinuousDistribution[" << std::endl
         << "  size = " << distr.size() << "," << std::endl
         << "  range = " << distr.range() << "," << std::endl
@@ -857,8 +864,8 @@ std::ostream &operator<<(std::ostream &os, const ContinuousDistribution<Float> &
     return os;
 }
 
-template <typename Float>
-std::ostream &operator<<(std::ostream &os, const IrregularContinuousDistribution<Float> &distr) {
+template <typename Value>
+std::ostream &operator<<(std::ostream &os, const IrregularContinuousDistribution<Value> &distr) {
     os << "IrregularContinuousDistribution[" << std::endl
         << "  size = " << distr.size() << "," << std::endl
         << "  nodes = " << distr.nodes() << "," << std::endl
