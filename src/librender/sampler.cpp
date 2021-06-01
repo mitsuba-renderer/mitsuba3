@@ -12,8 +12,8 @@ MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props) {
     m_sample_count = (uint32_t) props.size_("sample_count", 4);
     m_base_seed = props.size_("seed", 0);
 
-    m_dimension_index = 0u;
-    m_sample_index = 0;
+    m_dimension_index = ek::opaque<UInt32>(0, 1);
+    m_sample_index = ek::opaque<UInt32>(0, 1);
     m_samples_per_wavefront = 1;
     m_wavefront_size = 0;
 }
@@ -23,12 +23,12 @@ MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
                                                 size_t wavefront_size) {
     m_wavefront_size = (uint32_t) wavefront_size;
-    m_dimension_index = 0u;
-    m_sample_index = 0;
+    m_dimension_index = ek::opaque<UInt32>(0, 1);
+    m_sample_index = ek::opaque<UInt32>(0, 1);
 }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
-    m_dimension_index = 0u;
+    m_dimension_index = ek::opaque<UInt32>(0, 1);
     m_sample_index++;
 }
 
@@ -39,6 +39,10 @@ MTS_VARIANT Float Sampler<Float, Spectrum>::next_1d(Mask) {
 MTS_VARIANT typename Sampler<Float, Spectrum>::Point2f
 Sampler<Float, Spectrum>::next_2d(Mask) {
     NotImplementedError("next_2d");
+}
+
+MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
+    ek::schedule(m_sample_index, m_dimension_index);
 }
 
 MTS_VARIANT
@@ -61,7 +65,8 @@ MTS_VARIANT typename Sampler<Float, Spectrum>::UInt32
 Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed_offset) const {
     UInt32 indices = ek::arange<UInt32>(m_wavefront_size);
     UInt32 sequence_idx = m_samples_per_wavefront * (indices / m_samples_per_wavefront);
-    return sample_tea_32(UInt32(m_base_seed), sequence_idx + UInt32(seed_offset));
+    return sample_tea_32(ek::opaque<UInt32>(m_base_seed, 1),
+                         sequence_idx + ek::opaque<UInt32>(seed_offset, 1));
 }
 
 
@@ -74,8 +79,6 @@ Sampler<Float, Spectrum>::current_sample_index() const {
 
     return m_sample_index * m_samples_per_wavefront + wavefront_sample_offsets;
 }
-
-MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() { }
 
 //! @}
 // =======================================================================
@@ -104,6 +107,7 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
 }
 
 MTS_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
+    Base::schedule_state();
     ek::schedule(m_rng.inc, m_rng.state);
 }
 
