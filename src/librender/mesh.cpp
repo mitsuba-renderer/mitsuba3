@@ -382,7 +382,7 @@ Mesh<Float, Spectrum>::primitive_count() const {
 MTS_VARIANT typename Mesh<Float, Spectrum>::ScalarFloat
 Mesh<Float, Spectrum>::surface_area() const {
     ensure_pmf_built();
-    return m_area_pmf.sum();
+    return ek::hsum(m_area_pmf.sum());
 }
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f

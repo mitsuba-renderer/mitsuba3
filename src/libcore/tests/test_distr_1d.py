@@ -55,7 +55,7 @@ def test04_discr_basic(variants_vec_backends_once):
     )
 
     assert repr(x) == 'DiscreteDistribution[\n  size = 3,' \
-        '\n  sum = 6,\n  pmf = [1, 3, 2]\n]'
+        '\n  sum = [6],\n  pmf = [1, 3, 2]\n]'
 
     x.pmf()[:] = [1, 1, 1]
     x.update()
