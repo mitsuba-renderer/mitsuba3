@@ -132,6 +132,11 @@ public:
         return Point2f(x + jx, y + jy) * m_inv_resolution;
     }
 
+    void schedule_state() override {
+        Base::schedule_state();
+        ek::schedule(m_permutation_seed);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "StratifiedSampler[" << std::endl

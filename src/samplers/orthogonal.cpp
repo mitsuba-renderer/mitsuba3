@@ -129,6 +129,11 @@ public:
         return Point2f(f1, f2);
     }
 
+    void schedule_state() override {
+        Base::schedule_state();
+        ek::schedule(m_permutation_seed);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "OrthogonalSampler[" << std::endl
@@ -161,9 +166,9 @@ private:
     }
 
     /// Bush construction technique for orthogonal arrays
-    Float bush(UInt32 i,   // sample index
-               uint32_t j, // dimension
-               UInt32 p,   // pseudo-random permutation seed
+    Float bush(UInt32 i, // sample index
+               UInt32 j, // dimension
+               UInt32 p, // pseudo-random permutation seed
                Mask active = true) {
         uint32_t N = ek::pow(m_resolution, m_strength);
         uint32_t stm = m_resolution_div(N);
@@ -183,9 +188,9 @@ private:
     }
 
     /// Bose construction technique for orthogonal arrays. It only support OA of strength == 2
-    Float bose(UInt32 i,   // sample index
-               uint32_t j, // dimension
-               UInt32 p,   // pseudo-random permutation seed
+    Float bose(UInt32 i, // sample index
+               UInt32 j, // dimension
+               UInt32 p, // pseudo-random permutation seed
                Mask active = true) {
 
         // Permute the sample index so that samples are obtained in random order
@@ -196,19 +201,16 @@ private:
         UInt32 a_i1 = i - a_i0 * m_resolution; // i % m_resolution
 
         // Bose construction scheme
-        UInt32 a_ij, a_ik;
-        if (j == 0) {
-            a_ij = a_i0;
-            a_ik = a_i1;
-        } else if (j == 1) {
-            a_ij = a_i1;
-            a_ik = a_i0;
-        } else {
-            /// Linear combination of the 2D mapping (modulo the grid resolution)
-            UInt32 k = (j % 2) ? j - 1 : j + 1;
-            a_ij = (a_i0 + (j - 1) * a_i1) % m_resolution;
-            a_ik = (a_i0 + (k - 1) * a_i1) % m_resolution;
-        }
+        // Linear combination of the 2D mapping (modulo the grid resolution)
+        UInt32 k = ek::select((j % 2) > 0, j - 1, j + 1);
+        UInt32 a_ij = (a_i0 + (j - 1) * a_i1) % m_resolution;
+        UInt32 a_ik = (a_i0 + (k - 1) * a_i1) % m_resolution;
+        Mask j_is_zero = ek::eq(j, 0u);
+        ek::masked(a_ij, j_is_zero) = a_i0;
+        ek::masked(a_ik, j_is_zero) = a_i1;
+        Mask j_is_one  = ek::eq(j, 1u);
+        ek::masked(a_ij, j_is_one)  = a_i1;
+        ek::masked(a_ik, j_is_one)  = a_i0;
 
         // Correlated multi-jitter flavor with random perturbation
         UInt32 stratum     = permute_kensler(a_ij, m_resolution, p * (j + 1) * 0x51633e2d, active);

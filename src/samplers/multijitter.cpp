@@ -143,6 +143,11 @@ public:
                        (y + (sx + jy) * m_inv_resolution.x()) * m_inv_resolution.y());
     }
 
+    void schedule_state() override {
+        Base::schedule_state();
+        ek::schedule(m_permutation_seed);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "MultijitterSampler[" << std::endl

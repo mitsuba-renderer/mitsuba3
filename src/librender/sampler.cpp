@@ -28,7 +28,6 @@ MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
 }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
-    Assert(m_sample_index < (m_sample_count / m_samples_per_wavefront));
     m_dimension_index = 0u;
     m_sample_index++;
 }
@@ -44,8 +43,8 @@ Sampler<Float, Spectrum>::next_2d(Mask) {
 
 MTS_VARIANT
 void Sampler<Float, Spectrum>::loop_register(
-    ek::Loop<typename ek::detached_t<Sampler<Float, Spectrum>::Mask>> &) {
-    NotImplementedError("loop_register");
+    ek::Loop<typename ek::detached_t<Sampler<Float, Spectrum>::Mask>> &loop) {
+    loop.put(m_sample_index, m_dimension_index);
 }
 
 MTS_VARIANT void
@@ -106,6 +105,12 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
 
 MTS_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
     ek::schedule(m_rng.inc, m_rng.state);
+}
+
+MTS_VARIANT void PCG32Sampler<Float, Spectrum>::loop_register(
+    ek::Loop<ek::detached_t<Mask>> &loop) {
+    Base::loop_register(loop);
+    loop.put(m_rng.state);
 }
 
 //! @}

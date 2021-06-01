@@ -124,6 +124,11 @@ public:
         return Point2f(x, y);
     }
 
+    void schedule_state() override {
+        Base::schedule_state();
+        ek::schedule(m_scramble_seed);
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "LowDiscrepancySampler [" << std::endl

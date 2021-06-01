@@ -121,9 +121,9 @@ protected:
     /// Size of the wavefront (or 0, if not seeded)
     uint32_t m_wavefront_size;
     /// Index of the current dimension in the sample
-    uint32_t m_dimension_index;
+    UInt32 m_dimension_index;
     /// Index of the current sample in the sequence
-    uint32_t m_sample_index;
+    UInt32 m_sample_index;
 };
 
 /// Interface for sampler plugins based on the PCG32 random number generator
@@ -136,6 +136,7 @@ public:
 
     virtual void seed(uint64_t seed_offset, size_t wavefront_size = 1) override;
     virtual void schedule_state() override;
+    virtual void loop_register(ek::Loop<ek::detached_t<Mask>> &loop) override;
 
     MTS_DECLARE_CLASS()
 protected:
