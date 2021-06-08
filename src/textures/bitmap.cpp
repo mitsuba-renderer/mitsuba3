@@ -202,7 +202,7 @@ public:
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!", m_name);
 
-        m_mean = ek::opaque<Float>(ScalarFloat(mean / pixel_count));
+        m_mean = mean / pixel_count;
     }
 
     /**
@@ -237,7 +237,7 @@ protected:
     std::string m_name;
     ScalarTransform3f m_transform;
     bool m_raw;
-    Float m_mean;
+    ScalarFloat m_mean;
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
 };
@@ -262,6 +262,7 @@ public:
           m_filter_type(filter_type), m_wrap_mode(wrap_mode){
         m_data = ek::load<DynamicBuffer<Float>>(bitmap->data(),
             ek::hprod(m_resolution) * Channels);
+        ek::make_opaque(m_transform, m_mean);
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -607,6 +608,8 @@ protected:
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
 
+        ek::make_opaque(m_transform);
+
         const ScalarFloat *ptr = data.data();
 
         double mean = 0.0;
@@ -664,7 +667,7 @@ protected:
     ek::divisor<int32_t> m_inv_resolution_x;
     ek::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;
-    ScalarTransform3f m_transform;
+    Transform3f m_transform;
     Float m_mean;
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
