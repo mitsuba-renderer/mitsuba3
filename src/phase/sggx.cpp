@@ -2,7 +2,7 @@
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/volume.h>
-#include <mitsuba/render/sggx.h>
+#include <mitsuba/render/microflake.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -35,11 +35,11 @@ SGGX phase function (:monosp:`sggx`)
 This plugin implements the SGGX phase functuon :cite:`Heitz2015SGGX`.
 The SGGX phase function is an anisotropic microflake phase function :cite:`Jakob10`.
 This phase function can be useful to model fibers or surface-like structures using volume rendering.
-The SGGX microflake distribution is parametrized by a symmetric, positive definite matrix S.
+The SGGX microflake distribution is parametrized by a symmetric, positive definite matrix :math:`S`.
 This positive definite matrix describes the geometry of a 3D ellipsoid.
 The microflake normals of the SGGX phase function correspond to normals of this ellisoid.
 
-Due to it's symmetry, the matrix S is fully specified by providing the entries
+Due to it's symmetry, the matrix :math:`S` is fully specified by providing the entries
 :math:`S_{xx}`, :math:`S_{yy}`, :math:`S_{zz}`, :math:`S_{xy}`, :math:`S_{xz}` and :math:`S_{yz}`.
 It is the responsiblity of the user to ensure that these parameters describe a valid positive definite matrix.
 

@@ -22,10 +22,8 @@ public:
 
     /// Estimates the transformation from a unit axis-aligned bounding box to the given one.
     ScalarTransform4f bbox_transform() const {
-        ScalarVector3f d  = ek::rcp(m_bbox.max - m_bbox.min);
-        auto scale_transf = ScalarTransform4f::scale(d);
-        ScalarVector3f t  = -1.f * ScalarVector3f(m_bbox.min.x(), m_bbox.min.y(), m_bbox.min.z());
-        auto translation  = ScalarTransform4f::translate(t);
+        auto scale_transf = ScalarTransform4f::scale(ek::rcp(m_bbox.extents()));
+        auto translation  = ScalarTransform4f::translate(-m_bbox.min);
         return scale_transf * translation;
     }
 
@@ -34,7 +32,6 @@ public:
      *
      * \param path
      *    Name of the file to be loaded
-     *
      */
     VolumeGrid(const fs::path &path);
 
@@ -43,7 +40,6 @@ public:
      *
      * \param stream
      *    Pointer to an arbitrary stream data source
-     *
      */
     VolumeGrid(Stream *stream);
 
@@ -71,14 +67,13 @@ public:
     size_t bytes_per_voxel() const { return sizeof(ScalarFloat) * channel_count(); }
 
     /// Return the volume grid size in bytes (excluding metadata)
-    size_t buffer_size() const { return m_size.x() * m_size.y() * m_size.z() * bytes_per_voxel(); }
+    size_t buffer_size() const { return ek::hprod(m_size) * bytes_per_voxel(); }
 
     /**
      * Write an encoded form of the bitmap to a binary volume file
      *
      * \param path
      *    Target file name (expected to end in ".vol")
-     *
      */
     void write(const fs::path &path) const;
 
@@ -87,7 +82,6 @@ public:
      *
      * \param stream
      *    Target stream that will receive the encoded output
-     *
      */
     void write(Stream *stream) const;
 

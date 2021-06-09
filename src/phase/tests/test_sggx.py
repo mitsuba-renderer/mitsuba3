@@ -1,18 +1,19 @@
-import mitsuba
+import os
+import numpy as np
+
 import pytest
-import enoki as ek
-from enoki.scalar import ArrayXf as Float
 
-
-
-def test01_create(variant_scalar_rgb):
+def test01_create(variant_scalar_rgb, tmpdir):
     from mitsuba.core.xml import load_string
-    from mitsuba.render import PhaseFunctionFlags
+    from mitsuba.render import VolumeGrid, PhaseFunctionFlags
 
-    p = load_string("""<phase version='2.0.0' type='sggx'>
-                            <boolean name="diffuse" value="true"/>
-                            <volume type="constvolume" name="S">
-                                <string name="value" value="1.0, 1.0, 1.0, 0.0, 0.0, 0.0"/>
+    tmp_file = os.path.join(str(tmpdir), "sggx.vol")
+    grid = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 0.0], dtype=np.float32).reshape(1, 1, 1, 6)
+    VolumeGrid(grid).write(tmp_file)
+
+    p = load_string(f"""<phase version='2.0.0' type='sggx'>
+                            <volume type="gridvolume" name="S">
+                                <string name="filename" value="{tmp_file}"/>
                             </volume>
                         </phase>""")
 
@@ -20,44 +21,49 @@ def test01_create(variant_scalar_rgb):
     assert p.flags() == PhaseFunctionFlags.Anisotropic | PhaseFunctionFlags.Microflake
 
 @pytest.mark.slow
-def test02_chi2_simple(variants_vec_backends_once_rgb):
+def test02_chi2_simple(variants_vec_backends_once_rgb, tmpdir):
     from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
-    from mitsuba.core import ScalarBoundingBox2f
+    from mitsuba.render import VolumeGrid
+
+    tmp_file = os.path.join(str(tmpdir), "sggx.vol")
+    grid = np.array([0.15, 1.0, 0.8, 0.0, 0.0, 0.0], dtype=np.float32).reshape(1, 1, 1, 6)
+    VolumeGrid(grid).write(tmp_file)
 
     sample_func, pdf_func = PhaseFunctionAdapter("sggx",
-         """<boolean name="diffuse" value="false"/>
-            <volume type="constvolume" name="S">
-                <string name="value" value="0.15, 1.0, 0.8, 0.0, 0.0, 0.0"/>
+         f"""<volume type="gridvolume" name="S">
+                <string name="filename" value="{tmp_file}"/>
             </volume>
          """)
 
     chi2 = ChiSquareTest(
-        domain = SphericalDomain(),
-        sample_func = sample_func,
-        pdf_func = pdf_func,
-        sample_dim = 3
+        domain=SphericalDomain(),
+        sample_func=sample_func,
+        pdf_func=pdf_func,
+        sample_dim=3
     )
 
     assert chi2.run()
 
 @pytest.mark.slow
-def test03_chi2_skewed(variants_vec_backends_once_rgb):
+def test03_chi2_skewed(variants_vec_backends_once_rgb, tmpdir):
     from mitsuba.python.chi2 import PhaseFunctionAdapter, ChiSquareTest, SphericalDomain
-    from mitsuba.core import ScalarBoundingBox2f
+    from mitsuba.render import VolumeGrid
+
+    tmp_file = os.path.join(str(tmpdir), "sggx.vol")
+    grid = np.array([1.0, 0.35, 0.32, 0.52, 0.44, 0.2], dtype=np.float32).reshape(1, 1, 1, 6)
+    VolumeGrid(grid).write(tmp_file)
 
     sample_func, pdf_func = PhaseFunctionAdapter("sggx",
-         """<boolean name="diffuse" value="false"/>
-            <volume type="constvolume" name="S">
-                <string name="value" value="1.0, 0.35, 0.32, 0.52, 0.44, 0.2"/>
-            </volume>
+         f"""<volume type="gridvolume" name="S">
+                 <string name="filename" value="{tmp_file}"/>
+             </volume>
          """)
 
     chi2 = ChiSquareTest(
-        domain = SphericalDomain(),
-        sample_func = sample_func,
-        pdf_func = pdf_func,
-        sample_dim = 3
+        domain=SphericalDomain(),
+        sample_func=sample_func,
+        pdf_func=pdf_func,
+        sample_dim=3
     )
 
     assert chi2.run()
-

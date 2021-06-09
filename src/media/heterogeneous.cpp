@@ -58,7 +58,7 @@ Heterogeneous medium (:monosp:`heterogeneous`)
 
 This plugin provides a flexible heterogeneous medium implementation, which acquires its data
 from nested volume instances. These can be constant, use a procedural function, or fetch data from
-disk, e.g. using a density grid.
+disk, e.g. using a 3D grid.
 
 The medium is parametrized by the single scattering albedo and the extinction coefficient
 :math:`\sigma_t`. The extinction coefficient should be provided in inverse scene units.
@@ -123,7 +123,6 @@ public:
         m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
 
         m_max_density = m_scale * m_sigmat->max();
-        m_aabb        = m_sigmat->bbox();
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
         ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
@@ -152,7 +151,11 @@ public:
 
     std::tuple<Mask, Float, Float>
     intersect_aabb(const Ray3f &ray) const override {
-        return m_aabb.ray_intersect(ray);
+        return m_sigmat->bbox().ray_intersect(ray);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        m_max_density = m_scale * m_sigmat->max();
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -177,7 +180,6 @@ private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
 
-    ScalarBoundingBox3f m_aabb;
     ScalarFloat m_max_density;
 };
 

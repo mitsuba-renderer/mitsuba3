@@ -6,7 +6,7 @@
 
 MTS_PY_EXPORT(VolumeGrid) {
     MTS_PY_IMPORT_TYPES(VolumeGrid)
-    MTS_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array obj, bool compute_max=true) {
+    MTS_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array obj, bool compute_max = true) {
             if (!obj.dtype().is(py::dtype("f")))
                 throw py::type_error("Expected floating point (float32) array");
 
@@ -14,9 +14,8 @@ MTS_PY_EXPORT(VolumeGrid) {
                 throw py::type_error("Expected an array of size 3 or 4");
 
             size_t channel_count = 1;
-            if (obj.ndim() == 4) {
+            if (obj.ndim() == 4)
                 channel_count = obj.shape()[3];
-            }
 
             obj = py::array::ensure(obj, py::array::c_style);
             ScalarVector3i size(obj.shape()[2], obj.shape()[1], obj.shape()[0]);
@@ -24,9 +23,11 @@ MTS_PY_EXPORT(VolumeGrid) {
             memcpy(volumegrid->data(), obj.data(), volumegrid->buffer_size());
 
             ScalarFloat max = 0.f;
-            if (compute_max)
+            if (compute_max) {
                 for (size_t i = 0; i < ek::hprod(size) * channel_count; ++i)
                     max = ek::max(max, volumegrid->data()[i]);
+            }
+
             volumegrid->set_max(max);
             return volumegrid;
         }), "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a NumPy array")

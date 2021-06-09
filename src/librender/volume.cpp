@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 // =======================================================================
 
 MTS_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props) {
-    m_world_to_local = props.transform("to_world", ScalarTransform4f()).inverse();
+    m_to_local = props.transform("to_world", ScalarTransform4f()).inverse();
     update_bbox();
 }
 
