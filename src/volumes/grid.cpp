@@ -121,7 +121,7 @@ class GridVolumeImpl;
 template <typename Float, typename Spectrum>
 class GridVolume final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, m_world_to_local)
+    MTS_IMPORT_BASE(Volume, m_to_local)
     MTS_IMPORT_TYPES(VolumeGrid)
 
     GridVolume(const Properties &props) : Base(props), m_props(props) {
@@ -183,10 +183,6 @@ public:
         props.mark_queried("max_value");
     }
 
-    Mask is_inside(const Interaction3f & /* it */, Mask /*active*/) const override {
-       return true; // dummy implementation
-    }
-
     /**
      * Recursively expand into an implementation specialized to the actual loaded grid.
      */
@@ -234,7 +230,7 @@ protected:
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class GridVolumeImpl final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, is_inside, update_bbox, m_world_to_local)
+    MTS_IMPORT_BASE(Volume, update_bbox, m_to_local)
     MTS_IMPORT_TYPES()
 
     GridVolumeImpl(const Properties &props,
@@ -252,7 +248,7 @@ public:
 
         m_size     = ek::hprod(m_resolution);
         if (props.bool_("use_grid_bbox", false)) {
-            m_world_to_local = bbox_transform * m_world_to_local;
+            m_to_local = bbox_transform * m_to_local;
             update_bbox();
         }
 
@@ -338,16 +334,11 @@ public:
         constexpr bool uses_srgb_model = is_spectral_v<Spectrum> && !Raw && Channels == 3;
         using ResultType = std::conditional_t<uses_srgb_model, UnpolarizedSpectrum, StorageType>;
 
-        auto p = m_world_to_local * it.p;
+        auto p = m_to_local * it.p;
         if (ek::none_or<false>(active))
             return ek::zero<ResultType>();
         ResultType result = interpolate(p, it.wavelengths, active);
         return result & active;
-    }
-
-    Mask is_inside(const Interaction3f &it, Mask /*active*/) const override {
-        auto p = m_world_to_local * it.p;
-        return ek::all((p >= 0) && (p <= 1));
     }
 
     template <typename T> T wrap(const T &value) const {
@@ -500,7 +491,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "GridVolume[" << std::endl
-            << "  world_to_local = " << m_world_to_local << "," << std::endl
+            << "  to_local = " << m_to_local << "," << std::endl
             << "  dimensions = " << m_resolution << "," << std::endl
             << "  max = " << m_max << "," << std::endl
             << "  channels = " << m_channel_count << std::endl

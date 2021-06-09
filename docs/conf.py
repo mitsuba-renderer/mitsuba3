@@ -170,7 +170,6 @@ extensions.append('sphinx.ext.todo')
 todo_include_todos = True
 
 extensions.append('sphinxcontrib.bibtex')
-bibtex_bibfiles = ['references.bib']
 
 extensions.append('nbsphinx')
 nbsphinx_execute = 'never'

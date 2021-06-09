@@ -43,10 +43,10 @@ of the radiative transfer equation. Its implementation performs MIS both for dir
 as well as free-flight distance sampling. In particular, this integrator is well suited
 to render media with a spectrally varying extinction coefficient.
 The implementation is based on the method proposed by Miller et al. :cite:`Miller19null`
-and is only marginally slower than the simple volumetric path tracer.
+and is only marginally slower than the :ref:`simple volumetric path tracer <integrator-volpath>`.
 
 Similar to the simple volumetric path tracer, this integrator has special
-support for index-matched transmission event.
+support for index-matched transmission events.
 
 */
 template <typename Float, typename Spectrum>

@@ -9,43 +9,42 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-
-/// Abstract base class for spatially-varying 3D textures.
+/// Abstract base class for 3D volumes.
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Volume : public Object {
 public:
     MTS_IMPORT_TYPES(Texture)
 
     // ======================================================================
-    //! @{ \name 3D Texture interface
+    //! @{ \name Volume interface
     // ======================================================================
 
-    /// Evaluate the texture at the given surface interaction, with color processing.
+    /// Evaluate the volume at the given surface interaction, with color processing.
     virtual UnpolarizedSpectrum eval(const Interaction3f &it, Mask active = true) const;
 
-    /// Evaluate this texture as a single-channel quantity.
+    /// Evaluate this volume as a single-channel quantity.
     virtual Float eval_1(const Interaction3f &it, Mask active = true) const;
 
-    /// Evaluate this texture as a three-channel quantity with no color processing (e.g. normal map).
+    /// Evaluate this volume as a three-channel quantity with no color processing (e.g. velocity field).
     virtual Vector3f eval_3(const Interaction3f &it, Mask active = true) const;
 
    /**
-     * Evaluate this texture as a six-channel quantity with no color processing
+     * Evaluate this volume as a six-channel quantity with no color processing
      * This interface is specifically intended to encode the parameters of an SGGX phase function.
      */
     virtual ek::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
-     * Evaluate the texture at the given surface interaction,
+     * Evaluate the volume at the given surface interaction,
      * and compute the gradients of the linear interpolant as well.
      */
     virtual std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
                                                                    Mask active = true) const;
 
-    /// Returns the maximum value of the texture over all dimensions.
+    /// Returns the maximum value of the volume over all dimensions.
     virtual ScalarFloat max() const;
 
-    /// Returns the bounding box of the 3d texture
+    /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
     /**
@@ -63,7 +62,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Volume[" << std::endl
-            << "  world_to_local = " << m_world_to_local << std::endl
+            << "  to_local = " << m_to_local << std::endl
             << "]";
         return oss.str();
     }
@@ -73,20 +72,16 @@ protected:
     Volume(const Properties &props);
     virtual ~Volume() {}
 
-    virtual Mask is_inside(const Interaction3f &it, Mask active = true) const = 0;
-
     void update_bbox() {
-        ScalarPoint3f a(0.f, 0.f, 0.f);
-        ScalarPoint3f b(1.f, 1.f, 1.f);
-        a      = m_world_to_local.inverse() * a;
-        b      = m_world_to_local.inverse() * b;
-        m_bbox = ScalarBoundingBox3f(a);
-        m_bbox.expand(b);
+        ScalarTransform4f to_world = m_to_local.inverse();
+        ScalarPoint3f a = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
+        ScalarPoint3f b = to_world * ScalarPoint3f(1.f, 1.f, 1.f);
+        m_bbox = ScalarBoundingBox3f(a, b);
     }
 
 protected:
     /// Used to bring points in world coordinates to local coordinates.
-    ScalarTransform4f m_world_to_local;
+    ScalarTransform4f m_to_local;
     /// Bounding box
     ScalarBoundingBox3f m_bbox;
 };

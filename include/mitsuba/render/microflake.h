@@ -47,7 +47,7 @@ Normal<Float, 3> sggx_sample_vndf(const Frame<Float> &sh_frame,
     Matrix3f s_mat(s[XX], s[XY], s[XZ],
                    s[XY], s[YY], s[YZ],
                    s[XZ], s[YZ], s[ZZ]);
-    Matrix3f s2    = m * s_mat * ek::transpose(m);
+    Matrix3f s2 = m * s_mat * ek::transpose(m);
     Float inv_sqrt_s_ii = ek::safe_rsqrt(s2(i, i));
     Float tmp = ek::safe_sqrt(s2(j, j) * s2(i, i) - s2(j, i) * s2(j, i));
     Vector3f m_k(ek::safe_sqrt(ek::abs(ek::det(s2))) / tmp, 0.f, 0.f);
@@ -90,11 +90,11 @@ Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const ek::Array<Float, 6> &s) {
                       s[YY] * s[XZ] * s[XZ] - s[ZZ] * s[XY] * s[XY] +
                       2.f * s[XY] * s[XZ] * s[YZ]);
     Float den   = wm.x() * wm.x() * (s[YY] * s[ZZ] - s[YZ] * s[YZ]) +
-                wm.y() * wm.y() * (s[XX] * s[ZZ] - s[XZ] * s[XZ]) +
-                wm.z() * wm.z() * (s[XX] * s[YY] - s[XY] * s[XY]) +
-                2.f * (wm.x() * wm.y() * (s[XZ] * s[YZ] - s[ZZ] * s[XY]) +
-                       wm.x() * wm.z() * (s[XY] * s[YZ] - s[YY] * s[XZ]) +
-                       wm.y() * wm.z() * (s[XY] * s[XZ] - s[XX] * s[YZ]));
+                  wm.y() * wm.y() * (s[XX] * s[ZZ] - s[XZ] * s[XZ]) +
+                  wm.z() * wm.z() * (s[XX] * s[YY] - s[XY] * s[XY]) +
+                  2.f * (wm.x() * wm.y() * (s[XZ] * s[YZ] - s[ZZ] * s[XY]) +
+                         wm.x() * wm.z() * (s[XY] * s[YZ] - s[YY] * s[XZ]) +
+                         wm.y() * wm.z() * (s[XY] * s[XZ] - s[XX] * s[YZ]));
     return ek::max(det_s, 0.f) * ek::safe_sqrt(det_s) /
            (ek::Pi<Float> * ek::sqr(den));
 }

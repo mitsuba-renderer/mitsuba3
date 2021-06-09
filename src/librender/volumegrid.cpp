@@ -51,12 +51,7 @@ void VolumeGrid<Float, Spectrum>::read(Stream *stream) {
     m_size.y() = uint32_t(size_y);
     m_size.z() = uint32_t(size_z);
 
-    size_t size    = ek::hprod(m_size);
-    if (size < 8)
-        Throw("Invalid grid dimensions: %d x %d x %d < 8 (must have at "
-              "least one value at each corner)",
-              m_size.x(), m_size.y(), m_size.z());
-
+    size_t size = ek::hprod(m_size);
     int32_t channel_count;
     stream->read(channel_count);
     m_channel_count = channel_count;
