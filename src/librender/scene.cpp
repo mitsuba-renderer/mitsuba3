@@ -84,6 +84,10 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             PluginManager::instance()->create_object<Sensor>(sensor_props));
     }
 
+    // Create sensors' shapes (environment sensors)
+    for (Sensor *sensor: m_sensors)
+        sensor->set_scene(this);
+
     if (!m_integrator) {
         Log(Warn, "No integrator found! Instantiating a path tracer..");
         m_integrator = PluginManager::instance()->
