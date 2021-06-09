@@ -145,7 +145,7 @@ public:
             sigmat *= m_phase_function->projected_area(mi, active);
 
         auto sigmas = sigmat * m_albedo->eval(mi, active);
-        auto sigman = get_combined_extinction(mi, active) - sigmat;
+        auto sigman = m_max_density - sigmat;
         return { sigmas, sigman, sigmat };
     }
 
