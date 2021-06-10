@@ -6,6 +6,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
+#include <mitsuba/core/field.h>
 #include <enoki/packet.h>
 
 #if defined(MTS_ENABLE_CUDA)
