@@ -14,6 +14,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
+#include <enoki-thread/thread.h>
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)

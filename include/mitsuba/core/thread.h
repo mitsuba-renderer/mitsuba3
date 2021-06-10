@@ -1,8 +1,9 @@
 #pragma once
 
 #include <mitsuba/core/object.h>
-#include <enoki-thread/thread.h>
 #include <memory>
+
+extern "C" { struct Task; };
 
 NAMESPACE_BEGIN(mitsuba)
 

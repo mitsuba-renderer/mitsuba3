@@ -1,4 +1,5 @@
 #include <embree3/rtcore.h>
+#include <enoki-thread/thread.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
