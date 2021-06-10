@@ -365,8 +365,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
             payload_inst_index.index(),
         };
 
-        jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t),
-                        trace_args, active.index());
+        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
+                            trace_args, active.index());
 
         PreliminaryIntersection3f pi;
         pi.t          = ek::reinterpret_array<Single, UInt32>(UInt32::steal(trace_args[15]));
@@ -379,7 +379,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
         // This field is only used by embree, but we still need to initialize it for vcalls
         pi.shape_index = ek::zero<UInt32>();
 
-        // jit_optix_trace leaves payload data uninitialized for inactive lanes
+        // jit_optix_ray_trace leaves payload data uninitialized for inactive lanes
         pi.t[!active] = ek::Infinity<Float>;
 
         // Ensure pointers are initialized to nullptr for inactive lanes
@@ -440,8 +440,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) co
             miss_sbt_index.index(), payload_hit.index()
         };
 
-        jit_optix_trace(sizeof(trace_args) / sizeof(uint32_t),
-                        trace_args, active.index());
+        jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t),
+                            trace_args, active.index());
 
         return active && ek::eq(UInt32::steal(trace_args[15]), 1);
     } else {
