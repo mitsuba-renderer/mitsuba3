@@ -86,9 +86,9 @@ template <typename Float>
 Float sggx_ndf_pdf(const Vector<Float, 3> &wm, const ek::Array<Float, 6> &s) {
     const size_t XX = 0, YY = 1, ZZ = 2, XY = 3, XZ = 4, YZ = 5;
 
-    Float det_s = abs(s[XX] * s[YY] * s[ZZ] - s[XX] * s[YZ] * s[YZ] -
-                      s[YY] * s[XZ] * s[XZ] - s[ZZ] * s[XY] * s[XY] +
-                      2.f * s[XY] * s[XZ] * s[YZ]);
+    Float det_s = ek::abs(s[XX] * s[YY] * s[ZZ] - s[XX] * s[YZ] * s[YZ] -
+                          s[YY] * s[XZ] * s[XZ] - s[ZZ] * s[XY] * s[XY] +
+                          2.f * s[XY] * s[XZ] * s[YZ]);
     Float den   = wm.x() * wm.x() * (s[YY] * s[ZZ] - s[YZ] * s[YZ]) +
                   wm.y() * wm.y() * (s[XX] * s[ZZ] - s[XZ] * s[XZ]) +
                   wm.z() * wm.z() * (s[XX] * s[YY] - s[XY] * s[XY]) +
