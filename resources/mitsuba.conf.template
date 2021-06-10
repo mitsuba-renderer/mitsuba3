@@ -78,14 +78,13 @@
     # here. To do so, you will have to create a corresponding entry specifying
     # 'float' and 'spectrum' C++ types.
 
-    # Which variants should be compiled?
-    # If mitsuba is launched without any specific mode parameter,
-    # the first variant of the list below will be used.
+    # Which variants should be compiled? If mitsuba is launched without any
+    # specific mode parameter, the first variant of the list below will be
+    # used. Note that the "scalar_rgb" variant *must* be included at the
+    # moment.
 
     "enabled": [
-        "scalar_spectral",
-        # The "scalar_rgb" variant *must* be included at the moment.
-        "scalar_rgb"
+        @INSERT_CONFIGURATIONS_HERE@
     ],
 
     # The variant below will automatically be set when importing the Python

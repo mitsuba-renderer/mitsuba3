@@ -44,5 +44,6 @@ setup(
         '-DCMAKE_INSTALL_INCLUDEDIR=mitsuba/include',
         '-DCMAKE_INSTALL_DATAROOTDIR=mitsuba/data'
     ],
+    scripts=['resources/mitsuba'],
     packages=['mitsuba']
 )

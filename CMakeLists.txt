@@ -29,9 +29,15 @@ endif()
 # ----------------------------------------------------------
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
-  file(COPY resources/mitsuba.conf.template DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-  file(RENAME ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf.template
-              ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
+  if (NOT SKBUILD)
+    # Default: only scalar modes (RGB, Spectral)
+    set(INSERT_CONFIGURATIONS_HERE "\"scalar_rgb\", \"scalar_spectral\"")
+  else()
+    # Scikit-build default: enable CUDA & LLVM RGB mode as well
+    set(INSERT_CONFIGURATIONS_HERE "\"scalar_rgb\", \"scalar_spectral\", \"cuda_ad_rgb\", \"llvm_ad_rgb\"")
+  endif()
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
+                 ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf @ONLY)
   set(MTS_COPIED_CONFIG_FILE 1)
 endif()
 
@@ -561,24 +567,26 @@ endif()
 add_subdirectory(src)
 
 # Documentation
-find_package(Sphinx)
-if (Sphinx_FOUND)
-  set(SPHINX_INPUT_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/docs")
-  set(SPHINX_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
+if (NOT SKBUILD)
+  find_package(Sphinx)
+  if (Sphinx_FOUND)
+    set(SPHINX_INPUT_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/docs")
+    set(SPHINX_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 
-  add_custom_target(mkdoc
-      ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR}" "${SPHINX_OUTPUT_DIR}"
-      COMMENT "Building HTML documentation with Sphinx"
-      USES_TERMINAL)
+    add_custom_target(mkdoc
+        ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR}" "${SPHINX_OUTPUT_DIR}"
+        COMMENT "Building HTML documentation with Sphinx"
+        USES_TERMINAL)
 
-    set(SPHINX_INPUT_DIR_API  "${CMAKE_CURRENT_SOURCE_DIR}/docs/docs_api")
-    set(SPHINX_OUTPUT_DIR_API "${CMAKE_CURRENT_BINARY_DIR}/html_api")
+      set(SPHINX_INPUT_DIR_API  "${CMAKE_CURRENT_SOURCE_DIR}/docs/docs_api")
+      set(SPHINX_OUTPUT_DIR_API "${CMAKE_CURRENT_BINARY_DIR}/html_api")
 
-  add_custom_target(mkdoc-api
-      ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR_API}" "${SPHINX_OUTPUT_DIR_API}"
-      COMMENT "Building HTML documentation with Sphinx"
-      DEPENDS mitsuba-python dist-copy
-      USES_TERMINAL)
+    add_custom_target(mkdoc-api
+        ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR_API}" "${SPHINX_OUTPUT_DIR_API}"
+        COMMENT "Building HTML documentation with Sphinx"
+        DEPENDS mitsuba-python dist-copy
+        USES_TERMINAL)
+  endif()
 endif()
 
 if (MSVC)
@@ -586,7 +594,7 @@ if (MSVC)
 endif()
 
 # Warn if a mitsuba.conf file was newly created
-if (MTS_COPIED_CONFIG_FILE)
+if (MTS_COPIED_CONFIG_FILE AND NOT SKBUILD)
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
@@ -601,9 +609,6 @@ if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
     "MacPorts, Arch) or \"ninja-build\" elsewhere, and then invoke CMake using "
     "\"-GNinja\") ${ColorReset}")
 endif()
-
-# Make sure that dynamic libraries still can be found following 'make install'
-set_target_properties(mitsuba PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
 # Installation targets
 set(MTS_DEPEND
@@ -624,18 +629,13 @@ endif()
 
 if (NOT SKBUILD)
   list(APPEND MTS_DEPEND enoki-thread)
-  set_target_properties(enoki-thread PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
   if (MTS_ENABLE_JIT)
     list(APPEND MTS_DEPEND enoki-jit)
-    set_target_properties(enoki-jit PROPERTIES
-      INSTALL_RPATH "${MTS_ORIGIN}")
   endif()
 
   if (MTS_ENABLE_AUTODIFF)
     list(APPEND MTS_DEPEND enoki-autodiff)
-    set_target_properties(enoki-autodiff PROPERTIES
-      INSTALL_RPATH "${MTS_ORIGIN}")
   endif()
 endif()
 

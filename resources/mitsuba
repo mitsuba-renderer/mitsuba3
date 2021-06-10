@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import os, sys, subprocess
+
+for p in sys.path:
+    p2 = os.path.join(p, 'mitsuba')
+    if os.path.isdir(p2):
+        p3 = os.path.join(p2, 'mitsuba')
+        child = subprocess.Popen(sys.argv, executable=p3)
+        exit(child.wait())
+
+print('Could not find mitsuba executable!', file=sys.stderr)
+exit(-1)
