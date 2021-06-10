@@ -157,9 +157,9 @@ void embree_intersect_scalar(int* valid,
     if (rtc_hit) {
         PreliminaryIntersection3f pi = shape->ray_intersect_preliminary(ray);
         if (ek::all(pi.is_valid())) {
-            rtc_ray->tfar      = (float) ek::get_slice(pi.t);
-            rtc_hit->u         = (float) ek::get_slice(pi.prim_uv.x());
-            rtc_hit->v         = (float) ek::get_slice(pi.prim_uv.y());
+            rtc_ray->tfar      = (float) ek::slice(pi.t);
+            rtc_hit->u         = (float) ek::slice(pi.prim_uv.x());
+            rtc_hit->v         = (float) ek::slice(pi.prim_uv.y());
             rtc_hit->geomID    = geomID;
             rtc_hit->primID    = 0;
             rtc_hit->instID[0] = instID;
