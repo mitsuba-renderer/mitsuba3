@@ -295,7 +295,7 @@ private:
  * or / and the host. This wrapper won't duplicate the storage if the field type
  * is already a scalar type.
  */
-template <typename T, typename S = std::decay_t<decltype(ek::get_slice(T()))>, typename = int>
+template <typename T, typename S = std::decay_t<decltype(ek::slice(T()))>, typename = int>
 struct field {
     field() {}
     field(const T &v) : m_scalar(v) { }
@@ -353,12 +353,12 @@ struct field<T, S, ek::enable_if_t<ek::is_jit_array_v<T> || (!std::is_same_v<T, 
     }
     field& operator=(const T &v) {
         m_value = v;
-        m_scalar = ek::get_slice<S>(m_value);
+        m_scalar = ek::slice<S>(m_value);
         return *this;
     }
     field& operator=(T &&v) {
         m_value = v;
-        m_scalar = ek::get_slice<S>(m_value);
+        m_scalar = ek::slice<S>(m_value);
         return *this;
     }
     void opaque_() { ek::make_opaque(m_value); }
