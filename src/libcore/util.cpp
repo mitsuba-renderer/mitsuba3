@@ -69,14 +69,14 @@ int core_count() {
     return nprocs;
 #else
     /* Determine the number of present cores */
-    int nCores = sysconf(_SC_NPROCESSORS_CONF);
+    int ncores = sysconf(_SC_NPROCESSORS_CONF);
 
     /* Don't try to query CPU affinity if running inside Valgrind */
     if (getenv("VALGRIND_OPTS") == NULL) {
         /* Some of the cores may not be available to the user
            (e.g. on certain cluster nodes) -- determine the number
            of actual available cores here. */
-        int nLogicalCores = nCores;
+        int ncores_logical = ncores;
         size_t size = 0;
         cpu_set_t *cpuset = NULL;
         int retval = 0;
@@ -86,10 +86,10 @@ int core_count() {
            with increasingly larger buffers if the
            pthread_getaffinity_np operation fails */
         for (int i = 0; i<10; ++i) {
-            size = CPU_ALLOC_SIZE(nLogicalCores);
-            cpuset = CPU_ALLOC(nLogicalCores);
+            size = CPU_ALLOC_SIZE(ncores_logical);
+            cpuset = CPU_ALLOC(ncores_logical);
             if (!cpuset) {
-                Throw("getCoreCount(): could not allocate cpu_set_t");
+                Throw("core_count(): could not allocate cpu_set_t");
                 goto done;
             }
             CPU_ZERO_S(size, cpuset);
@@ -98,25 +98,25 @@ int core_count() {
             if (retval == 0)
                 break;
             CPU_FREE(cpuset);
-            nLogicalCores *= 2;
+            ncores_logical *= 2;
         }
 
         if (retval) {
-            Throw("getCoreCount(): pthread_getaffinity_np(): could "
-                "not read thread affinity map: %s", strerror(retval));
+            Throw("core_count(): pthread_getaffinity_np(): could "
+                  "not read thread affinity map: %s", strerror(retval));
             goto done;
         }
 
-        int availableCores = 0;
-        for (int i=0; i<nLogicalCores; ++i)
-            availableCores += CPU_ISSET_S(i, size, cpuset) ? 1 : 0;
-        nCores = availableCores;
+        int ncores_avail = 0;
+        for (int i=0; i<ncores_logical; ++i)
+            ncores_avail += CPU_ISSET_S(i, size, cpuset) ? 1 : 0;
+        ncores = ncores_avail;
         CPU_FREE(cpuset);
     }
 
 done:
-    __cached_core_count = nCores;
-    return nCores;
+    __cached_core_count = ncores;
+    return ncores;
 #endif
 }
 
