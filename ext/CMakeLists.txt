@@ -26,32 +26,28 @@ if (MTS_ENABLE_PROFILER AND MTS_PROFILER_NVTX)
     set(ENOKI_ENABLE_NVTX ON)
 endif()
 
-add_subdirectory(enoki)
+if (NOT SKBUILD)
+  add_subdirectory(enoki)
 
-if (NOT MTS_ENABLE_JIT)
-  add_subdirectory(enoki/ext/enoki-jit/ext/enoki-thread)
-  set_target_properties(enoki-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/enoki")
+  if (NOT MTS_ENABLE_JIT)
+    add_subdirectory(enoki/ext/enoki-jit/ext/enoki-thread)
+    set_target_properties(enoki-thread PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/enoki")
+  endif()
+
+  set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
+
+  if (MTS_ENABLE_JIT)
+    set_target_properties(enoki-jit PROPERTIES FOLDER "enoki")
+  endif()
+
+  if (MTS_ENABLE_AUTODIFF)
+    set_target_properties(enoki-autodiff PROPERTIES FOLDER "enoki")
+  endif()
+
+  if (MTS_ENABLE_PYTHON)
+    set_target_properties(enoki-python PROPERTIES FOLDER "enoki")
+  endif()
 endif()
-
-set_target_properties(enoki-thread PROPERTIES FOLDER "enoki")
-
-if (MTS_ENABLE_JIT)
-  set_target_properties(enoki-jit PROPERTIES FOLDER "enoki")
-endif()
-
-if (MTS_ENABLE_AUTODIFF)
-  set_target_properties(enoki-autodiff PROPERTIES FOLDER "enoki")
-endif()
-
-if (MTS_ENABLE_PYTHON)
-  set_target_properties(enoki-python PROPERTIES FOLDER "enoki")
-endif()
-
-set(ENOKI_INCLUDE_DIRS
-    ${CMAKE_CURRENT_SOURCE_DIR}/enoki/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/enoki/ext/enoki-jit/ext/enoki-thread/include
-    PARENT_SCOPE)
 
 # ----------------------------------------------------------
 #  Intel Embree, optional

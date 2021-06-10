@@ -55,6 +55,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
     }
 #endif
 
+#if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_jit_array_v<Float>) {
         // Get shapes registry ids
         std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
@@ -63,6 +64,7 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
         m_shapes_registry_ids =
             ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
     }
+#endif
 }
 
 MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
@@ -115,6 +117,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
+#if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_jit_array_v<Float>) {
         if (jit_flag(JitFlag::VCallRecord) || jit_flag(JitFlag::LoopRecord))
             Throw(
@@ -131,6 +134,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
             pi.shape = ek::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
         }
     }
+#endif
 
     return pi.shape->compute_surface_interaction(ray, pi, hit_flags, active);
 }

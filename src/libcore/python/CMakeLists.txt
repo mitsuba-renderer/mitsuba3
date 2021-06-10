@@ -45,12 +45,11 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   set_target_properties(${TARGET_NAME}
     PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
-    INSTALL_RPATH "${MTS_ORIGIN}/../.."
     FOLDER python
   )
 
   install(TARGETS ${TARGET_NAME}
-    LIBRARY DESTINATION python/mitsuba
+    LIBRARY DESTINATION mitsuba
   )
 
 endforeach()
@@ -78,15 +77,13 @@ pybind11_add_module(core_ext
 )
 
 target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render asmjit)
-set_target_properties(core_ext PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}/../..")
 
 set_target_properties(core_ext
   PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/mitsuba
-  INSTALL_RPATH "${MTS_ORIGIN}/../.."
   FOLDER python
 )
 
 install(TARGETS core_ext
-  LIBRARY DESTINATION python/mitsuba
+  LIBRARY DESTINATION mitsuba
 )

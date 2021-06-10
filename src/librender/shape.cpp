@@ -183,8 +183,6 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
     using Point3fP = Point<FloatP, 3>;
     using Ray3fP   = Ray<Point<FloatP, 3>, Spectrum>;
     using UInt32P  = ek::uint32_array_t<FloatP>;
-
-    using Float32  = ek::float32_array_t<Float>;
     using Float32P = ek::Packet<ek::scalar_t<Float32>, N>;
 
     const Shape* shape = (const Shape*) geometryUserPtr;

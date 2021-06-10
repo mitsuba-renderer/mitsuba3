@@ -77,8 +77,7 @@ target_compile_definitions(mitsuba-core
   PRIVATE ${PNG_DEFINES} -DMTS_BUILD_MODULE=MTS_MODULE_CORE)
 
 set_target_properties(mitsuba-core PROPERTIES
-  INTERPROCEDURAL_OPTIMIZATION ON
-  INSTALL_RPATH "${MTS_ORIGIN}")
+  INTERPROCEDURAL_OPTIMIZATION ON)
 
 target_link_libraries(mitsuba-core PRIVATE
   # Link to libpng and zlib (either the system version or a version built via cmake)
@@ -99,6 +98,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
   # Treat undefined symbols as errors when linking
   target_link_libraries(mitsuba-core PRIVATE -Wl,--no-undefined)
 endif()
+
+target_link_libraries(mitsuba-core PUBLIC enoki)
 
 if (MTS_ENABLE_JIT)
   target_link_libraries(mitsuba-core PUBLIC enoki-jit)

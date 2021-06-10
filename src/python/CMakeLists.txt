@@ -12,7 +12,7 @@ foreach(file ${MTS_PYTHON_FILES})
   get_filename_component(IN_FILE_DIR ${file} DIRECTORY)
   set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${file})
   ro_copy(${IN_FILE} python/mitsuba/${file})
-  install(FILES ${IN_FILE} DESTINATION python/mitsuba/${IN_FILE_DIR})
+  install(FILES ${IN_FILE} DESTINATION mitsuba/${IN_FILE_DIR})
 endforeach()
 
 # ----------------------------------------------------------
@@ -21,7 +21,7 @@ endforeach()
 
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/../../python/mitsuba/config.py
-  DESTINATION python/mitsuba
+  DESTINATION mitsuba
 )
 
 if (MSVC)
@@ -32,35 +32,31 @@ endif()
 #   Copy & installation targets for Enoki python bindings
 # ----------------------------------------------------------
 
-if (MSVC)
-  set_target_properties(enoki-python
-    PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MTS_BINARY_DIR}/python/enoki
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/enoki
-    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/enoki
-    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/enoki)
-else()
-  set_target_properties(enoki-python
-    PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki)
+if (NOT SKBUILD)
+  if (MSVC)
+    set_target_properties(enoki-python
+      PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY_RELEASE        ${MTS_BINARY_DIR}/python/enoki
+      LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/enoki
+      LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/enoki
+      LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/enoki)
+  elseif ()
+    set_target_properties(enoki-python
+      PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki)
+  endif()
+
+  set(ENOKI_PYTHON_FILES
+     __init__.py const.py detail.py generic.py
+     matrix.py router.py traits.py
+  )
+
+  foreach(file ${ENOKI_PYTHON_FILES})
+    set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/enoki/${file})
+    ro_copy(${IN_FILE} python/enoki/${file})
+  endforeach(file)
 endif()
 
-install(TARGETS enoki-python
-  LIBRARY DESTINATION python/enoki
-)
-
-set_target_properties(enoki-python PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}/../..")
-
-set(ENOKI_PYTHON_FILES
-   __init__.py const.py detail.py generic.py
-   matrix.py router.py traits.py
-)
-
-foreach(file ${ENOKI_PYTHON_FILES})
-  set(IN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/enoki/${file})
-  ro_copy(${IN_FILE} python/enoki/${file})
-  install(FILES ${IN_FILE} DESTINATION python/enoki)
-endforeach(file)
 
 # ----------------------------------------------------------
 #   pytest.ini file

@@ -49,7 +49,19 @@ endif()
 #  We require Python in the following
 # ----------------------------------------------------------
 
-if (MTS_ENABLE_PYTHON)
+if (SKBUILD)
+  execute_process(
+    COMMAND
+      "${PYTHON_EXECUTABLE}" -c
+      "import pybind11; import enoki; print('%s;%s' % (pybind11.get_cmake_dir(), enoki.get_cmake_dir()))"
+    OUTPUT_VARIABLE _tmp_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+  list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
+  MESSAGE(STATUS ${_tmp_dir})
+  find_package(pybind11 CONFIG REQUIRED)
+  find_package(enoki CONFIG REQUIRED)
+  set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+elseif (MTS_ENABLE_PYTHON)
   find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
   add_subdirectory(ext/pybind11)
@@ -153,25 +165,27 @@ macro (ro_copy IN_FILE OUT_FILE)
   endif()
 endmacro()
 
-if (NOT MSVC)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
-                   ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
-else()
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
-                   ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
-    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh setpath.sh)
+if (NOT SKBUILD)
+  if (NOT MSVC)
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
+                     ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh @ONLY)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
+  else()
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.sh
+                     ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh @ONLY)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/setpath.sh DESTINATION ".")
+      ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.sh setpath.sh)
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.bat
-                   ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat DESTINATION ".")
-    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.bat)
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.bat
+                     ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat @ONLY)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat DESTINATION ".")
+      ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.bat setpath.bat)
 
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.ps1
-                   ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 @ONLY)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 DESTINATION ".")
-    ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 setpath.ps1)
+      configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/setpath.ps1
+                     ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 @ONLY)
+      install(FILES ${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 DESTINATION ".")
+      ro_copy(${CMAKE_CURRENT_BINARY_DIR}/resources/setpath.ps1 setpath.ps1)
+  endif()
 endif()
 
 # ----------------------------------------------------------
@@ -341,14 +355,21 @@ if (NOT WIN32)
   set(BoldRed "${Esc}[1;31m")
 endif()
 
+# Adapt to variations in rpath handling on Linux and macOS
+if (APPLE)
+  set(MTS_ORIGIN "@loader_path")
+elseif(UNIX)
+  set(MTS_ORIGIN "$ORIGIN")
+endif()
+
+set(CMAKE_INSTALL_RPATH "${MTS_ORIGIN};${MTS_ORIGIN}/../enoki")
+
 # Build the dependencies
 add_subdirectory(ext)
 
 # Always add the include directories for tinyformat, Enoki and Eigen
 include_directories(include
   ${TINYFORMAT_INCLUDE_DIRS}
-  ${EIGEN_INCLUDE_DIRS}
-  ${ENOKI_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
@@ -492,20 +513,13 @@ function(add_plugin)
   )
   install(
     TARGETS ${TARGET}
-    LIBRARY DESTINATION plugins
+    LIBRARY DESTINATION ${CMAKE_INSTALL_BINDIR}/plugins
   )
 endfunction(add_plugin)
 
 # Be extra noisy about unintended float->double conversions
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "double")
   add_compile_options("-Wdouble-promotion")
-endif()
-
-# Adapt to variations in rpath handling on Linux and macOS
-if (APPLE)
-  set(MTS_ORIGIN "@loader_path")
-elseif(UNIX)
-  set(MTS_ORIGIN "$ORIGIN")
 endif()
 
 # Compile with compiler warnings turned on
@@ -608,19 +622,21 @@ if (MTS_ENABLE_EMBREE)
   list(APPEND MTS_DEPEND embree)
 endif()
 
-list(APPEND MTS_DEPEND enoki-thread)
-set_target_properties(enoki-thread PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
+if (NOT SKBUILD)
+  list(APPEND MTS_DEPEND enoki-thread)
+  set_target_properties(enoki-thread PROPERTIES INSTALL_RPATH "${MTS_ORIGIN}")
 
-if (MTS_ENABLE_JIT)
-  list(APPEND MTS_DEPEND enoki-jit)
-  set_target_properties(enoki-jit PROPERTIES
-    INSTALL_RPATH "${MTS_ORIGIN}")
-endif()
+  if (MTS_ENABLE_JIT)
+    list(APPEND MTS_DEPEND enoki-jit)
+    set_target_properties(enoki-jit PROPERTIES
+      INSTALL_RPATH "${MTS_ORIGIN}")
+  endif()
 
-if (MTS_ENABLE_AUTODIFF)
-  list(APPEND MTS_DEPEND enoki-autodiff)
-  set_target_properties(enoki-autodiff PROPERTIES
-    INSTALL_RPATH "${MTS_ORIGIN}")
+  if (MTS_ENABLE_AUTODIFF)
+    list(APPEND MTS_DEPEND enoki-autodiff)
+    set_target_properties(enoki-autodiff PROPERTIES
+      INSTALL_RPATH "${MTS_ORIGIN}")
+  endif()
 endif()
 
 # Set up location for build products
@@ -640,24 +656,24 @@ set_target_properties(mitsuba mitsuba-core mitsuba-render ${MTS_DEPEND}
 
 install(
   TARGETS mitsuba mitsuba-render mitsuba-core ${MTS_DEPEND}
-  LIBRARY DESTINATION .
-  RUNTIME DESTINATION .
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 install(
   DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba
-  DESTINATION include
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/include/mitsuba/core/config.h
-  DESTINATION include/mitsuba/core
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mitsuba/core
 )
 
 ro_copy(${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff data/srgb.coeff rgb2spec_opt_run)
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/ext/rgb2spec/srgb.coeff
-  DESTINATION data
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 )
 
 add_custom_target(copy-resources ALL DEPENDS ${MTS_COPY_FILES})
@@ -671,7 +687,7 @@ add_custom_command(
 )
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data/ior
-  DESTINATION data
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}
 )
 
 mark_as_advanced(

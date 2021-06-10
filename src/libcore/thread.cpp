@@ -9,6 +9,7 @@
 #include <vector>
 #include <sstream>
 #include <chrono>
+#include <cstring>
 
 // Required for native thread functions
 #if defined(__LINUX__)

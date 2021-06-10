@@ -75,8 +75,7 @@ add_library(mitsuba-render SHARED
 target_compile_definitions(mitsuba-render
   PRIVATE -DMTS_BUILD_MODULE=MTS_MODULE_RENDER)
 set_target_properties(mitsuba-render PROPERTIES
-  INTERPROCEDURAL_OPTIMIZATION ON
-  INSTALL_RPATH "${MTS_ORIGIN}")
+  INTERPROCEDURAL_OPTIMIZATION ON)
 
 # Link to enoki-thread
 target_link_libraries(mitsuba-render
