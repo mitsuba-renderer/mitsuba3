@@ -34,10 +34,10 @@ SYMBOLIC_EXCLUDE_FOLDERS = [
 if hasattr(ek, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
-        'jit_flag_option_1' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        'jit_flag_option_0' : {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        'jit_flag_option_2' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1, ek.JitFlag.VCallBranch: 0},
-        'jit_flag_option_3' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
+        'jit_flag_option_0' : {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
+        'jit_flag_option_1' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
+        'jit_flag_option_2' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
+        'jit_flag_option_3' : {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 1},
     }
 
 def list_all_render_test_configs():

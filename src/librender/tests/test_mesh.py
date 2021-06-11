@@ -326,10 +326,9 @@ def test11_parameters_grad_enabled(variants_all_ad_rgb):
 
 if hasattr(ek, 'JitFlag'):
     jit_flags_options = [
-        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 0},
-        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0, ek.JitFlag.VCallBranch: 1},
+        {ek.JitFlag.VCallRecord : 0, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
+        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 0, ek.JitFlag.LoopRecord : 0},
+        {ek.JitFlag.VCallRecord : 1, ek.JitFlag.VCallOptimize : 1, ek.JitFlag.LoopRecord : 0},
     ]
 else:
     jit_flags_options = []

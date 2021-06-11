@@ -70,9 +70,6 @@ Options:
     -O0
         Disable loop and virtual function call optimizations
 
-    -Ob
-        Implement virtual function calls using branching
-
     -Oo
         Force kernel evaluation in OptiX (esp. in wavefront mode)
 
@@ -163,11 +160,10 @@ int main(int argc, char *argv[]) {
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
     auto arg_extra     = parser.add("", true);
 
-    auto arg_branch   = parser.add(StringVec{ "-Ob" });
-    auto arg_no_optim = parser.add(StringVec{ "-O0" });
+    auto arg_no_optim    = parser.add(StringVec{ "-O0" });
     auto arg_force_optix = parser.add(StringVec{ "-Oo" });
     auto arg_dump_source = parser.add(StringVec{ "-Os" });
-    auto arg_graphviz  = parser.add(StringVec{ "-g" }, true);
+    auto arg_graphviz    = parser.add(StringVec{ "-g" }, true);
 
     bool profile = true, print_profile = false;
     xml::ParameterList params;
@@ -256,8 +252,6 @@ int main(int argc, char *argv[]) {
 
 #if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
         if (cuda || llvm) {
-            jit_set_flag(JitFlag::VCallBranch, false);
-
             if (*arg_force_optix)
                 jit_set_flag(JitFlag::ForceOptiX, true);
 
@@ -268,9 +262,6 @@ int main(int argc, char *argv[]) {
                 jit_set_flag(JitFlag::VCallOptimize, false);
                 jit_set_flag(JitFlag::LoopOptimize, false);
             }
-
-            if (*arg_branch)
-                jit_set_flag(JitFlag::VCallBranch, true);
 
             if (*arg_wavefront) {
                 jit_set_flag(JitFlag::LoopRecord, false);
@@ -285,7 +276,6 @@ int main(int argc, char *argv[]) {
         ENOKI_MARK_USED(arg_force_optix);
         ENOKI_MARK_USED(arg_dump_source);
         ENOKI_MARK_USED(arg_no_optim);
-        ENOKI_MARK_USED(arg_branch);
         ENOKI_MARK_USED(arg_wavefront);
         ENOKI_MARK_USED(arg_graphviz);
 #endif
