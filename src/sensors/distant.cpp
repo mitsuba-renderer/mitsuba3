@@ -65,7 +65,7 @@ Ray origins are positioned outside of the scene's geometry.
 template <typename Float, typename Spectrum>
 class DistantSensor final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_world_transform, m_film)
+    MTS_IMPORT_BASE(Sensor, m_to_world, m_film)
     MTS_IMPORT_TYPES(Scene, Shape)
 
     DistantSensor(const Properties &props) : Base(props), m_props(props) {
@@ -128,7 +128,7 @@ protected:
 template <typename Float, typename Spectrum, RayTargetType TargetType>
 class DistantSensorImpl final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_world_transform, m_film)
+    MTS_IMPORT_BASE(Sensor, m_to_world, m_film)
     MTS_IMPORT_TYPES(Scene, Shape)
 
     DistantSensorImpl(const Properties &props) : Base(props) {
@@ -155,9 +155,8 @@ public:
 
             std::tie(std::ignore, up) = coordinate_system(direction);
 
-            m_world_transform =
-                new AnimatedTransform(ScalarTransform4f::look_at(
-                    ScalarPoint3f(0.0f), ScalarPoint3f(direction), up));
+            m_to_world = ScalarTransform4f::look_at(
+                ScalarPoint3f(0.0f), ScalarPoint3f(direction), up);
         }
 
         // Set ray target if relevant
@@ -196,14 +195,11 @@ public:
             sample_wavelength<Float, Spectrum>(wavelength_sample);
         ray.wavelengths = wavelengths;
 
-        // Set ray direction
-        auto trafo = m_world_transform->eval(time, active);
-
         // Sample ray origin
         Spectrum ray_weight = 0.f;
 
         // Set ray direction
-        ray.d = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        ray.d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
 
         // Sample target point and position ray origin
         if constexpr (TargetType == RayTargetType::Point) {
@@ -220,7 +216,7 @@ public:
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
             Vector3f perp_offset =
-                trafo.transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
+                m_to_world.value().transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
             ray.o = m_bsphere.center + perp_offset * m_bsphere.radius - ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         }
@@ -252,7 +248,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "DistantSensor[" << std::endl
-            << "  world_transform = " << m_world_transform << "," << std::endl
+            << "  to_world = " << m_to_world << "," << std::endl
             << "  film = " << m_film << "," << std::endl;
 
         if constexpr (TargetType == RayTargetType::Point)
