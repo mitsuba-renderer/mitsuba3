@@ -40,7 +40,7 @@ if (NOT SKBUILD)
       LIBRARY_OUTPUT_DIRECTORY_DEBUG          ${MTS_BINARY_DIR}/python/enoki
       LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${MTS_BINARY_DIR}/python/enoki
       LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     ${MTS_BINARY_DIR}/python/enoki)
-  elseif ()
+  else ()
     set_target_properties(enoki-python
       PROPERTIES
       LIBRARY_OUTPUT_DIRECTORY ${MTS_BINARY_DIR}/python/enoki)
