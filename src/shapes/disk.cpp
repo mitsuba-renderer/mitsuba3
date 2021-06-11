@@ -210,7 +210,10 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
 
-        si.p = ray(pi.t);
+        // Re-project onto the disk to improve accuracy
+        Point3f p = ray(pi.t);
+        Float dist = ek::dot(m_to_world.value().translation() - p, m_frame.n);
+        si.p = p + dist * m_frame.n;
 
         if (likely(has_flag(hit_flags, HitComputeFlags::UV) ||
                    has_flag(hit_flags, HitComputeFlags::dPdUV))) {
