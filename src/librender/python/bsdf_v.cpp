@@ -114,7 +114,13 @@ MTS_PY_EXPORT(BSDF) {
             "index"_a, "active"_a = true, D(BSDF, flags, 2))
         .def_method(BSDF, component_count, "active"_a = true)
         .def_method(BSDF, id)
-        .def_readwrite("m_flags",      &PyBSDF::m_flags)
+        .def_property("m_flags",
+            [](PyBSDF &bsdf){ return bsdf.m_flags; },
+            [](PyBSDF &bsdf, uint32_t flags){
+                bsdf.m_flags = flags;
+                ek::set_attr(&bsdf, "flags", flags);
+            }
+        )
         .def_readwrite("m_components", &PyBSDF::m_components)
         .def("__repr__", &BSDF::to_string);
 
