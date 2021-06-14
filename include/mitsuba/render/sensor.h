@@ -192,6 +192,7 @@ protected:
 /// Helper function to parse the field of view field of a camera
 extern MTS_EXPORT_RENDER float parse_fov(const Properties &props, float aspect);
 
+/// Helper function to create a perspective projection transformation matrix
 template <typename Float> Transform<Point<Float, 4>>
 perspective_projection(const Vector<int, 2> &film_size,
                        const Vector<int, 2> &crop_size,

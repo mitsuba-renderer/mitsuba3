@@ -9338,7 +9338,7 @@ Returns:
     The index corresponding to the input index in the pseudorandom
     permutation vector.)doc";
 
-static const char *__doc_mitsuba_perspective_projection = R"doc()doc";
+static const char *__doc_mitsuba_perspective_projection = R"doc(Helper function to create a perspective projection transformation matrix)doc";
 
 static const char *__doc_mitsuba_prepare_ias =
 R"doc(Prepares and fills the OptixInstance array associated with a given
