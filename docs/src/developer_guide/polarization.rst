@@ -3,7 +3,7 @@
 Polarization
 ============
 
-.. image:: ../../../resources/data/docs/images/polarization/teaser.jpg
+.. image:: ../../images/polarization/teaser.jpg
     :width: 100%
     :align: center
 
@@ -50,7 +50,7 @@ Stokes vectors
 Definitions
 """""""""""
 
-.. figure:: ../../../resources/data/docs/images/polarization/stokes_vector.svg
+.. figure:: ../../images/polarization/stokes_vector.svg
     :width: 90%
     :align: center
     :name: stokes_components
@@ -101,19 +101,19 @@ and animations.
 .. raw:: html
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/horizontal.mp4"></video>
+        src="../../_static/videos/polarization/horizontal.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/vertical.mp4"></video>
+        src="../../_static/videos/polarization/vertical.mp4"></video>
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/diag_pos.mp4"></video>
+        src="../../_static/videos/polarization/diag_pos.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/diag_neg.mp4"></video>
+        src="../../_static/videos/polarization/diag_neg.mp4"></video>
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/circ_right.mp4"></video>
+        src="../../_static/videos/polarization/circ_right.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/circ_left.mp4"></video>
+        src="../../_static/videos/polarization/circ_left.mp4"></video>
 
 
 Reference frames
@@ -125,7 +125,7 @@ As illustrated in :ref:`Figure 1 <stokes_components>`, these definitions above a
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/wave_ref_frame.mp4"></video>
+            src="../../_static/videos/polarization/wave_ref_frame.mp4"></video>
     </center>
 
 Note how we take the point of view of the "receiver" and look into the direction of the "source" of the beam to describe the Stokes vector.
@@ -133,7 +133,7 @@ In particular, this also clarifies the handedness of circular polarization.
 
 As a final example, consider :ref:`Figure 2 <stokes_rotation>` which shows linearly polarized light in two different reference frames, resulting in two different Stokes vectors.
 
-.. figure:: ../../../resources/data/docs/images/polarization/stokes_rotation.svg
+.. figure:: ../../images/polarization/stokes_rotation.svg
     :width: 90%
     :align: center
     :name: stokes_rotation
@@ -162,7 +162,7 @@ Similar to Stokes vectors, Mueller matrices are also only valid in some referenc
 
 The most common optical elements (such as linear polarizers or retarders, see below) operate along a single direction of a light beam, and in that case, both of their reference frames are usually assumed to be the same, with the :math:`\mathbf{x}`-axis aligned with the optical table:
 
-.. figure:: ../../../resources/data/docs/images/polarization/mueller_matrix_frames_aligned_crop.png
+.. figure:: ../../images/polarization/mueller_matrix_frames_aligned_crop.png
     :width: 90%
     :align: center
     :name: frames_collinear
@@ -171,7 +171,7 @@ The most common optical elements (such as linear polarizers or retarders, see be
 
 For the general case, e.g. a Mueller matrix that describes a reflection on some interface, the two frames are necessarily different and need to be tracked carefully:
 
-.. figure:: ../../../resources/data/docs/images/polarization/mueller_matrix_frames_reflection_crop.png
+.. figure:: ../../images/polarization/mueller_matrix_frames_reflection_crop.png
     :width: 90%
     :align: center
     :name: frames_reflection
@@ -252,7 +252,7 @@ Here is another visualization of this process. Again, note how the polarization 
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/rotator.mp4"></video>
+            src="../../_static/videos/polarization/rotator.mp4"></video>
     </center>
 
 Rotation of Mueller matrix frames
@@ -293,7 +293,7 @@ where :math:`\theta_{\text{out}}` is the relative angle between the two frame ba
 
 Effectively, this process transforms the matrix :math:`\hat{\mathbf{M}}` into a modified matrix :math:`\mathbf{M}` that operates between rotated incident and outgoing frames.
 
-.. figure:: ../../../resources/data/docs/images/polarization/rotated_mueller_matrix_crop.png
+.. figure:: ../../images/polarization/rotated_mueller_matrix_crop.png
     :width: 90%
     :align: center
     :name: rotated_mueller_matrix
@@ -333,7 +333,7 @@ Finally, we rotate the resulting Stokes vector back into the original frame (:ma
         \mathbf{s}''' = \mathbf{R}(-\theta) \cdot \mathbf{s}'' = \underbrace{\mathbf{R}(-\theta) \cdot \mathbf{M} \cdot \mathbf{R}(\theta)}_{\mathbf{M}(\theta)} \cdot \mathbf{s}
     \end{equation}
 
-.. figure:: ../../../resources/data/docs/images/polarization/rotated_element_crop.png
+.. figure:: ../../images/polarization/rotated_element_crop.png
     :width: 90%
     :align: center
     :name: rotated_element
@@ -379,7 +379,7 @@ Consider a beam of unpolarized light (purple) that interacts with two linear pol
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/malus.mp4"></video>
+            src="../../_static/videos/polarization/malus.mp4"></video>
     </center>
 
 The first polarizer transforms the beam into fully horizontally polarized light (middle) before traveling through a second polarizer at an angle :math:`\theta`. It is clear that a horizontal orientation (:math:`\theta=0˚`) will allow all of the light to transmit as both polarizers are aligned with each other. Similarly, at an orthogonal configuration (:math:`\theta=90˚`), all light will be absorbed. For intermediate angles, only a fraction of the light is transmitted in form of linearly polarized light. Under such a setting, the total intensities (first component of the Stokes vector) before and after interacting with the two polarizers, :math:`\mathbf{s}_0, \mathbf{s}_0'`, follow *Malus' law* [[5]_]:
@@ -443,7 +443,7 @@ We can also use Mueller-Stokes calculus to understand a common physical setup to
 
     <center>
         <video style="max-width:80%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/qwp_circular.mp4"></video>
+            src="../../_static/videos/polarization/qwp_circular.mp4"></video>
     </center>
 
 Any type of light (e.g. unpolarized, visualized in purple) is linearly polarized at a 45˚ angle by the first filter (left) and then hits a quarter-wave plate (green) that has its "fast axis" in a horizontal configuration. The wave plate introduces a quarter wavelength phase shift that slows down the vertical component (red). As a result, the two wave components are no longer aligned and the light beam is (perfectly) left-circularly polarized.
@@ -500,7 +500,7 @@ At the core of this are of course the laws of reflection and refraction (a.k.a. 
 
 that relate an incident angle :math:`\theta_i` with its reflected (:math:`\theta_r`) and refracted (:math:`\theta_t`) analogues based on the indices of refraction (:math:`\eta_i \text{ and } \eta_t`) on the two sides of the interface:
 
-.. image:: ../../../resources/data/docs/images/polarization/reflection_transmission.svg
+.. image:: ../../images/polarization/reflection_transmission.svg
     :width: 50%
     :align: center
 
@@ -514,9 +514,9 @@ Modern formulations of the Fresnel equations are based on electromagnetic theory
 .. raw:: html
 
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/s_wave.mp4"></video>
+        src="../../_static/videos/polarization/s_wave.mp4"></video>
     <video style="max-width:48%;" loop autoplay muted
-        src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/p_wave.mp4"></video>
+        src="../../_static/videos/polarization/p_wave.mp4"></video>
 
 To describe these fields, we have to make some choices regarding coordinate systems. In particular: in which directions should the electric fields be pointing before and after interacting with the interface? Given the electric field direction :math:`E` and the propagation direction of the beam :math:`\mathbf{z}`, the orientation of the magnetic field :math:`H` is always clearly defined by a right-handed coordinate system :math:`E \times B = \alpha \cdot \mathbf{z}` for some constant :math:`\alpha` (Poynting's theorem). The orientation of the electric field itself is however somewhat arbitrary. Incident and reflected field could for instance point in the same or opposite directions of each other.
 
@@ -524,7 +524,7 @@ To describe these fields, we have to make some choices regarding coordinate syst
 
     Unfortunately, different choices for the orientations of the electric field will result in slightly different versions of the final Fresnel equations. All versions are "correct" however as long as conventions are clear and consistent. We therefore clarify the concrete alignments that we use in the following diagram:
 
-.. figure:: ../../../resources/data/docs/images/polarization/electric_magnetic_fields_verdet.svg
+.. figure:: ../../images/polarization/electric_magnetic_fields_verdet.svg
     :width: 95%
     :align: center
     :name: electric_magnetic_fields_verdet_first
@@ -674,7 +674,7 @@ with refractive index :math:`\eta`, speed of light (in vacuum) :math:`c_0`, vacu
 
 The beam area ratios are found by simple trigonometry to be :math:`\frac{A_r}{A_i} = \frac{\cos\theta_i}{\cos\theta_i} = 1` and :math:`\frac{A_t}{A_i} = \frac{\cos\theta_t}{\cos\theta_i}`:
 
-.. image:: ../../../resources/data/docs/images/polarization/reflectance_transmittance.svg
+.. image:: ../../images/polarization/reflectance_transmittance.svg
     :width: 100%
     :align: center
 
@@ -709,7 +709,7 @@ When considering all possible orientations of the electric field vectors (2 choi
 |
 |   Its main appeal is that at perpendicular incidence, both :math:`E_i^{\parallel}` and :math:`E_r^{\parallel}` are indistinguishable which makes sense from a physical perspective. However, it accomplishes this by having :math:`E_r^{\bot}` & :math:`E_r^{\parallel}` form a left handed coordinate system which can be less convenient for subsequent calculations.
 
-.. figure:: ../../../resources/data/docs/images/polarization/electric_magnetic_fields_fresnel.svg
+.. figure:: ../../images/polarization/electric_magnetic_fields_fresnel.svg
     :width: 95%
     :align: center
     :name: electric_magnetic_fields_fresnel
@@ -721,7 +721,7 @@ When considering all possible orientations of the electric field vectors (2 choi
 |
 |   Here, :math:`E_i^{\parallel}` and :math:`E_r^{\parallel}` are oriented s.t. their magnetic fields :math:`H_i^{\bot}` and :math:`H_r^{\bot}` point in *the same* direction (:ref:`Figure 7 <electric_magnetic_fields_verdet_first>` and repeated below as :ref:`Figure 9 <electric_magnetic_fields_verdet>` for easier comparison). It is named after Verdet, who was an editor of Fresnel and originally switched the convention because in his opinion, the two fields should instead be equivalent at grazing angles :cite:`Palik1997`, :cite:`Clarke2009`. Compared to Fresnel's original formulation of the equations, the sign of the parallel amplitude consequently had to be flipped, see Eq. :eq:`eq_reflection_amplitudes_p`.
 
-.. figure:: ../../../resources/data/docs/images/polarization/electric_magnetic_fields_verdet.svg
+.. figure:: ../../images/polarization/electric_magnetic_fields_verdet.svg
     :width: 95%
     :align: center
     :name: electric_magnetic_fields_verdet
@@ -755,7 +755,7 @@ Dielectric reflection (at a denser medium)
 
 The first case is simple dielectric reflection at an interface that is denser than the incident medium. Consider for instance :ref:`Figure 10 <reflection_from_outside>` with :math:`\eta_i = 1.0` and :math:`\eta_t = 1.5`. The curves with ":math:`\bot`" and ":math:`\parallel`" components of the reflectance is also well known in graphics where usually rendering systems implement the non-polarized version :math:`R_{avg} = R_\bot + R_\parallel` that just averages the two curves.
 
-.. figure:: ../../../resources/data/docs/images/polarization/reflection_from_outside.svg
+.. figure:: ../../images/polarization/reflection_from_outside.svg
     :width: 100%
     :align: center
     :name: reflection_from_outside
@@ -787,7 +787,7 @@ Dielectric transmission (into a denser medium)
 
 An analogous case is refraction into a medium of higher density as shown in :ref:`Figure 11 <transmission_from_outside>` for :math:`\eta_i = 1.0` and :math:`\eta_t = 1.5`.
 
-.. figure:: ../../../resources/data/docs/images/polarization/transmission_from_outside.svg
+.. figure:: ../../images/polarization/transmission_from_outside.svg
     :width: 100%
     :align: center
     :name: transmission_from_outside
@@ -813,14 +813,14 @@ Dielectric reflection and transmission (from a denser to a less dense medium)
 
 Internal reflection *inside* a dense dielectric (:math:`\eta_t / \eta_i < 1`) is an interesting case due to the well known *critical angle* (:math:`\theta = \arcsin(\eta_t / \eta_i)`) after which all light is reflected and thus transmittance goes to zero. This is also known as *total internal reflection (TIR)* See e.g. :ref:`Figure 12 <reflection_from_inside>` for the reflection case and :ref:`Figure 13 <transmission_from_inside>` for transmission in case of :math:`\eta_i = 1.5` and :math:`\eta_t = 1.0`.
 
-.. figure:: ../../../resources/data/docs/images/polarization/reflection_from_inside.svg
+.. figure:: ../../images/polarization/reflection_from_inside.svg
     :width: 100%
     :align: center
     :name: reflection_from_inside
 
     **Figure 12**: Reflectance and phase shifts for varying incident angles of a specular reflection from the inside of a dielectric interface with relative IOR :math:`2/3` (:math:`\eta_i = 1.5, \eta_t = 1.0`). Compare also with Fig. 1 in :cite:`Azzam2004`.
 
-.. figure:: ../../../resources/data/docs/images/polarization/transmission_from_inside.svg
+.. figure:: ../../images/polarization/transmission_from_inside.svg
     :width: 100%
     :align: center
     :name: transmission_from_inside
@@ -856,7 +856,7 @@ The sign is flipped compared to the retarder matrix in :ref:`Table 2 <table_opti
 
 Fresnel :cite:`Fresnel1823` realized that the phase shifts due to total internal reflection can be used to turn linear into circular polarization by constructing a prism where light is is reflected twice on the interior of a dielectric material. The angle have to be chosen carefully based on the refractive index s.t. the correct phase shift of :math:`90˚` (i.e. equivalent to a quarter-wave plate) is achieved:
 
-.. image:: ../../../resources/data/docs/images/polarization/fresnel_rhomb.svg
+.. image:: ../../images/polarization/fresnel_rhomb.svg
     :width: 50%
     :align: center
 
@@ -936,7 +936,7 @@ Conductor reflection
 
 As mentioned at the beginning of Section `Theory`_, all equations also generalize the the case of reflection on conductors that have complex valued indices of refraction :math:`\eta = n - k i` where :math:`n` is the real part and :math:`k` is the extinction coefficient. :ref:`Figure 14 <reflection_conductor>` shows a typical case with :math:`\eta = 0.183 - 3.43i` (gold at 633nm).
 
-.. figure:: ../../../resources/data/docs/images/polarization/reflection_conductor.svg
+.. figure:: ../../images/polarization/reflection_conductor.svg
     :width: 100%
     :align: center
     :name: reflection_conductor
@@ -1048,7 +1048,7 @@ In-plane measurements
 
 At the core of this lies the classical ellipsometry approach of *dual-rotating retarders (DRR)* proposed by Azzam :cite:`Azzam1978`. This technique is remarkably simple and works by only analyzing a single intensity signal that interacted with the material to be measured and a handful of basic optical elements (two linear polarizers and two quarter-wave plates). The setup looks as follows:
 
-.. image:: ../../../resources/data/docs/images/polarization/azzam.svg
+.. image:: ../../images/polarization/azzam.svg
     :width: 80%
     :align: center
 
@@ -1082,26 +1082,26 @@ To validate this process, we can plug in arbitrary Mueller matrices into this ex
 
 **Air** (no sample)
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_simulated_signal_air.svg
+.. image:: ../../images/polarization/drr_simulated_signal_air.svg
     :width: 55%
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_simulated_matrix_air.svg
+.. image:: ../../images/polarization/drr_simulated_matrix_air.svg
     :width: 31%
 
 **Linear polarizer** (horizontal transmission)
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_simulated_signal_polarizer.svg
+.. image:: ../../images/polarization/drr_simulated_signal_polarizer.svg
     :width: 55%
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_simulated_matrix_polarizer.svg
+.. image:: ../../images/polarization/drr_simulated_matrix_polarizer.svg
     :width: 31%
 
 **Quarter-wave plate** (fast axis horizontal)
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_simulated_signal_retarder.svg
+.. image:: ../../images/polarization/drr_simulated_signal_retarder.svg
     :width: 55%
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_simulated_matrix_retarder.svg
+.. image:: ../../images/polarization/drr_simulated_matrix_retarder.svg
     :width: 31%
 
 ------------
@@ -1112,7 +1112,7 @@ Our physical setup mostly follows the diagram above. The two notable differences
 
 2. Due to space limitations, we use two :math:`45˚` mirrors to redirect the laser. This takes place before the *polarizer module* so it does not affect the measurements.
 
-.. image:: ../../../resources/data/docs/images/polarization/azzam_lab_setup.jpg
+.. image:: ../../images/polarization/azzam_lab_setup.jpg
     :width: 95%
     :align: center
 
@@ -1122,12 +1122,12 @@ Both the sample and the analyzer module are mounted such that they can rotate in
 
     <center>
         <video style="max-width:95%;" controls loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/azzam_lab_setup_video.mp4"></video>
+            src="../../_static/videos/polarization/azzam_lab_setup_video.mp4"></video>
     </center>
 
 As part of the system calibration we first perform a measurement without any sample, effectively capturing the air and any potential inaccuracies of the device. As demonstrated in the following plot, the measured signal follows closely the expected curve from theory and hence the reconstructed Mueller matrix :math:`\mathbf{M}^{\text{air}}` is very close to the identity:
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_calibration.svg
+.. image:: ../../images/polarization/drr_calibration.svg
     :width: 70%
     :align: center
 
@@ -1183,13 +1183,13 @@ In both the conductor and dielectric case we observe excellent agreement between
 
     <center>
         <video style="max-width:60%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/drr_gold_m03.mp4"></video>
+            src="../../_static/videos/polarization/drr_gold_m03.mp4"></video>
     </center>
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_gold_m03_lab.svg
+.. image:: ../../images/polarization/drr_gold_m03_lab.svg
     :width: 49%
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_gold_m03_analytic.svg
+.. image:: ../../images/polarization/drr_gold_m03_analytic.svg
     :width: 49%
 
 **Schott NG1 (dielectric)**
@@ -1198,13 +1198,13 @@ In both the conductor and dielectric case we observe excellent agreement between
 
     <center>
         <video style="max-width:60%;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/drr_schott_ng1.mp4"></video>
+            src="../../_static/videos/polarization/drr_schott_ng1.mp4"></video>
     </center>
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_schott_ng1_lab.svg
+.. image:: ../../images/polarization/drr_schott_ng1_lab.svg
     :width: 49%
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_schott_ng1_analytic.svg
+.. image:: ../../images/polarization/drr_schott_ng1_analytic.svg
     :width: 49%
 
 Image-based measurements
@@ -1212,10 +1212,10 @@ Image-based measurements
 
 We also compare against the gold measurement available in the `pBRDF database <http://vclab.kaist.ac.kr/siggraph2020/pbrdfdataset/kaistdataset.html>`_ acquired by Baek et al. :cite:`Baek2020Image`. In comparison to our setup that measures only the *in-plane* :math:`\theta_i, \theta_o` angles, this data covers the full isotropic pBRDF but with lower accuracy. Nonetheless, the encoded Mueller matrices agree qualitatively with our implementation.
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_gold_m03_kaist.svg
+.. image:: ../../images/polarization/drr_gold_m03_kaist.svg
     :width: 49%
 
-.. image:: ../../../resources/data/docs/images/polarization/drr_gold_m03_analytic.svg
+.. image:: ../../images/polarization/drr_gold_m03_analytic.svg
     :width: 49%
 
 For details about this capture setup, please refer to the details given in the corresponding article.
@@ -1235,14 +1235,14 @@ We used a few simple test scenes that we were able to reproduce in both systems 
 
 A simple Cornell box scene with a dielectric sphere (:math:`\eta = 1.5`) that causes reflection and refraction.
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_dielectric.jpg
+.. image:: ../../images/polarization/art_comparison_dielectric.jpg
     :width: 50%
     :align: center
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_dielectric_s1.jpg
+.. image:: ../../images/polarization/art_comparison_dielectric_s1.jpg
     :width: 90%
     :align: center
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_dielectric_s2.jpg
+.. image:: ../../images/polarization/art_comparison_dielectric_s2.jpg
     :width: 90%
     :align: center
 
@@ -1250,14 +1250,14 @@ A simple Cornell box scene with a dielectric sphere (:math:`\eta = 1.5`) that ca
 
 The same scene as before, but the IOR is reversed (:math:`\eta = 1/1.5`) which causes internal reflection.
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_invdielectric.jpg
+.. image:: ../../images/polarization/art_comparison_invdielectric.jpg
     :width: 50%
     :align: center
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_invdielectric_s1.jpg
+.. image:: ../../images/polarization/art_comparison_invdielectric_s1.jpg
     :width: 90%
     :align: center
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_invdielectric_s2.jpg
+.. image:: ../../images/polarization/art_comparison_invdielectric_s2.jpg
     :width: 90%
     :align: center
 
@@ -1265,17 +1265,17 @@ The same scene as before, but the IOR is reversed (:math:`\eta = 1/1.5`) which c
 
 This scene uses two conductor spheres (:math:`\eta = 0.052 - 3.905 i`) and also causes elliptical polarization due to the phase shifts and two-bounce reflections between the spheres.
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_conductor.jpg
+.. image:: ../../images/polarization/art_comparison_conductor.jpg
     :width: 50%
     :align: center
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_conductor_s1.jpg
+.. image:: ../../images/polarization/art_comparison_conductor_s1.jpg
     :width: 90%
     :align: center
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_conductor_s2.jpg
+.. image:: ../../images/polarization/art_comparison_conductor_s2.jpg
     :width: 90%
     :align: center
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_conductor_s3.jpg
+.. image:: ../../images/polarization/art_comparison_conductor_s3.jpg
     :width: 90%
     :align: center
 
@@ -1350,7 +1350,7 @@ Such an issue is particularly subtle for the following reasons:
 
 One case where this can be observed is our *Conductor reflections* test scene from above. We illustrate this sign flip by repeating the comparison of the relevant :math:`\mathbf{s}_3` Stokes component in that scene --- but with the previous flawed implementation.
 
-.. image:: ../../../resources/data/docs/images/polarization/art_comparison_conductor_wrong_s3.jpg
+.. image:: ../../images/polarization/art_comparison_conductor_wrong_s3.jpg
     :width: 90%
     :align: center
 
@@ -1388,7 +1388,7 @@ Using the Mueller-Stokes calculus (Section `Mathematics of polarized light`_) in
 
 We avoid this asymmetry we made the decision to only use Mueller matrices where in the case of Stokes vectors, only the first column is non-zero:
 
-.. image:: ../../../resources/data/docs/images/polarization/stokes_vector_matrix.svg
+.. image:: ../../images/polarization/stokes_vector_matrix.svg
     :width: 33%
     :align: center
 
@@ -1398,7 +1398,7 @@ This leads to some unnecessary arithmetic but simplifies the API which is especi
 
 When also considering the different :ref:`color representations in Mitsuba 2 <sec-variants-colors>` there are three possible Mueller matrix types:
 
-.. image:: ../../../resources/data/docs/images/polarization/color_modes.svg
+.. image:: ../../images/polarization/color_modes.svg
     :width: 90%
     :align: center
 
@@ -1444,21 +1444,21 @@ The remainder of this section covers a few more implementation details / helpful
     :linenos:
 
     // From `include/mitsuba/core/traits.h`
-    template <typename T> using unpolarized_spectrum_t = ...
+    template <typename T> using depolarize_t = ...
 
     // Example use case
-    using UnpolarizedSpectrum = unpolarized_spectrum_t<Spectrum>;
+    using UnpolarizedSpectrum = depolarize_t<Spectrum>;
 
-| 3. There exists a helper function to extract the :math:`(1, 1)` entry of the Mueller matrix / Stokes vector. Essentially, it will turn any ``Spectrum`` value into an ``UnpolarizedSpectrum``.
-| This is used in a few places in the renderer where we do not care about the additional polarization information tracked by the Mueller matrix. For instance, when performing Russian Roulette (stochastic termination of long light paths) based on the current path throughput or when writing a final RGB pixel value to the image, see Section `Rendering output`_.
+3. There exists a helper function to extract the :math:`(1, 1)` entry of the Mueller matrix / Stokes vector. This is used for instance when writing the final output color to the film (at least when no output of the polarization state is requested, see Section `Rendering output`_ later), or to stochastically terminate paths with Russian roulette based on the current path throughput independent of polarization.
 
 .. code-block:: cpp
     :linenos:
 
     // From `include/mitsuba/core/spectrum.h`
 
+    // Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.
     template <typename T>
-    unpolarized_spectrum_t<T> unpolarized_spectrum(const T& s) {
+    depolarize_t<T> depolarize(const T& s) {
         if constexpr (is_polarized_v<T>) {
             // First entry of the Mueller matrix is the unpolarized spectrum
             return s(0, 0);
@@ -1467,16 +1467,18 @@ The remainder of this section covers a few more implementation details / helpful
         }
     }
 
-| 4. Another helper function returns a depolarizing Mueller matrix (with only its :math:`(1, 1)` entry used) where the input is usually an ``UnpolarizedSpectrum`` value.
-| This is obviously used in places where we want materials to act as depolarizers, e.g. in the case of a Lambertian diffuse material. However, there are also many BSDFs where it is currently not clear how they should interact with polarized light, or the functionality is not yet implemented. For now, these all act as depolarizers. Lastly, this is also used for light sources, as they currently all emit completely unpolarized light in Mitsuba 2.
+| 4. When compiling Mitsuba 2 in a polarized variant, all ``Spectrum`` types are supposed to be Mueller matrices, even though for many plugins this is either not yet implemented or it is unclear how to do so. For instance, what Mueller matrix should be returned when querying an environment map emitter?
+| In these cases, the following wrapper can be used to turn any unpolarized color representation into a valid Mueller matrix where just its :math:`(1, 1)` entry is used.
 
 .. code-block:: cpp
     :linenos:
 
     // From `include/mitsuba/core/spectrum.h`
 
+    // Turn a spectrum into a Mueller matrix representation that only has a non-zero
+    // (1,1) entry. For all non-polarized modes, this is the identity function.
     template <typename T>
-    auto depolarizer(const T &s = T(1)) {
+    auto unpolarized(const T &s) {
         if constexpr (is_polarized_v<T>) {
             T result = ek::zero<T>();
             result(0, 0) = s(0, 0);
@@ -1488,7 +1490,7 @@ The remainder of this section covers a few more implementation details / helpful
 
     // Example use case, where the value returned from the texture is of type
     // `UnpolarizedSpectrum`.
-    Spectrum s = depolarizer<Spectrum>(m_texture->eval(si, active));
+    Spectrum s = unpolarized<Spectrum>(m_texture->eval(si, active));
 
 Coordinate frames
 """""""""""""""""
@@ -1549,9 +1551,9 @@ Recall from Section `Mueller matrices`_ that whenever two Mueller matrices (or a
 
 We then have more functions that build on top of this to cover the common cases of rotating incident/outgoing Mueller reference frames (**left**, see Section `Rotation of Mueller matrix frames`_) and rotated optical elements (**right**, see Section `Rotation of optical elements`_):
 
-.. image:: ../../../resources/data/docs/images/polarization/rotated_mueller_matrix_crop.png
+.. image:: ../../images/polarization/rotated_mueller_matrix_crop.png
     :width: 49%
-.. image:: ../../../resources/data/docs/images/polarization/rotated_element_crop.png
+.. image:: ../../images/polarization/rotated_element_crop.png
     :width: 49%
 
 .. code-block:: cpp
@@ -1625,7 +1627,7 @@ Handling of light paths
 
 In principle, not much changes when adding polarization to a rendering algorithm and the retargetable type system of Mitsuba 2 will do a lot of the heavy lifting. In particular, emitters will return emission in form of Stokes vectors (or rather Mueller matrices with three zero valued columns.) and *polarized bidirectional scattering distribution functions (pBSDFs)* will return Mueller matrices that are multiplied with the emission:
 
-.. image:: ../../../resources/data/docs/images/polarization/light_path_ordering.svg
+.. image:: ../../images/polarization/light_path_ordering.svg
     :width: 80%
     :align: center
 
@@ -1666,7 +1668,7 @@ For completeness, we will first briefly discuss the usual convention **without p
 
 Mitsuba 2 (like most modern rendering systems) uses BSDF implementations that are completely decoupled from the actual rendering algorithms in order to be as extensible as possible. To facilitate this, their sampling and evaluation is taking place in some canonical *local* coordinate system that is always aligned with the shading normal :math:`\mathbf{n}` pointing *up* (towards :math:`+\mathbf{z}`):
 
-.. image:: ../../../resources/data/docs/images/polarization/world_local_unpol.svg
+.. image:: ../../images/polarization/world_local_unpol.svg
     :width: 90%
     :align: center
 
@@ -1697,7 +1699,7 @@ As rendering algorithms take place in *world space* however, some transformation
 
 In a setting **with polarization** this aspect becomes more involved as there are now also Stokes basis vectors associated with the local & world space incident and outgoing directions that are subject to these transformations:
 
-.. image:: ../../../resources/data/docs/images/polarization/world_local_pol.svg
+.. image:: ../../images/polarization/world_local_pol.svg
     :width: 90%
     :align: center
 
@@ -1840,7 +1842,7 @@ After looking at rendering algorithms and how they interact with pBSDFs, we stil
 
 As mentioned above, these should always return valid Mueller matrices based on the implicit reference frames of the (local) incident and outgoing directions. In the following Figure, these are marked as :math:`\mathbf{b}_o^{\text{local}}` and  :math:`\mathbf{b}_i^{\text{local}}`.
 
-.. image:: ../../../resources/data/docs/images/polarization/bsdf_coord_change.svg
+.. image:: ../../images/polarization/bsdf_coord_change.svg
     :width: 60%
     :align: center
 
@@ -1930,11 +1932,11 @@ In most natural scenes, polarization effects are very subtle and hardly visible 
 Here we compare unpolarized (**left**) vs polarized (**right**) renderings of a simple Cornell box scene with both dielectric and conductor materials and a microfacet based rough conductor pattern on the otherwise diffuse walls. Because differences are still subtle in this case, we also show a visualization of the pixel-wise absolute error.
 
 .. subfigstart::
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_unpol.png
+.. subfigure:: ../../images/polarization/scene_unpol.png
    :caption: Spectral rendering mode
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_pol.png
+.. subfigure:: ../../images/polarization/scene_pol.png
    :caption: Spectral + Polarized rendering mode
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_diff.jpg
+.. subfigure:: ../../images/polarization/scene_diff.jpg
    :caption: Pixel-wise absolute error between the two previous images.
 .. subfigend::
     :label: fig-render-comparison
@@ -1947,7 +1949,7 @@ Another simple but effective way to make the effects visible is to place a (rota
 
     <center>
         <video style="max-width:60%; border: 2px solid #000; display: block; margin: 0 auto;" loop autoplay muted
-            src="https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/tzeltner/2021/06/17/cbox_rotating_filter.mp4"></video>
+            src="../../_static/videos/polarization/cbox_rotating_filter.mp4"></video>
     </center>
 
 Stokes vector output
@@ -1977,7 +1979,7 @@ Currently, the Stokes components (:math:`\mathbf{s}_0, \dots, \mathbf{s}_3`) wil
 
 Internally, the Stokes integrator has to perform a last coordinate frame rotation to make sure the Stokes vector is saved in a consistent format, where its reference basis is aligned with the horizontal axis of the camera frame:
 
-.. image:: ../../../resources/data/docs/images/polarization/camera_rotation.svg
+.. image:: ../../images/polarization/camera_rotation.svg
     :width: 55%
     :align: center
 
@@ -2020,13 +2022,13 @@ Mitsuba 2 also includes a separate command line tool to create commonly used vis
 For instance, it can create the following false-color visualizations (green: positive, red: negative) of the Stokes components of the scene above:
 
 .. subfigstart::
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_s0.png
+.. subfigure:: ../../images/polarization/scene_s0.png
    :caption: :math:`\mathbf{s}_0`
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_s1.png
+.. subfigure:: ../../images/polarization/scene_s1.png
    :caption: :math:`\mathbf{s}_1`
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_s2.png
+.. subfigure:: ../../images/polarization/scene_s2.png
    :caption: :math:`\mathbf{s}_2`
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_s3.png
+.. subfigure:: ../../images/polarization/scene_s3.png
    :caption: :math:`\mathbf{s}_3`
 .. subfigend::
     :label: fig-stokes-output
@@ -2034,13 +2036,13 @@ For instance, it can create the following false-color visualizations (green: pos
 Alternatives that are more intuitive, originally proposed by Wilkie and Weidlich :cite:`WilkieWeidlich2010`, are also supported. Please refer to the corresponding article for more information on these.
 
 .. subfigstart::
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_dop.png
+.. subfigure:: ../../images/polarization/scene_dop.png
    :caption: Degree of polarization
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_top.png
+.. subfigure:: ../../images/polarization/scene_top.png
    :caption: Type of polarization (linear vs. circular)
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_lin.png
+.. subfigure:: ../../images/polarization/scene_lin.png
    :caption: Orientation of linear polarization
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_cir.png
+.. subfigure:: ../../images/polarization/scene_cir.png
    :caption: Chirality of circular polarization (left vs. right)
 .. subfigend::
     :label: fig-stokes-false-color-output
@@ -2052,7 +2054,7 @@ Like for regular rendering, the normal :ref:`path tracer <integrator-path>` is a
 
 Consider the following (seemingly) simple Cornell box scene, where a relatively small light source is behind a linear polarizer:
 
-.. image:: ../../../resources/data/docs/images/polarization/scene_nee_ref.png
+.. image:: ../../images/polarization/scene_nee_ref.png
     :width: 50%
     :align: center
 
@@ -2063,9 +2065,9 @@ Because light travels through the polarizer in a straight line (unlike for insta
 Both of these images were rendered in roughly equal time at the same number of samples per pixel. The only difference is the choice of the integrator. Note also that both images are correct *in expectation*, and the path tracer will just need a much longer time to converge to the solution.
 
 .. subfigstart::
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_nee_path.png
+.. subfigure:: ../../images/polarization/scene_nee_path.png
    :caption: Rendered with the path tracer
-.. subfigure:: ../../../resources/data/docs/images/polarization/scene_nee_volpath.png
+.. subfigure:: ../../images/polarization/scene_nee_volpath.png
    :caption: Rendered with the volumetric path tracer
 .. subfigend::
     :label: fig-shadow-rays-comparison
@@ -2090,7 +2092,6 @@ The following plugins in Mitsuba 2 currently work/interact with polarization:
 * Linear polarizer (:ref:`polarizer <bsdf-polarizer>`)
 * Linear retarder (:ref:`retarder <bsdf-retarder>`)
 * Circular polarizer (:ref:`circular <bsdf-circular>`)
-* Null (:ref:`null <bsdf-null>`)
 * Polarized plastic from :cite:`Baek2018Simultaneous` (:ref:`pplastic <bsdf-pplastic>`)
 * Measured polarized to render pBRDFs measured as part of :cite:`Baek2020Image` (:ref:`measured_polarized <bsdf-measured_polarized>`)
 
