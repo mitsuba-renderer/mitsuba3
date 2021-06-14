@@ -160,6 +160,7 @@ We generally recommend compiling ``scalar`` variants for command line
 rendering, and ``packet`` or ``cuda_autodiff`` variants for Python
 development---the latter only if differentiable rendering is desired.
 
+.. _sec-variants-colors:
 Part 2: Color representation
 ----------------------------
 
