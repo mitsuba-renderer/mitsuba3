@@ -239,11 +239,8 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         active &= ek::neq(ds.pdf, 0.f);
 
         // Perform a visibility test if requested
-        if (test_visibility && ek::any_or<true>(active)) {
-            Ray3f ray(ref.p, ds.d, math::RayEpsilon<Float> * (1.f + ek::hmax(ek::abs(ref.p))),
-                      ds.dist * (1.f - math::ShadowEpsilon<Float>), ref.time, ref.wavelengths);
-            spec[ray_test(ray, active)] = 0.f;
-        }
+        if (test_visibility && ek::any_or<true>(active))
+            spec[ray_test(ref.spawn_ray_to(ds.p), active)] = 0.f;
     } else {
         ds = ek::zero<DirectionSample3f>();
         spec = 0.f;

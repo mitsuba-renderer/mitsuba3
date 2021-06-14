@@ -40,6 +40,9 @@ struct Interaction {
     /// Position of the interaction in world coordinates
     Point3f p;
 
+    /// Geometric normal (only valid for \c SurfaceInteraction)
+    Normal3f n;
+
     //! @}
     // =============================================================
 
@@ -48,8 +51,9 @@ struct Interaction {
     // =============================================================
 
     /// Constructor
-    Interaction(Float t, Float time, const Wavelength &w, const Point3f &p)
-        : t(t), time(time), wavelengths(w), p(p) { }
+    Interaction(Float t, Float time, const Wavelength &w, const Point3f &p,
+                const Normal3f &n = 0.f)
+        : t(t), time(time), wavelengths(w), p(p), n(n) {}
 
     /**
      * This callback method is invoked by ek::zero<>, and takes care of fields that deviate
@@ -67,24 +71,36 @@ struct Interaction {
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
-        return Ray3f(p, d, (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>,
+        return Ray3f(offset_p(d), d, 0.f,
                      ek::Largest<Float>, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
     Ray3f spawn_ray_to(const Point3f &t) const {
-        Vector3f d = t - p;
+        Point3f o = offset_p(t - p);
+        Vector3f d = t - o;
         Float dist = ek::norm(d);
         d /= dist;
-
-        return Ray3f(p, d, (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>,
-                     dist * (1.f - math::ShadowEpsilon<Float>), time, wavelengths);
+        return Ray3f(o, d, 0.f, dist * (1.f - math::ShadowEpsilon<Float>), time,
+                     wavelengths);
     }
 
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(Interaction, t, time, wavelengths, p);
+    ENOKI_STRUCT(Interaction, t, time, wavelengths, p, n);
+
+private:
+    /**
+     * Compute an offset position, used when spawning a ray from this
+     * interaction. When the interaction is on the surface of a shape, the
+     * position is offset along the surface normal to prevent self intersection.
+     */
+    Point3f offset_p(const Vector3f &d) const {
+        Float mag = (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>;
+        mag *= ek::select(ek::dot(n, d) >= 0.f, 1.f, -1.f);
+        return p + mag * n;
+    }
 };
 
 // -----------------------------------------------------------------------------
@@ -101,7 +117,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Spectrum = Spectrum_;
 
     // Make parent fields/functions visible
-    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, is_valid)
+    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
 
     MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
@@ -121,9 +137,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /// UV surface coordinates
     Point2f uv;
-
-    /// Geometric normal
-    Normal3f n;
 
     /// Shading frame
     Frame3f sh_frame;
@@ -162,7 +175,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     explicit SurfaceInteraction(const PositionSample3f &ps,
                                 const Wavelength &wavelengths)
-        : Base(0.f, ps.time, wavelengths, ps.p), uv(ps.uv), n(ps.n),
+        : Base(0.f, ps.time, wavelengths, ps.p, ps.n), uv(ps.uv),
           sh_frame(Frame3f(ps.n)) { }
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
@@ -392,7 +405,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     using Index = typename CoreAliases::UInt32;
 
     // Make parent fields/functions visible
-    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, is_valid)
+    MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
     //! @}
     // =============================================================
 
@@ -436,7 +449,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(MediumInteraction, t, time, wavelengths, p, medium,
+    ENOKI_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
                  sh_frame, wi, sigma_s, sigma_n, sigma_t,
                  combined_extinction, mint)
 };
