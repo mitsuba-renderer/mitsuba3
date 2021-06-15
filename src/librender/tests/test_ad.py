@@ -148,8 +148,8 @@ from mitsuba.python.autodiff import Adam, SGD
 
 @pytest.mark.parametrize("spp", [8])
 @pytest.mark.parametrize("res", [3])
-@pytest.mark.parametrize("unbiased", [False]) # TODO refactoring
-@pytest.mark.parametrize("opt_conf", [(SGD, [200.5, 0.9])])
+@pytest.mark.parametrize("unbiased", [False, True])
+@pytest.mark.parametrize("opt_conf", [(SGD, [250.0, 0.8])])
 def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, unbiased, opt_conf):
     from mitsuba.core import Float, Color3f
     from mitsuba.python.util import traverse

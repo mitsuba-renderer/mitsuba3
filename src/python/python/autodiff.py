@@ -175,7 +175,7 @@ def render(scene,
         When the scene contains more than one sensor/camera, this parameter
         can be specified to select the desired sensor.
     """
-    if unbiased: # TODO refactoring
+    if unbiased:
         if optimizer is None:
             raise Exception('render(): unbiased=True requires that an '
                             'optimizer is specified!')
@@ -187,7 +187,7 @@ def render(scene,
                                    sensor_index=sensor_index)
         image_diff = _render_helper(scene, spp=spp[1],
                                     sensor_index=sensor_index)
-        ek.replace_grad(image, image_diff)
+        image = ek.replace_grad(image, image_diff)
     else:
         if type(spp) is tuple:
             raise Exception('render(): unbiased=False requires that spp '
