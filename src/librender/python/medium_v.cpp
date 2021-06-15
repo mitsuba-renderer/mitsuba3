@@ -29,6 +29,10 @@ public:
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, Medium, to_string, );
     }
+
+    using Medium::m_sample_emitters;
+    using Medium::m_is_homogeneous;
+    using Medium::m_has_spectral_extinction;
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
@@ -84,6 +88,27 @@ MTS_PY_EXPORT(Medium) {
     auto medium = py::class_<Medium, PyMedium, Object, ref<Medium>>(m, "Medium", D(Medium))
             .def(py::init<const Properties &>())
             .def_method(Medium, id)
+            .def_property("m_sample_emitters",
+                [](PyMedium &medium){ return medium.m_sample_emitters; },
+                [](PyMedium &medium, bool value){
+                    medium.m_sample_emitters = value;
+                    ek::set_attr(&medium, "sample_emitters", value);
+                }
+            )
+            .def_property("m_is_homogeneous",
+                [](PyMedium &medium){ return medium.m_is_homogeneous; },
+                [](PyMedium &medium, bool value){
+                    medium.m_is_homogeneous = value;
+                    ek::set_attr(&medium, "is_homogeneous", value);
+                }
+            )
+            .def_property("m_has_spectral_extinction",
+                [](PyMedium &medium){ return medium.m_has_spectral_extinction; },
+                [](PyMedium &medium, bool value){
+                    medium.m_has_spectral_extinction = value;
+                    ek::set_attr(&medium, "has_spectral_extinction", value);
+                }
+            )
             .def("__repr__", &Medium::to_string);
 
     bind_medium_generic<Medium *>(medium);

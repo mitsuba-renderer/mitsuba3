@@ -43,6 +43,8 @@ public:
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, Emitter, to_string,);
     }
+
+    using Emitter::m_flags;
 };
 
 MTS_PY_EXPORT(Emitter) {
@@ -85,6 +87,13 @@ MTS_PY_EXPORT(Emitter) {
                 },
                 "si"_a, "active"_a = true, D(Endpoint, eval))
         .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
+        .def_property("m_flags",
+            [](PyEmitter &emitter){ return emitter.m_flags; },
+            [](PyEmitter &emitter, uint32_t flags){
+                emitter.m_flags = flags;
+                ek::set_attr(&emitter, "flags", flags);
+            }
+        )
         .def("is_environment",
              [](EmitterPtr ptr) { return ptr->is_environment(); },
              D(Emitter, is_environment));

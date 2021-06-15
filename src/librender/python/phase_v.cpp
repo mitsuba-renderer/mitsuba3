@@ -92,6 +92,13 @@ MTS_PY_EXPORT(PhaseFunction) {
             .def("flags", py::overload_cast<size_t, Mask>(&PhaseFunction::flags, py::const_),
                  "index"_a, "active"_a = true, D(PhaseFunction, flags, 2))
             .def_method(PhaseFunction, id)
+            .def_property("m_flags",
+                [](PyPhaseFunction &phase){ return phase.m_flags; },
+                [](PyPhaseFunction &phase, uint32_t flags){
+                    phase.m_flags = flags;
+                    ek::set_attr(&phase, "flags", flags);
+                }
+            )
             .def("__repr__", &PhaseFunction::to_string);
 
     bind_phase_generic<PhaseFunction *>(phase);
