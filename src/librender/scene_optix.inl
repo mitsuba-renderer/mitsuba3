@@ -232,6 +232,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        ek::sync_thread();
+
         if (m_shapes.empty())
             return;
 
