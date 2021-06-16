@@ -81,8 +81,11 @@ MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice d
         // Construct the BVH only once
         if (m_embree_scene == nullptr) {
             m_embree_scene = rtcNewScene(device);
-            for (auto shape : m_shapes)
-                rtcAttachGeometry(m_embree_scene, shape->embree_geometry(device));
+            for (auto shape : m_shapes) {
+                RTCGeometry geom = shape->embree_geometry(device);
+                rtcAttachGeometry(m_embree_scene, geom);
+                rtcReleaseGeometry(geom);
+            }
             rtcCommitScene(m_embree_scene);
         }
 
@@ -117,7 +120,7 @@ ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-#if defined(MTS_ENABLE_LLVM) || defined(MTS_ENABLE_CUDA)
+#if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_jit_array_v<Float>) {
         if (jit_flag(JitFlag::VCallRecord) || jit_flag(JitFlag::LoopRecord))
             Throw(

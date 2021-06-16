@@ -39,13 +39,13 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     }
 
     Timer timer;
-    RTCScene embree_scene = rtcNewScene(__embree_device);
-    rtcSetSceneBuildQuality(embree_scene, RTC_BUILD_QUALITY_HIGH);
-    rtcSetSceneFlags(embree_scene, RTC_SCENE_FLAG_NONE);
 
     m_accel = new EmbreeState<Float>();
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
-    s.accel = embree_scene;
+
+    s.accel = rtcNewScene(__embree_device);
+    rtcSetSceneBuildQuality(s.accel, RTC_BUILD_QUALITY_HIGH);
+    rtcSetSceneFlags(s.accel, RTC_SCENE_FLAG_NONE);
 
     ScopedPhase phase(ProfilerPhase::InitAccel);
     accel_parameters_changed_cpu();
@@ -64,14 +64,19 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
+    if constexpr (ek::is_llvm_array_v<Float>)
+        ek::sync_thread();
+
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
     for (int geo : s.geometries)
         rtcDetachGeometry(s.accel, geo);
     s.geometries.clear();
 
-    for (Shape *shape : m_shapes)
-        s.geometries.push_back(rtcAttachGeometry(
-            s.accel, shape->embree_geometry(__embree_device)));
+    for (Shape *shape : m_shapes) {
+        RTCGeometry geom = shape->embree_geometry(__embree_device);
+        s.geometries.push_back(rtcAttachGeometry(s.accel, geom));
+        rtcReleaseGeometry(geom);
+    }
 
     ek::parallel_for(
         ek::blocked_range<size_t>(0, pool_size(), 1),
@@ -83,7 +88,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     EmbreeState<Float> *s = (EmbreeState<Float> *) m_accel;
-    rtcReleaseScene((RTCScene) s->accel);
+    rtcReleaseScene(s->accel);
     delete s;
     m_accel = nullptr;
 }
