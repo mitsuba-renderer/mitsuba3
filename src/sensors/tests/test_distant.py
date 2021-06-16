@@ -80,7 +80,6 @@ def test_construct(variant_scalar_rgb):
         sensor = make_sensor(sensor_dict(direction=direction))
         result = sensor.world_transform().matrix
         assert ek.allclose(result, expected)
-        # Couldn't get ek.allclose() to work here
 
     # Test different combinations of target and origin values
     # -- No target
@@ -310,6 +309,31 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     assert np.allclose(result, expected_value, rtol=rtol_value)
 
 
+def test_sample_direction(variants_vec_rgb):
+    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core import ScalarVector3f
+
+    direction = ScalarVector3f([1, 1, 1])
+    sensor = make_sensor(sensor_dict(direction=direction))
+
+    it = ek.zero(SurfaceInteraction3f, 3)
+    # Some positions inside the unit sphere
+    it.p = [[-0.5, 0.3, -0.1], [0.8, -0.3, -0.2], [-0.2, 0.6, -0.6]]
+    it.time = 1.0
+
+    # Sample sensor direction
+    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
+    ds, res = sensor.sample_direction(it, samples)
+
+    assert ek.allclose(ds.pdf, 1.0)
+    assert ek.allclose(ds.d, -ek.normalize(direction))
+    assert ek.allclose(sensor.pdf_direction(it, ds), 0.0)
+    assert ek.allclose(ds.time, it.time)
+
+    # Check spectrum
+    assert ek.allclose(res, 1.0)
+
+
 def test_checkerboard(variants_all_rgb):
     """
     Very basic render test with checkerboard texture and square target.
@@ -317,7 +341,7 @@ def test_checkerboard(variants_all_rgb):
     from mitsuba.core import ScalarTransform4f
     from mitsuba.core.xml import load_dict
 
-    l_o = 1.0
+    l_e = 1.0  # Emitted radiance
     rho0 = 0.5
     rho1 = 1.0
 
@@ -339,7 +363,7 @@ def test_checkerboard(variants_all_rgb):
         "emitter": {
             "type": "directional",
             "direction": [0, 0, -1],
-            "irradiance": 1.0
+            "irradiance": l_e
         },
         "sensor0": {
             "type": "distant",
@@ -386,5 +410,5 @@ def test_checkerboard(variants_all_rgb):
     scene = load_dict(scene_dict)
     data = np.array(scene.render())
 
-    expected = l_o * 0.5 * (rho0 + rho1) / ek.Pi
+    expected = l_e * 0.5 * (rho0 + rho1) / ek.Pi
     assert np.allclose(data, expected, atol=1e-3)
