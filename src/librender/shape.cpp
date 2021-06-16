@@ -511,11 +511,19 @@ MTS_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *callback) {
 
 MTS_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
-    ek::make_opaque(m_to_world, m_to_object);
-    if (m_emitter)
-        m_emitter->parameters_changed({"parent"});
-    if (m_sensor)
-        m_sensor->parameters_changed({"parent"});
+    if (dirty()) {
+        ek::make_opaque(m_to_world, m_to_object);
+
+        if (m_emitter)
+            m_emitter->parameters_changed({"parent"});
+        if (m_sensor)
+            m_sensor->parameters_changed({"parent"});
+
+#if defined(MTS_ENABLE_CUDA)
+        if constexpr (ek::is_cuda_array_v<Float>)
+            optix_prepare_geometry();
+#endif
+    }
 }
 
 MTS_VARIANT bool Shape<Float, Spectrum>::parameters_grad_enabled() const {

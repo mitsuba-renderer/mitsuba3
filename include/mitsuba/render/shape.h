@@ -523,6 +523,15 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
+    /// Return whether the shape's geometry has changed
+    bool dirty() const { return m_dirty; }
+
+    /// Mark that the shape's geometry has changed
+    void mark_dirty() { m_dirty = true; }
+
+    /// The \c Scene class needs access to \c Shape::m_dirty
+    friend class Scene<Float, Spectrum>;
+
     /// Return whether any shape's parameters require gradients (default return false)
     virtual bool parameters_grad_enabled() const;
 
@@ -554,6 +563,10 @@ protected:
     /// OptiX hitgroup data buffer
     void* m_optix_data_ptr = nullptr;
 #endif
+
+private:
+    /// True if the shape's geometry has changed
+    bool m_dirty;
 };
 
 MTS_EXTERN_CLASS_RENDER(Shape)

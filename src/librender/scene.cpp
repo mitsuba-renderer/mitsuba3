@@ -266,19 +266,17 @@ MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {
     }
 }
 
-MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
+MTS_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (m_environment)
         m_environment->set_scene(this); // TODO use parameters_changed({"scene"})
 
-    bool update_accel = false;
+    bool accel_is_dirty = false;
     for (auto &s : m_shapes) {
-        if (string::contains(keys, s->id()) || string::contains(keys, s->class_()->name())) {
-            update_accel = true;
-            break;
-        }
+        accel_is_dirty |= s->dirty();
+        s->m_dirty = false;
     }
 
-    if (update_accel) {
+    if (accel_is_dirty) {
         if constexpr (ek::is_cuda_array_v<Float>)
             accel_parameters_changed_gpu();
         else

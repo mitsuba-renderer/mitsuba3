@@ -87,7 +87,7 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize,
+    MTS_IMPORT_BASE(Shape, m_to_world, m_to_object, initialize, mark_dirty,
                     get_children_string, parameters_grad_enabled)
     MTS_IMPORT_TYPES()
 
@@ -133,6 +133,7 @@ public:
         m_inv_surface_area = ek::rcp(surface_area());
 
         ek::make_opaque(m_radius, m_center, m_inv_surface_area);
+        mark_dirty();
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -458,12 +459,10 @@ public:
         Base::traverse(callback);
     }
 
-    void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        update();
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        if (keys.empty() || string::contains(keys, "to_world"))
+            update();
         Base::parameters_changed();
-#if defined(MTS_ENABLE_CUDA)
-        optix_prepare_geometry();
-#endif
     }
 
 #if defined(MTS_ENABLE_CUDA)

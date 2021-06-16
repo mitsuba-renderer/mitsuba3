@@ -51,6 +51,7 @@ void Mesh<Float, Spectrum>::initialize() {
     m_vertex_positions_ptr = m_vertex_positions.data();
     m_faces_ptr = m_faces.data();
 #endif
+    mark_dirty();
     Base::initialize();
 }
 
@@ -907,9 +908,9 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
         m_vertex_positions_ptr = m_vertex_positions.data();
         m_faces_ptr = m_faces.data();
 #endif
-
-        Base::parameters_changed();
+        mark_dirty();
     }
+    Base::parameters_changed();
 }
 
 MTS_VARIANT void Mesh<Float, Spectrum>::set_grad_suspended(bool state) {

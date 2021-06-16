@@ -17,7 +17,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Mesh : public Shape<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES()
-    MTS_IMPORT_BASE(Shape, m_to_world)
+    MTS_IMPORT_BASE(Shape, m_to_world, mark_dirty)
 
     // Mesh is always stored in single precision
     using InputFloat = float;
