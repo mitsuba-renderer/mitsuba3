@@ -45,7 +45,7 @@ MTS_PY_EXPORT(Bitmap) {
             "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, "channel_names"_a = std::vector<std::string>(),
             D(Bitmap, Bitmap))
 
-        .def(py::init([](py::array obj, py::object pixel_format_) {
+        .def(py::init([](py::array obj, py::object pixel_format_, const std::vector<std::string> &channel_names) {
             Struct::Type component_format = obj.dtype().cast<Struct::Type>();
             if (obj.ndim() != 2 && obj.ndim() != 3)
                 throw py::type_error("Expected an array of size 2 or 3");
@@ -68,10 +68,10 @@ MTS_PY_EXPORT(Bitmap) {
 
             obj = py::array::ensure(obj, py::array::c_style);
             Vector2u size(obj.shape()[1], obj.shape()[0]);
-            auto bitmap = new Bitmap(pixel_format, component_format, size, channel_count);
+            auto bitmap = new Bitmap(pixel_format, component_format, size, channel_count, channel_names);
             memcpy(bitmap->data(), obj.data(), bitmap->buffer_size());
             return bitmap;
-        }), "array"_a, "pixel_format"_a = py::none(), "Initialize a Bitmap from a NumPy array")
+        }), "array"_a, "pixel_format"_a = py::none(), "channel_names"_a = std::vector<std::string>(), "Initialize a Bitmap from a NumPy array")
         .def(py::init<const Bitmap &>())
         .def_method(Bitmap, pixel_format)
         .def_method(Bitmap, component_format)
