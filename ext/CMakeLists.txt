@@ -113,7 +113,7 @@ if (MTS_ENABLE_EMBREE)
   endif()
 
   set_property(TARGET
-    algorithms lexers math simd sys tasking embree ${EMBREE_TARGET}
+    lexers math simd sys tasking embree ${EMBREE_TARGET}
     PROPERTY FOLDER "dependencies/embree")
 endif()
 
