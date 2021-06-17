@@ -85,7 +85,7 @@ using :monosp:`matplotlib`:
 
 This creates the following visualization:
 
-.. image:: ../../images/bsdf_eval.jpg
+.. image:: ../../../resources/data/docs/images/misc/bsdf_eval.jpg
     :width: 90%
     :align: center
 

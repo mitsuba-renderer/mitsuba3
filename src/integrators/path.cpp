@@ -41,7 +41,7 @@ the first visible intersection. A new direction is then chosen at the intersecti
 and the ray-casting step repeats over and over again (until one of several
 stopping criteria applies).
 
-.. image:: ../images/integrator_path_figure.png
+.. image:: ../../resources/data/docs/images/integrator/integrator_path_figure.png
     :width: 95%
     :align: center
 

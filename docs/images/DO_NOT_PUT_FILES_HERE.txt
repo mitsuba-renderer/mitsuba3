@@ -1,0 +1,2 @@
+This directory is just meant for the logo and images that are directly referenced by README.md.
+Any other images, figures, animations, etc. should go to '/resources/data/docs', which is a separate Git submodule that can be checked out sparsely. The goal is to avoid costly clones caused by old files appearing somewhere in the history.

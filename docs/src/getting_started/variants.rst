@@ -67,7 +67,7 @@ restrict themselves to 1-2 variants used by their current experiment to
 minimize edit-recompile times. Each variant is associated with an identifying
 name that is composed of several parts:
 
-.. image:: ../../images/variant.svg
+.. image:: ../../../resources/data/docs/images/variants/variant.svg
     :width: 80%
     :align: center
 

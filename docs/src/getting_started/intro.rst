@@ -1,7 +1,7 @@
 Getting started
 ===============
 
-.. image:: ../../images/features.svg
+.. image:: ../../../resources/data/docs/images/misc/features.svg
     :width: 100%
     :align: center
 
