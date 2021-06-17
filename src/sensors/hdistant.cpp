@@ -213,7 +213,7 @@ public:
         Spectrum ray_weight = 0.f;
 
         // Sample ray direction
-        ray.d = m_to_world.value().transform_affine(
+        ray.d = -m_to_world.value().transform_affine(
             warp::square_to_uniform_hemisphere(film_sample)
         );
 
