@@ -12,13 +12,13 @@ NAMESPACE_BEGIN(mitsuba)
 
 enum class RayTargetType { Shape, Point, None };
 
-// Forward declaration of specialized DistantSensor
+// Forward declaration of specialized HemisphericalDistantSensor
 template <typename Float, typename Spectrum, RayTargetType TargetType>
 class HemisphericalDistantSensorImpl;
 
 /**!
 
-.. _sensor-distant:
+.. _sensor-hdistant:
 
 Hemispherical distant radiancemeter sensor (:monosp:`hdistant`)
 ---------------------------------------------------------------
