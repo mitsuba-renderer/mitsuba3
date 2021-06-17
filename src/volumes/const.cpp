@@ -63,6 +63,8 @@ public:
 
     ScalarFloat max() const override { NotImplementedError("max"); }
 
+    bool is_spatially_varying() const override { return false; }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_object("value", m_value.get());
     }

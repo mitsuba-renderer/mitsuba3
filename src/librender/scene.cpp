@@ -30,6 +30,8 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
         if (shape) {
             if (shape->is_emitter())
                 m_emitters.push_back(shape->emitter());
+            if (shape->is_volume_emitter())
+                m_emitters.push_back(shape->volume_emitter());
             if (shape->is_sensor())
                 m_sensors.push_back(shape->sensor());
             if (shape->is_shapegroup()) {

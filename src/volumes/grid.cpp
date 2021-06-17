@@ -468,6 +468,7 @@ public:
 
     ScalarFloat max() const override { return m_max; }
     ScalarVector3i resolution() const override { return m_resolution; };
+    bool is_spatially_varying() const override { return true; }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);

@@ -261,10 +261,25 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
         if (is_valid())
             return shape->emitter(active);
         else
-            return scene->environment();
+            return nullptr;
     } else {
         Mask valid = is_valid();
         return ek::select(valid, shape->emitter(active && valid), scene->environment());
+    }
+}
+
+// See interaction.h
+template <typename Float, typename Spectrum>
+typename MediumInteraction<Float, Spectrum>::EmitterPtr
+MediumInteraction<Float, Spectrum>::emitter(const Scene * /*scene*/, Mask active) const {
+    if constexpr (!ek::is_array_v<ShapePtr>) {
+        if (is_valid())
+            return medium->emitter(active);
+        else
+            return nullptr;
+    } else {
+        Mask valid = is_valid();
+        return ek::select(valid, medium->emitter(active && valid), nullptr);
     }
 }
 

@@ -26,6 +26,7 @@ struct PositionSample {
     using Spectrum = Spectrum_;
     MTS_IMPORT_RENDER_BASIC_TYPES()
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
+    using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;
 
     //! @}
     // =============================================================
@@ -77,6 +78,17 @@ struct PositionSample {
         : p(si.p), n(si.sh_frame.n), uv(si.uv), time(si.time), pdf(0.f),
           delta(false) { }
 
+    /**
+     * \brief Create a position sampling record from a medium intersection
+     *
+     * This is useful to determine the hypothetical sampling density in a
+     * medium after hitting it using standard ray tracing. This happens for
+     * instance in path tracing with multiple importance sampling.
+     */
+    PositionSample(const MediumInteraction3f &mi)
+        : p(mi.p), n(mi.sh_frame.n), uv(mi.mint, mi.maxt), time(mi.time), pdf(0.f),
+          delta(false) { }
+
     /// Basic field constructor
     PositionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                    Float time, Float pdf, Mask delta)
@@ -119,6 +131,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
 
     using Interaction3f        = typename RenderAliases::Interaction3f;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
+    using MediumInteraction3f  = typename RenderAliases::MediumInteraction3f;
     using EmitterPtr           = typename RenderAliases::EmitterPtr;
 
     //! @}
@@ -172,6 +185,35 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      */
     DirectionSample(const Scene<Float, Spectrum> *scene,
                     const SurfaceInteraction3f &it,
+                    const Interaction3f &ref) : Base(it) {
+        Vector3f rel = it.p - ref.p;
+        Mask valid = it.is_valid();
+        dist = ek::norm(rel);
+        d    = select(valid, rel / dist, -it.wi);
+        emitter = it.emitter(scene, valid);
+    }
+
+    /**
+     * \brief Create a direct sampling record, which can be used to \a query
+     * the density of a medium position with respect to a given reference
+     * position.
+     *
+     * Direction `s` is set so that it points from the reference surface to
+     * the medium point, as required when using e.g. the \ref Endpoint
+     * interface to compute PDF values.
+     *
+     * \param scene
+     *     Pointer to the scene, which is needed to extract information
+     *     about the environment emitter (if applicable)
+     *
+     * \param it
+     *     Medium interaction
+     *
+     * \param ref
+     *     Reference position
+     */
+    DirectionSample(const Scene<Float, Spectrum> *scene,
+                    const MediumInteraction3f &it,
                     const Interaction3f &ref) : Base(it) {
         Vector3f rel = it.p - ref.p;
         Mask valid = it.is_valid();

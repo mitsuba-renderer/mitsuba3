@@ -402,6 +402,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Index = typename CoreAliases::UInt32;
+    using PositionSample3f = typename RenderAliases::PositionSample3f;
 
     // Make parent fields/functions visible
     MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
@@ -424,8 +425,8 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, radiance, combined_extinction;
 
-    /// mint used when sampling the given distance "t".
-    Float mint;
+    /// mint and maxt used when sampling the given distance "t".
+    Float mint, maxt;
 
     //! @}
     // =============================================================
@@ -433,6 +434,18 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Methods
     // =============================================================
+
+    /**
+     * Construct from a position sample.
+     * Unavailable fields such as `wi` and the partial derivatives are left
+     * uninitialized.
+     * The `shape` pointer is left uninitialized because we can't guarantee that
+     * the given \ref PositionSample::object points to a Shape instance.
+     */
+    explicit MediumInteraction(const PositionSample3f &ps,
+                            const Wavelength &wavelengths)
+        : Base(0.f, ps.time, wavelengths, ps.p, ps.n),
+          sh_frame(Frame3f(ps.n)) { }
 
 
     /// Convert a local shading-space vector into world space
@@ -444,6 +457,12 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     Vector3f to_local(const Vector3f &v) const {
         return sh_frame.to_local(v);
     }
+
+    /**
+     * Return the emitter associated with the intersection (if any)
+     * \note Defined in scene.h
+     */
+    EmitterPtr emitter(const Scene *scene, Mask active = true) const;
 
     //! @}
     // =============================================================

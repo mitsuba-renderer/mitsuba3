@@ -47,6 +47,9 @@ public:
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
+    /// Does this volume evaluation depend on the 3d coordinates
+    virtual bool is_spatially_varying() const { return false; }
+
     /**
      * \brief Returns the resolution of the volume, assuming that it is based
      * on a discrete representation.

@@ -18,8 +18,10 @@ MTS_PY_EXPORT(Endpoint) {
             "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
         .def("pdf_direction", &Endpoint::pdf_direction,
             "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
-        .def("eval", &Endpoint::eval,
-            "si"_a, "active"_a = true, D(Endpoint, eval))
+        .def("eval", py::overload_cast<const SurfaceInteraction3f&, Mask>(&Endpoint::eval, py::const_),
+            "it"_a, "active"_a = true, D(Endpoint, eval))
+        .def("eval", py::overload_cast<const MediumInteraction3f&, Mask>(&Endpoint::eval, py::const_),
+            "it"_a, "active"_a = true, D(Endpoint, eval))
         .def_method(Endpoint, world_transform)
         .def_method(Endpoint, needs_sample_2)
         .def_method(Endpoint, needs_sample_3)

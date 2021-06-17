@@ -62,7 +62,12 @@ MTS_VARIANT Float Endpoint<Float, Spectrum>::pdf_direction(const Interaction3f &
 
 MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f & /*si*/,
                                                      Mask /*active*/) const {
-    NotImplementedError("eval");
+    NotImplementedError("eval[SurfaceInteraction3f]");
+}
+
+MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const MediumInteraction3f & /*si*/,
+                                                     Mask /*active*/) const {
+    NotImplementedError("eval[MediumInteraction3f]");
 }
 
 MTS_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)

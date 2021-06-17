@@ -111,14 +111,13 @@ template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function)
+                    m_phase_function, m_emitter)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
         m_albedo = props.volume<Volume>("albedo", 0.75f);
         m_sigmat = props.volume<Volume>("sigma_t", 1.f);
-        m_radiance = props.volume<Volume>("radiance", 0.f);
 
         m_scale = props.float_("scale", 1.0f);
         m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
@@ -140,7 +139,11 @@ public:
     get_radiance(const MediumInteraction3f & mi ,
                  Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return m_radiance->eval(mi, active);
+        if (m_emitter) {
+            return m_emitter->eval(mi, active);
+        } else {
+            return 0.f;
+        }
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
@@ -170,7 +173,8 @@ public:
         callback->put_parameter("scale", m_scale);
         callback->put_object("albedo", m_albedo.get());
         callback->put_object("sigma_t", m_sigmat.get());
-        callback->put_object("radiance", m_radiance.get());
+        if (m_emitter)
+            callback->put_object("emitter", m_emitter.get());
         Base::traverse(callback);
     }
 
@@ -178,16 +182,17 @@ public:
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
             << "  albedo   = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t  = " << string::indent(m_sigmat) << std::endl
-            << "  radiance = " << string::indent(m_radiance) << std::endl
-            << "  scale    = " << string::indent(m_scale) << std::endl
+            << "  sigma_t  = " << string::indent(m_sigmat) << std::endl;
+        if (m_emitter)
+            oss << "  emitter  = " << string::indent(m_emitter) << std::endl;
+        oss << "  scale    = " << string::indent(m_scale) << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 private:
-    ref<Volume> m_sigmat, m_albedo, m_radiance;
+    ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
 
     ScalarFloat m_max_density;

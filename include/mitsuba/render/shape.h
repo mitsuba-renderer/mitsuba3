@@ -403,11 +403,38 @@ public:
     /// Is this shape also an area emitter?
     bool is_emitter() const { return (bool) m_emitter; }
 
+    /// Is this shape also a volume emitter?
+    bool is_volume_emitter() const { 
+        if (m_interior_medium.get() != nullptr) {
+            return (bool) m_interior_medium.get()->is_emitter();
+        } else {
+            return false;
+        }
+    }
+
     /// Return the area emitter associated with this shape (if any)
     const Emitter *emitter(Mask /*unused*/ = true) const { return m_emitter.get(); }
 
     /// Return the area emitter associated with this shape (if any)
     Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
+
+    /// Return the area emitter associated with this shape (if any)
+    const Emitter *volume_emitter(Mask /*unused*/ = true) const { 
+        if (m_interior_medium.get() != nullptr) {
+            return m_interior_medium.get()->emitter();
+        } else {
+            return nullptr;
+        }
+    }
+
+    /// Return the area emitter associated with this shape (if any)
+    Emitter *volume_emitter(Mask /*unused*/ = true) { 
+        if (m_interior_medium.get() != nullptr) {
+            return m_interior_medium.get()->emitter();
+        } else {
+            return nullptr;
+        }
+    }
 
     /// Is this shape also an area sensor?
     bool is_sensor() const { return (bool) m_sensor; }

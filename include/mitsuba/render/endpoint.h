@@ -161,7 +161,25 @@ public:
      * \return
      *    The emitted radiance or importance
      */
+
     virtual Spectrum eval(const SurfaceInteraction3f &si, Mask active = true) const;
+    /**
+     * \brief Given a ray-medium intersection, return the emitted
+     * radiance or importance traveling along the reverse direction
+     *
+     * This function is e.g. used when a volume light source has been hit by a
+     * ray in a path tracing-style integrator, and it subsequently needs to be
+     * queried for the emitted radiance along the negative ray direction. The
+     * default implementation throws an exception, which states that the method
+     * is not implemented.
+     *
+     * \param mi
+     *    An intersect record that specfies both the query position
+     *    and direction (using the <tt>si.wi</tt> field)
+     * \return
+     *    The emitted radiance or importance
+     */
+    virtual Spectrum eval(const MediumInteraction3f &mi, Mask active = true) const;
 
 
     /// Return the local space to world space transformation
