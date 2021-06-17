@@ -264,13 +264,13 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HemisphericalDistantSensor[" << std::endl
-            << "  to_world = " << m_to_world << "," << std::endl
-            << "  film = " << m_film << "," << std::endl;
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  film = " << string::indent(m_film) << "," << std::endl;
 
         if constexpr (TargetType == RayTargetType::Point)
             oss << "  target = " << m_target_point << std::endl;
         else if constexpr (TargetType == RayTargetType::Shape)
-            oss << "  target = " << m_target_shape << std::endl;
+            oss << "  target = " << string::indent(m_target_shape) << std::endl;
         else // if constexpr (TargetType == RayTargetType::None)
             oss << "  target = none" << std::endl;
 
