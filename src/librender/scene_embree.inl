@@ -129,7 +129,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         rh.ray.dir_x = (float) ray.d.x();
         rh.ray.dir_y = (float) ray.d.y();
         rh.ray.dir_z = (float) ray.d.z();
-        rh.ray.tnear = (float) ray.mint;
+        rh.ray.tnear = (float) 0.f;
         rh.ray.tfar  = (float) ray.maxt;
         rh.ray.time  = (float) ray.time;
 
@@ -182,7 +182,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
         uint32_t in[13] = { valid.index(),      ray_o.x().index(),
                             ray_o.y().index(),  ray_o.z().index(),
@@ -262,7 +262,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         ray2.dir_x = (float) ray.d.x();
         ray2.dir_y = (float) ray.d.y();
         ray2.dir_z = (float) ray.d.z();
-        ray2.tnear = (float) ray.mint;
+        ray2.tnear = (float) 0.f;
         ray2.tfar  = (float) ray.maxt;
         ray2.time  = (float) ray.time;
 
@@ -293,7 +293,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         // Conversion, in case this is a double precision build
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
 
         uint32_t in[13] = { valid.index(),      ray_o.x().index(),
                             ray_o.y().index(),  ray_o.z().index(),

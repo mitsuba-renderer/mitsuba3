@@ -156,7 +156,7 @@ public:
         Point<FloatP, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
-        active = active && t >= ray.mint
+        active = active && t >= 0.f
                         && t <= ray.maxt
                         && ek::abs(local.x()) <= 1.f
                         && ek::abs(local.y()) <= 1.f;
@@ -181,7 +181,7 @@ public:
         Point<FloatP, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
-        return active && t >= ray.mint
+        return active && t >= 0.f
                       && t <= ray.maxt
                       && ek::abs(local.x()) <= 1.f
                       && ek::abs(local.y()) <= 1.f;

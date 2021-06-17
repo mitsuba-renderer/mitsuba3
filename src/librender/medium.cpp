@@ -52,7 +52,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint = ek::max(ray.mint, mint);
+    mint = ek::max(0.f, mint);
     maxt = ek::min(ray.maxt, maxt);
 
     auto combined_extinction = get_combined_extinction(mi, active);

@@ -230,7 +230,7 @@ public:
         active &= v >= 0.f && u + v <= 1.f;
 
         T t = ek::dot(e2, qvec) * inv_det;
-        active &= t >= ray.mint && t <= ray.maxt;
+        active &= t >= 0.f && t <= ray.maxt;
 
         return { ek::select(active, t, ek::Infinity<T>), { u, v } };
     }

@@ -162,8 +162,7 @@ public:
         Point<FloatP, 3> local = ray(t);
 
         // Is intersection within ray segment and disk?
-        active = active && t >= ray.mint
-                        && t <= ray.maxt
+        active = active && t >= 0.f && t <= ray.maxt
                         && local.x() * local.x() + local.y() * local.y() <= 1.f;
 
         return { ek::select(active, t, ek::Infinity<FloatP>),
@@ -186,8 +185,7 @@ public:
         Point<FloatP, 3> local = ray(t);
 
         // Is intersection within ray segment and rectangle?
-        return active && t >= ray.mint
-                      && t <= ray.maxt
+        return active && t >= 0.f && t <= ray.maxt
                       && local.x() * local.x() + local.y() * local.y() <= 1.f;
     }
 

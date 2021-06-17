@@ -137,10 +137,11 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray, uint32_t
 
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
+        Float ray_mint = ek::zero<Float>();
 
         uint32_t in[13] = { valid.index(),      ray.o.x().index(),
                             ray.o.y().index(),  ray.o.z().index(),
-                            ray.mint.index(),   ray.d.x().index(),
+                            ray_mint.index(),   ray.d.x().index(),
                             ray.d.y().index(),  ray.d.z().index(),
                             ray.time.index(),   ray.maxt.index(),
                             zero.index(),       zero.index(),
@@ -220,10 +221,11 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t /*hit_flags*/, M
 
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
+        Float ray_mint = ek::zero<Float>();
 
         uint32_t in[13] = { valid.index(),      ray.o.x().index(),
                             ray.o.y().index(),  ray.o.z().index(),
-                            ray.mint.index(),   ray.d.x().index(),
+                            ray_mint.index(),   ray.d.x().index(),
                             ray.d.y().index(),  ray.d.z().index(),
                             ray.time.index(),   ray.maxt.index(),
                             zero.index(),       zero.index(),

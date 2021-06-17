@@ -179,7 +179,6 @@ public:
 
             if (ek::any_or<true>(act_null_scatter)) {
                 ek::masked(ray.o, act_null_scatter) = mi.p;
-                ek::masked(ray.mint, act_null_scatter) = 0.f;
                 ek::masked(si.t, act_null_scatter) = si.t - mi.t;
             }
 
@@ -201,7 +200,7 @@ public:
 
                 Mask active_e = act_medium_scatter && sample_emitters;
                 if (ek::any_or<true>(active_e)) {
-                    auto [emitted, ds] = sample_emitter(mi, true, scene, sampler, medium, channel, active_e);
+                    auto [emitted, ds] = sample_emitter(mi, scene, sampler, medium, channel, active_e);
                     Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
                     ek::masked(result, active_e) += throughput * phase_val * emitted * mis_weight(ds.pdf, phase_val);
                 }
@@ -213,7 +212,6 @@ public:
                     sampler->next_2d(act_medium_scatter),
                     act_medium_scatter);
                 Ray3f new_ray  = mi.spawn_ray(wo);
-                new_ray.mint = 0.0f;
                 ek::masked(ray, act_medium_scatter) = new_ray;
                 needs_intersection |= act_medium_scatter;
                 ek::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
@@ -253,7 +251,7 @@ public:
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
                 if (likely(ek::any_or<true>(active_e))) {
-                    auto [emitted, ds] = sample_emitter(si, false, scene, sampler, medium, channel, active_e);
+                    auto [emitted, ds] = sample_emitter(si, scene, sampler, medium, channel, active_e);
 
                     // Query the BSDF for that emitter-sampled direction
                     Vector3f wo       = si.to_local(ds.d);
@@ -300,8 +298,9 @@ public:
 
     /// Samples an emitter in the scene and evaluates it's attenuated contribution
     std::tuple<Spectrum, DirectionSample3f>
-    sample_emitter(const Interaction3f &ref_interaction, Mask is_medium_interaction, const Scene *scene,
-                          Sampler *sampler, MediumPtr medium, UInt32 channel, Mask active) const {
+    sample_emitter(const Interaction3f &ref_interaction, const Scene *scene,
+                   Sampler *sampler, MediumPtr medium, UInt32 channel,
+                   Mask active) const {
         using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         Spectrum transmittance(1.0f);
 
@@ -314,7 +313,6 @@ public:
         }
 
         Ray3f ray = ref_interaction.spawn_ray(ds.d);
-        ek::masked(ray.mint, is_medium_interaction) = 0.f;
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
@@ -363,7 +361,6 @@ public:
 
                 if (ek::any_or<true>(active_medium)) {
                     ek::masked(ray.o, active_medium)    = mi.p;
-                    ek::masked(ray.mint, active_medium) = 0.f;
                     ek::masked(si.t, active_medium) = si.t - mi.t;
 
                     if (ek::any_or<true>(is_spectral))
@@ -405,7 +402,6 @@ public:
         }
         return { transmittance * emitter_val, ds };
     }
-
 
     //! @}
     // =============================================================

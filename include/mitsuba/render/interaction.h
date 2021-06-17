@@ -71,8 +71,7 @@ struct Interaction {
 
     /// Spawn a semi-infinite ray towards the given direction
     Ray3f spawn_ray(const Vector3f &d) const {
-        return Ray3f(offset_p(d), d, 0.f,
-                     ek::Largest<Float>, time, wavelengths);
+        return Ray3f(offset_p(d), d, ek::Largest<Float>, time, wavelengths);
     }
 
     /// Spawn a finite ray towards the given position
@@ -81,7 +80,7 @@ struct Interaction {
         Vector3f d = t - o;
         Float dist = ek::norm(d);
         d /= dist;
-        return Ray3f(o, d, 0.f, dist * (1.f - math::ShadowEpsilon<Float>), time,
+        return Ray3f(o, d, dist * (1.f - math::ShadowEpsilon<Float>), time,
                      wavelengths);
     }
 

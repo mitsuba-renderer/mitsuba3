@@ -229,7 +229,6 @@ public:
                     }
 
                     ek::masked(ray.o, act_null_scatter) = mi.p;
-                    ek::masked(ray.mint, act_null_scatter) = 0.f;
                     ek::masked(si.t, act_null_scatter) = si.t - mi.t;
                 }
 
@@ -246,7 +245,9 @@ public:
                     valid_ray |= act_medium_scatter;
                     Mask active_e = act_medium_scatter && sample_emitters;
                     if (ek::any_or<true>(active_e)) {
-                        auto [p_over_f_nee_end, p_over_f_end, emitted, ds] = sample_emitter(mi, true, scene, sampler, medium, p_over_f, channel, active_e);
+                        auto [p_over_f_nee_end, p_over_f_end, emitted, ds] =
+                            sample_emitter(mi, scene, sampler, medium, p_over_f,
+                                           channel, active_e);
                         Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
                         update_weights(p_over_f_nee_end, 1.0f, phase_val, channel, active_e);
                         update_weights(p_over_f_end, ek::select(ds.delta, 0.f, phase_val), phase_val, channel, active_e);
@@ -263,7 +264,6 @@ public:
                         sampler->next_2d(act_medium_scatter),
                         act_medium_scatter);
                     Ray3f new_ray  = mi.spawn_ray(wo);
-                    new_ray.mint = 0.0f;
                     ek::masked(ray, act_medium_scatter) = new_ray;
                     needs_intersection |= act_medium_scatter;
 
@@ -308,7 +308,7 @@ public:
                 BSDFPtr bsdf  = si.bsdf(ray);
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
                 if (likely(ek::any_or<true>(active_e))) {
-                    auto [p_over_f_nee_end, p_over_f_end, emitted, ds] = sample_emitter(si, false, scene, sampler, medium, p_over_f, channel, active_e);
+                    auto [p_over_f_nee_end, p_over_f_end, emitted, ds] = sample_emitter(si, scene, sampler, medium, p_over_f, channel, active_e);
                     Vector3f wo_local       = si.to_local(ds.d);
                     Spectrum bsdf_val = bsdf->eval(ctx, si, wo_local, active_e);
                     Float bsdf_pdf =  bsdf->pdf(ctx, si, wo_local, active_e);
@@ -349,9 +349,11 @@ public:
         return { result, valid_ray };
     }
 
-
-    std::tuple<WeightMatrix, WeightMatrix, Spectrum, DirectionSample3f> sample_emitter(const Interaction3f &ref_interaction, Mask is_medium_interaction,
-                const Scene *scene, Sampler *sampler,  MediumPtr medium, const WeightMatrix &p_over_f, UInt32 channel, Mask active) const {
+    std::tuple<WeightMatrix, WeightMatrix, Spectrum, DirectionSample3f>
+    sample_emitter(const Interaction3f &ref_interaction, const Scene *scene,
+                   Sampler *sampler, MediumPtr medium,
+                   const WeightMatrix &p_over_f, UInt32 channel,
+                   Mask active) const {
         using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
 
@@ -366,7 +368,6 @@ public:
         }
 
         Ray3f ray = ref_interaction.spawn_ray(ds.d);
-        ek::masked(ray.mint, is_medium_interaction) = 0.f;
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
@@ -414,7 +415,6 @@ public:
 
                 if (ek::any_or<true>(active_medium)) {
                     ek::masked(ray.o, active_medium)    = mi.p;
-                    ek::masked(ray.mint, active_medium) = 0.f;
                     // Update si.t since we continue the ray into the same direction
                     ek::masked(si.t, active_medium) = si.t - mi.t;
                     if (ek::any_or<true>(is_spectral)) {

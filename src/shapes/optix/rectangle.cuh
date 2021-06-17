@@ -18,7 +18,7 @@ extern "C" __global__ void __intersection__rectangle() {
     // Ray in object-space
     ray = rect->to_object.transform_ray(ray);
 
-    float t = -ray.o.z() * ray.d_rcp.z();
+    float t = -ray.o.z() / ray.d.z();
     Vector3f local = ray(t);
 
     if (abs(local.x()) <= 1.f && abs(local.y()) <= 1.f)
@@ -35,7 +35,7 @@ extern "C" __global__ void __closesthit__rectangle() {
     // Ray in object-space
     Ray3f ray = rect->to_object.transform_ray(ray_);
 
-    float t = -ray.o.z() * ray.d_rcp.z();
+    float t = -ray.o.z() / ray.d.z();
     Vector3f local = ray(t);
     Vector2f prim_uv = Vector2f(local.x(), local.y());
 

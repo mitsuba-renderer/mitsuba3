@@ -166,7 +166,7 @@ struct Transform4f {
 
     DEVICE Ray3f transform_ray(const Ray3f &ray) {
         return Ray3f(transform_point(ray.o), transform_vector(ray.d),
-                     ray.mint, ray.maxt, ray.time);
+                     ray.maxt, ray.time);
     }
 
     /// Debug print

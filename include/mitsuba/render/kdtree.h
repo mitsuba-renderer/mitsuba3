@@ -2213,7 +2213,7 @@ public:
         // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
 
-        ScalarFloat mint = std::max(ray.mint, std::get<1>(bbox_result)),
+        ScalarFloat mint = std::max(0.f, std::get<1>(bbox_result)),
                     maxt = std::min(ray.maxt, std::get<2>(bbox_result));
 
         ScalarVector3f d_rcp = ek::rcp(ray.d);
@@ -2269,7 +2269,7 @@ public:
                         if constexpr (ShadowRay)
                             return prim_pi;
 
-                        Assert(prim_pi.t >= ray.mint && prim_pi.t <= ray.maxt);
+                        Assert(prim_pi.t >= 0.f && prim_pi.t <= ray.maxt);
                         pi = prim_pi;
                         ray.maxt = pi.t;
                     }

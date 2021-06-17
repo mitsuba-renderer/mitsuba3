@@ -347,7 +347,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
 
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
         if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
             ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
@@ -428,7 +428,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) co
 
         using Single = ek::float32_array_t<Float>;
         ek::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_mint(ray.mint), ray_maxt(ray.maxt), ray_time(ray.time);
+        Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
         if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
             ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 

@@ -64,12 +64,12 @@ def test_sampling(variant_scalar_rgb, center, radius):
     pos_samples = np.random.rand(num_samples, 2)
     dir_samples = np.random.rand(num_samples, 2)
 
-    for i in range(100):
+    for i in range(num_samples):
         ray = sensor.sample_ray_differential(
             0.0, wav_samples[i], pos_samples[i], dir_samples[i])[0]
 
         # assert that the ray starts at the sphere surface
-        assert ek.allclose(ek.norm(center_v - ray.o), radius)
+        assert ek.allclose(ek.norm(center_v - ray.o), radius, atol=1e-4)
         # assert that all rays point away from the sphere center
         assert ek.dot(ek.normalize(ray.o - center_v), ray.d) > 0.0
 
@@ -111,7 +111,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     pos_samples = np.random.rand(num_samples, 2)
     dir_samples = np.random.rand(num_samples, 2)
 
-    for i in range(100):
+    for i in range(num_samples):
         ray, weight = sensor.sample_ray_differential(
             0.0, wav_samples[i], pos_samples[i], dir_samples[i])
 

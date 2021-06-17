@@ -73,8 +73,11 @@ public:
         // 3. Sample spectrum
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
 
+        Vector3f d = Frame3f(ps.n).to_world(local);
+        Point3f o = ps.p + d * math::RayEpsilon<Float>;
+
         return {
-            RayDifferential3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelengths),
+            RayDifferential3f(o, d, time, wavelengths),
             unpolarized<Spectrum>(wav_weight) * ek::Pi<ScalarFloat>
         };
     }

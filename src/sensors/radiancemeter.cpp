@@ -104,6 +104,7 @@ public:
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
         ray.d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
+        ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
     }
@@ -125,6 +126,7 @@ public:
         // 2. Set ray origin and direction
         ray.o = m_to_world.value().transform_affine(Point3f(0.f, 0.f, 0.f));
         ray.d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
+        ray.o += ray.d * math::RayEpsilon<Float>;
 
         // 3. Set differentials; since the film size is always 1x1, we don't
         //    have differentials

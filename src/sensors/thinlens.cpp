@@ -176,12 +176,15 @@ public:
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = ek::normalize(Vector3f(focus_p - aperture_p));
-        Float inv_z = ek::rcp(d.z());
-        ray.mint = m_near_clip * inv_z;
-        ray.maxt = m_far_clip * inv_z;
 
         ray.o = m_to_world.value().transform_affine(aperture_p);
         ray.d = m_to_world.value() * d;
+
+        Float inv_z = ek::rcp(d.z());
+        Float near_t = m_near_clip * inv_z,
+              far_t  = m_far_clip * inv_z;
+        ray.o += ray.d * near_t;
+        ray.maxt = far_t - near_t;
 
         return { ray, wav_weight };
     }
@@ -213,12 +216,15 @@ public:
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = ek::normalize(Vector3f(focus_p - aperture_p));
-        Float inv_z = ek::rcp(d.z());
-        ray.mint = m_near_clip * inv_z;
-        ray.maxt = m_far_clip * inv_z;
 
         ray.o = m_to_world.value().transform_affine(aperture_p);
         ray.d = m_to_world.value() * d;
+
+        Float inv_z = ek::rcp(d.z());
+        Float near_t = m_near_clip * inv_z,
+              far_t  = m_far_clip * inv_z;
+        ray.o += ray.d * near_t;
+        ray.maxt = far_t - near_t;
 
         ray.o_x = ray.o_y = ray.o;
 

@@ -296,7 +296,7 @@ template <typename Point_> struct BoundingBox {
     /**
      * \brief Check if a ray intersects a bounding box
      *
-     * Note that this function ignores the <tt>(mint, maxt)</tt> interval
+     * Note that this function ignores the <tt>maxt</tt> value
      * associated with the ray.
      */
     template <typename Ray>

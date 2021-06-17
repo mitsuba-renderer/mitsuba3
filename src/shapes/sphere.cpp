@@ -300,7 +300,6 @@ public:
             center = (Value3) m_center.value();
         }
 
-        Value mint = Value(ray.mint);
         Value maxt = Value(ray.maxt);
 
         Value3 o = Value3(ray.o) - center;
@@ -313,15 +312,15 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
-        ek::mask_t<FloatP> in_bounds = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
 
         active &= solution_found && !out_bounds && !in_bounds;
 
         FloatP t = ek::select(
-            active, ek::select(near_t < mint, FloatP(far_t), FloatP(near_t)),
+            active, ek::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t)),
             ek::Infinity<FloatP>);
 
         return { t, ek::zero<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
@@ -350,7 +349,6 @@ public:
             center = (Value3) m_center.value();
         }
 
-        Value mint = Value(ray.mint);
         Value maxt = Value(ray.maxt);
 
         Value3 o = Value3(ray.o) - center;
@@ -363,10 +361,10 @@ public:
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
         // Sphere doesn't intersect with the segment on the ray
-        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= mint); // NaN-aware conditionals
+        ek::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
 
         // Sphere fully contains the segment of the ray
-        ek::mask_t<FloatP> in_bounds  = near_t < mint && far_t > maxt;
+        ek::mask_t<FloatP> in_bounds  = near_t < Value(0.0) && far_t > maxt;
 
         return solution_found && !out_bounds && !in_bounds && active;
     }

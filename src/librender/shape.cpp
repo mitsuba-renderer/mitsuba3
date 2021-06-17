@@ -150,9 +150,10 @@ void embree_intersect_scalar(int* valid,
     ray.d.x() = rtc_ray->dir_x;
     ray.d.y() = rtc_ray->dir_y;
     ray.d.z() = rtc_ray->dir_z;
-    ray.mint  = rtc_ray->tnear;
-    ray.maxt  = rtc_ray->tfar;
     ray.time  = rtc_ray->time;
+
+    ray.o += ray.d * rtc_ray->tnear;
+    ray.maxt = rtc_ray->tfar - rtc_ray->tnear;
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
@@ -200,9 +201,12 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
     ray.d.x() = ek::load_aligned<Float32P>(rtc_ray->dir_x);
     ray.d.y() = ek::load_aligned<Float32P>(rtc_ray->dir_y);
     ray.d.z() = ek::load_aligned<Float32P>(rtc_ray->dir_z);
-    ray.mint  = ek::load_aligned<Float32P>(rtc_ray->tnear);
-    ray.maxt  = ek::load_aligned<Float32P>(rtc_ray->tfar);
     ray.time  = ek::load_aligned<Float32P>(rtc_ray->time);
+
+    Float32P tnear = ek::load_aligned<Float32P>(rtc_ray->tnear),
+             tfar  = ek::load_aligned<Float32P>(rtc_ray->tfar);
+    ray.o += ray.d * tnear;
+    ray.maxt = tfar - tnear;
 
     // Check whether this is a shadow ray or not
     if (rtc_hit) {
@@ -216,7 +220,7 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
         ek::store_aligned(rtc_hit->instID[0], ek::select(active, UInt32P(instID), ek::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
         active &= shape->ray_test_packet(ray, active);
-        ek::store_aligned(rtc_ray->tfar, Float32P(ek::select(active, -ek::Infinity<Float>, ray.maxt)));
+        ek::store_aligned(rtc_ray->tfar, Float32P(ek::select(active, -ek::Infinity<Float>, tfar)));
     }
 }
 

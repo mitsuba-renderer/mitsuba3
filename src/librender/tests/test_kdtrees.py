@@ -42,7 +42,6 @@ def test01_depth_scalar_stairs(variant_scalar_rgb):
             o = [x * inv_n,  y * inv_n,  2]
             d = [0,  0,  -1]
             r = Ray3f(o, d, 0.5, wavelengths)
-            r.mint = 0
             r.maxt = 100
 
             res_naive   = scene.ray_intersect_naive(r)
@@ -88,7 +87,6 @@ def test02_depth_scalar_bunny(variant_scalar_rgb):
                  b.min[2]]
             d = [0, 0, 1]
             r = Ray3f(o, d, 0.5, wavelengths)
-            r.mint = 0
             r.maxt = 100
 
             res_naive  = scene.ray_intersect_naive(r)

@@ -11,8 +11,8 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Simple n-dimensional ray segment data structure
  *
  * Along with the ray origin and direction, this data structure additionally
- * stores a ray segment [mint, maxt] (whose entries may include positive/negative
- * infinity).
+ * stores a maximum ray position \c maxt, a time value \c time as well a the
+ * wavelegnth information associated with the ray.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = ek::array_size_v<Point_>;
@@ -27,12 +27,11 @@ template <typename Point_, typename Spectrum_> struct Ray {
     using Spectrum   = Spectrum_;
     using Wavelength = wavelength_t<Spectrum_>;
 
-    Point o;                              ///< Ray origin
-    Vector d;                             ///< Ray direction
-    Float mint = math::RayEpsilon<Float>; ///< Minimum position on the ray segment
-    Float maxt = ek::Largest<Float>;      ///< Maximum position on the ray segment
-    Float time = 0.f;                     ///< Time value associated with this ray
-    Wavelength wavelengths;               ///< Wavelength packet associated with the ray
+    Point o;                         ///< Ray origin
+    Vector d;                        ///< Ray direction
+    Float maxt = ek::Largest<Float>; ///< Maximum position on the ray segment
+    Float time = 0.f;                ///< Time value associated with this ray
+    Wavelength wavelengths;          ///< Wavelength associated with the ray
 
     /// Construct a new ray (o, d) at time 'time'
     Ray(const Point &o, const Vector &d, Float time,
@@ -44,14 +43,13 @@ template <typename Point_, typename Spectrum_> struct Ray {
         : o(o), d(d), time(t) { }
 
     /// Construct a new ray (o, d) with bounds
-    Ray(const Point &o, const Vector &d, Float mint, Float maxt,
-        Float time, const Wavelength &wavelengths)
-        : o(o), d(d), mint(mint), maxt(maxt),
-          time(time), wavelengths(wavelengths) { }
+    Ray(const Point &o, const Vector &d, Float maxt, Float time,
+        const Wavelength &wavelengths)
+        : o(o), d(d), maxt(maxt), time(time), wavelengths(wavelengths) {}
 
-    /// Copy a ray, but change the [mint, maxt] interval
-    Ray(const Ray &r, Float mint, Float maxt)
-        : o(r.o), d(r.d), mint(mint), maxt(maxt),
+    /// Copy a ray, but change the maxt value
+    Ray(const Ray &r, Float maxt)
+        : o(r.o), d(r.d), maxt(maxt),
           time(r.time), wavelengths(r.wavelengths) { }
 
     /// Return the position of a point along the ray
@@ -62,14 +60,13 @@ template <typename Point_, typename Spectrum_> struct Ray {
         Ray result;
         result.o           = o;
         result.d           = -d;
-        result.mint        = mint;
         result.maxt        = maxt;
         result.time        = time;
         result.wavelengths = wavelengths;
         return result;
     }
 
-    ENOKI_STRUCT(Ray, o, d, mint, maxt, time, wavelengths)
+    ENOKI_STRUCT(Ray, o, d, maxt, time, wavelengths)
 };
 
 /**
@@ -81,7 +78,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     using Base = Ray<Point_, Spectrum_>;
 
     MTS_USING_TYPES(Float, Point, Vector, Wavelength)
-    MTS_USING_MEMBERS(o, d, mint, maxt, time, wavelengths)
+    MTS_USING_MEMBERS(o, d, maxt, time, wavelengths)
 
     Point o_x, o_y;
     Vector d_x, d_y;
@@ -108,7 +105,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
         d_y = ek::fmadd(d_y - d, amount, d);
     }
 
-    ENOKI_STRUCT(RayDifferential, o, d, mint, maxt, time,
+    ENOKI_STRUCT(RayDifferential, o, d, maxt, time,
                  wavelengths, o_x, o_y, d_x, d_y)
 };
 
@@ -118,7 +115,6 @@ std::ostream &operator<<(std::ostream &os, const Ray<Point, Spectrum> &r) {
     os << "Ray" << type_suffix<Point>() << "[" << std::endl
        << "  o = " << string::indent(r.o, 6) << "," << std::endl
        << "  d = " << string::indent(r.d, 6) << "," << std::endl
-       << "  mint = " << r.mint << "," << std::endl
        << "  maxt = " << r.maxt << "," << std::endl
        << "  time = " << r.time << "," << std::endl;
     if (r.wavelengths.size() > 0)
