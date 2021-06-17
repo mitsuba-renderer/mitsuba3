@@ -25,6 +25,8 @@ MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
     m_wavefront_size = (uint32_t) wavefront_size;
     m_dimension_index = ek::opaque<UInt32>(0, 1);
     m_sample_index = ek::opaque<UInt32>(0, 1);
+    schedule_state();
+    ek::eval();
 }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
