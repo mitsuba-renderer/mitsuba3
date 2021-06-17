@@ -51,6 +51,8 @@ void Mesh<Float, Spectrum>::initialize() {
     m_vertex_positions_ptr = m_vertex_positions.data();
     m_faces_ptr = m_faces.data();
 #endif
+    if (m_emitter || m_sensor)
+        ensure_pmf_built();
     mark_dirty();
     Base::initialize();
 }
