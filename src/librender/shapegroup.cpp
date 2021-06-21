@@ -117,31 +117,27 @@ MTS_VARIANT typename ShapeGroup<Float, Spectrum>::SurfaceInteraction3f
 ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                          PreliminaryIntersection3f pi,
                                                          uint32_t hit_flags,
+                                                         uint32_t recursion_depth,
                                                          Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
 #if defined(MTS_ENABLE_EMBREE) || defined(MTS_ENABLE_CUDA)
-    if constexpr (ek::is_jit_array_v<Float>) {
-        if (jit_flag(JitFlag::VCallRecord) || jit_flag(JitFlag::LoopRecord))
-            Throw(
-                "Instancing should only be used in wavefront mode as nested "
-                "vcalls aren't supported in the current version of enoki-jit.");
-    }
-
     if constexpr (!ek::is_cuda_array_v<Float>) {
         if constexpr (!ek::is_array_v<Float>) {
             Assert(pi.shape_index < m_shapes.size());
             pi.shape = m_shapes[pi.shape_index];
         } else {
 #if defined(MTS_ENABLE_LLVM)
-            Assert(ek::all(pi.shape_index < m_shapes.size()));
             pi.shape = ek::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
 #endif
         }
     }
 #endif
 
-    return pi.shape->compute_surface_interaction(ray, pi, hit_flags, active);
+    if (recursion_depth > 0)
+        return ek::zero<SurfaceInteraction3f>();
+
+    return pi.shape->compute_surface_interaction(ray, pi, hit_flags, 1, active);
 }
 
 MTS_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize

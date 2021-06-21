@@ -167,16 +167,20 @@ public:
      *
      * \param ray
      *      Ray associated with the ray intersection
-     * \param flags
+     * \param pi
      *      Data structure carrying information about the ray intersection
-     * \param flags
+     * \param hit_flags
      *      Flags specifying which information should be computed
+     * \param recursion_depth
+     *      Integer specifying the recursion depth for nested virtual function
+     *      call to this method (e.g. used for instancing).
      * \return
      *      A data structure containing the detailed information
      */
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              PreliminaryIntersection3f pi,
                                                              uint32_t hit_flags = +HitComputeFlags::All,
+                                                             uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
     /**

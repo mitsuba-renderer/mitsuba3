@@ -37,6 +37,7 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
                                                      uint32_t hit_flags,
+                                                     uint32_t recursion_depth,
                                                      Mask active) const override;
 
     ScalarSize primitive_count() const override;

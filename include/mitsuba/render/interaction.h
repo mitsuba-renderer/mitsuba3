@@ -631,7 +631,7 @@ struct PreliminaryIntersection {
 
             ShapePtr target = ek::select(ek::eq(instance, nullptr), shape, instance);
             SurfaceInteraction3f si =
-                target->compute_surface_interaction(ray, *this, hit_flags, active);
+                target->compute_surface_interaction(ray, *this, hit_flags, 0u, active);
 
             ek::masked(si.t, !active) = ek::Infinity<Float>;
             active &= si.is_valid();

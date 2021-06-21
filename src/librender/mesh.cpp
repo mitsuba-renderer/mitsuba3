@@ -491,6 +491,7 @@ MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    PreliminaryIntersection3f pi,
                                                    uint32_t hit_flags,
+                                                   uint32_t /*recursion_depth*/,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
 

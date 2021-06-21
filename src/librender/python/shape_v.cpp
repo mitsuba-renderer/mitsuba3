@@ -35,7 +35,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray,
                const PreliminaryIntersection3f &pi, uint32_t hit_flags,
                Mask active) {
-                return shape->compute_surface_interaction(ray, pi, hit_flags, active);
+                return shape->compute_surface_interaction(ray, pi, hit_flags, 0, active);
             },
             "ray"_a, "pi"_a, "hit_flags"_a = +HitComputeFlags::All,
             "active"_a = true, D(Shape, compute_surface_interaction))

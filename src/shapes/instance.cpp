@@ -130,16 +130,12 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
                                                      uint32_t hit_flags,
+                                                     uint32_t recursion_depth,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        if constexpr (ek::is_jit_array_v<Float>) {
-            if (jit_flag(JitFlag::VCallRecord))
-                Throw("Instances are only supported in wavefront mode!");
-        }
-
         SurfaceInteraction3f si = m_shapegroup->compute_surface_interaction(
-            m_to_object.value().transform_affine(ray), pi, hit_flags, active);
+            m_to_object.value().transform_affine(ray), pi, hit_flags, recursion_depth, active);
 
         si.p = m_to_world.value().transform_affine(si.p);
         si.n = ek::normalize(m_to_world.value().transform_affine(si.n));
