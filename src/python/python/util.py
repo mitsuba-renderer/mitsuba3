@@ -35,11 +35,18 @@ class SceneParameters(Mapping):
         return self.properties.__contains__(key)
 
     def __getitem__(self, key: str):
-        return self.get_property(*(self.properties[key]))
+        value, value_type, node = self.properties[key]
+        if value_type is None:
+            return value
+        else:
+            return self.get_property(value, value_type, node)
 
     def __setitem__(self, key: str, value):
-        item = self.set_dirty(key)
-        return self.set_property(item[0], item[1], value)
+        cur, value_type, node = self.set_dirty(key)
+        if value_type is None:
+            cur.assign(value)
+        else:
+            self.set_property(cur, value_type, value)
 
     def __delitem__(self, key: str) -> None:
         del self.properties[key]
@@ -181,7 +188,7 @@ def traverse(node: 'mitsuba.core.Object') -> SceneParameters:
             self.depth = depth
             self.hierarchy[node] = (parent, depth)
 
-        def put_parameter(self, name, cpptype, ptr):
+        def put_parameter(self, name, ptr, cpptype=None):
             name = name if self.name is None else self.name + '.' + name
             self.properties[name] = (ptr, cpptype, self.node)
 
@@ -219,8 +226,11 @@ def suspend_gradients(node: 'mitsuba.core.Object', state: 'bool') -> None:
             from mitsuba.core import get_property
             self.get_property = get_property
 
-        def put_parameter(self, name, cpptype, ptr):
-            ek.set_grad_suspended(self.get_property(ptr, cpptype, self.node), self.state)
+        def put_parameter(self, name, value, cpptype=None):
+            if cpptype is None:
+                ek.set_grad_suspended(value, self.state)
+            else:
+                ek.set_grad_suspended(self.get_property(value, cpptype, self.node), self.state)
 
         def put_object(self, name, node):
             node.set_grad_suspended(self.state) # Suspend hidden parameters if necessary

@@ -7,14 +7,13 @@ extern py::object cast_object(Object *o);
 // Trampoline for derived types implemented in Python
 class PyTraversalCallback : public TraversalCallback {
 public:
-    void put_parameter_impl(const std::string &name,
-                            const std::type_info &type,
-                            void *ptr) override {
+    void put_parameter_impl(const std::string &name, void *ptr,
+                            const std::type_info &type) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "put_parameter");
 
         if (overload)
-            overload(name, (void *) &type, ptr);
+            overload(name, ptr, (void *) &type);
         else
             Throw("TraversalCallback doesn't overload the method \"put_parameter\"");
     }
@@ -37,15 +36,21 @@ MTS_PY_EXPORT(Object) {
         .def_method(Class, alias)
         .def_method(Class, parent, py::return_value_policy::reference);
 
-    py::class_<PluginManager, std::unique_ptr<PluginManager, py::nodelete>>(m, "PluginManager", D(PluginManager))
-        .def_static_method(PluginManager, instance, py::return_value_policy::reference)
-        .def("get_plugin_class", [](PluginManager &pmgr, const std::string &name, const std::string &variant){
-            try {
-                return pmgr.get_plugin_class(name, variant);
-            } catch(std::runtime_error &){
-                return static_cast<const Class *>(nullptr);
-            }
-        }, "name"_a, "variant"_a, py::return_value_policy::reference, D(PluginManager, get_plugin_class));
+    py::class_<PluginManager, std::unique_ptr<PluginManager, py::nodelete>>(
+        m, "PluginManager", D(PluginManager))
+        .def_static_method(PluginManager, instance,
+                           py::return_value_policy::reference)
+        .def("get_plugin_class",
+             [](PluginManager &pmgr, const std::string &name,
+                const std::string &variant) {
+                 try {
+                     return pmgr.get_plugin_class(name, variant);
+                 } catch (std::runtime_error &) {
+                     return static_cast<const Class *>(nullptr);
+                 }
+             },
+             "name"_a, "variant"_a, py::return_value_policy::reference,
+             D(PluginManager, get_plugin_class));
 
     py::class_<TraversalCallback, PyTraversalCallback>(m, "TraversalCallback")
         .def(py::init<>());
