@@ -91,16 +91,14 @@ def test_sample_ray_direction(variant_scalar_rgb):
     ],
 )
 @pytest.mark.parametrize("w_e", [[0, 0, -1], [0, 1, -1]])
-@pytest.mark.parametrize("w_o", [[0, 0, 1], [0, 1, 1]])
-def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
-    # This test checks if targeting works as intended by rendering a basic scene
+def test_sample_target(variant_scalar_rgb, sensor_setup, w_e):
+    # Check if targeting works as intended by rendering a basic scene
     from mitsuba.core import Bitmap, ScalarTransform4f, Struct
     from mitsuba.core.xml import load_dict
 
     # Basic illumination and sensing parameters
     l_e = 1.0  # Emitted radiance
     w_e = list(w_e / np.linalg.norm(w_e))  # Emitter direction
-    w_o = list(w_o / np.linalg.norm(w_o))  # Sensor direction
     cos_theta_e = abs(np.dot(w_e, [0, 0, 1]))
 
     # Reflecting surface specification
@@ -224,10 +222,14 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     scene = load_dict({**scene_dict, "sensor": sensors[sensor_setup]})
 
     # Run simulation
-    result = np.array(scene.render()).squeeze()
+    scene.render()
+    result = np.array(
+        scene.sensors()[0].film().bitmap().convert(
+            Bitmap.PixelFormat.RGB, Struct.Type.Float32, False
+        )
+    ).squeeze()
 
-    surface_area = 4.0 * surface_scale ** 2  # Area of square surface
-    l_o = l_e * cos_theta_e * rho / np.pi  # * cos_theta_o
+    l_o = l_e * cos_theta_e * rho / np.pi  # Outgoing radiance
     expected = {  # Special expected values for some cases
         "default": l_o * 2.0 / ek.Pi,
         "target_square_large": l_o * 0.25,
@@ -287,10 +289,10 @@ def test_checkerboard(variants_all_rgb):
     """
     Very basic render test with checkerboard texture and square target.
     """
-    from mitsuba.core import ScalarTransform4f
+    from mitsuba.core import Bitmap, ScalarTransform4f, Struct
     from mitsuba.core.xml import load_dict
 
-    l_o = 1.0
+    l_e = 1.0  # Emitted radiance
     rho0 = 0.5
     rho1 = 1.0
 
@@ -346,8 +348,12 @@ def test_checkerboard(variants_all_rgb):
     }
 
     scene = load_dict(scene_dict)
+    scene.render()
+    result = np.array(
+        scene.sensors()[0].film().bitmap().convert(
+            Bitmap.PixelFormat.RGB, Struct.Type.Float32, False
+        )
+    ).squeeze()
 
-    data = np.array(scene.render())
-
-    expected = l_o * 0.5 * (rho0 + rho1) / ek.Pi
-    assert np.allclose(expected, data, atol=1e-3)
+    expected = l_e * 0.5 * (rho0 + rho1) / ek.Pi
+    assert np.allclose(expected, result, atol=1e-3)
