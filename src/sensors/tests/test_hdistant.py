@@ -37,8 +37,12 @@ def test_construct(variant_scalar_rgb):
 
     # Construct with transform
     sensor = make_sensor(
-        sensor_dict(to_world=ScalarTransform4f.look_at(
-            origin=[0, 0, 0], target=[0, 0, 1], up=[1, 0, 0])))
+        sensor_dict(
+            to_world=ScalarTransform4f.look_at(
+                origin=[0, 0, 0], target=[0, 0, 1], up=[1, 0, 0]
+            )
+        )
+    )
 
     # Test different target values
     # -- No target,
@@ -220,15 +224,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     scene = load_dict({**scene_dict, "sensor": sensors[sensor_setup]})
 
     # Run simulation
-    sensor = scene.sensors()[0]
-    scene.integrator().render(scene, sensor)
-
-    # Check result
-    result = np.array(
-        sensor.film()
-        .bitmap()
-        .convert(Bitmap.PixelFormat.RGB, Struct.Type.Float32, False)
-    ).squeeze()
+    result = np.array(scene.render()).squeeze()
 
     surface_area = 4.0 * surface_scale ** 2  # Area of square surface
     l_o = l_e * cos_theta_e * rho / np.pi  # * cos_theta_o
@@ -244,7 +240,47 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     }
     rtol_value = rtol.get(sensor_setup, 5e-3)
 
-    assert np.allclose(result, expected_value, rtol=rtol_value)
+    assert np.allclose(expected_value, result, rtol=rtol_value)
+
+
+@pytest.mark.parametrize("target", ("point", "shape"))
+def test_sample_ray_differential(variant_scalar_rgb, target):
+    from mitsuba.core.warp import uniform_hemisphere_to_square
+
+    # We set odd and even values on purpose
+    n_x = 5
+    n_y = 6
+
+    d = sensor_dict(target=target)
+    d.update(
+        {
+            "film": {
+                "type": "hdrfilm",
+                "width": n_x,
+                "height": n_y,
+                "rfilter": {"type": "box"},
+            }
+        }
+    )
+    sensor = make_sensor(d)
+
+    sample1 = [0.5, 0.5]
+    sample2 = [0.5, 0.5]
+    ray, _ = sensor.sample_ray_differential(1.0, 1.0, sample1, sample2, True)
+
+    # Sampled ray differential directions are expected to map to film
+    # coordinates shifted by one pixel
+    sample_dx = [0.5 + 1.0 / n_x, 0.5]
+    expected_ray_dx, _ = sensor.sample_ray(1.0, 1.0, sample_dx, sample2, True)
+    assert ek.allclose(sample_dx, uniform_hemisphere_to_square(-ray.d_x))
+    assert ek.allclose(ray.d_x, expected_ray_dx.d)
+    assert ek.allclose(ray.o_x, expected_ray_dx.o)
+
+    sample_dy = [0.5, 0.5 + 1.0 / n_y]
+    expected_ray_dy, _ = sensor.sample_ray(1.0, 1.0, sample_dy, sample2, True)
+    assert ek.allclose(sample_dy, uniform_hemisphere_to_square(-ray.d_y))
+    assert ek.allclose(ray.d_y, expected_ray_dy.d)
+    assert ek.allclose(ray.o_y, expected_ray_dy.o)
 
 
 def test_checkerboard(variants_all_rgb):
@@ -273,16 +309,10 @@ def test_checkerboard(variants_all_rgb):
                 },
             },
         },
-        "emitter": {
-            "type": "directional",
-            "direction": [0, 0, -1],
-            "irradiance": 1.0
-        },
+        "emitter": {"type": "directional", "direction": [0, 0, -1], "irradiance": 1.0},
         "sensor0": {
             "type": "hdistant",
-            "target": {
-                "type": "rectangle"
-            },
+            "target": {"type": "rectangle"},
             "sampler": {
                 "type": "independent",
                 "sample_count": 50000,
@@ -293,9 +323,7 @@ def test_checkerboard(variants_all_rgb):
                 "width": 4,
                 "pixel_format": "luminance",
                 "component_format": "float32",
-                "rfilter": {
-                    "type": "box"
-                },
+                "rfilter": {"type": "box"},
             },
         },
         # "sensor1": {  # In case one would like to check what the scene looks like
@@ -314,17 +342,12 @@ def test_checkerboard(variants_all_rgb):
         #         "rfilter": {"type": "box"},
         #     },
         # },
-        "integrator": {
-            "type": "path"
-        },
+        "integrator": {"type": "path"},
     }
 
     scene = load_dict(scene_dict)
 
-    sensor = scene.sensors()[0]
-    scene.integrator().render(scene, sensor)
-
-    data = np.array(sensor.film().bitmap())
+    data = np.array(scene.render())
 
     expected = l_o * 0.5 * (rho0 + rho1) / ek.Pi
-    assert np.allclose(data, expected, atol=1e-3)
+    assert np.allclose(expected, data, atol=1e-3)

@@ -160,8 +160,8 @@ public:
     }
 
     // This must be implemented. However, it won't be used in practice:
-    // instead, HemisphericalDistantSensorImpl::bbox() is used when the plugin is
-    // instantiated.
+    // instead, HemisphericalDistantSensorImpl::bbox() is used when the plugin
+    // is instantiated.
     ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }
 
     template <RayTargetType TargetType>
@@ -208,6 +208,10 @@ public:
                       "with a radius of 0.5 or lower (e.g. default box)");
         }
 
+        // Store film sample location spacing for performance
+        m_d.x() = 1.0f / m_film->size().x();
+        m_d.y() = 1.0f / m_film->size().y();
+
         // Set ray target if relevant
         if constexpr (TargetType == RayTargetType::Point) {
             m_target_point = props.point3f("target");
@@ -230,10 +234,10 @@ public:
                     m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
     }
 
-    std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float wavelength_sample,
-                    const Point2f & film_sample,
-                    const Point2f &aperture_sample, Mask active) const override {
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f &film_sample,
+                                          const Point2f &aperture_sample,
+                                          Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
         Ray3f ray;
@@ -249,30 +253,63 @@ public:
 
         // Sample ray direction
         ray.d = -m_to_world.value().transform_affine(
-            warp::square_to_uniform_hemisphere(film_sample)
-        );
+            warp::square_to_uniform_hemisphere(film_sample));
 
         // Sample target point and position ray origin
         if constexpr (TargetType == RayTargetType::Point) {
-            ray.o = m_target_point - 2.f * ray.d * m_bsphere.radius;
+            ray.o      = m_target_point - 2.f * ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         } else if constexpr (TargetType == RayTargetType::Shape) {
             // Use area-based sampling of shape
             PositionSample3f ps =
                 m_target_shape->sample_position(time, aperture_sample, active);
-            ray.o = ps.p - 2.f * ray.d * m_bsphere.radius;
+            ray.o      = ps.p - 2.f * ray.d * m_bsphere.radius;
             ray_weight = wav_weight / (ps.pdf * m_target_shape->surface_area());
         } else { // if constexpr (TargetType == RayTargetType::None) {
             // Sample target uniformly on bounding sphere cross section
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
-            Vector3f perp_offset =
-                m_to_world.value().transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
-            ray.o = m_bsphere.center + perp_offset * m_bsphere.radius - ray.d * m_bsphere.radius;
+            Vector3f perp_offset = m_to_world.value().transform_affine(
+                Vector3f(offset.x(), offset.y(), 0.f));
+            ray.o = m_bsphere.center + perp_offset * m_bsphere.radius -
+                    ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         }
 
         return { ray, ray_weight & active };
+    }
+
+    // Ray sampling with spectral sampling removed
+    std::pair<Vector3f, Point3f>
+    sample_ray_dir_origin(Float time, const Point2f &film_sample,
+                          const Point2f &aperture_sample, Mask active) const {
+        MTS_MASK_ARGUMENT(active);
+
+        // Sample ray direction
+        Vector3f direction = -m_to_world.value().transform_affine(
+            warp::square_to_uniform_hemisphere(film_sample));
+
+        // Sample target point and position ray origin
+        Point3f origin;
+
+        if constexpr (TargetType == RayTargetType::Point) {
+            origin = m_target_point - 2.f * direction * m_bsphere.radius;
+        } else if constexpr (TargetType == RayTargetType::Shape) {
+            // Use area-based sampling of shape
+            PositionSample3f ps =
+                m_target_shape->sample_position(time, aperture_sample, active);
+            origin = ps.p - 2.f * direction * m_bsphere.radius;
+        } else { // if constexpr (TargetType == RayTargetType::None) {
+            // Sample target uniformly on bounding sphere cross section
+            Point2f offset =
+                warp::square_to_uniform_disk_concentric(aperture_sample);
+            Vector3f perp_offset = m_to_world.value().transform_affine(
+                Vector3f(offset.x(), offset.y(), 0.f));
+            origin = m_bsphere.center + perp_offset * m_bsphere.radius -
+                     direction * m_bsphere.radius;
+        }
+
+        return { direction, origin };
     }
 
     std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
@@ -286,8 +323,16 @@ public:
         std::tie(ray, ray_weight) = sample_ray(
             time, wavelength_sample, film_sample, aperture_sample, active);
 
-        // Since the film size is always 1x1, we don't have differentials
-        ray.has_differentials = false;
+        // Compute ray differentials
+        ray.has_differentials = true;
+
+        Point2f film_sample_x{ film_sample.x() + m_d.x(), film_sample.y() };
+        std::tie(ray.d_x, ray.o_x) =
+            sample_ray_dir_origin(time, film_sample_x, aperture_sample, active);
+
+        Point2f film_sample_y{ film_sample.x(), film_sample.y() + m_d.y() };
+        std::tie(ray.d_y, ray.o_y) =
+            sample_ray_dir_origin(time, film_sample_y, aperture_sample, active);
 
         return { ray, ray_weight & active };
     }
@@ -317,9 +362,14 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    // Scene bounding sphere
     ScalarBoundingSphere3f m_bsphere;
+    // Target shape if any
     ref<Shape> m_target_shape;
+    // Target point if any
     Point3f m_target_point;
+    // Spacing between two pixels in film coordinates
+    ScalarPoint2f m_d;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(HemisphericalDistantSensor, Sensor)
@@ -339,12 +389,14 @@ constexpr const char *distant_sensor_class_name() {
 NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum, RayTargetType TargetType>
-Class *HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>::m_class = new Class(
-    detail::distant_sensor_class_name<TargetType>(), "Sensor",
-    ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr, nullptr);
+Class *HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>::m_class =
+    new Class(detail::distant_sensor_class_name<TargetType>(), "Sensor",
+              ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr,
+              nullptr);
 
 template <typename Float, typename Spectrum, RayTargetType TargetType>
-const Class *HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>::class_() const {
+const Class *
+HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>::class_() const {
     return m_class;
 }
 
