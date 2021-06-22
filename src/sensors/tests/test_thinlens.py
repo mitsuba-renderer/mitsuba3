@@ -3,14 +3,14 @@ import pytest
 import enoki as ek
 
 
-def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.1, focus_dist=15):
+def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.1, focus_dist=15, near_clip=1.0):
     from mitsuba.core.xml import load_dict
     from mitsuba.core import ScalarTransform4f, ScalarVector3f
     t = [o[0] + d[0], o[1] + d[1], o[2] + d[2]]
 
     camera_dict = {
         "type": "thinlens",
-        "near_clip": 1.0,
+        "near_clip": near_clip,
         "far_clip": 35.0,
         "focus_distance": focus_dist,
         "aperture_radius": aperture,
@@ -65,9 +65,10 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
 def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
     # Check the correctness of the sample_ray() method
 
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f
+    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f, Point3f
 
-    cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist)
+    near_clip = 1.0
+    cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist, near_clip=near_clip)
 
     time = 0.0
     wav_sample = [0.5, 0.33, 0.1]
@@ -83,7 +84,11 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(spec_weight, spec)
     assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.o, origin)
+
+    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
+    assert ek.allclose(ray.o, o, atol=1e-4)
+
 
     # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
     # generates a ray that points in the camera direction
@@ -104,9 +109,11 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
     tmp = aperture_rad * warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo @ Vector3f(tmp.x, tmp.y, 0)
 
-    # NOTE: here we assume near_clip = 1.0
-
-    assert ek.allclose(ray.o, ray_centered.o + aperture_v)
+    inv_z_centered = ek.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
+    o_centered = ray_centered.o - near_clip * inv_z_centered * Vector3f(ray_centered.d)
+    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    o = o_centered + aperture_v + near_clip * inv_z * Vector3f(ray.d)
+    assert ek.allclose(ray.o, o, atol=1e-4)
     assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
 
@@ -117,9 +124,10 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
 def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
     # Check the correctness of the sample_ray_differential() method
 
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f
+    from mitsuba.core import sample_shifted, sample_rgb_spectrum, warp, Vector3f, Transform4f, Point3f
 
-    cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist)
+    near_clip = 1.0
+    cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist, near_clip=near_clip)
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
@@ -135,7 +143,10 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(spec_weight, spec)
     assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.o, origin)
+
+    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
+    assert ek.allclose(ray.o, o, atol=1e-4)
 
     # ----------------------------------------_
     # Check that the derivatives are orthogonal
@@ -178,9 +189,11 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
     aperture_v = trafo @ (aperture_rad * Vector3f(tmp.x, tmp.y, 0))
 
-    # NOTE: here we assume near_clip = 1.0
-
-    assert ek.allclose(ray.o, ray_centered.o + aperture_v)
+    inv_z_centered = ek.rcp((cam.world_transform().inverse() @ ray_centered.d).z)
+    o_centered = ray_centered.o - near_clip * inv_z_centered * Vector3f(ray_centered.d)
+    inv_z = ek.rcp((cam.world_transform().inverse() @ ray.d).z)
+    o = o_centered + aperture_v + near_clip * inv_z * Vector3f(ray.d)
+    assert ek.allclose(ray.o, o, atol=1e-4)
     assert ek.allclose(ray.d, ek.normalize(ray_centered.d * focus_dist - aperture_v), atol=1e-4)
 
 

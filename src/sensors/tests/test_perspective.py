@@ -3,14 +3,14 @@ import pytest
 import enoki as ek
 
 
-def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5):
+def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, near_clip=1.0):
     from mitsuba.core.xml import load_dict
     from mitsuba.core import ScalarTransform4f, ScalarVector3f
     t = [o[0] + d[0], o[1] + d[1], o[2] + d[2]]
 
     camera_dict = {
         "type": "perspective",
-        "near_clip": 1.0,
+        "near_clip": near_clip,
         "far_clip": 35.0,
         "focus_distance": 15.0,
         "fov": fov,
@@ -60,9 +60,10 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
 @pytest.mark.parametrize("direction", directions)
 def test02_sample_ray(variants_vec_spectral, origin, direction):
     # Check the correctness of the sample_ray() method
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum
+    from mitsuba.core import sample_shifted, sample_rgb_spectrum, Point3f, Vector3f
 
-    camera = create_camera(origin, direction)
+    near_clip = 1.0
+    camera = create_camera(origin, direction, near_clip=near_clip)
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
@@ -77,7 +78,10 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(spec_weight, spec)
     assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.o, origin)
+
+    inv_z = ek.rcp((camera.world_transform().inverse() @ ray.d).z)
+    o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
+    assert ek.allclose(ray.o, o, atol=1e-4)
 
     # Check that a [0.5, 0.5] position_sample generates a ray
     # that points in the camera direction
@@ -90,9 +94,10 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
 @pytest.mark.parametrize("direction", directions)
 def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     # Check the correctness of the sample_ray_differential() method
-    from mitsuba.core import sample_shifted, sample_rgb_spectrum
+    from mitsuba.core import sample_shifted, sample_rgb_spectrum, Point3f, Vector3f
 
-    camera = create_camera(origin, direction)
+    near_clip = 1.0
+    camera = create_camera(origin, direction, near_clip=near_clip)
 
     time = 0.5
     wav_sample = [0.5, 0.33, 0.1]
@@ -106,7 +111,11 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     assert ek.allclose(ray.wavelengths, wav)
     assert ek.allclose(spec_weight, spec)
     assert ek.allclose(ray.time, time)
-    assert ek.allclose(ray.o, origin)
+
+    inv_z = ek.rcp((camera.world_transform().inverse() @ ray.d).z)
+    o = Point3f(origin) + near_clip * inv_z * Vector3f(ray.d)
+    assert ek.allclose(ray.o, o, atol=1e-4)
+
 
     # Check that the derivatives are orthogonal
     assert ek.allclose(ek.dot(ray.d_x - ray.d, ray.d_y - ray.d), 0, atol=1e-7)
