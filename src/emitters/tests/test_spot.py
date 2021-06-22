@@ -65,12 +65,12 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     it.wavelengths = wav
 
     # Direction from the position to the point emitter
-    d = -it.p + lookat.transform_point(0)
+    d = -it.p + lookat.translation()
     dist = ek.norm(d)
     d /= dist
 
     # Calculate angle between lookat direction and ray direction
-    angle = ek.acos((trafo.inverse().transform_vector(-d))[2])
+    angle = ek.acos((trafo.inverse() @ (-d))[2])
     angle = ek.select(ek.abs(angle - beam_width_rad)
                       < 1e-3, beam_width_rad, angle)
     angle = ek.select(ek.abs(angle - cutoff_angle_rad)
@@ -135,12 +135,12 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     spec = ek.select(angle <= cutoff_angle_rad, spec, 0)
 
     assert ek.allclose(
-        res, spec / warp.square_to_uniform_cone_pdf(trafo.inverse().transform_vector(ray.d), cos_cutoff_angle_rad))
+        res, spec / warp.square_to_uniform_cone_pdf(trafo.inverse() @ ray.d, cos_cutoff_angle_rad))
     assert ek.allclose(ray.time, eval_t)
     assert ek.all(local_dir.z >= cos_cutoff_angle_rad)
     assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(ray.d, trafo.transform_vector(local_dir))
-    assert ek.allclose(ray.o, lookat.transform_point(0))
+    assert ek.allclose(ray.d, trafo @ local_dir)
+    assert ek.allclose(ray.o, lookat.translation())
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())

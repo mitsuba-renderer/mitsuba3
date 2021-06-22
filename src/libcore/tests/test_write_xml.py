@@ -270,7 +270,7 @@ def test08_xml_defaults(variants_all_rgb, tmp_path):
 def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
     from mitsuba.python.xml import dict_to_xml
     from mitsuba.core.xml import load_dict, load_file
-    from mitsuba.core import ScalarTransform4f, ScalarVector3f, Thread
+    from mitsuba.core import ScalarTransform4f, ScalarVector3f, ScalarPoint3f
     filepath = str(tmp_path / 'test_write_xml-test09_output.xml')
     print(f"Output temporary file: {filepath}")
 
@@ -286,15 +286,15 @@ def test09_xml_decompose_transform(variants_all_rgb, tmp_path):
     dict_to_xml(scene_dict, filepath)
     s1 = load_file(filepath)
     s2 = load_dict(scene_dict)
-    vects = [
-        ScalarVector3f(0,0,1),
-        ScalarVector3f(0,1,0),
-        ScalarVector3f(1,0,0)
+    points = [
+        ScalarPoint3f(0,0,1),
+        ScalarPoint3f(0,1,0),
+        ScalarPoint3f(1,0,0)
     ]
     tr1 = s1.sensors()[0].world_transform()
     tr2 = s2.sensors()[0].world_transform()
-    for vec in vects:
-        assert ek.allclose(tr1.transform_point(vec), tr2.transform_point(vec))
+    for p in points:
+        assert ek.allclose(tr1 @ p, tr2 @ p)
 
 
 @fresolver_append_path

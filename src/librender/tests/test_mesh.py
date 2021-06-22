@@ -467,7 +467,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+    from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
@@ -484,7 +484,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     params = traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = ek.unravel(Vector3f, positions_buf)
+    positions_initial = ek.unravel(Point3f, positions_buf)
 
     # Create differential parameter to be optimized
     diff_vector = Vector3f(0.0)
@@ -493,7 +493,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # Apply the transformation to mesh vertex position and update scene
     def apply_transformation(trasfo):
         trasfo = trasfo(diff_vector)
-        new_positions = trasfo.transform_point(positions_initial)
+        new_positions = trasfo @ positions_initial
         params[shape_param_key] = ek.ravel(new_positions)
         params.set_dirty(shape_param_key)
         params.update()
@@ -685,7 +685,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+    from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
     from mitsuba.render import HitComputeFlags
 
     # Set enoki JIT flags
@@ -703,7 +703,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     params = traverse(scene)
     shape_param_key = 'rect.vertex_positions'
     positions_buf = params[shape_param_key]
-    positions_initial = ek.unravel(Vector3f, positions_buf)
+    positions_initial = ek.unravel(Point3f, positions_buf)
 
     # Create differential parameter to be optimized
     diff_vector = Vector3f(0.0)
@@ -712,7 +712,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # Apply the transformation to mesh vertex position and update scene
     def apply_transformation(trasfo):
         trasfo = trasfo(diff_vector)
-        new_positions = trasfo.transform_point(positions_initial)
+        new_positions = trasfo @ positions_initial
         params[shape_param_key] = ek.ravel(new_positions)
         params.set_dirty(shape_param_key)
         params.update()
@@ -764,7 +764,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, gc_collect, res, wall, jit_flags):
-    from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Transform4f, Ray3f
+    from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
     from mitsuba.render import HitComputeFlags
     from mitsuba.python.util import traverse
 
@@ -800,9 +800,9 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, gc_collect, res, wall, jit_f
 
     # Attach object vertices to differential parameter
     with ek.Scope("Attach object vertices"):
-        positions_initial = ek.unravel(Vector3f, params[key])
+        positions_initial = ek.unravel(Point3f, params[key])
         transform = Transform4f.translate(Vector3f(0.0, theta, 0.0))
-        positions_new = transform.transform_point(positions_initial)
+        positions_new = transform @ positions_initial
         positions_new = ek.ravel(positions_new)
         ek.set_label(positions_new, 'positions_new')
         del transform
@@ -842,7 +842,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, gc_collect, res, wall, jit_f
 
 @fresolver_append_path
 def test19_update_geometry(variants_vec_rgb):
-    from mitsuba.core import xml, Transform4f, Float, UInt32, Vector2f, Ray3f, ScalarVector2i
+    from mitsuba.core import xml, Transform4f, Float, UInt32, Vector2f, Point3f, Ray3f, ScalarVector2i
     from mitsuba.python.util import traverse
 
     scene = xml.load_dict({
@@ -856,11 +856,11 @@ def test19_update_geometry(variants_vec_rgb):
 
     params = traverse(scene)
 
-    init_vertex_pos = ek.unravel(mitsuba.core.Vector3f, params['rect.vertex_positions'])
+    init_vertex_pos = ek.unravel(Point3f, params['rect.vertex_positions'])
 
     def translate(v):
         transform = Transform4f.translate(mitsuba.core.Vector3f(v))
-        positions_new = transform.transform_point(init_vertex_pos)
+        positions_new = transform @ init_vertex_pos
         params['rect.vertex_positions'] = ek.ravel(positions_new)
         params.update()
         ek.eval()

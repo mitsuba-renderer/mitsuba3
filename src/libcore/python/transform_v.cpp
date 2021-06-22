@@ -30,14 +30,6 @@ void bind_transform3f(py::module &m, const char *name) {
         }))
         .def(py::init<Matrix3f>(), D(Transform, Transform))
         .def(py::init<Matrix3f, Matrix3f>(), "Initialize from a matrix and its inverse transpose")
-        .def("transform_point",
-            [](const Transform3f &t, const Point2f &v) {
-                return t*v;
-            })
-        .def("transform_vector",
-            [](const Transform3f &t, const Vector2f &v) {
-                return t*v;
-            })
         .def_static("translate", &Transform3f::translate, "v"_a, D(Transform, translate))
         .def_static("scale", &Transform3f::scale, "v"_a, D(Transform, scale))
         .def_static("rotate", &Transform3f::template rotate<3>,
@@ -47,8 +39,15 @@ void bind_transform3f(py::module &m, const char *name) {
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def(py::self * py::self)
+        .def("__matmul__", [](const Transform3f &a, const Point2f &b) {
+            return a * b;
+        }, py::is_operator())
+        .def("__matmul__", [](const Transform3f &a, const Vector2f &b) {
+            return a * b;
+        }, py::is_operator())
         /// Fields
         .def("inverse",   &Transform3f::inverse, D(Transform, inverse))
+        .def("translation", &Transform3f::translation, D(Transform, translation))
         .def("has_scale", &Transform3f::has_scale, D(Transform, has_scale))
         .def_readwrite("matrix", &Transform3f::matrix)
         .def_readwrite("inverse_transpose", &Transform3f::inverse_transpose)
@@ -83,18 +82,6 @@ void bind_transform4f(py::module &m, const char *name) {
         }))
         .def(py::init<Matrix4f>(), D(Transform, Transform))
         .def(py::init<Matrix4f, Matrix4f>(), "Initialize from a matrix and its inverse transpose")
-        .def("transform_point",
-            [](const Transform4f &t, const Point3f &v) {
-                return t*v;
-            })
-        .def("transform_vector",
-            [](const Transform4f &t, const Vector3f &v) {
-                return t*v;
-            })
-        .def("transform_normal",
-            [](const Transform4f &t, const Normal3f &v) {
-                return t*v;
-            })
         .def_static("translate", &Transform4f::translate, "v"_a, D(Transform, translate))
         .def_static("scale", &Transform4f::scale, "v"_a, D(Transform, scale))
         .def_static("rotate", &Transform4f::template rotate<4>,
@@ -109,12 +96,22 @@ void bind_transform4f(py::module &m, const char *name) {
             "frame"_a, D(Transform, from_frame))
         .def_static("to_frame", &Transform4f::template to_frame<Float>,
             "frame"_a, D(Transform, to_frame))
+        .def("translation", &Transform4f::translation, D(Transform, translation))
         .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
         .def("extract", &Transform4f::template extract<3>, D(Transform, extract))
         /// Operators
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def(py::self * py::self)
+        .def("__matmul__", [](const Transform4f &a, const Point3f &b) {
+            return a * b;
+        }, py::is_operator())
+        .def("__matmul__", [](const Transform4f &a, const Vector3f &b) {
+            return a * b;
+        }, py::is_operator())
+        .def("__matmul__", [](const Transform4f &a, const Normal3f &b) {
+            return a * b;
+        }, py::is_operator())
         /// Fields
         .def("inverse",   &Transform4f::inverse, D(Transform, inverse))
         .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))

@@ -14,7 +14,7 @@ def test01_create(variant_scalar_mono_polarized):
 
 
 def test02_sample_local(variant_scalar_mono_polarized):
-    from mitsuba.core import Frame3f, Transform4f, Spectrum
+    from mitsuba.core import Frame3f, Transform4f, Spectrum, Vector3f
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode, SurfaceInteraction3f
 
@@ -36,7 +36,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
     # i.e. rotations around "x" or "z" in this local frame (Case 2, 3).
 
     # Incident direction
-    wi = [0, 0, 1]
+    wi = Vector3f(0, 0, 1)
     stokes_in = spectrum_from_stokes([1, 0, 0, 0])
 
     ctx = BSDFContext()
@@ -71,7 +71,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
         assert ek.allclose(expected, stokes_out, atol=1e-3)
 
         def rotate_vector(v, axis, angle):
-            return Transform4f.rotate(axis, angle).transform_vector(v)
+            return Transform4f.rotate(axis, angle) @ v
 
         # Case 2: Tilt polarizer around "x". Should not change anything.
         # (Note: to stay with local coordinates, we rotate the incident direction instead.)

@@ -102,7 +102,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
 
     trafo = Transform4f.look_at(origin, Vector3f(origin) + Vector3f(direction), [0, 1, 0])
     tmp = aperture_rad * warp.square_to_uniform_disk_concentric(aperture_sample)
-    aperture_v = trafo.transform_vector(Vector3f(tmp.x, tmp.y, 0))
+    aperture_v = trafo @ Vector3f(tmp.x, tmp.y, 0)
 
     # NOTE: here we assume near_clip = 1.0
 
@@ -176,7 +176,7 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
 
     trafo = Transform4f.look_at(origin, Vector3f(origin) + Vector3f(direction), [0, 1, 0])
     tmp = warp.square_to_uniform_disk_concentric(aperture_sample)
-    aperture_v = trafo.transform_vector(aperture_rad * Vector3f(tmp.x, tmp.y, 0))
+    aperture_v = trafo @ (aperture_rad * Vector3f(tmp.x, tmp.y, 0))
 
     # NOTE: here we assume near_clip = 1.0
 

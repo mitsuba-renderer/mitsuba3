@@ -129,7 +129,7 @@ def test07_rotate_stokes_basis(variant_scalar_rgb):
     b_00 = stokes_basis(w) # Corresponding Stokes basis
 
     def rotate_vector(v, axis, angle):
-        return Transform4f.rotate(axis, angle).transform_vector(v)
+        return Transform4f.rotate(axis, angle) @ v
 
     # Switch to basis rotated by 90˚.
     b_90 = rotate_vector(b_00, w, 90.0)
@@ -170,7 +170,7 @@ def test08_rotate_mueller_basis(variant_scalar_rgb):
     M = linear_polarizer()
 
     def rotate_vector(v, axis, angle):
-        return Transform4f.rotate(axis, angle).transform_vector(v)
+        return Transform4f.rotate(axis, angle) @ v
 
     # As reference, rotate the element directly by -45˚
     M_rotated_element = rotated_element(-45 * ek.Pi/180, M)

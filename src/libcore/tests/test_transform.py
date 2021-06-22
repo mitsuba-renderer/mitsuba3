@@ -52,7 +52,7 @@ def test02_inverse(variant_scalar_rgb):
         assert ek.allclose(inv_trafo.matrix, np.array(expected)), \
                '\n' + str(inv_trafo.matrix) + '\n' + str(expected)
 
-        assert ek.allclose(inv_trafo.transform_point(tr.transform_point(p)), p,
+        assert ek.allclose(inv_trafo @ (tr @ p), p,
                            rtol=1e-4)
 
     # --- Scale
@@ -62,7 +62,7 @@ def test02_inverse(variant_scalar_rgb):
                         [0, 10, 0, 0],
                         [0, 0, 500, 0],
                         [0, 0, 0, 1]])
-    assert ek.allclose(trafo.transform_point(p), [1, 20, 1500])
+    assert ek.allclose(trafo @ p, [1, 20, 1500])
     check_inverse(trafo, [
         [1,      0,       0,    0],
         [0, 1/10.0,       0,    0],
@@ -77,7 +77,7 @@ def test02_inverse(variant_scalar_rgb):
                         [0, 1, 0, 0],
                         [0, 0, 1, 1.5],
                         [0, 0, 0, 1]])
-    assert ek.allclose(trafo.transform_point(p), [2, 2, 4.5])
+    assert ek.allclose(trafo @ p, [2, 2, 4.5])
     check_inverse(trafo, [
         [1, 0, 0,   -1],
         [0, 1, 0,    0],
@@ -108,7 +108,7 @@ def test02_inverse(variant_scalar_rgb):
         assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 5e-4
 
         p = np.random.random((3,))
-        res = trafo.inverse().transform_point(trafo.transform_point(p))
+        res = trafo.inverse() @ (trafo @ p)
         assert la.norm(res - p, 2) < 5e-3
 
 
@@ -128,12 +128,12 @@ def test04_transform_point(variant_scalar_rgb):
 
     A = Matrix4f(1)
     A[3, 3] = 2
-    assert ek.allclose(Transform4f(A).transform_point([2, 4, 6]), [1, 2, 3])
-    assert ek.allclose(Transform4f(A).transform_point([4, 6, 8]), [2, 3, 4])
+    assert ek.allclose(Transform4f(A) @ Point3f(2, 4, 6), [1, 2, 3])
+    assert ek.allclose(Transform4f(A) @ Point3f(4, 6, 8), [2, 3, 4])
 
     def kernel(p : Point3f):
         from mitsuba.core import Transform4f
-        return Transform4f(A).transform_point(p)
+        return Transform4f(A) @ p
 
     check_vectorization(kernel)
 
@@ -144,11 +144,11 @@ def test05_transform_vector(variant_scalar_rgb):
     A = Matrix4f(1)
     A[3, 3] = 2
     A[1, 1] = .5
-    assert ek.allclose(Transform4f(A).transform_vector([2, 4, 6]), [2, 2, 6])
+    assert ek.allclose(Transform4f(A) @ Vector3f(2, 4, 6), [2, 2, 6])
 
     def kernel(v : Vector3f):
         from mitsuba.core import Transform4f
-        return Transform4f(A).transform_vector(v)
+        return Transform4f(A) @ v
 
     check_vectorization(kernel)
 
@@ -160,11 +160,11 @@ def test06_transform_normal(variant_scalar_rgb):
     A[3, 3] = 2
     A[1, 2] = .5
     A[1, 1] = .5
-    assert ek.allclose(Transform4f(A).transform_normal([2, 4, 6]), [2, 8, 2])
+    assert ek.allclose(Transform4f(A)@ Normal3f(2, 4, 6), [2, 8, 2])
 
     def kernel(n : Normal3f):
         from mitsuba.core import Transform4f
-        return Transform4f(A).transform_normal(n)
+        return Transform4f(A) @ n
 
     check_vectorization(kernel)
 

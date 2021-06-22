@@ -105,7 +105,7 @@ template <typename Point_> struct Transform {
 
     /**
      * \brief Transform a 3D point
-     * \remark In the Python API, this method is named \c transform_point
+     * \remark In the Python API, one should use the \c @ operator
      */
     template <typename T, typename Expr = ek::expr_t<Float, T>>
     MTS_INLINE Point<Expr, Size - 1> operator*(const Point<T, Size - 1> &arg) const {
@@ -119,7 +119,7 @@ template <typename Point_> struct Transform {
 
     /**
      * \brief Transform a 3D vector
-     * \remark In the Python API, this method is named \c transform_vector
+     * \remark In the Python API, one should use the \c @ operator
      */
     template <typename T, typename Expr = ek::expr_t<Float, T>>
     MTS_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
@@ -134,7 +134,7 @@ template <typename Point_> struct Transform {
 
     /**
      * \brief Transform a 3D normal vector
-     * \remark In the Python API, this method is named \c transform_normal
+     * \remark In the Python API, one should use the \c @ operator
      */
     template <typename T, typename Expr = ek::expr_t<Float, T>>
     MTS_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
