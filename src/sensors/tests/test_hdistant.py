@@ -24,7 +24,7 @@ def sensor_dict(target=None, to_world=None):
 def make_sensor(d):
     from mitsuba.core.xml import load_dict
 
-    return load_dict(d).expand()[0]
+    return load_dict(d)
 
 
 def test_construct(variant_scalar_rgb):

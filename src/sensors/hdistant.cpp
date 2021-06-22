@@ -138,69 +138,7 @@ public:
     MTS_IMPORT_BASE(Sensor, m_to_world, m_film)
     MTS_IMPORT_TYPES(Scene, Shape)
 
-    HemisphericalDistantSensor(const Properties &props) : Base(props), m_props(props) {
-
-        // Get target
-        if (props.has_property("target")) {
-            if (props.type("target") == Properties::Type::Array3f) {
-                props.point3f("target");
-                m_target_type = RayTargetType::Point;
-            } else if (props.type("target") == Properties::Type::Object) {
-                // We assume it's a shape
-                m_target_type = RayTargetType::Shape;
-            } else {
-                Throw("Unsupported 'target' parameter type");
-            }
-        } else {
-            m_target_type = RayTargetType::None;
-        }
-
-        props.mark_queried("to_world");
-        props.mark_queried("target");
-    }
-
-    // This must be implemented. However, it won't be used in practice:
-    // instead, HemisphericalDistantSensorImpl::bbox() is used when the plugin
-    // is instantiated.
-    ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }
-
-    template <RayTargetType TargetType>
-    using Impl = HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>;
-
-    // Recursively expand into an implementation specialized to the target
-    // specification.
-    std::vector<ref<Object>> expand() const override {
-        ref<Object> result;
-        switch (m_target_type) {
-            case RayTargetType::Shape:
-                result = (Object *) new Impl<RayTargetType::Shape>(m_props);
-                break;
-            case RayTargetType::Point:
-                result = (Object *) new Impl<RayTargetType::Point>(m_props);
-                break;
-            case RayTargetType::None:
-                result = (Object *) new Impl<RayTargetType::None>(m_props);
-                break;
-            default:
-                Throw("Unsupported ray target type!");
-        }
-        return { result };
-    }
-
-    MTS_DECLARE_CLASS()
-
-protected:
-    Properties m_props;
-    RayTargetType m_target_type;
-};
-
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-class HemisphericalDistantSensorImpl final : public Sensor<Float, Spectrum> {
-public:
-    MTS_IMPORT_BASE(Sensor, m_to_world, m_film)
-    MTS_IMPORT_TYPES(Scene, Shape)
-
-    HemisphericalDistantSensorImpl(const Properties &props) : Base(props) {
+    HemisphericalDistantSensor(const Properties &props) : Base(props) {
         // Check reconstruction filter radius
         if (m_film->reconstruction_filter()->radius() >
             0.5f + math::RayEpsilon<Float>) {
@@ -213,16 +151,25 @@ public:
         m_d.y() = 1.0f / m_film->size().y();
 
         // Set ray target if relevant
-        if constexpr (TargetType == RayTargetType::Point) {
-            m_target_point = props.point3f("target");
-        } else if constexpr (TargetType == RayTargetType::Shape) {
-            auto obj       = props.object("target");
-            m_target_shape = dynamic_cast<Shape *>(obj.get());
+        // Get target
+        if (props.has_property("target")) {
+            if (props.type("target") == Properties::Type::Array3f) {
+                m_target_type = RayTargetType::Point;
+                m_target_point = props.point3f("target");
+            } else if (props.type("target") == Properties::Type::Object) {
+                // We assume it's a shape
+                m_target_type = RayTargetType::Shape;
+                auto obj       = props.object("target");
+                m_target_shape = dynamic_cast<Shape *>(obj.get());
 
-            if (!m_target_shape)
-                Throw(
-                    "Invalid parameter target, must be a Point3f or a Shape.");
+                if (!m_target_shape)
+                    Throw(
+                        "Invalid parameter target, must be a Point3f or a Shape.");
+            } else {
+                Throw("Unsupported 'target' parameter type");
+            }
         } else {
+            m_target_type = RayTargetType::None;
             Log(Debug, "No target specified.");
         }
     }
@@ -256,16 +203,16 @@ public:
             warp::square_to_uniform_hemisphere(film_sample));
 
         // Sample target point and position ray origin
-        if constexpr (TargetType == RayTargetType::Point) {
+        if (m_target_type == RayTargetType::Point) {
             ray.o      = m_target_point - 2.f * ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
-        } else if constexpr (TargetType == RayTargetType::Shape) {
+        } else if (m_target_type == RayTargetType::Shape) {
             // Use area-based sampling of shape
             PositionSample3f ps =
                 m_target_shape->sample_position(time, aperture_sample, active);
             ray.o      = ps.p - 2.f * ray.d * m_bsphere.radius;
             ray_weight = wav_weight / (ps.pdf * m_target_shape->surface_area());
-        } else { // if constexpr (TargetType == RayTargetType::None) {
+        } else { // if (m_target_type == RayTargetType::None) {
             // Sample target uniformly on bounding sphere cross section
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
@@ -292,14 +239,14 @@ public:
         // Sample target point and position ray origin
         Point3f origin;
 
-        if constexpr (TargetType == RayTargetType::Point) {
+        if (m_target_type == RayTargetType::Point) {
             origin = m_target_point - 2.f * direction * m_bsphere.radius;
-        } else if constexpr (TargetType == RayTargetType::Shape) {
+        } else if (m_target_type == RayTargetType::Shape) {
             // Use area-based sampling of shape
             PositionSample3f ps =
                 m_target_shape->sample_position(time, aperture_sample, active);
             origin = ps.p - 2.f * direction * m_bsphere.radius;
-        } else { // if constexpr (TargetType == RayTargetType::None) {
+        } else { // if (m_target_type == RayTargetType::None) {
             // Sample target uniformly on bounding sphere cross section
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
@@ -347,12 +294,12 @@ public:
             << "  to_world = " << string::indent(m_to_world) << "," << std::endl
             << "  film = " << string::indent(m_film) << "," << std::endl;
 
-        if constexpr (TargetType == RayTargetType::Point)
+        if (m_target_type == RayTargetType::Point)
             oss << "  target = " << m_target_point << std::endl;
-        else if constexpr (TargetType == RayTargetType::Shape)
+        else if (m_target_type == RayTargetType::Shape)
             oss << "  target = " << string::indent(m_target_shape) << std::endl;
-        else // if constexpr (TargetType == RayTargetType::None)
-            oss << "  target = none" << std::endl;
+        else // if (m_target_type == RayTargetType::None)
+            oss << "  target = None" << std::endl;
 
         oss << "]";
 
@@ -364,6 +311,8 @@ public:
 protected:
     // Scene bounding sphere
     ScalarBoundingSphere3f m_bsphere;
+    // Ray target type
+    RayTargetType m_target_type;
     // Target shape if any
     ref<Shape> m_target_shape;
     // Target point if any
@@ -374,30 +323,4 @@ protected:
 
 MTS_IMPLEMENT_CLASS_VARIANT(HemisphericalDistantSensor, Sensor)
 MTS_EXPORT_PLUGIN(HemisphericalDistantSensor, "HemisphericalDistantSensor")
-
-NAMESPACE_BEGIN(detail)
-template <RayTargetType TargetType>
-constexpr const char *distant_sensor_class_name() {
-    if constexpr (TargetType == RayTargetType::Shape) {
-        return "HemisphericalDistantSensor_Shape";
-    } else if constexpr (TargetType == RayTargetType::Point) {
-        return "HemisphericalDistantSensor_Point";
-    } else if constexpr (TargetType == RayTargetType::None) {
-        return "HemisphericalDistantSensor_NoTarget";
-    }
-}
-NAMESPACE_END(detail)
-
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-Class *HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>::m_class =
-    new Class(detail::distant_sensor_class_name<TargetType>(), "Sensor",
-              ::mitsuba::detail::get_variant<Float, Spectrum>(), nullptr,
-              nullptr);
-
-template <typename Float, typename Spectrum, RayTargetType TargetType>
-const Class *
-HemisphericalDistantSensorImpl<Float, Spectrum, TargetType>::class_() const {
-    return m_class;
-}
-
 NAMESPACE_END(mitsuba)
