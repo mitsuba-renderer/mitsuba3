@@ -48,6 +48,17 @@ The ``to_world`` transform is best set using a
 hemisphere defined by the [0, 0, 1] direction, and the ``up`` film direction is
 set to [0, 1, 0].
 
+The following XML snippet creates a scene with a ``roughconductor``
+surface illuminated by three ``directional`` emitter, each emitting in
+a single RGB channel. A ``hdistant`` plugin with default orientation is
+defined.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/sensor/sensor_hdistant_illumination_optimized.svg
+   :caption: Example scene illumination setup
+.. subfigend::
+   :label: fig-hdistant-illumination
+
 .. code:: xml
 
     <scene version="2.1.0">
@@ -61,7 +72,7 @@ set to [0, 1, 0].
             <film type="hdrfilm">
                 <integer name="width" value="32"/>
                 <integer name="height" value="32"/>
-                <string name="pixel_format" value="luminance"/>
+                <string name="pixel_format" value="rgb"/>
                 <string name="component_format" value="float32"/>
                 <rfilter type="box"/>
             </film>
@@ -70,9 +81,15 @@ set to [0, 1, 0].
 
         <emitter type="directional">
             <vector name="direction" x="1" y="0" z="-1"/>
+            <rgb name="irradiance" value="1, 0, 0"/>
         </emitter>
         <emitter type="directional">
             <vector name="direction" x="1" y="1" z="-1"/>
+            <rgb name="irradiance" value="0, 1, 0"/>
+        </emitter>
+        <emitter type="directional">
+            <vector name="direction" x="0" y="1" z="-1"/>
+            <rgb name="irradiance" value="0, 0, 1   "/>
         </emitter>
 
         <shape type="rectangle">
@@ -80,6 +97,24 @@ set to [0, 1, 0].
         </shape>
     </scene>
 
+The following figures show the recorded exitant radiance with the default film
+orientation (left, ``up = [0,1,0]``) and with a rotated film (right,
+``up = [1,1,0]``). Colored dots on the plots materialize emitter directions.
+The orange arrow represents the ``up`` direction on the film.
+Note that on the plots, the origin of pixel coordinates is taken at the bottom
+left.
+
+.. subfigstart::
+.. subfigure:: ../../resources/data/docs/images/sensor/sensor_hdistant_film_default_optimized.svg
+   :caption: Default film orientation
+.. subfigure:: ../../resources/data/docs/images/sensor/sensor_hdistant_film_rotated_optimized.svg
+   :caption: Rotated film
+.. subfigure:: ../../resources/data/docs/images/sensor/sensor_hdistant_default.svg
+   :caption: Exitant radiance
+.. subfigure:: ../../resources/data/docs/images/sensor/sensor_hdistant_rotated.svg
+   :caption: Exitant radiance
+.. subfigend::
+   :label: fig-hdistant-film
 
 By default, ray target points are sampled from the cross section of the scene's
 bounding sphere. The ``target`` parameter can be set to restrict ray target
