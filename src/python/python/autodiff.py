@@ -94,10 +94,11 @@ def _render_helper(scene, spp=None, sensor_index=0):
     return values / (weight + 1e-8)
 
 
-def write_bitmap(filename, data, resolution, write_async=True):
+def convert_to_bitmap(data, resolution, uint8_srgb=True):
     """
-    Write the linearized RGB image in `data` to a PNG/EXR/.. file with
-    resolution `resolution`.
+    Convert the linearized RGB image in `data` to a `Bitmap` with
+    resolution `resolution`. `uint8_srgb` defines whether the resulting
+    bitmap should be translated to a uint8 sRGB bitmap.
     """
     import numpy as np
     from mitsuba.core import Bitmap, Struct
@@ -108,11 +109,23 @@ def write_bitmap(filename, data, resolution, write_async=True):
     data = np.array(data.numpy())
     data = data.reshape(resolution[1], resolution[0], -1)
     bitmap = Bitmap(data)
-    if filename.endswith('.png') or \
-       filename.endswith('.jpg') or \
-       filename.endswith('.jpeg'):
+    if uint8_srgb:
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)
+    return bitmap
+
+
+def write_bitmap(filename, data, resolution, write_async=True):
+    """
+    Write the linearized RGB image in `data` to a PNG/EXR/.. file with
+    resolution `resolution`.
+    """
+
+    uint8_srgb = filename.endswith('.png') or \
+                 filename.endswith('.jpg') or \
+                 filename.endswith('.jpeg')
+
+    bitmap = convert_to_bitmap(data, resolution, uint8_srgb)
     quality = 0 if filename.endswith('png') else -1
 
     if write_async:
