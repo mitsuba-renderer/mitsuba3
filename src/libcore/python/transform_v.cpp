@@ -45,6 +45,12 @@ void bind_transform3f(py::module &m, const char *name) {
         .def("__matmul__", [](const Transform3f &a, const Vector2f &b) {
             return a * b;
         }, py::is_operator())
+        .def("transform_affine", [](const Transform3f &a, const Point2f &b) {
+            return a.transform_affine(b);
+        }, "p"_a, D(Transform, transform_affine))
+        .def("transform_affine", [](const Transform3f &a, const Vector2f &b) {
+            return a.transform_affine(b);
+        }, "v"_a, D(Transform, transform_affine))
         /// Fields
         .def("inverse",   &Transform3f::inverse, D(Transform, inverse))
         .def("translation", &Transform3f::translation, D(Transform, translation))
@@ -59,9 +65,10 @@ void bind_transform3f(py::module &m, const char *name) {
     MTS_PY_ENOKI_STRUCT(trans3, Transform3f, matrix, inverse_transpose)
 }
 
-template <typename Float>
+template <typename Float, typename Spectrum>
 void bind_transform4f(py::module &m, const char *name) {
     MTS_IMPORT_CORE_TYPES()
+    using Ray3f = Ray<Point<Float, 3>, Spectrum>;
     auto trans4 = py::class_<Transform4f>(m, name, D(Transform))
         .def(py::init<>(), "Initialize with the identity matrix")
         .def(py::init<const Transform4f &>(), "Copy constructor")
@@ -112,6 +119,21 @@ void bind_transform4f(py::module &m, const char *name) {
         .def("__matmul__", [](const Transform4f &a, const Normal3f &b) {
             return a * b;
         }, py::is_operator())
+        .def("__matmul__", [](const Transform4f &a, const Ray3f &b) {
+            return a * b;
+        }, py::is_operator())
+        .def("transform_affine", [](const Transform4f &a, const Point3f &b) {
+            return a.transform_affine(b);
+        }, "p"_a, D(Transform, transform_affine))
+        .def("transform_affine", [](const Transform4f &a, const Ray3f &b) {
+            return a.transform_affine(b);
+        }, "ray"_a, D(Transform, transform_affine))
+        .def("transform_affine", [](const Transform4f &a, const Vector3f &b) {
+            return a.transform_affine(b);
+        }, "v"_a, D(Transform, transform_affine))
+        .def("transform_affine", [](const Transform4f &a, const Normal3f &b) {
+            return a.transform_affine(b);
+        }, "n"_a, D(Transform, transform_affine))
         /// Fields
         .def("inverse",   &Transform4f::inverse, D(Transform, inverse))
         .def("has_scale", &Transform4f::has_scale, D(Transform, has_scale))
@@ -127,6 +149,7 @@ void bind_transform4f(py::module &m, const char *name) {
 
 MTS_PY_EXPORT(Transform) {
     MTS_PY_IMPORT_TYPES()
+    using ScalarSpectrum = scalar_spectrum_t<Spectrum>;
 
     MTS_PY_CHECK_ALIAS(Transform3f, "Transform3f") {
         bind_transform3f<Float>(m, "Transform3f");
@@ -140,12 +163,12 @@ MTS_PY_EXPORT(Transform) {
     }
 
     MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
-        bind_transform4f<Float>(m, "Transform4f");
+        bind_transform4f<Float, Spectrum>(m, "Transform4f");
     }
 
     MTS_PY_CHECK_ALIAS(ScalarTransform4f, "ScalarTransform4f") {
         if constexpr (ek::is_dynamic_v<Float>) {
-            bind_transform4f<ScalarFloat>(m, "ScalarTransform4f");
+            bind_transform4f<ScalarFloat, ScalarSpectrum>(m, "ScalarTransform4f");
             py::implicitly_convertible<ScalarTransform4f, Transform4f>();
         }
     }
