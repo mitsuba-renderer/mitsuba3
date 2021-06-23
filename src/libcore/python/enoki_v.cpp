@@ -130,8 +130,7 @@ MTS_PY_EXPORT(Enoki) {
             enoki_scalar.attr(ek_name.c_str());
     }
 
-
-    // Matrix type aliases
     m.attr("PCG32") = enoki_variant.attr("PCG32");
+    m.attr("Loop") = enoki_variant.attr("Loop");
 }
 
