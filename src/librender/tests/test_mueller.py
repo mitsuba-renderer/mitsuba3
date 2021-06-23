@@ -8,16 +8,16 @@ def test01_depolarizer(variant_scalar_rgb):
     from mitsuba.render.mueller import depolarizer
 
     # Remove all polarization, and change intensity based on transmittance value.
-    assert ek.allclose(ek.dot(depolarizer(.8), Array4f([1, .5, .5, .5])), [.8, 0, 0, 0])
+    assert ek.allclose(depolarizer(.8) @ Array4f([1, .5, .5, .5]), [.8, 0, 0, 0])
 
 def test02_rotator(variant_scalar_rgb):
     from mitsuba.render.mueller import rotator
 
     # Start with horizontally linear polarized light [1,1,0,0] and ..
     # .. rotate the Stokes frame by +45˚
-    assert ek.allclose(ek.dot(rotator( 45 * ek.Pi/180), Array4f([1, 1, 0, 0])), [1, 0, -1, 0], atol=1e-5)
+    assert ek.allclose(rotator( 45 * ek.Pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, -1, 0], atol=1e-5)
     # .. rotate the Stokes frame by -45˚
-    assert ek.allclose(ek.dot(rotator(-45 * ek.Pi/180), Array4f([1, 1, 0, 0])), [1, 0, +1, 0], atol=1e-5)
+    assert ek.allclose(rotator(-45 * ek.Pi/180) @ Array4f([1, 1, 0, 0]), [1, 0, +1, 0], atol=1e-5)
 
 
 
@@ -30,7 +30,7 @@ def test03_linear_polarizer(variant_scalar_rgb):
     polarizer = rotated_element(angle, linear_polarizer(1.0))
 
     stokes_in  = Array4f([1, 1, 0, 0])
-    stokes_out = ek.dot(polarizer, stokes_in)
+    stokes_out = polarizer @ stokes_in
     intensity  = stokes_out[0]
     assert ek.allclose(intensity, value_malus)
 
@@ -135,21 +135,21 @@ def test07_rotate_stokes_basis(variant_scalar_rgb):
     b_90 = rotate_vector(b_00, w, 90.0)
     assert ek.allclose(b_90, [0, 1, 0], atol=1e-3)
     # Now polarization should be at 90˚ / vertical (with Stokes vector [1, -1, 0, 0])
-    s_90 = ek.dot(rotate_stokes_basis(w, b_00, b_90), s_00)
+    s_90 = rotate_stokes_basis(w, b_00, b_90) @ s_00
     assert ek.allclose(s_90, [1.0, -1.0, 0.0, 0.0], atol=1e-3)
 
     # Switch to basis rotated by +45˚.
     b_45 = rotate_vector(b_00, w, +45.0)
     assert ek.allclose(b_45, [0.70712, 0.70712, 0.0], atol=1e-3)
     # Now polarization should be at -45˚ (with Stokes vector [1, 0, -1, 0])
-    s_45 = ek.dot(rotate_stokes_basis(w, b_00, b_45), s_00)
+    s_45 = rotate_stokes_basis(w, b_00, b_45) @ s_00
     assert ek.allclose(s_45, [1.0, 0.0, -1.0, 0.0], atol=1e-3)
 
     # Switch to basis rotated by -45˚.
     b_45_neg = rotate_vector(b_00, w, -45.0)
     assert ek.allclose(b_45_neg, [0.70712, -0.70712, 0.0], atol=1e-3)
     # Now polarization should be at +45˚ (with Stokes vector [1, 0, +1, 0])
-    s_45_neg = ek.dot(rotate_stokes_basis(w, b_00, b_45_neg), s_00)
+    s_45_neg = rotate_stokes_basis(w, b_00, b_45_neg) @ s_00
     assert ek.allclose(s_45_neg, [1.0, 0.0, +1.0, 0.0], atol=1e-3)
 
 
