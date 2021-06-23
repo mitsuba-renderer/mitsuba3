@@ -13,7 +13,7 @@ MTS_PY_EXPORT(warp) {
           "p"_a, D(warp, uniform_disk_to_square));
 
     m.def("square_to_uniform_disk_pdf",
-          warp::square_to_uniform_disk_pdf<true, Float>,
+          warp::square_to_uniform_disk_pdf<false, Float>,
           "p"_a, D(warp, square_to_uniform_disk_pdf));
 
     m.def("uniform_disk_to_square_concentric",
@@ -28,7 +28,7 @@ MTS_PY_EXPORT(warp) {
           "sample"_a, D(warp, square_to_uniform_square_concentric));
 
     m.def("square_to_uniform_disk_concentric_pdf",
-          warp::square_to_uniform_disk_concentric_pdf<true, Float>,
+          warp::square_to_uniform_disk_concentric_pdf<false, Float>,
           "p"_a, D(warp, square_to_uniform_disk_concentric_pdf));
 
     m.def("square_to_uniform_triangle",
@@ -64,7 +64,7 @@ MTS_PY_EXPORT(warp) {
           "v"_a, D(warp, square_to_tent_pdf));
 
     m.def("square_to_uniform_triangle_pdf",
-          warp::square_to_uniform_triangle_pdf<true, Float>,
+          warp::square_to_uniform_triangle_pdf<false, Float>,
           "p"_a, D(warp, square_to_uniform_triangle_pdf));
 
     m.def("square_to_uniform_sphere",
@@ -76,7 +76,7 @@ MTS_PY_EXPORT(warp) {
           "sample"_a, D(warp, uniform_sphere_to_square));
 
     m.def("square_to_uniform_sphere_pdf",
-          warp::square_to_uniform_sphere_pdf<true, Float>,
+          warp::square_to_uniform_sphere_pdf<false, Float>,
           "v"_a, D(warp, square_to_uniform_sphere_pdf));
 
     m.def("square_to_uniform_hemisphere",
@@ -88,7 +88,7 @@ MTS_PY_EXPORT(warp) {
           "v"_a, D(warp, uniform_hemisphere_to_square));
 
     m.def("square_to_uniform_hemisphere_pdf",
-          warp::square_to_uniform_hemisphere_pdf<true, Float>,
+          warp::square_to_uniform_hemisphere_pdf<false, Float>,
           "v"_a, D(warp, square_to_uniform_hemisphere_pdf));
 
     m.def("square_to_cosine_hemisphere",
@@ -100,7 +100,7 @@ MTS_PY_EXPORT(warp) {
           "v"_a, D(warp, cosine_hemisphere_to_square));
 
     m.def("square_to_cosine_hemisphere_pdf",
-          warp::square_to_cosine_hemisphere_pdf<true, Float>,
+          warp::square_to_cosine_hemisphere_pdf<false, Float>,
           "v"_a, D(warp, square_to_cosine_hemisphere_pdf));
 
     m.def("square_to_uniform_cone",
@@ -112,7 +112,7 @@ MTS_PY_EXPORT(warp) {
           "v"_a, "cos_cutoff"_a, D(warp, uniform_cone_to_square));
 
     m.def("square_to_uniform_cone_pdf",
-          warp::square_to_uniform_cone_pdf<true, Float>,
+          warp::square_to_uniform_cone_pdf<false, Float>,
           "v"_a, "cos_cutoff"_a, D(warp, square_to_uniform_cone_pdf));
 
     m.def("square_to_beckmann",
