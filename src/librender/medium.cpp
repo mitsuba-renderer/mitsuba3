@@ -40,7 +40,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
 
     // initialize basic medium interaction fields
-    MediumInteraction3f mi;
+    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
     mi.wi          = -ray.d;
     mi.sh_frame    = Frame3f(mi.wi);
     mi.time        = ray.time;
@@ -70,6 +70,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     mi.p            = ray(sampled_t);
     mi.medium       = this;
     mi.mint         = mint;
+
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
         get_scattering_coefficients(mi, valid_mi);
     mi.combined_extinction = combined_extinction;
