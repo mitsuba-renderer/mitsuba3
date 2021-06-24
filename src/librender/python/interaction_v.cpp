@@ -14,6 +14,7 @@ MTS_PY_EXPORT(Interaction) {
         .def_field(Interaction3f, time,        D(Interaction, time))
         .def_field(Interaction3f, wavelengths, D(Interaction, wavelengths))
         .def_field(Interaction3f, p,           D(Interaction, p))
+        .def_field(Interaction3f, n,           D(Interaction, n))
         // Methods
         .def(py::init<>(), D(Interaction, Interaction))
         .def("zero_",        &Interaction3f::zero_, "size"_a = 1)
@@ -22,7 +23,7 @@ MTS_PY_EXPORT(Interaction) {
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def_repr(Interaction3f);
 
-    MTS_PY_ENOKI_STRUCT(it, Interaction3f, t, time, wavelengths, p)
+    MTS_PY_ENOKI_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
 }
 
 MTS_PY_EXPORT(SurfaceInteraction) {
@@ -33,7 +34,6 @@ MTS_PY_EXPORT(SurfaceInteraction) {
         // Members
         .def_field(SurfaceInteraction3f, shape,      D(SurfaceInteraction, shape))
         .def_field(SurfaceInteraction3f, uv,         D(SurfaceInteraction, uv))
-        .def_field(SurfaceInteraction3f, n,          D(SurfaceInteraction, n))
         .def_field(SurfaceInteraction3f, sh_frame,   D(SurfaceInteraction, sh_frame))
         .def_field(SurfaceInteraction3f, dp_du,      D(SurfaceInteraction, dp_du))
         .def_field(SurfaceInteraction3f, dp_dv,      D(SurfaceInteraction, dp_dv))
@@ -82,7 +82,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
         .def_repr(SurfaceInteraction3f);
 
     MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths,
-                        p, shape, uv, n, sh_frame, dp_du, dp_dv, dn_du,
+                        p, n, shape, uv, sh_frame, dp_du, dp_dv, dn_du,
                         dn_dv, duv_dx, duv_dy, wi, prim_index, instance)
 }
 

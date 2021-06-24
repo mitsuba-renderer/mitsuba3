@@ -3110,6 +3110,8 @@ static const char *__doc_mitsuba_Interaction_operator_assign_4 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_p = R"doc(Position of the interaction in world coordinates)doc";
 
+static const char *__doc_mitsuba_Interaction_n = R"doc(Geometric normal (only valid for ``SurfaceInteraction``))doc";
+
 static const char *__doc_mitsuba_Interaction_spawn_ray = R"doc(Spawn a semi-infinite ray towards the given direction)doc";
 
 static const char *__doc_mitsuba_Interaction_spawn_ray_to = R"doc(Spawn a finite ray towards the given position)doc";
@@ -7017,8 +7019,6 @@ static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a po
 static const char *__doc_mitsuba_SurfaceInteraction_is_medium_transition = R"doc(Does the surface mark a transition between two media?)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_is_sensor = R"doc(Is the intersected shape also a sensor?)doc";
-
-static const char *__doc_mitsuba_SurfaceInteraction_n = R"doc(Geometric normal)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_operator_array = R"doc()doc";
 

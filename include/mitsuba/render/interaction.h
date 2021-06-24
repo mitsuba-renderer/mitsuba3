@@ -383,8 +383,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(SurfaceInteraction, t, time, wavelengths, p, shape, uv,
-                 n, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+    ENOKI_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
+                 sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                  duv_dy, wi, prim_index, instance)
 };
 
