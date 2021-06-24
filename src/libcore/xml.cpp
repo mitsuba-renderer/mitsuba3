@@ -445,6 +445,8 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     continue;
                 for (const auto &kv : param)
                     string::replace_inplace(value, "$" + kv.first, kv.second);
+                if (value.find('$') != std::string::npos)
+                    src.throw_error(node, "undefined parameter(s) in string: \"%s\"!", value);
                 attr.set_value(value.c_str());
             }
         }
