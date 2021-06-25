@@ -34,6 +34,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     "-DMTS_VARIANT_NAME=${MTS_VARIANT_NAME}"
     "-DMTS_VARIANT_FLOAT=${MTS_VARIANT_FLOAT}"
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
+    # macOS: Avoid warnings about loop unrolling being disabled with -Os
+    "-DENOKI_UNROLL= "
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core)
@@ -75,6 +77,9 @@ pybind11_add_module(core_ext
   thread.cpp
   util.cpp
 )
+
+# macOS: Avoid warnings about loop unrolling being disabled with -Os
+target_compile_definitions(core_ext PRIVATE "-DENOKI_UNROLL= ")
 
 target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render asmjit)
 

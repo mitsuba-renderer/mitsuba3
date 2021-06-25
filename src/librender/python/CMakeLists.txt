@@ -35,6 +35,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
     "-DMTS_VARIANT_NAME=${MTS_VARIANT_NAME}"
     "-DMTS_VARIANT_FLOAT=${MTS_VARIANT_FLOAT}"
     "-DMTS_VARIANT_SPECTRUM=${MTS_VARIANT_SPECTRUM}"
+    # macOS: Avoid warnings about loop unrolling being disabled with -Os
+    "-DENOKI_UNROLL= "
   )
 
   target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-render)
@@ -60,6 +62,9 @@ pybind11_add_module(render_ext
   phase.cpp
   spiral.cpp
 )
+
+# macOS: Avoid warnings about loop unrolling being disabled with -Os
+target_compile_definitions(render_ext PRIVATE "-DENOKI_UNROLL= ")
 
 target_link_libraries(render_ext PRIVATE mitsuba-render)
 
