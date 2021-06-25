@@ -3,7 +3,8 @@ import pytest
 import enoki as ek
 import numpy as np
 
-from .utils import check_uniform_scalar_sampler, check_uniform_wavefront_sampler
+from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler, 
+                     check_deep_copy_sampler_scalar, check_deep_copy_sampler_wavefront ) 
 
 def test01_ldsampler_scalar(variant_scalar_rgb):
     from mitsuba.core import xml
@@ -64,3 +65,25 @@ def test03_ldsampler_deterministic_values(variant_scalar_rgb):
 
     for v in values_2d_dim1:
         assert ek.allclose(sampler.next_2d(), v)
+
+
+def test04_copy_sampler_scalar(variants_any_scalar):
+    from mitsuba.core import xml
+
+    sampler = xml.load_dict({
+        "type" : "ldsampler",
+        "sample_count" : 1024,
+    })
+    
+    check_deep_copy_sampler_scalar(sampler)
+
+
+def test05_copy_sampler_wavefront(variants_vec_backends_once):
+    from mitsuba.core import xml
+
+    sampler = xml.load_dict({
+        "type" : "ldsampler",
+        "sample_count" : 1024,
+    })
+    
+    check_deep_copy_sampler_wavefront(sampler)

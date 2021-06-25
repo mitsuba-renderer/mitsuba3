@@ -53,3 +53,39 @@ def check_uniform_wavefront_sampler(sampler, res=16, atol=0.5):
 
     assert ek.allclose(Float(hist_1d), float(sample_count) / res, atol=atol)
     assert ek.allclose(Float(hist_2d), float(sample_count) / (res * res), atol=atol)
+
+
+def check_deep_copy_sampler_scalar(sampler1): 
+    sampler1.seed(0)
+
+    assert sampler1.wavefront_size() == 1
+
+    for i in range(5):
+        sampler1.next_1d()
+        sampler1.next_2d()
+
+    sampler2 = sampler1.copy()
+
+    for i in range(10):
+        assert ek.all(sampler1.next_1d() == sampler2.next_1d())
+        assert ek.all(sampler1.next_2d() == sampler2.next_2d())
+
+
+def check_deep_copy_sampler_wavefront(sampler1, factor=16): 
+    sample_count = sampler1.sample_count()
+
+    sampler1.set_samples_per_wavefront(sample_count // factor)
+    sampler1.seed(0, sample_count // factor)
+
+    assert sampler1.wavefront_size() == (sample_count // factor)
+
+    for i in range(5):
+        sampler1.next_1d()
+        sampler1.advance()
+        sampler1.next_2d()
+
+    sampler2 = sampler1.copy()
+
+    for i in range(10):
+        assert ek.all(sampler1.next_1d() == sampler2.next_1d())
+        assert ek.all(sampler1.next_2d() == sampler2.next_2d())

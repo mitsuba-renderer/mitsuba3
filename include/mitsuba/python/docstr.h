@@ -5427,6 +5427,14 @@ the internal state of the sampler.
 
 May throw an exception if not supported.)doc";
 
+static const char *__doc_mitsuba_Sampler_copy =
+R"doc(Create a deep copy (internal state) of this sampler.
+
+Subsequent calls to the copied sampler will produce the same random 
+numbers as the original sampler.
+
+May throw an exception if not supported.)doc";
+
 static const char *__doc_mitsuba_Sampler_compute_per_sequence_seed =
 R"doc(Generates a array of seeds where the seed values are unique per
 sequence)doc";

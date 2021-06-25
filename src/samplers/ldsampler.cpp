@@ -85,6 +85,10 @@ public:
         return sampler;
     }
 
+    ref<Sampler<Float, Spectrum>> copy() override {
+        return new LowDiscrepancySampler (*this);
+    }
+
     void seed(uint64_t seed_offset, size_t wavefront_size) override {
         Base::seed(seed_offset, wavefront_size);
         m_scramble_seed = compute_per_sequence_seed((uint32_t) seed_offset);
@@ -138,7 +142,12 @@ public:
     }
 
     MTS_DECLARE_CLASS()
+    
 private:
+    LowDiscrepancySampler(const LowDiscrepancySampler &sampler) : Base(sampler) {
+        m_scramble_seed = sampler.m_scramble_seed;
+    }
+
     /// Per-sequence scramble seed
     UInt32 m_scramble_seed;
 };

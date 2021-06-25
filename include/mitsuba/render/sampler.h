@@ -61,6 +61,19 @@ public:
      */
     virtual ref<Sampler> clone() = 0;
 
+
+    /**
+     * \brief Create a deep copy of this sampler.
+     * 
+     * Subsequent calls to the copied sampler will produce the same
+     * random numbers as the original sampler.
+     * 
+     * \remark This method relies on the overload of the copy construtor.
+     *
+     * May throw an exception if not supported.
+     */
+    virtual ref<Sampler> copy() = 0;
+
     /**
      * \brief Deterministically seed the underlying RNG, if applicable.
      *
@@ -104,6 +117,8 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     Sampler(const Properties &props);
+    /// Copy state to a new sampler object
+    Sampler(const Sampler&);  
     virtual ~Sampler();
 
     /// Generates a array of seeds where the seed values are unique per sequence
@@ -141,7 +156,8 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     PCG32Sampler(const Properties &props);
-
+    /// Copy state to a new PCG32Sampler object
+    PCG32Sampler(const PCG32Sampler &sampler);
 protected:
     PCG32 m_rng;
 };
