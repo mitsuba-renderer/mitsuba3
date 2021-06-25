@@ -99,10 +99,17 @@ public:
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
 
     std::string to_string() const override {
+        using string::indent;
+
         std::ostringstream oss;
         oss << "IrradianceMeter[" << std::endl
-            << "  shape = " << m_shape << "," << std::endl
-            << "  film = " << m_film << "," << std::endl
+            << "  surface_area = ";
+
+        if (m_shape) oss << m_shape->surface_area();
+            else         oss << " <no shape attached!>";
+        oss << "," << std::endl;
+
+        oss << "  film = " << indent(m_film) << "," << std::endl
             << "]";
         return oss.str();
     }
