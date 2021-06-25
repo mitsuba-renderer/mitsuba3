@@ -314,9 +314,8 @@ string_type path::str() const {
 
     for (size_t i = 0; i < m_path.size(); ++i) {
         oss << m_path[i];
-        if (i + 1 < m_path.size()) {
+        if (i + 1 < m_path.size())
             oss << preferred_separator;
-        }
     }
 
     return oss.str();
@@ -339,17 +338,17 @@ void path::set(const string_type &str) {
 
 std::vector<string_type> path::tokenize(const string_type &string,
                                         const string_type &delim) {
-    string_type::size_type lastPos = 0,
-                           pos = string.find_first_of(delim, lastPos);
+    string_type::size_type last_pos = 0,
+                           pos = string.find_first_of(delim, last_pos);
     std::vector<string_type> tokens;
 
-    while (lastPos != string_type::npos) {
-        if (pos != lastPos)
-            tokens.push_back(string.substr(lastPos, pos - lastPos));
-        lastPos = pos;
-        if (lastPos == string_type::npos || lastPos + 1 == string.length())
+    while (last_pos != string_type::npos) {
+        if (pos != last_pos)
+            tokens.push_back(string.substr(last_pos, pos - last_pos));
+        last_pos = pos;
+        if (last_pos == string_type::npos || last_pos + 1 == string.length())
             break;
-        pos = string.find_first_of(delim, ++lastPos);
+        pos = string.find_first_of(delim, ++last_pos);
     }
 
     return tokens;
