@@ -5,6 +5,7 @@ MTS_PY_EXPORT(Sampler) {
     MTS_PY_IMPORT_TYPES(Sampler)
     MTS_PY_CLASS(Sampler, Object)
         .def_method(Sampler, clone)
+        .def_method(Sampler, copy)
         .def_method(Sampler, sample_count)
         .def_method(Sampler, wavefront_size)
         .def_method(Sampler, set_samples_per_wavefront, "samples_per_wavefront"_a)

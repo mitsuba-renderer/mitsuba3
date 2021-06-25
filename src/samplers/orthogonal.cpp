@@ -104,6 +104,10 @@ public:
         return sampler;
     }
 
+    ref<Sampler<Float, Spectrum>> copy() override {
+        return new OrthogonalSampler(*this);
+    }
+
     void seed(uint64_t seed_offset, size_t wavefront_size) override {
         Base::seed(seed_offset, wavefront_size);
         m_permutation_seed = compute_per_sequence_seed((uint32_t) seed_offset);
@@ -217,6 +221,14 @@ private:
         UInt32 sub_stratum = permute_kensler(a_ik, m_resolution, p * (j + 1) * 0x68bc21eb, active);
         Float jitter = m_jitter ? m_rng.template next_float<Float>(active) : 0.5f;
         return (stratum + (sub_stratum + jitter) / m_resolution) / m_resolution;
+    }
+
+    OrthogonalSampler(const OrthogonalSampler &sampler) : Base(sampler) {
+        m_jitter           = sampler.m_jitter;
+        m_strength         = sampler.m_strength;
+        m_resolution       = sampler.m_resolution;
+        m_resolution_div   = sampler.m_resolution_div;
+        m_permutation_seed = sampler.m_permutation_seed;
     }
 
 private:

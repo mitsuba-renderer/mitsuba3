@@ -70,6 +70,10 @@ public:
         return sampler;
     }
 
+    ref<Sampler<Float, Spectrum>> copy() override {
+        return new IndependentSampler(*this);
+    }
+
     Float next_1d(Mask active = true) override {
         Assert(seeded());
         return m_rng.template next_float<Float>(active);
@@ -90,6 +94,9 @@ public:
     }
 
     MTS_DECLARE_CLASS()
+
+private:
+    IndependentSampler(const IndependentSampler &sampler) : Base(sampler) {}
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(IndependentSampler, Sampler)

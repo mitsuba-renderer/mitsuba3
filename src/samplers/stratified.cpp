@@ -88,6 +88,10 @@ public:
         return sampler;
     }
 
+    ref<Sampler<Float, Spectrum>> copy() override {
+        return new StratifiedSampler(*this);
+    }
+
     void seed(uint64_t seed_offset, size_t wavefront_size) override {
         Base::seed(seed_offset, wavefront_size);
         m_permutation_seed = compute_per_sequence_seed((uint32_t) seed_offset);
@@ -147,7 +151,17 @@ public:
     }
 
     MTS_DECLARE_CLASS()
+
 private:
+    StratifiedSampler(const StratifiedSampler &sampler) : Base(sampler) {
+        m_jitter           = sampler.m_jitter;
+        m_resolution       = sampler.m_resolution;
+        m_inv_resolution   = sampler.m_inv_resolution;
+        m_inv_sample_count = sampler.m_inv_sample_count;
+        m_resolution_div   = sampler.m_resolution_div;
+        m_permutation_seed = sampler.m_permutation_seed;
+    }
+
     bool m_jitter;
 
     /// Stratification grid resolution
