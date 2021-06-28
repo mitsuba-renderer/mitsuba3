@@ -893,27 +893,20 @@ def test19_update_geometry(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test20_write_xml(variants_all_rgb):
-    from mitsuba.core.xml import load_dict
-    from mitsuba.core import Thread
+def test20_write_xml(variants_all_rgb, tmp_path):
+    from mitsuba.core import xml
     from mitsuba.python.util import traverse
-    from enoki import allclose
-    import os
-    from shutil import rmtree
 
-    fr = Thread.thread().file_resolver()
-    # Add the path to the mitsuba root folder, so that files are always saved in mitsuba/resources/...
-    # This way we know where to look for the file in case the unit test fails
-    mts_root = str(fr[len(fr)-1])
-    filepath = os.path.join(mts_root, 'resources/data/scenes/mesh_write_xml/mesh.ply')
-    dirname = os.path.dirname(filepath)
-    os.makedirs(dirname, exist_ok=True)
-    mesh = load_dict({
+    filepath = str(tmp_path / 'test_mesh-test20_write_xml.ply')
+    print(f"Output temporary file: {filepath}")
+
+    mesh = xml.load_dict({
         'type': 'ply',
         'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
     })
     params = traverse(mesh)
-    positions = params['vertex_positions'].numpy().copy()
+    positions = params['vertex_positions'].copy_()
+
     # Modify one buffer, to check if JIT modes are properly evaluated when saving
     params['vertex_positions'] += 10
     # Add a mesh attribute, to check if they are properly migrated in CUDA modes
@@ -921,12 +914,11 @@ def test20_write_xml(variants_all_rgb):
     mesh.add_attribute(buf_name, 1, [1,2,3,4])
 
     mesh.write_ply(filepath)
-    mesh_saved = load_dict({
+    mesh_saved = xml.load_dict({
         'type': 'ply',
         'filename': filepath
     })
     params_saved = traverse(mesh_saved)
 
-    rmtree(os.path.split(filepath)[0])
-    assert allclose(params_saved['vertex_positions'], positions + 10)
-    assert buf_name in params_saved and allclose(params_saved[buf_name], [1, 2, 3, 4])
+    assert ek.allclose(params_saved['vertex_positions'], positions + 10.0)
+    assert buf_name in params_saved and ek.allclose(params_saved[buf_name], [1, 2, 3, 4])
