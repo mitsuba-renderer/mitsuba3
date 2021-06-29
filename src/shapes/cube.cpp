@@ -28,8 +28,10 @@ Cube (:monosp:`cube`)
      (Default: none (i.e. object space = world space))
 
 This shape plugin describes a cube intersection primitive, based on the triangle
-mesh class.
-
+mesh class.  By default, it creates a cube between the world-space positions 
+(−1, −1, −1) and (1, 1, 1). However, an arbitrary linear transformation may be 
+specified to translate, rotate, scale or skew it as desired. The parameterization 
+of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
 */
 
 MTS_VARIANT class Cube final : public Mesh<Float, Spectrum> {
@@ -58,48 +60,20 @@ public:
         m_vertex_count = 24;
         m_name         = "cube";
 
-        // m_faces_buf =
-        //     DynamicBuffer<UInt32>::copy(triangles.data(), m_face_count * 3);
-        // m_vertex_positions_buf = empty<FloatStorage>(m_vertex_count * 3);
-        // m_vertex_normals_buf   = empty<FloatStorage>(m_vertex_count * 3);
-        // m_vertex_texcoords_buf = empty<FloatStorage>(m_vertex_count * 2);
-
-        // // TODO this is needed for the bbox(..) methods, but is it slower?
-        // m_faces_buf.managed();
-        // m_vertex_positions_buf.managed();
-        // m_vertex_normals_buf.managed();
-        // m_vertex_texcoords_buf.managed();
-
-        // for (uint8_t i = 0; i < m_vertex_count; ++i) {
-        //     InputFloat *position_ptr = m_vertex_positions_buf.data() + i * 3;
-        //     InputFloat *normal_ptr   = m_vertex_normals_buf.data() + i * 3;
-        //     InputFloat *texcoord_ptr = m_vertex_texcoords_buf.data() + i * 2;
-
-        //     InputPoint3f p  = vertices[i];
-        //     InputNormal3f n = normals[i];
-        //     p               = m_to_world.transform_affine(p);
-        //     n               = normalize(m_to_world.transform_affine(n));
-        //     m_bbox.expand(p);
-
-        //     store_unaligned(position_ptr, p);
-        //     store_unaligned(normal_ptr, n);
-        //     store_unaligned(texcoord_ptr, texcoords[i]);
-        // }
-
         std::vector<InputVector3f> vertices = {
-            { 1, -1, -1 }, { 1, -1, 1 },  { -1, -1, 1 },  { -1, -1, -1 },
-            { 1, 1, -1 },  { -1, 1, -1 }, { -1, 1, 1 },   { 1, 1, 1 },
-            { 1, -1, -1 }, { 1, 1, -1 },  { 1, 1, 1 },    { 1, -1, 1 },
-            { 1, -1, 1 },  { 1, 1, 1 },   { -1, 1, 1 },   { -1, -1, 1 },
-            { -1, -1, 1 }, { -1, 1, 1 },  { -1, 1, -1 },  { -1, -1, -1 },
-            { 1, 1, -1 },  { 1, -1, -1 }, { -1, -1, -1 }, { -1, 1, -1 }
+            {  1, -1, -1 }, {  1, -1,  1 }, { -1, -1,  1 }, { -1, -1, -1 },
+            {  1,  1, -1 }, { -1,  1, -1 }, { -1,  1,  1 }, {  1,  1,  1 },
+            {  1, -1, -1 }, {  1,  1, -1 }, {  1,  1,  1 }, {  1, -1,  1 },
+            {  1, -1,  1 }, {  1,  1,  1 }, { -1,  1,  1 }, { -1, -1,  1 },
+            { -1, -1,  1 }, { -1,  1,  1 }, { -1,  1, -1 }, { -1, -1, -1 },
+            {  1,  1, -1 }, {  1, -1, -1 }, { -1, -1, -1 }, { -1,  1, -1 }
         };
         std::vector<InputNormal3f> normals = {
-            { 0, -1, 0 }, { 0, -1, 0 }, { 0, -1, 0 }, { 0, -1, 0 }, { 0, 1, 0 },
-            { 0, 1, 0 },  { 0, 1, 0 },  { 0, 1, 0 },  { 1, 0, 0 },  { 1, 0, 0 },
-            { 1, 0, 0 },  { 1, 0, 0 },  { 0, 0, 1 },  { 0, 0, 1 },  { 0, 0, 1 },
-            { 0, 0, 1 },  { -1, 0, 0 }, { -1, 0, 0 }, { -1, 0, 0 }, { -1, 0, 0 },
-            { 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 }, { 0, 0, -1 }
+            { 0, -1,  0 }, {  0, -1,  0 }, {  0, -1,  0 }, {  0, -1,  0 }, {  0, 1, 0 },
+            { 0,  1,  0 }, {  0,  1,  0 }, {  0,  1,  0 }, {  1,  0,  0 }, {  1, 0, 0 },
+            { 1,  0,  0 }, {  1,  0,  0 }, {  0,  0,  1 }, {  0,  0,  1 }, {  0, 0, 1 },
+            { 0,  0,  1 }, { -1,  0,  0 }, { -1,  0,  0 }, { -1,  0,  0 }, { -1, 0, 0 },
+            { 0,  0, -1 }, {  0,  0, -1 }, {  0,  0, -1 }, {  0,  0, -1 }
         };
         std::vector<InputVector2f> texcoords = {
             { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 },
@@ -108,8 +82,8 @@ public:
             { 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }
         };
         std::vector<ScalarIndex3> triangles = {
-            { 0, 1, 2 },    { 3, 0, 2 },    { 4, 5, 6 },    { 7, 4, 6 },
-            { 8, 9, 10 },   { 11, 8, 10 },  { 12, 13, 14 }, { 15, 12, 14 },
+            {  0,  1,  2 }, {  3,  0,  2 }, {  4,  5,  6 }, {  7,  4,  6 },
+            {  8,  9, 10 }, { 11,  8, 10 }, { 12, 13, 14 }, { 15, 12, 14 },
             { 16, 17, 18 }, { 19, 16, 18 }, { 20, 21, 22 }, { 23, 20, 22 }
         };
 
@@ -132,18 +106,11 @@ public:
                 m_bbox.expand(p);
         }
 
-        // memcpy(vertex_positions.get(), vertices.data(), m_vertex_count * 3);
-        // memcpy(vertex_normals.get(), normals.data(), m_vertex_count * 3);
-        // memcpy(vertex_texcoords.get(), texcoords.data(), m_vertex_count * 2);
-
-
-
         m_faces = ek::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
         m_vertex_positions = ek::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
         m_vertex_normals   = ek::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
         m_vertex_texcoords = ek::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
 
-        // set_children();
         initialize();
     }
 
