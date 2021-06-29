@@ -223,7 +223,7 @@ if __name__ == '__main__':
     ref_spp = args.spp
     overwrite = args.overwrite
 
-    for scene_fname in scenes:
+    for scene_fname in SCENES:
         scene_dir = dirname(scene_fname)
 
         if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
