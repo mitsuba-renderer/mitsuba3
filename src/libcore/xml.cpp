@@ -1033,7 +1033,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
         try {
             inst.object = PluginManager::instance()->create_object(props, inst.class_);
-            #if (defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM))
+            #if defined(MTS_ENABLE_CUDA) || defined(MTS_ENABLE_LLVM)
                 if (ctx.is_jit()) {
                     ek::eval();
                     ek::sync_thread();
@@ -1041,9 +1041,10 @@ static Task *instantiate_node(XMLParseContext &ctx,
             #endif
         } catch (const std::exception &e) {
             Throw("Error while loading \"%s\" (near %s): could not instantiate "
-                "%s plugin of type \"%s\": %s", inst.src_id, inst.offset(inst.location),
-                string::to_lower(inst.class_->name()), props.plugin_name(),
-                e.what());
+                  "%s plugin of type \"%s\": %s",
+                  inst.src_id, inst.offset(inst.location),
+                  string::to_lower(inst.class_->name()), props.plugin_name(),
+                  e.what());
         }
 
         auto unqueried = props.unqueried();
@@ -1052,19 +1053,19 @@ static Task *instantiate_node(XMLParseContext &ctx,
                 if (props.type(v) == Properties::Type::Object) {
                     const auto &obj = props.object(v);
                     Throw("Error while loading \"%s\" (near %s): unreferenced "
-                        "object %s (within %s of type \"%s\")",
-                        inst.src_id, inst.offset(inst.location),
-                        obj, string::to_lower(inst.class_->name()),
-                        inst.props.plugin_name());
+                          "object %s (within %s of type \"%s\")",
+                          inst.src_id, inst.offset(inst.location),
+                          obj, string::to_lower(inst.class_->name()),
+                          inst.props.plugin_name());
                 } else {
                     v = "\"" + v + "\"";
                 }
             }
             Throw("Error while loading \"%s\" (near %s): unreferenced %s "
-                "%s in %s plugin of type \"%s\"",
-                inst.src_id, inst.offset(inst.location),
-                unqueried.size() > 1 ? "properties" : "property", unqueried,
-                string::to_lower(inst.class_->name()), props.plugin_name());
+                  "%s in %s plugin of type \"%s\"",
+                  inst.src_id, inst.offset(inst.location),
+                  unqueried.size() > 1 ? "properties" : "property", unqueried,
+                  string::to_lower(inst.class_->name()), props.plugin_name());
         }
     };
 
