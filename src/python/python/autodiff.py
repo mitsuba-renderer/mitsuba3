@@ -115,7 +115,7 @@ def convert_to_bitmap(data, resolution, uint8_srgb=True):
     return bitmap
 
 
-def write_bitmap(filename, data, resolution, write_async=True):
+def write_bitmap(filename, data, resolution, write_async=True, quality=-1):
     """
     Write the linearized RGB image in `data` to a PNG/EXR/.. file with
     resolution `resolution`.
@@ -126,7 +126,6 @@ def write_bitmap(filename, data, resolution, write_async=True):
                  filename.endswith('.jpeg')
 
     bitmap = convert_to_bitmap(data, resolution, uint8_srgb)
-    quality = 0 if filename.endswith('png') else -1
 
     if write_async:
         bitmap.write_async(filename, quality=quality)
