@@ -107,7 +107,7 @@ MTS_PY_EXPORT(MediumInteraction) {
         .def("to_local", &MediumInteraction3f::to_local, "v"_a, D(MediumInteraction, to_local))
         .def_repr(MediumInteraction3f);
 
-    MTS_PY_ENOKI_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p,
+    MTS_PY_ENOKI_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
                         medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
                         combined_extinction, mint)
 }
