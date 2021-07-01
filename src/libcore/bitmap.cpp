@@ -50,6 +50,7 @@ extern "C" {
 #include <ImfVersion.h>
 #include <ImfIO.h>
 #include <ImathBox.h>
+#include <IlmThreadPool.h>
 
 #if defined(__clang__)
 #  pragma clang diagnostic pop
@@ -675,14 +676,14 @@ void Bitmap::read(Stream *stream, FileFormat format) {
         format = detect_file_format(stream);
 
     switch (format) {
-        case FileFormat::BMP:     read_bmp(stream);     break;
-        case FileFormat::JPEG:    read_jpeg(stream);    break;
-        case FileFormat::OpenEXR: read_openexr(stream); break;
-        case FileFormat::RGBE:    read_rgbe(stream);    break;
-        case FileFormat::PFM:     read_pfm(stream);     break;
-        case FileFormat::PPM:     read_ppm(stream);     break;
-        case FileFormat::TGA:     read_tga(stream);     break;
-        case FileFormat::PNG:     read_png(stream);     break;
+        case FileFormat::BMP:     read_bmp(stream);   break;
+        case FileFormat::JPEG:    read_jpeg(stream);  break;
+        case FileFormat::OpenEXR: read_exr(stream);   break;
+        case FileFormat::RGBE:    read_rgbe(stream);  break;
+        case FileFormat::PFM:     read_pfm(stream);   break;
+        case FileFormat::PPM:     read_ppm(stream);   break;
+        case FileFormat::TGA:     read_tga(stream);   break;
+        case FileFormat::PNG:     read_png(stream);   break;
         default:
             Throw("Bitmap: Unknown file format!");
     }
@@ -760,7 +761,7 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
 
     switch (format) {
         case FileFormat::OpenEXR:
-            write_openexr(stream, quality);
+            write_exr(stream, quality);
             break;
 
         case FileFormat::PNG:
@@ -889,10 +890,31 @@ private:
     ref<Stream> m_stream;
 };
 
-void Bitmap::read_openexr(Stream *stream) {
+/// Dispatch parallel OpenEXR work via enoki-thread
+class EXRThreadPool : public IlmThread::ThreadPoolProvider {
+public:
+    int numThreads() const override {
+        return std::max(1, (int) pool_size());
+    }
+
+    void setNumThreads(int) override {
+        Throw("EXRThreadPool::setNumThreads(): unsupported!");
+    }
+
+    void addTask(IlmThread::Task* task) override {
+        Task *t = ek::do_async([task]() {
+            task->execute();
+            task->group()->finishOneTask();
+            delete task;
+        });
+        task_release(t);
+    }
+
+    void finish() override { }
+};
+
+void Bitmap::read_exr(Stream *stream) {
     ScopedPhase phase(ProfilerPhase::BitmapRead);
-    if (Imf::globalThreadCount() == 0)
-        Imf::setGlobalThreadCount(std::min(8, util::core_count()));
 
     EXRIStream istr(stream);
     Imf::InputFile file(istr);
@@ -901,7 +923,7 @@ void Bitmap::read_openexr(Stream *stream) {
     const Imf::ChannelList &channels = header.channels();
 
     if (channels.begin() == channels.end())
-        Throw("read_openexr(): Image does not contain any channels!");
+        Throw("read_exr(): Image does not contain any channels!");
 
     // Load metadata if present
     for (auto it = header.begin(); it != header.end(); ++it) {
@@ -946,7 +968,7 @@ void Bitmap::read_openexr(Stream *stream) {
         case Imf::HALF:  m_component_format = Struct::Type::Float16; break;
         case Imf::FLOAT: m_component_format = Struct::Type::Float32; break;
         case Imf::UINT:  m_component_format = Struct::Type::UInt32;  break;
-        default: Throw("read_openexr(): Invalid component type (must be "
+        default: Throw("read_exr(): Invalid component type (must be "
                        "float16, float32, or uint32)");
     }
 
@@ -1252,10 +1274,8 @@ void Bitmap::read_openexr(Stream *stream) {
     }
 }
 
-void Bitmap::write_openexr(Stream *stream, int quality) const {
+void Bitmap::write_exr(Stream *stream, int quality) const {
     ScopedPhase phase(ProfilerPhase::BitmapWrite);
-    if (Imf::globalThreadCount() == 0)
-        Imf::setGlobalThreadCount(std::min(8, util::core_count()));
 
     PixelFormat pixel_format = m_pixel_format;
 
@@ -2464,13 +2484,12 @@ std::ostream &operator<<(std::ostream &os, Bitmap::AlphaTransform value) {
     return os;
 }
 
+
 void Bitmap::static_initialization() {
-    // No-op
+    IlmThread::ThreadPool::globalThreadPool().setThreadProvider(new EXRThreadPool());
 }
 
-void Bitmap::static_shutdown() {
-    Imf::setGlobalThreadCount(0);
-}
+void Bitmap::static_shutdown() { }
 
 MTS_IMPLEMENT_CLASS(Bitmap, Object)
 

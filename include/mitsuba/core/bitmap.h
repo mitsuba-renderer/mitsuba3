@@ -596,10 +596,10 @@ public:
      void read(Stream *stream, FileFormat format);
 
      /// Read a file encoded using the OpenEXR file format
-     void read_openexr(Stream *stream);
+     void read_exr(Stream *stream);
 
      /// Write a file using the OpenEXR file format
-     void write_openexr(Stream *stream, int compression = -1) const;
+     void write_exr(Stream *stream, int compression = -1) const;
 
      /// Read a file encoded using the JPEG file format
      void read_jpeg(Stream *stream);

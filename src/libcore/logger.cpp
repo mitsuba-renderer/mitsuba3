@@ -141,7 +141,7 @@ const Appender *Logger::appender(size_t index) const {
 
 NAMESPACE_BEGIN(detail)
 
-void Throw(LogLevel level, const Class *theClass, const char *file,
+void Throw(LogLevel level, const Class *class_, const char *file,
            int line, const std::string &msg_) {
     // Trap if we're running in a debugger to facilitate debugging.
     #if defined(MTS_THROW_TRAPS_DEBUGGER)
@@ -163,7 +163,7 @@ void Throw(LogLevel level, const Class *theClass, const char *file,
         msg = msg.substr(0, it) + "\n  " + msg.substr(it + 3);
 
     std::string text =
-        formatter.format(level, theClass, Thread::thread(), file, line, msg);
+        formatter.format(level, class_, Thread::thread(), file, line, msg);
     throw std::runtime_error(zerowidth_space + text);
 }
 
