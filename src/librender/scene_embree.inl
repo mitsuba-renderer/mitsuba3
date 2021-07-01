@@ -20,6 +20,7 @@ NAMESPACE_BEGIN(mitsuba)
 #define rtcIntersectW     JOIN(rtcIntersect, MTS_RAY_WIDTH)
 #define rtcOccludedW      JOIN(rtcOccluded,  MTS_RAY_WIDTH)
 
+static uint32_t __embree_threads = 0;
 static RTCDevice __embree_device = nullptr;
 
 template <typename Float>
@@ -32,10 +33,12 @@ struct EmbreeState {
 
 MTS_VARIANT void
 Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
+
     if (!__embree_device) {
-        __embree_device = rtcNewDevice(
-            tfm::format("threads=%i,user_threads=%i", pool_size(), pool_size())
-                .c_str());
+        __embree_threads = std::max((uint32_t) 1, pool_size());
+        std::string config_str = tfm::format(
+            "threads=%i,user_threads=%i", __embree_threads, __embree_threads);
+        __embree_device = rtcNewDevice(config_str.c_str());
     }
 
     Timer timer;
@@ -79,7 +82,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     }
 
     ek::parallel_for(
-        ek::blocked_range<size_t>(0, pool_size(), 1),
+        ek::blocked_range<size_t>(0, __embree_threads, 1),
         [&](const ek::blocked_range<size_t> &) {
             rtcJoinCommitScene(s.accel);
         }
