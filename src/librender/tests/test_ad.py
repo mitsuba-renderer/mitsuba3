@@ -391,10 +391,14 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, gc_collect, mode, eval_grad,
     if mode == "forward":
         # Forward propagate gradients to loss, one BSDF at a time
         ek.set_grad(p1, 1)
+        ek.set_grad(p2, 0)
         ek.enqueue(p1)
+        ek.enqueue(p2)
         ek.traverse(Float, reverse=False, retain_graph=True)
 
+        ek.set_grad(p1, 0)
         ek.set_grad(p2, 1)
+        ek.enqueue(p1)
         ek.enqueue(p2)
         ek.traverse(Float, reverse=False, retain_graph=True)
 
