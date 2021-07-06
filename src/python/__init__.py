@@ -175,6 +175,10 @@ def set_variant(value):
     _tls.modules = modules
     _tls.variant = value
 
+    # Automatically import mitsuba.python.ad (e.g. register AD integrators)
+    if '_ad_' in value:
+        _import('mitsuba.python.ad')
+
 
 def variant():
     'Returns the currently active variant'

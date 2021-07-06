@@ -24,7 +24,13 @@ MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectr
 public:
     MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
-    PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) { }
+    PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
+        if constexpr (!ek::is_jit_array_v<Float>) {
+            Log(Warn, "Derived SamplingIntegrator defined in Python will have "
+                      "terrible performance in scalar_* modes. It is strongly "
+                      "recommended to switch to a cuda_* or llvm_* mode");
+        }
+    }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
