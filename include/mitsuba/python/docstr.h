@@ -2516,22 +2516,10 @@ static const char *__doc_mitsuba_Film_crop_offset = R"doc(Return the offset of t
 
 static const char *__doc_mitsuba_Film_crop_size = R"doc(Return the size of the crop window)doc";
 
-static const char *__doc_mitsuba_Film_destination_exists = R"doc(Does the destination file already exist?)doc";
+static const char *__doc_mitsuba_Film_develop = R"doc(Return a image buffer object storing the developed image)doc";
 
-static const char *__doc_mitsuba_Film_develop =
-R"doc(Develop the film and write the result to the previously specified
-filename)doc";
+static const char *__doc_mitsuba_Film_write = R"doc(Write the developed contents of the film to a file on disk)doc";
 
-static const char *__doc_mitsuba_Film_develop_2 =
-R"doc(Develop the contents of a subregion of the film and store it inside
-the given bitmap
-
-This may fail when the film does not have an explicit representation
-of the bitmap in question (e.g. when it is writing to a tiled EXR
-image)
-
-Returns:
-    ``True`` upon success)doc";
 
 static const char *__doc_mitsuba_Film_has_high_quality_edges =
 R"doc(Should regions slightly outside the image plane be sampled to improve
@@ -2557,8 +2545,6 @@ safe.)doc";
 static const char *__doc_mitsuba_Film_reconstruction_filter = R"doc(Return the image reconstruction filter (const version))doc";
 
 static const char *__doc_mitsuba_Film_set_crop_window = R"doc(Set the size and offset of the crop window.)doc";
-
-static const char *__doc_mitsuba_Film_set_destination_file = R"doc(Set the target filename (with or without extension))doc";
 
 static const char *__doc_mitsuba_Film_size =
 R"doc(Ignoring the crop window, return the resolution of the underlying
@@ -5588,6 +5574,8 @@ static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
 static const char *__doc_mitsuba_Scene_5 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_Scene = R"doc(Instantiate a scene from a Properties object)doc";
+
+static const char *__doc_mitsuba_Scene_render = R"doc(Render the scene with the sensor specified by its index)doc";
 
 static const char *__doc_mitsuba_Scene_accel_init_cpu = R"doc(Create the ray-intersection acceleration data structure)doc";
 

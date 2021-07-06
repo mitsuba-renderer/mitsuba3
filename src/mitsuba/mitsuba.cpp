@@ -85,18 +85,14 @@ std::function<void(void)> develop_callback;
 std::mutex develop_callback_mutex;
 
 template <typename Float, typename Spectrum>
-bool render(Object *scene_, size_t sensor_i, fs::path filename,
+void render(Object *scene_, size_t sensor_i, fs::path filename,
             const fs::path &graphviz_output) {
     auto *scene = dynamic_cast<Scene<Float, Spectrum> *>(scene_);
     if (!scene)
         Throw("Root element of the input file must be a <scene> tag!");
     if (sensor_i >= scene->sensors().size())
         Throw("Specified sensor index is out of bounds!");
-    auto sensor = scene->sensors()[sensor_i];
-    auto film = sensor->film();
-
-    filename.replace_extension("exr");
-    film->set_destination_file(filename);
+    auto film = scene->sensors()[sensor_i]->film();
 
     auto integrator = scene->integrator();
     if (!integrator)
@@ -105,24 +101,14 @@ bool render(Object *scene_, size_t sensor_i, fs::path filename,
 
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
-        develop_callback = [&]() { film->develop(); };
+        develop_callback = [&]() { film->write(filename); };
     }
-    bool success = integrator->render(scene, sensor.get());
+    integrator->render(scene, sensor_i, false);
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
         develop_callback = nullptr;
     }
-    if (success) {
-        film->develop();
-    } else {
-#if !defined(_WIN32)
-        Log(Warn, "\U0000274C Rendering failed, result not saved.");
-#else
-        Log(Warn, "Rendering failed, result not saved.");
-#endif
-    }
-
-    return success;
+    film->write(filename);
 }
 
 #if !defined(__WINDOWS__)
@@ -331,9 +317,8 @@ int main(int argc, char *argv[]) {
             ref<Object> parsed =
                 xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
 
-            bool success = MTS_INVOKE_VARIANT(mode, render, parsed.get(),
-                                              sensor_i, filename, graphviz_output);
-            print_profile = print_profile || success;
+            MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename,
+                               graphviz_output);
             arg_extra = arg_extra->next();
         }
     } catch (const std::exception &e) {

@@ -28,32 +28,18 @@ public:
     /// Merge an image block into the film. This methods should be thread-safe.
     virtual void put(const ImageBlock *block) = 0;
 
-    /// Develop the film and write the result to the previously specified filename
-    virtual void develop() = 0;
-
-    /**
-     * \brief Develop the contents of a subregion of the film and store
-     * it inside the given bitmap
-     *
-     * This may fail when the film does not have an explicit representation
-     * of the bitmap in question (e.g. when it is writing to a tiled EXR image)
-     *
-     * \return \c true upon success
-     */
-    virtual bool develop(
-        const ScalarPoint2i  &offset,
-        const ScalarVector2i &size,
-        const ScalarPoint2i  &target_offset,
-        Bitmap *target) const = 0;
+    /// Return a image buffer object storing the developed image
+    virtual ImageBuffer develop(bool raw = false) = 0;
 
     /// Return a bitmap object storing the developed contents of the film
     virtual ref<Bitmap> bitmap(bool raw = false) = 0;
 
-    /// Set the target filename (with or without extension)
-    virtual void set_destination_file(const fs::path &filename) = 0;
+    /// Write the developed contents of the film to a file on disk
+    virtual void write(const fs::path &path) = 0;
 
-    /// Does the destination file already exist?
-    virtual bool destination_exists(const fs::path &basename) const = 0;
+    // =============================================================
+    //! @{ \name Accessor functions
+    // =============================================================
 
     /**
      * Should regions slightly outside the image plane be sampled to improve
@@ -61,10 +47,6 @@ public:
      * sense when reconstruction filters other than the box filter are used.
      */
     bool has_high_quality_edges() const { return m_high_quality_edges; }
-
-    // =============================================================
-    //! @{ \name Accessor functions
-    // =============================================================
 
     /// Ignoring the crop window, return the resolution of the underlying sensor
     const ScalarVector2i &size() const { return m_size; }

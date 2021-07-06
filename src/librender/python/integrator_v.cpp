@@ -61,8 +61,10 @@ MTS_PY_EXPORT(Integrator) {
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
 
     MTS_PY_CLASS(Integrator, Object)
-        .def("render",
-            [&](Integrator *integrator, Scene *scene, Sensor *sensor) {
+        .def(
+            "render",
+            [&](Integrator *integrator, Scene *scene, uint32_t sensor_idx,
+                bool develop_film) {
                 py::gil_scoped_release release;
 
 #if MTS_HANDLE_SIGINT
@@ -82,7 +84,7 @@ MTS_PY_EXPORT(Integrator) {
                 });
 #endif
 
-                bool res = integrator->render(scene, sensor);
+                auto res = integrator->render(scene, sensor_idx, develop_film);
 
 #if MTS_HANDLE_SIGINT
                 // Restore previous signal handler
@@ -91,7 +93,8 @@ MTS_PY_EXPORT(Integrator) {
 
                 return res;
             },
-            D(Integrator, render), "scene"_a, "sensor"_a)
+            D(Integrator, render), "scene"_a, "sensor_index"_a = 0,
+            "develop_film"_a = true)
         .def_method(Integrator, cancel);
 
     auto integrator =

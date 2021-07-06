@@ -136,6 +136,12 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
     }
 }
 
+MTS_VARIANT ref<Bitmap>
+Scene<Float, Spectrum>::render(uint32_t sensor_index) {
+    m_integrator->render(this, sensor_index, false);
+    return m_sensors[sensor_index]->film()->bitmap();
+}
+
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);

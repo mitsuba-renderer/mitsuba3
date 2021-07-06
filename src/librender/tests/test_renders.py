@@ -149,7 +149,7 @@ def test_render(gc_collect, variant, scene_fname, jit_flags_key):
 
     # Load and render
     scene = mitsuba.core.xml.load_file(scene_fname, spp=spp)
-    scene.integrator().render(scene, scene.sensors()[0])
+    scene.integrator().render(scene)
 
     # Compute variance image
     bmp = scene.sensors()[0].film().bitmap(raw=False)
@@ -241,7 +241,7 @@ if __name__ == '__main__':
                 continue
 
             scene = mitsuba.core.xml.load_file(scene_fname, spp=ref_spp)
-            scene.integrator().render(scene, scene.sensors()[0])
+            scene.integrator().render(scene)
 
             bmp = scene.sensors()[0].film().bitmap(raw=False)
             img, var_img = bitmap_extract(bmp)

@@ -49,10 +49,13 @@ MTS_VARIANT std::vector<std::string> SamplingIntegrator<Float, Spectrum>::aov_na
     return { };
 }
 
-MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Sensor *sensor) {
+MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::ImageBuffer
+SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
+                                            bool develop_film) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
+    ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->crop_size();
 
@@ -172,7 +175,10 @@ MTS_VARIANT bool SamplingIntegrator<Float, Spectrum>::render(Scene *scene, Senso
         Log(Info, "Rendering finished. (took %s)",
             util::time_string((float) m_render_timer.value(), true));
 
-    return !m_stop;
+    if (develop_film)
+        return film->develop();
+    else
+        return ek::empty<ImageBuffer>();
 }
 
 MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *scene,
