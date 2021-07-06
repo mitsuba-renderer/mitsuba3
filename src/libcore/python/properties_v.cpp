@@ -15,6 +15,13 @@ extern Caster cast_object;
         p.set_##Name(key, value, false);                               \
     }, D(Properties, set_##Name))
 
+
+#define GET_ITEM_DEFAULT_BINDING(Name, DName, Type)       \
+    def(#Name, [](Properties& p, const std::string &key,  \
+                  const Type &def_val) {                  \
+        return py::cast(p.Name(key, def_val));            \
+    }, D(Properties, DName, 2))
+
 MTS_PY_EXPORT(Properties) {
     MTS_PY_CHECK_ALIAS(Properties, "Properties") {
         py::class_<Properties>(m, "Properties", D(Properties))
@@ -44,6 +51,13 @@ MTS_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
             .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
             .SET_ITEM_BINDING(object, ref<Object>)
+            .GET_ITEM_DEFAULT_BINDING(float_, float, py::float_)
+            .GET_ITEM_DEFAULT_BINDING(bool_, bool, bool)
+            .GET_ITEM_DEFAULT_BINDING(long_, long, int64_t)
+            .GET_ITEM_DEFAULT_BINDING(string, string, std::string)
+            .GET_ITEM_DEFAULT_BINDING(array3f, array3f, typename Properties::Array3f)
+            .GET_ITEM_DEFAULT_BINDING(transform, transform, typename Properties::Transform4f)
+            .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
             .def("__getitem__", [](const Properties& p, const std::string &key) {
                     // We need to ask for type information to return the right cast
                     auto type = p.type(key);
