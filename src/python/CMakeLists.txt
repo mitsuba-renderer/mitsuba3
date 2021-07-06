@@ -2,10 +2,7 @@
 #   Copy & installation targets for files in 'src/python'
 # ----------------------------------------------------------
 
-file(GLOB_RECURSE MTS_PYTHON_FILES RELATIVE
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/*.py
-  ${CMAKE_CURRENT_SOURCE_DIR}/*.shader)
+file(GLOB_RECURSE MTS_PYTHON_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py)
 
 set(MTS_COPY_FILES "")
 foreach(file ${MTS_PYTHON_FILES})
