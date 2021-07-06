@@ -222,13 +222,15 @@ public:
             ek::scatter(data, rgb[1], idx + 1);
             ek::scatter(data, rgb[2], idx + 2);
 
-            UInt32 i = ek::arange<UInt32>(pixel_count * (ch - 1));
-            UInt32 weight_idx = i / (ch - 1) * ch + 4;
-            UInt32 values_idx = (i / (ch - 1)) * ch + i % (ch - 1);
+            // TODO depends on m_pixel_format
+
+            UInt32 i = ek::arange<UInt32>(pixel_count * (ch - 2));
+            UInt32 weight_idx = i / (ch - 2) * ch + 4;
+            UInt32 values_idx = (i / (ch - 2)) * ch + i % (ch - 2);
 
             // Offset indices for aovs channels (skip the W channel)
             if (ch > 5)
-                values_idx[(i % (ch - 1)) > 3] += 1;
+                values_idx[(i % (ch - 1)) > (ch - 2)] += 2;
 
             Float weight = ek::gather<Float>(data, weight_idx);
             Float values = ek::gather<Float>(data, values_idx);

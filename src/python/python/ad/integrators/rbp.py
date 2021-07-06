@@ -1,6 +1,39 @@
 import enoki as ek
 import mitsuba
 
+# TODO move this to a another place (could implement and bind in C++)
+def sample_sensor_rays(sensor, spp=None):
+    from mitsuba.core import Float, UInt32, Vector2f
+
+    film = sensor.film()
+    sampler = sensor.sampler()
+    film_size = film.crop_size()
+    if spp is None:
+        spp = sampler.sample_count()
+
+    total_sample_count = ek.hprod(film_size) * spp
+
+    if sampler.wavefront_size() != total_sample_count:
+        sampler.seed(0, total_sample_count)
+
+    pos_idx = ek.arange(UInt32, total_sample_count)
+    pos_idx //= ek.opaque(UInt32, spp)
+    scale = ek.rcp(Vector2f(film_size))
+    pos = Vector2f(Float(pos_idx %  int(film_size[0])),
+                   Float(pos_idx // int(film_size[0])))
+
+    pos += sampler.next_2d()
+
+    rays, weights = sensor.sample_ray_differential(
+        time=0,
+        sample1=sampler.next_1d(),
+        sample2=pos * scale,
+        sample3=0
+    )
+
+    return rays, weights, pos, pos_idx
+
+
 class RBPIntegrator(mitsuba.render.SamplingIntegrator):
     """
     This integrator implements a basic Radiative Backpropagation path tracer.
@@ -8,12 +41,32 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
         self.max_depth = props.long_('max_depth', 4)
-        self.recursive_li = props.bool_('recursive_li', False)
+        self.recursive_li = props.bool_('recursive_li', True)
+
+    def render_adjoint(self: mitsuba.render.SamplingIntegrator,
+                       scene: mitsuba.render.Scene,
+                       params: mitsuba.python.util.SceneParameters,
+                       image_adj: mitsuba.core.Spectrum,
+                       sensor_index: int=0) -> None:
+        """
+        Performed the adjoint rendering integration, backpropagating the
+        image gradients to the scene parameters.
+        """
+        sensor = scene.sensors()[sensor_index]
+        sampler = sensor.sampler()
+        spp = sampler.sample_count()
+        rays, weights, _, pos_idx = sample_sensor_rays(sensor, spp)
+        grad = weights * ek.gather(type(image_adj), image_adj, pos_idx)
+
+        for k, v in params.items():
+            ek.enable_grad(v)
+
+        self.sample_adjoint(scene, sensor.sampler(), rays, params, grad)
 
     def sample(self, scene, sampler, rays, medium, active):
         return *self.Li(scene, sampler, rays, params=None), []
 
-    def adjoint_sample(self, scene, sampler, rays, params, grad):
+    def sample_adjoint(self, scene, sampler, rays, params, grad):
         self.Li(scene, sampler, rays, params, grad)
 
     def Li(self: mitsuba.render.SamplingIntegrator,
@@ -23,7 +76,7 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
            params: mitsuba.python.util.SceneParameters=None,
            grad: mitsuba.core.Spectrum=None,
            emission_weight: mitsuba.core.Spectrum=None,
-           active: mitsuba.core.Mask=True):
+           active: mitsuba.core.Mask=True): # TODO should take depth as arg
         """
         Performs a recursive step of a random walk to construct a light path.
 

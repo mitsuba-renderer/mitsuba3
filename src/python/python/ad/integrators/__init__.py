@@ -2,7 +2,7 @@
 #        Default implementation for Integrator adjoint methods
 # -------------------------------------------------------------------
 
-
+import enoki as ek
 import mitsuba
 import mitsuba.python.util
 
@@ -35,7 +35,7 @@ def render_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
     image = self.render(scene, sensor_index)
     ek.set_grad(image, image_adj)
     ek.enqueue(image)
-    ek.traverse(type(image_adj), reverse=True, retain_graph=False)
+    ek.traverse(mitsuba.core.Float, reverse=True, retain_graph=False)
 
 
 def sample_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
