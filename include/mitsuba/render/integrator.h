@@ -38,8 +38,13 @@ class MTS_EXPORT_RENDER Integrator : public Object {
 public:
     MTS_IMPORT_TYPES(Scene, Sensor)
 
-    /// Perform the main rendering job. Returns \c true upon success
-    virtual bool render(Scene *scene, Sensor *sensor) = 0;
+    /**
+     * \brief Perform the main rendering job.
+     *
+     * Returns the rendered image if \c develop_film is set to \c true.
+     */
+    virtual ImageBuffer render(Scene *scene, uint32_t sensor_index = 0,
+                               bool develop_film = true) = 0;
 
     /**
      * \brief Cancel a running render job
@@ -136,7 +141,8 @@ public:
     //! @{ \name Integrator interface implementation
     // =========================================================================
 
-    bool render(Scene *scene, Sensor *sensor) override;
+    ImageBuffer render(Scene *scene, uint32_t sensor_index = 0,
+                       bool develop_film = true) override;
     void cancel() override;
 
     /**

@@ -354,8 +354,8 @@ public:
     /**
      * Write an encoded form of the bitmap to a file using the specified file format
      *
-     * \param stream
-     *    Target stream that will receive the encoded output
+     * \param path
+     *    Target file path on disk
      *
      * \param format
      *    Target file format (\ref FileFormat::OpenEXR, \ref FileFormat::PNG, etc.)

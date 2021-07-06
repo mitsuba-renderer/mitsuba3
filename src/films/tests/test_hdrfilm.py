@@ -73,7 +73,7 @@ def test02_crops(variant_scalar_rgb):
 @pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
 def test03_develop(variant_scalar_rgb, file_format, tmpdir):
     from mitsuba.core.xml import load_string
-    from mitsuba.core import Bitmap, Struct, ReconstructionFilter, float_dtype
+    from mitsuba.core import Bitmap, Struct
     from mitsuba.render import ImageBlock
     import numpy as np
 
@@ -108,13 +108,8 @@ def test03_develop(variant_scalar_rgb, file_format, tmpdir):
     film.prepare(['X', 'Y', 'Z', 'A', 'W'])
     film.put(block)
 
-    with pytest.raises(RuntimeError):
-        # Should raise when the destination file hasn't been specified.
-        film.develop()
-
     filename = str(tmpdir.join('test_image.' + file_format))
-    film.set_destination_file(filename)
-    film.develop()
+    film.write(filename)
 
     # Read back and check contents
     other = Bitmap(filename).convert(Bitmap.PixelFormat.XYZAW, Struct.Type.Float32, srgb_gamma=False)

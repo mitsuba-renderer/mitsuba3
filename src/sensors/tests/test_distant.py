@@ -279,12 +279,11 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     scene = load_dict({**scene_dict, "sensor": sensors[sensor_setup]})
 
     # Run simulation
-    sensor = scene.sensors()[0]
-    scene.integrator().render(scene, sensor)
+    scene.integrator().render(scene)
 
     # Check result
     result = np.array(
-        sensor.film().bitmap().convert(
+        scene.sensors()[0].film().bitmap().convert(
             Bitmap.PixelFormat.RGB, Struct.Type.Float32, False
         )
     ).squeeze()
@@ -379,11 +378,7 @@ def test_checkerboard(variants_all_rgb):
     }
 
     scene = load_dict(scene_dict)
-
-    sensor = scene.sensors()[0]
-    scene.integrator().render(scene, sensor)
-
-    data = np.array(sensor.film().bitmap())
+    data = np.array(scene.render())
 
     expected = l_o * 0.5 * (rho0 + rho1) / ek.Pi
     assert np.allclose(data, expected, atol=1e-3)

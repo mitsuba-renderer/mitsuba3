@@ -88,21 +88,13 @@ def test01_create_and_eval(create_phasefunction):
 
 def test02_render_scene(create_phasefunction):
     scene = create_medium_scene('myisotropic')
-    status = scene.integrator().render(scene, scene.sensors()[0])
-    assert status, "Rendering failed"
-
-    film = scene.sensors()[0].film()
-    converted = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
-    trampoline_np = np.array(converted, copy=False)
+    bitmap = scene.render()
+    trampoline_np = np.array(bitmap, copy=False)
 
     # Reference image: rendered using isotropic phase function
     scene = create_medium_scene('isotropic')
-    status = scene.integrator().render(scene, scene.sensors()[0])
-    assert status, "Reference rendering failed"
-
-    film = scene.sensors()[0].film()
-    converted = film.bitmap(raw=True).convert(Bitmap.PixelFormat.RGBA, Struct.Type.Float32, False)
-    ref_np = np.array(converted, copy=False)
+    bitmap = scene.render()
+    ref_np = np.array(bitmap, copy=False)
 
     diff = np.mean((ref_np - trampoline_np) ** 2)
     assert diff < 0.001 # TODO: Replace this by a T-Test

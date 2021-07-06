@@ -94,7 +94,8 @@ The following XML snippet discribes a film that writes a full-HD RGBA OpenEXR fi
 template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_high_quality_edges, m_filter)
+    MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
+                    m_high_quality_edges, m_filter)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -104,8 +105,6 @@ public:
             props.string("pixel_format", "rgba"));
         std::string component_format = string::to_lower(
             props.string("component_format", "float16"));
-
-        m_dest_file = props.string("filename", "");
 
         if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -183,10 +182,6 @@ public:
         props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
-    void set_destination_file(const fs::path &dest_file) override {
-        m_dest_file = dest_file;
-    }
-
     void prepare(const std::vector<std::string> &channels) override {
         std::vector<std::string> channels_sorted = channels;
         channels_sorted.push_back("R");
@@ -210,42 +205,45 @@ public:
         m_storage->put(block);
     }
 
-    bool develop(const ScalarPoint2i  &source_offset,
-                 const ScalarVector2i &size,
-                 const ScalarPoint2i  &target_offset,
-                 Bitmap *target) const override {
-        Assert(m_storage != nullptr);
-        (void) source_offset;
-        (void) size;
-        (void) target_offset;
-        (void) target;
+    ImageBuffer develop(bool raw = false) override {
+        if (raw)
+            return m_storage->data();
 
-#if 0
-        const Bitmap *source = m_storage->bitmap();
+        if constexpr (ek::is_jit_array_v<Float>) {
+            Float data = m_storage->data().copy();
+            size_t ch =  m_storage->channel_count();
+            size_t pixel_count = ek::hprod(m_storage->size());
 
-        StructConverter cvt(source->struct_(), target->struct_());
+            UInt32 idx = ek::arange<UInt32>(pixel_count) * ch;
+            Color3f rgb = xyz_to_srgb(Color3f(ek::gather<Float>(data, idx),
+                                              ek::gather<Float>(data, idx + 1),
+                                              ek::gather<Float>(data, idx + 2)));
+            ek::scatter(data, rgb[0], idx);
+            ek::scatter(data, rgb[1], idx + 1);
+            ek::scatter(data, rgb[2], idx + 2);
 
-        size_t source_bpp = source->bytes_per_pixel();
-        size_t target_bpp = target->bytes_per_pixel();
+            UInt32 i = ek::arange<UInt32>(pixel_count * (ch - 1));
+            UInt32 weight_idx = i / (ch - 1) * ch + 4;
+            UInt32 values_idx = (i / (ch - 1)) * ch + i % (ch - 1);
 
-        const uint8_t *source_data = source->uint8_data()
-            + (source_offset.x() + source_offset.y() * source->width()) * source_bpp;
-        uint8_t *target_data = target->uint8_data()
-            + (target_offset.x() + target_offset.y() * target->width()) * target_bpp;
+            // Offset indices for aovs channels (skip the W channel)
+            if (ch > 5)
+                values_idx[(i % (ch - 1)) > 3] += 1;
 
-        if (size.x() == m_crop_size.x() && target->width() == m_storage->width()) {
-            // Develop a connected part of the underlying buffer
-            cvt.convert(size.x() * size.y(), source_data, target_data);
+            Float weight = ek::gather<Float>(data, weight_idx);
+            Float values = ek::gather<Float>(data, values_idx);
+
+            ek::mask_t<Float> valid = weight > 0.f;
+
+            return (values / weight) & valid;
         } else {
-            // Develop a rectangular subregion
-            for (int i = 0; i < size.y(); ++i) {
-                cvt.convert(size.x(), source_data, target_data);
-                source_data += source->width() * source_bpp;
-                target_data += target->width() * target_bpp;
-            }
+            Struct::Type component_format = m_component_format;
+            m_component_format = Struct::Type::Float32;
+            ref<Bitmap> b = bitmap(false);
+            m_component_format = component_format;
+            size_t size = b->channel_count() * b->pixel_count();
+            return ek::load<ImageBuffer>(b->data(), size);
         }
-#endif
-        return true;
     }
 
     ref<Bitmap> bitmap(bool raw = false) override {
@@ -253,10 +251,11 @@ public:
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
 
-        ref<Bitmap> source = new Bitmap(m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
-                                                               : Bitmap::PixelFormat::XYZAW,
-                          struct_type_v<ScalarFloat>, m_storage->size(), m_storage->channel_count(),
-                          m_channels, (uint8_t *) storage.data());
+        ref<Bitmap> source = new Bitmap(
+            m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
+                                   : Bitmap::PixelFormat::XYZAW,
+            struct_type_v<ScalarFloat>, m_storage->size(),
+            m_storage->channel_count(), m_channels, (uint8_t *) storage.data());
 
         if (raw)
             return source;
@@ -316,13 +315,10 @@ public:
         source->convert(target);
 
         return target;
-     };
+    }
 
-    void develop() override {
-        if (m_dest_file.empty())
-            Throw("Destination file not specified, cannot develop.");
-
-        fs::path filename = m_dest_file;
+    void write(const fs::path &path) override {
+        fs::path filename = path;
         std::string proper_extension;
         if (m_file_format == Bitmap::FileFormat::OpenEXR)
             proper_extension = ".exr";
@@ -344,24 +340,6 @@ public:
         bitmap()->write(filename, m_file_format);
     }
 
-    bool destination_exists(const fs::path &base_name) const override {
-        std::string proper_extension;
-        if (m_file_format == Bitmap::FileFormat::OpenEXR)
-            proper_extension = ".exr";
-        else if (m_file_format == Bitmap::FileFormat::RGBE)
-            proper_extension = ".rgbe";
-        else
-            proper_extension = ".pfm";
-
-        fs::path filename = base_name;
-
-        std::string extension = string::to_lower(filename.extension().string());
-        if (extension != proper_extension)
-            filename.replace_extension(proper_extension);
-
-        return fs::exists(filename);
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HDRFilm[" << std::endl
@@ -373,7 +351,6 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
-            << "  dest_file = \"" << m_dest_file << "\"" << std::endl
             << "]";
         return oss.str();
     }
@@ -383,7 +360,6 @@ protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
     Struct::Type m_component_format;
-    fs::path m_dest_file;
     ref<ImageBlock> m_storage;
     std::mutex m_mutex;
     std::vector<std::string> m_channels;
