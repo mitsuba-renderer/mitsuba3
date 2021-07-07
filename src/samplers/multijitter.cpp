@@ -65,14 +65,17 @@ public:
                     current_sample_index, compute_per_sequence_seed)
     MTS_IMPORT_TYPES()
 
-    MultijitterSampler(const Properties &props = Properties()) : Base(props) {
+    MultijitterSampler(const Properties &props) : Base(props) {
         m_jitter = props.bool_("jitter", true);
+        set_sample_count(m_sample_count);
+    }
 
+    void set_sample_count(uint32_t spp) override {
         // Find stratification grid resolution with aspect ratio close to 1
-        m_resolution[1] = uint32_t(ek::sqrt(ScalarFloat(m_sample_count)));
-        m_resolution[0] = (m_sample_count + m_resolution[1] - 1) / m_resolution[1];
+        m_resolution[1] = uint32_t(ek::sqrt(ScalarFloat(spp)));
+        m_resolution[0] = (spp + m_resolution[1] - 1) / m_resolution[1];
 
-        if (m_sample_count != ek::hprod(m_resolution))
+        if (spp != ek::hprod(m_resolution))
             Log(Warn, "Sample count rounded up to %i", ek::hprod(m_resolution));
 
         m_sample_count = ek::hprod(m_resolution);
@@ -82,7 +85,7 @@ public:
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
-        MultijitterSampler *sampler = new MultijitterSampler();
+        MultijitterSampler *sampler = new MultijitterSampler(Properties());
         sampler->m_jitter                = m_jitter;
         sampler->m_sample_count          = m_sample_count;
         sampler->m_inv_sample_count      = m_inv_sample_count;
@@ -162,7 +165,7 @@ public:
     }
 
     MTS_DECLARE_CLASS()
-    
+
 private:
     MultijitterSampler(const MultijitterSampler &sampler) : Base(sampler) {
         m_jitter           = sampler.m_jitter;

@@ -65,20 +65,24 @@ public:
                     current_sample_index, compute_per_sequence_seed)
     MTS_IMPORT_TYPES()
 
-    LowDiscrepancySampler (const Properties &props = Properties()) : Base(props) {
+    LowDiscrepancySampler (const Properties &props) : Base(props) {
+        set_sample_count(m_sample_count);
+    }
+
+    void set_sample_count(uint32_t spp) override {
         // Make sure sample_count is power of two and square (e.g. 4, 16, 64, 256, 1024, ...)
         ScalarUInt32 res = 2;
-        while (ek::sqr(res) < m_sample_count)
+        while (ek::sqr(res) < spp)
             res = math::round_to_power_of_two(++res);
 
-        if (m_sample_count != ek::sqr(res))
+        if (spp != ek::sqr(res))
             Log(Warn, "Sample count should be square and power of two, rounding to %i", ek::sqr(res));
 
         m_sample_count = ek::sqr(res);
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
-        LowDiscrepancySampler  *sampler  = new LowDiscrepancySampler ();
+        LowDiscrepancySampler  *sampler  = new LowDiscrepancySampler(Properties());
         sampler->m_sample_count          = m_sample_count;
         sampler->m_samples_per_wavefront = m_samples_per_wavefront;
         sampler->m_base_seed             = m_base_seed;
@@ -142,7 +146,7 @@ public:
     }
 
     MTS_DECLARE_CLASS()
-    
+
 private:
     LowDiscrepancySampler(const LowDiscrepancySampler &sampler) : Base(sampler) {
         m_scramble_seed = sampler.m_scramble_seed;
