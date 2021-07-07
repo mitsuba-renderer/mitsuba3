@@ -42,7 +42,7 @@ MTS_PY_EXPORT(Scene) {
     MTS_PY_CLASS(Scene, Object)
         .def(py::init<const Properties>())
         .def("render",
-            [&](Scene *scene, uint32_t sensor_idx) {
+            [&](Scene *scene, uint32_t sensor_idx, uint32_t spp) {
                 py::gil_scoped_release release;
 
 #if MTS_HANDLE_SIGINT
@@ -62,6 +62,8 @@ MTS_PY_EXPORT(Scene) {
                 });
 #endif
 
+                if (spp > 0)
+                    scene->sensors()[sensor_idx]->sampler()->set_sample_count(spp);
                 ref<Bitmap> bitmap = scene->render(sensor_idx);
 
 #if MTS_HANDLE_SIGINT
@@ -71,7 +73,7 @@ MTS_PY_EXPORT(Scene) {
 
                 return bitmap;
             },
-            D(Scene, render), "sensor_index"_a = 0)
+            D(Scene, render), "sensor_index"_a = 0, "spp"_a = 0)
         .def("ray_intersect_preliminary",
              py::overload_cast<const Ray3f &, Mask>(&Scene::ray_intersect_preliminary, py::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_intersect_preliminary))
