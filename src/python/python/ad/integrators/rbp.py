@@ -2,14 +2,13 @@ import enoki as ek
 import mitsuba
 
 # TODO move this to a another place (could implement and bind in C++)
-def sample_sensor_rays(sensor, spp=None):
+def sample_sensor_rays(sensor):
     from mitsuba.core import Float, UInt32, Vector2f
 
     film = sensor.film()
     sampler = sensor.sampler()
     film_size = film.crop_size()
-    if spp is None:
-        spp = sampler.sample_count()
+    spp = sampler.sample_count()
 
     total_sample_count = ek.hprod(film_size) * spp
 
@@ -47,15 +46,17 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
                        image_adj: mitsuba.core.Spectrum,
-                       sensor_index: int=0) -> None:
+                       sensor_index: int=0,
+                       spp: int=0) -> None:
         """
         Performed the adjoint rendering integration, backpropagating the
         image gradients to the scene parameters.
         """
         sensor = scene.sensors()[sensor_index]
         sampler = sensor.sampler()
-        spp = sampler.sample_count()
-        rays, weights, _, pos_idx = sample_sensor_rays(sensor, spp)
+        if spp > 0:
+            sampler.set_sample_count(spp)
+        rays, weights, _, pos_idx = sample_sensor_rays(sensor)
         grad = weights * ek.gather(type(image_adj), image_adj, pos_idx)
 
         for k, v in params.items():

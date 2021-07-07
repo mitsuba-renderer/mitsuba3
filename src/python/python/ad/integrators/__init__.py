@@ -11,7 +11,8 @@ def render_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.Spectrum,
-                        sensor_index: int=0) -> None:
+                        sensor_index: int=0,
+                        spp: int=0) -> None:
     """
     Performed the adjoint rendering integration, backpropagating the
     image gradients to the scene parameters.
@@ -30,9 +31,13 @@ def render_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
 
     Parameter ``sensor_index`` (``int``):
         Optional parameter to specify which sensor to use for rendering.
+
+    Parameter ``spp`` (``int``):
+        Optional parameter to override the number of samples per pixel.
+        This parameter will be ignored if set to 0.
     """
     ek.enable_grad(params)
-    image = self.render(scene, sensor_index)
+    image = self.render(scene, sensor_index, spp=spp)
     ek.set_grad(image, image_adj)
     ek.enqueue(image)
     ek.traverse(mitsuba.core.Float, reverse=True, retain_graph=False)
