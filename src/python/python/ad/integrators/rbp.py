@@ -103,7 +103,7 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
 
         def adjoint(var, weight, active):
             if is_primal:
-                return ek.select(active, var * weight, 0.0)
+                return ek.detach(ek.select(active, var * weight, 0.0))
             else:
                 ek.set_grad(var, ek.select(active, weight * grad, 0.0))
                 ek.enqueue(var)
@@ -214,7 +214,7 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ------------------- Recurse to the next bounce -------------------
 
-            si = si_bsdf
+            si = ek.detach(si_bsdf)
             throughput *= ek.detach(bsdf_val)
 
             depth_i += UInt32(1)
