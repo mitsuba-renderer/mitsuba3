@@ -56,7 +56,7 @@ public:
     MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed, seeded)
     MTS_IMPORT_TYPES()
 
-    IndependentSampler(const Properties &props = Properties()) : Base(props) {
+    IndependentSampler(const Properties &props) : Base(props) {
         /* Can't seed yet on the GPU because we don't know yet
            how many entries will be needed. */
         if (!ek::is_dynamic_array_v<Float>)
@@ -64,7 +64,7 @@ public:
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
-        IndependentSampler *sampler = new IndependentSampler();
+        IndependentSampler *sampler = new IndependentSampler(Properties());
         sampler->m_sample_count = m_sample_count;
         sampler->m_base_seed = m_base_seed;
         return sampler;

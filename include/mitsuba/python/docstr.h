@@ -5460,6 +5460,8 @@ static const char *__doc_mitsuba_Sampler_seeded = R"doc(Return whether the sampl
 
 static const char *__doc_mitsuba_Sampler_set_samples_per_wavefront = R"doc(Set the number of samples per pass in wavefront modes (default is 1))doc";
 
+static const char *__doc_mitsuba_Sampler_set_sample_count = R"doc(Set the number of samples per pixel)doc";
+
 static const char *__doc_mitsuba_Sampler_wavefront_size = R"doc(Return the size of the wavefront (or 0, if not seeded))doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator =

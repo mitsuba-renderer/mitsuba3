@@ -58,15 +58,18 @@ public:
                     current_sample_index, compute_per_sequence_seed)
     MTS_IMPORT_TYPES()
 
-    StratifiedSampler(const Properties &props = Properties()) : Base(props) {
+    StratifiedSampler(const Properties &props) : Base(props) {
         m_jitter = props.bool_("jitter", true);
+        set_sample_count(m_sample_count);
+    }
 
+    void set_sample_count(uint32_t spp) override {
         // Make sure sample_count is a square number
         m_resolution = 1;
-        while (ek::sqr(m_resolution) < m_sample_count)
+        while (ek::sqr(m_resolution) < spp)
             m_resolution++;
 
-        if (m_sample_count != ek::sqr(m_resolution))
+        if (spp != ek::sqr(m_resolution))
             Log(Warn, "Sample count should be square and power of two, rounding to %i", ek::sqr(m_resolution));
 
         m_sample_count = ek::sqr(m_resolution);
@@ -76,7 +79,7 @@ public:
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
-        StratifiedSampler *sampler = new StratifiedSampler();
+        StratifiedSampler *sampler = new StratifiedSampler(Properties());
         sampler->m_jitter                = m_jitter;
         sampler->m_sample_count          = m_sample_count;
         sampler->m_inv_sample_count      = m_inv_sample_count;

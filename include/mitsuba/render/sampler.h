@@ -99,6 +99,9 @@ public:
     /// Return the number of samples per pixel
     uint32_t sample_count() const { return m_sample_count; }
 
+    /// Set the number of samples per pixel
+    virtual void set_sample_count(uint32_t spp) { m_sample_count = spp; }
+
     /// Return the size of the wavefront (or 0, if not seeded)
     uint32_t wavefront_size() const { return m_wavefront_size; };
 

@@ -68,11 +68,14 @@ public:
                     current_sample_index, compute_per_sequence_seed)
     MTS_IMPORT_TYPES()
 
-    OrthogonalSampler(const Properties &props = Properties()) : Base(props) {
+    OrthogonalSampler(const Properties &props) : Base(props) {
         m_jitter = props.bool_("jitter", true);
         m_strength = props.int_("strength", 2);
+        set_sample_count(m_sample_count);
+    }
 
-        // Make sure m_resolution is a prime number
+    void set_sample_count(uint32_t spp) override {
+         // Make sure m_resolution is a prime number
         auto is_prime = [](uint32_t x) {
             for (uint32_t i = 2; i <= x / 2; ++i)
                 if (x % i == 0)
@@ -81,10 +84,10 @@ public:
         };
 
         m_resolution = 2;
-        while (ek::sqr(m_resolution) < m_sample_count || !is_prime(m_resolution))
+        while (ek::sqr(m_resolution) < spp || !is_prime(m_resolution))
             m_resolution++;
 
-        if (m_sample_count != ek::sqr(m_resolution))
+        if (spp != ek::sqr(m_resolution))
             Log(Warn, "Sample count should be the square of a prime"
                 "number, rounding to %i", ek::sqr(m_resolution));
 
@@ -93,7 +96,7 @@ public:
     }
 
     ref<Sampler<Float, Spectrum>> fork() override {
-        OrthogonalSampler *sampler       = new OrthogonalSampler();
+        OrthogonalSampler *sampler       = new OrthogonalSampler(Properties());
         sampler->m_jitter                = m_jitter;
         sampler->m_strength              = m_strength;
         sampler->m_sample_count          = m_sample_count;

@@ -9,6 +9,7 @@ MTS_PY_EXPORT(Sampler) {
         .def_method(Sampler, sample_count)
         .def_method(Sampler, wavefront_size)
         .def_method(Sampler, set_samples_per_wavefront, "samples_per_wavefront"_a)
+        .def_method(Sampler, set_sample_count, "spp"_a)
         .def_method(Sampler, advance)
         .def_method(Sampler, schedule_state)
         .def("loop_register", &Sampler::loop_register, "loop"_a)
