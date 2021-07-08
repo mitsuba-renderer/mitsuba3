@@ -76,4 +76,38 @@ MTS_PY_EXPORT(Sensor) {
     m.def("perspective_projection", &perspective_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
           D(perspective_projection));
+
+    if constexpr (ek::is_array_v<SensorPtr>) {
+        py::object ek       = py::module_::import("enoki"),
+                   ek_array = ek.attr("ArrayBase");
+
+        py::class_<SensorPtr> cls(m, "SensorPtr", ek_array);
+
+        cls.def("sample_ray",
+                [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
+                const Point2f &sample3, Mask active) {
+                    return ptr->sample_ray(time, sample1, sample2, sample3, active);
+                },
+                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+                D(Endpoint, sample_ray))
+        .def("sample_direction",
+                [](SensorPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+                    return ptr->sample_direction(it, sample, active);
+                },
+                "it"_a, "sample"_a, "active"_a = true,
+                D(Endpoint, sample_direction))
+        .def("pdf_direction",
+                [](SensorPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {
+                    return ptr->pdf_direction(it, ds, active);
+                },
+                "it"_a, "ds"_a, "active"_a = true,
+                D(Endpoint, pdf_direction))
+        .def("eval",
+                [](SensorPtr ptr, const SurfaceInteraction3f &si, Mask active) {
+                    return ptr->eval(si, active);
+                },
+                "si"_a, "active"_a = true, D(Endpoint, eval));
+
+        bind_enoki_ptr_array(cls);
+    }
 }
