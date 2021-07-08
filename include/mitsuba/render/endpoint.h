@@ -323,3 +323,17 @@ protected:
 
 MTS_EXTERN_CLASS_RENDER(Endpoint)
 NAMESPACE_END(mitsuba)
+
+// -----------------------------------------------------------------------
+//! @{ \name Enoki support for vectorized function calls
+// -----------------------------------------------------------------------
+
+ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Endpoint)
+    ENOKI_VCALL_METHOD(sample_ray)
+    ENOKI_VCALL_METHOD(eval)
+    ENOKI_VCALL_METHOD(sample_direction)
+    ENOKI_VCALL_METHOD(pdf_direction)
+ENOKI_VCALL_TEMPLATE_END(mitsuba::Endpoint)
+
+//! @}
+// -----------------------------------------------------------------------

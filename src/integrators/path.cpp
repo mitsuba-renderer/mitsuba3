@@ -187,7 +187,7 @@ public:
             DirectionSample3f ds(scene, si_bsdf, si);
 
             // Did we happen to hit an emitter?
-            if (ek::any_or<true>(ek::neq(ds.emitter, nullptr))) {
+            if (ek::any_or<true>(ek::neq(ds.endpoint, nullptr))) {
                 Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
                 /* If so, determine probability of having sampled that same

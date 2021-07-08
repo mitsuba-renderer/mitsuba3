@@ -119,7 +119,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
 
     using Interaction3f        = typename RenderAliases::Interaction3f;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
-    using EmitterPtr           = typename RenderAliases::EmitterPtr;
+    using EndpointPtr          = typename RenderAliases::EndpointPtr;
 
     //! @}
     // =============================================================
@@ -142,7 +142,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
       * lies. In that case, the \c object attribute stores a pointer to this
       * object.
       */
-    EmitterPtr emitter = nullptr;
+    EndpointPtr endpoint = nullptr;
 
     //! @}
     // =============================================================
@@ -177,14 +177,14 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
         Mask valid = it.is_valid();
         dist = ek::norm(rel);
         d    = select(valid, rel / dist, -it.wi);
-        emitter = it.emitter(scene, valid);
+        endpoint = it.emitter(scene, valid);
     }
 
     /// Element-by-element constructor
     DirectionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                     const Float &time, const Float &pdf, const Mask &delta,
-                    const Vector3f &d, const Float &dist, const EmitterPtr &emitter)
-        : Base(p, n, uv, time, pdf, delta), d(d), dist(dist), emitter(emitter) { }
+                    const Vector3f &d, const Float &dist, const EndpointPtr &endpoint)
+        : Base(p, n, uv, time, pdf, delta), d(d), dist(dist), endpoint(endpoint) { }
 
     /// Construct from a position sample
     DirectionSample(const Base &base) : Base(base) { }
@@ -192,7 +192,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)
+    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, endpoint)
 };
 
 // -----------------------------------------------------------------------------
@@ -221,7 +221,7 @@ std::ostream &operator<<(std::ostream &os,
        << "  time = " << ds.time << "," << std::endl
        << "  pdf = " << ds.pdf << "," << std::endl
        << "  delta = " << ds.delta << "," << std::endl
-       << "  emitter = " << string::indent(ds.emitter) << "," << std::endl
+       << "  endpoint = " << string::indent(ds.endpoint) << "," << std::endl
        << "  d = " << string::indent(ds.d, 6) << "," << std::endl
        << "  dist = " << ds.dist << std::endl
        << "]";

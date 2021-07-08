@@ -297,7 +297,7 @@ Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
                                               Mask active) const {
     MTS_MASK_ARGUMENT(active);
-    return ds.emitter->pdf_direction(ref, ds, active) / m_emitters.size();
+    return ds.endpoint->pdf_direction(ref, ds, active) / m_emitters.size();
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *callback) {

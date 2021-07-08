@@ -107,9 +107,9 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Compute MIS weight for the BSDF sampling
             ds = DirectionSample3f(scene, si_bsdf, si)
-            ds.emitter = si_bsdf.emitter(scene, active)
+            ds.endpoint = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-            active_b = active & ek.neq(ds.emitter, None) & ~delta
+            active_b = active & ek.neq(ds.endpoint, None) & ~delta
             emitter_pdf = scene.pdf_emitter_direction(si, ds, active_b)
             emission_weight = ek.select(active_b, mis_weight(bs.pdf, emitter_pdf), 1.0)
 

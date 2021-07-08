@@ -220,19 +220,19 @@ public:
         d = m_to_world.value().transform_affine(d);
 
         DirectionSample3f ds;
-        ds.p       = it.p + d * dist;
-        ds.n       = -d;
-        ds.uv      = uv;
-        ds.time    = it.time;
-        ds.pdf     = ek::select(
+        ds.p        = it.p + d * dist;
+        ds.n        = -d;
+        ds.uv       = uv;
+        ds.time     = it.time;
+        ds.pdf      = ek::select(
             pdf > 0.f,
             pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<ScalarFloat>))),
             0.f
         );
-        ds.delta   = false;
-        ds.emitter = this;
-        ds.d       = d;
-        ds.dist    = dist;
+        ds.delta    = false;
+        ds.endpoint = this;
+        ds.d        = d;
+        ds.dist     = dist;
 
         auto weight =
             depolarizer<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf;

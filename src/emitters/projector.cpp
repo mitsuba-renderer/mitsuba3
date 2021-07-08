@@ -169,14 +169,14 @@ public:
 
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
         DirectionSample3f ds;
-        ds.p       = m_to_world.value().translation();
-        ds.n       = m_to_world.value() * ScalarVector3f(0, 0, 1);
-        ds.uv      = uv;
-        ds.time    = it.time;
-        ds.pdf     = 1.f;
-        ds.delta   = true;
-        ds.emitter = this;
-        ds.d       = ds.p - it.p;
+        ds.p        = m_to_world.value().translation();
+        ds.n        = m_to_world.value() * ScalarVector3f(0, 0, 1);
+        ds.uv       = uv;
+        ds.time     = it.time;
+        ds.pdf      = 1.f;
+        ds.delta    = true;
+        ds.endpoint = this;
+        ds.d        = ds.p - it.p;
         Float dist_squared = ek::squared_norm(ds.d);
         ds.dist = ek::sqrt(dist_squared);
         ds.d *= ek::rcp(ds.dist);

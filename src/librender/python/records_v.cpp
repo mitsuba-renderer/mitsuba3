@@ -29,15 +29,15 @@ MTS_PY_EXPORT(DirectionSample) {
         .def(py::init<const DirectionSample3f &>(), "Copy constructor", "other"_a)
         .def(py::init<const Point3f &, const Normal3f &, const Point2f &,
                         const Float &, const Float &, const Mask &,
-                        const Vector3f &, const Float &, const EmitterPtr &>(),
+                        const Vector3f &, const Float &, const EndpointPtr &>(),
             "p"_a, "n"_a, "uv"_a, "time"_a, "pdf"_a, "delta"_a, "d"_a, "dist"_a,
             "emitter"_a, "Element-by-element constructor")
         .def(py::init<const Scene *, const SurfaceInteraction3f &, const Interaction3f &>(),
             "scene"_a, "si"_a, "ref"_a, D(PositionSample, PositionSample))
         .def_readwrite("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_readwrite("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
-        .def_readwrite("emitter", &DirectionSample3f::emitter, D(DirectionSample, emitter))
+        .def_readwrite("endpoint", &DirectionSample3f::endpoint, D(DirectionSample, endpoint))
         .def_repr(DirectionSample3f);
 
-    MTS_PY_ENOKI_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, emitter, d, dist)
+    MTS_PY_ENOKI_STRUCT(pos, DirectionSample3f, p, n, uv, time, pdf, delta, endpoint, d, dist)
 }

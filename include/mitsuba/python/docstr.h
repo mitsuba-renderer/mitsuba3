@@ -1833,7 +1833,7 @@ static const char *__doc_mitsuba_DirectionSample_d = R"doc(Unit direction from t
 
 static const char *__doc_mitsuba_DirectionSample_dist = R"doc(Distance from the reference point to the target shape)doc";
 
-static const char *__doc_mitsuba_DirectionSample_emitter =
+static const char *__doc_mitsuba_DirectionSample_endpoint =
 R"doc(Optional: pointer to an associated object
 
 In some uses of this record, sampling a position also involves

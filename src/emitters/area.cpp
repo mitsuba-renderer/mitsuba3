@@ -148,7 +148,7 @@ public:
         }
 
 
-        ds.emitter = this;
+        ds.endpoint = this;
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
 

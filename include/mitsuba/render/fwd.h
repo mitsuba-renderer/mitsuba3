@@ -102,6 +102,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using PhaseFunctionPtr       = ek::replace_scalar_t<Float, const PhaseFunction *>;
     using ShapePtr               = ek::replace_scalar_t<Float, const Shape *>;
     using EmitterPtr             = ek::replace_scalar_t<Float, const Emitter *>;
+    using EndpointPtr            = ek::replace_scalar_t<Float, const Endpoint *>;
 };
 
 #define MMTS_USING_MEMBERS_MACRO2(x) \
@@ -181,6 +182,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
-    using EmitterPtr             = typename RenderAliases::EmitterPtr;
+    using EmitterPtr             = typename RenderAliases::EmitterPtr;                             \
+    using EndpointPtr            = typename RenderAliases::EndpointPtr;
 
 NAMESPACE_END(mitsuba)

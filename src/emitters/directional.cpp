@@ -133,7 +133,7 @@ public:
         ds.time   = it.time;
         ds.pdf    = 1.f;
         ds.delta  = true;
-        ds.emitter = this;
+        ds.endpoint = this;
         ds.d      = -d;
         ds.dist   = dist;
 

@@ -156,7 +156,7 @@ public:
         ds.pdf      = 1.f;
         ds.time     = it.time;
         ds.delta    = true;
-        ds.emitter  = this;
+        ds.endpoint = this;
         ds.d        = ds.p - it.p;
         ds.dist     = ek::norm(ds.d);
         Float inv_dist = ek::rcp(ds.dist);

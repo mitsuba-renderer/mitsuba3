@@ -104,15 +104,15 @@ public:
         Float dist = 2.f * radius;
 
         DirectionSample3f ds;
-        ds.p       = it.p + d * dist;
-        ds.n       = -d;
-        ds.uv      = sample;
-        ds.time    = it.time;
-        ds.pdf     = warp::square_to_uniform_sphere_pdf(d);
-        ds.delta   = false;
-        ds.emitter = this;
-        ds.d       = d;
-        ds.dist    = dist;
+        ds.p        = it.p + d * dist;
+        ds.n        = -d;
+        ds.uv       = sample;
+        ds.time     = it.time;
+        ds.pdf      = warp::square_to_uniform_sphere_pdf(d);
+        ds.delta    = false;
+        ds.endpoint = this;
+        ds.d        = d;
+        ds.dist     = dist;
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         si.wavelengths = it.wavelengths;
