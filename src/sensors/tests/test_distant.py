@@ -161,6 +161,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             },
             "film": {
                 "type": "hdrfilm",
+                "component_format": "float16",
                 "height": 1,
                 "width": 1,
                 "rfilter": {"type": "box"},
@@ -179,6 +180,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             },
             "film": {
                 "type": "hdrfilm",
+                "component_format": "float16",
                 "height": 1,
                 "width": 1,
                 "rfilter": {"type": "box"},
@@ -197,6 +199,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             },
             "film": {
                 "type": "hdrfilm",
+                "component_format": "float16",
                 "height": 1,
                 "width": 1,
                 "rfilter": {"type": "box"},
@@ -215,6 +218,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             },
             "film": {
                 "type": "hdrfilm",
+                "component_format": "float16",
                 "height": 1,
                 "width": 1,
                 "rfilter": {"type": "box"},
@@ -230,6 +234,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             },
             "film": {
                 "type": "hdrfilm",
+                "component_format": "float16",
                 "height": 1,
                 "width": 1,
                 "rfilter": {"type": "box"},
@@ -248,6 +253,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
             },
             "film": {
                 "type": "hdrfilm",
+                "component_format": "float16",
                 "height": 1,
                 "width": 1,
                 "rfilter": {"type": "box"},
