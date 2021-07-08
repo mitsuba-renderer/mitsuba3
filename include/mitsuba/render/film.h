@@ -29,13 +29,13 @@ public:
     virtual void put(const ImageBlock *block) = 0;
 
     /// Return a image buffer object storing the developed image
-    virtual ImageBuffer develop(bool raw = false) = 0;
+    virtual ImageBuffer develop(bool raw = false) const = 0;
 
     /// Return a bitmap object storing the developed contents of the film
-    virtual ref<Bitmap> bitmap(bool raw = false) = 0;
+    virtual ref<Bitmap> bitmap(bool raw = false) const = 0;
 
     /// Write the developed contents of the film to a file on disk
-    virtual void write(const fs::path &path) = 0;
+    virtual void write(const fs::path &path) const = 0;
 
     // =============================================================
     //! @{ \name Accessor functions

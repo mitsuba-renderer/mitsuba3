@@ -32,7 +32,7 @@ High dynamic range film (:monosp:`hdrfilm`)
    - |string|
    - Specifies the desired pixel format of output images. The options are :monosp:`luminance`,
      :monosp:`luminance_alpha`, :monosp:`rgb`, :monosp:`rgba`, :monosp:`xyz` and :monosp:`xyza`.
-     (Default: :monosp:`rgba`)
+     (Default: :monosp:`rgb`)
  * - component_format
    - |string|
    - Specifies the desired floating  point component format of output images. The options are
@@ -102,9 +102,9 @@ public:
         std::string file_format = string::to_lower(
             props.string("file_format", "openexr"));
         std::string pixel_format = string::to_lower(
-            props.string("pixel_format", "rgba"));
+            props.string("pixel_format", "rgb"));
         std::string component_format = string::to_lower(
-            props.string("component_format", "float16"));
+            props.string("component_format", "float32"));
 
         if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::FileFormat::OpenEXR;
@@ -205,7 +205,7 @@ public:
         m_storage->put(block);
     }
 
-    ImageBuffer develop(bool raw = false) override {
+    ImageBuffer develop(bool raw = false) const override {
         if (raw)
             return m_storage->data();
 
@@ -214,41 +214,75 @@ public:
             size_t ch =  m_storage->channel_count();
             size_t pixel_count = ek::hprod(m_storage->size());
 
-            UInt32 idx = ek::arange<UInt32>(pixel_count) * ch;
-            Color3f rgb = xyz_to_srgb(Color3f(ek::gather<Float>(data, idx),
-                                              ek::gather<Float>(data, idx + 1),
-                                              ek::gather<Float>(data, idx + 2)));
-            ek::scatter(data, rgb[0], idx);
-            ek::scatter(data, rgb[1], idx + 1);
-            ek::scatter(data, rgb[2], idx + 2);
+            bool to_rgb    = m_pixel_format == Bitmap::PixelFormat::RGB ||
+                             m_pixel_format == Bitmap::PixelFormat::RGBA;
+            bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
+                             m_pixel_format == Bitmap::PixelFormat::YA;
+            bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
+                             m_pixel_format == Bitmap::PixelFormat::YA ||
+                             m_pixel_format == Bitmap::PixelFormat::XYZA;
+            bool has_aovs = ch > 5;
 
-            // TODO depends on m_pixel_format
+            if (to_rgb) {
+                UInt32 idx  = ek::arange<UInt32>(pixel_count) * ch;
+                Color3f rgb = xyz_to_srgb(Color3f(ek::gather<Float>(data, idx),
+                                                  ek::gather<Float>(data, idx + 1),
+                                                  ek::gather<Float>(data, idx + 2)));
+                ek::scatter(data, rgb[0], idx);
+                ek::scatter(data, rgb[1], idx + 1);
+                ek::scatter(data, rgb[2], idx + 2);
+            }
 
-            UInt32 i = ek::arange<UInt32>(pixel_count * (ch - 2));
-            UInt32 weight_idx = i / (ch - 2) * ch + 4;
-            UInt32 values_idx = (i / (ch - 2)) * ch + i % (ch - 2);
+            uint32_t img_ch = to_y ? 1 : 3;
+            uint32_t output_ch = ch - 5 + img_ch + (has_alpha ? 1 : 0);
 
-            // Offset indices for aovs channels (skip the W channel)
-            if (ch > 5)
-                values_idx[(i % (ch - 1)) > (ch - 2)] += 2;
+            UInt32 i = ek::arange<UInt32>(pixel_count * output_ch);
+            UInt32 i_channel = i % output_ch;
+            UInt32 weight_idx = (i / output_ch) * ch + 4;
+            UInt32 values_idx = (i / output_ch) * ch + i_channel;
 
+            if (has_aovs) {
+                // Offset indices for aovs channels
+                uint32_t aovs_channel = img_ch + (has_alpha ? 1 : 0);
+                Mask aovs_mask = i_channel >= aovs_channel;
+                values_idx[aovs_mask] += 5 - aovs_channel;
+            }
+
+            if (to_y) {
+                // Offset indices for aovs channels (skip the X channel)
+                Mask Y_mask = ek::eq(i_channel, 0);
+                values_idx[Y_mask] += 1;
+            }
+
+            if (has_alpha && to_y) {
+                // Offset indices for alpha channel (skip the YZ channels)
+                Mask alpha_mask = ek::eq(i_channel, img_ch);
+                values_idx[alpha_mask] += 2;
+            }
+
+            // Gather the pixel values from the image data buffer
             Float weight = ek::gather<Float>(data, weight_idx);
             Float values = ek::gather<Float>(data, values_idx);
 
-            ek::mask_t<Float> valid = weight > 0.f;
-
-            return (values / weight) & valid;
+            return (values / weight) & (weight > 0.f);
         } else {
-            Struct::Type component_format = m_component_format;
-            m_component_format = Struct::Type::Float32;
-            ref<Bitmap> b = bitmap(false);
-            m_component_format = component_format;
-            size_t size = b->channel_count() * b->pixel_count();
-            return ek::load<ImageBuffer>(b->data(), size);
+            ref<Bitmap> source = bitmap();
+            std::vector<std::string> channel_names;
+            for (size_t i = 0; i < source->channel_count(); i++)
+                channel_names.push_back(source->struct_()->operator[](i).name);
+            ref<Bitmap> target = new Bitmap(
+                source->pixel_format(),
+                Struct::Type::Float32,
+                source->size(),
+                source->channel_count(),
+                channel_names);
+            source->convert(target);
+            size_t size = target->channel_count() * target->pixel_count();
+            return ek::load<ImageBuffer>(target->data(), size);
         }
     }
 
-    ref<Bitmap> bitmap(bool raw = false) override {
+    ref<Bitmap> bitmap(bool raw = false) const override {
         auto &&storage = ek::migrate(m_storage->data(), AllocType::Host);
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
@@ -262,53 +296,86 @@ public:
         if (raw)
             return source;
 
-        bool has_aovs = m_channels.size() != 5;
+        bool to_rgb    = m_pixel_format == Bitmap::PixelFormat::RGB ||
+                         m_pixel_format == Bitmap::PixelFormat::RGBA;
+        bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
+                         m_pixel_format == Bitmap::PixelFormat::XYZA;
+        bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
+                         m_pixel_format == Bitmap::PixelFormat::YA;
+        bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
+                         m_pixel_format == Bitmap::PixelFormat::YA ||
+                         m_pixel_format == Bitmap::PixelFormat::XYZA;
+        bool has_aovs  = m_channels.size() != 5;
+
+        uint32_t img_ch = to_y ? 1 : 3;
+        uint32_t aovs_channel = (has_aovs ? img_ch + (has_alpha ? 1 : 0) : 0);
+        uint32_t output_ch = m_storage->channel_count() - 5 + aovs_channel;
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
             m_component_format, m_storage->size(),
-            has_aovs ? (m_storage->channel_count() - 1) : 0);
+            has_aovs ? output_ch : 0);
 
         if (has_aovs) {
-            for (size_t i = 0, j = 0; i < m_channels.size(); ++i, ++j) {
-                Struct::Field &source_field = source->struct_()->operator[](i),
-                              &dest_field   = target->struct_()->operator[](j);
+            source->struct_()->operator[](4).flags |= +Struct::Flags::Weight;
+
+            for (size_t i = 0; i < output_ch; ++i) {
+                Struct::Field &dest_field = target->struct_()->operator[](i);
 
                 switch (i) {
                     case 0:
-                        dest_field.name = "R";
-                        dest_field.blend = {
-                            {  3.240479f, "X" },
-                            { -1.537150f, "Y" },
-                            { -0.498535f, "Z" }
-                        };
+                        if (to_rgb) {
+                            dest_field.name = "R";
+                            dest_field.blend = {
+                                {  3.240479f, "X" },
+                                { -1.537150f, "Y" },
+                                { -0.498535f, "Z" }
+                            };
+                        } else if (to_xyz) {
+                            dest_field.name = "X";
+                        } else if (to_y) {
+                            dest_field.name = "Y";
+                        }
                         break;
 
                     case 1:
-                        dest_field.name = "G";
-                        dest_field.blend = {
-                            { -0.969256, "X" },
-                            {  1.875991, "Y" },
-                            {  0.041556, "Z" }
-                        };
-                        break;
+                        if (to_rgb) {
+                            dest_field.name = "G";
+                            dest_field.blend = {
+                                { -0.969256, "X" },
+                                {  1.875991, "Y" },
+                                {  0.041556, "Z" }
+                            };
+                            break;
+                        } else if (to_xyz) {
+                            dest_field.name = "Y";
+                            break;
+                        } else if (to_y && has_alpha) {
+                            dest_field.name = "A";
+                            break;
+                        }
 
                     case 2:
-                        dest_field.name = "B";
-                        dest_field.blend = {
-                            {  0.055648, "X" },
-                            { -0.204043, "Y" },
-                            {  1.057311, "Z" }
-                        };
-                        break;
-
-                    case 4:
-                        source_field.flags |= +Struct::Flags::Weight;
-                        j--;
-                        break;
+                        if (to_rgb) {
+                            dest_field.name = "B";
+                            dest_field.blend = {
+                                {  0.055648, "X" },
+                                { -0.204043, "Y" },
+                                {  1.057311, "Z" }
+                            };
+                            break;
+                        } else if (to_xyz) {
+                            dest_field.name = "Z";
+                            break;
+                        }
+                    case 3:
+                        if ((to_rgb || to_xyz) && has_alpha) {
+                            dest_field.name = "A";
+                            break;
+                        }
 
                     default:
-                        dest_field.name = m_channels[i];
+                        dest_field.name = m_channels[5 + i - aovs_channel];
                         break;
                 }
             }
@@ -319,7 +386,7 @@ public:
         return target;
     }
 
-    void write(const fs::path &path) override {
+    void write(const fs::path &path) const override {
         fs::path filename = path;
         std::string proper_extension;
         if (m_file_format == Bitmap::FileFormat::OpenEXR)

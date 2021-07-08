@@ -71,7 +71,7 @@ def test02_crops(variant_scalar_rgb):
 
 
 @pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
-def test03_develop(variant_scalar_rgb, file_format, tmpdir):
+def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
     from mitsuba.core.xml import load_string
     from mitsuba.core import Bitmap, Struct
     from mitsuba.render import ImageBlock
@@ -137,3 +137,53 @@ def test03_develop(variant_scalar_rgb, file_format, tmpdir):
             assert ek.allclose(img[:, :, :3], contents[:, :, :3], atol=1e-5)
         # Alpha channel was ignored, alpha and weights should default to 1.0.
         assert ek.allclose(img[:, :, 3:5], 1.0, atol=1e-6)
+
+
+@pytest.mark.parametrize('pixel_format', ['RGB', 'RGBA', 'XYZ', 'XYZA', 'luminance', 'luminance_alpha'])
+@pytest.mark.parametrize('has_aovs', [False, True])
+def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
+    from mitsuba.core import xml, Bitmap
+    from mitsuba.render import ImageBlock
+    import numpy as np
+
+    aovs_channels = ['aov.r', 'aov.g', 'aov.b'] if has_aovs else []
+    if pixel_format == 'luminance':
+        output_channels = ['Y'] + aovs_channels
+    elif pixel_format == 'luminance_alpha':
+        output_channels = ['Y', 'A'] + aovs_channels
+    else:
+        output_channels = list(pixel_format) + aovs_channels
+
+    film = xml.load_dict({
+        'type': 'hdrfilm',
+        'pixel_format': pixel_format,
+        'component_format': 'float32',
+        'width': 3,
+        'height': 5,
+    })
+
+    res = film.size()
+    block = ImageBlock(res, 5 + len(aovs_channels), film.reconstruction_filter())
+    block.clear()
+    for x in range(res[1]):
+        for y in range(res[0]):
+            aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
+            block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
+    film.prepare(['X', 'Y', 'Z', 'A', 'W'] + aovs_channels)
+    film.put(block)
+
+    data = np.array(film.develop().numpy())
+    assert len(data) == res[0] * res[1] * (len(output_channels))
+
+    data_bitmap = Bitmap(data.reshape(res[1], res[0], -1),
+                         Bitmap.PixelFormat.MultiChannel,
+                         output_channels)
+
+    bitmap = film.bitmap()
+
+    # print(data_bitmap)
+    # print(bitmap)
+    # data_bitmap.write('test_data_bitmap.exr')
+    # bitmap.write('test_bitmap.exr')
+
+    assert np.allclose(np.array(bitmap), np.array(data_bitmap))
