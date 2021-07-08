@@ -104,7 +104,7 @@ public:
         std::string pixel_format = string::to_lower(
             props.string("pixel_format", "rgb"));
         std::string component_format = string::to_lower(
-            props.string("component_format", "float32"));
+            props.string("component_format", "float16"));
 
         if (file_format == "openexr" || file_format == "exr")
             m_file_format = Bitmap::FileFormat::OpenEXR;
