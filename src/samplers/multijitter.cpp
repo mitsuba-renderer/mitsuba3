@@ -81,7 +81,7 @@ public:
         m_resolution_x_div = m_resolution[0];
     }
 
-    ref<Sampler<Float, Spectrum>> clone() override {
+    ref<Sampler<Float, Spectrum>> fork() override {
         MultijitterSampler *sampler = new MultijitterSampler();
         sampler->m_jitter                = m_jitter;
         sampler->m_sample_count          = m_sample_count;
@@ -94,7 +94,7 @@ public:
         return sampler;
     }
 
-    ref<Sampler<Float, Spectrum>> copy() override {
+    ref<Sampler<Float, Spectrum>> clone() override {
         return new MultijitterSampler(*this);
     }
 

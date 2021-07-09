@@ -52,27 +52,27 @@ public:
     MTS_IMPORT_TYPES()
 
     /**
-     * \brief Create a clone of this sampler.
+     * \brief Create a fork of this sampler.
      *
      * A subsequent call to \c seed() is necessary to properly initialize
      * the internal state of the sampler.
      *
      * May throw an exception if not supported.
      */
-    virtual ref<Sampler> clone() = 0;
+    virtual ref<Sampler> fork() = 0;
 
 
     /**
-     * \brief Create a deep copy of this sampler.
+     * \brief Create a clone of this sampler.
      * 
-     * Subsequent calls to the copied sampler will produce the same
+     * Subsequent calls to the cloned sampler will produce the same
      * random numbers as the original sampler.
      * 
      * \remark This method relies on the overload of the copy construtor.
      *
      * May throw an exception if not supported.
      */
-    virtual ref<Sampler> copy() = 0;
+    virtual ref<Sampler> clone() = 0;
 
     /**
      * \brief Deterministically seed the underlying RNG, if applicable.

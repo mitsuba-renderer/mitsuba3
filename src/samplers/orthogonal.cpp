@@ -92,7 +92,7 @@ public:
         m_resolution_div = m_resolution;
     }
 
-    ref<Sampler<Float, Spectrum>> clone() override {
+    ref<Sampler<Float, Spectrum>> fork() override {
         OrthogonalSampler *sampler       = new OrthogonalSampler();
         sampler->m_jitter                = m_jitter;
         sampler->m_strength              = m_strength;
@@ -104,7 +104,7 @@ public:
         return sampler;
     }
 
-    ref<Sampler<Float, Spectrum>> copy() override {
+    ref<Sampler<Float, Spectrum>> clone() override {
         return new OrthogonalSampler(*this);
     }
 
