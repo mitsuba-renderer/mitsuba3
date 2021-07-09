@@ -77,7 +77,7 @@ public:
         m_sample_count = ek::sqr(res);
     }
 
-    ref<Sampler<Float, Spectrum>> clone() override {
+    ref<Sampler<Float, Spectrum>> fork() override {
         LowDiscrepancySampler  *sampler  = new LowDiscrepancySampler ();
         sampler->m_sample_count          = m_sample_count;
         sampler->m_samples_per_wavefront = m_samples_per_wavefront;
@@ -85,7 +85,7 @@ public:
         return sampler;
     }
 
-    ref<Sampler<Float, Spectrum>> copy() override {
+    ref<Sampler<Float, Spectrum>> clone() override {
         return new LowDiscrepancySampler (*this);
     }
 

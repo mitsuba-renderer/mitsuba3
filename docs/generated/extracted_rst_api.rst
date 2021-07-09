@@ -13176,17 +13176,31 @@
         Returns → None:
             *no description available*
 
+    .. py:method:: mitsuba.render.Sampler.fork(self)
+
+        Create a fork of this sampler
+
+        The fork is allowed to be different to some extent, e.g. a
+        pseudorandom generator should be based on a different random seed
+        compared to the original. All other parameters are copied exactly.
+
+        May throw an exception if not supported. Forking may also change the
+        state of the original sampler (e.g. by using the next 1D sample as a
+        seed for the fork).
+
+        Returns → :py:obj:`mitsuba.render.Sampler`:
+            *no description available*
+            
     .. py:method:: mitsuba.render.Sampler.clone(self)
 
         Create a clone of this sampler
 
-        The clone is allowed to be different to some extent, e.g. a
-        pseudorandom generator should be based on a different random seed
-        compared to the original. All other parameters are copied exactly.
+        The clone will be exactly equal to the original sampler. Subsequent 
+        calls to the cloned sampler will produce the same random numbers as 
+        the original sampler.
 
-        May throw an exception if not supported. Cloning may also change the
-        state of the original sampler (e.g. by using the next 1D sample as a
-        seed for the clone).
+        May throw an exception if not supported. This method relies on the 
+        overload of the copy construtor.
 
         Returns → :py:obj:`mitsuba.render.Sampler`:
             *no description available*
@@ -13527,10 +13541,10 @@
 
         Return the sensor's sample generator
 
-        This is the *root* sampler, which will later be cloned a number of
+        This is the *root* sampler, which will later be forked a number of
         times to provide each participating worker thread with its own
         instance (see Scene::sampler()). Therefore, this sampler should never
-        be used for anything except creating clones.
+        be used for anything except creating forks.
 
         Returns → :py:obj:`mitsuba.render.Sampler`:
             *no description available*

@@ -75,7 +75,7 @@ public:
         m_resolution_div = m_resolution;
     }
 
-    ref<Sampler<Float, Spectrum>> clone() override {
+    ref<Sampler<Float, Spectrum>> fork() override {
         StratifiedSampler *sampler = new StratifiedSampler();
         sampler->m_jitter                = m_jitter;
         sampler->m_sample_count          = m_sample_count;
@@ -88,7 +88,7 @@ public:
         return sampler;
     }
 
-    ref<Sampler<Float, Spectrum>> copy() override {
+    ref<Sampler<Float, Spectrum>> clone() override {
         return new StratifiedSampler(*this);
     }
 

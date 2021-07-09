@@ -63,14 +63,14 @@ public:
             seed(PCG32_DEFAULT_STATE);
     }
 
-    ref<Sampler<Float, Spectrum>> clone() override {
+    ref<Sampler<Float, Spectrum>> fork() override {
         IndependentSampler *sampler = new IndependentSampler();
         sampler->m_sample_count = m_sample_count;
         sampler->m_base_seed = m_base_seed;
         return sampler;
     }
 
-    ref<Sampler<Float, Spectrum>> copy() override {
+    ref<Sampler<Float, Spectrum>> clone() override {
         return new IndependentSampler(*this);
     }
 

@@ -64,7 +64,7 @@ def check_deep_copy_sampler_scalar(sampler1):
         sampler1.next_1d()
         sampler1.next_2d()
 
-    sampler2 = sampler1.copy()
+    sampler2 = sampler1.clone()
 
     for i in range(10):
         assert ek.all(sampler1.next_1d() == sampler2.next_1d())
@@ -84,7 +84,7 @@ def check_deep_copy_sampler_wavefront(sampler1, factor=16):
         sampler1.advance()
         sampler1.next_2d()
 
-    sampler2 = sampler1.copy()
+    sampler2 = sampler1.clone()
 
     for i in range(10):
         assert ek.all(sampler1.next_1d() == sampler2.next_1d())

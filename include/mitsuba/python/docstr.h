@@ -5419,16 +5419,16 @@ A subsequent call to ``next_1d`` or ``next_2d`` will access the first
 
 static const char *__doc_mitsuba_Sampler_class = R"doc()doc";
 
-static const char *__doc_mitsuba_Sampler_clone =
-R"doc(Create a clone of this sampler.
+static const char *__doc_mitsuba_Sampler_fork =
+R"doc(Create a fork of this sampler.
 
 A subsequent call to ``seed``() is necessary to properly initialize
 the internal state of the sampler.
 
 May throw an exception if not supported.)doc";
 
-static const char *__doc_mitsuba_Sampler_copy =
-R"doc(Create a deep copy (internal state) of this sampler.
+static const char *__doc_mitsuba_Sampler_clone =
+R"doc(Create a clone of this sampler.
 
 Subsequent calls to the copied sampler will produce the same random 
 numbers as the original sampler.

@@ -87,11 +87,11 @@ public:
     /**
      * \brief Return the sensor's sample generator
      *
-     * This is the \a root sampler, which will later be cloned a
+     * This is the \a root sampler, which will later be forked a
      * number of times to provide each participating worker thread
      * with its own instance (see \ref Scene::sampler()).
      * Therefore, this sampler should never be used for anything
-     * except creating clones.
+     * except creating forks.
      */
     Sampler *sampler() { return m_sampler; }
 
