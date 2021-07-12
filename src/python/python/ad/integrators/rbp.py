@@ -138,9 +138,8 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            emitter = si.emitter(scene, active)
             result += adjoint(
-                emitter.eval(si, active),
+                si.emitter(scene, active).eval(si, active),
                 throughput * emission_weight,
                 active
             )
@@ -157,7 +156,8 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
             # ---------------------- Emitter sampling ----------------------
 
             active_e = active & has_flag(bsdf.flags(), BSDFFlags.Smooth)
-            ds, emitter_val = scene.sample_emitter_direction(si, sampler.next_2d(active_e), True, active_e)
+            ds, emitter_val = scene.sample_emitter_direction(
+                si, sampler.next_2d(active_e), True, active_e)
             active_e &= ek.neq(ds.pdf, 0.0)
             wo = si.to_local(ds.d)
 

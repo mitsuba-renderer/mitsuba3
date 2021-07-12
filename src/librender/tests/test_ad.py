@@ -29,7 +29,6 @@ def make_simple_scene(res=1, integrator="path"):
         },
         'rect' : {
             'type' : 'rectangle',
-            'id' : 'rect',
             "bsdf" : {
                 "type" : "diffuse",
                 "reflectance" : {
