@@ -146,8 +146,22 @@ def test07_printing(variant_scalar_rgb):
 """
 
 
+def test08_get_default(variant_scalar_rgb):
+    from mitsuba.core import Properties as Prop
+
+    p = Prop()
+    assert p.get('foo') == None
+    assert p.get('foo', 4.0) == 4.0
+    assert p.get('foo', 4) == 4
+    assert type(p.get('foo', 4)) == int
+    assert p.get('foo', 'foo') == 'foo'
+
+    p['foo'] = 'test'
+    assert p.get('foo', 4.0) == 'test'
+
+
 @pytest.mark.skip("TODO fix AnimatedTransform")
-def test08_animated_transforms(variant_scalar_rgb):
+def test09_animated_transforms(variant_scalar_rgb):
     """An AnimatedTransform can be built from a given Transform."""
     from mitsuba.core import Properties as Prop, Transform4f, AnimatedTransform
 
