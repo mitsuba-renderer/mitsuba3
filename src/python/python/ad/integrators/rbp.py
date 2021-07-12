@@ -1,37 +1,6 @@
 import enoki as ek
 import mitsuba
 
-# TODO move this to a another place (could implement and bind in C++)
-def sample_sensor_rays(sensor):
-    from mitsuba.core import Float, UInt32, Vector2f
-
-    film = sensor.film()
-    sampler = sensor.sampler()
-    film_size = film.crop_size()
-    spp = sampler.sample_count()
-
-    total_sample_count = ek.hprod(film_size) * spp
-
-    if sampler.wavefront_size() != total_sample_count:
-        sampler.seed(0, total_sample_count)
-
-    pos_idx = ek.arange(UInt32, total_sample_count)
-    pos_idx //= ek.opaque(UInt32, spp)
-    scale = ek.rcp(Vector2f(film_size))
-    pos = Vector2f(Float(pos_idx %  int(film_size[0])),
-                   Float(pos_idx // int(film_size[0])))
-
-    pos += sampler.next_2d()
-
-    rays, weights = sensor.sample_ray_differential(
-        time=0.0,
-        sample1=sampler.next_1d(),
-        sample2=pos * scale,
-        sample3=0.0
-    )
-
-    return rays, weights, pos, pos_idx
-
 
 class RBPIntegrator(mitsuba.render.SamplingIntegrator):
     """
@@ -56,6 +25,7 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
         sampler = sensor.sampler()
         if spp > 0:
             sampler.set_sample_count(spp)
+
         rays, weights, _, pos_idx = sample_sensor_rays(sensor)
 
         grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
@@ -223,6 +193,37 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
 
     def to_string(self):
         return f'RBPIntegrator[max_depth = {self.max_depth}]'
+
+
+def sample_sensor_rays(sensor):
+    """ Sample a 2D grid of primary rays for a given sensor """
+    from mitsuba.core import Float, UInt32, Vector2f
+
+    film = sensor.film()
+    sampler = sensor.sampler()
+    film_size = film.crop_size()
+    spp = sampler.sample_count()
+
+    total_sample_count = ek.hprod(film_size) * spp
+
+    assert sampler.wavefront_size() == total_sample_count
+
+    pos_idx = ek.arange(UInt32, total_sample_count)
+    pos_idx //= ek.opaque(UInt32, spp)
+    scale = ek.rcp(Vector2f(film_size))
+    pos = Vector2f(Float(pos_idx %  int(film_size[0])),
+                   Float(pos_idx // int(film_size[0])))
+
+    pos += sampler.next_2d()
+
+    rays, weights = sensor.sample_ray_differential(
+        time=0.0,
+        sample1=sampler.next_1d(),
+        sample2=pos * scale,
+        sample3=0.0
+    )
+
+    return rays, weights, pos, pos_idx
 
 
 mitsuba.render.register_integrator("rbp", lambda props: RBPIntegrator(props))

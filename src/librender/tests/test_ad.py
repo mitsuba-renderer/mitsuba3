@@ -63,7 +63,6 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
 
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.python.util import traverse
-    from mitsuba.python.autodiff import render
 
     scene = make_simple_scene()
 
@@ -76,7 +75,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
 
     # Forward rendering - first time
     scene.sensors()[0].sampler().seed(0)
-    img_1 = render(scene, spp=spp)
+    img_1 = scene.integrator().render(scene, spp=spp)
 
     # Backward pass and gradient descent step
     loss = ek.hsum_async(img_1)
@@ -90,7 +89,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
 
     # Forward rendering - second time
     scene.sensors()[0].sampler().seed(0)
-    img_2 = render(scene, spp=spp)
+    img_2 = scene.integrator().render(scene, spp=spp)
 
     new_loss = ek.hsum_async(img_2)
 
@@ -107,7 +106,6 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
     # Test correctness of the gradients taking one step of gradient descent on linear function
     from mitsuba.core import Float
     from mitsuba.python.util import traverse
-    from mitsuba.python.autodiff import render
 
     scene = make_simple_scene()
 
@@ -125,7 +123,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
 
     # Forward rendering - first time
     scene.sensors()[0].sampler().seed(0)
-    img_1 = render(scene, spp=spp)
+    img_1 = scene.integrator().render(scene, spp=spp)
 
     # Compute forward gradients
     assert ek.grad(img_1) == 0.0
@@ -138,21 +136,19 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
     params.update()
 
     scene.sensors()[0].sampler().seed(0)
-    img_2 = render(scene, spp=spp)
+    img_2 = scene.integrator().render(scene, spp=spp)
 
     assert ek.allclose(img_1, img_2 - lr * grad)
 
 
-from mitsuba.python.autodiff import Adam, SGD
+from mitsuba.python.ad import Adam, SGD
 
 @pytest.mark.parametrize("spp", [8])
 @pytest.mark.parametrize("res", [3])
-@pytest.mark.parametrize("unbiased", [False, True])
 @pytest.mark.parametrize("opt_conf", [(SGD, [250.0, 0.8])])
-def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, unbiased, opt_conf):
+def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
     from mitsuba.core import Float, Color3f
     from mitsuba.python.util import traverse
-    from mitsuba.python.autodiff import render
 
     scene = make_simple_scene(res=res, integrator="direct")
 
@@ -162,7 +158,7 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, unbiased, opt_co
     param_ref = Color3f(params[key])
 
     scene.sensors()[0].sampler().seed(0)
-    image_ref = render(scene, spp=spp)
+    image_ref = scene.integrator().render(scene, spp=spp)
 
     opt_type, opt_args = opt_conf
     opt = opt_type(*opt_args, params=params)
@@ -181,7 +177,7 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, unbiased, opt_co
     for it in range(N):
         # Perform a differentiable rendering of the scene
         scene.sensors()[0].sampler().seed(0)
-        image = render(scene, optimizer=opt, unbiased=unbiased, spp=spp)
+        image = scene.integrator().render(scene, spp=spp)
         ek.set_label(image, 'image')
 
         # Objective: MSE between 'image' and 'image_ref'

@@ -211,6 +211,7 @@ def traverse(node: 'mitsuba.core.Object') -> SceneParameters:
 
     return SceneParameters(cb.properties, cb.hierarchy)
 
+
 def suspend_gradients(node: 'mitsuba.core.Object', state: 'bool') -> None:
     """
     Traverse a node of Mitsuba's scene graph and suspend/resume keeping track of derivatives.
@@ -242,3 +243,38 @@ def suspend_gradients(node: 'mitsuba.core.Object', state: 'bool') -> None:
 
     cb = SuspendCallback(node, state)
     node.traverse(cb)
+
+
+def convert_to_bitmap(data, resolution, uint8_srgb=True):
+    """
+    Convert the linearized RGB image in `data` to a `Bitmap` with
+    resolution `resolution`. `uint8_srgb` defines whether the resulting
+    bitmap should be translated to a uint8 sRGB bitmap.
+    """
+    from mitsuba.core import Bitmap, Struct
+
+    if type(data).__name__ == 'Tensor':
+        data = data.detach().cpu()
+
+    bitmap = Bitmap(data.numpy().reshape(resolution[1], resolution[0], -1))
+    if uint8_srgb:
+        bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
+                                Struct.Type.UInt8, True)
+    return bitmap
+
+
+def write_bitmap(filename, data, resolution, write_async=True, quality=-1):
+    """
+    Write the linearized RGB image in `data` to a PNG/EXR/.. file with
+    resolution `resolution`.
+    """
+    uint8_srgb = filename.endswith('.png') or \
+                 filename.endswith('.jpg') or \
+                 filename.endswith('.jpeg')
+
+    bitmap = convert_to_bitmap(data, resolution, uint8_srgb)
+
+    if write_async:
+        bitmap.write_async(filename, quality=quality)
+    else:
+        bitmap.write(filename, quality=quality)
