@@ -252,7 +252,7 @@ public:
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
 
             // Mueller matrix for specular reflection.
-            F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wo_hat)), eta_c);
+            F = mueller::specular_reflection(UnpolarizedSpectrum(dot(wo_hat, m)), eta_c);
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
@@ -322,7 +322,7 @@ public:
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
             // Mueller matrix for specular reflection.
-            F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wo_hat)), eta_c);
+            F = mueller::specular_reflection(UnpolarizedSpectrum(dot(wo_hat, H)), eta_c);
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */
@@ -437,7 +437,7 @@ public:
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
             // Mueller matrix for specular reflection.
-            F = mueller::specular_reflection(UnpolarizedSpectrum(Frame3f::cos_theta(wo_hat)), eta_c);
+            F = mueller::specular_reflection(UnpolarizedSpectrum(dot(wo_hat, H)), eta_c);
 
             /* The Stokes reference frame vector of this matrix lies perpendicular
                to the plane of reflection. */

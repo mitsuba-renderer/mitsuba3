@@ -242,7 +242,7 @@ public:
                 Float D = distr.eval(H);
 
                 // Mueller matrix for specular reflection.
-                Spectrum F = mueller::specular_reflection(Frame3f::cos_theta(wo_hat), m_eta);
+                Spectrum F = mueller::specular_reflection(dot(wo_hat, H), m_eta);
 
                 /* The Stokes reference frame vector of this matrix lies perpendicular
                    to the plane of reflection. */
