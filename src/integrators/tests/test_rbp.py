@@ -1,5 +1,6 @@
 import enoki as ek
 import mitsuba
+import pytest
 
 
 def make_simple_scene(res=1):
@@ -58,6 +59,7 @@ def make_simple_scene(res=1):
 #     jit_flags_options = []
 
 # def test_gradients(variants_all_ad_rgb):
+@pytest.mark.skip()
 def test_gradients(variant_cuda_ad_rgb):
     from mitsuba.core import xml, Color3f
     from mitsuba.python.util import traverse
