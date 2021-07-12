@@ -22,6 +22,34 @@ extern Caster cast_object;
         return py::cast(p.Name(key, def_val));            \
     }, D(Properties, DName, 2))
 
+
+py::object properties_get(const Properties& p, const std::string &key) {
+    // We need to ask for type information to return the right cast
+    auto type = p.type(key);
+    if (type == Properties::Type::Bool)
+        return py::cast(p.bool_(key));
+    else if (type == Properties::Type::Long)
+        return py::cast(p.long_(key));
+    else if (type == Properties::Type::Float)
+        return py::cast(p.float_(key));
+    else if (type == Properties::Type::String)
+        return py::cast(p.string(key));
+        else if (type == Properties::Type::Array3f)
+        return py::cast(p.array3f(key));
+    else if (type == Properties::Type::Transform)
+        return py::cast(p.transform(key));
+    else if (type == Properties::Type::AnimatedTransform)
+        return py::cast(p.animated_transform(key));
+    else if (type == Properties::Type::Object) {
+        return cast_object((ref<Object>)p.object(key));
+    } else if (type == Properties::Type::Pointer)
+        return py::cast(p.pointer(key));
+    else {
+        throw std::runtime_error("Unsupported property type");
+    }
+}
+
+
 MTS_PY_EXPORT(Properties) {
     MTS_PY_CHECK_ALIAS(Properties, "Properties") {
         py::class_<Properties>(m, "Properties", D(Properties))
@@ -59,30 +87,17 @@ MTS_PY_EXPORT(Properties) {
             .GET_ITEM_DEFAULT_BINDING(transform, transform, typename Properties::Transform4f)
             .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
             .def("__getitem__", [](const Properties& p, const std::string &key) {
-                    // We need to ask for type information to return the right cast
-                    auto type = p.type(key);
-                    if (type == Properties::Type::Bool)
-                        return py::cast(p.bool_(key));
-                    else if (type == Properties::Type::Long)
-                        return py::cast(p.long_(key));
-                    else if (type == Properties::Type::Float)
-                        return py::cast(p.float_(key));
-                    else if (type == Properties::Type::String)
-                        return py::cast(p.string(key));
-                     else if (type == Properties::Type::Array3f)
-                        return py::cast(p.array3f(key));
-                    else if (type == Properties::Type::Transform)
-                        return py::cast(p.transform(key));
-                    else if (type == Properties::Type::AnimatedTransform)
-                        return py::cast(p.animated_transform(key));
-                    else if (type == Properties::Type::Object) {
-                        return cast_object((ref<Object>)p.object(key));
-                    } else if (type == Properties::Type::Pointer)
-                        return py::cast(p.pointer(key));
-                    else {
-                        throw std::runtime_error("Unsupported property type");
-                    }
-            }, "Retrieve an existing property given its name")
+                return properties_get(p, key);
+            }, "key"_a, "Retrieve an existing property given its name")
+            .def("get", [](const Properties& p, const std::string &key,
+                           const py::object &def_val) {
+                if (p.has_property(key))
+                    return properties_get(p, key);
+                else
+                    return def_val;
+            },
+            "key"_a, "def_value"_a = py::none(),
+            "Return the value for the specified key it exists, otherwise return default value")
             .def("__contains__", [](const Properties& p, const std::string &key) {
                 return p.has_property(key);
             })
