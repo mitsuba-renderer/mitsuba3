@@ -5,13 +5,14 @@ from os.path import join, realpath, dirname, basename, splitext, exists
 import glob
 import pytest
 
-import nbformat
-from nbconvert.preprocessors import ExecutePreprocessor
 
 def run_notebook(notebook_path, tmp_dir=None):
     """
     Execute a jupyter notebook (output notebook in tmp_dir)
     """
+    import nbformat
+    from nbconvert.preprocessors import ExecutePreprocessor
+
     nb_name, _ = splitext(basename(notebook_path))
     if tmp_dir is None:
         tmp_dir = dirname(notebook_path)
