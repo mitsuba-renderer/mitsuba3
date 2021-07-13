@@ -3,6 +3,7 @@ import json
 import re
 import sys
 import os
+import platform
 import pathlib
 
 try:
@@ -154,6 +155,8 @@ if __name__ == '__main__':
         if name not in configurations:
             raise ValueError('mitsuba.conf: "enabled" refers to an '
                              'unknown configuration "%s"' % name)
+        if platform.system() == 'Darwin' and 'cuda' in name:
+            continue
         item = configurations[name]
         spectrum = item['spectrum'].replace('Float', item['float'])
         float_types.add(item['float'])
