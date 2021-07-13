@@ -45,7 +45,7 @@ def create_emitter_and_spectrum(lookat, cutoff_angle, s_key='d65'):
 def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelength_sample, cutoff_angle, lookat):
     """ Check the correctness of the sample_direction() method """
 
-    from mitsuba.core import sample_shifted, Transform4f
+    from mitsuba.core import sample_shifted, Transform4f, Vector3f
     from mitsuba.render import SurfaceInteraction3f
 
     cutoff_angle_rad = cutoff_angle / 180 * ek.Pi
@@ -65,7 +65,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
     it.wavelengths = wav
 
     # Direction from the position to the point emitter
-    d = -it.p + lookat.translation()
+    d = Vector3f(-it.p + lookat.translation())
     dist = ek.norm(d)
     d /= dist
 
