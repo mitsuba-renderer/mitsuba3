@@ -18,8 +18,10 @@ MTS_PY_EXPORT(VolumeGrid) {
                 channel_count = obj.shape()[3];
 
             obj = py::array::ensure(obj, py::array::c_style);
-            ScalarVector3i size(obj.shape()[2], obj.shape()[1], obj.shape()[0]);
-            auto volumegrid = new VolumeGrid(size, channel_count);
+            ScalarVector3u size((uint32_t) obj.shape()[2],
+                                (uint32_t) obj.shape()[1],
+                                (uint32_t) obj.shape()[0]);
+            auto volumegrid = new VolumeGrid(size, (uint32_t) channel_count);
             memcpy(volumegrid->data(), obj.data(), volumegrid->buffer_size());
 
             ScalarFloat max = 0.f;

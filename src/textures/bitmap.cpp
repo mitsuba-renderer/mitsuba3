@@ -202,7 +202,7 @@ public:
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!", m_name);
 
-        m_mean = mean / pixel_count;
+        m_mean = ScalarFloat(mean / pixel_count);
     }
 
     /**
