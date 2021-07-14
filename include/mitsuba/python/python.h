@@ -54,17 +54,21 @@ PYBIND11_DECLARE_HOLDER_TYPE(T, mitsuba::ref<T>, true);
 
 /// Shorthand notation for defining object registration routine for trampoline objects
 /// WARNING: this will leak out memory as the constructed py::object will never be destroyed
-#define MTS_PY_REGISTER_OBJECT(Function, Name)                                                     \
-    m.def(Function,                                                                                \
-        [](const std::string &name, std::function<py::object(const Properties *)> &constructor) {  \
-            (void) new Class(name, #Name, ::mitsuba::detail::get_variant<Float, Spectrum>(),       \
-                            [=](const Properties &p) {                                             \
-                                py::object o = constructor(&p);                                    \
-                                return o.release().cast<ref<Name>>();                              \
-                            },                                                                     \
-                            nullptr);                                                              \
-            PluginManager::instance()->register_python_plugin(name);                               \
-        });                                                                                        \
+#define MTS_PY_REGISTER_OBJECT(Function, Name)                                 \
+    m.def(                                                                     \
+        Function,                                                              \
+        [](const std::string &name,                                            \
+           std::function<py::object(const Properties *)> &constructor) {       \
+            auto variant = ::mitsuba::detail::get_variant<Float, Spectrum>();  \
+            (void) new Class(                                                  \
+                name, #Name, variant,                                          \
+                [=](const Properties &p) {                                     \
+                    py::object o = constructor(&p);                            \
+                    return o.release().cast<ref<Name>>();                      \
+                },                                                             \
+                nullptr);                                                      \
+            PluginManager::instance()->register_python_plugin(name, variant);  \
+        });
 
 using namespace mitsuba;
 

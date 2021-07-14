@@ -26,13 +26,15 @@ public:
     void ensure_plugin_loaded(const std::string &name);
 
     /// Return the class corresponding to a plugin for a specific variant
-    const Class *get_plugin_class(const std::string &name, const std::string &variant);
+    const Class *get_plugin_class(const std::string &name,
+                                  const std::string &variant);
 
     /// Return the list of loaded plugins
     std::vector<std::string> loaded_plugins() const;
 
     /// Register a Python plugin
-    void register_python_plugin(const std::string &plugin_name);
+    void register_python_plugin(const std::string &plugin_name,
+                                const std::string &variant);
 
     /**
      * \brief Instantiate a plugin, verify its type, and return the newly

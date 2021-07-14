@@ -133,10 +133,12 @@ void PluginManager::ensure_plugin_loaded(const std::string &name) {
     (void) d->plugin(name);
 }
 
-const Class *PluginManager::get_plugin_class(const std::string &name, const std::string &variant) {
+const Class *PluginManager::get_plugin_class(const std::string &name,
+                                             const std::string &variant) {
     const Class *plugin_class;
 
-    auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(), name);
+    auto it = std::find(d->m_python_plugins.begin(), d->m_python_plugins.end(),
+                        name + variant);
     if (it != d->m_python_plugins.end()) {
         plugin_class = Class::for_name(name, variant);
     } else {
@@ -155,12 +157,14 @@ std::vector<std::string> PluginManager::loaded_plugins() const {
     return list;
 }
 
-void PluginManager::register_python_plugin(const std::string &plugin_name) {
-    d->m_python_plugins.push_back(plugin_name);
+void PluginManager::register_python_plugin(const std::string &plugin_name,
+                                           const std::string &variant) {
+    d->m_python_plugins.push_back(plugin_name + variant);
     Class::static_initialization();
 }
 
-ref<Object> PluginManager::create_object(const Properties &props, const Class *class_) {
+ref<Object> PluginManager::create_object(const Properties &props,
+                                         const Class *class_) {
     Assert(class_ != nullptr);
     if (class_->name() == "Scene")
        return class_->construct(props);
