@@ -26,6 +26,7 @@ MTS_PY_EXPORT(Ray) {
 
     {
         auto raydiff = py::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
+            .def(py::init<>(), "Create an unitialized ray")
             .def(py::init<const Ray3f &>(), "ray"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
                 "Initialize without differentials.",
