@@ -3,7 +3,7 @@
 import types
 import sys
 import threading
-from importlib import import_module as _import
+from importlib import import_module as _import, reload as _reload
 import enoki as ek
 
 if sys.version_info < (3, 6):
@@ -175,9 +175,12 @@ def set_variant(value):
     _tls.modules = modules
     _tls.variant = value
 
-    # Automatically import mitsuba.python.ad (e.g. register AD integrators)
+    # Automatically load/reload and register Python integrators for AD variants
     if '_ad_' in value:
-        _import('mitsuba.python.ad')
+        if 'python' in globals():
+            _reload(globals()['python'].ad.integrators)
+        else:
+            _import('mitsuba.python.ad.integrators')
 
 
 def variant():
