@@ -46,7 +46,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
     def Li(self: mitsuba.render.SamplingIntegrator,
            scene: mitsuba.render.Scene,
            sampler: mitsuba.render.Sampler,
-           rays: mitsuba.core.Ray3f,
+           rays: mitsuba.core.RayDifferential3f,
            depth: mitsuba.core.UInt32=1,
            params: mitsuba.python.util.SceneParameters=None,
            grad: mitsuba.core.Spectrum=None,
@@ -63,7 +63,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         When `params` is defined, the method will backpropagate `grad` to the
         scene parameters in `params` and return nothing.
         """
-        from mitsuba.core import Spectrum, Float, UInt32, Mask, Ray3f, Loop
+        from mitsuba.core import Spectrum, Float, UInt32, Mask, RayDifferential3f, Loop
         from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
 
         assert params is None or ek.detached_t(grad) or grad.index_ad() == 0
@@ -78,7 +78,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                 ek.traverse(Float, reverse=True, retain_graph=False)
                 return 0
 
-        rays = Ray3f(rays)
+        rays = RayDifferential3f(rays)
 
         si = scene.ray_intersect(rays, active_)
         valid_rays = active_ & si.is_valid()
@@ -102,7 +102,6 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
-
             # ---------------------- Direct emission ----------------------
 
             result += adjoint(
@@ -118,7 +117,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             active &= depth_i < self.max_depth
 
             ctx = BSDFContext()
-            bsdf = si.bsdf()
+            bsdf = si.bsdf(rays)
 
             # ---------------------- Emitter sampling ----------------------
 
@@ -145,11 +144,12 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             if not is_primal:
                 params.set_grad_suspended(True)
 
-            bs, bsdf_val = bsdf.sample(ctx, si, sampler.next_1d(active),
-                                       sampler.next_2d(active), active)
+            bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
+                                          sampler.next_2d(active), active)
 
             active &= bs.pdf > 0.0
             rays = ek.detach(si.spawn_ray(si.to_world(bs.wo)))
+            rays = RayDifferential3f(rays)
             si_bsdf = scene.ray_intersect(rays, active)
 
             # Compute MIS weights for the BSDF sampling
@@ -182,7 +182,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             # ------------------- Recurse to the next bounce -------------------
 
             si = ek.detach(si_bsdf)
-            throughput *= ek.detach(bsdf_val)
+            throughput *= ek.detach(bsdf_weight)
 
             depth_i += UInt32(1)
 
@@ -190,6 +190,5 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
     def to_string(self):
         return f'RBIntegrator[max_depth = {self.max_depth}]'
-
 
 mitsuba.render.register_integrator("rb", lambda props: RBIntegrator(props))
