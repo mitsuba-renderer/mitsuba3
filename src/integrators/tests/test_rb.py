@@ -116,7 +116,7 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
     # write_bitmap('image_adj.exr', image_adj, crop_size)
 
     # scene.sensors()[0].sampler().seed(0)
-    rb_integrator.render_adjoint(scene, params, image_adj, spp=spp_adjoint)
+    rb_integrator.render_backward(scene, params, image_adj, spp=spp_adjoint)
     grad_backward = ek.grad(params[key])
 
     # Finite difference

@@ -1,16 +1,24 @@
 import enoki as ek
 import mitsuba
+
 from .integrator import sample_sensor_rays, mis_weight
 
-
-class RBIntegrator(mitsuba.render.SamplingIntegrator):
+class ReparamRBIntegrator(mitsuba.render.SamplingIntegrator):
     """
-    This integrator implements a Radiative Backpropagation path tracer.
+    This integrator implements a Radiative Backpropagation path tracer with
+    discontinuities reparameterization based on the Warped-Area sampling
+    technique.
     """
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
         self.max_depth = props.long_('max_depth', 4)
         self.recursive_li = props.bool_('recursive_li', True)
+
+        self.reparam_props = {
+            'aux_ray_count': props.long_('aux_ray_count', 32),
+            'kappa': props.float_('kappa', 1e5),
+            'harmonic_power': props.float_('harmonic_power', 3.0),
+        }
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
@@ -46,7 +54,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
     def Li(self: mitsuba.render.SamplingIntegrator,
            scene: mitsuba.render.Scene,
            sampler: mitsuba.render.Sampler,
-           rays: mitsuba.core.RayDifferential3f,
+           rays: mitsuba.core.Ray3f,
            depth: mitsuba.core.UInt32=1,
            params: mitsuba.python.util.SceneParameters=None,
            grad: mitsuba.core.Spectrum=None,
@@ -63,13 +71,13 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         When `params` is defined, the method will backpropagate `grad` to the
         scene parameters in `params` and return nothing.
         """
-        from mitsuba.core import Spectrum, Float, UInt32, Mask, RayDifferential3f, Loop
+        from mitsuba.core import Spectrum, Float, UInt32, Mask, Ray3f, Loop
         from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
 
         assert params is None or ek.detached_t(grad) or grad.index_ad() == 0
         is_primal = params is None
 
-        def adjoint(var, weight, active):
+        def adjoint(var, weight, active): # TODO should take a dictionary
             if is_primal:
                 return ek.detach(ek.select(active, var * weight, 0.0))
             else:
@@ -78,8 +86,12 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                 ek.traverse(Float, reverse=True, retain_graph=False)
                 return 0
 
-        rays = RayDifferential3f(rays)
+        from mitsuba.python.ad import WarpFieldReparameterizer
+        reparam = WarpFieldReparameterizer(scene, self.reparam_props) # TODO use this guy!
 
+        rays = Ray3f(rays)
+
+        # Primary ray intersection
         si = scene.ray_intersect(rays, active_)
         valid_rays = active_ & si.is_valid()
 
@@ -102,6 +114,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
+
             # ---------------------- Direct emission ----------------------
 
             result += adjoint(
@@ -117,7 +130,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             active &= depth_i < self.max_depth
 
             ctx = BSDFContext()
-            bsdf = si.bsdf(rays)
+            bsdf = si.bsdf()
 
             # ---------------------- Emitter sampling ----------------------
 
@@ -144,12 +157,11 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             if not is_primal:
                 params.set_grad_suspended(True)
 
-            bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
-                                          sampler.next_2d(active), active)
+            bs, bsdf_val = bsdf.sample(ctx, si, sampler.next_1d(active),
+                                       sampler.next_2d(active), active)
 
             active &= bs.pdf > 0.0
             rays = ek.detach(si.spawn_ray(si.to_world(bs.wo)))
-            rays = RayDifferential3f(rays)
             si_bsdf = scene.ray_intersect(rays, active)
 
             # Compute MIS weights for the BSDF sampling
@@ -182,13 +194,14 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             # ------------------- Recurse to the next bounce -------------------
 
             si = ek.detach(si_bsdf)
-            throughput *= ek.detach(bsdf_weight)
+            throughput *= ek.detach(bsdf_val)
 
             depth_i += UInt32(1)
 
         return result, valid_rays
 
     def to_string(self):
-        return f'RBIntegrator[max_depth = {self.max_depth}]'
+        return f'ReparamRBIntegrator[max_depth = {self.max_depth}]'
 
-mitsuba.render.register_integrator("rb", lambda props: RBIntegrator(props))
+
+mitsuba.render.register_integrator("reparamrb", lambda props: ReparamRBIntegrator(props))

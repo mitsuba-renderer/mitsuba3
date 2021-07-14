@@ -6,7 +6,7 @@ import mitsuba.python.util
 #        Default implementation for Integrator adjoint methods
 # -------------------------------------------------------------------
 
-def render_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
+def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.Spectrum,
@@ -78,7 +78,7 @@ def sample_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
 
 
 # Bind adjoint methods to the SamplingIntegrator class
-mitsuba.render.SamplingIntegrator.render_adjoint = render_adjoint_impl
+mitsuba.render.SamplingIntegrator.render_backward = render_backward_impl
 mitsuba.render.SamplingIntegrator.sample_adjoint = sample_adjoint_impl
 
 
