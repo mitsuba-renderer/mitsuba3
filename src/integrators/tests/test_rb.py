@@ -59,8 +59,8 @@ def make_simple_scene(res=1):
 #     jit_flags_options = []
 
 # def test_gradients(variants_all_ad_rgb):
-@pytest.mark.skip()
-def test_gradients(variant_cuda_ad_rgb):
+# @pytest.mark.skip()
+def test_gradient(variant_cuda_ad_rgb):
     from mitsuba.core import xml, Color3f
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import write_bitmap
@@ -76,8 +76,8 @@ def test_gradients(variant_cuda_ad_rgb):
     # ek.set_flag(ek.JitFlag.LoopRecord,  False)
     # ek.set_flag(ek.JitFlag.LoopOptimize,  False)
 
-    rbp_integrator = xml.load_dict({
-        'type': 'rbp',
+    rb_integrator = xml.load_dict({
+        'type': 'rb',
         'max_depth': max_depth
     })
     path_integrator = xml.load_dict({
@@ -87,7 +87,7 @@ def test_gradients(variant_cuda_ad_rgb):
 
     # Rendering reference image
     scene.sensors()[0].sampler().seed(0)
-    image_ref = rbp_integrator.render(scene, spp=spp_primal)
+    image_ref = rb_integrator.render(scene, spp=spp_primal)
     write_bitmap('path_ref.exr', image_ref, crop_size)
 
     params = traverse(scene)
@@ -100,7 +100,7 @@ def test_gradients(variant_cuda_ad_rgb):
 
     # Render primal image
     scene.sensors()[0].sampler().seed(0)
-    image = rbp_integrator.render(scene, spp=spp_primal)
+    image = rb_integrator.render(scene, spp=spp_primal)
     write_bitmap('path_init.exr', image, crop_size)
 
     # Compute adjoint image (MSE objective function)
@@ -114,7 +114,7 @@ def test_gradients(variant_cuda_ad_rgb):
 
     # print('Adjoint rendering ----')
     # scene.sensors()[0].sampler().seed(0)
-    rbp_integrator.render_adjoint(scene, params, image_adj, spp=spp_adjoint)
+    rb_integrator.render_adjoint(scene, params, image_adj, spp=spp_adjoint)
     grad_backward = ek.grad(params[key])
 
     # # Forward render with path tracer

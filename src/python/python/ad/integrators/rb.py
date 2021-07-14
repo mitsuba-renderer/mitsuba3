@@ -1,10 +1,11 @@
 import enoki as ek
 import mitsuba
+from .integrator import sample_sensor_rays, mis_weight
 
 
-class RBPIntegrator(mitsuba.render.SamplingIntegrator):
+class RBIntegrator(mitsuba.render.SamplingIntegrator):
     """
-    This integrator implements a basic Radiative Backpropagation path tracer.
+    This integrator implements a Radiative Backpropagation path tracer.
     """
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
@@ -68,9 +69,6 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
         assert params is None or ek.detached_t(grad) or grad.index_ad() == 0
         is_primal = params is None
 
-        def mis_weight(a, b):
-            return ek.detach(ek.select(a > 0.0, (a**2) / (a**2 + b**2), 0.0))
-
         def adjoint(var, weight, active):
             if is_primal:
                 return ek.detach(ek.select(active, var * weight, 0.0))
@@ -82,7 +80,6 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
 
         rays = Ray3f(rays)
 
-        # Primary ray intersection
         si = scene.ray_intersect(rays, active_)
         valid_rays = active_ & si.is_valid()
 
@@ -168,18 +165,18 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
                 if self.recursive_li:
                     li = self.Li(scene, sampler, ek.detach(rays), depth_i+1,
                                  emission_weight=emission_weight,
-                                 active_=active_b)[0]
+                                 active_=active)[0]
                 else:
                     li = ds.emitter.eval(si_bsdf, active_b) * emission_weight
 
                 params.set_grad_suspended(False)
 
-                bsdf_eval = bsdf.eval(ctx, si, ek.detach(bs.wo), active_b)
+                bsdf_eval = bsdf.eval(ctx, si, ek.detach(bs.wo), active)
 
                 adjoint(
                     bsdf_eval,
                     throughput * li / bs.pdf,
-                    active_b
+                    active
                 )
 
             # ------------------- Recurse to the next bounce -------------------
@@ -192,38 +189,7 @@ class RBPIntegrator(mitsuba.render.SamplingIntegrator):
         return result, valid_rays
 
     def to_string(self):
-        return f'RBPIntegrator[max_depth = {self.max_depth}]'
+        return f'RBIntegrator[max_depth = {self.max_depth}]'
 
 
-def sample_sensor_rays(sensor):
-    """ Sample a 2D grid of primary rays for a given sensor """
-    from mitsuba.core import Float, UInt32, Vector2f
-
-    film = sensor.film()
-    sampler = sensor.sampler()
-    film_size = film.crop_size()
-    spp = sampler.sample_count()
-
-    total_sample_count = ek.hprod(film_size) * spp
-
-    assert sampler.wavefront_size() == total_sample_count
-
-    pos_idx = ek.arange(UInt32, total_sample_count)
-    pos_idx //= ek.opaque(UInt32, spp)
-    scale = ek.rcp(Vector2f(film_size))
-    pos = Vector2f(Float(pos_idx %  int(film_size[0])),
-                   Float(pos_idx // int(film_size[0])))
-
-    pos += sampler.next_2d()
-
-    rays, weights = sensor.sample_ray_differential(
-        time=0.0,
-        sample1=sampler.next_1d(),
-        sample2=pos * scale,
-        sample3=0.0
-    )
-
-    return rays, weights, pos, pos_idx
-
-
-mitsuba.render.register_integrator("rbp", lambda props: RBPIntegrator(props))
+mitsuba.render.register_integrator("rb", lambda props: RBIntegrator(props))
