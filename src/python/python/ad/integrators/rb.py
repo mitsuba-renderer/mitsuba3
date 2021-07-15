@@ -27,27 +27,27 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         if spp > 0:
             sampler.set_sample_count(spp)
 
-        rays, weights, _, pos_idx = sample_sensor_rays(sensor)
+        ray, weight, _, pos_idx = sample_sensor_rays(sensor)
 
         grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
-        grad_values *= weights / sampler.sample_count()
+        grad_values *= weight / sampler.sample_count()
 
         for k, v in params.items():
             ek.enable_grad(v)
 
-        self.sample_adjoint(scene, sampler, rays, params, grad_values)
+        self.sample_adjoint(scene, sampler, ray, params, grad_values)
 
-    def sample(self, scene, sampler, rays, medium, active):
-        return *self.Li(scene, sampler, rays), []
+    def sample(self, scene, sampler, ray, medium, active):
+        return *self.Li(scene, sampler, ray), []
 
-    def sample_adjoint(self, scene, sampler, rays, params, grad):
+    def sample_adjoint(self, scene, sampler, ray, params, grad):
         with params.suspend_gradients():
-            self.Li(scene, sampler, rays, params=params, grad=grad)
+            self.Li(scene, sampler, ray, params=params, grad=grad)
 
     def Li(self: mitsuba.render.SamplingIntegrator,
            scene: mitsuba.render.Scene,
            sampler: mitsuba.render.Sampler,
-           rays: mitsuba.core.RayDifferential3f,
+           ray: mitsuba.core.RayDifferential3f,
            depth: mitsuba.core.UInt32=1,
            params=mitsuba.python.util.SceneParameters(),
            grad: mitsuba.core.Spectrum=None,
@@ -79,10 +79,10 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                     ek.backward(var * ek.detach(weight) * grad)
                 return 0
 
-        rays = RayDifferential3f(rays)
+        ray = RayDifferential3f(ray)
 
-        si = scene.ray_intersect(rays, active_)
-        valid_rays = active_ & si.is_valid()
+        si = scene.ray_intersect(ray, active_)
+        valid_ray = active_ & si.is_valid()
 
         # Initialize loop variables
         result     = Spectrum(0.0)
@@ -94,7 +94,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
         depth_i = UInt32(depth)
         loop = Loop("RBPLoop" + '_recursive_li' if is_primal else '')
-        loop.put(lambda:(depth_i, active, rays, emission_weight, throughput, si, result))
+        loop.put(lambda:(depth_i, active, ray, emission_weight, throughput, si, result))
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
@@ -111,7 +111,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             active &= depth_i < self.max_depth
 
             ctx = BSDFContext()
-            bsdf = si.bsdf(rays)
+            bsdf = si.bsdf(ray)
 
             # ---------------------- Emitter sampling ----------------------
 
@@ -137,11 +137,11 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                                           sampler.next_2d(active), active)
 
             active &= bs.pdf > 0.0
-            rays = si.spawn_ray(si.to_world(bs.wo))
-            rays = RayDifferential3f(rays)
-            si_bsdf = scene.ray_intersect(rays, active)
+            ray = si.spawn_ray(si.to_world(bs.wo))
+            ray = RayDifferential3f(ray)
+            si_bsdf = scene.ray_intersect(ray, active)
 
-            # Compute MIS weights for the BSDF sampling
+            # Compute MIS weight for the BSDF sampling
             ds = DirectionSample3f(scene, si_bsdf, si)
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
@@ -152,7 +152,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             if not is_primal:
                 # Account for incoming radiance
                 if self.recursive_li:
-                    li = self.Li(scene, sampler, rays, depth_i+1,
+                    li = self.Li(scene, sampler, ray, depth_i+1,
                                  emission_weight=emission_weight,
                                  active_=active)[0]
                 else:
@@ -174,7 +174,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
             depth_i += UInt32(1)
 
-        return result, valid_rays
+        return result, valid_ray
 
     def to_string(self):
         return f'RBIntegrator[max_depth = {self.max_depth}]'
