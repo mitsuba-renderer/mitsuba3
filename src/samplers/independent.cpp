@@ -53,7 +53,8 @@ on the order of the machine epsilon (:math:`6\cdot 10^{-8}`) in single precision
 template <typename Float, typename Spectrum>
 class IndependentSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed, seeded)
+    MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed,
+                    seeded, schedule_state)
     MTS_IMPORT_TYPES()
 
     IndependentSampler(const Properties &props) : Base(props) {
@@ -72,6 +73,14 @@ public:
 
     ref<Sampler<Float, Spectrum>> clone() override {
         return new IndependentSampler(*this);
+    }
+
+    void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1) override {
+        Base::seed(seed_offset, wavefront_size);
+        if constexpr (ek::is_jit_array_v<Float>) {
+            schedule_state();
+            ek::eval();
+        }
     }
 
     Float next_1d(Mask active = true) override {
