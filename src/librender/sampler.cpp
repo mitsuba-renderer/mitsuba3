@@ -86,13 +86,13 @@ Sampler<Float, Spectrum>::current_sample_index() const {
 
 
 MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler& sampler) {
-    m_sample_count          = sampler.m_sample_count; 
+    m_sample_count          = sampler.m_sample_count;
     m_base_seed             = sampler.m_base_seed;
     m_wavefront_size        = sampler.m_wavefront_size;
     m_samples_per_wavefront = sampler.m_samples_per_wavefront;
     m_dimension_index       = sampler.m_dimension_index;
     m_sample_index          = sampler.m_sample_index;
-}  
+}
 
 //! @}
 // =======================================================================
@@ -134,7 +134,7 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::loop_register(
 
 MTS_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler& sampler)
     : Base(sampler) {
-    m_rng = sampler.m_rng; 
+    m_rng = sampler.m_rng;
 }
 
 //! @}
