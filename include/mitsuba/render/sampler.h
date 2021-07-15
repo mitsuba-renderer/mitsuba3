@@ -64,10 +64,10 @@ public:
 
     /**
      * \brief Create a clone of this sampler.
-     * 
+     *
      * Subsequent calls to the cloned sampler will produce the same
      * random numbers as the original sampler.
-     * 
+     *
      * \remark This method relies on the overload of the copy construtor.
      *
      * May throw an exception if not supported.
@@ -80,7 +80,7 @@ public:
      * In the context of wavefront ray tracing & dynamic arrays, this function
      * must be called with \c wavefront_size matching the size of the wavefront.
      */
-    virtual void seed(uint64_t seed_offset, size_t wavefront_size = 1);
+    virtual void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1);
 
     /**
      * \brief Advance to the next sample.
@@ -121,7 +121,7 @@ public:
 protected:
     Sampler(const Properties &props);
     /// Copy state to a new sampler object
-    Sampler(const Sampler&);  
+    Sampler(const Sampler&);
     virtual ~Sampler();
 
     /// Generates a array of seeds where the seed values are unique per sequence
@@ -148,11 +148,11 @@ protected:
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER PCG32Sampler : public Sampler<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sampler, m_base_seed)
+    MTS_IMPORT_BASE(Sampler, m_base_seed, m_wavefront_size)
     MTS_IMPORT_TYPES()
     using PCG32 = mitsuba::PCG32<UInt32>;
 
-    virtual void seed(uint64_t seed_offset, size_t wavefront_size = 1) override;
+    virtual void seed(uint64_t seed_offset, size_t wavefront_size = (size_t)-1) override;
     virtual void schedule_state() override;
     virtual void loop_register(ek::Loop<Float> &loop) override;
 

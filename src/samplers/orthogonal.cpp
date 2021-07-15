@@ -114,6 +114,10 @@ public:
     void seed(uint64_t seed_offset, size_t wavefront_size) override {
         Base::seed(seed_offset, wavefront_size);
         m_permutation_seed = compute_per_sequence_seed((uint32_t) seed_offset);
+        if constexpr (ek::is_jit_array_v<Float>) {
+            schedule_state();
+            ek::eval();
+        }
     }
 
     Float next_1d(Mask active = true) override {

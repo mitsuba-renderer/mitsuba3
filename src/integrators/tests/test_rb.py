@@ -91,7 +91,6 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
     })
 
     # Rendering reference image
-    scene.sensors()[0].sampler().seed(0)
     image_1 = rb_integrator.render(scene, spp=spp_primal)
     # write_bitmap('image_1.exr', image_1, crop_size)
 

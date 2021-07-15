@@ -74,7 +74,6 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
     ek.enable_grad(params[key])
 
     # Forward rendering - first time
-    scene.sensors()[0].sampler().seed(0)
     img_1 = scene.integrator().render(scene, spp=spp)
 
     # Backward pass and gradient descent step
@@ -122,7 +121,6 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
     params.update()
 
     # Forward rendering - first time
-    scene.sensors()[0].sampler().seed(0)
     img_1 = scene.integrator().render(scene, spp=spp)
 
     # Compute forward gradients
@@ -157,7 +155,6 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
     params = traverse(scene)
     param_ref = Color3f(params[key])
 
-    scene.sensors()[0].sampler().seed(0)
     image_ref = scene.integrator().render(scene, spp=spp)
 
     opt_type, opt_args = opt_conf

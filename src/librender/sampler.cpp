@@ -12,8 +12,8 @@ MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props) {
     m_sample_count = (uint32_t) props.size_("sample_count", 4);
     m_base_seed = props.size_("seed", 0);
 
-    m_dimension_index = ek::opaque<UInt32>(0, 1);
-    m_sample_index = ek::opaque<UInt32>(0, 1);
+    m_dimension_index = ek::opaque<UInt32>(0);
+    m_sample_index = ek::opaque<UInt32>(0);
     m_samples_per_wavefront = 1;
     m_wavefront_size = 0;
 }
@@ -22,17 +22,23 @@ MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
                                                 size_t wavefront_size) {
-    m_wavefront_size = (uint32_t) wavefront_size;
-    m_dimension_index = ek::opaque<UInt32>(0, 1);
-    m_sample_index = ek::opaque<UInt32>(0, 1);
-    if constexpr (ek::is_jit_array_v<Float>) {
-        schedule_state();
-        ek::eval();
+    if constexpr (ek::is_array_v<Float>) {
+        // Only overwrite when specified
+        if (wavefront_size != (size_t) -1) {
+            m_wavefront_size = (uint32_t) wavefront_size;
+        } else {
+            if (m_wavefront_size == 0)
+                Throw("Sampler::seed(): wavefront_size should be specified!");
+        }
+    } else {
+        m_wavefront_size = 1;
     }
+    m_dimension_index = ek::opaque<UInt32>(0);
+    m_sample_index = ek::opaque<UInt32>(0);
 }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
-    m_dimension_index = ek::opaque<UInt32>(0, 1);
+    m_dimension_index = ek::opaque<UInt32>(0);
     m_sample_index++;
 }
 
@@ -73,7 +79,6 @@ Sampler<Float, Spectrum>::compute_per_sequence_seed(uint32_t seed_offset) const 
                          sequence_idx + ek::opaque<UInt32>(seed_offset, 1));
 }
 
-
 MTS_VARIANT typename Sampler<Float, Spectrum>::UInt32
 Sampler<Float, Spectrum>::current_sample_index() const {
     // Build an array of offsets for the sample indices in the wavefront
@@ -83,7 +88,6 @@ Sampler<Float, Spectrum>::current_sample_index() const {
 
     return m_sample_index * m_samples_per_wavefront + wavefront_sample_offsets;
 }
-
 
 MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler& sampler) {
     m_sample_count          = sampler.m_sample_count;
@@ -111,11 +115,10 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
     uint64_t seed_value = m_base_seed + seed_offset;
 
     if constexpr (ek::is_array_v<Float>) {
-        UInt64 idx = ek::arange<UInt64>(wavefront_size);
+        UInt64 idx = ek::arange<UInt64>(m_wavefront_size);
         UInt64 tmp = ek::opaque<UInt64>(seed_value, 1);
-        m_rng.seed(wavefront_size, sample_tea_64(tmp, idx), sample_tea_64(idx, tmp));
+        m_rng.seed(m_wavefront_size, sample_tea_64(tmp, idx), sample_tea_64(idx, tmp));
     } else {
-        assert(wavefront_size == 1);
         m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM);
     }
 }
