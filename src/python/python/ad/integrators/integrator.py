@@ -36,10 +36,13 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
         This parameter will be ignored if set to 0.
     """
     ek.enable_grad(params)
+    prev_flag = ek.flag(ek.JitFlag.LoopRecord)
+    ek.set_flag(ek.JitFlag.LoopRecord, False)
     image = self.render(scene, sensor_index, spp=spp)
     ek.set_grad(image, image_adj)
     ek.enqueue(image)
     ek.traverse(mitsuba.core.Float, reverse=True, retain_graph=False)
+    ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
 
 
 def sample_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
