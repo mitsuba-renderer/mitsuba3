@@ -28,13 +28,13 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         if spp > 0:
             sampler.set_sample_count(spp)
 
-        ray, weights, _, pos_idx = sample_sensor_rays(sensor)
+        ray, weight, _, pos_idx = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
         result, _ = self.Li(scene, sampler.clone(), ray)
 
         grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
-        grad_values *= weights / sampler.sample_count()
+        grad_values *= weight / sampler.sample_count()
 
         for k, v in params.items():
             ek.enable_grad(v)
@@ -97,13 +97,13 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ---------------------- BSDF sampling ----------------------
             with params.suspend_gradients():
-                bs, bsdf_val = bsdf.sample(ctx, si, sampler.next_1d(active),
-                                           sampler.next_2d(active), active)
+                bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
+                                              sampler.next_2d(active), active)
                 active &= bs.pdf > 0.0
                 ray = RayDifferential3f(si.spawn_ray(si.to_world(bs.wo)))
                 si_bsdf = scene.ray_intersect(ray, active)
 
-            # Compute MIS weights for the BSDF sampling
+            # Compute MIS weight for the BSDF sampling
             ds = DirectionSample3f(scene, si_bsdf, si)
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
@@ -117,7 +117,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                 ek.backward(grad * (emitter_contrib + bsdf_eval * ek.detach(ek.select(active, result / ek.max(1e-8, bsdf_eval), 0.0))))
 
             si = si_bsdf
-            throughput *= bsdf_val
+            throughput *= bsdf_weight
 
             depth_i += UInt32(1)
 
