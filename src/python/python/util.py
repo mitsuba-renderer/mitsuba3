@@ -1,11 +1,8 @@
+from collections.abc import Mapping
+from contextlib import contextmanager
+
 import mitsuba
 import enoki as ek
-from collections.abc import Mapping
-
-
-def is_differentiable(p):
-    """Returns whether a parameter's type is a differentiable enoki type."""
-    return ek.is_diff_array_v(p) and ek.is_floating_point_v(p)
 
 
 class SceneParameters(Mapping):
@@ -18,7 +15,7 @@ class SceneParameters(Mapping):
     :py:meth:`~mitsuba.python.util.SceneParameters.keep()`.
     """
 
-    def __init__(self, properties, hierarchy):
+    def __init__(self, properties={}, hierarchy={}):
         """
         Private constructor (use
         :py:func:`mitsuba.python.util.traverse()` instead)
@@ -56,9 +53,9 @@ class SceneParameters(Mapping):
 
     def __repr__(self) -> str:
         param_list = ''
-        for k in self.keys():
-            param_list += '  %s %s,\n' % (
-                ('*' if is_differentiable(self[k]) else ' '), k)
+        for k, v in self.items():
+            is_diff = ek.is_diff_array_v(v) and ek.is_floating_point_v(v)
+            param_list += '  %s %s,\n' % (('*' if is_diff else ' '), k)
         return 'SceneParameters[\n%s]' % param_list
 
     def __iter__(self):
@@ -83,8 +80,8 @@ class SceneParameters(Mapping):
         return self.properties.keys()
 
     def all_differentiable(self):
-        for k in self.keys():
-            if not is_differentiable(self[k]):
+        for k, v in self.items():
+            if not (ek.is_diff_array_v(v) and ek.is_floating_point_v(v)):
                 return False
         return True
 
@@ -157,6 +154,24 @@ class SceneParameters(Mapping):
             if depth == 0: # root node
                 suspend_gradients(obj, state)
                 break
+
+    @contextmanager
+    def suspend_gradients(self):
+        """Temporarily disable the generation of gradients."""
+        self.set_grad_suspended(True)
+        try:
+            yield
+        finally:
+            self.set_grad_suspended(False)
+
+    @contextmanager
+    def resume_gradients(self):
+        """Temporarily enable the generation of gradients"""
+        self.set_grad_suspended(False)
+        try:
+            yield
+        finally:
+            self.set_grad_suspended(True)
 
 
 def traverse(node: 'mitsuba.core.Object') -> SceneParameters:

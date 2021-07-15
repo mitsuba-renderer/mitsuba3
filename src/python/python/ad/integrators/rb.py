@@ -13,11 +13,11 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         self.recursive_li = props.bool_('recursive_li', True)
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
-                       scene: mitsuba.render.Scene,
-                       params: mitsuba.python.util.SceneParameters,
-                       image_adj: mitsuba.core.Spectrum,
-                       sensor_index: int=0,
-                       spp: int=0) -> None:
+                        scene: mitsuba.render.Scene,
+                        params: mitsuba.python.util.SceneParameters,
+                        image_adj: mitsuba.core.Spectrum,
+                        sensor_index: int=0,
+                        spp: int=0) -> None:
         """
         Performed the adjoint rendering integration, backpropagating the
         image gradients to the scene parameters.
@@ -35,20 +35,21 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         for k, v in params.items():
             ek.enable_grad(v)
 
-        self.sample_adjoint(scene, sensor.sampler(), rays, params, grad_values)
+        self.sample_adjoint(scene, sampler, rays, params, grad_values)
 
     def sample(self, scene, sampler, rays, medium, active):
-        return *self.Li(scene, sampler, rays, params=None), []
+        return *self.Li(scene, sampler, rays), []
 
     def sample_adjoint(self, scene, sampler, rays, params, grad):
-        self.Li(scene, sampler, rays, params=params, grad=grad)
+        with params.suspend_gradients():
+            self.Li(scene, sampler, rays, params=params, grad=grad)
 
     def Li(self: mitsuba.render.SamplingIntegrator,
            scene: mitsuba.render.Scene,
            sampler: mitsuba.render.Sampler,
            rays: mitsuba.core.RayDifferential3f,
            depth: mitsuba.core.UInt32=1,
-           params: mitsuba.python.util.SceneParameters=None,
+           params=mitsuba.python.util.SceneParameters(),
            grad: mitsuba.core.Spectrum=None,
            emission_weight: mitsuba.core.Float=None,
            active_: mitsuba.core.Mask=True):
@@ -63,19 +64,19 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         When `params` is defined, the method will backpropagate `grad` to the
         scene parameters in `params` and return nothing.
         """
-        from mitsuba.core import Spectrum, Float, UInt32, Mask, RayDifferential3f, Loop
+        from mitsuba.core import Spectrum, Float, UInt32, RayDifferential3f, Loop
         from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
 
-        assert params is None or ek.detached_t(grad) or grad.index_ad() == 0
-        is_primal = params is None
+        is_primal = len(params) == 0
+        assert is_primal or ek.detached_t(grad) or grad.index_ad() == 0
 
         def adjoint(var, weight, active):
+            var = ek.select(active, var, 0.0)
             if is_primal:
-                return ek.detach(ek.select(active, var * weight, 0.0))
+                return var * weight
             else:
-                ek.set_grad(var, ek.select(active, weight * grad, 0.0))
-                ek.enqueue(var)
-                ek.traverse(Float, reverse=True, retain_graph=False)
+                if ek.grad_enabled(var):
+                    ek.backward(var * ek.detach(weight) * grad)
                 return 0
 
         rays = RayDifferential3f(rays)
@@ -87,14 +88,9 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         result     = Spectrum(0.0)
         throughput = Spectrum(1.0)
         active     = active_ & si.is_valid()
-
         if emission_weight is None:
-            emission_weight = Float(1.0)
-        else:
-            emission_weight = Float(emission_weight) # TODO is this needed to copy in recursive call?
-
-        if not is_primal:
-            params.set_grad_suspended(False)
+            emission_weight = 1.0
+        emission_weight = Float(emission_weight)
 
         depth_i = UInt32(depth)
         loop = Loop("RBPLoop" + '_recursive_li' if is_primal else '')
@@ -104,14 +100,12 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         while loop(active):
             # ---------------------- Direct emission ----------------------
 
-            result += adjoint(
-                si.emitter(scene, active).eval(si, active),
-                throughput * emission_weight,
-                active
-            )
-
-            if not is_primal:
-                params.set_grad_suspended(True)
+            with params.resume_gradients():
+                result += adjoint(
+                    si.emitter(scene, active).eval(si, active),
+                    throughput * emission_weight,
+                    active
+                )
 
             active &= si.is_valid()
             active &= depth_i < self.max_depth
@@ -127,28 +121,23 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             active_e &= ek.neq(ds.pdf, 0.0)
             wo = si.to_local(ds.d)
 
-            if not is_primal:
-                params.set_grad_suspended(False)
+            with params.resume_gradients():
+                bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
+                mis = ek.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf))
 
-            bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
-            mis = ek.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf))
-
-            result += adjoint(
-                bsdf_val,
-                throughput * mis * emitter_val,
-                active_e
-            )
+                result += adjoint(
+                    bsdf_val,
+                    throughput * mis * emitter_val,
+                    active_e
+                )
 
             # ---------------------- BSDF sampling ----------------------
-
-            if not is_primal:
-                params.set_grad_suspended(True)
 
             bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
                                           sampler.next_2d(active), active)
 
             active &= bs.pdf > 0.0
-            rays = ek.detach(si.spawn_ray(si.to_world(bs.wo)))
+            rays = si.spawn_ray(si.to_world(bs.wo))
             rays = RayDifferential3f(rays)
             si_bsdf = scene.ray_intersect(rays, active)
 
@@ -163,26 +152,25 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             if not is_primal:
                 # Account for incoming radiance
                 if self.recursive_li:
-                    li = self.Li(scene, sampler, ek.detach(rays), depth_i+1,
+                    li = self.Li(scene, sampler, rays, depth_i+1,
                                  emission_weight=emission_weight,
                                  active_=active)[0]
                 else:
                     li = ds.emitter.eval(si_bsdf, active_b) * emission_weight
 
-                params.set_grad_suspended(False)
+                with params.resume_gradients():
+                    bsdf_eval = bsdf.eval(ctx, si, bs.wo, active)
 
-                bsdf_eval = bsdf.eval(ctx, si, ek.detach(bs.wo), active)
-
-                adjoint(
-                    bsdf_eval,
-                    throughput * li / bs.pdf,
-                    active
-                )
+                    adjoint(
+                        bsdf_eval,
+                        throughput * li / bs.pdf,
+                        active
+                    )
 
             # ------------------- Recurse to the next bounce -------------------
 
-            si = ek.detach(si_bsdf)
-            throughput *= ek.detach(bsdf_weight)
+            si = si_bsdf
+            throughput *= bsdf_weight
 
             depth_i += UInt32(1)
 
@@ -190,5 +178,6 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
     def to_string(self):
         return f'RBIntegrator[max_depth = {self.max_depth}]'
+
 
 mitsuba.render.register_integrator("rb", lambda props: RBIntegrator(props))

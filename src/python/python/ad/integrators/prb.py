@@ -17,11 +17,11 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         self.max_depth = props.long_('max_depth', 4)
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
-                       scene: mitsuba.render.Scene,
-                       params: mitsuba.python.util.SceneParameters,
-                       image_adj: mitsuba.core.Spectrum,
-                       sensor_index: int = 0,
-                       spp: int = 0) -> None:
+                        scene: mitsuba.render.Scene,
+                        params: mitsuba.python.util.SceneParameters,
+                        image_adj: mitsuba.core.Spectrum,
+                        sensor_index: int = 0,
+                        spp: int = 0) -> None:
 
         sensor = scene.sensors()[sensor_index]
         sampler = sensor.sampler()

@@ -140,7 +140,6 @@ class Optimizer:
             self.lr[key] = lr
             self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, size=1)
 
-
     def set_grad_suspended(self, value):
         """Temporarily disable the generation of gradients."""
         self.params.set_grad_suspended(value)
@@ -153,6 +152,15 @@ class Optimizer:
             yield
         finally:
             self.params.set_grad_suspended(False)
+
+    @contextmanager
+    def resume_gradients(self):
+        """Temporarily enable the generation of gradients"""
+        self.params.set_grad_suspended(False)
+        try:
+            yield
+        finally:
+            self.params.set_grad_suspended(True)
 
 
 class SGD(Optimizer):
