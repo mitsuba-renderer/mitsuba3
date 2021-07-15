@@ -8,6 +8,12 @@ from mitsuba.render import (BSDFContext, BSDFFlags, DirectionSample3f,
 
 from .integrator import mis_weight, sample_sensor_rays
 
+def index_spectrum(spec, idx):
+    m = spec[0]
+    if mitsuba.core.is_rgb:
+        m[ek.eq(idx, 1)] = spec[1]
+        m[ek.eq(idx, 2)] = spec[2]
+    return m
 
 class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
     """
@@ -80,6 +86,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
     def sample_adjoint(self, scene, sampler, ray, params, grad, result):
         self.Li(scene, sampler, ray, params=params, grad=grad, result=result)
 
+
     def Li(self, scene, sampler, ray, depth=1, params=mitsuba.python.util.SceneParameters(),
            grad=None, active_=True, result=None):
 
@@ -127,9 +134,6 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
             active_medium = active & ek.neq(medium, None)
             active_surface = active & ~active_medium
-            act_null_scatter = Mask(False)
-            act_medium_scatter = Mask(False)
-            escaped_medium = Mask(False)
 
             # Handle medium sampling and potential medium escape
             u = sampler.next_1d(active_medium)
@@ -142,18 +146,26 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
             needs_intersection &= ~active_medium
             mi.t[active_medium & (si.t < mi.t)] = ek.Infinity
+
+            weight = Spectrum(1.0)
+
+            # Evaluate ratio of transmittance and free-flight PDF
+            tr, free_flight_pdf = medium.eval_tr_and_pdf(mi, si, active_medium)
+            tr_pdf = index_spectrum(free_flight_pdf, channel)
+            weight[active_medium] = weight * ek.select(tr_pdf > 0.0, tr / ek.detach(tr_pdf), 0.0)
+
             escaped_medium = active_medium & ~mi.is_valid()
             active_medium &= mi.is_valid()
 
             # Handle null and real scatter events
-            weight = Spectrum(1.0)
             if self.handle_null_scattering:
-                null_scatter = sampler.next_1d(active_medium) >= mi.sigma_t[0] / mi.combined_extinction[0]
-                act_null_scatter |= null_scatter & active_medium
-                act_medium_scatter |= ~act_null_scatter & active_medium
-                r = mi.sigma_t / mi.combined_extinction
+                null_scatter = sampler.next_1d(active_medium) >= index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel)
+                act_null_scatter = null_scatter & active_medium
+                act_medium_scatter = ~act_null_scatter & active_medium
+                r = index_spectrum(mi.sigma_t / mi.combined_extinction, channel)
                 event_pdf = ek.select(active_medium, ek.select(null_scatter, 1 - r, r), 0.0)
-                weight[active_medium] = weight * event_pdf / ek.detach(event_pdf)
+                weight[active_medium] = weight / ek.detach(event_pdf)
+                weight[act_null_scatter] = weight * mi.sigma_n
             else:
                 act_medium_scatter = active_medium
 
@@ -167,7 +179,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                 ray.o[act_null_scatter] = ek.detach(mi.p)
                 si.t[act_null_scatter] = si.t - ek.detach(mi.t)
 
-            weight[act_medium_scatter] = weight * mi.sigma_s / mi.sigma_t
+            weight[act_medium_scatter] = weight * mi.sigma_s * index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel)
             throughput[active_medium] = throughput * ek.detach(weight)
 
             mi = ek.detach(mi)
@@ -342,7 +354,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             tr_multiplier[active_surface] = tr_multiplier * bsdf_val
 
             if not is_primal:
-                active_adjoint = (active_surface | active_medium) & ((tr_multiplier[0] > 0) | (tr_multiplier[1] > 0) | (tr_multiplier[2] > 0))
+                active_adjoint = (active_surface | active_medium) & (tr_multiplier > 0.0)
                 ek.backward(tr_multiplier * ek.detach(ek.select(active_adjoint, grad * adj_emitted / ek.max(tr_multiplier, 1e-8), 0.0)))
 
             transmittance *= ek.detach(tr_multiplier)
