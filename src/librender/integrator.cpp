@@ -166,7 +166,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
         for (size_t i = 0; i < n_passes; i++)
             render_sample(scene, sensor, sampler, block, aovs.data(),
                           pos, diff_scale_factor);
-        sampler->schedule_state();
 
         film->put(block);
     }
@@ -290,7 +289,11 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     block->put(position_sample, aovs, active);
 
+    sampler->advance();
+
     if constexpr (ek::is_jit_array_v<Float>) {
+        sampler->schedule_state();
+
         if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
             Log(Info, "Computation graph recorded. (took %s)",
                 util::time_string((float) timer.reset(), true));
@@ -315,7 +318,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         ENOKI_MARK_USED(timer);
     }
 
-    sampler->advance();
 }
 
 MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
