@@ -177,10 +177,12 @@ def set_variant(value):
 
     # Automatically load/reload and register Python integrators for AD variants
     if '_ad_' in value:
-        if 'python' in globals():
-            _reload(globals()['python'].ad.integrators)
+        import sys
+        if 'mitsuba.python.ad.integrators' in sys.modules:
+            _reload(sys.modules['mitsuba.python.ad.integrators'])
         else:
             _import('mitsuba.python.ad.integrators')
+        del sys
 
 
 def variant():
