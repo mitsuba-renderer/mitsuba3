@@ -98,6 +98,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 @pytest.mark.parametrize("spp", [1, 4])
 def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, spp):
+# def test02_bsdf_reflectance_forward(variant_cuda_ad_rgb, gc_collect, jit_flags, spp):
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
@@ -139,11 +140,9 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
     assert ek.allclose(img_1, img_2 - lr * grad)
 
 
-from mitsuba.python.ad import Adam, SGD
-
 @pytest.mark.parametrize("spp", [8])
 @pytest.mark.parametrize("res", [3])
-@pytest.mark.parametrize("opt_conf", [(SGD, [250.0, 0.8])])
+@pytest.mark.parametrize("opt_conf", [('SGD', [250.0, 0.8])])
 def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
     from mitsuba.core import Float, Color3f
     from mitsuba.python.util import traverse
@@ -158,7 +157,7 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
     image_ref = scene.integrator().render(scene, spp=spp)
 
     opt_type, opt_args = opt_conf
-    opt = opt_type(*opt_args, params=params)
+    opt = getattr(mitsuba.python.ad, opt_type)(*opt_args, params=params)
 
     opt[key] = Color3f(0.1)
     ek.set_label(opt[key], key)
