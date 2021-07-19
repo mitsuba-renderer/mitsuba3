@@ -210,7 +210,7 @@ public:
             return m_storage->data();
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            Float data = m_storage->data().copy();
+            Float data = m_storage->data();
             size_t ch =  m_storage->channel_count();
             size_t pixel_count = ek::hprod(m_storage->size());
 
@@ -222,16 +222,6 @@ public:
                              m_pixel_format == Bitmap::PixelFormat::YA ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
             bool has_aovs = ch > 5;
-
-            if (to_rgb) {
-                UInt32 idx  = ek::arange<UInt32>(pixel_count) * ch;
-                Color3f rgb = xyz_to_srgb(Color3f(ek::gather<Float>(data, idx),
-                                                  ek::gather<Float>(data, idx + 1),
-                                                  ek::gather<Float>(data, idx + 2)));
-                ek::scatter(data, rgb[0], idx);
-                ek::scatter(data, rgb[1], idx + 1);
-                ek::scatter(data, rgb[2], idx + 2);
-            }
 
             uint32_t img_ch = to_y ? 1 : 3;
             uint32_t output_ch = ch - 5 + img_ch + (has_alpha ? 1 : 0);
@@ -263,6 +253,18 @@ public:
             // Gather the pixel values from the image data buffer
             Float weight = ek::gather<Float>(data, weight_idx);
             Float values = ek::gather<Float>(data, values_idx);
+
+            if (to_rgb) {
+                UInt32 idx  = ek::arange<UInt32>(pixel_count) * ch;
+                Color3f rgb = xyz_to_srgb(Color3f(ek::gather<Float>(data, idx),
+                                                  ek::gather<Float>(data, idx + 1),
+                                                  ek::gather<Float>(data, idx + 2)));
+                ek::eval(rgb);
+                UInt32 i_pixel = (i / output_ch);
+                values[ek::eq(i_channel, 0)] = ek::gather<Float>(rgb[0], i_pixel);
+                values[ek::eq(i_channel, 1)] = ek::gather<Float>(rgb[1], i_pixel);
+                values[ek::eq(i_channel, 2)] = ek::gather<Float>(rgb[2], i_pixel);
+            }
 
             return (values / weight) & (weight > 0.f);
         } else {
@@ -408,6 +410,10 @@ public:
 
         bitmap()->write(filename, m_file_format);
     }
+
+    void schedule_storage() override {
+        ek::schedule(m_storage->data());
+    };
 
     std::string to_string() const override {
         std::ostringstream oss;

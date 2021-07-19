@@ -49,7 +49,6 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
     if (unlikely(block->channel_count() != channel_count()))
         Throw("ImageBlock::put(): mismatched channel counts!");
 
-
     ScalarVector2i source_size   = block->size() + 2 * block->border_size(),
                    target_size   =        size() + 2 *        border_size();
 

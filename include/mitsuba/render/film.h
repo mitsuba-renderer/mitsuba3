@@ -37,6 +37,9 @@ public:
     /// Write the developed contents of the film to a file on disk
     virtual void write(const fs::path &path) const = 0;
 
+    /// ek::schedule() variables that represent the internal film storage
+    virtual void schedule_storage() = 0;
+
     // =============================================================
     //! @{ \name Accessor functions
     // =============================================================
