@@ -55,6 +55,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
+    ImageBuffer result;
+
     ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->crop_size();
@@ -140,6 +142,9 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
                 }
             }
         );
+
+        if (develop_film)
+            result = film->develop();
     } else {
         Log(Info, "Start rendering...");
 
@@ -163,21 +168,56 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
                                 Float(idx / uint32_t(film_size[0])));
         std::vector<Float> aovs(channels.size());
 
-        for (size_t i = 0; i < n_passes; i++)
+        Timer timer;
+        for (size_t i = 0; i < n_passes; i++) {
+
             render_sample(scene, sensor, sampler, block, aovs.data(),
                           pos, diff_scale_factor);
+            sampler->schedule_state();
 
+            if (n_passes > 1) {
+                ek::eval(block->data());
+                ek::sync_thread();
+            }
+        }
         film->put(block);
+
+        if (n_passes == 1) {
+            if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
+                Log(Info, "Computation graph recorded. (took %s)",
+                    util::time_string((float) timer.reset(), true));
+            }
+
+            auto &out = Base::m_graphviz_output;
+            if (!out.empty()) {
+                ref<FileStream> out_stream =
+                    new FileStream(out, FileStream::ETruncReadWrite);
+                const char *graph = jit_var_graphviz();
+                out_stream->write(graph, strlen(graph));
+            }
+
+            if (develop_film) {
+                result = film->develop();
+                ek::schedule(result);
+            } else {
+                film->schedule_storage();
+            }
+            ek::eval();
+
+            if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
+                Log(Info, "Code generation finished. (took %s)",
+                    util::time_string((float) timer.reset(), true));
+            }
+
+            ek::sync_thread();
+        }
     }
 
     if (!m_stop)
         Log(Info, "Rendering finished. (took %s)",
             util::time_string((float) m_render_timer.value(), true));
 
-    if (develop_film)
-        return film->develop();
-    else
-        return ek::empty<ImageBuffer>();
+    return result;
 }
 
 MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *scene,
@@ -242,8 +282,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Vector2f &pos,
                                                    ScalarFloat diff_scale_factor,
                                                    Mask active) const {
-    std::conditional_t<ek::is_jit_array_v<Float>, Timer, int> timer;
-
     Vector2f position_sample = pos + sampler->next_2d(active);
 
     Point2f aperture_sample(.5f);
@@ -290,34 +328,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     block->put(position_sample, aovs, active);
 
     sampler->advance();
-
-    if constexpr (ek::is_jit_array_v<Float>) {
-        sampler->schedule_state();
-
-        if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
-            Log(Info, "Computation graph recorded. (took %s)",
-                util::time_string((float) timer.reset(), true));
-        }
-
-        auto &out = Base::m_graphviz_output;
-        if (!out.empty()) {
-            ref<FileStream> out_stream =
-                new FileStream(out, FileStream::ETruncReadWrite);
-            const char *graph = jit_var_graphviz();
-            out_stream->write(graph, strlen(graph));
-        }
-
-        ek::eval(block->data());
-        if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
-            Log(Info, "Code generation finished. (took %s)",
-                util::time_string((float) timer.reset(), true));
-        }
-
-        ek::sync_thread();
-    } else {
-        ENOKI_MARK_USED(timer);
-    }
-
 }
 
 MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>

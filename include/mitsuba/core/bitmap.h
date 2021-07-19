@@ -712,9 +712,8 @@ void accumulate_2d(ConstT source,
               index_target = col + (target_offset.x() + target_size.x() * (y + target_offset.y())) *
                                        channel_count;
 
-        ek::scatter(
-            target,
-            ek::gather<Value>(source, index_source) + ek::gather<Value>(target, index_target),
+        ek::scatter_reduce(
+            ReduceOp::Add, target, ek::gather<Value>(source, index_source),
             index_target
         );
     }
