@@ -1,12 +1,7 @@
 import enoki as ek
 import mitsuba
-from mitsuba.core import (Float, Loop, Mask, Ray3f, RayDifferential3f,
-                          Spectrum, UInt32, Vector3f)
-from mitsuba.render import (BSDFContext, BSDFFlags, DirectionSample3f,
-                            MediumPtr, PhaseFunctionContext,
-                            SurfaceInteraction3f, has_flag)
-
 from .integrator import mis_weight, sample_sensor_rays
+
 
 def index_spectrum(spec, idx):
     m = spec[0]
@@ -89,6 +84,11 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
     def Li(self, scene, sampler, ray, depth=1, params=mitsuba.python.util.SceneParameters(),
            grad=None, active_=True, result=None):
+        from mitsuba.core import (Float, Loop, Mask, Ray3f, RayDifferential3f,
+                                  Spectrum, UInt32)
+        from mitsuba.render import (BSDFContext, BSDFFlags, DirectionSample3f,
+                                    MediumPtr, PhaseFunctionContext,
+                                    SurfaceInteraction3f, has_flag)
 
         is_primal = len(params) == 0
         params.set_grad_suspended(is_primal)
@@ -116,7 +116,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             n_channels = ek.array_size_v(Spectrum)
             channel = ek.min(n_channels * sampler.next_1d(active), n_channels - 1)
 
-        loop = Loop("PRBVolpathLoop" + '' if is_primal else '_adjoint')
+        loop = Loop("PRBVolpathLoop" + ('' if is_primal else '_adjoint'))
         loop.put(lambda: (active, depth, ray, medium, throughput, si, result, needs_intersection,
                           last_scatter_event, last_scatter_direction_pdf, eta, specular_chain, valid_ray))
         sampler.loop_register(loop)
@@ -289,6 +289,9 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
     def sample_emitter(self, ref_interaction, scene, sampler, medium, channel,
                        active, adj_emitted=None, grad=None):
+        from mitsuba.core import (Float, Loop, Mask, RayDifferential3f,
+                                  Spectrum, Vector3f)
+        from mitsuba.render import MediumPtr, SurfaceInteraction3f
 
         is_primal = grad is None
         wavefront_size = ek.width(ref_interaction)
