@@ -162,7 +162,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
 
         ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
                                                film->reconstruction_filter(),
-                                               !has_aovs && std::is_scalar_v<Float>);
+                                               false, false, false, false);
         block->clear();
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
                                 Float(idx / uint32_t(film_size[0])));

@@ -56,12 +56,19 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
                    target_offset =        offset() -        border_size();
 
     if constexpr (ek::is_jit_array_v<Float>) {
-        accumulate_2d<Float &, const Float &>(
-            block->data(), source_size,
-            data(), target_size,
-            ScalarVector2i(0), source_offset - target_offset,
-            source_size, channel_count()
-        );
+        // If target block is cleared and match size, directly copy data
+        if (m_data.is_literal() && m_data[0] == 0.f &&
+            m_size == block->size() && m_offset == block->offset() &&
+            m_border_size == block->border_size()) {
+            m_data = block->data().copy();
+        } else {
+            accumulate_2d<Float &, const Float &>(
+                block->data(), source_size,
+                data(), target_size,
+                ScalarVector2i(0), source_offset - target_offset,
+                source_size, channel_count()
+            );
+        }
     } else {
         accumulate_2d(
             block->data().data(), source_size,
