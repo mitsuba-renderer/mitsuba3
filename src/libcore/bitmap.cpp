@@ -165,6 +165,7 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
         case PixelFormat::YA:    channels = { "Y", "A" };               break;
         case PixelFormat::RGB:   channels = { "R", "G", "B"};           break;
         case PixelFormat::RGBA:  channels = { "R", "G", "B", "A"};      break;
+        case PixelFormat::RGBAW: channels = { "R", "G", "B", "A", "W"}; break;
         case PixelFormat::XYZ:   channels = { "X", "Y", "Z"};           break;
         case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
         case PixelFormat::XYZAW: channels = { "X", "Y", "Z", "A", "W"}; break;
@@ -406,7 +407,8 @@ void Bitmap::convert(Bitmap *target) const {
     ref<Struct> target_struct = new Struct(*(target->struct_()));
 
     bool source_is_rgb = m_pixel_format == PixelFormat::RGB ||
-                         m_pixel_format == PixelFormat::RGBA;
+                         m_pixel_format == PixelFormat::RGBA ||
+                         m_pixel_format == PixelFormat::RGBAW;
     bool source_is_xyz = m_pixel_format == PixelFormat::XYZ ||
                          m_pixel_format == PixelFormat::XYZA ||
                          m_pixel_format == PixelFormat::XYZAW;
@@ -2450,6 +2452,7 @@ std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value) {
         case Bitmap::PixelFormat::YA:           os << "ya"; break;
         case Bitmap::PixelFormat::RGB:          os << "rgb"; break;
         case Bitmap::PixelFormat::RGBA:         os << "rgba"; break;
+        case Bitmap::PixelFormat::RGBAW:        os << "rgbaw"; break;
         case Bitmap::PixelFormat::XYZ:          os << "xyz"; break;
         case Bitmap::PixelFormat::XYZA:         os << "xyza"; break;
         case Bitmap::PixelFormat::XYZAW:        os << "xyzaw"; break;
