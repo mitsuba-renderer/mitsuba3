@@ -105,14 +105,14 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
         for y in range(film.size()[0]):
             block.put([y+0.5, x+0.5], contents[x, y, :])
 
-    film.prepare(['X', 'Y', 'Z', 'A', 'W'])
+    film.prepare(['R', 'G', 'B', 'A', 'W'])
     film.put(block)
 
     filename = str(tmpdir.join('test_image.' + file_format))
     film.write(filename)
 
     # Read back and check contents
-    other = Bitmap(filename).convert(Bitmap.PixelFormat.XYZAW, Struct.Type.Float32, srgb_gamma=False)
+    other = Bitmap(filename).convert(Bitmap.PixelFormat.RGBAW, Struct.Type.Float32, srgb_gamma=False)
     img   = np.array(other, copy=False)
 
     if False:
@@ -169,7 +169,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
         for y in range(res[0]):
             aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
             block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
-    film.prepare(['X', 'Y', 'Z', 'A', 'W'] + aovs_channels)
+    film.prepare(['R', 'G', 'B', 'A', 'W'] + aovs_channels)
     film.put(block)
 
     data = np.array(film.develop().numpy())

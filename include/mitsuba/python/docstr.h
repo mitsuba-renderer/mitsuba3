@@ -966,6 +966,8 @@ static const char *__doc_mitsuba_Bitmap_PixelFormat_RGB = R"doc(RGB bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_PixelFormat_RGBA = R"doc(RGB bitmap + alpha channel)doc";
 
+static const char *__doc_mitsuba_Bitmap_PixelFormat_RGBAW = R"doc(RGB bitmap + alpha channel + weight)doc";
+
 static const char *__doc_mitsuba_Bitmap_PixelFormat_XYZ = R"doc(XYZ tristimulus bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_PixelFormat_XYZA = R"doc(XYZ tristimulus + alpha channel)doc";
@@ -5416,7 +5418,7 @@ May throw an exception if not supported.)doc";
 static const char *__doc_mitsuba_Sampler_clone =
 R"doc(Create a clone of this sampler.
 
-Subsequent calls to the copied sampler will produce the same random 
+Subsequent calls to the copied sampler will produce the same random
 numbers as the original sampler.
 
 May throw an exception if not supported.)doc";
@@ -8290,9 +8292,13 @@ static const char *__doc_mitsuba_cie1931_y =
 R"doc(Evaluate the CIE 1931 Y color matching function given a wavelength in
 nanometers)doc";
 
-static const char *__doc_mitsuba_cie_static_initialization = R"doc(Allocate arrays for the CIE 1931 tables)doc";
+static const char *__doc_mitsuba_linear_rgb_rec =
+R"doc(Evaluate the ITU-R Rec. BT.709 linear RGB color matching functions
+given a wavelength in nanometers)doc";
 
-static const char *__doc_mitsuba_cie_static_shutdown = R"doc()doc";
+static const char *__doc_mitsuba_color_management_static_initialization = R"doc(Allocate arrays for the CIE 1931 tables)doc";
+
+static const char *__doc_mitsuba_color_management_static_shutdown = R"doc()doc";
 
 static const char *__doc_mitsuba_class = R"doc()doc";
 
@@ -8322,19 +8328,19 @@ static const char *__doc_mitsuba_depolarize =
 R"doc(Return the (1,1) entry of a Mueller matrix. Identity function for all
 other-types.)doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table = R"doc(Table with fits for cie1931_xyz and cie1931_y)doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables = R"doc(Table with fits for cie1931_xyz and cie1931_y)doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table_initialize = R"doc()doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables_initialize = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table_initialized = R"doc()doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables_initialized = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table_release = R"doc()doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables_release = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table_x = R"doc()doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables_x = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table_y = R"doc()doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables_y = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_CIE1932Table_z = R"doc()doc";
+static const char *__doc_mitsuba_detail_ColorSpaceTables_z = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_ConcurrentVector = R"doc()doc";
 
@@ -8412,7 +8418,7 @@ static const char *__doc_mitsuba_detail_OrderedChunkAllocator_used = R"doc(Retur
 
 static const char *__doc_mitsuba_detail_Throw = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_get_cie_table = R"doc()doc";
+static const char *__doc_mitsuba_detail_get_color_space_tables = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_get_construct_functor = R"doc()doc";
 
@@ -9683,9 +9689,10 @@ static const char *__doc_mitsuba_sobol_2 = R"doc(Sobol' radical inverse in base 
 
 static const char *__doc_mitsuba_spectrum_from_file = R"doc()doc";
 
-static const char *__doc_mitsuba_spectrum_to_rgb = R"doc()doc";
+static const char *__doc_mitsuba_spectrum_list_to_srgb = R"doc()doc";
 
 static const char *__doc_mitsuba_spectrum_to_xyz = R"doc(Spectral responses to XYZ.)doc";
+static const char *__doc_mitsuba_spectrum_to_srgb = R"doc(Spectral responses to sRGB.)doc";
 
 static const char *__doc_mitsuba_spline_eval_1d =
 R"doc(Evaluate a cubic spline interpolant of a *uniformly* sampled 1D

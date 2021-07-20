@@ -75,7 +75,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
 
     // Insert default channels and set up the film
     for (size_t i = 0; i < 5; ++i)
-        channels.insert(channels.begin() + i, std::string(1, "XYZAW"[i]));
+        channels.insert(channels.begin() + i, std::string(1, "RGBAW"[i]));
     film->prepare(channels);
 
     m_render_timer.reset();
@@ -309,19 +309,17 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);
 
-    Color3f xyz;
-    if constexpr (is_monochromatic_v<Spectrum>) {
-        xyz = spec_u.x();
-    } else if constexpr (is_rgb_v<Spectrum>) {
-        xyz = srgb_to_xyz(spec_u, active);
+    Color3f rgb;
+    if constexpr (is_rgb_v<Spectrum>) {
+        rgb = spec_u;
     } else {
-        static_assert(is_spectral_v<Spectrum>);
-        xyz = spectrum_to_xyz(spec_u, ray.wavelengths, active);
+        static_assert(is_spectral_v<Spectrum> || is_monochromatic_v<Spectrum>);
+        rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
     }
 
-    aovs[0] = xyz.x();
-    aovs[1] = xyz.y();
-    aovs[2] = xyz.z();
+    aovs[0] = rgb.x();
+    aovs[1] = rgb.y();
+    aovs[2] = rgb.z();
     aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
     aovs[4] = 1.f;
 
