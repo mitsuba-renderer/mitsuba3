@@ -42,6 +42,9 @@ public:
         /// RGB bitmap + alpha channel
         RGBA,
 
+        /// RGB bitmap + alpha channel + weight
+        RGBAW,
+
         /// XYZ tristimulus bitmap
         XYZ,
 
@@ -281,6 +284,7 @@ public:
     bool has_alpha() const {
         return m_pixel_format == PixelFormat::YA
             || m_pixel_format == PixelFormat::RGBA
+            || m_pixel_format == PixelFormat::RGBAW
             || m_pixel_format == PixelFormat::XYZA
             || m_pixel_format == PixelFormat::XYZAW;
     }
