@@ -1,9 +1,5 @@
 import enoki as ek
 import mitsuba
-
-from mitsuba.core import Spectrum, Float, UInt32, Loop, RayDifferential3f
-from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
-
 from .integrator import sample_sensor_rays, mis_weight
 
 
@@ -51,6 +47,9 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
     def Li(self, scene, sampler, ray, depth=1, params=mitsuba.python.util.SceneParameters(),
            grad=None, active_=True, result=None):
+
+        from mitsuba.core import Spectrum, Float, UInt32, Loop, RayDifferential3f
+        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
 
         is_primal = len(params) == 0
         params.set_grad_suspended(is_primal)
