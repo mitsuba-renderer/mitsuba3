@@ -3,7 +3,7 @@ import pytest
 import enoki as ek
 import numpy as np
 
-from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler, 
+from .utils import ( check_uniform_scalar_sampler, check_uniform_wavefront_sampler,
                      check_deep_copy_sampler_scalar, check_deep_copy_sampler_wavefront )
 
 def test01_multijitter_scalar(variant_scalar_rgb):
@@ -35,7 +35,7 @@ def test03_copy_sampler_scalar(variants_any_scalar):
         "type" : "multijitter",
         "sample_count" : 1024,
     })
-    
+
     check_deep_copy_sampler_scalar(sampler)
 
 def test04_copy_sampler_wavefront(variants_vec_backends_once):
@@ -45,5 +45,5 @@ def test04_copy_sampler_wavefront(variants_vec_backends_once):
         "type" : "multijitter",
         "sample_count" : 1024,
     })
-    
+
     check_deep_copy_sampler_wavefront(sampler)
