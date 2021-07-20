@@ -115,7 +115,7 @@ ref<Texture> ior_from_file(const std::string &filename) {
     ref<Texture> tex = PluginManager::instance()->create_object<Texture>(props);
 
     if (!is_spectral_v<Spectrum>) {
-        Color<float, 3> color = spectrum_to_rgb(wavelengths, values, false);
+        Color<float, 3> color = spectrum_list_to_srgb(wavelengths, values, false);
 
         Properties props2;
         if (is_monochromatic_v<Spectrum>) {

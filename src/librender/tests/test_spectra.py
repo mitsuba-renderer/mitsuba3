@@ -144,3 +144,22 @@ def test06_rgb2spec_fetch_eval_mean(variant_scalar_spectral):
         assert not ek.any(ek.isnan(coeff)), "{} => coeff = {}".format(rgb, coeff)
         assert not ek.any(ek.isnan(mean)),  "{} => mean = {}".format(rgb, mean)
         assert not ek.any(ek.isnan(value)), "{} => value = {}".format(rgb, value)
+
+
+def test07_cie1931_srgb_roundtrip(variants_vec_spectral):
+    from mitsuba.core import Float, Spectrum
+    from mitsuba.core import spectrum_to_xyz, spectrum_to_srgb, xyz_to_srgb, srgb_to_xyz
+
+    n = 50
+    wavelengths = Spectrum(
+        ek.linspace(Float, 100, 1000, n),
+        ek.linspace(Float, 400, 500, n),
+        ek.linspace(Float, 100, 500, n),
+        ek.linspace(Float, 500, 1000, n)
+    )
+
+    srgb = spectrum_to_srgb(Spectrum(1.0), wavelengths)
+    xyz = spectrum_to_xyz(Spectrum(1.0), wavelengths)
+
+    assert ek.allclose(xyz_to_srgb(xyz), srgb)
+    assert ek.allclose(srgb_to_xyz(srgb), xyz, atol=1e-6)

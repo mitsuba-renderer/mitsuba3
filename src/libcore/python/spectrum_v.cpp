@@ -14,6 +14,9 @@ MTS_PY_EXPORT(Spectrum) {
     .def("cie1931_xyz", [](Float wavelengths) {
             return cie1931_xyz(wavelengths);
         }, "wavelength"_a, D(cie1931_xyz))
+    .def("linear_rgb_rec", [](Float wavelengths) {
+            return linear_rgb_rec(wavelengths);
+        }, "wavelength"_a, D(linear_rgb_rec))
     .def("cie1931_y", [](Float wavelengths) {
             return cie1931_y(wavelengths);
         }, "wavelength"_a, D(cie1931_y))
@@ -36,15 +39,14 @@ MTS_PY_EXPORT(Spectrum) {
 
     m.def("xyz_to_srgb", &xyz_to_srgb<Float>,
           "rgb"_a, "active"_a = true, D(xyz_to_srgb));
+    m.def("srgb_to_xyz", &srgb_to_xyz<Float>,
+            "rgb"_a, "active"_a = true, D(srgb_to_xyz));
 
-    if constexpr (is_rgb_v<Spectrum>) {
-        m.def("srgb_to_xyz", &srgb_to_xyz<Float>,
-              "rgb"_a, "active"_a = true, D(srgb_to_xyz));
-    }
-
-    if constexpr (is_spectral_v<Spectrum>) {
+    if constexpr (is_spectral_v<Spectrum> || is_monochromatic_v<Spectrum>) {
         m.def("spectrum_to_xyz", &spectrum_to_xyz<Float, ek::array_size_v<Spectrum>>,
               "value"_a, "wavelengths"_a, "active"_a = true, D(spectrum_to_xyz));
+        m.def("spectrum_to_srgb", &spectrum_to_srgb<Float, ek::array_size_v<Spectrum>>,
+              "value"_a, "wavelengths"_a, "active"_a = true, D(spectrum_to_srgb));
 
         m.def("sample_shifted",
               py::overload_cast<const ek::value_t<

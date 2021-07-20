@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
 
         if (profile)
             Profiler::static_initialization();
-        cie_static_initialization(cuda, llvm);
+        color_management_static_initialization(cuda, llvm);
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
@@ -354,7 +354,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    cie_static_shutdown();
+    color_management_static_shutdown();
     if (profile) {
         Profiler::static_shutdown();
         if (print_profile)
