@@ -38,8 +38,9 @@ void spectrum_from_file(const std::string &filename, std::vector<Scalar> &wavele
 }
 
 template <typename Scalar>
-Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
-                                 const std::vector<Scalar> &values, bool bounded) {
+Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
+                                       const std::vector<Scalar> &values,
+                                       bool bounded) {
     Color<Scalar, 3> color = (Scalar) 0.f;
 
     const int steps = 1000;
@@ -85,8 +86,6 @@ Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
     return color;
 }
 
-
-
 /// Explicit instantiations
 template MTS_EXPORT void spectrum_from_file(const std::string &filename,
                                             std::vector<float> &wavelengths,
@@ -96,11 +95,11 @@ template MTS_EXPORT void spectrum_from_file(const std::string &filename,
                                             std::vector<double> &values);
 
 template MTS_EXPORT Color<float, 3>
-spectrum_to_rgb(const std::vector<float> &wavelengths,
-                const std::vector<float> &values, bool bounded);
+spectrum_list_to_srgb(const std::vector<float> &wavelengths,
+                      const std::vector<float> &values, bool bounded);
 template MTS_EXPORT Color<double, 3>
-spectrum_to_rgb(const std::vector<double> &wavelengths,
-                const std::vector<double> &values, bool bounded);
+spectrum_list_to_srgb(const std::vector<double> &wavelengths,
+                      const std::vector<double> &values, bool bounded);
 
 // =======================================================================
 //! @{ \name CIE 1931 2 degree observer implementation
@@ -185,35 +184,35 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
 };
 
 NAMESPACE_BEGIN(detail)
-CIE1932Table<float> cie1931_table_scalar;
+ColorSpaceTables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-CIE1932Table<ek::LLVMArray<float>> cie1931_table_llvm;
+ColorSpaceTables<ek::LLVMArray<float>> color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-CIE1932Table<ek::CUDAArray<float>> cie1931_table_cuda;
+ColorSpaceTables<ek::CUDAArray<float>> color_space_tables_cuda;
 #endif
 NAMESPACE_END(detail)
 
-void cie_static_initialization(bool cuda, bool llvm) {
-    detail::cie1931_table_scalar.initialize(cie1931_tbl);
+void color_management_static_initialization(bool cuda, bool llvm) {
+    detail::color_space_tables_scalar.initialize(cie1931_tbl);
 #if defined(MTS_ENABLE_LLVM)
     if (llvm)
-        detail::cie1931_table_llvm.initialize(cie1931_tbl);
+        detail::color_space_tables_llvm.initialize(cie1931_tbl);
 #endif
 #if defined(MTS_ENABLE_CUDA)
     if (cuda)
-        detail::cie1931_table_cuda.initialize(cie1931_tbl);
+        detail::color_space_tables_cuda.initialize(cie1931_tbl);
 #endif
     (void) cuda; (void) llvm;
 }
 
-void cie_static_shutdown() {
-    detail::cie1931_table_scalar.release();
+void color_management_static_shutdown() {
+    detail::color_space_tables_scalar.release();
 #if defined(MTS_ENABLE_LLVM)
-    detail::cie1931_table_llvm.release();
+    detail::color_space_tables_llvm.release();
 #endif
 #if defined(MTS_ENABLE_CUDA)
-    detail::cie1931_table_cuda.release();
+    detail::color_space_tables_cuda.release();
 #endif
 }
 

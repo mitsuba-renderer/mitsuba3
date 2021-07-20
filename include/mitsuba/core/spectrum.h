@@ -139,52 +139,72 @@ struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
    a unit-valued spectrum integrates to a luminance of 1.0 */
 #define MTS_CIE_Y_NORMALIZATION float(1.0 / 106.7502593994140625)
 
-/// Table with fits for \ref cie1931_xyz and \ref cie1931_y
+/**
+ * \brief Struct carrying color space tables with fits for \ref cie1931_xyz and
+ * \ref cie1931_y as well as corresponding precomputed ITU-R Rec. BT.709 linear
+ * RGB tables.
+ */
 NAMESPACE_BEGIN(detail)
-template <typename Float> struct CIE1932Table {
+template <typename Float> struct ColorSpaceTables {
     using FloatStorage = DynamicBuffer<Float>;
-    FloatStorage x, y, z;
-    bool initialized = false;
+
     void initialize(const float* ptr) {
         if (initialized)
             return;
-        x = ek::load<FloatStorage>(ptr, MTS_CIE_SAMPLES);
-        y = ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES);
-        z = ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES);
         initialized = true;
+
+        xyz = Color<FloatStorage, 3>(
+            ek::load<FloatStorage>(ptr, MTS_CIE_SAMPLES),
+            ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES, MTS_CIE_SAMPLES),
+            ek::load<FloatStorage>(ptr + MTS_CIE_SAMPLES * 2, MTS_CIE_SAMPLES)
+        );
+
+        srgb = xyz_to_srgb(xyz);
     }
+
     void release() {
         if (!initialized)
             return;
-        x = y = z = FloatStorage();
         initialized = false;
+
+        xyz = srgb = Color<FloatStorage, 3>();
     }
+
+    /// CIE 1931 XYZ color tables
+    Color<FloatStorage, 3> xyz;
+    /// ITU-R Rec. BT.709 linear RGB tables
+    Color<FloatStorage, 3> srgb;
+
+private:
+    bool initialized = false;
 };
-extern MTS_EXPORT_CORE CIE1932Table<float> cie1931_table_scalar;
+
+extern MTS_EXPORT_CORE ColorSpaceTables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-extern MTS_EXPORT_CORE CIE1932Table<ek::LLVMArray<float>> cie1931_table_llvm;
+extern MTS_EXPORT_CORE ColorSpaceTables<ek::LLVMArray<float>> color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-extern MTS_EXPORT_CORE CIE1932Table<ek::CUDAArray<float>> cie1931_table_cuda;
+extern MTS_EXPORT_CORE ColorSpaceTables<ek::CUDAArray<float>> color_space_tables_cuda;
 #endif
-template <typename Float> auto get_cie_table() {
+
+template <typename Float> auto get_color_space_tables() {
 #if defined(MTS_ENABLE_LLVM)
     if constexpr (ek::is_llvm_array_v<Float>)
-        return cie1931_table_llvm;
+        return color_space_tables_llvm;
     else
 #endif
 #if defined(MTS_ENABLE_CUDA)
     if constexpr (ek::is_cuda_array_v<Float>)
-        return cie1931_table_cuda;
+        return color_space_tables_cuda;
     else
 #endif
-    return cie1931_table_scalar;
+    return color_space_tables_scalar;
 }
 NAMESPACE_END(detail)
 
-/// Allocate arrays for the CIE 1931 tables
-extern MTS_EXPORT_CORE void cie_static_initialization(bool cuda, bool llvm);
-extern MTS_EXPORT_CORE void cie_static_shutdown();
+/// Allocate arrays for the color space tables
+extern MTS_EXPORT_CORE void color_management_static_initialization(bool cuda, bool llvm);
+extern MTS_EXPORT_CORE void color_management_static_shutdown();
 
 /**
  * \brief Evaluate the CIE 1931 XYZ color matching functions given a wavelength
@@ -206,20 +226,20 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
     UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
            i1 = i0 + 1;
 
-    auto cie_table = detail::get_cie_table<Float32>();
-    Float v0_x = (Float) ek::gather<Float32>(cie_table.x, i0, active);
-    Float v1_x = (Float) ek::gather<Float32>(cie_table.x, i1, active);
-    Float v0_y = (Float) ek::gather<Float32>(cie_table.y, i0, active);
-    Float v1_y = (Float) ek::gather<Float32>(cie_table.y, i1, active);
-    Float v0_z = (Float) ek::gather<Float32>(cie_table.z, i0, active);
-    Float v1_z = (Float) ek::gather<Float32>(cie_table.z, i1, active);
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0_x = (Float) ek::gather<Float32>(tables.xyz.x(), i0, active);
+    Float v1_x = (Float) ek::gather<Float32>(tables.xyz.x(), i1, active);
+    Float v0_y = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
+    Float v1_y = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
+    Float v0_z = (Float) ek::gather<Float32>(tables.xyz.z(), i0, active);
+    Float v1_z = (Float) ek::gather<Float32>(tables.xyz.z(), i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
 
     return Result(ek::fmadd(w0, v0_x, w1 * v1_x),
                   ek::fmadd(w0, v0_y, w1 * v1_y),
-                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active, active, active);
+                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active);
 }
 
 /**
@@ -242,14 +262,50 @@ Float cie1931_y(Float wavelength, ek::mask_t<Float> active = true) {
     UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
           i1 = i0 + 1;
 
-    auto cie_table = detail::get_cie_table<Float32>();
-    Float v0 = (Float) ek::gather<Float32>(cie_table.y, i0, active);
-    Float v1 = (Float) ek::gather<Float32>(cie_table.y, i1, active);
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0 = (Float) ek::gather<Float32>(tables.xyz.y(), i0, active);
+    Float v1 = (Float) ek::gather<Float32>(tables.xyz.y(), i1, active);
 
     Float w1 = t - Float(i0),
           w0 = (ScalarFloat) 1.f - w1;
 
     return ek::select(active, ek::fmadd(w0, v0, w1 * v1), 0.f);
+}
+
+/**
+ * \brief Evaluate the ITU-R Rec. BT.709 linear RGB color matching functions
+ * given a wavelength in nanometers
+ */
+template <typename Float, typename Result = Color<Float, 3>>
+Result linear_rgb_rec(Float wavelength, ek::mask_t<Float> active = true) {
+    using UInt32      = ek::uint32_array_t<Float>;
+    using Float32     = ek::float32_array_t<Float>;
+    using ScalarFloat = ek::scalar_t<Float>;
+
+    Float t = (wavelength - (ScalarFloat) MTS_CIE_MIN) *
+              ((MTS_CIE_SAMPLES - 1) /
+               ((ScalarFloat) MTS_CIE_MAX - (ScalarFloat) MTS_CIE_MIN));
+
+    active &= wavelength >= (ScalarFloat) MTS_CIE_MIN &&
+              wavelength <= (ScalarFloat) MTS_CIE_MAX;
+
+    UInt32 i0 = ek::clamp(UInt32(t), ek::zero<UInt32>(), UInt32(MTS_CIE_SAMPLES - 2)),
+           i1 = i0 + 1;
+
+    auto tables = detail::get_color_space_tables<Float32>();
+    Float v0_r = (Float) ek::gather<Float32>(tables.srgb.x(), i0, active);
+    Float v1_r = (Float) ek::gather<Float32>(tables.srgb.x(), i1, active);
+    Float v0_g = (Float) ek::gather<Float32>(tables.srgb.y(), i0, active);
+    Float v1_g = (Float) ek::gather<Float32>(tables.srgb.y(), i1, active);
+    Float v0_b = (Float) ek::gather<Float32>(tables.srgb.z(), i0, active);
+    Float v1_b = (Float) ek::gather<Float32>(tables.srgb.z(), i1, active);
+
+    Float w1 = t - Float(i0),
+          w0 = (ScalarFloat) 1.f - w1;
+
+    return Result(ek::fmadd(w0, v0_r, w1 * v1_r),
+                  ek::fmadd(w0, v0_g, w1 * v1_g),
+                  ek::fmadd(w0, v0_b, w1 * v1_b)) & ek::mask_t<Result>(active);
 }
 
 /// Spectral responses to XYZ.
@@ -261,6 +317,17 @@ Color<Float, 3> spectrum_to_xyz(const Spectrum<Float, Size> &value,
     return { ek::hmean(XYZ.x() * value),
              ek::hmean(XYZ.y() * value),
              ek::hmean(XYZ.z() * value) };
+}
+
+/// Spectral responses to sRGB.
+template <typename Float, size_t Size>
+Color<Float, 3> spectrum_to_srgb(const Spectrum<Float, Size> &value,
+                                 const Spectrum<Float, Size> &wavelengths,
+                                 ek::mask_t<Float> active = true) {
+    ek::Array<Spectrum<Float, Size>, 3> rgb = linear_rgb_rec(wavelengths, active);
+    return { ek::hmean(rgb.x() * value),
+             ek::hmean(rgb.y() * value),
+             ek::hmean(rgb.z() * value) };
 }
 
 /// Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
@@ -369,8 +436,8 @@ MTS_EXPORT_CORE void spectrum_from_file(const std::string &filename,
                                         std::vector<Scalar> &values);
 
 template <typename Scalar>
-MTS_EXPORT_CORE Color<Scalar, 3> spectrum_to_rgb(const std::vector<Scalar> &wavelengths,
-                                                 const std::vector<Scalar> &values,
-                                                 bool bounded = true);
+MTS_EXPORT_CORE Color<Scalar, 3>
+spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
+                      const std::vector<Scalar> &values, bool bounded = true);
 
 NAMESPACE_END(mitsuba)

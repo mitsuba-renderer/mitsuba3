@@ -1173,7 +1173,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             return PluginManager::instance()->create_object(props, class_);
         } else {
             // In non-spectral mode, pre-integrate against the CIE matching curves
-            Color3f color = spectrum_to_rgb(
+            Color3f color = spectrum_list_to_srgb(
                 wavelengths, values, !(within_emitter || is_unbounded_spectrum(name)));
 
             Properties props;

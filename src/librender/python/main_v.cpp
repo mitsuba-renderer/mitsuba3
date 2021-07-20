@@ -127,7 +127,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
            the 'mitsuba::Scene' Python type is garbage collected */
         py::cpp_function cleanup_callback(
             [](py::handle weakref) {
-                cie_static_shutdown();
+                color_management_static_shutdown();
                 /* The Enoki python module is responsible for cleaning up the
                    JIT state, so jit_shutdown() shouldn't be called here. */
                 weakref.dec_ref();
