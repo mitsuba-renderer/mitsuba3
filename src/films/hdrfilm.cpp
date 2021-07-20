@@ -60,7 +60,7 @@ will record linear radiance values.
 When writing OpenEXR files, the film will either produce a luminance, luminance/alpha, RGB(A),
 or XYZ(A) tristimulus bitmap having a :monosp:`float16`,
 :monosp:`float32`, or :monosp:`uint32`-based internal representation based on the chosen parameters.
-The default configuration is RGBA with a :monosp:`float16` component format, which is appropriate for
+The default configuration is RGB with a :monosp:`float16` component format, which is appropriate for
 most purposes.
 
 For OpenEXR files, Mitsuba 2 also supports fully general multi-channel output; refer to
@@ -79,7 +79,7 @@ When RGB(A) output is selected, the measured spectral power distributions are
 converted to linear RGB based on the CIE 1931 XYZ color matching curves and
 the ITU-R Rec. BT.709-3 primaries with a D65 white point.
 
-The following XML snippet discribes a film that writes a full-HD RGBA OpenEXR file:
+The following XML snippet describes a film that writes a full-HD RGBA OpenEXR file:
 
 .. code-block:: xml
 
@@ -183,15 +183,20 @@ public:
     }
 
     void prepare(const std::vector<std::string> &channels) override {
-        std::vector<std::string> channels_sorted = channels;
-        channels_sorted.push_back("R");
-        channels_sorted.push_back("G");
-        channels_sorted.push_back("B");
-        std::sort(channels_sorted.begin(), channels_sorted.end());
-        for (size_t i = 1; i < channels_sorted.size(); ++i) {
-            if (channels_sorted[i] == channels_sorted[i - 1])
-                Throw("Film::prepare(): duplicate channel name \"%s\"", channels_sorted[i]);
+        if (channels.size() < 5)
+            Throw("Film::prepare(): expects at least 5 channels (RGBAW)!");
+
+        for (size_t i = 0; i < 5; ++i) {
+            if (channels[i] != std::string(1, "RGBAW"[i])) {
+                Throw("Film::prepare(): expects the first 5 channels to be RGBAW!");
+            }
         }
+
+        std::vector<std::string> sorted = channels;
+        std::sort(sorted.begin(), sorted.end());
+        auto it = std::unique(sorted.begin(), sorted.end());
+        if (it != sorted.end())
+            Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
 
         m_storage = new ImageBlock(m_crop_size, channels.size());
         m_storage->set_offset(m_crop_offset);
@@ -214,8 +219,8 @@ public:
             size_t ch =  m_storage->channel_count();
             size_t pixel_count = ek::hprod(m_storage->size());
 
-            bool to_rgb    = m_pixel_format == Bitmap::PixelFormat::RGB ||
-                             m_pixel_format == Bitmap::PixelFormat::RGBA;
+            bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
+                             m_pixel_format == Bitmap::PixelFormat::XYZA;
             bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
                              m_pixel_format == Bitmap::PixelFormat::YA;
             bool has_alpha = m_pixel_format == Bitmap::PixelFormat::RGBA ||
@@ -254,16 +259,21 @@ public:
             Float weight = ek::gather<Float>(data, weight_idx);
             Float values = ek::gather<Float>(data, values_idx);
 
-            if (to_rgb) {
-                UInt32 idx  = ek::arange<UInt32>(pixel_count) * ch;
-                Color3f rgb = xyz_to_srgb(Color3f(ek::gather<Float>(data, idx),
-                                                  ek::gather<Float>(data, idx + 1),
-                                                  ek::gather<Float>(data, idx + 2)));
-                ek::eval(rgb);
-                UInt32 i_pixel = (i / output_ch);
-                values[ek::eq(i_channel, 0)] = ek::gather<Float>(rgb[0], i_pixel);
-                values[ek::eq(i_channel, 1)] = ek::gather<Float>(rgb[1], i_pixel);
-                values[ek::eq(i_channel, 2)] = ek::gather<Float>(rgb[2], i_pixel);
+            if (to_xyz || to_y) {
+                UInt32 in_idx  = ek::arange<UInt32>(pixel_count) * ch;
+                Color3f rgb = Color3f(ek::gather<Float>(data, in_idx),
+                                      ek::gather<Float>(data, in_idx + 1),
+                                      ek::gather<Float>(data, in_idx + 2));
+
+                UInt32 out_idx = ek::arange<UInt32>(pixel_count) * output_ch;
+                if (to_y) {
+                    ek::scatter(values, luminance(rgb), out_idx);
+                } else {
+                    Color3f xyz = srgb_to_xyz(rgb);
+                    ek::scatter(values, xyz[0], out_idx);
+                    ek::scatter(values, xyz[1], out_idx + 1);
+                    ek::scatter(values, xyz[2], out_idx + 2);
+                }
             }
 
             return (values / weight) & (weight > 0.f);
@@ -291,7 +301,7 @@ public:
 
         ref<Bitmap> source = new Bitmap(
             m_channels.size() != 5 ? Bitmap::PixelFormat::MultiChannel
-                                   : Bitmap::PixelFormat::XYZAW,
+                                   : Bitmap::PixelFormat::RGBAW,
             struct_type_v<ScalarFloat>, m_storage->size(),
             m_storage->channel_count(), m_channels, (uint8_t *) storage.data());
 
@@ -328,29 +338,34 @@ public:
                     case 0:
                         if (to_rgb) {
                             dest_field.name = "R";
-                            dest_field.blend = {
-                                {  3.240479f, "X" },
-                                { -1.537150f, "Y" },
-                                { -0.498535f, "Z" }
-                            };
                         } else if (to_xyz) {
                             dest_field.name = "X";
+                            dest_field.blend = {
+                                { 0.412453f, "R" },
+                                { 0.357580f, "G" },
+                                { 0.180423f, "B" }
+                            };
                         } else if (to_y) {
                             dest_field.name = "Y";
+                            dest_field.blend = {
+                                { 0.212671f, "R" },
+                                { 0.715160f, "G" },
+                                { 0.072169f, "B" }
+                            };
                         }
                         break;
 
                     case 1:
                         if (to_rgb) {
                             dest_field.name = "G";
-                            dest_field.blend = {
-                                { -0.969256, "X" },
-                                {  1.875991, "Y" },
-                                {  0.041556, "Z" }
-                            };
                             break;
                         } else if (to_xyz) {
                             dest_field.name = "Y";
+                            dest_field.blend = {
+                                { 0.212671f, "R" },
+                                { 0.715160f, "G" },
+                                { 0.072169f, "B" }
+                            };
                             break;
                         } else if (to_y && has_alpha) {
                             dest_field.name = "A";
@@ -360,14 +375,14 @@ public:
                     case 2:
                         if (to_rgb) {
                             dest_field.name = "B";
-                            dest_field.blend = {
-                                {  0.055648, "X" },
-                                { -0.204043, "Y" },
-                                {  1.057311, "Z" }
-                            };
                             break;
                         } else if (to_xyz) {
                             dest_field.name = "Z";
+                            dest_field.blend = {
+                                { 0.019334f, "R" },
+                                { 0.119193f, "G" },
+                                { 0.950227f, "B" }
+                            };
                             break;
                         }
                     case 3:
