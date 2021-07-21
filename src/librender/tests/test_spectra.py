@@ -57,7 +57,7 @@ def test04_srgb_d65(variant_scalar_spectral):
 
     np.random.seed(12345)
     wavelengths = np.linspace(300, 800, MTS_WAVELENGTH_SAMPLES)
-    wavelengths += (10 * np.random.uniform(size=wavelengths.shape)).astype(np.int)
+    wavelengths += (10 * np.random.uniform(size=wavelengths.shape)).astype(int)
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
 
     ps = PositionSample3f()

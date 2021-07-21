@@ -201,6 +201,7 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
 
     assert ek.allclose(avrg_params, param_ref, atol=1e-3)
 
+
 @pytest.mark.parametrize("eval_grad", [False, True])
 @pytest.mark.parametrize("N", [1, 10])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
@@ -394,3 +395,45 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, gc_collect, mode, eval_grad,
         ek.traverse(Float, reverse=False, retain_graph=True)
 
         assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
+
+
+def test06_optimizer_state(variant_cuda_ad_rgb):
+    from mitsuba.core import Float
+    from mitsuba.python.autodiff import SGD, Adam
+
+    def ensure_iterable(x):
+        if not isinstance(x, (tuple, list)):
+            return (x,)
+        return x
+
+    key = 'some_param'
+    init = Float([1.0, 2.0, 3.0])
+
+    for cls in [(lambda: SGD(lr=2e-2, momentum=0.1)),
+                (lambda: Adam(lr=2e-2))]:
+        opt = cls()
+        assert key not in opt.variables
+        assert key not in opt.state
+        opt[key] = Float(init)
+        assert key in opt.variables
+
+        for _ in range(3):
+            ek.set_grad(opt[key], Float([-1, 1, 2]))
+            opt.step()
+
+        assert key in opt.state
+        state_before = ensure_iterable(opt.state[key])
+        for s in state_before:
+            assert ek.all(ek.neq(s, 0))
+
+        # A value change should not affect the state
+        opt[key] = ek.clamp(opt[key], 0, 2)
+        state_after = ensure_iterable(opt.state[key])
+        for a, b in zip(state_before, state_after):
+            assert ek.allclose(a, b)
+
+        # A size change should reset the state
+        opt[key] = Float([1.0, 2.0])
+        state_after = ensure_iterable(opt.state[key])
+        for s in state_after:
+            assert ek.all(ek.eq(s, 0))
