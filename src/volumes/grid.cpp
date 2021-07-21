@@ -188,6 +188,7 @@ public:
         // Mark values which are only used in the implementation class as queried
         props.mark_queried("use_grid_bbox");
         props.mark_queried("max_value");
+        props.mark_queried("fixed_max");
     }
 
     Mask is_inside(const Interaction3f & /*it*/, Mask /*active*/) const override {
@@ -268,6 +269,12 @@ public:
         if (props.has_property("max_value")) {
             m_fixed_max = true;
             m_max       = props.get<ScalarFloat>("max_value");
+        }
+        // In the context of an optimization, we might want to keep the majorant
+        // fixed to an initial value computed from the reference data, for convenience.
+        if (props.has_property("fixed_max")) {
+            m_fixed_max = props.bool_("fixed_max");
+            Log(Info, "Medium will keep majorant fixed to: %s", m_metadata.max);
         }
     }
 
