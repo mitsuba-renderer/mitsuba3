@@ -125,7 +125,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import xml, Ray3f, Vector3f
 
     shape = xml.load_dict({'type' : 'cylinder'})
 
@@ -173,7 +173,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
 
 def test06_differentiable_surface_interaction_ray_backward(variant_cuda_ad_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import xml, Ray3f, Vector3f
 
     shape = xml.load_dict({'type' : 'cylinder'})
 

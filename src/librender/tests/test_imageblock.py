@@ -121,8 +121,8 @@ def test04_put_vec_basic(variants_vec_rgb):
     n = 29
     positions = np.random.uniform(size=(n, 2))
 
-    positions[:, 0] = np.floor(positions[:, 0] * (im.width()-1)).astype(np.int)
-    positions[:, 1] = np.floor(positions[:, 1] * (im.height()-1)).astype(np.int)
+    positions[:, 0] = np.floor(positions[:, 0] * (im.width()-1)).astype(int)
+    positions[:, 1] = np.floor(positions[:, 1] * (im.height()-1)).astype(int)
     # Repeat some of the coordinates to make sure that we test the case where
     # the same pixel receives several values
     positions[-3:, :] = positions[:3, :]
@@ -145,6 +145,7 @@ def test04_put_vec_basic(variants_vec_rgb):
 
 
 def test05_put_with_filter(variants_vec_rgb):
+    from mitsuba.core import float_dtype
     from mitsuba.core.xml import load_string as load_string_vec
     from mitsuba.render import ImageBlock as ImageBlockV
 
@@ -155,9 +156,9 @@ def test05_put_with_filter(variants_vec_rgb):
     from mitsuba.render import ImageBlock
     mitsuba.set_variant(variant)
 
-#     """The previous tests used a very simple box filter, parametrized so that
-#     it essentially had no effect. In this test, we use a more realistic
-#     Gaussian reconstruction filter, with non-zero radius."""
+    # The previous tests used a very simple box filter, parametrized so that
+    # it essentially had no effect. In this test, we use a more realistic
+    # Gaussian reconstruction filter, with non-zero radius.
 
     rfilter = load_string("""<rfilter version="2.0.0" type="gaussian">
             <float name="stddev" value="0.25"/>
@@ -176,7 +177,7 @@ def test05_put_with_filter(variants_vec_rgb):
     positions = np.array([
         [5, 6], [0, 1], [5, 6], [1, 11], [11, 11],
         [0, 1], [2, 5], [4, 1], [0, 11], [5, 4]
-    ], dtype=np.float)
+    ], dtype=float_dtype)
     n = positions.shape[0]
     positions += np.random.uniform(size=positions.shape, low=0, high=0.95)
 
@@ -198,12 +199,12 @@ def test05_put_with_filter(variants_vec_rgb):
     # -- Compute reference
     for i in range(n):
         # Fractional part of the position
-        offset = positions[i, :] - positions[i, :].astype(np.int)
+        offset = positions[i, :] - positions[i, :].astype(int)
 
         # Reconstruction window around the pixel position
         pos = positions[i, :] - 0.5 + border
-        lo  = np.ceil(pos - radius).astype(np.int)
-        hi  = np.floor(pos + radius).astype(np.int)
+        lo  = np.ceil(pos - radius).astype(int)
+        hi  = np.floor(pos + radius).astype(int)
 
         for dy in range(lo[1], hi[1] + 1):
             for dx in range(lo[0], hi[0] + 1):

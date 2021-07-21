@@ -29,11 +29,25 @@ class Optimizer:
         return self.variables[key]
 
     def __setitem__(self, key: str, value):
+        """
+        Overwrite the value of a parameter.
+
+        This method can also be used to load a scene parameters to optimize.
+
+        Note that the state of the optimizer (e.g. momentum) associated with the
+        parameter is preserved, unless the parameter's dimensions changed. When
+        assigning a substantially different parameter value (e.g. as part of a
+        different optimization run), the previous momentum value is meaningless
+        and calling `reset()` is advisable.
+        """
         if not (ek.is_diff_array_v(value) and ek.is_floating_point_v(value)):
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
+        needs_reset = (key not in self.variables) or ek.width(self.variables[key]) != ek.width(value)
+
         self.variables[key] = type(value)(ek.detach(value))
         ek.enable_grad(self.variables[key])
-        self._reset(key)
+        if needs_reset:
+            self.reset(key)
 
     def __delitem__(self, key: str) -> None:
         del self.variables[key]
@@ -162,6 +176,9 @@ class Optimizer:
         finally:
             self.params.set_grad_suspended(True)
 
+    def reset(self, key):
+        """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
+        pass
 
 class SGD(Optimizer):
     """
@@ -196,7 +213,7 @@ class SGD(Optimizer):
         super().__init__(lr, params)
 
     def step(self):
-        """ Take a gradient step """
+        """Take a gradient step"""
         for k, p in self.variables.items():
             g_p = ek.grad(p)
             size = ek.width(g_p)
@@ -206,7 +223,7 @@ class SGD(Optimizer):
             if self.momentum != 0:
                 if size != ek.width(self.state[k]):
                     # Reset state if data size has changed
-                    self._reset(k)
+                    self.reset(k)
 
                 self.state[k] = self.momentum * self.state[k] + g_p
                 value = ek.detach(p) - self.lr_v[k] * self.state[k]
@@ -222,8 +239,8 @@ class SGD(Optimizer):
 
         ek.eval()
 
-    def _reset(self, key):
-        """ Zero-initializes the internal state associated with a parameter """
+    def reset(self, key):
+        """Zero-initializes the internal state associated with a parameter"""
         if self.momentum == 0:
             return
         p = self.variables[key]
@@ -264,7 +281,7 @@ class Adam(Optimizer):
         self.t = 0
 
     def step(self):
-        """ Take a gradient step """
+        """Take a gradient step"""
         self.t += 1
 
         from mitsuba.core import Float
@@ -280,7 +297,7 @@ class Adam(Optimizer):
                 continue
             elif size != ek.width(self.state[k][0]):
                 # Reset state if data size has changed
-                self._reset(k)
+                self.reset(k)
 
             m_tp, v_tp = self.state[k]
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
@@ -296,8 +313,8 @@ class Adam(Optimizer):
 
         ek.eval()
 
-    def _reset(self, key):
-        """ Zero-initializes the internal state associated with a parameter """
+    def reset(self, key):
+        """Zero-initializes the internal state associated with a parameter"""
         p = self.variables[key]
         size = ek.width(p)
         self.state[key] = (ek.zero(ek.detached_t(p), size),
