@@ -37,6 +37,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                     self.nee_handle_homogeneous = self.nee_handle_homogeneous or medium.is_homogeneous()
                     self.handle_null_scattering = self.handle_null_scattering or (not medium.is_homogeneous())
         self.is_prepared = True
+        self.use_nee = True
 
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
@@ -64,7 +65,8 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         ray, weight, _, pos_idx = sample_sensor_rays(sensor)
 
         # sample forward path (not differentiable)
-        result, _ = self.Li(scene, sampler.clone(), ray)
+        with params.suspend_gradients():
+            result, _ = self.Li(scene, sampler.clone(), ray)
 
         grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
         grad_values *= weight / sampler.sample_count()
@@ -184,7 +186,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
             mi = ek.detach(mi)
             if not is_primal and ek.grad_enabled(weight):
-                ek.backward(weight * ek.detach(ek.select(active_medium, grad * result / ek.max(1e-8, weight), 0.0)))
+                ek.backward(weight * ek.detach(ek.select(active_medium | escaped_medium, grad * result / ek.max(1e-8, weight), 0.0)))
 
             phase_ctx = PhaseFunctionContext(sampler)
             phase = mi.medium.phase_function()
@@ -218,6 +220,8 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             contrib = ek.select(count_direct, throughput * emitted,
                                 throughput * mis_weight(last_scatter_direction_pdf, emitter_pdf) * emitted)
             result[active_e] = result + ek.detach(contrib if is_primal else -contrib)
+            if not is_primal and ek.grad_enabled(contrib):
+                ek.backward(grad * contrib)
 
             active_surface &= si.is_valid()
             ctx = BSDFContext()
@@ -248,23 +252,21 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                 if not is_primal:
                     self.sample_emitter(ref_interaction, scene, sampler,
                         medium, channel, active_e, adj_emitted=contrib, grad=grad)
-                    if ek.grad_enabled(nee_weight):
-                        ek.backward(grad * nee_weight * mis_weight(ds.pdf, nee_directional_pdf) * ek.detach(emitted))
+                    if ek.grad_enabled(nee_weight) or ek.grad_enabled(emitted):
+                        ek.backward(grad * contrib)
 
             # ----------------------- BSDF sampling ----------------------
             with params.suspend_gradients():
-                bs, bsdf_val = bsdf.sample(ctx, si, sampler.next_1d(active_surface),
+                bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active_surface),
                                            sampler.next_2d(active_surface), active_surface)
                 active_surface &= bs.pdf > 0
 
             bsdf_eval = bsdf.eval(ctx, si, bs.wo, active_surface)
-            smooth_bsdf = has_flag(bsdf.flags(), BSDFFlags.Smooth)
-            bsdf_val[smooth_bsdf] = bsdf_eval / bs.pdf
 
             if not is_primal and ek.grad_enabled(bsdf_eval):
-                ek.backward(bsdf_eval * ek.detach(ek.select(active & smooth_bsdf, grad * result / ek.max(1e-8, bsdf_eval), 0.0)))
+                ek.backward(bsdf_eval * ek.detach(ek.select(active, grad * result / ek.max(1e-8, bsdf_eval), 0.0)))
 
-            throughput[active_surface] = throughput * bsdf_val
+            throughput[active_surface] = throughput * bsdf_weight
             eta[active_surface] = eta * bs.eta
             bsdf_ray = si.spawn_ray(si.to_world(bs.wo))
             ray[active_surface] = bsdf_ray
@@ -300,8 +302,8 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         medium = ek.select(active, medium, ek.zero(MediumPtr, wavefront_size))
 
         ds, emitter_val = scene.sample_emitter_direction(ref_interaction, sampler.next_2d(active), False, active)
+        ds = ek.detach(ds)
         emitter_val[ek.eq(ds.pdf, 0.0)] = 0.0
-        emitter_val = ek.detach(emitter_val) # TODO: should support emitter gradients here too
         active &= ek.neq(ds.pdf, 0.0)
 
         ray = ref_interaction.spawn_ray(ds.d)
@@ -312,7 +314,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         transmittance = Spectrum(1.0)
 
         loop = Loop("PRBVolpathNEELoop")
-        loop.put(lambda: (active, medium, ray, needs_intersection, si, total_dist, transmittance, ds))
+        loop.put(lambda: (active, medium, ray, needs_intersection, si, total_dist, transmittance))
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
@@ -346,7 +348,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             # Ratio tracking transmittance computation
             active_medium &= mi.is_valid()
             ray.o[active_medium] = ek.detach(mi.p)
-            si.t[active_medium] = si.t - mi.t
+            si.t[active_medium] = ek.detach(si.t - mi.t)
             tr_multiplier[active_medium] = tr_multiplier * mi.sigma_n / mi.combined_extinction
 
             # Handle interactions with surfaces
@@ -356,16 +358,16 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             bsdf_val = bsdf.eval_null_transmission(si, active_surface)
             tr_multiplier[active_surface] = tr_multiplier * bsdf_val
 
-            if not is_primal:
-                active_adjoint = (active_surface | active_medium) & (tr_multiplier > 0.0)
-                ek.backward(tr_multiplier * ek.detach(ek.select(active_adjoint, grad * adj_emitted / ek.max(tr_multiplier, 1e-8), 0.0)))
+            if not is_primal and ek.grad_enabled(tr_multiplier):
+                active_adj = (active_surface | active_medium) & (tr_multiplier > 0.0)
+                ek.backward(tr_multiplier * ek.detach(ek.select(active_adj, grad * adj_emitted / tr_multiplier, 0.0)))
 
             transmittance *= ek.detach(tr_multiplier)
 
             # Update the ray with new origin & t parameter
             new_ray = si.spawn_ray(Vector3f(ray.d))
-            ray[active_surface] = new_ray
-            ray.maxt = remaining_dist
+            ray[active_surface] = ek.detach(new_ray)
+            ray.maxt = ek.detach(remaining_dist)
             needs_intersection |= active_surface
 
             # Continue tracing through scene if non-zero weights exist
