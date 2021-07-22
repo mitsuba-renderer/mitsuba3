@@ -264,7 +264,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     std::pair<Spectrum, Mask> result = sample(scene, sampler, ray, medium, aovs + 5, active);
     result.first = ray_weight * result.first;
 
-    UnpolarizedSpectrum spec_u = depolarize(result.first);
+    UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);
 
     Color3f xyz;
     if constexpr (is_monochromatic_v<Spectrum>) {

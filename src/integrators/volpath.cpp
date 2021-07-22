@@ -115,8 +115,8 @@ public:
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
-            active &= ek::any(ek::neq(depolarize(throughput), 0.f));
-            Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
+            active &= ek::any(ek::neq(unpolarized_spectrum(throughput), 0.f));
+            Float q = ek::min(ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
             Mask perform_rr = (depth > (uint32_t) m_rr_depth);
             active &= sampler->next_1d(active) < q || !perform_rr;
             ek::masked(throughput, perform_rr) *= ek::rcp(ek::detach(q));
@@ -392,7 +392,7 @@ public:
             needs_intersection |= active_surface;
 
             // Continue tracing through scene if non-zero weights exist
-            active &= (active_medium || active_surface) && ek::any(ek::neq(depolarize(transmittance), 0.f));
+            active &= (active_medium || active_surface) && ek::any(ek::neq(unpolarized_spectrum(transmittance), 0.f));
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();

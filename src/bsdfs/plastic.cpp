@@ -239,7 +239,7 @@ public:
             result[sample_diffuse] = value;
         }
 
-        return { bs, unpolarized<Spectrum>(result) };
+        return { bs, depolarizer<Spectrum>(result) };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -265,7 +265,7 @@ public:
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *
                 m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
 
-        return unpolarized<Spectrum>(diff) & active;
+        return depolarizer<Spectrum>(diff) & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -327,7 +327,7 @@ public:
             prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
         }
 
-        return { ek::select(active, unpolarized<Spectrum>(diff), 0.f),
+        return { ek::select(active, depolarizer<Spectrum>(diff), 0.f),
                  ek::select(active, hemi_pdf * prob_diffuse, 0.f) };
     }
 

@@ -269,7 +269,7 @@ public:
 
         active &= Frame3f::cos_theta(bs.wo) > 0;
 
-        return { bs, (unpolarized<Spectrum>(spec) / bs.pdf) & active };
+        return { bs, (depolarizer<Spectrum>(spec) / bs.pdf) & active };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -322,7 +322,7 @@ public:
             spec *= m_ndf.eval(u_m, params, active) /
                     (4 * m_sigma.eval(u_wi, params, active));
 
-        return unpolarized<Spectrum>(spec) & active;
+        return depolarizer<Spectrum>(spec) & active;
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,

@@ -98,7 +98,7 @@ public:
 
         return { Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius,
                        d, time, wavelengths),
-                 unpolarized<Spectrum>(weight) *
+                 depolarizer<Spectrum>(weight) *
                      (ek::Pi<Float> * ek::sqr(m_bsphere.radius)) };
     }
 
@@ -127,7 +127,7 @@ public:
         // No need to divide by the PDF here (always equal to 1.f)
         UnpolarizedSpectrum spec = m_irradiance->eval(si, active);
 
-        return { ds, unpolarized<Spectrum>(spec) };
+        return { ds, depolarizer<Spectrum>(spec) };
     }
 
     Float pdf_direction(const Interaction3f & /*it*/,

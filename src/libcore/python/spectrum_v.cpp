@@ -58,6 +58,6 @@ MTS_PY_EXPORT(Spectrum) {
         m.attr("MTS_WAVELENGTH_MAX")     = MTS_WAVELENGTH_MAX;
     }
 
-    m.def("unpolarized", [](const Spectrum &s) { return unpolarized(s); }, "");
-    m.def("depolarize", [](const Spectrum &s) { return depolarize(s); }, "");
+    m.def("unpolarized_spectrum", [](const Spectrum &s) { return unpolarized_spectrum(s); }, "");
+    m.def("depolarizer", [](const Spectrum &s) { return depolarizer(s); }, "");
 }

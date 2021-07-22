@@ -47,8 +47,8 @@ def _render_helper(scene, spp=None, sensor_index=0):
     sampler.schedule_state()
 
     if is_polarized:
-        from mitsuba.core import depolarize
-        spec = depolarize(spec)
+        from mitsuba.core import unpolarized_spectrum
+        spec = unpolarized_spectrum(spec)
 
     if is_monochromatic:
         rgb = [spec[0]]

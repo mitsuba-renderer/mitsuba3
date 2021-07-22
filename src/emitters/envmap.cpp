@@ -144,7 +144,7 @@ public:
                              ek::safe_acos(v.y()) * ek::InvPi<Float>);
         uv -= ek::floor(uv);
 
-        return unpolarized<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
+        return depolarizer<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float /* time */, Float /* wavelength_sample */,
@@ -186,7 +186,7 @@ public:
 
         return {
             ds,
-            unpolarized<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf
+            depolarizer<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf
         };
     }
 

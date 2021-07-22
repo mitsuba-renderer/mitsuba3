@@ -274,8 +274,8 @@ public:
                 // Refract inside
                 Spectrum To = mueller::specular_transmission(ek::abs(Frame3f::cos_theta(wo_hat)), m_eta);
 
-                // Diffuse subsurface scattering.
-                Spectrum diff = mueller::depolarizer(m_diffuse_reflectance->eval(si, active));
+                // Diffuse subsurface scattering that acts as a depolarizer.
+                Spectrum diff = depolarizer<Spectrum>(m_diffuse_reflectance->eval(si, active));
 
                 // Refract outside
                 Normal3f n(0.f, 0.f, 1.f);

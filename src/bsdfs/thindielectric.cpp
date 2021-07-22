@@ -147,7 +147,7 @@ public:
         if (m_specular_transmittance && ek::any_or<true>(selected_t))
             weight[selected_t] *= m_specular_transmittance->eval(si, selected_t);
 
-        return { bs, unpolarized<Spectrum>(weight) & active };
+        return { bs, depolarizer<Spectrum>(weight) & active };
     }
 
     Spectrum eval(const BSDFContext & /* ctx */, const SurfaceInteraction3f & /* si */,
@@ -173,7 +173,7 @@ public:
         if (m_specular_transmittance)
             value *= m_specular_transmittance->eval(si, active);
 
-        return unpolarized<Spectrum>(value);
+        return depolarizer<Spectrum>(value);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {

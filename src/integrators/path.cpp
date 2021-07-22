@@ -172,7 +172,7 @@ public:
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
             throughput = throughput * bsdf_val;
-            active &= ek::any(ek::neq(depolarize(throughput), 0.f));
+            active &= ek::any(ek::neq(unpolarized_spectrum(throughput), 0.f));
             if (ek::none_or<false>(active))
                 break;
 
@@ -212,7 +212,7 @@ public:
                getting stuck (e.g. due to total internal reflection) */
             Mask use_rr = depth > m_rr_depth;
             if (ek::any_or<true>(use_rr)) {
-                Float q = ek::min(ek::hmax(depolarize(throughput)) * ek::sqr(eta), .95f);
+                Float q = ek::min(ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
                 ek::masked(active, use_rr) &= sampler->next_1d(active) < q;
                 ek::masked(throughput, use_rr) *= ek::rcp(q);
             }

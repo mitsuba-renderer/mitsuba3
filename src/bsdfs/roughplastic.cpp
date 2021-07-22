@@ -239,7 +239,7 @@ public:
         active &= bs.pdf > 0.f;
         result = eval(ctx, si, bs.wo, active);
 
-        return { bs, (unpolarized<Spectrum>(result) / bs.pdf) & active };
+        return { bs, (depolarizer<Spectrum>(result) / bs.pdf) & active };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -293,7 +293,7 @@ public:
             value += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
-        return unpolarized<Spectrum>(value) & active;
+        return depolarizer<Spectrum>(value) & active;
     }
 
     Float lerp_gather(const DynamicBuffer<Float> &data, Float x, size_t size,
@@ -428,7 +428,7 @@ public:
             value += diff * (ek::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
 
-        return { unpolarized<Spectrum>(value) & active, pdf };
+        return { depolarizer<Spectrum>(value) & active, pdf };
     }
 
     void traverse(TraversalCallback *callback) override {

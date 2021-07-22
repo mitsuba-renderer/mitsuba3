@@ -64,7 +64,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        return unpolarized<Spectrum>(m_radiance->eval(si, active)) & (Frame3f::cos_theta(si.wi) > 0.f);
+        return depolarizer<Spectrum>(m_radiance->eval(si, active)) & (Frame3f::cos_theta(si.wi) > 0.f);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -110,7 +110,7 @@ public:
         }
 
         return { Ray3f(si.p, si.to_world(local), time, wavelength),
-                 unpolarized<Spectrum>(spec_weight) * (ek::Pi<Float> / pdf) };
+                 depolarizer<Spectrum>(spec_weight) * (ek::Pi<Float> / pdf) };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -157,7 +157,7 @@ public:
         }
 
         ds.emitter = this;
-        return { ds, unpolarized<Spectrum>(spec) & active };
+        return { ds, depolarizer<Spectrum>(spec) & active };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,

@@ -166,7 +166,7 @@ public:
                                                sampler->next_2d(active), active);
             bsdf_val = si.to_world_mueller(bsdf_val, -bs.wo, si.wi);
 
-            Mask active_b = active && ek::any(ek::neq(depolarize(bsdf_val), 0.f));
+            Mask active_b = active && ek::any(ek::neq(unpolarized_spectrum(bsdf_val), 0.f));
 
             // Trace the ray in the sampled direction and intersect against the scene
             SurfaceInteraction si_bsdf =

@@ -68,8 +68,15 @@ struct Spectrum : ek::StaticArrayImpl<Value_, Size_, false, Spectrum<Value_, Siz
     ENOKI_ARRAY_IMPORT(Spectrum, Base)
 };
 
-/// Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.
-template <typename T> depolarize_t<T> depolarize(const T& spectrum) {
+/**
+ * Return the (1,1) entry of a Mueller matrix. Identity function for all other types.
+ *
+ * This is useful for places in the renderer where we do not care about the
+ * additional information tracked by the Mueller matrix.
+ * For instance when performing Russian Roulette based on the path throughput or
+ * when writing a final RGB pixel value to the image block.
+ */
+template <typename T> unpolarized_spectrum_t<T> unpolarized_spectrum(const T& spectrum) {
     if constexpr (is_polarized_v<T>) {
         // First entry of the Mueller matrix is the unpolarized spectrum
         return spectrum(0, 0);
@@ -81,8 +88,12 @@ template <typename T> depolarize_t<T> depolarize(const T& spectrum) {
 /**
  * Turn a spectrum into a Mueller matrix representation that only has a non-zero
  * (1,1) entry. For all non-polarized modes, this is the identity function.
+ *
+ * Apart from the obvious usecase as a depolarizing Mueller matrix (e.g. for a
+ * Lambertian diffuse material), this is also currently used in many BSDFs and
+ * emitters where it is not clear how they should interact with polarization.
  */
-template <typename T> auto unpolarized(const T &spectrum) {
+template <typename T> auto depolarizer(const T &spectrum = T(1)) {
     if constexpr (is_polarized_v<T>) {
         T result = ek::zero<T>();
         result(0, 0) = spectrum(0, 0);

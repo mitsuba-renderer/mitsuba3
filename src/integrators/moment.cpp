@@ -69,7 +69,7 @@ public:
                 m_integrators[i].first->sample(scene, sampler, ray, medium, aovs, active);
             aovs += m_integrators[i].second;
 
-            UnpolarizedSpectrum spec_u = depolarize(result_sub.first);
+            UnpolarizedSpectrum spec_u = unpolarized_spectrum(result_sub.first);
 
             Color3f xyz;
             if constexpr (is_monochromatic_v<Spectrum>) {

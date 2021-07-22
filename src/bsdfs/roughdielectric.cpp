@@ -308,7 +308,7 @@ public:
 
         bs.pdf *= ek::abs(dwh_dwo);
 
-        return { bs, unpolarized<Spectrum>(weight) & active };
+        return { bs, depolarizer<Spectrum>(weight) & active };
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -384,7 +384,7 @@ public:
             result[eval_t] = value;
         }
 
-        return unpolarized<Spectrum>(result);
+        return depolarizer<Spectrum>(result);
     }
 
     Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
@@ -557,7 +557,7 @@ public:
                                    (eta * eta * dot_wo_m) /
                                        ek::sqr(dot_wi_m + eta * dot_wo_m));
 
-        return { unpolarized<Spectrum>(result),
+        return { depolarizer<Spectrum>(result),
                  ek::select(active, pdf * ek::abs(dwh_dwo), 0.f) };
     }
 

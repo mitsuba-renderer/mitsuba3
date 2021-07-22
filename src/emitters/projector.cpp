@@ -146,7 +146,7 @@ public:
         ray.o = m_to_world.value().translation();
         ray.d = m_to_world.value() * Vector3f(ek::normalize(near_p));
 
-        return { ray, unpolarized<Spectrum>(weight / pdf) & active };
+        return { ray, depolarizer<Spectrum>(weight / pdf) & active };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -186,7 +186,7 @@ public:
         spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) *
                 ek::sqr(ek::rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
 
-        return { ds, unpolarized<Spectrum>(spec & active) };
+        return { ds, depolarizer<Spectrum>(spec & active) };
     }
 
     ScalarBoundingBox3f bbox() const override {

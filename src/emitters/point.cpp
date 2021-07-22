@@ -73,7 +73,7 @@ public:
                   warp::square_to_uniform_sphere(dir_sample),
                   time, wavelengths);
 
-        return { ray, unpolarized<Spectrum>(spec_weight) };
+        return { ray, depolarizer<Spectrum>(spec_weight) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -101,7 +101,7 @@ public:
         UnpolarizedSpectrum spec =
             m_intensity->eval(si, active) * ek::sqr(inv_dist);
 
-        return { ds, unpolarized<Spectrum>(spec) };
+        return { ds, depolarizer<Spectrum>(spec) };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &,

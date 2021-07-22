@@ -77,7 +77,7 @@ template <typename T> constexpr bool is_spectral_v = detail::spectrum_traits<T>:
 template <typename T> constexpr bool is_polarized_v = detail::spectrum_traits<T>::is_polarized;
 template <typename T> using scalar_spectrum_t = typename detail::spectrum_traits<T>::Scalar;
 template <typename T> using wavelength_t = typename detail::spectrum_traits<T>::Wavelength;
-template <typename T> using depolarize_t = typename detail::spectrum_traits<T>::Unpolarized;
+template <typename T> using unpolarized_spectrum_t = typename detail::spectrum_traits<T>::Unpolarized;
 
 //! @}
 // =============================================================

@@ -154,7 +154,7 @@ public:
             // solid angle compression at refractive index boundaries. Stop with at least some
             // probability to avoid  getting stuck (e.g. due to total internal reflection)
             Spectrum mis_throughput = mis_weight(p_over_f);
-            Float q = ek::min(ek::hmax(depolarize(mis_throughput)) * ek::sqr(eta), .95f);
+            Float q = ek::min(ek::hmax(unpolarized_spectrum(mis_throughput)) * ek::sqr(eta), .95f);
             Mask perform_rr = active && !last_event_was_null && (depth > (uint32_t) m_rr_depth);
             active &= !(sampler->next_1d(active) >= q && perform_rr);
             update_weights(p_over_f, ek::detach(q), 1.0f, channel, perform_rr);
@@ -163,7 +163,7 @@ public:
 
             Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
             active &= !exceeded_max_depth;
-            active &= ek::any(ek::neq(depolarize(mis_weight(p_over_f)), 0.f));
+            active &= ek::any(ek::neq(unpolarized_spectrum(mis_weight(p_over_f)), 0.f));
 
             if (ek::none(active))
                 break;
@@ -312,8 +312,8 @@ public:
                     Vector3f wo_local       = si.to_local(ds.d);
                     Spectrum bsdf_val = bsdf->eval(ctx, si, wo_local, active_e);
                     Float bsdf_pdf =  bsdf->pdf(ctx, si, wo_local, active_e);
-                    update_weights(p_over_f_nee_end, 1.0f, depolarize(bsdf_val), channel, active_e);
-                    update_weights(p_over_f_end, ek::select(ds.delta, 0.f, bsdf_pdf), depolarize(bsdf_val), channel, active_e);
+                    update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_e);
+                    update_weights(p_over_f_end, ek::select(ds.delta, 0.f, bsdf_pdf), unpolarized_spectrum(bsdf_val), channel, active_e);
                     ek::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
                 }
 
@@ -337,8 +337,8 @@ public:
 
                 // Update NEE weights only if the BSDF is not null
                 ek::masked(p_over_f_nee, non_null_bsdf) = p_over_f;
-                update_weights(p_over_f, bs.pdf, depolarize(bsdf_weight * bs.pdf), channel, active_surface);
-                update_weights(p_over_f_nee, 1.f, depolarize(bsdf_weight * bs.pdf), channel, non_null_bsdf);
+                update_weights(p_over_f, bs.pdf, unpolarized_spectrum(bsdf_weight * bs.pdf), channel, active_surface);
+                update_weights(p_over_f_nee, 1.f, unpolarized_spectrum(bsdf_weight * bs.pdf), channel, non_null_bsdf);
 
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 ek::masked(medium, has_medium_trans) = si.target_medium(ray.d);
@@ -439,8 +439,8 @@ public:
             if (ek::any_or<true>(active_surface)) {
                 auto bsdf         = si.bsdf(ray);
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
-                update_weights(p_over_f_nee, 1.0f, depolarize(bsdf_val), channel, active_surface);
-                update_weights(p_over_f_uni, 1.0f, depolarize(bsdf_val), channel, active_surface);
+                update_weights(p_over_f_nee, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_surface);
+                update_weights(p_over_f_uni, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_surface);
             }
 
             ek::masked(ray, active_surface) = si.spawn_ray(ray.d);
@@ -452,7 +452,7 @@ public:
                 active &= (active_medium || active_surface) && ek::any(ek::neq(mis_weight(p_over_f_uni), 0.f));
             else
                 active &= (active_medium || active_surface) &&
-                      (ek::any(ek::neq(depolarize(p_over_f_uni), 0.f)) || ek::any(ek::neq(depolarize(p_over_f_nee), 0.f)) );
+                      (ek::any(ek::neq(unpolarized_spectrum(p_over_f_uni), 0.f)) || ek::any(ek::neq(unpolarized_spectrum(p_over_f_nee), 0.f)) );
 
             // If a medium transition is taking place: Update the medium pointer
             Mask has_medium_trans = active_surface && si.is_medium_transition();

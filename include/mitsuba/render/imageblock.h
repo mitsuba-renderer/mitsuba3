@@ -102,7 +102,7 @@ public:
         if (unlikely(m_channel_count != 5))
             Throw("ImageBlock::put(): non-standard image block configuration! (AOVs?)");
 
-        UnpolarizedSpectrum value_u = depolarize(value);
+        UnpolarizedSpectrum value_u = unpolarized_spectrum(value);
 
         Color3f xyz;
         if constexpr (is_monochromatic_v<Spectrum>) {

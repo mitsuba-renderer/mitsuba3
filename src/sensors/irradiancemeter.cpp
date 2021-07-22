@@ -78,7 +78,7 @@ public:
 
         return {
             RayDifferential3f(o, d, time, wavelengths),
-            unpolarized<Spectrum>(wav_weight) * ek::Pi<ScalarFloat>
+            depolarizer<Spectrum>(wav_weight) * ek::Pi<ScalarFloat>
         };
     }
 

@@ -134,7 +134,7 @@ public:
 
         return { Ray3f(m_to_world.value().translation(),
                        m_to_world.value() * local_dir, time, wavelengths),
-                 unpolarized<Spectrum>(falloff_spec / pdf_dir) };
+                 depolarizer<Spectrum>(falloff_spec / pdf_dir) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -157,7 +157,7 @@ public:
         Vector3f local_d = m_to_world.value().inverse() * -ds.d;
         UnpolarizedSpectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);
 
-        return { ds, unpolarized<Spectrum>(falloff_spec * (inv_dist * inv_dist)) };
+        return { ds, depolarizer<Spectrum>(falloff_spec * (inv_dist * inv_dist)) };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {

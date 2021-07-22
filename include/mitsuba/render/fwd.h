@@ -51,7 +51,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SpectrumU              = underlying_t<Spectrum>;
 
     using Wavelength                = wavelength_t<Spectrum>;
-    using UnpolarizedSpectrum       = depolarize_t<Spectrum>;
+    using UnpolarizedSpectrum       = unpolarized_spectrum_t<Spectrum>;
 
     using StokesVector4f            = StokesVector<UnpolarizedSpectrum>;
     using MuellerMatrix4f           = MuellerMatrix<UnpolarizedSpectrum>;
