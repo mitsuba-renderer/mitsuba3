@@ -54,9 +54,17 @@ public:
             bs.sampled_type      = UInt32(+BSDFFlags::Null);
             bs.eta               = 1.f;
             bs.pdf               = 1.f;
+
+            /* In an ordinary BSDF we would use depolarizer<Spectrum>(1.f) here
+               to construct a depolarizing Mueller matrix. However, the null
+               BSDF should leave the polarization state unaffected, and hence
+               this is one of the few places where it is safe to directly use a
+               scalar (which will broadcast to the identity matrix in polarized
+               rendering modes). */
             result               = 1.f;
         }
-        return { bs, depolarizer<Spectrum>(result) };
+
+        return { bs, result };
     }
 
     Spectrum eval(const BSDFContext & /*ctx*/,
@@ -72,7 +80,10 @@ public:
 
     Spectrum eval_null_transmission(const SurfaceInteraction3f & /*si*/,
                                     Mask /*active*/) const override {
-        return depolarizer<Spectrum>(1.f);
+        /* As above, we do not want the polarization state to change. So it is
+           safe to return a scalar (which will broadcast to the identity
+           matrix). */
+        return 1.f;
     }
 
     std::string to_string() const override { return "Null[]"; }
