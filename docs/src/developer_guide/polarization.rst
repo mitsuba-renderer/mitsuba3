@@ -1444,21 +1444,21 @@ The remainder of this section covers a few more implementation details / helpful
     :linenos:
 
     // From `include/mitsuba/core/traits.h`
-    template <typename T> using depolarize_t = ...
+    template <typename T> using unpolarized_spectrum_t = ...
 
     // Example use case
-    using UnpolarizedSpectrum = depolarize_t<Spectrum>;
+    using UnpolarizedSpectrum = unpolarized_spectrum_t<Spectrum>;
 
-3. There exists a helper function to extract the :math:`(1, 1)` entry of the Mueller matrix / Stokes vector. This is used for instance when writing the final output color to the film (at least when no output of the polarization state is requested, see Section `Rendering output`_ later), or to stochastically terminate paths with Russian roulette based on the current path throughput independent of polarization.
+| 3. There exists a helper function to extract the :math:`(1, 1)` entry of the Mueller matrix / Stokes vector. Essentially, it will turn any ``Spectrum`` value into an ``UnpolarizedSpectrum``.
+| This is used in a few places in the renderer where we do not care about the additional polarization information tracked by the Mueller matrix. For instance, when performing Russian Roulette (stochastic termination of long light paths) based on the current path throughput or when writing a final RGB pixel value to the image, see Section `Rendering output`_.
 
 .. code-block:: cpp
     :linenos:
 
     // From `include/mitsuba/core/spectrum.h`
 
-    // Return the (1,1) entry of a Mueller matrix. Identity function for all other-types.
     template <typename T>
-    depolarize_t<T> depolarize(const T& s) {
+    unpolarized_spectrum_t<T> unpolarized_spectrum(const T& s) {
         if constexpr (is_polarized_v<T>) {
             // First entry of the Mueller matrix is the unpolarized spectrum
             return s(0, 0);
@@ -1467,18 +1467,16 @@ The remainder of this section covers a few more implementation details / helpful
         }
     }
 
-| 4. When compiling Mitsuba 2 in a polarized variant, all ``Spectrum`` types are supposed to be Mueller matrices, even though for many plugins this is either not yet implemented or it is unclear how to do so. For instance, what Mueller matrix should be returned when querying an environment map emitter?
-| In these cases, the following wrapper can be used to turn any unpolarized color representation into a valid Mueller matrix where just its :math:`(1, 1)` entry is used.
+| 4. Another helper function returns a depolarizing Mueller matrix (with only its :math:`(1, 1)` entry used) where the input is usually an ``UnpolarizedSpectrum`` value.
+| This is obviously used in places where we want materials to act as depolarizers, e.g. in the case of a Lambertian diffuse material. However, there are also many BSDFs where it is currently not clear how they should interact with polarized light, or the functionality is not yet implemented. For now, these all act as depolarizers. Lastly, this is also used for light sources, as they currently all emit completely unpolarized light in Mitsuba 2.
 
 .. code-block:: cpp
     :linenos:
 
     // From `include/mitsuba/core/spectrum.h`
 
-    // Turn a spectrum into a Mueller matrix representation that only has a non-zero
-    // (1,1) entry. For all non-polarized modes, this is the identity function.
     template <typename T>
-    auto unpolarized(const T &s) {
+    auto depolarizer(const T &s = T(1)) {
         if constexpr (is_polarized_v<T>) {
             T result = ek::zero<T>();
             result(0, 0) = s(0, 0);
@@ -1490,7 +1488,7 @@ The remainder of this section covers a few more implementation details / helpful
 
     // Example use case, where the value returned from the texture is of type
     // `UnpolarizedSpectrum`.
-    Spectrum s = unpolarized<Spectrum>(m_texture->eval(si, active));
+    Spectrum s = depolarizer<Spectrum>(m_texture->eval(si, active));
 
 Coordinate frames
 """""""""""""""""
@@ -2092,6 +2090,7 @@ The following plugins in Mitsuba 2 currently work/interact with polarization:
 * Linear polarizer (:ref:`polarizer <bsdf-polarizer>`)
 * Linear retarder (:ref:`retarder <bsdf-retarder>`)
 * Circular polarizer (:ref:`circular <bsdf-circular>`)
+* Null (:ref:`null <bsdf-null>`)
 * Polarized plastic from :cite:`Baek2018Simultaneous` (:ref:`pplastic <bsdf-pplastic>`)
 * Measured polarized to render pBRDFs measured as part of :cite:`Baek2020Image` (:ref:`measured_polarized <bsdf-measured_polarized>`)
 
