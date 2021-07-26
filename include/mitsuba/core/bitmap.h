@@ -51,9 +51,6 @@ public:
         /// XYZ tristimulus + alpha channel
         XYZA,
 
-        /// XYZ tristimulus + alpha channel + weight
-        XYZAW,
-
         /// Arbitrary multi-channel bitmap without a fixed interpretation
         MultiChannel
     };
@@ -285,8 +282,7 @@ public:
         return m_pixel_format == PixelFormat::YA
             || m_pixel_format == PixelFormat::RGBA
             || m_pixel_format == PixelFormat::RGBAW
-            || m_pixel_format == PixelFormat::XYZA
-            || m_pixel_format == PixelFormat::XYZAW;
+            || m_pixel_format == PixelFormat::XYZA;
     }
 
     /// Return the number bytes of storage used per pixel

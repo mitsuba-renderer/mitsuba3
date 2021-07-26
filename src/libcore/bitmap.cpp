@@ -168,7 +168,6 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
         case PixelFormat::RGBAW: channels = { "R", "G", "B", "A", "W"}; break;
         case PixelFormat::XYZ:   channels = { "X", "Y", "Z"};           break;
         case PixelFormat::XYZA:  channels = { "X", "Y", "Z", "A"};      break;
-        case PixelFormat::XYZAW: channels = { "X", "Y", "Z", "A", "W"}; break;
         case PixelFormat::MultiChannel:
             if (channel_names.size() == 0) {
                 for (size_t i = 0; i < channel_count; ++i)
@@ -410,8 +409,7 @@ void Bitmap::convert(Bitmap *target) const {
                          m_pixel_format == PixelFormat::RGBA ||
                          m_pixel_format == PixelFormat::RGBAW;
     bool source_is_xyz = m_pixel_format == PixelFormat::XYZ ||
-                         m_pixel_format == PixelFormat::XYZA ||
-                         m_pixel_format == PixelFormat::XYZAW;
+                         m_pixel_format == PixelFormat::XYZA;
     bool source_is_y   = m_pixel_format == PixelFormat::Y ||
                          m_pixel_format == PixelFormat::YA;
 
@@ -2455,7 +2453,6 @@ std::ostream &operator<<(std::ostream &os, Bitmap::PixelFormat value) {
         case Bitmap::PixelFormat::RGBAW:        os << "rgbaw"; break;
         case Bitmap::PixelFormat::XYZ:          os << "xyz"; break;
         case Bitmap::PixelFormat::XYZA:         os << "xyza"; break;
-        case Bitmap::PixelFormat::XYZAW:        os << "xyzaw"; break;
         case Bitmap::PixelFormat::MultiChannel: os << "multichannel"; break;
         default: Throw("Unknown pixel format!");
     }

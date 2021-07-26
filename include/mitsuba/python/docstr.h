@@ -972,8 +972,6 @@ static const char *__doc_mitsuba_Bitmap_PixelFormat_XYZ = R"doc(XYZ tristimulus 
 
 static const char *__doc_mitsuba_Bitmap_PixelFormat_XYZA = R"doc(XYZ tristimulus + alpha channel)doc";
 
-static const char *__doc_mitsuba_Bitmap_PixelFormat_XYZAW = R"doc(XYZ tristimulus + alpha channel + weight)doc";
-
 static const char *__doc_mitsuba_Bitmap_PixelFormat_Y = R"doc(Single-channel luminance bitmap)doc";
 
 static const char *__doc_mitsuba_Bitmap_PixelFormat_YA = R"doc(Two-channel luminance + alpha bitmap)doc";
@@ -8328,19 +8326,19 @@ static const char *__doc_mitsuba_depolarize =
 R"doc(Return the (1,1) entry of a Mueller matrix. Identity function for all
 other-types.)doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables = R"doc(Table with fits for cie1931_xyz and cie1931_y)doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables = R"doc(Table with fits for cie1931_xyz and cie1931_y)doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables_initialize = R"doc()doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables_initialize = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables_initialized = R"doc()doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables_initialized = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables_release = R"doc()doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables_release = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables_x = R"doc()doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables_x = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables_y = R"doc()doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables_y = R"doc()doc";
 
-static const char *__doc_mitsuba_detail_ColorSpaceTables_z = R"doc()doc";
+static const char *__doc_mitsuba_detail_CIE1932Tables_z = R"doc()doc";
 
 static const char *__doc_mitsuba_detail_ConcurrentVector = R"doc()doc";
 

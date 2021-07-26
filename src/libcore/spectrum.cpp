@@ -184,12 +184,12 @@ static const Float cie1931_tbl[MTS_CIE_SAMPLES * 3] = {
 };
 
 NAMESPACE_BEGIN(detail)
-ColorSpaceTables<float> color_space_tables_scalar;
+CIE1932Tables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-ColorSpaceTables<ek::LLVMArray<float>> color_space_tables_llvm;
+CIE1932Tables<ek::LLVMArray<float>> color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-ColorSpaceTables<ek::CUDAArray<float>> color_space_tables_cuda;
+CIE1932Tables<ek::CUDAArray<float>> color_space_tables_cuda;
 #endif
 NAMESPACE_END(detail)
 

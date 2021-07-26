@@ -89,7 +89,7 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
             <string name="component_format" value="float32"/>
             <rfilter type="box"/>
         </film>""".format(file_format))
-    # Regardless of the output file format, values are stored as XYZAW (5 channels).
+    # Regardless of the output file format, values are stored as RGBAW (5 channels).
     contents = np.random.uniform(size=(film.size()[1], film.size()[0], 5))
     # RGBE and will only reconstruct well images that have similar scales on
     # all channel (because exponent is shared between channels).

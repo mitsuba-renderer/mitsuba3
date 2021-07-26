@@ -13,20 +13,23 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
                         sensor_index: int=0,
                         spp: int=0) -> None:
     """
-    Performed the adjoint rendering integration, backpropagating the
-    image gradients to the scene parameters.
+    Performs the adjoint phase of differentiable rendering by backpropagating
+    image gradients back to the scene parameters.
 
-    The default implementation relies on Automatic Differentiation to
-    compute the scene parameters gradients w.r.t. the adjoint image.
+    The default implementation provided by this function relies on automatic
+    differentiation, which tends to be relatively inefficient due to the need
+    to track intermediate state of the program execution. More efficient
+    implementations are provided by special adjoint integrators like ``rb`` and
+    ``prb``.
 
     Parameter ``scene``:
         The scene to render
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-        Scene parameters expecting gradients.
+       SceneParameters data structure that will receive parameter gradients.
 
     Parameter ``image_adj`` (``mitsuba.core.ImageBuffer``):
-        Gradient image to backpropagate during the adjoint integration.
+        Gradient image that should be backpropagated.
 
     Parameter ``sensor_index`` (``int``):
         Optional parameter to specify which sensor to use for rendering.

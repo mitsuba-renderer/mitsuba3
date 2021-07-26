@@ -237,20 +237,20 @@ public:
             UInt32 values_idx = (i / output_ch) * ch + i_channel;
 
             if (has_aovs) {
-                // Offset indices for aovs channels
+                // Apply index offset for AOV channels
                 uint32_t aovs_channel = img_ch + (has_alpha ? 1 : 0);
                 Mask aovs_mask = i_channel >= aovs_channel;
                 values_idx[aovs_mask] += 5 - aovs_channel;
             }
 
             if (to_y) {
-                // Offset indices for aovs channels (skip the X channel)
+                // Apply index offset for AOV channels (skip the X channel)
                 Mask Y_mask = ek::eq(i_channel, 0);
                 values_idx[Y_mask] += 1;
             }
 
             if (has_alpha && to_y) {
-                // Offset indices for alpha channel (skip the YZ channels)
+                // Apply index offset for Alpha channel (skip the YZ channels)
                 Mask alpha_mask = ek::eq(i_channel, img_ch);
                 values_idx[alpha_mask] += 2;
             }
