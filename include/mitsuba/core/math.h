@@ -339,8 +339,8 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     /* Is this perhaps a linear equation? */
     Mask linear_case = ek::eq(a, Scalar(0));
 
-    /* If so, we require b > 0 */
-    Mask active = !linear_case || (b > Scalar(0));
+    /* If so, we require b != 0 */
+    Mask active = !(linear_case && ek::eq(b, Scalar(0)));
 
     /* Initialize solution with that of linear equation */
     Value x0, x1;
