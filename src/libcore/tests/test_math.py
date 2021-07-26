@@ -33,6 +33,7 @@ def test03_solve_quadratic(variant_scalar_rgb):
     from mitsuba.core import math
     assert ek.allclose(math.solve_quadratic(1, 4, -5), (1, -5, 1))
     assert ek.allclose(math.solve_quadratic(0, 5, -10), (1, 2, 2))
+    assert ek.allclose(math.solve_quadratic(0, -5, 10), (1, 2, 2))
 
 
 def test04_solve_quadratic_vec(variant_scalar_rgb):
