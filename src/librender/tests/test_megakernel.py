@@ -5,7 +5,9 @@ import pytest
 
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
 def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
-    """Tests that forward rendering launches the correct number of kernels"""
+    """
+    Tests that forward rendering launches the correct number of kernels
+    """
     from mitsuba.core import xml
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
@@ -109,3 +111,112 @@ def test02_kernel_launches_path_reseed(variants_vec_rgb, integrator_name):
     for i in range(2):
         for k in range(3):
             assert histories[0][k]['hash'] == histories[i][k]['hash']
+
+
+def test03_kernel_launches_optimization(variants_vec_rgb):
+    """
+    Check the history of kernel launches during a simple optimization loop
+    using render_adjoint.
+    """
+    from mitsuba.core import xml, Color3f
+    from mitsuba.python.util import traverse
+
+    scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
+    film_size = scene.sensors()[0].film().crop_size()
+    spp = 32
+
+    film_wavefront_size = ek.hprod(film_size) * 3 #(RGB)
+    wavefront_size = ek.hprod(film_size) * spp
+
+    integrator = xml.load_dict({
+        'type': 'rb',
+        'max_depth': 3
+    })
+
+    ek.set_flag(ek.JitFlag.KernelHistory, True)
+
+    image_ref = integrator.render(scene, spp=spp)
+    ek.kernel_history_clear()
+
+    # ek.set_log_level(3)
+
+    params = traverse(scene)
+    key = 'red.reflectance.value'
+    params.keep([key])
+    params[key] = Color3f(0.1, 0.1, 0.1)
+    params.update()
+
+    # Updating the scene here shouldn't produce any kernel launch
+    assert len(ek.kernel_history()) == 0
+
+    opt = mitsuba.python.ad.SGD(lr=0.05, params=params)
+    opt.load(key)
+    opt.update()
+
+    # Creating the optimizer shouldn't produce any kernel launch
+    assert len(ek.kernel_history()) == 0
+
+    spp = 16
+    wavefront_size = ek.hprod(film_size) * spp
+
+    histories = []
+    for it in range(3):
+        # print(f"\nITERATION {it}\n")
+
+        # print(f"\n----- PRIMAL\n")
+
+        # Primal rendering of the scene
+        with opt.suspend_gradients():
+            image = integrator.render(scene, spp=spp)
+
+        history_primal = ek.kernel_history()
+        if it == 0:
+            assert len(history_primal) == 3 # (seed, render, develop film)
+        else:
+            assert len(history_primal) == 2 # (render, develop film)
+        assert history_primal[-2]['size'] == wavefront_size
+        assert history_primal[-1]['size'] == film_wavefront_size
+
+        # print(f"\n----- LOSS\n")
+
+        # Compute adjoint image
+        ek.enable_grad(image)
+        ob_val = ek.hsum_async(ek.sqr(image - image_ref)) / len(image)
+        ek.backward(ob_val)
+        image_adj = ek.grad(image)
+        ek.set_grad(image, 0.0)
+
+        history_loss = ek.kernel_history()
+        assert len(history_loss) == 1 # (horizontal reduction with hsum)
+        assert history_loss[0]['size'] == film_wavefront_size
+
+        # print(f"\n----- ADJOINT\n")
+
+        # Adjoint rendering of the scene
+        integrator.render_backward(scene, opt, image_adj, spp=spp)
+
+        history_adjoint = ek.kernel_history()
+        assert len(history_adjoint) == 1 # (gather rays weights in image_adj)
+        assert history_adjoint[0]['size'] == film_wavefront_size
+
+        # print(f"\n----- STEP\n")
+
+        # Optimizer: take a gradient step
+        opt.step()
+        history_step = ek.kernel_history()
+        assert len(history_step) == 2 # (adjoint render, eval optimizer state)
+        assert history_step[0]['size'] == wavefront_size
+        assert history_step[1]['size'] == 1
+
+        # print(f"\n----- UPDATE\n")
+
+        # Optimizer: Update the scene parameters
+        opt.update()
+        history_update = ek.kernel_history()
+        assert len(history_update) == 0
+
+        histories.append(history_primal + history_loss + history_adjoint + history_step)
+
+    # Make sure that kernels are reused after the 2nd iteration
+    for k in range(len(histories[1])):
+        assert histories[1][k]['hash'] == histories[2][k]['hash']
