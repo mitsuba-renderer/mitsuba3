@@ -51,6 +51,10 @@ class ChiSquareTest:
        the probability density over each histogram cell (using the trapezoid
        rule). The default value is ``4``.
 
+    Parameter ``seed`` (int):
+       Seed value for the PCG32 random number generator used in the histogram
+       computation. The default value is ``0``.
+
     Notes:
 
     The following attributes are part of the public API:
@@ -72,7 +76,7 @@ class ChiSquareTest:
         in this attribute.
     """
     def __init__(self, domain, sample_func, pdf_func, sample_dim=2,
-                 sample_count=1000000, res=101, ires=4):
+                 sample_count=1000000, res=101, ires=4, seed=0):
         from mitsuba.core import ScalarVector2u
 
         assert res > 0
@@ -89,6 +93,7 @@ class ChiSquareTest:
             self.res = ek.max(ScalarVector2u(
                 int(res / domain.aspect()), res), 1)
         self.ires = ires
+        self.seed = seed
         self.bounds = domain.bounds()
         self.pdf = None
         self.histogram = None
@@ -106,9 +111,11 @@ class ChiSquareTest:
 
         # Generate a table of uniform variates
         from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
-            UInt64, PCG32
+            UInt64, PCG32, sample_tea_64
 
-        rng = PCG32(initseq=ek.arange(UInt64, self.sample_count))
+        idx = ek.arange(UInt64, self.sample_count)
+        rng = PCG32(initstate=sample_tea_64(idx, self.seed),
+                    initseq=sample_tea_64(self.seed, idx))
 
         samples_in = getattr(mitsuba.core, 'Vector%if' % self.sample_dim)()
         for i in range(self.sample_dim):

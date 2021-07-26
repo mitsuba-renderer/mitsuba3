@@ -55,7 +55,8 @@ def test03_chi2_aniso_beckmann_visible(variants_vec_backends_once_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
-        ires=8
+        ires=8,
+        seed=2
     )
 
     assert chi2.run()
