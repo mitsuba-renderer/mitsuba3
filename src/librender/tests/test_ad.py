@@ -399,7 +399,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, gc_collect, mode, eval_grad,
 
 def test06_optimizer_state(variant_cuda_ad_rgb):
     from mitsuba.core import Float
-    from mitsuba.python.autodiff import SGD, Adam
+    from mitsuba.python.ad import SGD, Adam
 
     def ensure_iterable(x):
         if not isinstance(x, (tuple, list)):

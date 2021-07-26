@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
-def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
+def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
     """
     Tests that forward rendering launches the correct number of kernels
     """
@@ -63,7 +63,7 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
 
 
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
-def test02_kernel_launches_path_reseed(variants_vec_rgb, integrator_name):
+def test02_kernel_launches_path_reseed(variants_vec_rgb, gc_collect, integrator_name):
     """
     Similar to previous test, but this time we re-seed between each rendering.
     Hence we should always be able to fully reuse all the kernels
@@ -113,7 +113,7 @@ def test02_kernel_launches_path_reseed(variants_vec_rgb, integrator_name):
             assert histories[0][k]['hash'] == histories[i][k]['hash']
 
 
-def test03_kernel_launches_optimization(variants_vec_rgb):
+def test03_kernel_launches_optimization(variants_vec_rgb, gc_collect):
     """
     Check the history of kernel launches during a simple optimization loop
     using render_adjoint.
