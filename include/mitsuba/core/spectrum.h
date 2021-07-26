@@ -145,7 +145,7 @@ struct Spectrum<ek::detail::MaskedArray<Value_>, Size_>
  * RGB tables.
  */
 NAMESPACE_BEGIN(detail)
-template <typename Float> struct ColorSpaceTables {
+template <typename Float> struct CIE1932Tables {
     using FloatStorage = DynamicBuffer<Float>;
 
     void initialize(const float* ptr) {
@@ -179,12 +179,12 @@ private:
     bool initialized = false;
 };
 
-extern MTS_EXPORT_CORE ColorSpaceTables<float> color_space_tables_scalar;
+extern MTS_EXPORT_CORE CIE1932Tables<float> color_space_tables_scalar;
 #if defined(MTS_ENABLE_LLVM)
-extern MTS_EXPORT_CORE ColorSpaceTables<ek::LLVMArray<float>> color_space_tables_llvm;
+extern MTS_EXPORT_CORE CIE1932Tables<ek::LLVMArray<float>> color_space_tables_llvm;
 #endif
 #if defined(MTS_ENABLE_CUDA)
-extern MTS_EXPORT_CORE ColorSpaceTables<ek::CUDAArray<float>> color_space_tables_cuda;
+extern MTS_EXPORT_CORE CIE1932Tables<ek::CUDAArray<float>> color_space_tables_cuda;
 #endif
 
 template <typename Float> auto get_color_space_tables() {

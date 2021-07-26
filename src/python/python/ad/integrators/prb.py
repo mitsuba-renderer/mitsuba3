@@ -67,7 +67,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         emission_weight = Float(1.0)
 
         depth_i = UInt32(depth)
-        loop = Loop("PRBLoop" + '' if is_primal else '_adjoint')
+        loop = Loop("Path Replay Backpropagation main loop" + '' if is_primal else ' - adjoint')
         loop.put(lambda: (depth_i, active, ray, emission_weight, throughput, si, result))
         sampler.loop_register(loop)
         loop.init()
