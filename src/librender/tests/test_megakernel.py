@@ -8,8 +8,6 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     """Tests that forward rendering launches the correct number of kernels"""
     from mitsuba.core import xml
 
-    ek.set_flag(ek.JitFlag.KernelHistory, False)
-
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
     spp = 32
@@ -69,8 +67,6 @@ def test02_kernel_launches_path_reseed(variants_vec_rgb, integrator_name):
     Hence we should always be able to fully reuse all the kernels
     """
     from mitsuba.core import xml
-
-    ek.set_flag(ek.JitFlag.KernelHistory, False)
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
