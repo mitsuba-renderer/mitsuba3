@@ -308,7 +308,7 @@ def test05_sample_ggx(variants_vec_backends_once):
 
 
 @pytest.mark.parametrize("sample_visible", [True, False])
-@pytest.mark.parametrize("alpha", [0.1, 0.5])
+@pytest.mark.parametrize("alpha", [0.125, 0.5])
 @pytest.mark.parametrize("md_type_name", ['GGX', 'Beckmann'])
 @pytest.mark.parametrize("angle", [15, 80, 30])
 def test06_chi2(variants_vec_backends_once, md_type_name, alpha, sample_visible, angle):
@@ -328,7 +328,8 @@ def test06_chi2(variants_vec_backends_once, md_type_name, alpha, sample_visible,
         pdf_func=lambda *args: pdf_func(*(list(args) + [angle])),
         sample_dim=2,
         res=203,
-        ires=10
+        ires=10,
+        seed=10
     )
 
     assert chi2.run()

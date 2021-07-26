@@ -15,7 +15,8 @@ def test01_chi2_smooth(variants_vec_backends_once_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
-        res=201
+        res=201,
+        seed=2
     )
 
     assert chi2.run()

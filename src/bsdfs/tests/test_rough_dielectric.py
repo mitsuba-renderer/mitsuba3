@@ -32,7 +32,8 @@ def test02_chi2_rough_grazing(variants_vec_backends_once_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        seed=4
     )
 
     assert chi2.run()
@@ -71,7 +72,8 @@ def test04_chi2_rough_beckmann_visible(variants_vec_backends_once_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        seed=2
     )
 
     assert chi2.run()
@@ -110,7 +112,8 @@ def test06_chi2_rough_ggx_visible(variants_vec_backends_once_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        seed=2
     )
 
     assert chi2.run()
@@ -143,7 +146,8 @@ def test08_chi2_rough_from_inside_tir(variants_vec_backends_once_rgb):
         domain=SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        seed=8
     )
 
     assert chi2.run()
@@ -185,7 +189,8 @@ def test10_chi2_lobe_refl(variants_vec_backends_once_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
-        res=201
+        res=201,
+        seed=2
     )
 
     assert chi2.run()
