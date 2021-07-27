@@ -340,7 +340,7 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     Mask linear_case = ek::eq(a, Scalar(0));
 
     /* If so, we require b != 0 */
-    Mask active = !(linear_case && ek::eq(b, Scalar(0)));
+    Mask valid_linear = linear_case && ek::neq(b, Scalar(0));
 
     /* Initialize solution with that of linear equation */
     Value x0, x1;
@@ -348,9 +348,9 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
 
     /* Check if the quadratic equation is solvable */
     Value discrim = ek::fmsub(b, b, Scalar(4) * a * c);
-    active &= linear_case || (discrim >= Scalar(0));
+    Mask valid_quadratic = !linear_case && (discrim >= Scalar(0));
 
-    if (likely(ek::any_or<true>(active))) {
+    if (likely(ek::any_or<true>(valid_quadratic))) {
         Value sqrt_discrim = ek::sqrt(discrim);
 
         /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
@@ -373,7 +373,7 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
         x1 = ek::select(linear_case, x0, x1m);
     }
 
-    return { active, x0, x1 };
+    return { valid_linear || valid_quadratic, x0, x1 };
 }
 
 //! @}
