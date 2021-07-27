@@ -2,7 +2,6 @@ import enoki as ek
 import mitsuba
 import pytest
 
-
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
 def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
     """
@@ -12,7 +11,7 @@ def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
-    spp = 32
+    spp = 2
 
     integrator = xml.load_dict({
         'type': integrator_name,
@@ -72,7 +71,7 @@ def test02_kernel_launches_path_reseed(variants_vec_rgb, gc_collect, integrator_
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
-    spp = 32
+    spp = 2
 
     integrator = xml.load_dict({
         'type': integrator_name,
@@ -123,7 +122,7 @@ def test03_kernel_launches_optimization(variants_vec_rgb, gc_collect):
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
-    spp = 32
+    spp = 4
 
     film_wavefront_size = ek.hprod(film_size) * 3 #(RGB)
     wavefront_size = ek.hprod(film_size) * spp
@@ -156,7 +155,8 @@ def test03_kernel_launches_optimization(variants_vec_rgb, gc_collect):
     # Creating the optimizer shouldn't produce any kernel launch
     assert len(ek.kernel_history()) == 0
 
-    spp = 16
+    # Use a different spp for the optimization loop (produce different kernels)
+    spp = 2
     wavefront_size = ek.hprod(film_size) * spp
 
     histories = []
@@ -216,6 +216,9 @@ def test03_kernel_launches_optimization(variants_vec_rgb, gc_collect):
         assert len(history_update) == 0
 
         histories.append(history_primal + history_loss + history_adjoint + history_step)
+
+    # Ensures all evaluation have finished
+    ek.sync_thread()
 
     # Make sure that kernels are reused after the 2nd iteration
     for k in range(len(histories[1])):
