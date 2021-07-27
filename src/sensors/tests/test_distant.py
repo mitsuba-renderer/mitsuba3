@@ -285,7 +285,7 @@ def test_sample_target(variant_scalar_rgb, sensor_setup, w_e, w_o):
     scene = load_dict({**scene_dict, "sensor": sensors[sensor_setup]})
 
     # Run simulation
-    scene.integrator().render(scene)
+    scene.integrator().render(scene, seed=0)
 
     # Check result
     result = np.array(

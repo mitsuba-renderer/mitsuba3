@@ -50,7 +50,9 @@ MTS_VARIANT std::vector<std::string> SamplingIntegrator<Float, Spectrum>::aov_na
 }
 
 MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::ImageBuffer
-SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
+SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
+                                            uint32_t seed,
+                                            uint32_t sensor_index,
                                             bool develop_film) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
@@ -111,6 +113,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
         // Total number of blocks to be handled, including multiple passes.
         size_t total_blocks = spiral.block_count() * n_passes,
                blocks_done = 0;
+        size_t seed_offset = seed * total_spp * ek::hprod(film_size);
 
         ek::parallel_for(
             ek::blocked_range<size_t>(0, total_blocks, 1),
@@ -129,8 +132,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
                     block->set_size(size);
                     block->set_offset(offset);
 
-                    render_block(scene, sensor, sampler, block,
-                                 aovs.get(), samples_per_pass, block_id);
+                    render_block(scene, sensor, sampler, block, aovs.get(),
+                                 samples_per_pass, seed_offset, block_id);
 
                     film->put(block);
 
@@ -153,8 +156,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t sensor_index,
 
         ScalarFloat diff_scale_factor = ek::rsqrt((ScalarFloat) sampler->sample_count());
         ScalarUInt32 wavefront_size = ek::hprod(film_size) * (uint32_t) samples_per_pass;
-        if (sampler->wavefront_size() != wavefront_size)
-            sampler->seed(0, wavefront_size);
+        sampler->seed(seed, wavefront_size);
 
         UInt32 idx = ek::arange<UInt32>(wavefront_size);
         if (samples_per_pass != 1)
@@ -226,6 +228,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
                                                                    ImageBlock *block,
                                                                    Float *aovs,
                                                                    size_t sample_count_,
+                                                                   size_t seed_offset,
                                                                    size_t block_id) const {
     block->clear();
     uint32_t pixel_count  = (uint32_t)(m_block_size * m_block_size),
@@ -237,7 +240,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
 
     if constexpr (!ek::is_array_v<Float>) {
         for (uint32_t i = 0; i < pixel_count && !should_stop(); ++i) {
-            sampler->seed(block_id * pixel_count + i);
+            sampler->seed(block_id * pixel_count + i + seed_offset);
 
             ScalarPoint2u pos = ek::morton_decode<ScalarPoint2u>(i);
             if (ek::any(pos >= block->size()))

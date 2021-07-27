@@ -74,7 +74,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
     ek.enable_grad(params[key])
 
     # Forward rendering - first time
-    img_1 = scene.integrator().render(scene, spp=spp)
+    img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Backward pass and gradient descent step
     loss = ek.hsum_async(img_1)
@@ -87,8 +87,7 @@ def test01_bsdf_reflectance_backward(variants_all_ad_rgb, gc_collect, jit_flags,
     params.update()
 
     # Forward rendering - second time
-    scene.sensors()[0].sampler().seed(0)
-    img_2 = scene.integrator().render(scene, spp=spp)
+    img_2 = scene.integrator().render(scene, seed=0, spp=spp)
 
     new_loss = ek.hsum_async(img_2)
 
@@ -122,7 +121,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
     params.update()
 
     # Forward rendering - first time
-    img_1 = scene.integrator().render(scene, spp=spp)
+    img_1 = scene.integrator().render(scene, seed=0, spp=spp)
 
     # Compute forward gradients
     assert ek.grad(img_1) == 0.0
@@ -134,8 +133,7 @@ def test02_bsdf_reflectance_forward(variants_all_ad_rgb, gc_collect, jit_flags, 
     params[key] += lr
     params.update()
 
-    scene.sensors()[0].sampler().seed(0)
-    img_2 = scene.integrator().render(scene, spp=spp)
+    img_2 = scene.integrator().render(scene, seed=0, spp=spp)
 
     assert ek.allclose(img_1, img_2 - lr * grad)
 
@@ -154,7 +152,7 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
     params = traverse(scene)
     param_ref = Color3f(params[key])
 
-    image_ref = scene.integrator().render(scene, spp=spp)
+    image_ref = scene.integrator().render(scene, seed=0, spp=spp)
 
     opt_type, opt_args = opt_conf
     opt = getattr(mitsuba.python.ad, opt_type)(*opt_args, params=params)
@@ -172,8 +170,7 @@ def test03_optimizer(variants_all_ad_rgb, gc_collect, spp, res, opt_conf):
 
     for it in range(N):
         # Perform a differentiable rendering of the scene
-        scene.sensors()[0].sampler().seed(0)
-        image = scene.integrator().render(scene, spp=spp)
+        image = scene.integrator().render(scene, seed=0, spp=spp)
         ek.set_label(image, 'image')
 
         # Objective: MSE between 'image' and 'image_ref'

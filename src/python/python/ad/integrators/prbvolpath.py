@@ -52,6 +52,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
                        image_adj: mitsuba.core.Spectrum,
+                       seed: int,
                        sensor_index: int = 0,
                        spp: int = 0) -> None:
         if not self.is_prepared:
@@ -61,6 +62,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         sampler = sensor.sampler()
         if spp > 0:
             sampler.set_sample_count(spp)
+        sampler.seed(seed, ek.hprod(sensor.film().crop_size()) * spp)
 
         ray, weight, _, pos_idx = sample_sensor_rays(sensor)
 

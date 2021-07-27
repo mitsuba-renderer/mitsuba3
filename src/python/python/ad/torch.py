@@ -55,14 +55,14 @@ def render_torch(scene, params=None, **kwargs):
                         params.update()
 
                         if unbiased:
-                            result = render(scene, spp=spp[0],
+                            result = render(scene, seed=0, spp=spp[0],
                                             sensor_index=sensor_index).torch()
 
                     for v in ctx.inputs:
                         if v is not None:
                             ek.enable_grad(v)
 
-                    ctx.output = render(scene, spp=spp[1],
+                    ctx.output = render(scene, seed=0, spp=spp[1],
                                         sensor_index=sensor_index)
 
                     if result is None:

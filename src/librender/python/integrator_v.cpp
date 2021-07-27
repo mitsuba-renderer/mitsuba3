@@ -69,8 +69,12 @@ MTS_PY_EXPORT(Integrator) {
     MTS_PY_CLASS(Integrator, Object)
         .def(
             "render",
-            [&](Integrator *integrator, Scene *scene, uint32_t sensor_idx,
-                bool develop_film, uint32_t spp) {
+            [&](Integrator *integrator,
+                Scene *scene,
+                uint32_t seed,
+                uint32_t sensor_idx,
+                bool develop_film,
+                uint32_t spp) {
                 py::gil_scoped_release release;
 
 #if MTS_HANDLE_SIGINT
@@ -91,7 +95,7 @@ MTS_PY_EXPORT(Integrator) {
 #endif
                 if (spp > 0)
                     scene->sensors()[sensor_idx]->sampler()->set_sample_count(spp);
-                auto res = integrator->render(scene, sensor_idx, develop_film);
+                auto res = integrator->render(scene, seed, sensor_idx, develop_film);
 
 #if MTS_HANDLE_SIGINT
                 // Restore previous signal handler
@@ -100,7 +104,7 @@ MTS_PY_EXPORT(Integrator) {
 
                 return res;
             },
-            D(Integrator, render), "scene"_a, "sensor_index"_a = 0,
+            D(Integrator, render), "scene"_a, "seed"_a, "sensor_index"_a = 0,
             "develop_film"_a = true, "spp"_a = 0)
         .def_method(Integrator, cancel);
 

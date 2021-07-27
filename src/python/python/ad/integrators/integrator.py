@@ -10,6 +10,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.Spectrum,
+                        seed: int,
                         sensor_index: int=0,
                         spp: int=0) -> None:
     """
@@ -31,6 +32,9 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     Parameter ``image_adj`` (``mitsuba.core.ImageBuffer``):
         Gradient image that should be backpropagated.
 
+    Parameter ``seed` (``int``)
+        Seed value for the sampler.
+
     Parameter ``sensor_index`` (``int``):
         Optional parameter to specify which sensor to use for rendering.
 
@@ -41,7 +45,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     ek.enable_grad(params)
     prev_flag = ek.flag(ek.JitFlag.LoopRecord)
     ek.set_flag(ek.JitFlag.LoopRecord, False)
-    image = self.render(scene, sensor_index, spp=spp)
+    image = self.render(scene, seed, sensor_index, spp=spp)
     ek.set_grad(image, image_adj)
     ek.enqueue(image)
     ek.traverse(mitsuba.core.Float, reverse=True, retain_graph=False)

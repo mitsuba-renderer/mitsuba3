@@ -91,7 +91,7 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
     })
 
     # Rendering reference image
-    image_1 = rb_integrator.render(scene, spp=spp_primal)
+    image_1 = rb_integrator.render(scene, seed=0, spp=spp_primal)
     # write_bitmap('image_1.exr', image_1, crop_size)
 
     # Update scene parameter
@@ -103,7 +103,7 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
 
     # Render primal image
     scene.sensors()[0].sampler().seed(0)
-    image_2 = rb_integrator.render(scene, spp=spp_primal)
+    image_2 = rb_integrator.render(scene, seed=0, spp=spp_primal)
     # write_bitmap('image_2.exr', image_2, crop_size)
 
     # Compute adjoint image (MSE objective function)
@@ -115,7 +115,7 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
     # write_bitmap('image_adj.exr', image_adj, crop_size)
 
     # scene.sensors()[0].sampler().seed(0)
-    rb_integrator.render_backward(scene, params, image_adj, spp=spp_adjoint)
+    rb_integrator.render_backward(scene, params, image_adj, seed=0, spp=spp_adjoint)
     grad_backward = ek.grad(params[key])
 
     # Finite difference

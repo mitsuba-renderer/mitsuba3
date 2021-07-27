@@ -43,7 +43,9 @@ public:
      *
      * Returns the rendered image if \c develop_film is set to \c true.
      */
-    virtual ImageBuffer render(Scene *scene, uint32_t sensor_index = 0,
+    virtual ImageBuffer render(Scene *scene,
+                               uint32_t seed,
+                               uint32_t sensor_index = 0,
                                bool develop_film = true) = 0;
 
     /**
@@ -141,7 +143,9 @@ public:
     //! @{ \name Integrator interface implementation
     // =========================================================================
 
-    ImageBuffer render(Scene *scene, uint32_t sensor_index = 0,
+    ImageBuffer render(Scene *scene,
+                       uint32_t seed,
+                       uint32_t sensor_index = 0,
                        bool develop_film = true) override;
     void cancel() override;
 
@@ -172,6 +176,7 @@ protected:
                               ImageBlock *block,
                               Float *aovs,
                               size_t sample_count,
+                              size_t seed_offset,
                               size_t block_id) const;
 
     void render_sample(const Scene *scene,
