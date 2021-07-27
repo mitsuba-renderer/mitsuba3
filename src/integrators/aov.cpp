@@ -235,7 +235,7 @@ public:
                             /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
                             auto pdf = pdf_rgb_spectrum(ray.wavelengths);
                             spec_u *= ek::select(ek::neq(pdf, 0.f), ek::rcp(pdf), 0.f);
-                            rgb = xyz_to_srgb(spectrum_to_xyz(spec_u, ray.wavelengths, active));
+                            rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
                         }
 
                         *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();

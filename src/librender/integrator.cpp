@@ -310,12 +310,12 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);
 
     Color3f rgb;
-    if constexpr (is_rgb_v<Spectrum>) {
-        rgb = spec_u;
-    } else {
-        static_assert(is_spectral_v<Spectrum> || is_monochromatic_v<Spectrum>);
+    if constexpr (is_spectral_v<Spectrum>)
         rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
-    }
+    else if constexpr (is_monochromatic_v<Spectrum>)
+        rgb = spec_u.x();
+    else
+        rgb = spec_u;
 
     aovs[0] = rgb.x();
     aovs[1] = rgb.y();

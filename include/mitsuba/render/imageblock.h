@@ -99,23 +99,21 @@ public:
              const Spectrum &value,
              const Float &alpha,
              Mask active = true) {
+        ENOKI_MARK_USED(wavelengths);
         if (unlikely(m_channel_count != 5))
             Throw("ImageBlock::put(): non-standard image block configuration! (AOVs?)");
 
-        UnpolarizedSpectrum value_u = unpolarized_spectrum(value);
+        UnpolarizedSpectrum spec_u = unpolarized_spectrum(value);
 
-        Color3f xyz;
-        if constexpr (is_monochromatic_v<Spectrum>) {
-            ENOKI_MARK_USED(wavelengths);
-            xyz = value_u.x();
-        } else if constexpr (is_rgb_v<Spectrum>) {
-            ENOKI_MARK_USED(wavelengths);
-            xyz = srgb_to_xyz(value_u, active);
-        } else {
-            static_assert(is_spectral_v<Spectrum>);
-            xyz = spectrum_to_xyz(value_u, wavelengths, active);
-        }
-        Float values[5] = { xyz.x(), xyz.y(), xyz.z(), alpha, 1.f };
+        Color3f rgb;
+        if constexpr (is_spectral_v<Spectrum>)
+            rgb = spectrum_to_srgb(spec_u, wavelengths, active);
+        else if constexpr (is_monochromatic_v<Spectrum>)
+            rgb = spec_u.x();
+        else
+            rgb = spec_u;
+
+        Float values[5] = { rgb.x(), rgb.y(), rgb.z(), alpha, 1.f };
         return put(pos, values, active);
     }
 

@@ -75,7 +75,6 @@ def test02_put_image_block(variant_scalar_rgb):
         check_value(im, (i+1) * ref)
 
 def test03_put_values_basic(variant_scalar_rgb):
-    from mitsuba.core import srgb_to_xyz
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -91,13 +90,13 @@ def test03_put_values_basic(variant_scalar_rgb):
     ref = np.zeros(shape=(im.height() + 2 * border, im.width() + 2 * border, 3 + 1 + 1))
     for i in range(border, im.height() + border):
         for j in range(border, im.width() + border):
-            spectrum = np.random.uniform(size=(3,))
-            ref[i, j, :3] = srgb_to_xyz(spectrum)
+            rgb = np.random.uniform(size=(3,))
+            ref[i, j, :3] = rgb
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight
             # To avoid the effects of the reconstruction filter (simpler test),
             # we'll just add one sample right in the center of each pixel.
-            im.put([j + 0.5, i + 0.5], [], spectrum, alpha=1.0)
+            im.put([j + 0.5, i + 0.5], [], rgb, alpha=1.0)
 
     check_value(im, ref, atol=1e-6)
 
@@ -108,7 +107,6 @@ def test04_put_vec_basic(variants_vec_rgb):
 
     variant = mitsuba.variant()
     mitsuba.set_variant('scalar_rgb')
-    from mitsuba.core import srgb_to_xyz
     mitsuba.set_variant(variant)
 
     # Recall that we must pass a reconstruction filter to use the `put` methods.
@@ -127,19 +125,19 @@ def test04_put_vec_basic(variants_vec_rgb):
     # the same pixel receives several values
     positions[-3:, :] = positions[:3, :]
 
-    spectra = np.arange(n * 3).reshape((n, 3))
+    rgb = np.arange(n * 3).reshape((n, 3))
     alphas = np.ones(shape=(n,))
 
     border = im.border_size()
     ref = np.zeros(shape=(im.height() + 2 * border, im.width() + 2 * border, 3 + 1 + 1))
     for i in range(n):
         (x, y) = positions[i, :] + border
-        ref[int(y), int(x), :3] +=  srgb_to_xyz(spectra[i, :])
+        ref[int(y), int(x), :3] +=  rgb[i, :]
         ref[int(y), int(x),  3] += 1  # Alpha
         ref[int(y), int(x),  4] += 1  # Weight
 
     # Vectorized `put`
-    im.put(positions + 0.5, [], spectra, alphas)
+    im.put(positions + 0.5, [], rgb, alphas)
 
     check_value(im, ref, atol=1e-6)
 
@@ -151,7 +149,6 @@ def test05_put_with_filter(variants_vec_rgb):
 
     variant = mitsuba.variant()
     mitsuba.set_variant('scalar_rgb')
-    from mitsuba.core import srgb_to_xyz
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
     mitsuba.set_variant(variant)
@@ -181,7 +178,7 @@ def test05_put_with_filter(variants_vec_rgb):
     n = positions.shape[0]
     positions += np.random.uniform(size=positions.shape, low=0, high=0.95)
 
-    spectra = np.arange(n * 3).reshape((n, 3)) * 10
+    rgb = np.arange(n * 3).reshape((n, 3)) * 10
     alphas = np.ones(shape=(n,))
 
     radius = int(math.ceil(rfilter.radius()))
@@ -191,10 +188,10 @@ def test05_put_with_filter(variants_vec_rgb):
 
     # -- Scalar `put`
     for i in range(n):
-        im2.put(positions[i, :], [], spectra[i, :], alpha=1.0)
+        im2.put(positions[i, :], [], rgb[i, :], alpha=1.0)
 
     # -- Vectorized `put`
-    im.put(positions, [], spectra, alphas)
+    im.put(positions, [], rgb, alphas)
 
     # -- Compute reference
     for i in range(n):
@@ -214,17 +211,15 @@ def test05_put_with_filter(variants_vec_rgb):
                 if (np.any(r_pos < 0) or np.any(r_pos >= ref.shape[:2])):
                     continue
 
-                xyz = srgb_to_xyz(spectra[i, :])
-
                 weight = rfilter.eval_discretized(w_pos[0]) * rfilter.eval_discretized(w_pos[1])
 
-                ref[r_pos[1], r_pos[0], :3] += weight * xyz
+                ref[r_pos[1], r_pos[0], :3] += weight * rgb[i, :]
                 ref[r_pos[1], r_pos[0],  3] += weight * 1  # Alpha
                 ref[r_pos[1], r_pos[0],  4] += weight * 1  # Weight
 
                 weight_vec = rfilter.eval(w_pos[0]) * rfilter.eval(w_pos[1])
 
-                ref_vec[r_pos[1], r_pos[0], :3] += weight_vec * xyz
+                ref_vec[r_pos[1], r_pos[0], :3] += weight_vec * rgb[i, :]
                 ref_vec[r_pos[1], r_pos[0],  3] += weight_vec * 1  # Alpha
                 ref_vec[r_pos[1], r_pos[0],  4] += weight_vec * 1  # Weight
 
@@ -233,7 +228,7 @@ def test05_put_with_filter(variants_vec_rgb):
 
 
 def test06_put_values_basic(variant_scalar_spectral):
-    from mitsuba.core import spectrum_to_xyz, MTS_WAVELENGTH_SAMPLES
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -252,7 +247,7 @@ def test06_put_values_basic(variant_scalar_spectral):
         for j in range(border, im.width() + border):
             wavelengths = np.random.uniform(size=(MTS_WAVELENGTH_SAMPLES,), low=350, high=750)
             spectrum = np.random.uniform(size=(MTS_WAVELENGTH_SAMPLES,))
-            ref[i, j, :3] = spectrum_to_xyz(spectrum, wavelengths)
+            ref[i, j, :3] = spectrum_to_srgb(spectrum, wavelengths)
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight
             # To avoid the effects of the reconstruction filter (simpler test),

@@ -18,7 +18,7 @@ template <typename Spectrum> struct spectrum_traits { };
 template <typename Float>
 struct spectrum_traits<Color<Float, 1>> {
     using Scalar                             = Color<ek::scalar_t<Float>, 1>;
-    using Wavelength                         = Color<Float, 1>;
+    using Wavelength                         = Color<Float, 0>;
     using Unpolarized                        = Color<Float, 1>;
     static constexpr bool is_monochromatic   = true;
     static constexpr bool is_rgb             = false;

@@ -408,7 +408,7 @@ template <typename Value> Value pdf_rgb_spectrum(const Value &wavelengths) {
     if constexpr (MTS_WAVELENGTH_MIN == 360.f && MTS_WAVELENGTH_MAX == 830.f) {
         Value tmp = ek::sech(0.0072f * (wavelengths - 538.f));
         return ek::select(wavelengths >= MTS_WAVELENGTH_MIN && wavelengths <= MTS_WAVELENGTH_MAX,
-                      0.003939804229326285f * tmp * tmp, ek::zero<Value>());
+                          0.003939804229326285f * tmp * tmp, ek::zero<Value>());
     } else {
         return pdf_uniform_spectrum(wavelengths);
     }
@@ -419,11 +419,8 @@ template <typename Float, typename Spectrum>
 std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
     if constexpr (!is_spectral_v<Spectrum>) {
         ENOKI_MARK_USED(sample);
-        // Note: wavelengths should not be used when rendering in RGB mode.
-        if constexpr (is_rgb_v<Spectrum>)
-            return { {}, 1.f };
-        else
-            return { ek::NaN<Float>, 1.f };
+        // Wavelengths should not be used when rendering in RGB or monochromatic modes.
+        return { {}, 1.f };
     } else {
         auto wav_sample = math::sample_shifted<wavelength_t<Spectrum>>(sample);
         return sample_rgb_spectrum(wav_sample);
