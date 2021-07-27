@@ -10,8 +10,8 @@ DEVICE T sqr(const T& x) {
 
 DEVICE bool solve_quadratic(float a, float b, float c, float& x0, float&x1) {
     bool linear_case = (a == 0.f);
-    // For linear eq, we require b > 0
-    if (linear_case && b <= 0.f)
+    // For linear eq, we require b != 0
+    if (linear_case && b == 0.f)
         return false;
 
     x0 = x1 = -c / b;
