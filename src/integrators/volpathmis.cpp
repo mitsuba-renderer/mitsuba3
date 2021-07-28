@@ -216,7 +216,8 @@ public:
 
                 active &= depth < (uint32_t) m_max_depth;
                 act_medium_scatter &= active;
-                specular_chain = specular_chain && !(act_medium_scatter && sample_emitters);
+                specular_chain &= !act_medium_scatter;
+                specular_chain |= act_medium_scatter && !sample_emitters;
 
                 if (ek::any_or<true>(act_null_scatter)) {
                     if (ek::any_or<true>(is_spectral)) {
