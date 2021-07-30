@@ -10,7 +10,7 @@ public:
     PySensor(const Properties &props) : Sensor(props) { }
 
     std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
            const Point2f &sample3, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3,
@@ -18,7 +18,7 @@ public:
     }
 
     std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
+    sample_ray_differential(Float time, Float sample1, const Point3f &sample2,
                             const Point2f &sample3, Mask active) const override {
         using Return = std::pair<RayDifferential3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
@@ -27,7 +27,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_direction, ref, sample, active);

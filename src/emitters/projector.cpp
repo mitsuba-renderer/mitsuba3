@@ -118,7 +118,7 @@ public:
 
     /// TODO: Completely untested, need to revist once the particle tracer is merged.
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f & /* spatial_sample */,
+                                          const Point3f & /* spatial_sample */,
                                           const Point2f & direction_sample,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
@@ -150,7 +150,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
+    sample_direction(const Interaction3f &it, const Point3f & /*sample*/,
                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 

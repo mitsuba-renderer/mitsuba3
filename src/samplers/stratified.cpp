@@ -143,6 +143,32 @@ public:
         return Point2f(x + jx, y + jy) * m_inv_resolution;
     }
 
+    Point3f next_3d(Mask active = true) override {
+        Assert(seeded());
+
+        UInt32 sample_indices = current_sample_index();
+        UInt32 perm_seed = m_permutation_seed + m_dimension_index++;
+
+        // Shuffle the samples order
+        UInt32 p = permute_kensler(sample_indices, m_sample_count, perm_seed, active);
+
+        // Map the index to its 3D cell
+        UInt32 z = m_resolution_div(p);
+        UInt32 y = p - z * m_resolution;  // p % m_resolution_z
+        UInt32 x = p - y * m_resolution;  // p % m_resolution_y
+
+        // Add a random perturbation
+        Float jx = 0.5f, jy = 0.5f, jz = 0.5f;
+        if (m_jitter) {
+            jx = m_rng.template next_float<Float>(active);
+            jy = m_rng.template next_float<Float>(active);
+            jz = m_rng.template next_float<Float>(active);
+        }
+
+        // Construct the final 2D point
+        return Point3f(x + jx, y + jy, z + jz) * m_inv_resolution;
+    }
+
     void schedule_state() override {
         Base::schedule_state();
         ek::schedule(m_permutation_seed);

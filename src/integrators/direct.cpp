@@ -139,8 +139,9 @@ public:
                 Mask active_e = sample_emitter;
                 DirectionSample3f ds;
                 Spectrum emitter_val;
+                Point2f em_sample = sampler->next_2d(active_e);
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(active_e), true, active_e);
+                    si, Point3f(em_sample.x(), em_sample.y(), 0.f), true, active_e);
                 active_e &= ek::neq(ds.pdf, 0.f);
                 if (ek::none_or<false>(active_e))
                     continue;

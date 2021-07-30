@@ -214,11 +214,11 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, uint32_t hit_flags, Mask acti
 }
 
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
-Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
+Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point3f &sample_,
                                                  bool test_visibility, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
-    Point2f sample(sample_);
+    Point3f sample(sample_);
     DirectionSample3f ds;
     Spectrum spec;
 

@@ -85,7 +85,7 @@ public:
      *    and the actual used sampling density function.
      */
     virtual std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
                const Point2f &sample3, Mask active = true) const;
 
     /**
@@ -119,7 +119,7 @@ public:
      */
     virtual std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active = true) const;
 
     //! @}
@@ -189,7 +189,7 @@ public:
 
     /**
      * \brief Does the method \ref sample_ray() require a uniformly distributed
-     * 2D sample for the \c sample2 parameter?
+     * 3D sample for the \c sample2 parameter?
      */
     bool needs_sample_2() const { return m_needs_sample_2; }
 

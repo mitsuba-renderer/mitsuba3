@@ -302,7 +302,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         sensor->film()->crop_size();
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
-        time, wavelength_sample, adjusted_position, aperture_sample);
+        time, wavelength_sample, Vector3f(adjusted_position.x(), adjusted_position.y(), 0.f), aperture_sample);
 
     ray.scale_differential(diff_scale_factor);
 

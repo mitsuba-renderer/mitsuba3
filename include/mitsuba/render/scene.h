@@ -121,7 +121,7 @@ public:
      */
     std::pair<DirectionSample3f, Spectrum>
     sample_emitter_direction(const Interaction3f &ref,
-                             const Point2f &sample,
+                             const Point3f &sample,
                              bool test_visibility = true,
                              Mask active = true) const;
 

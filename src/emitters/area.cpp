@@ -68,7 +68,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &sample2, const Point2f &sample3,
+                                          const Point3f &sample2, const Point2f &sample3,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -78,14 +78,14 @@ public:
 
         // 1. Two strategies to sample spatial component based on 'm_radiance'
         if (!m_radiance->is_spatially_varying()) {
-            PositionSample3f ps = m_shape->sample_position(time, sample2, active);
+            PositionSample3f ps = m_shape->sample_position(time, Point2f(sample2.x(), sample2.y()), active);
 
             // Radiance not spatially varying, use area-based sampling of shape
             si = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
             pdf = ps.pdf;
         } else {
             // Ipmortance sample texture
-            std::tie(si.uv, pdf) = m_radiance->sample_position(sample2, active);
+            std::tie(si.uv, pdf) = m_radiance->sample_position(Point2f(sample2.x(), sample2.y()), active);
             active &= ek::neq(pdf, 0.f);
 
             si = m_shape->eval_parameterization(Point2f(si.uv), +HitComputeFlags::All, active);
@@ -114,7 +114,7 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point3f &sample, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         DirectionSample3f ds;
@@ -123,14 +123,14 @@ public:
         // One of two very different strategies is used depending on 'm_radiance'
         if (!m_radiance->is_spatially_varying()) {
             // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
-            ds = m_shape->sample_direction(it, sample, active);
+            ds = m_shape->sample_direction(it, Point2f(sample.x(), sample.y()), active);
             active &= ek::dot(ds.d, ds.n) < 0.f && ek::neq(ds.pdf, 0.f);
 
             SurfaceInteraction3f si(ds, it.wavelengths);
             spec = m_radiance->eval(si, active) / ds.pdf;
         } else {
             // Importance sample the texture, then map onto the shape
-            auto [uv, pdf] = m_radiance->sample_position(sample, active);
+            auto [uv, pdf] = m_radiance->sample_position(Point2f(sample.x(), sample.y()), active);
             active &= ek::neq(pdf, 0.f);
 
             SurfaceInteraction3f si = m_shape->eval_parameterization(uv, +HitComputeFlags::All, active);

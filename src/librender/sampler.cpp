@@ -52,6 +52,11 @@ Sampler<Float, Spectrum>::next_2d(Mask) {
     NotImplementedError("next_2d");
 }
 
+MTS_VARIANT typename Sampler<Float, Spectrum>::Point3f
+Sampler<Float, Spectrum>::next_3d(Mask) {
+    NotImplementedError("next_3d");
+}
+
 MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
     ek::schedule(m_sample_index, m_dimension_index);
 }

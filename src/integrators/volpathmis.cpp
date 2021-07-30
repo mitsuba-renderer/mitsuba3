@@ -402,7 +402,7 @@ public:
         using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
 
-        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_3d(active), false, active);
         Spectrum emitter_val = emitter_sample_weight * ds.pdf;
         ek::masked(emitter_val, ek::eq(ds.pdf, 0.f)) = 0.f;
         active &= ek::neq(ds.pdf, 0.f);

@@ -148,17 +148,17 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float /* time */, Float /* wavelength_sample */,
-                                          const Point2f & /* sample2 */,
+                                          const Point3f & /* sample2 */,
                                           const Point2f & /* sample3 */,
                                           Mask /* active */) const override {
         NotImplementedError("sample_ray");
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point3f &sample, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        auto [uv, pdf] = m_warp.sample(sample);
+        auto [uv, pdf] = m_warp.sample(Point2f(sample.x(), sample.y()));
 
         Float theta = uv.y() * ek::Pi<Float>,
               phi = uv.x() * (2.f * ek::Pi<Float>);

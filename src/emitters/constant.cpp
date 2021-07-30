@@ -58,7 +58,7 @@ public:
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f &sample2, const Point2f &sample3,
+                                          const Point3f &sample2, const Point2f &sample3,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -68,7 +68,7 @@ public:
             math::sample_shifted<Wavelength>(wavelength_sample), active);
 
         // 2. Sample spatial component
-        Vector3f v0 = warp::square_to_uniform_sphere(sample2);
+        Vector3f v0 = warp::square_to_uniform_sphere(Point2f(sample2.x(), sample2.y()));
 
         // 3. Sample directional component
         Vector3f v1 = warp::square_to_cosine_hemisphere(sample3);
@@ -80,10 +80,10 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point3f &sample, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = warp::square_to_uniform_sphere(sample);
+        Vector3f d = warp::square_to_uniform_sphere(Point2f(sample.x(), sample.y()));
         Float dist = 2.f * m_bsphere.radius;
 
         DirectionSample3f ds;

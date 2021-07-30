@@ -136,6 +136,12 @@ public:
         return Point2f(x, y);
     }
 
+    Point3f next_3d(Mask /*active*/ = true) override {
+        Point2f xy = this->next_2d();
+        Float z = this->next_1d();
+        return Point3f(xy.x(), xy.y(), z);
+    }
+
     void schedule_state() override {
         Base::schedule_state();
         ek::schedule(m_scramble_seed);

@@ -304,7 +304,7 @@ public:
         using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         Spectrum transmittance(1.0f);
 
-        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_3d(active), false, active);
         ek::masked(emitter_val, ek::eq(ds.pdf, 0.f)) = 0.f;
         active &= ek::neq(ds.pdf, 0.f);
 

@@ -10,7 +10,7 @@ public:
     PyEmitter(const Properties &props) : Emitter(props) { }
 
     std::pair<Ray3f, Spectrum>
-    sample_ray(Float time, Float sample1, const Point2f &sample2,
+    sample_ray(Float time, Float sample1, const Point3f &sample2,
            const Point2f &sample3, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_ray, time, sample1, sample2, sample3,
@@ -19,7 +19,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
-                     const Point2f &sample,
+                     const Point3f &sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
         PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_direction, ref, sample, active);
@@ -63,14 +63,14 @@ MTS_PY_EXPORT(Emitter) {
         py::class_<EmitterPtr> cls(m, "EmitterPtr", ek_array);
 
         cls.def("sample_ray",
-                [](EmitterPtr ptr, Float time, Float sample1, const Point2f &sample2,
+                [](EmitterPtr ptr, Float time, Float sample1, const Point3f &sample2,
                 const Point2f &sample3, Mask active) {
                     return ptr->sample_ray(time, sample1, sample2, sample3, active);
                 },
                 "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
                 D(Endpoint, sample_ray))
         .def("sample_direction",
-                [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
+                [](EmitterPtr ptr, const Interaction3f &it, const Point3f &sample, Mask active) {
                 return ptr->sample_direction(it, sample, active);
                 },
                 "it"_a, "sample"_a, "active"_a = true,
