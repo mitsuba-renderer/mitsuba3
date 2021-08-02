@@ -15,13 +15,13 @@ class SceneParameters(Mapping):
     :py:meth:`~mitsuba.python.util.SceneParameters.keep()`.
     """
 
-    def __init__(self, properties={}, hierarchy={}):
+    def __init__(self, properties=None, hierarchy=None):
         """
         Private constructor (use
         :py:func:`mitsuba.python.util.traverse()` instead)
         """
-        self.properties = properties
-        self.hierarchy = hierarchy
+        self.properties = properties if properties is not None else {}
+        self.hierarchy  = hierarchy  if hierarchy  is not None else {}
         self.update_list = {}
 
         from mitsuba.core import set_property, get_property
