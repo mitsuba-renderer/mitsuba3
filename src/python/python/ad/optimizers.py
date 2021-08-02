@@ -81,7 +81,7 @@ class Optimizer:
         if regexps is None:
             return params.keys()
 
-        if regexps is not list:
+        if type(regexps) is not list:
             regexps = [regexps]
 
         import re
