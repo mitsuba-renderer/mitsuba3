@@ -599,39 +599,44 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         bool has_rgb = true,
              has_xyz = true,
              has_y   = false,
-             has_a   = false;
+             has_a   = false,
+             has_w   = false;
 
         std::vector<std::string> field_names;
         for (auto it2 = range.first; it2 != range.second; ++it2) {
-            if (it2->second.first == "Y")
+            if (it2->second.first == "Y") {
                 has_y = true;
-            if (it2->second.first == "A")
+            } else if (it2->second.first == "A") {
                 has_a = true;
-            else {
-                if (std::string("RGB").find(it2->second.first) == std::string::npos){
+            } else if (it2->second.first == "W") {
+                has_w = true;
+                if (prefix != "<root>")
+                    Throw("Bitmap::split: Unexpected weight channel in image '%s'", prefix);
+                if (!has_a)
+                    Throw("Bitmap::split: Expect alpha channel is weight channel is present");
+            } else {
+                if (std::string("RGB").find(it2->second.first) == std::string::npos)
                     has_rgb = false;
-                }
-                if (std::string("XYZ").find(it2->second.first) == std::string::npos){
+                if (std::string("XYZ").find(it2->second.first) == std::string::npos)
                     has_xyz = false;
-                }
-
-            if (it2->second.first == "W" && prefix != "<root>")
-                Throw("Bitmap::split: Unexpected weight channel in image '%s'", prefix);
             }
-
             field_names.push_back(it2->second.first);
         }
 
-        has_xyz &= has_a ? field_names.size() == 4 : field_names.size() == 3;
-        has_rgb &= has_a ? field_names.size() == 4 : field_names.size() == 3;
-        has_y &= !has_xyz &&
-                 (has_a ? field_names.size() == 2 : field_names.size() == 1);
+        size_t extra_ch = 0;
+        extra_ch += has_a ? 1 : 0;
+        extra_ch += has_w ? 1 : 0;
+
+        has_rgb &= field_names.size() == 3 + extra_ch;
+        has_xyz &= field_names.size() == 3 + extra_ch;
+        has_y   &= !has_xyz && field_names.size() == 1 + extra_ch;
 
         ref<Bitmap> target;
-        if (has_rgb || has_xyz || has_y) {
+        if (has_xyz || has_rgb || has_y) {
             target = new Bitmap(
                 has_rgb
-                    ? (has_a ? PixelFormat::RGBA : PixelFormat::RGB)
+                    ? (has_w ? PixelFormat::RGBAW
+                             : (has_a ? PixelFormat::RGBA : PixelFormat::RGB))
                     : (has_xyz ? (has_a ? PixelFormat::XYZA : PixelFormat::XYZ)
                                : (has_a ? PixelFormat::YA : PixelFormat::Y)),
                 m_component_format, m_size);
