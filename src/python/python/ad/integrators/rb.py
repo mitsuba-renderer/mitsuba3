@@ -27,12 +27,13 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         sampler = sensor.sampler()
         if spp > 0:
             sampler.set_sample_count(spp)
+        spp = sampler.sample_count()
         sampler.seed(seed, ek.hprod(sensor.film().crop_size()) * spp)
 
         ray, weight, _, pos_idx = sample_sensor_rays(sensor)
 
         grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
-        grad_values *= weight / sampler.sample_count()
+        grad_values *= weight / spp
 
         for k, v in params.items():
             ek.enable_grad(v)
