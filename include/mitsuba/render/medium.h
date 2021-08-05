@@ -87,7 +87,7 @@ public:
     MTS_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
 
     /// Returns whether this medium is emitting
-    MTS_INLINE bool is_emitter() const { return (bool) m_emitter; }
+    MTS_INLINE bool is_emitter() const { return m_emitter.get() != nullptr; }
 
     /// Return the volume emitter associated with this shape (if any)
     Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
