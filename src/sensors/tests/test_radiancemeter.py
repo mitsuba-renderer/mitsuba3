@@ -94,18 +94,18 @@ def test_sample_ray(variant_scalar_rgb, direction, origin):
     from mitsuba.core import Vector3f
     origin    = Vector3f(origin)
     direction = Vector3f(direction)
-    sample1 = [0.32, 0.87]
-    sample2 = [0.16, 0.44]
+    sample1 = [0.32, 0.87, 0.0]
+    sample2 = [0.16, 0.44, 0.0]
 
     sensor = make_sensor(direction=direction, origin=origin)
 
     # Test regular ray sampling
-    ray = sensor.sample_ray(1., 1., sample1, sample2, True)
+    ray = sensor.sample_ray(1., 1., sample1, sample2[:2], True)
     assert ek.allclose(ray[0].o, origin, atol=1e-4)
     assert ek.allclose(ray[0].d, ek.normalize(direction))
 
     # Test ray differential sampling
-    ray = sensor.sample_ray_differential(1., 1., sample2, sample1, True)
+    ray = sensor.sample_ray_differential(1., 1., sample2, sample1[:2], True)
     assert ek.allclose(ray[0].o, origin, atol=1e-4)
     assert ek.allclose(ray[0].d, ek.normalize(direction))
     assert not ray[0].has_differentials

@@ -61,7 +61,7 @@ def test_sampling(variant_scalar_rgb, center, radius):
     num_samples = 100
 
     wav_samples = np.random.rand(num_samples)
-    pos_samples = np.random.rand(num_samples, 2)
+    pos_samples = np.random.rand(num_samples, 3)
     dir_samples = np.random.rand(num_samples, 2)
 
     for i in range(num_samples):
@@ -108,7 +108,7 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     num_samples = 100
 
     wav_samples = np.random.rand(num_samples)
-    pos_samples = np.random.rand(num_samples, 2)
+    pos_samples = np.random.rand(num_samples, 3)
     dir_samples = np.random.rand(num_samples, 2)
 
     for i in range(num_samples):

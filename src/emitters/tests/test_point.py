@@ -79,7 +79,7 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
     d /= dist
 
     # Sample a direction on the emitter
-    sample = [0.1, 0.5]
+    sample = [0.1, 0.5, 0.0]
     ds, res = emitter.sample_direction(it, sample)
 
     assert ds.time == it.time
@@ -111,7 +111,7 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     d /= dist
 
     # Sample direction on the emitter
-    sample = [0.1, 0.5]
+    sample = [0.1, 0.5, 0.0]
     ds, res = emitter.sample_direction(it, sample)
 
     assert ek.all(ds.time == it.time)
