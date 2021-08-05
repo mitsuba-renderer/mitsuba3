@@ -65,14 +65,16 @@ public:
     Spectrum eval(const MediumInteraction3f &mi, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        return unpolarized<Spectrum>(m_radiance->eval(mi, active));
+        return depolarizer<Spectrum>(m_radiance->eval(mi, active));
     }
 
-    PositionSample3f sample_bbox_point(const Point3f &sample, const Mask active = true) const {
+    // Samples a 3d point within the volume defined by a given shape
+    PositionSample3f sample_radiance_point(const Point3f &sample, const Mask active = true) const {
         ScalarBoundingBox3f shape_bbox = m_shape->bbox();
         PositionSample3f ps = ek::zero<PositionSample3f>();
-        ek::masked(ps.p, active) = shape_bbox.min + sample * shape_bbox.max;
+        ek::masked(ps.p, active) = shape_bbox.min + sample * (shape_bbox.max - shape_bbox.min);
         ek::masked(ps.pdf, active) = 1.f / shape_bbox.volume();
+        Log(Debug, "bbox: %s, sample: %s, p: %s, pdf: %s", shape_bbox, sample, ps.p, ps.pdf);
         return ps;
     }
 
@@ -85,11 +87,11 @@ public:
 
         // 1. Two strategies to sample spatial component based on 'm_radiance'
         // Currently only supports homogeneous sampling within the bounding box of the shape
-        auto ps = this->sample_bbox_point(sample2, active);
+        auto ps = this->sample_radiance_point(sample2, active);
         mi = MediumInteraction3f(ps, ek::zero<Wavelength>());
 
         // 2. Sample directional component
-        Vector3f local = warp::square_to_cosine_hemisphere(sample3);
+        Vector3f local = warp::square_to_uniform_sphere(sample3);
 
         Wavelength wavelength;
         Spectrum spec_weight;
@@ -104,7 +106,7 @@ public:
         }
 
         return { Ray3f(mi.p, mi.to_world(local), time, wavelength),
-                 unpolarized<Spectrum>(spec_weight) * (ek::Pi<Float> / ps.pdf) };
+                 depolarizer<Spectrum>(spec_weight) * ps.pdf };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -115,7 +117,7 @@ public:
         
         MTS_MASK_ARGUMENT(active);
 
-        DirectionSample3f ds(this->sample_bbox_point(sample, active));
+        DirectionSample3f ds(this->sample_radiance_point(sample, active));
         ds.d = ds.p - it.p;
 
         Float dist_squared = ek::squared_norm(ds.d);
@@ -123,9 +125,11 @@ public:
         ds.d /= ds.dist;
         ds.n = ds.d;
 
-        Float dp = ek::abs_dot(ds.d, ds.n);
+        // // First term is the distance term and the second term is the solid angle term
+        // // based on the sample point
         Float x = dist_squared;
         ds.pdf *= ek::select(ek::isfinite(x), x, 0.f);
+        ek::masked(ds.pdf, ds.dist == 0.f || !(ek::isfinite(ds.dist))) = 0.f;
 
         // // Volume is uniform, try to importance sample the shape wrt. solid angle at 'it'
 
@@ -142,13 +146,14 @@ public:
 
         MediumInteraction3f mi = MediumInteraction3f(ds, it.wavelengths);
         spec = m_radiance->eval(mi, active) / ds.pdf;
+        // ek::masked(spec, ds.pdf == 0.f) = 0.f;
 
         ds.emitter = this;
         active &= mi.is_valid();
 
-        Log(Debug, "Emission of volume is finite: %s ~ %s ~ pdf: %s ~ maxt: %s, mint: %s, maxt - mint: %s ~ active: %s", spec,  ek::isfinite(spec), ds.pdf, active);
+        Log(Debug, "Emission of volume is finite: %s ~ %s ~ pdf: %s ~ maxt: %s, mint: %s, maxt - mint: %s ~ active: %s", spec,  ek::isfinite(spec), ds.pdf, mi.maxt, mi.mint, mi.maxt - mi.mint, active);
 
-        return { ds, unpolarized<Spectrum>(spec) & active };
+        return { ds, depolarizer<Spectrum>(spec) & active };
     }
 
     Float pdf_direction(const Interaction3f &/*it*/, const DirectionSample3f &ds,
@@ -156,8 +161,7 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         MTS_MASK_ARGUMENT(active);
 
-        Float pdf = 1.f / this->m_shape->bbox().volume(),
-               dp = ek::abs_dot(ds.d, ds.n) / (4*ek::Pi<Float>);
+        Float pdf = 1.f / this->m_shape->bbox().volume();
 
         pdf *= (ds.dist * ds.dist);
 
