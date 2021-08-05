@@ -206,9 +206,10 @@ public:
             if (ek::any_or<true>(active_medium)) {
                 // Generate random variable for sampling events
                 auto medium_sample_eta = sampler->next_1d(active_medium);
+                Mask sample_emitters = mi.medium->use_emitter_sampling();
 
                 // Calculate the probability of events using modified analogue probabilities
-                UnpolarizedSpectrum prob_emission = ek::select(medium->is_emitter(), mi.sigma_t, 0.f);
+                UnpolarizedSpectrum prob_emission = ek::select(ek::hmean(mi.radiance) > 0.f, mi.sigma_t, 0.f);
                 UnpolarizedSpectrum prob_scatter  = mi.sigma_t;
                 UnpolarizedSpectrum prob_null     = mi.sigma_n;
 
@@ -229,7 +230,12 @@ public:
                 act_emission       |= emission_interaction && active_medium;
 
                 if (ek::any_or<true>(act_emission)) {
-                    Mask count_direct = specular_chain;
+                    update_weights(p_over_f, prob_emission, 1.f, channel, act_emission);
+                    if (ek::any_or<true>(not_spectral)) {
+                        update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_emission);
+                    }
+
+                    Mask count_direct = specular_chain && sample_emitters;
                     if (ek::any_or<true>(act_emission && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
                         DirectionSample3f ds(scene, mi, last_scatter_event);
@@ -239,10 +245,6 @@ public:
                     Spectrum contrib = ek::select(count_direct, mis_weight(p_over_f) * mi.radiance, mis_weight(p_over_f, p_over_f_nee) * mi.radiance);
                     ek::masked(result, act_emission) += contrib;
 
-                    // update_weights(p_over_f, prob_emission, 1.f, channel, act_emission);
-                    // if (ek::any_or<true>(not_spectral)) {
-                    //     update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_emission);
-                    // }
                     // ek::masked(result, act_emission) += mis_weight(p_over_f) * mi.radiance;
                 }
                 
@@ -255,7 +257,6 @@ public:
                 // Count this as a bounce
                 ek::masked(depth, act_medium_scatter) += 1;
                 ek::masked(last_scatter_event, act_medium_scatter) = mi;
-                Mask sample_emitters = mi.medium->use_emitter_sampling();
 
                 active &= depth < (uint32_t) m_max_depth;
                 act_medium_scatter &= active;
@@ -282,6 +283,7 @@ public:
                     // Log(Debug, "%s %s %s", mi.sigma_s, act_medium_scatter, p_over_f);
                     if (ek::any_or<true>(not_spectral))
                         update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_medium_scatter);
+                    Log(Debug, "%s %s %s", mi.sigma_s, act_medium_scatter, p_over_f);
 
                     PhaseFunctionContext phase_ctx(sampler);
                     auto phase = mi.medium->phase_function();
