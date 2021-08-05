@@ -149,8 +149,9 @@ public:
             Mask active_e = active && has_flag(bsdf->flags(), BSDFFlags::Smooth);
 
             if (likely(ek::any_or<true>(active_e))) {
+                Point2f em_sample = sampler->next_2d(active_e);
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
-                    si, sampler->next_3d(active_e), true, active_e);
+                    si, Point3f(em_sample.x(), em_sample.y(), 0.f), true, active_e);
                 active_e &= ek::neq(ds.pdf, 0.f);
 
                 // Query the BSDF for that emitter-sampled direction

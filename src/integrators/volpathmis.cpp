@@ -279,11 +279,10 @@ public:
 
                 if (ek::any_or<true>(act_medium_scatter)) {
                     update_weights(p_over_f, prob_scatter, mi.sigma_s, channel, act_medium_scatter);
-
-                    // Log(Debug, "%s %s %s", mi.sigma_s, act_medium_scatter, p_over_f);
                     if (ek::any_or<true>(not_spectral))
                         update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_medium_scatter);
-                    Log(Debug, "%s %s %s", mi.sigma_s, act_medium_scatter, p_over_f);
+                        
+                    // Log(Debug, "%s %s %s", mi.sigma_s, act_medium_scatter, p_over_f);
 
                     PhaseFunctionContext phase_ctx(sampler);
                     auto phase = mi.medium->phase_function();
