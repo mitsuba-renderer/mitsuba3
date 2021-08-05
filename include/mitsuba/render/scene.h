@@ -261,7 +261,7 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
         if (is_valid())
             return shape->emitter(active);
         else
-            return nullptr;
+            return scene->environment();
     } else {
         Mask valid = is_valid();
         return ek::select(valid, shape->emitter(active && valid), scene->environment());
