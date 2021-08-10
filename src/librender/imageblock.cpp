@@ -31,16 +31,22 @@ MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() {
 }
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
-    size_t size = m_channel_count * ek::hprod(m_size + 2 * m_border_size);
-    m_data = ek::zero<DynamicBuffer<Float>>(size);
+    ScalarVector2i size = m_size + 2 * m_border_size;
+    size_t width = m_channel_count * ek::hprod(size);
+    size_t shape[3] = { (size_t) size.x(), (size_t) size.y(), m_channel_count };
+    m_data = ImageBuffer(ek::zero<DynamicBuffer<Float>>(width), 3, shape);
 }
 
-MTS_VARIANT void ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &size) {
-    if (size == m_size)
+MTS_VARIANT void
+ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &new_size) {
+    if (new_size == m_size)
         return;
-    m_size = size;
-    m_data = ek::empty<DynamicBuffer<Float>>(
-        m_channel_count * ek::hprod(size + 2 * m_border_size));
+    m_size = new_size;
+
+    ScalarVector2i size = m_size + 2 * m_border_size;
+    size_t width = m_channel_count * ek::hprod(size);
+    size_t shape[3] = { (size_t) size.x(), (size_t) size.y(), m_channel_count };
+    m_data = ImageBuffer(ek::empty<DynamicBuffer<Float>>(width), 3, shape);
 }
 
 MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
@@ -57,14 +63,14 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
 
     if constexpr (ek::is_jit_array_v<Float>) {
         // If target block is cleared and match size, directly copy data
-        if (m_data.is_literal() && m_data[0] == 0.f &&
+        if (m_data.array().is_literal() && m_data.array()[0] == 0.f &&
             m_size == block->size() && m_offset == block->offset() &&
             m_border_size == block->border_size()) {
-            m_data = block->data().copy();
+            m_data.array() = block->data().array().copy();
         } else {
             accumulate_2d<Float &, const Float &>(
-                block->data(), source_size,
-                data(), target_size,
+                block->data().array(), source_size,
+                m_data.array(), target_size,
                 ScalarVector2i(0), source_offset - target_offset,
                 source_size, channel_count()
             );
@@ -72,7 +78,7 @@ MTS_VARIANT void ImageBlock<Float, Spectrum>::put(const ImageBlock *block) {
     } else {
         accumulate_2d(
             block->data().data(), source_size,
-            data().data(), target_size,
+            m_data.data(), target_size,
             ScalarVector2i(0), source_offset - target_offset,
             source_size, channel_count()
         );
@@ -159,8 +165,8 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
                 enabled &= x <= hi.x();
                 ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
-                    ek::scatter_reduce(ReduceOp::Add, m_data, value[k] * weight,
-                                       offset + k, enabled);
+                    ek::scatter_reduce(ReduceOp::Add, m_data.array(),
+                                       value[k] * weight, offset + k, enabled);
             }
         }
     } else {
@@ -169,8 +175,8 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
         Mask enabled = active && ek::all(lo >= 0 && lo < size);
         ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
-            ek::scatter_reduce(ReduceOp::Add, m_data, value[k], offset + k,
-                               enabled);
+            ek::scatter_reduce(ReduceOp::Add, m_data.array(), value[k],
+                               offset + k, enabled);
     }
 
     return active;

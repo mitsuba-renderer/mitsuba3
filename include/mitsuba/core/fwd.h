@@ -82,9 +82,8 @@ template <typename Value,
 using DynamicBuffer =
     std::conditional_t<ek::is_dynamic_array_v<T>, T, ek::DynamicArray<T>>;
 
-// TODO use ek::TensorXf types instead
 template <typename Value>
-using ImageBuffer = DynamicBuffer<Value>;
+using ImageBuffer = ek::Tensor<DynamicBuffer<Value>>;
 
 //! @}
 // =============================================================

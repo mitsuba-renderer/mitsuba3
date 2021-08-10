@@ -6,6 +6,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/fwd.h>
 #include <enoki/dynamic.h>
+#include <enoki/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -186,10 +187,10 @@ public:
     int border_size() const { return m_border_size; }
 
     /// Return the underlying pixel buffer
-    DynamicBuffer<Float> &data() { return m_data; }
+    ImageBuffer &data() { return m_data; }
 
     /// Return the underlying pixel buffer (const version)
-    const DynamicBuffer<Float> &data() const { return m_data; }
+    const ImageBuffer &data() const { return m_data; }
 
     //! @}
     // =============================================================
@@ -205,7 +206,7 @@ protected:
     ScalarVector2i m_size;
     uint32_t m_channel_count;
     int m_border_size;
-    DynamicBuffer<Float> m_data;
+    ImageBuffer m_data;
     const ReconstructionFilter *m_filter;
     Float *m_weights_x, *m_weights_y;
     bool m_warn_negative;

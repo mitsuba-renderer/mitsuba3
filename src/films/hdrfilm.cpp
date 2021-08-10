@@ -217,7 +217,8 @@ public:
         if constexpr (ek::is_jit_array_v<Float>) {
             Float data = m_storage->data();
             size_t ch =  m_storage->channel_count();
-            size_t pixel_count = ek::hprod(m_storage->size());
+            ScalarVector2i size = m_storage->size();
+            size_t pixel_count = ek::hprod(size);
 
             bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
@@ -229,12 +230,12 @@ public:
             bool has_aovs = ch > 5;
 
             uint32_t img_ch = to_y ? 1 : 3;
-            uint32_t output_ch = ch - 5 + img_ch + (has_alpha ? 1 : 0);
+            uint32_t target_ch = ch - 5 + img_ch + (has_alpha ? 1 : 0);
 
-            UInt32 i = ek::arange<UInt32>(pixel_count * output_ch);
-            UInt32 i_channel = i % output_ch;
-            UInt32 weight_idx = (i / output_ch) * ch + 4;
-            UInt32 values_idx = (i / output_ch) * ch + i_channel;
+            UInt32 i = ek::arange<UInt32>(pixel_count * target_ch);
+            UInt32 i_channel = i % target_ch;
+            UInt32 weight_idx = (i / target_ch) * ch + 4;
+            UInt32 values_idx = (i / target_ch) * ch + i_channel;
 
             if (has_aovs) {
                 // Apply index offset for AOV channels
@@ -265,7 +266,7 @@ public:
                                       ek::gather<Float>(data, in_idx + 1),
                                       ek::gather<Float>(data, in_idx + 2));
 
-                UInt32 out_idx = ek::arange<UInt32>(pixel_count) * output_ch;
+                UInt32 out_idx = ek::arange<UInt32>(pixel_count) * target_ch;
                 if (to_y) {
                     ek::scatter(values, luminance(rgb), out_idx);
                 } else {
@@ -276,9 +277,15 @@ public:
                 }
             }
 
-            return (values / weight) & (weight > 0.f);
+            // Apply weight
+            values = (values / weight) & (weight > 0.f);
+
+            size_t shape[3] = { (size_t) size.x(), (size_t) size.y(), target_ch };
+            return ImageBuffer(values, 3, shape);
         } else {
             ref<Bitmap> source = bitmap();
+
+            // Convert to Float32 bitmap
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
                 channel_names.push_back(source->struct_()->operator[](i).name);
@@ -289,13 +296,19 @@ public:
                 source->channel_count(),
                 channel_names);
             source->convert(target);
-            size_t size = target->channel_count() * target->pixel_count();
-            return ek::load<ImageBuffer>(target->data(), size);
+
+            ScalarVector2i size = target->size();
+            size_t width = target->channel_count() * ek::hprod(size);
+            auto data = ek::load<DynamicBuffer<Float>>(target->data(), width);
+            size_t shape[3] = { (size_t) target->width(),
+                                (size_t) target->height(),
+                                target->channel_count() };
+            return ImageBuffer(data, 3, shape);
         }
     }
 
     ref<Bitmap> bitmap(bool raw = false) const override {
-        auto &&storage = ek::migrate(m_storage->data(), AllocType::Host);
+        auto &&storage = ek::migrate(m_storage->data().array(), AllocType::Host);
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
 
@@ -321,17 +334,17 @@ public:
 
         uint32_t img_ch = to_y ? 1 : 3;
         uint32_t aovs_channel = (has_aovs ? img_ch + (has_alpha ? 1 : 0) : 0);
-        uint32_t output_ch = m_storage->channel_count() - 5 + aovs_channel;
+        uint32_t target_ch = m_storage->channel_count() - 5 + aovs_channel;
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
             m_component_format, m_storage->size(),
-            has_aovs ? output_ch : 0);
+            has_aovs ? target_ch : 0);
 
         if (has_aovs) {
             source->struct_()->operator[](4).flags |= +Struct::Flags::Weight;
 
-            for (size_t i = 0; i < output_ch; ++i) {
+            for (size_t i = 0; i < target_ch; ++i) {
                 Struct::Field &dest_field = target->struct_()->operator[](i);
 
                 switch (i) {

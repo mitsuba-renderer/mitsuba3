@@ -149,10 +149,10 @@ class Optimizer:
 
         if key is None:
             self.lr_default = lr
-            self.lr_default_v = ek.opaque(ek.detached_t(Float), lr, size=1)
+            self.lr_default_v = ek.opaque(ek.detached_t(Float), lr, shape=1)
         else:
             self.lr[key] = lr
-            self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, size=1)
+            self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, shape=1)
 
     def set_grad_suspended(self, value):
         """Temporarily disable the generation of gradients."""
@@ -287,7 +287,7 @@ class Adam(Optimizer):
         for k, p in self.variables.items():
             self.t[k] += 1
             lr_scale = ek.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
-            lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, size=1)
+            lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, shape=1)
 
             lr_t = self.lr_v[k] * lr_scale
             g_p = ek.grad(p)
