@@ -33,7 +33,7 @@ MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() {
 MTS_VARIANT void ImageBlock<Float, Spectrum>::clear() {
     ScalarVector2i size = m_size + 2 * m_border_size;
     size_t width = m_channel_count * ek::hprod(size);
-    size_t shape[3] = { (size_t) size.x(), (size_t) size.y(), m_channel_count };
+    size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), m_channel_count };
     m_data = ImageBuffer(ek::zero<DynamicBuffer<Float>>(width), 3, shape);
 }
 
@@ -45,7 +45,7 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2i &new_size) {
 
     ScalarVector2i size = m_size + 2 * m_border_size;
     size_t width = m_channel_count * ek::hprod(size);
-    size_t shape[3] = { (size_t) size.x(), (size_t) size.y(), m_channel_count };
+    size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), m_channel_count };
     m_data = ImageBuffer(ek::empty<DynamicBuffer<Float>>(width), 3, shape);
 }
 

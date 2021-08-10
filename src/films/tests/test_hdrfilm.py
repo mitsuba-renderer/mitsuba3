@@ -160,6 +160,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
         'component_format': 'float32',
         'width': 3,
         'height': 5,
+        # 'rfilter': { 'type': 'box' }
     })
 
     res = film.size()
@@ -172,10 +173,11 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     film.prepare(['R', 'G', 'B', 'A', 'W'] + aovs_channels)
     film.put(block)
 
-    data = np.array(film.develop().numpy())
-    assert len(data) == res[0] * res[1] * (len(output_channels))
+    image = film.develop()
 
-    data_bitmap = Bitmap(data.reshape(res[1], res[0], -1),
+    assert ek.hprod(image.shape) == ek.hprod(res) * (len(output_channels))
+
+    data_bitmap = Bitmap(np.array(image.numpy()),
                          Bitmap.PixelFormat.MultiChannel,
                          output_channels)
 

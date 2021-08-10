@@ -8,7 +8,7 @@ import mitsuba
 
 
 def check_value(im, arr, atol=1e-9):
-    vals = np.array(im.data(), copy=False).reshape([im.height() + 2 * im.border_size(),
+    vals = np.array(im.data().array, copy=False).reshape([im.height() + 2 * im.border_size(),
                                                     im.width() + 2 * im.border_size(),
                                                     im.channel_count()])
     ref = np.empty(shape=vals.shape)

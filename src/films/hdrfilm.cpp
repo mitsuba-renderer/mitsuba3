@@ -280,7 +280,7 @@ public:
             // Apply weight
             values = (values / weight) & (weight > 0.f);
 
-            size_t shape[3] = { (size_t) size.x(), (size_t) size.y(), target_ch };
+            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(), target_ch };
             return ImageBuffer(values, 3, shape);
         } else {
             ref<Bitmap> source = bitmap();
@@ -300,8 +300,8 @@ public:
             ScalarVector2i size = target->size();
             size_t width = target->channel_count() * ek::hprod(size);
             auto data = ek::load<DynamicBuffer<Float>>(target->data(), width);
-            size_t shape[3] = { (size_t) target->width(),
-                                (size_t) target->height(),
+            size_t shape[3] = { (size_t) target->height(),
+                                (size_t) target->width(),
                                 target->channel_count() };
             return ImageBuffer(data, 3, shape);
         }
