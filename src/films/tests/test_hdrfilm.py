@@ -177,9 +177,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
 
     assert ek.hprod(image.shape) == ek.hprod(res) * (len(output_channels))
 
-    data_bitmap = Bitmap(np.array(image.numpy()),
-                         Bitmap.PixelFormat.MultiChannel,
-                         output_channels)
+    data_bitmap = Bitmap(image, Bitmap.PixelFormat.MultiChannel, output_channels)
 
     bitmap = film.bitmap()
 
