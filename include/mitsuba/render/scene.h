@@ -96,6 +96,59 @@ public:
     // =============================================================
 
     /**
+     * \brief Sample one emitter in the scene and rescale the random sample for reuse.
+     * If possible, it is sampled proportional to its radiance.
+     *
+     * \param sample
+     *    A uniformly distributed number in [0, 1).
+     *
+     * \return
+     *    The index of the chosen emitter along with the sampling weight (equal
+     *    to the inverse PDF), and the rescaled random sample for reusing.
+     */
+    std::tuple<UInt32, Float, Float>
+    sample_emitter(Float index_sample, Mask active = true) const;
+
+    /**
+     * \brief Importance sample a ray according to the emission profile
+     * defined by the emitters in the scene.
+     *
+     * This function combines both steps of choosing a ray origin on a light
+     * source and an outgoing ray direction.
+     * It does not return any auxiliary sampling information and is mainly
+     * meant to be used by unidirectional rendering techniques.
+     *
+     * Note that this function may use a different sampling strategy compared to
+     * the sequence of running \ref sample_emitter_position()
+     * and \ref Emitter::sample_direction(). The reason for this is that it may
+     * be possible to switch to a better technique when sampling both
+     * position and direction at the same time.
+     *
+     * \param time
+     *    The scene time associated with the ray to be sampled.
+     *
+     * \param sample1
+     *     A uniformly distributed 1D value that is used to sample the spectral
+     *     dimension of the emission profile.
+     *
+     * \param sample2
+     *    A uniformly distributed sample on the domain <tt>[0,1]^2</tt>.
+     *
+     * \param sample3
+     *    A uniformly distributed sample on the domain <tt>[0,1]^2</tt>.
+     *
+     * \return (ray, importance weight, emitter, radiance)
+     *    ray: sampled ray, starting from the surface of an emitter in the scene
+     *    importance weight: accounts for the difference between the profile and
+     *        the sampling density function actualy used.
+     *    emitter: pointer to the selected emitter.
+     *    radiance: emitted radiance along the sampled ray.
+     */
+    std::tuple<Ray3f, Spectrum, const EmitterPtr>
+    sample_emitter_ray(Float time, Float sample1, const Point2f &sample2,
+                       const Point2f &sample3, Mask active = true) const;
+
+    /**
      * \brief Direct illumination sampling routine
      *
      * Given an arbitrary reference point in the scene, this method samples a
@@ -124,6 +177,12 @@ public:
                              const Point2f &sample,
                              bool test_visibility = true,
                              Mask active = true) const;
+
+    /**
+     * \brief Evaluate the probability density of the \ref
+     * sample_emitter() technique given a sampled emitter index.
+     */
+    Float pdf_emitter(UInt32 index, Mask active = true) const;
 
     /**
      * \brief Evaluate the probability density of the  \ref
