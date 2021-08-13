@@ -127,7 +127,9 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
         Point2u lo = ek::max(ek::ceil2int <Point2u>(pos - filter_radius), 0),
                 hi = ek::min(ek::floor2int<Point2u>(pos + filter_radius), size - 1);
 
-        uint32_t n = ek::ceil2int<uint32_t>((m_filter->radius() - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
+        uint32_t n = ek::ceil2int<uint32_t>(
+            (filter_radius - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
+        Assert(n <= ek::ceil(2 * filter_radius) + 1);
 
         Point2f base = lo - pos;
         for (uint32_t i = 0; i < n; ++i) {
@@ -143,13 +145,13 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
         if (unlikely(m_normalize)) {
             Float wx(0), wy(0);
-            for (uint32_t i = 0; i <= n; ++i) {
+            for (uint32_t i = 0; i < n; ++i) {
                 wx += m_weights_x[i];
                 wy += m_weights_y[i];
             }
 
             Float factor = ek::rcp(wx * wy);
-            for (uint32_t i = 0; i <= n; ++i)
+            for (uint32_t i = 0; i < n; ++i)
                 m_weights_x[i] *= factor;
         }
 
