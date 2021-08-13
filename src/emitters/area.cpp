@@ -72,45 +72,22 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-
-        Float pdf = 1.f;
-
-        // 1. Two strategies to sample spatial component based on 'm_radiance'
-        if (!m_radiance->is_spatially_varying()) {
-            PositionSample3f ps = m_shape->sample_position(time, sample2, active);
-
-            // Radiance not spatially varying, use area-based sampling of shape
-            si = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
-            pdf = ps.pdf;
-        } else {
-            // Ipmortance sample texture
-            std::tie(si.uv, pdf) = m_radiance->sample_position(sample2, active);
-            active &= ek::neq(pdf, 0.f);
-
-            si = m_shape->eval_parameterization(Point2f(si.uv), +HitComputeFlags::All, active);
-            active &= si.is_valid();
-
-            pdf /= ek::norm(ek::cross(si.dp_du, si.dp_dv));
-        }
+        // 1. Sample spatial component
+        auto [ps, pos_weight] = sample_position(time, sample2, active);
 
         // 2. Sample directional component
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
 
-        Wavelength wavelength;
-        Spectrum spec_weight;
+        // 3. Sample spectral component
+        SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
+        auto [wavelength, wav_weight] =
+            sample_wavelengths(si, wavelength_sample, active);
 
-        if constexpr (is_spectral_v<Spectrum>) {
-            std::tie(wavelength, spec_weight) = m_radiance->sample_spectrum(
-                si, math::sample_shifted<Wavelength>(wavelength_sample), active);
-        } else {
-            wavelength = ek::zero<Wavelength>();
-            spec_weight = m_radiance->eval(si, active);
-            ENOKI_MARK_USED(wavelength_sample);
-        }
+        // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
+        Spectrum weight = 2.f * pos_weight * wav_weight * ek::Pi<ScalarFloat>;
 
-        return { Ray3f(si.p, si.to_world(local), time, wavelength),
-                 depolarizer<Spectrum>(spec_weight) * (ek::Pi<Float> / pdf) };
+        return { Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelength),
+                 depolarizer<Spectrum>(weight) & active };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -158,6 +135,42 @@ public:
 
         ds.emitter = this;
         return { ds, depolarizer<Spectrum>(spec) & active };
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float time, const Point2f &sample,
+                    Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+        Assert(m_shape, "Cannot sample from an area emitter without an associated Shape.");
+
+        // Two strategies to sample the spatial component based on 'm_radiance'
+        PositionSample3f ps;
+        if (!m_radiance->is_spatially_varying()) {
+            // Radiance not spatially varying, use area-based sampling of shape
+            ps = m_shape->sample_position(time, sample, active);
+        } else {
+            // Importance sample texture
+            auto [uv, pdf] = m_radiance->sample_position(sample, active);
+            active &= ek::neq(pdf, 0.f);
+
+            auto si = m_shape->eval_parameterization(uv, +HitComputeFlags::All, active);
+            active &= si.is_valid();
+            pdf /= ek::norm(ek::cross(si.dp_du, si.dp_dv));
+
+            ps = si;
+            ps.pdf = pdf;
+            ps.delta = false;
+        }
+
+        Float weight = ek::select(active & (ps.pdf > 0.f), ek::rcp(ps.pdf), Float(0.f));
+        return { ps, weight };
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        return m_radiance->sample_spectrum(
+            si, math::sample_shifted<Wavelength>(sample), active);
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,

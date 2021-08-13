@@ -63,17 +63,19 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
-            ek::zero<SurfaceInteraction3f>(),
-            math::sample_shifted<Wavelength>(wavelength_sample), active);
+        auto si = ek::zero<SurfaceInteraction3f>();
+        si.t    = 0.f;
+        si.p    = m_to_world.value().translation();
+        si.time = time;
+        auto [wavelengths, weight] =
+            sample_wavelengths(si, wavelength_sample, active);
 
-        spec_weight *= 4.f * ek::Pi<Float>;
+        weight *= 4.f * ek::Pi<Float>;
 
-        Ray3f ray(m_to_world.value() * Point3f(0.f),
-                  warp::square_to_uniform_sphere(dir_sample),
-                  time, wavelengths);
+        Ray3f ray(si.p, warp::square_to_uniform_sphere(dir_sample), time,
+                  wavelengths);
 
-        return { ray, depolarizer<Spectrum>(spec_weight) };
+        return { ray, depolarizer<Spectrum>(weight) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -107,6 +109,26 @@ public:
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
                         Mask) const override {
         return 0.f;
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float time, const Point2f & /*sample*/,
+                    Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+
+        PositionSample3f ps(
+            /* position */ m_to_world.value().translation(),
+            /* normal (invalid) */ ScalarVector3f(0.f),
+            /*uv*/ Point2f(0.5f), time, /*pdf*/ 1.f, /*delta*/ true
+        );
+        return { ps, Float(1.f) };
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        return m_intensity->sample_spectrum(
+            si, math::sample_shifted<Wavelength>(sample), active);
     }
 
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override {

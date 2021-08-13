@@ -102,49 +102,49 @@ public:
 
         m_sample_to_camera = m_camera_to_sample.inverse();
 
+        // Compute
+        ScalarPoint3f pmin(m_sample_to_camera * ScalarPoint3f(0.f, 0.f, 0.f)),
+                      pmax(m_sample_to_camera * ScalarPoint3f(1.f, 1.f, 0.f));
+        ScalarBoundingBox2f image_rect(ScalarPoint2f(pmin.x(), pmin.y()) / pmin.z());
+        image_rect.expand(ScalarPoint2f(pmax.x(), pmax.y()) / pmax.z());
+        m_sensor_area = image_rect.volume();
+
         m_flags = +EmitterFlags::DeltaPosition;
         ek::set_attr(this, "flags", m_flags);
     }
 
-    Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
-                        Mask) const override {
-        return 0.f;
-    }
-
-    Spectrum eval(const SurfaceInteraction3f & /*si*/,
-                  Mask /*active*/) const override {
-        return 0.f;
-    }
-
-    /// TODO: Completely untested, need to revist once the particle tracer is merged.
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
-                                          const Point2f & /* spatial_sample */,
+                                          const Point2f & /*spatial_sample*/,
                                           const Point2f & direction_sample,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        // 1. Sample spectrum
-        auto [wavelengths, weight] =
-            sample_wavelength<Float, Spectrum>(wavelength_sample);
 
-        // 2. Sample position on film
+        // 1. Sample position on film
         auto [uv, pdf] = m_irradiance->sample_position(direction_sample, active);
 
-        // 3. Query irradiance on film
+        // 2. Sample spectrum (weight includes irradiance eval)
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.uv = uv;
-        si.wavelengths = wavelengths;
-        weight *= m_irradiance->eval(si, active) * m_intensity->eval(si, active);
+        si.t                    = 0.f;
+        si.time                 = time;
+        si.p                    = m_to_world.value().translation();
+        si.uv                   = uv;
+        auto [wavelengths, weight] =
+            sample_wavelengths(si, wavelength_sample, active);
 
         // 4. Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera * Point3f(uv.x(), uv.y(), 0.f);
+        Vector3f near_dir = ek::normalize(near_p);
 
         // 5. Generate transformed ray
         Ray3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;
-        ray.o = m_to_world.value().translation();
-        ray.d = m_to_world.value() * Vector3f(ek::normalize(near_p));
+        ray.o = si.p;
+        ray.d = m_to_world.value() * near_dir;
+
+        // Scaling factor to match \ref sample_direction.
+        weight *= ek::Pi<ScalarFloat> * m_sensor_area;
 
         return { ray, depolarizer<Spectrum>(weight / pdf) & active };
     }
@@ -169,7 +169,6 @@ public:
 
         // 4. Prepare DirectionSample record for caller (MIS, etc.)
         DirectionSample3f ds;
-
         ds.p       = m_to_world.value().translation();
         ds.n       = m_to_world.value() * ScalarVector3f(0, 0, 1);
         ds.uv      = uv;
@@ -182,11 +181,50 @@ public:
         ds.dist = ek::sqrt(dist_squared);
         ds.d *= ek::rcp(ds.dist);
 
-        // Scale so that irradiance at z=1 is correct
-        spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) *
-                ek::sqr(ek::rcp(it_local.z())) / -ek::dot(ds.n, ds.d);
+        /* Scale so that irradiance at z=1 is correct.
+         * See the weight returned by \ref PerspectiveCamera::sample_direction
+         * and the comments in \ref PerspectiveCamera::importance.
+         * Note that:
+         *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
+         */
+        spec *= ek::Pi<Float> * m_intensity->eval(it_query, active) /
+                (ek::sqr(it_local.z()) * -ek::dot(ds.n, ds.d));
 
         return { ds, depolarizer<Spectrum>(spec & active) };
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float time, const Point2f & /*sample*/,
+                    Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+
+        Vector3f center_dir = m_to_world.value() * ScalarVector3f(0.f, 0.f, 1.f);
+        PositionSample3f ps(
+            /* position */ m_to_world.value().translation(), center_dir,
+            /*uv*/ Point2f(0.5f), time, /*pdf*/ 1.f, /*delta*/ true
+        );
+        return { ps, Float(1.f) };
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &_si, Float sample,
+                       Mask active) const override {
+        SurfaceInteraction3f si(_si);
+        auto [wav, weight] = m_irradiance->sample_spectrum(
+            si, math::sample_shifted<Wavelength>(sample), active);
+        si.wavelengths = wav;
+        weight *= m_intensity->eval(si, active);
+        return { wav, weight };
+    }
+
+    Float pdf_direction(const Interaction3f &, const DirectionSample3f &,
+                        Mask) const override {
+        return 0.f;
+    }
+
+    Spectrum eval(const SurfaceInteraction3f & /*si*/,
+                  Mask /*active*/) const override {
+        return 0.f;
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -217,6 +255,7 @@ protected:
     ScalarTransform4f m_camera_to_sample;
     ScalarTransform4f m_sample_to_camera;
     ScalarFloat m_x_fov;
+    ScalarFloat m_sensor_area;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Projector, Emitter)

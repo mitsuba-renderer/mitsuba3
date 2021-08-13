@@ -59,17 +59,23 @@ public:
             ek::make_opaque(m_to_world);
         }
 
-        m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
-        ek::set_attr(this, "flags", m_flags);
         m_irradiance = props.texture<Texture>("irradiance", Texture::D65(1.f));
         m_needs_sample_3 = false;
+
+        m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
+        ek::set_attr(this, "flags", m_flags);
     }
 
     void set_scene(const Scene *scene) override {
-        m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius =
-            ek::max(math::RayEpsilon<Float>,
-                m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
+        if (scene->bbox().valid()) {
+            m_bsphere = scene->bbox().bounding_sphere();
+            m_bsphere.radius =
+                ek::max(math::RayEpsilon<Float>,
+                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
+        } else {
+            m_bsphere.center = 0.f;
+            m_bsphere.radius = math::RayEpsilon<Float>;
+        }
     }
 
     Spectrum eval(const SurfaceInteraction3f & /*si*/,
@@ -83,23 +89,31 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        // 1. Sample spectrum
-        auto [wavelengths, weight] =
-            sample_wavelength<Float, Spectrum>(wavelength_sample);
+        // 1. Sample spatial component
+        Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample);
 
-        // 2. Sample spatial component
-        Point2f offset =
-            warp::square_to_uniform_disk_concentric(spatial_sample);
+        // 2. "Sample" directional component (fixed, no actual sampling required)
+        const auto trafo = m_to_world.value();
+        Vector3f d_global = trafo.transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+
         Vector3f perp_offset =
-            m_to_world.value().transform_affine(Vector3f(offset.x(), offset.y(), 0.f));
+            trafo.transform_affine(Vector3f{ offset.x(), offset.y(), 0.f });
+        Point3f origin = m_bsphere.center + (perp_offset - d_global) * m_bsphere.radius;
 
-        // 3. Set ray direction
-        Vector3f d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
+        // 3. Sample spectral component
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t    = 0.f;
+        si.time = time;
+        si.p    = origin;
+        si.uv   = spatial_sample;
+        auto [wavelengths, wav_weight] =
+            sample_wavelengths(si, wavelength_sample, active);
 
-        return { Ray3f(m_bsphere.center + (perp_offset - d) * m_bsphere.radius,
-                       d, time, wavelengths),
-                 depolarizer<Spectrum>(weight) *
-                     (ek::Pi<Float> * ek::sqr(m_bsphere.radius)) };
+        Spectrum weight =
+            wav_weight * ek::Pi<Float> * ek::sqr(m_bsphere.radius);
+
+        return { Ray3f(origin, d_global, time, wavelengths),
+                 depolarizer<Spectrum>(weight) };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -107,8 +121,10 @@ public:
                      Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
-        Float dist = 2.f * m_bsphere.radius;
+        Vector3f d = m_to_world.value().transform_affine(Vector3f{ 0.f, 0.f, 1.f });
+        // Needed when the reference point is on the sensor, which is not part of the bbox
+        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center));
+        Float dist = 2.f * radius;
 
         DirectionSample3f ds;
         ds.p      = it.p - d * dist;
@@ -134,6 +150,13 @@ public:
                         const DirectionSample3f & /*ds*/,
                         Mask /*active*/) const override {
         return 0.f;
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        return m_irradiance->sample_spectrum(
+            si, math::sample_shifted<Wavelength>(sample), active);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -164,5 +187,5 @@ protected:
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(DirectionalEmitter, Emitter)
-MTS_EXPORT_PLUGIN(DirectionalEmitter, "Distant emitter")
+MTS_EXPORT_PLUGIN(DirectionalEmitter, "Distant directional emitter")
 NAMESPACE_END(mitsuba)

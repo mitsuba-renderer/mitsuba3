@@ -130,9 +130,15 @@ public:
     }
 
     void set_scene(const Scene *scene) override {
-        m_bsphere = scene->bbox().bounding_sphere();
-        m_bsphere.radius = ek::max(math::RayEpsilon<Float>,
-                               m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
+        if (scene->bbox().valid()) {
+            m_bsphere = scene->bbox().bounding_sphere();
+            m_bsphere.radius =
+                ek::max(math::RayEpsilon<Float>,
+                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>) );
+        } else {
+            m_bsphere.center = 0.f;
+            m_bsphere.radius = math::RayEpsilon<Float>;
+        }
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -148,26 +154,65 @@ public:
         return depolarizer<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
     }
 
-    std::pair<Ray3f, Spectrum> sample_ray(Float /* time */, Float /* wavelength_sample */,
-                                          const Point2f & /* sample2 */,
-                                          const Point2f & /* sample3 */,
-                                          Mask /* active */) const override {
-        NotImplementedError("sample_ray");
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f &sample2,
+                                          const Point2f &sample3,
+                                          Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
+        // 1. Sample spatial component
+        Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
+
+        // 2. Sample directional component
+        auto [uv, pdf] = m_warp.sample(sample3, nullptr, active);
+        active &= pdf > 0.f;
+
+        Float theta = uv.y() * ek::Pi<ScalarFloat>;
+        Float phi   = uv.x() * ek::TwoPi<ScalarFloat>;
+
+        Vector3f d          = ek::sphdir(theta, phi);
+        d                   = Vector3f(d.y(), d.z(), -d.x());
+        Float inv_sin_theta = ek::safe_rsqrt(ek::sqr(d.x()) + ek::sqr(d.z()));
+        pdf *= inv_sin_theta * ek::InvTwoPi<ScalarFloat> * ek::InvPi<ScalarFloat>;
+
+        Vector3f d_global = m_to_world.value().transform_affine(d);
+
+        // Compute ray origin
+        Vector3f perpendicular_offset =
+            Frame3f(d).to_world(Vector3f(offset.x(), offset.y(), 0));
+        Point3f origin =
+            m_bsphere.center + (perpendicular_offset - d_global) * m_bsphere.radius;
+
+        // 3. Sample spectral component (weight accounts for radiance)
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t    = 0.f;
+        si.time = time;
+        si.p    = origin;
+        si.uv   = uv;
+        auto [wavelengths, wav_weight] = sample_wavelengths(si, wavelength_sample, active);
+
+        ScalarFloat r2 = ek::sqr(m_bsphere.radius);
+        Ray3f ray(origin, d_global, time, wavelengths);
+        Spectrum weight = ek::Pi<ScalarFloat> * r2 * wav_weight / pdf;
+
+        return std::make_pair(ray, weight & active);
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        auto [uv, pdf] = m_warp.sample(sample);
+        auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
 
         Float theta = uv.y() * ek::Pi<Float>,
-              phi = uv.x() * (2.f * ek::Pi<Float>);
+              phi = uv.x() * ek::TwoPi<ScalarFloat>;
 
         Vector3f d = ek::sphdir(theta, phi);
         d = Vector3f(d.y(), d.z(), -d.x());
 
-        Float dist = 2.f * m_bsphere.radius;
+        // Needed when the reference point is on the sensor, which is not part of the bbox
+        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center));
+        Float dist = 2.f * radius;
 
         Float inv_sin_theta =
             ek::safe_rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
@@ -175,24 +220,26 @@ public:
         d = m_to_world.value().transform_affine(d);
 
         DirectionSample3f ds;
-        ds.p      = it.p + d * dist;
-        ds.n      = -d;
-        ds.uv     = uv;
-        ds.time   = it.time;
-        ds.pdf = ek::select(pdf > 0.f, pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))), 0.f);
-        ds.delta  = false;
+        ds.p       = it.p + d * dist;
+        ds.n       = -d;
+        ds.uv      = uv;
+        ds.time    = it.time;
+        ds.pdf     = ek::select(
+            pdf > 0.f,
+            pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<ScalarFloat>))),
+            0.f
+        );
+        ds.delta   = false;
         ds.emitter = this;
-        ds.d      = d;
-        ds.dist   = dist;
+        ds.d       = d;
+        ds.dist    = dist;
 
-        return {
-            ds,
-            depolarizer<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf
-        };
+        auto weight =
+            depolarizer<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) / ds.pdf;
+        return { ds, weight & (ds.pdf > 0.f) };
     }
 
-    Float pdf_direction(const Interaction3f &/*it*/,
-                        const DirectionSample3f &ds,
+    Float pdf_direction(const Interaction3f & /*it*/, const DirectionSample3f &ds,
                         Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
@@ -206,6 +253,21 @@ public:
         Float inv_sin_theta =
             ek::safe_rsqrt(ek::max(ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
         return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si_, Float sample,
+                       Mask active) const override {
+        SurfaceInteraction3f si(si_);
+        // TODO: consider sampling directly from the envmap spectrum at location.
+        auto [wav, weight] = m_d65->sample_spectrum(
+            si, math::sample_shifted<Wavelength>(sample), active);
+        si.wavelengths = wav;
+        // `eval` already accounts for the D65 value
+        auto value = eval(si, active);
+        weight /= m_d65->eval(si, active);
+
+        return { wav, value * weight };
     }
 
     ScalarBoundingBox3f bbox() const override {
