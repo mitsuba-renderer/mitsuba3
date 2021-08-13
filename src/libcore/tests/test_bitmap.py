@@ -333,3 +333,25 @@ def test_construct_from_array(variants_all_rgb):
 
     assert ek.allclose(b_np, np.array(b1))
     assert ek.allclose(b_np, np.array(b2))
+
+
+def check_resample():
+    """Resampling a Bitmap should work even in non-scalar and non-RGB variants."""
+    from mitsuba.core import Bitmap, FilterBoundaryCondition
+
+    b = Bitmap(find_resource('resources/data/tests/bitmap/XYZ_YC.exr'))
+
+    b1 = b.resample([4, 6])
+    assert b1.width() == 4 and b1.height() == 6
+
+    b2 = b.resample([6, 7], None, (FilterBoundaryCondition.Zero, FilterBoundaryCondition.Zero), (-1, 1))
+    assert b2.width() == 6 and b2.height() == 7
+
+def test_resample_scalar_rgb(variant_scalar_rgb):
+    check_resample()
+def test_resample_scalar_spectral(variant_scalar_spectral):
+    check_resample()
+def test_resample_cuda_rgb(variant_cuda_rgb):
+    check_resample()
+def test_resample_llvm_rgb(variant_llvm_rgb):
+    check_resample()

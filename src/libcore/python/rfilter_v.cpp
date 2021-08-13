@@ -1,17 +1,28 @@
+#include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/python/python.h>
 
+template <typename ReconstructionFilter>
+void bind_rfilter(py::module &m, const char *name) {
+    MTS_PY_CHECK_ALIAS(ReconstructionFilter, name) {
+        py::class_<ReconstructionFilter, Object, ref<ReconstructionFilter>>(
+            m, name, D(ReconstructionFilter))
+            .def("border_size", &ReconstructionFilter::border_size,
+                 D(ReconstructionFilter, border_size))
+            .def("radius", &ReconstructionFilter::radius,
+                 D(ReconstructionFilter, radius))
+            .def("eval", &ReconstructionFilter::eval,
+                 D(ReconstructionFilter, eval), "x"_a, "active"_a = true)
+            .def("eval_discretized", &ReconstructionFilter::eval_discretized,
+                 D(ReconstructionFilter, eval_discretized), "x"_a,
+                 "active"_a = true);
+    }
+}
+
 MTS_PY_EXPORT(rfilter) {
     MTS_PY_IMPORT_TYPES(ReconstructionFilter)
+    using BitmapReconstructionFilter = Bitmap::ReconstructionFilter;
 
-    MTS_PY_CLASS(ReconstructionFilter, Object)
-        .def_method(ReconstructionFilter, border_size)
-        .def_method(ReconstructionFilter, radius)
-        .def("eval",
-            &ReconstructionFilter::eval,
-            D(ReconstructionFilter, eval), "x"_a, "active"_a = true)
-        .def("eval_discretized",
-            &ReconstructionFilter::eval_discretized,
-            D(ReconstructionFilter, eval_discretized), "x"_a, "active"_a = true)
-        ;
+    bind_rfilter<ReconstructionFilter>(m, "ReconstructionFilter");
+    bind_rfilter<BitmapReconstructionFilter>(m, "BitmapReconstructionFilter");
 }
