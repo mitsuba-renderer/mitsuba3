@@ -164,13 +164,10 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Handle null and real scatter events
             if self.handle_null_scattering:
-                null_scatter = sampler.next_1d(active_medium) >= index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel)
-                act_null_scatter = null_scatter & active_medium
+                scatter_prob = index_spectrum(mi.sigma_t, channel) / index_spectrum(mi.combined_extinction, channel)
+                act_null_scatter = (sampler.next_1d(active_medium) >= scatter_prob) & active_medium
                 act_medium_scatter = ~act_null_scatter & active_medium
-                r = index_spectrum(mi.sigma_t / mi.combined_extinction, channel)
-                event_pdf = ek.select(active_medium, ek.select(null_scatter, 1 - r, r), 0.0)
-                weight[active_medium] = weight / ek.detach(event_pdf)
-                weight[act_null_scatter] = weight * mi.sigma_n
+                weight[act_null_scatter] = weight * mi.sigma_n / ek.detach(1 - scatter_prob)
             else:
                 act_medium_scatter = active_medium
 
@@ -184,7 +181,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                 ray.o[act_null_scatter] = ek.detach(mi.p)
                 si.t[act_null_scatter] = si.t - ek.detach(mi.t)
 
-            weight[act_medium_scatter] = weight * mi.sigma_s * index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel)
+            weight[act_medium_scatter] = weight * mi.sigma_s * ek.detach(index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel))
             throughput[active_medium] = throughput * ek.detach(weight)
 
             mi = ek.detach(mi)
