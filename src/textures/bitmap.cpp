@@ -584,6 +584,25 @@ public:
         }
     }
 
+    std::pair<Wavelength, UnpolarizedSpectrum>
+    sample_spectrum(const SurfaceInteraction3f &_si, const Wavelength &sample,
+                    Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::TextureSample, active);
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            // TODO: since the position is given, we could choose wavs better
+            SurfaceInteraction3f si(_si);
+            si.wavelengths = MTS_WAVELENGTH_MIN +
+                             (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample;
+            return { si.wavelengths, eval(si, active) * (MTS_WAVELENGTH_MAX -
+                                                         MTS_WAVELENGTH_MIN) };
+        } else {
+            ENOKI_MARK_USED(sample);
+            UnpolarizedSpectrum value = eval(_si, active);
+            return { ek::empty<Wavelength>(), value };
+        }
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
         callback->put_parameter("transform", m_transform);
