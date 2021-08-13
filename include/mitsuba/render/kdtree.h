@@ -2,6 +2,8 @@
 
 #include <unordered_set>
 #include <atomic>
+
+#include <enoki-thread/thread.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/logger.h>

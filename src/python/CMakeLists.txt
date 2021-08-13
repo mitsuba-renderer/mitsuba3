@@ -82,11 +82,13 @@ set_target_properties(copy-python PROPERTIES FOLDER python)
 #   docstring target
 # ----------------------------------------------------------
 
-
 if (UNIX)
   include_directories(
     ${ASMJIT_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/nanogui/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/ext/enoki-jit/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/enoki/ext/enoki-jit/ext/enoki-thread/include
   )
 
   get_filename_component(MKDOC_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../include/mitsuba ABSOLUTE)
