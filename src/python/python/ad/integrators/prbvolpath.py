@@ -20,8 +20,6 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         self.max_depth = props.long_('max_depth', 4)
 
         self.hide_emitters = props.bool_('hide_emitters', False)
-        self.nee_handle_homogeneous = False
-        self.handle_null_scattering = False
 
         self.use_nee = False
         self.nee_handle_homogeneous = False
@@ -37,6 +35,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                     self.nee_handle_homogeneous = self.nee_handle_homogeneous or medium.is_homogeneous()
                     self.handle_null_scattering = self.handle_null_scattering or (not medium.is_homogeneous())
         self.is_prepared = True
+        # By default enable always NEE in case there are surfaces
         self.use_nee = True
 
     def render(self: mitsuba.render.SamplingIntegrator,
@@ -243,7 +242,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                 ref_interaction[act_medium_scatter] = mi
                 ref_interaction[active_surface] = si
                 nee_sampler = sampler if is_primal else sampler.clone()
-                emitted, ds = self.sample_emitter(ref_interaction, scene, nee_sampler, medium, channel, active_e)
+                emitted, ds = self.sample_emitter(ref_interaction, scene, sampler, medium, channel, active_e)
                 # Query the BSDF for that emitter-sampled direction
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, si.to_local(ds.d), active_e_surface)
                 phase_val = phase.eval(phase_ctx, mi, ds.d, active_e_medium)
@@ -254,7 +253,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                 result[active_e] = result + ek.detach(contrib if is_primal else -contrib)
 
                 if not is_primal:
-                    self.sample_emitter(ref_interaction, scene, sampler,
+                    self.sample_emitter(ref_interaction, scene, nee_sampler,
                         medium, channel, active_e, adj_emitted=contrib, grad=grad)
                     if ek.grad_enabled(nee_weight) or ek.grad_enabled(emitted):
                         ek.backward(grad * contrib)
