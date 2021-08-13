@@ -106,16 +106,16 @@ MTS_PY_EXPORT(Integrator) {
             },
             D(Integrator, render), "scene"_a, "seed"_a, "sensor_index"_a = 0,
             "develop_film"_a = true, "spp"_a = 0)
-        .def_method(Integrator, cancel);
+        .def_method(Integrator, cancel)
+        .def_method(Integrator, should_stop)
+        .def_method(Integrator, aov_names);
 
-    auto integrator =
+    auto sampling_integrator =
         py::class_<SamplingIntegrator, PySamplingIntegrator, Integrator,
                     ref<SamplingIntegrator>>(m, "SamplingIntegrator", D(SamplingIntegrator))
-            .def(py::init<const Properties&>())
-            .def_method(SamplingIntegrator, aov_names)
-            .def_method(SamplingIntegrator, should_stop);
+            .def(py::init<const Properties&>());
 
-    integrator.def(
+    sampling_integrator.def(
         "sample",
         [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
            const RayDifferential3f &ray, const Medium *medium, Mask active) {

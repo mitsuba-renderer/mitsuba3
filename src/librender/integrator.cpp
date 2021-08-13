@@ -1,13 +1,12 @@
-#include <thread>
 #include <mutex>
 
 #include <enoki/morton.h>
+#include <mitsuba/core/fwd.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/core/progress.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/util.h>
-#include <mitsuba/core/warp.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
@@ -15,9 +14,26 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/spiral.h>
 #include <enoki-thread/thread.h>
-#include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
+
+// -----------------------------------------------------------------------------
+
+MTS_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
+    : m_stop(false) {
+    m_timeout = props.float_("timeout", -1.f);
+
+    /// Disable direct visibility of emitters if needed
+    m_hide_emitters = props.bool_("hide_emitters", false);
+}
+
+MTS_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
+    return { };
+}
+
+MTS_VARIANT void Integrator<Float, Spectrum>::cancel() {
+    m_stop = true;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -33,21 +49,9 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Proper
     }
 
     m_samples_per_pass = (uint32_t) props.size_("samples_per_pass", (size_t) -1);
-    m_timeout = props.float_("timeout", -1.f);
-
-    /// Disable direct visibility of emitters if needed
-    m_hide_emitters = props.bool_("hide_emitters", false);
 }
 
 MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
-
-MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::cancel() {
-    m_stop = true;
-}
-
-MTS_VARIANT std::vector<std::string> SamplingIntegrator<Float, Spectrum>::aov_names() const {
-    return { };
-}
 
 MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
@@ -73,7 +77,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     size_t n_passes = (total_spp + samples_per_pass - 1) / samples_per_pass;
 
     std::vector<std::string> channels = aov_names();
-
     // Insert default channels and set up the film
     for (size_t i = 0; i < 5; ++i)
         channels.insert(channels.begin() + i, std::string(1, "RGBAW"[i]));
@@ -362,6 +365,8 @@ MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pr
 }
 
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
+
+// -----------------------------------------------------------------------------
 
 MTS_IMPLEMENT_CLASS_VARIANT(Integrator, Object, "integrator")
 MTS_IMPLEMENT_CLASS_VARIANT(SamplingIntegrator, Integrator)
