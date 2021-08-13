@@ -25,6 +25,7 @@ MTS_PY_EXPORT(ImageBlock) {
                     throw std::runtime_error("Incompatible channel count!");
                 ib.put(pos, data.data(), mask);
             }, "pos"_a, "data"_a, "active"_a = true)
+        .def_method(ImageBlock, overwrite_channel, "channel"_a, "value"_a)
         .def_method(ImageBlock, clear)
         .def_method(ImageBlock, set_offset, "offset"_a)
         .def_method(ImageBlock, offset)
