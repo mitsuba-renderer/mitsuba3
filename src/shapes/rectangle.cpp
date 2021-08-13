@@ -133,6 +133,22 @@ public:
         return m_inv_surface_area;
     }
 
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t /*hit_flags*/,
+                                               Mask /*active*/) const override {
+        auto si = ek::zero<SurfaceInteraction3f>();
+        si.t    = 0.f;  // Mark interaction as valid
+        si.p    = m_to_world.value().transform_affine(
+            Point3f(uv.x() * 2.f - 1.f, uv.y() * 2.f - 1.f, 0.f));
+        si.n        = m_frame.n;
+        si.shape    = this;
+        si.uv       = uv;
+        si.sh_frame = m_frame;
+        si.dp_du    = m_frame.s;
+        si.dp_dv    = m_frame.t;
+        return si;
+    }
+
     //! @}
     // =============================================================
 
