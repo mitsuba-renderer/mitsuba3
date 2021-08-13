@@ -111,7 +111,7 @@ public:
      *    A reference position somewhere within the scene.
      *
      * \param sample
-     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>
+     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>.
      *
      * \return
      *     A \ref DirectionSample instance describing the generated sample
@@ -121,9 +121,6 @@ public:
     sample_direction(const Interaction3f &ref,
                      const Point2f &sample,
                      Mask active = true) const;
-
-    //! @}
-    // =============================================================
 
     /**
      * \brief Evaluate the probability density of the \a direct sampling
@@ -136,6 +133,80 @@ public:
     virtual Float pdf_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds,
                                 Mask active = true) const;
+
+    /**
+     * \brief Importance sample the spatial component of the
+     * emission or importance profile of the endpoint.
+     *
+     * The default implementation throws an exception.
+     *
+     * \param time
+     *    The scene time associated with the position to be sampled.
+     *
+     * \param sample
+     *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>.
+     *
+     * \return
+     *     A \ref PositionSample instance describing the generated sample
+     *     along with an importance weight.
+     */
+    virtual std::pair<PositionSample3f, Float>
+    sample_position(Float time, const Point2f &sample,
+                    Mask active = true) const;
+
+    /**
+     * \brief Evaluate the probability density of the position sampling
+     * method implemented by \ref sample_position().
+     *
+     * In simple cases, this will be the reciprocal of the endpoint's
+     * surface area.
+     *
+     * \param ps
+     *    The sampled position record.
+     * \return
+     *    The corresponding sampling density.
+     */
+    virtual Float pdf_position(const PositionSample3f &ps, Mask active = true) const;
+
+    /**
+     * \brief Importance sample a set of wavelengths proportional to the
+     * sensitivity/emission spectrum.
+     *
+     * Any discrepancies between ideal and actual sampled profile are absorbed
+     * into a spectral importance weight that is returned along with the wavelengths.
+     *
+     * In RGB and monochromatic modes, since no wavelengths need to be sampled,
+     * this simply returns the value of the spectrum (pdf = 1).
+     *
+     * \param si
+     *     Surface interaction, used to condition on the spatial dimensions
+     *     in case of a spatially-varying spectrum. In that case, at least
+     *     the `uv` field must be correctly filled.
+     * \param sample
+     *     A uniformly distributed 1D value that is used to sample the spectral
+     *     dimension of the emission profile.
+     *
+     * \return
+     *    The set of sampled wavelengths and (potentially spectrally varying)
+     *    importance weights. The latter account for the difference between the
+     *    profile and the actual used sampling density function.
+     *    In the case of emitters, this will include the emitted radiance.
+     */
+    virtual std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active = true) const;
+
+    /**
+     * \brief Evaluate the probability density of the wavelength sampling
+     * method implemented by \ref sample_wavelengths().
+     *
+     * \param wavelengths
+     *    The sampled wavelengths.
+     * \return
+     *    The corresponding sampling density (for each wavelength).
+     */
+    virtual Spectrum pdf_wavelengths(const Spectrum &wavelengths,
+                                     Mask active = true) const;
 
     //! @}
     // =============================================================
@@ -234,6 +305,7 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
+    ENOKI_VCALL_REGISTER(Float, mitsuba::Endpoint)
     MTS_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);
