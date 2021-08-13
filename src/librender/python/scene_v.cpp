@@ -2,8 +2,10 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scatteringintegrator.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
+
 #include <mitsuba/python/python.h>
 
 #if !defined(MTS_ENABLE_EMBREE)
@@ -130,6 +132,8 @@ MTS_PY_EXPORT(Scene) {
                 if (auto tmp = dynamic_cast<MonteCarloIntegrator *>(o); tmp)
                     return py::cast(tmp);
                 if (auto tmp = dynamic_cast<SamplingIntegrator *>(o); tmp)
+                    return py::cast(tmp);
+                if (auto tmp = dynamic_cast<ScatteringIntegrator *>(o); tmp)
                     return py::cast(tmp);
                 return py::cast(o);
             },
