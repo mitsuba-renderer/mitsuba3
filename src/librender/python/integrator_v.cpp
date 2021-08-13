@@ -1,6 +1,8 @@
-#include <mitsuba/render/integrator.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/thread.h>
+#include <mitsuba/render/integrator.h>
+#include <mitsuba/render/scatteringintegrator.h>
+
 #include <mitsuba/python/python.h>
 
 #if defined(__APPLE__) || defined(__linux__)
@@ -130,4 +132,8 @@ MTS_PY_EXPORT(Integrator) {
     MTS_PY_REGISTER_OBJECT("register_integrator", Integrator)
 
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
+
+    MTS_PY_CLASS(ScatteringIntegrator, Integrator)
+        .def_method(ScatteringIntegrator, sample, "scene"_a, "sensor"_a,
+                    "sampler"_a, "block"_a, "active"_a = true);
 }

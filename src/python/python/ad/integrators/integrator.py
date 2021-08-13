@@ -84,12 +84,14 @@ def sample_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
     """
 
     raise NotImplementedError(
-        "SamplingIntegrator.sample_adjoint is not implemented!")
+        "Integrator.sample_adjoint is not implemented!")
 
 
-# Bind adjoint methods to the SamplingIntegrator class
+# Bind adjoint methods to the integrator classes
 mitsuba.render.SamplingIntegrator.render_backward = render_backward_impl
 mitsuba.render.SamplingIntegrator.sample_adjoint = sample_adjoint_impl
+mitsuba.render.ScatteringIntegrator.render_backward = render_backward_impl
+mitsuba.render.ScatteringIntegrator.sample_adjoint = sample_adjoint_impl
 
 
 # -------------------------------------------------------------

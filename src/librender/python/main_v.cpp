@@ -1,14 +1,16 @@
-#include <mitsuba/render/scene.h>
-#include <mitsuba/render/sensor.h>
+#include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/film.h>
+#include <mitsuba/render/integrator.h>
+#include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/phase.h>
+#include <mitsuba/render/scatteringintegrator.h>
+#include <mitsuba/render/scene.h>
+#include <mitsuba/render/sensor.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
-#include <mitsuba/render/bsdf.h>
-#include <mitsuba/render/medium.h>
-#include <mitsuba/render/phase.h>
-#include <mitsuba/render/integrator.h>
+
 #include <mitsuba/python/python.h>
 
 #define MODULE_NAME MTS_MODULE_NAME(render, MTS_VARIANT_NAME)
@@ -40,6 +42,7 @@ static py::object caster(Object *o) {
 
     PY_TRY_CAST(MonteCarloIntegrator);
     PY_TRY_CAST(SamplingIntegrator);
+    PY_TRY_CAST(ScatteringIntegrator);
     PY_TRY_CAST(Integrator);
 
     PY_TRY_CAST(Sampler);
