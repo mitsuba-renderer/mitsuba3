@@ -327,9 +327,10 @@ resample(Bitmap *target, const Bitmap *source,
     }
 }
 
-void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
-                      const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
-                      const std::pair<Float, Float> &clamp, Bitmap *temp) const {
+void Bitmap::resample(
+    Bitmap *target, const ReconstructionFilter *rfilter,
+    const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
+    const std::pair<ScalarFloat, ScalarFloat> &clamp, Bitmap *temp) const {
     if (pixel_format() != target->pixel_format() ||
         component_format() != target->component_format() ||
         channel_count() != target->channel_count())
@@ -344,7 +345,7 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
     switch (m_component_format) {
         case Struct::Type::Float16:
             mitsuba::resample<ek::half, false>(target, this, rfilter, bc,
-                                                  clamp, temp);
+                                               clamp, temp);
             break;
 
         case Struct::Type::Float32:
@@ -362,9 +363,10 @@ void Bitmap::resample(Bitmap *target, const ReconstructionFilter *rfilter,
     }
 }
 
-ref<Bitmap> Bitmap::resample(const Vector2u &res, const ReconstructionFilter *rfilter,
-                             const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
-                             const std::pair<Float, Float> &bound) const {
+ref<Bitmap> Bitmap::resample(
+    const ScalarVector2u &res, const ReconstructionFilter *rfilter,
+    const std::pair<FilterBoundaryCondition, FilterBoundaryCondition> &bc,
+    const std::pair<ScalarFloat, ScalarFloat> &bound) const {
     ref<Bitmap> result =
         new Bitmap(m_pixel_format, m_component_format, res, channel_count());
     result->m_struct = m_struct;
