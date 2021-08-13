@@ -139,6 +139,9 @@ public:
      */
     Mask put(const Point2f &pos, const Float *value, Mask active = true);
 
+    /// Overwrite entire channel with the given value.
+    void overwrite_channel(size_t channel, const Float &value);
+
     /// Clear everything to zero.
     void clear();
 

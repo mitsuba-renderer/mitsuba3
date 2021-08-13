@@ -213,6 +213,20 @@ public:
         m_storage->put(block);
     }
 
+    void overwrite_channel(const std::string &channel_name,
+                           const Float &value) override {
+        auto it = std::find(m_channels.begin(), m_channels.end(), channel_name);
+        if (it == m_channels.end())
+            Throw("Channel \"%s\" not found in channels: %s", channel_name,
+                  m_channels);
+
+        size_t idx = it - m_channels.begin();
+        /* locked */ {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_storage->overwrite_channel(idx, value);
+        }
+    }
+
     TensorXf develop(bool raw = false) const override {
         if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);

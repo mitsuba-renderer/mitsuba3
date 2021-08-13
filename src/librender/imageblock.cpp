@@ -183,6 +183,17 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
     return active;
 }
 
+MTS_VARIANT void
+ImageBlock<Float, Spectrum>::overwrite_channel(size_t channel, const Float &value) {
+    // Include the border on each side
+    size_t pixel_count = ek::hprod(m_size + 2 * m_border_size);
+    Assert(ek::width(value) == 1 || ek::width(value) == pixel_count);
+
+    auto indices =
+        m_channel_count * ek::arange<DynamicBuffer<UInt64>>(pixel_count) + channel;
+    ek::scatter(m_data.array(), DynamicBuffer<Float>(value), indices);
+}
+
 MTS_VARIANT std::string ImageBlock<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << "ImageBlock[" << std::endl
