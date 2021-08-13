@@ -129,9 +129,9 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     it = ek.zero(SurfaceInteraction3f)
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
     it.wavelengths = wav
-    spec = spectrum.eval(it)
-    spec = ek.select(angle <= beam_width_rad, spec, spec *
-                     ((cutoff_angle_rad - angle) * inv_transition_width))
+    spec = spec * ek.select(angle <= beam_width_rad,
+                            1,
+                            ((cutoff_angle_rad - angle) * inv_transition_width))
     spec = ek.select(angle <= cutoff_angle_rad, spec, 0)
 
     assert ek.allclose(

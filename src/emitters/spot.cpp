@@ -95,24 +95,29 @@ public:
         m_uv_factor = ek::tan(m_cutoff_angle);
     }
 
-    UnpolarizedSpectrum falloff_curve(const Vector3f &d, Wavelength wavelengths, Mask active) const {
-        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.wavelengths = wavelengths;
-        UnpolarizedSpectrum result = m_intensity->eval(si, active);
+    /**
+     * Computes the UV coordinates corresponding to a direction in the local frame.
+     */
+    Point2f direction_to_uv(const Vector3f &local_dir) const {
+        return Point2f(
+            0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
+            0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor));
+    }
 
+    /**
+     * Returns a factor in [0, 1] accounting for the falloff profile of
+     * the spot emitter in direction `d`.
+     *
+     * Does not include the emitted radiance in that direction.
+     */
+    Float falloff_curve(const Vector3f &d, Mask /*active*/) const {
         Vector3f local_dir = ek::normalize(d);
-        Float cos_theta = local_dir.z();
+        Float cos_theta    = local_dir.z();
+        Float beam_res = ek::select(
+            cos_theta >= m_cos_beam_width, 1.f,
+            (m_cutoff_angle - ek::acos(cos_theta)) * m_inv_transition_width);
 
-        if (m_texture->is_spatially_varying()) {
-            si.uv = Point2f(0.5f + 0.5f * local_dir.x() / (local_dir.z() * m_uv_factor),
-                            0.5f + 0.5f * local_dir.y() / (local_dir.z() * m_uv_factor));
-            result *= m_texture->eval(si, active);
-        }
-
-        UnpolarizedSpectrum beam_res = ek::select(cos_theta >= m_cos_beam_width, result,
-                               result * ((m_cutoff_angle - ek::acos(cos_theta)) * m_inv_transition_width));
-
-        return beam_res & (cos_theta > m_cos_cutoff_angle);
+        return ek::select(cos_theta > m_cos_cutoff_angle, beam_res, 0.f);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -122,19 +127,21 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample directional component
-        Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float)m_cos_cutoff_angle);
-        Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float)m_cos_cutoff_angle);
+        Vector3f local_dir = warp::square_to_uniform_cone(spatial_sample, (Float) m_cos_cutoff_angle);
+        Float pdf_dir = warp::square_to_uniform_cone_pdf(local_dir, (Float) m_cos_cutoff_angle);
 
         // 2. Sample spectrum
-        auto [wavelengths, spec_weight] = m_intensity->sample_spectrum(
-            ek::zero<SurfaceInteraction3f>(),
-            math::sample_shifted<Wavelength>(wavelength_sample), active);
+        auto si = ek::zero<SurfaceInteraction3f>();
+        si.time = time;
+        si.p    = m_to_world.value().translation();
+        si.uv   = direction_to_uv(local_dir);
+        auto [wavelengths, spec_weight] =
+            sample_wavelengths(si, wavelength_sample, active);
 
-        UnpolarizedSpectrum falloff_spec = falloff_curve(local_dir, wavelengths, active);
+        Float falloff = falloff_curve(local_dir, active);
 
-        return { Ray3f(m_to_world.value().translation(),
-                       m_to_world.value() * local_dir, time, wavelengths),
-                 depolarizer<Spectrum>(falloff_spec / pdf_dir) };
+        return { Ray3f(si.p, m_to_world.value() * local_dir, time, wavelengths),
+                 depolarizer<Spectrum>(spec_weight * falloff / pdf_dir) };
     }
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
@@ -155,13 +162,61 @@ public:
         Float inv_dist = ek::rcp(ds.dist);
         ds.d        *= inv_dist;
         Vector3f local_d = m_to_world.value().inverse() * -ds.d;
-        UnpolarizedSpectrum falloff_spec = falloff_curve(local_d, it.wavelengths, active);
 
-        return { ds, depolarizer<Spectrum>(falloff_spec * (inv_dist * inv_dist)) };
+        // Evaluate emitted radiance & falloff profile
+        Float falloff = falloff_curve(local_d, active);
+        active &= falloff > 0.f;  // Avoid invalid texture lookups
+
+        SurfaceInteraction3f si      = ek::zero<SurfaceInteraction3f>();
+        si.t                         = 0.f;
+        si.time                      = it.time;
+        si.wavelengths               = it.wavelengths;
+        si.p                         = ds.p;
+        UnpolarizedSpectrum radiance = m_intensity->eval(si, active);
+        if (m_texture->is_spatially_varying()) {
+            si.uv = direction_to_uv(local_d);
+            radiance *= m_texture->eval(si, active);
+        }
+
+        return { ds, depolarizer<Spectrum>(radiance & active) * (falloff * ek::sqr(inv_dist)) };
     }
 
     Float pdf_direction(const Interaction3f &, const DirectionSample3f &, Mask) const override {
         return 0.f;
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float time, const Point2f & /*sample*/,
+                    Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
+
+        Vector3f center_dir = m_to_world.value() * ScalarVector3f(0.f, 0.f, 1.f);
+        PositionSample3f ps(
+            /* position */ m_to_world.value().translation(), center_dir,
+            /*uv*/ Point2f(0.5f), time, /*pdf*/ 1.f, /*delta*/ true
+        );
+        return { ps, Float(1.f) };
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        Wavelength wav;
+        Spectrum weight;
+
+        if (m_texture->is_spatially_varying()) {
+            std::tie(wav, weight) = m_texture->sample_spectrum(
+                si, math::sample_shifted<Wavelength>(sample), active);
+
+            SurfaceInteraction3f si2 = si;
+            si2.wavelengths = wav;
+            weight *= m_intensity->eval(si2, active);
+        } else {
+            std::tie(wav, weight) = m_intensity->sample_spectrum(
+                si, math::sample_shifted<Wavelength>(sample), active);
+        }
+
+        return { wav, weight };
     }
 
     Spectrum eval(const SurfaceInteraction3f &, Mask) const override { return 0.f; }
