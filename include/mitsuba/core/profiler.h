@@ -31,6 +31,7 @@ enum class ProfilerPhase : int {
     InitAccel,                  /* Acceleration data structure creation */
     Render,                     /* Integrator::render() */
     SamplingIntegratorSample,   /* SamplingIntegrator::sample() */
+    SampleEmitter,              /* Scene::sample_emitter() */
     SampleEmitterRay,           /* Scene::sample_emitter_ray() */
     SampleEmitterDirection,     /* Scene::sample_emitter_direction() */
     RayTest,                    /* Scene::ray_test() */
@@ -62,6 +63,7 @@ constexpr const char
         "Acceleration data structure creation",
         "Integrator::render()",
         "SamplingIntegrator::sample()",
+        "Scene::sample_emitter()",
         "Scene::sample_emitter_ray()",
         "Scene::sample_emitter_direction()",
         "Scene::ray_test()",
