@@ -61,11 +61,12 @@ constexpr auto has_flag(UInt32 flags, EmitterFlags f)            { return ek::ne
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Emitter : public Endpoint<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Endpoint)
+    MTS_IMPORT_BASE(Endpoint, m_shape)
 
     /// Is this an environment map light emitter?
     bool is_environment() const {
-        return has_flag(m_flags, EmitterFlags::Infinite) && !has_flag(m_flags, EmitterFlags::Delta);
+        return has_flag(m_flags, EmitterFlags::Infinite) &&
+               !has_flag(m_flags, EmitterFlags::Delta);
     }
 
     /// Flags for all components combined.
@@ -97,8 +98,12 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Emitter)
     ENOKI_VCALL_METHOD(eval)
     ENOKI_VCALL_METHOD(sample_direction)
     ENOKI_VCALL_METHOD(pdf_direction)
+    ENOKI_VCALL_METHOD(sample_position)
+    ENOKI_VCALL_METHOD(sample_wavelengths)
     ENOKI_VCALL_METHOD(is_environment)
     ENOKI_VCALL_GETTER(flags, uint32_t)
+    ENOKI_VCALL_GETTER(shape, const typename Class::Shape *)
+    ENOKI_VCALL_GETTER(medium, const typename Class::Medium *)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Emitter)
 
 //! @}

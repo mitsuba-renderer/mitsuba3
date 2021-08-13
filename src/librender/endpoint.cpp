@@ -14,7 +14,7 @@ MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(
         if (medium) {
             if (m_medium)
                 Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
-            m_medium = medium;
+            set_medium(medium);
             props.mark_queried(name);
         }
     }
@@ -30,6 +30,7 @@ MTS_VARIANT void Endpoint<Float, Spectrum>::set_shape(Shape * shape) {
         Throw("An endpoint can be only be attached to a single shape.");
 
     m_shape = shape;
+    ek::set_attr(this, "shape", m_shape);
 }
 
 MTS_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
@@ -37,10 +38,12 @@ MTS_VARIANT void Endpoint<Float, Spectrum>::set_medium(Medium *medium) {
         Throw("An endpoint can be only be attached to a single medium.");
 
     m_medium = medium;
+    ek::set_attr(this, "medium", m_medium);
 }
 
 MTS_VARIANT std::pair<typename Endpoint<Float, Spectrum>::Ray3f, Spectrum>
-Endpoint<Float, Spectrum>::sample_ray(Float /*time*/, Float /*sample1*/,
+Endpoint<Float, Spectrum>::sample_ray(Float /*time*/,
+                                      Float /*sample1*/,
                                       const Point2f & /*sample2*/,
                                       const Point2f & /*sample3*/,
                                       Mask /*active*/) const {
@@ -54,10 +57,35 @@ Endpoint<Float, Spectrum>::sample_direction(const Interaction3f & /*it*/,
     NotImplementedError("sample_direction");
 }
 
+MTS_VARIANT
+std::pair<typename Endpoint<Float, Spectrum>::PositionSample3f, Float>
+Endpoint<Float, Spectrum>::sample_position(Float /*time*/,
+                                           const Point2f &/*sample*/,
+                                           Mask /*active*/) const {
+    NotImplementedError("sample_position");
+}
+
+MTS_VARIANT std::pair<typename Endpoint<Float, Spectrum>::Wavelength, Spectrum>
+Endpoint<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f & /*si*/,
+                                              Float /*sample*/,
+                                              Mask /*active*/) const {
+    NotImplementedError("sample_wavelengths");
+}
+
 MTS_VARIANT Float Endpoint<Float, Spectrum>::pdf_direction(const Interaction3f & /*it*/,
                                                            const DirectionSample3f & /*ds*/,
                                                            Mask /*active*/) const {
     NotImplementedError("pdf_direction");
+}
+
+MTS_VARIANT Float Endpoint<Float, Spectrum>::pdf_position(
+    const PositionSample3f & /*ps*/, Mask /*active*/) const {
+    NotImplementedError("pdf_position");
+}
+
+MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::pdf_wavelengths(
+    const Spectrum & /*wavelengths*/, Mask /*active*/) const {
+    NotImplementedError("pdf_wavelengths");
 }
 
 MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f & /*si*/,
