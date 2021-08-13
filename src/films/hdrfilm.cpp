@@ -160,7 +160,7 @@ public:
                            " Overriding..");
                 m_pixel_format = Bitmap::PixelFormat::RGB;
             }
-            if (_component_format != Struct::Type::Float32) {
+            if (m_component_format != Struct::Type::Float32) {
                 Log(Warn, "The RGBE format only supports "
                            "component_format=\"float32\". Overriding..");
                 m_component_format = Struct::Type::Float32;
@@ -214,7 +214,7 @@ public:
     }
 
     TensorXf develop(bool raw = false) const override {
-        if (raw)
+        if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);
             return m_storage->data();
         }

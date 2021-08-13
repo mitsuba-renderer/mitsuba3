@@ -273,10 +273,18 @@ def convert_to_bitmap(data, resolution, uint8_srgb=True):
     """
     from mitsuba.core import Bitmap, Struct
 
-    if type(data).__name__ == 'Tensor':
-        data = data.detach().cpu()
+    if isinstance(data, Bitmap):
+        bitmap = data
+        assert bitmap.size() == resolution, \
+               'Resolution mismatch: {} vs expected {}'.format(bitmap.size(), resolution)
+    else:
+        import numpy as np
+        if type(data).__name__ == 'Tensor':
+            data = data.detach().cpu().numpy()
+        elif not isinstance(data, np.ndarray):
+            data = np.array(data.numpy())
+        bitmap = Bitmap(data.reshape(resolution[1], resolution[0], -1))
 
-    bitmap = Bitmap(data.numpy().reshape(resolution[1], resolution[0], -1))
     if uint8_srgb:
         bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
                                 Struct.Type.UInt8, True)

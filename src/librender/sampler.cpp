@@ -8,7 +8,8 @@ NAMESPACE_BEGIN(mitsuba)
 //! @{ \name Sampler implementations
 // =======================================================================
 
-MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props) {
+MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
+    : Object() {
     m_sample_count = (uint32_t) props.size_("sample_count", 4);
     m_base_seed = props.size_("seed", 0);
 
@@ -16,6 +17,16 @@ MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props) {
     m_sample_index = ek::opaque<UInt32>(0);
     m_samples_per_wavefront = 1;
     m_wavefront_size = 0;
+}
+
+MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
+    : Object() {
+    m_sample_count          = sampler.m_sample_count;
+    m_base_seed             = sampler.m_base_seed;
+    m_wavefront_size        = sampler.m_wavefront_size;
+    m_samples_per_wavefront = sampler.m_samples_per_wavefront;
+    m_dimension_index       = sampler.m_dimension_index;
+    m_sample_index          = sampler.m_sample_index;
 }
 
 MTS_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
@@ -89,15 +100,6 @@ Sampler<Float, Spectrum>::current_sample_index() const {
         wavefront_sample_offsets = ek::arange<UInt32>(m_wavefront_size) % m_samples_per_wavefront;
 
     return m_sample_index * m_samples_per_wavefront + wavefront_sample_offsets;
-}
-
-MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler& sampler) : Object() {
-    m_sample_count          = sampler.m_sample_count;
-    m_base_seed             = sampler.m_base_seed;
-    m_wavefront_size        = sampler.m_wavefront_size;
-    m_samples_per_wavefront = sampler.m_samples_per_wavefront;
-    m_dimension_index       = sampler.m_dimension_index;
-    m_sample_index          = sampler.m_sample_index;
 }
 
 //! @}

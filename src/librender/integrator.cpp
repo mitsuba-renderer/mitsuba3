@@ -255,7 +255,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         }
     } else if constexpr (ek::is_array_v<Float> && !ek::is_jit_array_v<Float>) {
         // Ensure that the sample generation is fully deterministic
-        sampler->seed(block_id + seed_offset);
+        sampler->seed(block_id * pixel_count + seed_offset);
 
         for (auto [index, active] : ek::range<UInt32>(pixel_count * sample_count)) {
             if (should_stop())
@@ -268,6 +268,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
     } else {
         ENOKI_MARK_USED(scene);
         ENOKI_MARK_USED(sensor);
+        ENOKI_MARK_USED(seed_offset);
         ENOKI_MARK_USED(aovs);
         ENOKI_MARK_USED(diff_scale_factor);
         ENOKI_MARK_USED(pixel_count);

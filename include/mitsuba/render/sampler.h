@@ -108,7 +108,7 @@ public:
     /// Return whether the sampler was seeded
     bool seeded() const { return m_wavefront_size > 0; }
 
-    /// Set the number of samples per pass in wavefront modes (default is 1)
+    /// Set the number of samples per pixel per pass in wavefront modes (default is 1)
     void set_samples_per_wavefront(uint32_t samples_per_wavefront);
 
     /// ek::schedule() variables that represent the internal sampler state
