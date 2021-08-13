@@ -55,8 +55,12 @@ public:
         const std::string & /* formatted */, const std::string &eta,
         const void * /* ptr */) override {
         py::gil_scoped_acquire gil;
-        if (m_label.is_none() || m_bar.is_none())
-            make_progress_bar();
+
+        /* Heuristic: display the bar when it is created,
+         * or when progress starts over.
+         * Otherwise, the bar is only ever shown once. */
+        make_and_display_progress_bar(progress == 0.f);
+
         m_bar.attr("value") = progress;
         m_label.attr("value") = escape_html(name) + " " + eta;
         if (progress == 1.f) {
@@ -65,13 +69,19 @@ public:
         }
         m_flush();
     }
-    void make_progress_bar() {
-        m_bar = m_float_progress(
-            "layout"_a = m_layout("width"_a = "100%"), "bar_style"_a = "info",
-            "min"_a = 0.0, "max"_a = 1.0);
-        m_label = m_html();
-        auto vbox = m_vbox("children"_a = py::make_tuple(m_label, m_bar));
-        m_display(vbox);
+    void make_and_display_progress_bar(bool display) {
+        bool exists = !(m_label.is_none() || m_bar.is_none());
+        if (!exists) {
+            m_label = m_html();
+            m_bar = m_float_progress(
+                "layout"_a = m_layout("width"_a = "100%"), "bar_style"_a = "info",
+                "min"_a = 0.0, "max"_a = 1.0);
+        }
+
+        if (!exists || display) {
+            auto vbox = m_vbox("children"_a = py::make_tuple(m_label, m_bar));
+            m_display(vbox);
+        }
     }
 private:
     // Imports
