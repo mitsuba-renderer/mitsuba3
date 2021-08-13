@@ -1,9 +1,3 @@
-if (MTS_ENABLE_PYTHON)
-  # Python bindings (need to include it first so that some required CMake
-  # functions are defined).
-  include("cmake/libpython.cmake")
-endif()
-
 # Mitsuba support libraries
 add_subdirectory(libcore)
 add_subdirectory(librender)
