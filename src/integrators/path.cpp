@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 .. _integrator-path:
 
 Path tracer (:monosp:`path`)
--------------------------------------------
+----------------------------
 
 .. pluginparameters::
 
@@ -108,6 +108,8 @@ public:
 
         // Spectral throughput and accumulated radiance
         Spectrum throughput(1.f), result(0.f);
+        if (unlikely(m_max_depth == 0))
+            return { result, false };
 
         // Tracks radiance scaling due to index of refraction changes
         Float eta(1.f);

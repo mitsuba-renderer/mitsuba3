@@ -696,6 +696,7 @@ protected:
     Float m_mean;
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
+    bool m_raw;
 
     // Optional: distribution for importance sampling
     mutable std::mutex m_mutex;

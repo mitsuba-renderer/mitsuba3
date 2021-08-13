@@ -296,12 +296,11 @@ public:
     }
 
 
-    /// Samples an emitter in the scene and evaluates it's attenuated contribution
+    /// Samples an emitter in the scene and evaluates its attenuated contribution
     std::tuple<Spectrum, DirectionSample3f>
     sample_emitter(const Interaction3f &ref_interaction, const Scene *scene,
                    Sampler *sampler, MediumPtr medium, UInt32 channel,
                    Mask active) const {
-        using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         Spectrum transmittance(1.0f);
 
         auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);

@@ -268,7 +268,8 @@ public:
               d_omega = 1 / (A' * cos^3(theta))
         */
 
-        Float ct = Frame3f::cos_theta(d), inv_ct = ek::rcp(ct);
+        Float ct     = Frame3f::cos_theta(d),
+              inv_ct = ek::rcp(ct);
 
         // Compute the position on the plane at distance 1
         Point2f p(d.x() * inv_ct, d.y() * inv_ct);

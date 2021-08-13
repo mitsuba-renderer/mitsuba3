@@ -54,7 +54,8 @@ template <typename Float, typename Spectrum>
 class IndependentSampler final : public PCG32Sampler<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(PCG32Sampler, m_sample_count, m_base_seed, m_rng, seed,
-                    seeded, schedule_state)
+                    seeded, m_samples_per_wavefront, m_wavefront_size,
+                    schedule_state)
     MTS_IMPORT_TYPES()
 
     IndependentSampler(const Properties &props) : Base(props) {
@@ -97,7 +98,10 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "IndependentSampler[" << std::endl
+            << "  base_seed = " << m_base_seed << std::endl
             << "  sample_count = " << m_sample_count << std::endl
+            << "  samples_per_wavefront = " << m_samples_per_wavefront << std::endl
+            << "  wavefront_size = " << m_wavefront_size << std::endl
             << "]";
         return oss.str();
     }

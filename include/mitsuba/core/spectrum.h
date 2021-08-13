@@ -342,12 +342,12 @@ Color<Float, 3> srgb_to_xyz(const Color<Float, 3> &rgb, ek::mask_t<Float> /*acti
 
 /// Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB
 template <typename Float>
-Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &rgb, ek::mask_t<Float> /*active*/ = true) {
+Color<Float, 3> xyz_to_srgb(const Color<Float, 3> &xyz, ek::mask_t<Float> /*active*/ = true) {
     using ScalarMatrix3f = ek::Matrix<ek::scalar_t<Float>, 3>;
     const ScalarMatrix3f M(3.240479f, -1.537150f, -0.498535f,
                           -0.969256f,  1.875991f,  0.041556f,
                            0.055648f, -0.204043f,  1.057311f);
-    return M * rgb;
+    return M * xyz;
 }
 
 template <typename Float, size_t Size>
