@@ -1,7 +1,11 @@
 
 #pragma once
 
+#include <ostream>
+#include <type_traits>
+
 #include <enoki/array_router.h>
+namespace ek = enoki;
 
 NAMESPACE_BEGIN(mitsuba)
 

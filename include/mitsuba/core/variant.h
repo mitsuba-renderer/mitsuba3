@@ -1,8 +1,11 @@
 #pragma once
 
-#include <mitsuba/core/platform.h>
-#include <typeinfo>
+#include <cstddef> // for size_t
 #include <type_traits>
+#include <typeinfo>
+#include <utility> // for std::move
+
+#include <mitsuba/core/platform.h>
 
 #if defined(_MSC_VER)
   #pragma warning(push)
