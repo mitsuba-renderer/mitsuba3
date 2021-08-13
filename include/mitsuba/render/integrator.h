@@ -55,7 +55,27 @@ public:
      * job. In this case, \ref render() will quit with a return value of \c
      * false.
      */
-    virtual void cancel() = 0;
+    virtual void cancel();
+
+    /**
+     * Indicates whether \ref cancel() or a timeout have occured. Should be
+     * checked regularly in the integrator's main loop so that timeouts are
+     * enforced accurately.
+     *
+     * Note that accurate timeouts rely on \ref m_render_timer, which needs
+     * to be reset at the beginning of the rendering phase.
+     */
+    bool should_stop() const {
+        return m_stop || (m_timeout > 0.f &&
+                          m_render_timer.value() > 1000.f * m_timeout);
+    }
+
+    /**
+     * For integrators that return one or more arbitrary output variables
+     * (AOVs), this function specifies a list of associated channel names. The
+     * default implementation simply returns an empty vector.
+     */
+    virtual std::vector<std::string> aov_names() const;
 
     void set_graphviz_output(const fs::path &value) {
         m_graphviz_output = value;
@@ -64,12 +84,28 @@ public:
     MTS_DECLARE_CLASS()
 protected:
     /// Create an integrator
-    Integrator(const Properties & /*props*/) {}
+    Integrator(const Properties & props);
 
     /// Virtual destructor
     virtual ~Integrator() { }
 
 protected:
+    /// Integrators should stop all work when this flag is set to true.
+    bool m_stop;
+
+    /**
+     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
+     *
+     * Specified in seconds. A negative values indicates no timeout.
+     */
+    float m_timeout;
+
+    /// Timer used to enforce the timeout.
+    Timer m_render_timer;
+
+    /// Flag for disabling direct visibility of emitters
+    bool m_hide_emitters;
+
     fs::path m_graphviz_output;
 };
 
@@ -83,7 +119,8 @@ protected:
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER SamplingIntegrator : public Integrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Integrator)
+    MTS_IMPORT_BASE(Integrator, should_stop, aov_names,
+                    m_stop, m_timeout, m_render_timer, m_hide_emitters)
     MTS_IMPORT_TYPES(Scene, Sensor, Film, ImageBlock, Medium, Sampler)
 
     /**
@@ -132,13 +169,6 @@ public:
                                              Float *aovs = nullptr,
                                              Mask active = true) const;
 
-    /**
-     * For integrators that return one or more arbitrary output variables
-     * (AOVs), this function specifies a list of associated channel names. The
-     * default implementation simply returns an empty vector.
-     */
-    virtual std::vector<std::string> aov_names() const;
-
     // =========================================================================
     //! @{ \name Integrator interface implementation
     // =========================================================================
@@ -147,20 +177,6 @@ public:
                     uint32_t seed,
                     uint32_t sensor_index = 0,
                     bool develop_film = true) override;
-    void cancel() override;
-
-    /**
-     * Indicates whether \ref cancel() or a timeout have occured. Should be
-     * checked regularly in the integrator's main loop so that timeouts are
-     * enforced accurately.
-     *
-     * Note that accurate timeouts rely on \ref m_render_timer, which needs
-     * to be reset at the beginning of the rendering phase.
-     */
-    bool should_stop() const {
-        return m_stop || (m_timeout > 0.f &&
-                          m_render_timer.value() > 1000.f * m_timeout);
-    }
 
     //! @}
     // =========================================================================
@@ -189,8 +205,6 @@ protected:
                        Mask active = true) const;
 
 protected:
-    /// Integrators should stop all work when this flag is set to true.
-    bool m_stop;
 
     /// Size of (square) image blocks to render per core.
     uint32_t m_block_size;
@@ -202,19 +216,6 @@ protected:
      * If set to (size_t) -1, all the work is done in a single pass (default).
      */
     uint32_t m_samples_per_pass;
-
-    /**
-     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
-     *
-     * Specified in seconds. A negative values indicates no timeout.
-     */
-    float m_timeout;
-
-    /// Timer used to enforce the timeout.
-    Timer m_render_timer;
-
-    /// Flag for disabling direct visibility of emitters
-    bool m_hide_emitters;
 };
 
 /*
@@ -239,6 +240,7 @@ protected:
     int m_max_depth;
     int m_rr_depth;
 };
+
 
 MTS_EXTERN_CLASS_RENDER(Integrator)
 MTS_EXTERN_CLASS_RENDER(SamplingIntegrator)
