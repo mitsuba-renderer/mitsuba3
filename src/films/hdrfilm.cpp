@@ -160,7 +160,7 @@ public:
                            " Overriding..");
                 m_pixel_format = Bitmap::PixelFormat::RGB;
             }
-            if (m_component_format != Struct::Type::Float32) {
+            if (_component_format != Struct::Type::Float32) {
                 Log(Warn, "The RGBE format only supports "
                            "component_format=\"float32\". Overriding..");
                 m_component_format = Struct::Type::Float32;
@@ -198,10 +198,13 @@ public:
         if (it != sorted.end())
             Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
 
-        m_storage = new ImageBlock(m_crop_size, channels.size());
-        m_storage->set_offset(m_crop_offset);
-        m_storage->clear();
-        m_channels = channels;
+        /* locked */ {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_storage = new ImageBlock(m_crop_size, channels.size());
+            m_storage->set_offset(m_crop_offset);
+            m_storage->clear();
+            m_channels = channels;
+        }
     }
 
     void put(const ImageBlock *block) override {
@@ -212,13 +215,21 @@ public:
 
     TensorXf develop(bool raw = false) const override {
         if (raw)
+            std::lock_guard<std::mutex> lock(m_mutex);
             return m_storage->data();
+        }
 
         if constexpr (ek::is_jit_array_v<Float>) {
-            Float data = m_storage->data();
-            size_t ch =  m_storage->channel_count();
-            ScalarVector2i size = m_storage->size();
-            size_t pixel_count = ek::hprod(size);
+            Float data;
+            size_t ch, pixel_count;
+            ScalarVector2i size;
+            /* locked */ {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                data        = m_storage->data();
+                size        = m_storage->size();
+                ch          = m_storage->channel_count();
+                pixel_count = ek::hprod(m_storage->size());
+            }
 
             bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
                              m_pixel_format == Bitmap::PixelFormat::XYZA;
@@ -308,7 +319,9 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) const override {
+        std::lock_guard<std::mutex> lock(m_mutex);
         auto &&storage = ek::migrate(m_storage->data().array(), AllocType::Host);
+
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
 
@@ -471,7 +484,7 @@ protected:
     Bitmap::PixelFormat m_pixel_format;
     Struct::Type m_component_format;
     ref<ImageBlock> m_storage;
-    std::mutex m_mutex;
+    mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;
 };
 
