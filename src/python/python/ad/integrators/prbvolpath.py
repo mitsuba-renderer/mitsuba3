@@ -78,17 +78,17 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             ek.enable_grad(v)
 
         # Replay light paths and accumulate gradients
-        self.sample_adjoint(scene, sampler, ray, params, grad_values, result)
+        self.sample_adjoint(scene, sampler, ray, params, grad_values, sensor.medium(), result)
 
     def sample(self, scene, sampler, ray, medium, active):
-        return *self.Li(scene, sampler, ray), []
+        return *self.Li(scene, sampler, ray, medium=medium), []
 
-    def sample_adjoint(self, scene, sampler, ray, params, grad, result):
-        self.Li(scene, sampler, ray, params=params, grad=grad, result=result)
+    def sample_adjoint(self, scene, sampler, ray, params, grad, medium, result):
+        self.Li(scene, sampler, ray, params=params, grad=grad, medium=medium, result=result)
 
 
     def Li(self, scene, sampler, ray, depth=1, params=mitsuba.python.util.SceneParameters(),
-           grad=None, active_=True, result=None):
+           grad=None, medium=None, active_=True, result=None):
         from mitsuba.core import (Float, Loop, Mask, Ray3f, RayDifferential3f,
                                   Spectrum, UInt32)
         from mitsuba.render import (BSDFContext, BSDFFlags, DirectionSample3f,
@@ -106,7 +106,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         needs_intersection = Mask(True)
         last_scatter_event = ek.zero(mitsuba.render.Interaction3f, wavefront_size)
         last_scatter_direction_pdf = ek.zero(Float, wavefront_size) + 1.0
-        medium = ek.zero(MediumPtr, wavefront_size)
+        medium = MediumPtr(medium)
         channel = 0
         depth = UInt32(depth)
         valid_ray = Mask(False)
