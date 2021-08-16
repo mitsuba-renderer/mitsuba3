@@ -278,17 +278,17 @@ class Adam(Optimizer):
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.epsilon = epsilon
-        self.t = 0
+        self.t = defaultdict(lambda: 0)
 
     def step(self):
         """Take a gradient step"""
-        self.t += 1
-
         from mitsuba.core import Float
 
-        lr_scale = ek.sqrt(1 - self.beta_2 ** self.t) / (1 - self.beta_1 ** self.t)
-        lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, size=1)
         for k, p in self.variables.items():
+            self.t[k] += 1
+            lr_scale = ek.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
+            lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, size=1)
+
             lr_t = self.lr_v[k] * lr_scale
             g_p = ek.grad(p)
             size = ek.width(g_p)
@@ -319,6 +319,7 @@ class Adam(Optimizer):
         size = ek.width(p)
         self.state[key] = (ek.zero(ek.detached_t(p), size),
                            ek.zero(ek.detached_t(p), size))
+        self.t[key] = 0
 
     def __repr__(self):
         return ('Adam[\n'
