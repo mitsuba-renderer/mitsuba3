@@ -197,22 +197,24 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 const char *graph = jit_var_graphviz();
                 out_stream->write(graph, strlen(graph));
             }
+        }
 
-            if (develop_film) {
-                result = film->develop();
-                ek::schedule(result);
-            } else {
-                film->schedule_storage();
-            }
-            ek::eval();
+        if (develop_film) {
+            result = film->develop();
+            ek::schedule(result);
+        } else {
+            film->schedule_storage();
+        }
+        ek::eval();
 
+        if (n_passes == 1) {
             if (jit_flag(JitFlag::VCallRecord) && jit_flag(JitFlag::LoopRecord)) {
                 Log(Info, "Code generation finished. (took %s)",
                     util::time_string((float) timer.reset(), true));
             }
-
-            ek::sync_thread();
         }
+
+        ek::sync_thread();
     }
 
     if (!m_stop)
