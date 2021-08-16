@@ -162,7 +162,7 @@ public:
 
         ScalarFloat *ptr = (ScalarFloat *) m_bitmap->data();
         size_t pixel_count = m_bitmap->pixel_count();
-        bool bad = false;
+        bool exceed_unit_range = false;
 
         double mean = 0.0;
         if (m_bitmap->channel_count() == 3) {
@@ -170,7 +170,7 @@ public:
                 for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
-                        bad = true;
+                        exceed_unit_range = true;
                     value = srgb_model_fetch(value);
                     mean += (double) srgb_model_mean(value);
                     ek::store(ptr, value);
@@ -180,7 +180,7 @@ public:
                 for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarColor3f value = ek::load<ScalarColor3f>(ptr);
                     if (!all(value >= 0 && value <= 1))
-                        bad = true;
+                        exceed_unit_range = true;
                     mean += (double) luminance(value);
                     ptr += 3;
                 }
@@ -189,7 +189,7 @@ public:
             for (size_t i = 0; i < pixel_count; ++i) {
                 ScalarFloat value = ptr[i];
                 if (!(value >= 0 && value <= 1))
-                    bad = true;
+                    exceed_unit_range = true;
                 mean += (double) value;
             }
         } else {
@@ -197,7 +197,7 @@ public:
                   m_bitmap->channel_count());
         }
 
-        if (bad)
+        if (exceed_unit_range && !m_raw)
             Log(Warn,
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!", m_name);
@@ -259,7 +259,7 @@ public:
           m_inv_resolution_x((int) bitmap->width()),
           m_inv_resolution_y((int) bitmap->height()),
           m_name(name), m_transform(transform), m_mean(mean),
-          m_filter_type(filter_type), m_wrap_mode(wrap_mode){
+          m_filter_type(filter_type), m_wrap_mode(wrap_mode) {
         m_data = ek::load<DynamicBuffer<Float>>(bitmap->data(),
             ek::hprod(m_resolution) * Channels);
         ek::make_opaque(m_transform, m_mean);
@@ -614,7 +614,7 @@ protected:
 
         double mean = 0.0;
         size_t pixel_count = (size_t) ek::hprod(m_resolution);
-        bool bad = false;
+        bool exceed_unit_range = false;
 
         if (Channels == 3) {
             std::unique_ptr<ScalarFloat[]> importance_map(
@@ -627,7 +627,7 @@ protected:
                     tmp = srgb_model_mean(value);
                 } else {
                     if (!all(value >= 0 && value <= 1))
-                        bad = true;
+                        exceed_unit_range = true;
                     tmp = luminance(value);
                 }
                 if (init_distr)
@@ -643,7 +643,7 @@ protected:
             for (size_t i = 0; i < pixel_count; ++i) {
                 ScalarFloat value = ptr[i];
                 if (!(value >= 0 && value <= 1))
-                    bad = true;
+                    exceed_unit_range = true;
                 mean += (double) value;
             }
 
@@ -655,7 +655,7 @@ protected:
         if (init_mean)
             m_mean = ek::opaque<Float>(ScalarFloat(mean / pixel_count));
 
-        if (bad)
+        if (exceed_unit_range && !Raw)
             Log(Warn,
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!", m_name);
