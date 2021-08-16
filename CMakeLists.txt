@@ -68,6 +68,7 @@ if (SKBUILD)
   find_package(enoki CONFIG REQUIRED)
   set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
 elseif (MTS_ENABLE_PYTHON)
+  set(Python_FIND_FRAMEWORK LAST) # Prefer Brew/Conda to Apple framework python
   find_package(Python COMPONENTS Interpreter Development REQUIRED)
 
   add_subdirectory(ext/pybind11)
@@ -204,9 +205,22 @@ endif()
 # binaries that will be distributed to others.
 
 if (MSVC)
-  set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX2")
+  if (SKBUILD)
+    # Portable binaries for PyPI
+    set(MTS_NATIVE_FLAGS_DEFAULT "")
+  else()
+    set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX2")
+  endif()
+elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+  # Apple M1 compatibility
+  set(MTS_NATIVE_FLAGS_DEFAULT "-mcpu=apple-a12")
 else()
-  set(MTS_NATIVE_FLAGS_DEFAULT "-march=native")
+  if (SKBUILD)
+    # Portable binaries for PyPI
+    set(MTS_NATIVE_FLAGS_DEFAULT "-march=nehalem")
+  else()
+    set(MTS_NATIVE_FLAGS_DEFAULT "-march=native")
+  endif()
 endif()
 
 set(MTS_NATIVE_FLAGS ${MTS_NATIVE_FLAGS_DEFAULT} CACHE STRING
@@ -612,11 +626,15 @@ endif()
 
 # Installation targets
 set(MTS_DEPEND
-  asmjit IlmImf IlmThread Imath Iex IexMath Half pugixml
+  IlmImf IlmThread Imath Iex IexMath Half pugixml
 )
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(amd64)|(AMD64)")
+  set(MTS_DEPEND ${MTS_DEPEND} asmjit)
+endif()
+
 if (WIN32 OR APPLE)
-  list(APPEND MTS_DEPEND png16 jpeg)
+  list(APPEND MTS_DEPEND png jpeg)
 
   if (WIN32)
     list(APPEND MTS_DEPEND zlib)

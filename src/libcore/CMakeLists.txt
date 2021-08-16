@@ -85,10 +85,14 @@ target_link_libraries(mitsuba-core PRIVATE
   ${ZLIB_LIBRARY}
   enoki-thread
   # Link pugixml parser
-  pugixml asmjit
+  pugixml 
   # Image libraries: link to libjpeg, libpng, OpenEXR
   ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
 )
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(amd64)|(AMD64)")
+  target_link_libraries(mitsuba-core PRIVATE asmjit)
+endif()
 
 if (NOT MSVC)
   target_link_libraries(mitsuba-core PRIVATE ${CMAKE_DL_LIBS})

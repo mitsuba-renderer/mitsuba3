@@ -156,11 +156,7 @@ void trap_debugger() {
         return;
 
 #if defined(__LINUX__) || defined(__OSX__)
-    #if defined(__i386__) || defined(__x86_64__) || defined(__OSX__)
-        __asm__ ("int $3");
-    #else
-        __builtin_trap();
-    #endif
+    __builtin_trap();
 #elif defined(__WINDOWS__)
     __debugbreak();
 #endif

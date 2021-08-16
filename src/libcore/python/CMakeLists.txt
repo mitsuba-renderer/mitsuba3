@@ -40,7 +40,7 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
 
   target_link_libraries(${TARGET_NAME} PRIVATE mitsuba-core)
 
-  if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|AMD64")
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "(amd64)|(AMD64)")
     target_link_libraries(${TARGET_NAME} PRIVATE asmjit)
   endif()
 
@@ -81,7 +81,11 @@ pybind11_add_module(core_ext
 # macOS: Avoid warnings about loop unrolling being disabled with -Os
 target_compile_definitions(core_ext PRIVATE "-DENOKI_UNROLL= ")
 
-target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render asmjit)
+target_link_libraries(core_ext PRIVATE mitsuba-core mitsuba-render)
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(amd64)|(AMD64)")
+  target_link_libraries(core_ext PRIVATE asmjit)
+endif()
 
 set_target_properties(core_ext
   PROPERTIES
