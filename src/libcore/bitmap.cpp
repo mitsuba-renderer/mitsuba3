@@ -912,7 +912,10 @@ public:
             task->group()->finishOneTask();
             delete task;
         });
-        task_release(t);
+        if (pool_size() == 0)
+            task_wait_and_release(t);
+        else
+            task_release(t);
     }
 
     void finish() override { }
