@@ -43,7 +43,7 @@ def test01_point_sample_ray(variants_vec_spectral, spectrum_key):
     time = 0.5
     wavelength_sample = [0.5, 0.33, 0.1]
     dir_sample = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
-    pos_sample = dir_sample  # not being used anyway
+    pos_sample = dir_sample + [[0.0, 0.0, 0.0]]  # not being used anyway
 
     # Sample a ray (position, direction, wavelengths) on the emitter
     ray, res = emitter.sample_ray(time, wavelength_sample, pos_sample, dir_sample)

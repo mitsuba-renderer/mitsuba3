@@ -94,7 +94,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, it_pos, wavelen
 
 @pytest.mark.parametrize("spectrum_key", spectrum_strings.keys())
 @pytest.mark.parametrize("wavelength_sample", [0.7])
-@pytest.mark.parametrize("pos_sample", [[0.4, 0.5], [0.1, 0.4]])
+@pytest.mark.parametrize("pos_sample", [[0.4, 0.5, 0.0], [0.1, 0.4, 0.0]])
 @pytest.mark.parametrize("cutoff_angle", [20, 80])
 @pytest.mark.parametrize("lookat", lookat_transforms)
 def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_sample, cutoff_angle, lookat):
@@ -113,8 +113,8 @@ def test_sample_ray(variants_vec_spectral, spectrum_key, wavelength_sample, pos_
     trafo = Transform4f(emitter.world_transform())
 
     # Sample a local direction and calculate local angle
-    dir_sample = pos_sample  # not being used anyway
-    local_dir = warp.square_to_uniform_cone(pos_sample, cos_cutoff_angle_rad)
+    dir_sample = pos_sample[:2]  # not being used anyway
+    local_dir = warp.square_to_uniform_cone(pos_sample[:2], cos_cutoff_angle_rad)
     angle = ek.acos(local_dir[2])
     angle = ek.select(ek.abs(angle - beam_width_rad)
                       < 1e-3, beam_width_rad, angle)

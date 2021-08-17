@@ -120,7 +120,8 @@ public:
         // If there is an environment emitter and emitters are visible: all rays will be valid
         // Otherwise, it will depend on whether a valid interaction is sampled
         Mask valid_ray = !m_hide_emitters && ek::neq(scene->environment(), nullptr);
-
+        // Ray3f reference_ray = Ray3f(Vector3f(278.075f, 273.1f, -790.0f), Vector3f(0.00750745f, 0.0100037f, 0.999922f), 2790.22f, 0.f);
+        // Log(Info, "Ray: %s, %s, %s, %s, %s", ray_, ray_.o == reference_ray.o, ray_.d == reference_ray.d, ray_.maxt == reference_ray.maxt, ray_.time == reference_ray.time);
         // For now, don't use ray differentials
         Ray3f ray = ray_;
 
@@ -228,6 +229,8 @@ public:
                 // Log(Debug, "%s %s %s", emission_interaction, scatter_interaction, null_interaction);
 
                 act_emission       |= emission_interaction && active_medium;
+                act_medium_scatter |= scatter_interaction  && active_medium;
+                act_null_scatter   |= null_interaction     && active_medium;
 
                 if (ek::any_or<true>(act_emission)) {
                     update_weights(p_over_f, prob_emission, 1.f, channel, act_emission);
@@ -235,7 +238,7 @@ public:
                         update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_emission);
                     }
 
-                    Mask count_direct = specular_chain && sample_emitters;
+                    Mask count_direct = specular_chain;
                     if (ek::any_or<true>(act_emission && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
                         DirectionSample3f ds(scene, mi, last_scatter_event);
@@ -248,11 +251,9 @@ public:
                     // ek::masked(result, act_emission) += mis_weight(p_over_f) * mi.radiance;
                 }
                 
-                active        &= !act_emission;
-                active_medium &= !act_emission;
-                
-                act_medium_scatter |= scatter_interaction  && active_medium;
-                act_null_scatter   |= null_interaction     && active_medium;
+                // Deactivate lanes that encountered an emission event
+                active &= !act_emission;
+                last_event_was_null = act_null_scatter;
 
                 // Count this as a bounce
                 ek::masked(depth, act_medium_scatter) += 1;
@@ -281,8 +282,6 @@ public:
                     update_weights(p_over_f, prob_scatter, mi.sigma_s, channel, act_medium_scatter);
                     if (ek::any_or<true>(not_spectral))
                         update_weights(p_over_f, mi.combined_extinction, 1.f, channel, not_spectral && act_medium_scatter);
-                        
-                    // Log(Debug, "%s %s %s", mi.sigma_s, act_medium_scatter, p_over_f);
 
                     PhaseFunctionContext phase_ctx(sampler);
                     auto phase = mi.medium->phase_function();
@@ -292,8 +291,7 @@ public:
                     Mask active_e = act_medium_scatter && sample_emitters;
                     if (ek::any_or<true>(active_e)) {
                         auto [p_over_f_nee_end, p_over_f_end, emitted, ds] =
-                            sample_emitter(mi, scene, sampler, medium, p_over_f,
-                                           channel, active_e);
+                            sample_emitter(mi, scene, sampler, medium, p_over_f, channel, active_e);
                         Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
                         update_weights(p_over_f_nee_end, 1.0f, phase_val, channel, active_e);
                         update_weights(p_over_f_end, ek::select(ds.delta, 0.f, phase_val), phase_val, channel, active_e);
@@ -389,6 +387,7 @@ public:
                 Mask has_medium_trans            = active_surface && si.is_medium_transition();
                 ek::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
+            
             active &= (active_surface | active_medium);
         }
 
@@ -403,8 +402,10 @@ public:
         using EmitterPtr = ek::replace_scalar_t<Float, const Emitter *>;
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
 
-        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_3d(active), false, active);
+        Point2f em_sample = sampler->next_2d(active);
+        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, Point3f(em_sample.x(), em_sample.y(), 0.f), false, active);
         Spectrum emitter_val = emitter_sample_weight * ds.pdf;
+        // Log(Debug, "%s | %s", ds, emitter_sample_weight);
         ek::masked(emitter_val, ek::eq(ds.pdf, 0.f)) = 0.f;
         active &= ek::neq(ds.pdf, 0.f);
         update_weights(p_over_f_nee, ds.pdf, 1.0f, channel, active);
@@ -517,6 +518,7 @@ public:
                 ek::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
         }
+        // Log(Debug, "%s | %s ~ %s", p_over_f_nee, p_over_f_uni, emitter_val);
 
         return { p_over_f_nee, p_over_f_uni, emitter_val, ds};
     }

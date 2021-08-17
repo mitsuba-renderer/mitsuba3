@@ -85,7 +85,7 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
 
     time = 0.5
     wavelength_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0, 0.0, 0.0]]
     dir_sample = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
 
     # Sample a ray (position, direction, wavelengths) on the emitter
@@ -97,7 +97,7 @@ def test03_sample_ray(variants_vec_spectral, spectrum_key):
     wav, spec = spectrum.sample_spectrum(it, sample_shifted(wavelength_sample))
 
     # Sample a position on the shape
-    ps = shape.sample_position(time, pos_sample)
+    ps = shape.sample_position(time, pos_sample[:2])
 
     assert ek.allclose(res, spec * shape.surface_area() * ek.Pi)
     assert ek.allclose(ray.time, time)
@@ -123,11 +123,11 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     it.time = 1.0
 
     # Sample direction on the emitter
-    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
+    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9], [0.0, 0.0, 0.0]]
     ds, res = emitter.sample_direction(it, samples)
 
     # Sample direction on the shape
-    shape_ds = shape.sample_direction(it, samples)
+    shape_ds = shape.sample_direction(it, samples[:2])
 
     assert ek.allclose(ds.pdf, shape_ds.pdf)
     assert ek.allclose(ds.pdf, emitter.pdf_direction(it, ds))

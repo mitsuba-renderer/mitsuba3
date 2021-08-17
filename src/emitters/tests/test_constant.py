@@ -52,7 +52,7 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
 
     time = 0.5
     wavelength_sample = [0.5, 0.33, 0.1]
-    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
+    pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2], [0.0, 0.0, 0.0]]
     dir_sample = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
 
     # Sample a ray (position, direction, wavelengths) on the emitter
@@ -65,7 +65,7 @@ def test02_sample_ray(variants_vec_spectral, spectrum_key):
     assert ek.allclose(res, spec * 4 * ek.Pi * ek.Pi)
     assert ek.allclose(ray.time, time)
     assert ek.allclose(ray.wavelengths, wav)
-    assert ek.allclose(ray.o, warp.square_to_uniform_sphere(pos_sample))
+    assert ek.allclose(ray.o, warp.square_to_uniform_sphere(pos_sample[:2]))
     assert ek.allclose(
         ray.d, Frame3f(-ray.o).to_world(warp.square_to_cosine_hemisphere(dir_sample)))
 
@@ -84,11 +84,11 @@ def test03_sample_direction(variants_vec_spectral):
     it.time = 1.0
 
     # Sample direction on the emitter
-    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
+    samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9], [0.0, 0.0, 0.0]]
     ds, res = emitter.sample_direction(it, samples)
 
     assert ek.allclose(ds.pdf, ek.InvFourPi)
-    assert ek.allclose(ds.d, warp.square_to_uniform_sphere(samples))
+    assert ek.allclose(ds.d, warp.square_to_uniform_sphere(samples[:2]))
     assert ek.allclose(emitter.pdf_direction(it, ds), ek.InvFourPi)
     assert ek.allclose(ds.time, it.time)
 

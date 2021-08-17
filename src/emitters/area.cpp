@@ -73,19 +73,20 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        Point2f pos_sample = Point2f(sample2.x(), sample2.y());
 
         Float pdf = 1.f;
 
         // 1. Two strategies to sample spatial component based on 'm_radiance'
         if (!m_radiance->is_spatially_varying()) {
-            PositionSample3f ps = m_shape->sample_position(time, Point2f(sample2.x(), sample2.y()), active);
+            PositionSample3f ps = m_shape->sample_position(time, pos_sample, active);
 
             // Radiance not spatially varying, use area-based sampling of shape
             si = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
             pdf = ps.pdf;
         } else {
             // Ipmortance sample texture
-            std::tie(si.uv, pdf) = m_radiance->sample_position(Point2f(sample2.x(), sample2.y()), active);
+            std::tie(si.uv, pdf) = m_radiance->sample_position(pos_sample, active);
             active &= ek::neq(pdf, 0.f);
 
             si = m_shape->eval_parameterization(Point2f(si.uv), +HitComputeFlags::All, active);
@@ -119,18 +120,19 @@ public:
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         DirectionSample3f ds;
         Spectrum spec;
+        Point2f pos_sample = Point2f(sample.x(), sample.y());
 
         // One of two very different strategies is used depending on 'm_radiance'
         if (!m_radiance->is_spatially_varying()) {
             // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
-            ds = m_shape->sample_direction(it, Point2f(sample.x(), sample.y()), active);
+            ds = m_shape->sample_direction(it, pos_sample, active);
             active &= ek::dot(ds.d, ds.n) < 0.f && ek::neq(ds.pdf, 0.f);
 
             SurfaceInteraction3f si(ds, it.wavelengths);
             spec = m_radiance->eval(si, active) / ds.pdf;
         } else {
             // Importance sample the texture, then map onto the shape
-            auto [uv, pdf] = m_radiance->sample_position(Point2f(sample.x(), sample.y()), active);
+            auto [uv, pdf] = m_radiance->sample_position(pos_sample, active);
             active &= ek::neq(pdf, 0.f);
 
             SurfaceInteraction3f si = m_shape->eval_parameterization(uv, +HitComputeFlags::All, active);
@@ -157,6 +159,7 @@ public:
         }
 
         ds.emitter = this;
+        // Log(Info, "%s", ds);
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
 
