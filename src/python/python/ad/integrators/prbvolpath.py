@@ -69,7 +69,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
         # sample forward path (not differentiable)
         with params.suspend_gradients():
-            result, _ = self.Li(scene, sampler.clone(), ray)
+            result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
         grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
         grad_values *= weight / spp
