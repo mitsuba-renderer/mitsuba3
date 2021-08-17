@@ -192,7 +192,7 @@ public:
     }
 
     Mask is_inside(const Interaction3f & /*it*/, Mask /*active*/) const override {
-       return true; // dummy implementation
+        Throw("is_inside() called on non-expanded GridVolume instance");
     }
 
     template <uint32_t Channels, bool Raw> using Impl = GridVolumeImpl<Float, Spectrum, Channels, Raw>;
