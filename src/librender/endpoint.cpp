@@ -65,6 +65,10 @@ MTS_VARIANT Spectrum Endpoint<Float, Spectrum>::eval(const SurfaceInteraction3f 
     NotImplementedError("eval");
 }
 
+MTS_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *callback) {
+    callback->put_object("medium", m_medium.get());
+}
+
 MTS_IMPLEMENT_CLASS_VARIANT(Endpoint, Object)
 MTS_INSTANTIATE_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

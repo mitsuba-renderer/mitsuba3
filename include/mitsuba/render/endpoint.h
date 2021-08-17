@@ -232,6 +232,8 @@ public:
     //! @}
     // =============================================================
 
+    void traverse(TraversalCallback *callback) override;
+
     MTS_DECLARE_CLASS()
 protected:
     Endpoint(const Properties &props);

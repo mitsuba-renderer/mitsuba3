@@ -114,6 +114,7 @@ public:
         callback->put_parameter("shutter_open_time", m_shutter_open_time);
         callback->put_object("film", m_film.get());
         callback->put_object("sampler", m_sampler.get());
+        Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
