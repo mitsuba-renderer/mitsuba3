@@ -90,7 +90,7 @@ target_link_libraries(mitsuba-core PRIVATE
   ${PNG_LIBRARIES} ${JPEG_LIBRARIES} IlmImf
 )
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(amd64)|(AMD64)")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
   target_link_libraries(mitsuba-core PRIVATE asmjit)
 endif()
 

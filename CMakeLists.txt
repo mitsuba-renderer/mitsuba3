@@ -629,7 +629,7 @@ set(MTS_DEPEND
   IlmImf IlmThread Imath Iex IexMath Half pugixml
 )
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(amd64)|(AMD64)")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64)|(amd64)|(AMD64)")
   set(MTS_DEPEND ${MTS_DEPEND} asmjit)
 endif()
 
