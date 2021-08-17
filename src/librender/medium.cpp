@@ -72,7 +72,7 @@ Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &ray,
     MediumInteraction3f mi_next = mi;
     Mask escaped = !active;
     Spectrum weight = ek::full<Spectrum>(1.f, ek::width(ray));
-    ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction");
+    ek::Loop<Float> loop("Medium::sample_interaction");
     loop.put(active, mi, mi_next, escaped, weight);
     sampler->loop_register(loop);
     loop.init();
@@ -129,7 +129,7 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     Float sampling_weight = ek::NaN<Float>;
     const Mask did_traverse = active;
 
-    ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction_drt");
+    ek::Loop<Float> loop("Medium::sample_interaction_drt");
     loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
              running_t, mi_sub, transmittance);
     sampler->loop_register(loop);
@@ -198,9 +198,9 @@ Medium<Float, Spectrum>::static_sample_interaction_drt(const MediumPtr medium,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint = ek::max(ray.mint, mint);
-    maxt = ek::min(ray.maxt, maxt);
-    mi.mint   = mint;
+    mint                    = ek::max(0.f, mint);
+    maxt                    = ek::min(ray.maxt, maxt);
+    mi.mint                 = mint;
     const Mask did_traverse = active;
 
     // Get majorant
@@ -216,7 +216,7 @@ Medium<Float, Spectrum>::static_sample_interaction_drt(const MediumPtr medium,
     Float sampled_t_step = ek::NaN<Float>;
     Float sampling_weight = ek::NaN<Float>;
 
-    ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction_drt");
+    ek::Loop<Float> loop("Medium::sample_interaction_drt");
     loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
              running_t, mi_sub, transmittance);
     sampler->loop_register(loop);
@@ -286,7 +286,7 @@ Medium<Float, Spectrum>::static_sample_interaction_drrt(const MediumPtr medium,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint              = ek::max(ray.mint, mint);
+    mint              = ek::max(0.f, mint);
     maxt              = ek::min(ray.maxt, maxt);
     mi.mint           = mint;
     const Mask did_traverse = active;
@@ -306,7 +306,7 @@ Medium<Float, Spectrum>::static_sample_interaction_drrt(const MediumPtr medium,
     Float sampled_t_step = ek::NaN<Float>;
     Float sampling_weight = ek::NaN<Float>;
 
-    ek::Loop<ek::detached_t<Mask>> loop("Medium::sample_interaction_drt");
+    ek::Loop<Float> loop("Medium::sample_interaction_drt");
     loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
              running_t, mi_sub, transmittance);
     sampler->loop_register(loop);
@@ -386,7 +386,7 @@ Medium<Float, Spectrum>::prepare_interaction_sampling(const Ray3f &ray,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint = ek::max(ray.mint, mint);
+    mint = ek::max(0.f, mint);
     maxt = ek::min(ray.maxt, maxt);
     mi.mint   = mint;
 

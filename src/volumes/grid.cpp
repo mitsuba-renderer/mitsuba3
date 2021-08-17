@@ -191,10 +191,6 @@ public:
         props.mark_queried("fixed_max");
     }
 
-    Mask is_inside(const Interaction3f & /*it*/, Mask /*active*/) const override {
-        Throw("is_inside() called on non-expanded GridVolume instance");
-    }
-
     template <uint32_t Channels, bool Raw> using Impl = GridVolumeImpl<Float, Spectrum, Channels, Raw>;
 
     /**
@@ -260,7 +256,6 @@ public:
         m_inv_resolution_y = ek::divisor<int32_t>(res.y());
         m_inv_resolution_z = ek::divisor<int32_t>(res.z());
 
-        m_size = ek::hprod(m_resolution);
         if (props.get<bool>("use_grid_bbox", false)) {
             m_to_local = bbox_transform * m_to_local;
             update_bbox();
@@ -274,7 +269,7 @@ public:
         // fixed to an initial value computed from the reference data, for convenience.
         if (props.has_property("fixed_max")) {
             m_fixed_max = props.bool_("fixed_max");
-            Log(Info, "Medium will keep majorant fixed to: %s", m_metadata.max);
+            Log(Info, "Medium will keep majorant fixed to: %s", m_max);
         }
     }
 
