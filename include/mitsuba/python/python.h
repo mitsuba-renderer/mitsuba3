@@ -180,6 +180,7 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     cls.attr("IsQuaternion") = false;
     cls.attr("IsComplex") = false;
     cls.attr("IsMatrix") = false;
+    cls.attr("IsTensor") = false;
     cls.attr("IsEnoki") = true;
     cls.attr("Prefix") = "Array";
     cls.attr("Shape") = py::make_tuple(ek::Dynamic);
