@@ -120,7 +120,7 @@ public:
 
         ScalarVector2u res = bitmap->size();
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), 4 };
-        m_data = ImageBuffer(bitmap->data(), 3, shape);
+        m_data = TensorXf(bitmap->data(), 3, shape);
 
         m_scale = props.float_("scale", 1.f);
         m_warp = Warp(luminance.get(), res);
@@ -328,7 +328,7 @@ protected:
 protected:
     std::string m_filename;
     ScalarBoundingSphere3f m_bsphere;
-    ImageBuffer m_data;
+    TensorXf m_data;
     Warp m_warp;
     ref<Texture> m_d65;
     ScalarFloat m_scale;

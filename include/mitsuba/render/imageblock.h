@@ -187,10 +187,10 @@ public:
     int border_size() const { return m_border_size; }
 
     /// Return the underlying pixel buffer
-    ImageBuffer &data() { return m_data; }
+    TensorXf &data() { return m_data; }
 
     /// Return the underlying pixel buffer (const version)
-    const ImageBuffer &data() const { return m_data; }
+    const TensorXf &data() const { return m_data; }
 
     //! @}
     // =============================================================
@@ -206,7 +206,7 @@ protected:
     ScalarVector2i m_size;
     uint32_t m_channel_count;
     int m_border_size;
-    ImageBuffer m_data;
+    TensorXf m_data;
     const ReconstructionFilter *m_filter;
     Float *m_weights_x, *m_weights_y;
     bool m_warn_negative;

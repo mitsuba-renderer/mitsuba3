@@ -29,7 +29,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
        SceneParameters data structure that will receive parameter gradients.
 
-    Parameter ``image_adj`` (``mitsuba.core.ImageBuffer``):
+    Parameter ``image_adj`` (``mitsuba.core.TensorXf``):
         Gradient image that should be backpropagated.
 
     Parameter ``seed` (``int``)

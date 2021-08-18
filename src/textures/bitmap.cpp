@@ -261,7 +261,7 @@ public:
           m_filter_type(filter_type), m_wrap_mode(wrap_mode) {
         ScalarVector2i res = ScalarVector2i(bitmap->size());
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), Channels };
-        m_data = ImageBuffer(bitmap->data(), 3, shape);
+        m_data = TensorXf(bitmap->data(), 3, shape);
         ek::make_opaque(m_transform, m_mean);
     }
 
@@ -668,7 +668,7 @@ protected:
     }
 
 protected:
-    ImageBuffer m_data;
+    TensorXf m_data;
     ek::divisor<int32_t> m_inv_resolution_x;
     ek::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;

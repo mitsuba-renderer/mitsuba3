@@ -82,9 +82,6 @@ template <typename Value,
 using DynamicBuffer =
     std::conditional_t<ek::is_dynamic_array_v<T>, T, ek::DynamicArray<T>>;
 
-template <typename Value>
-using ImageBuffer = ek::Tensor<DynamicBuffer<Value>>;
-
 //! @}
 // =============================================================
 
@@ -174,8 +171,6 @@ template <typename Float_> struct CoreAliases {
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
 
-    using ImageBuffer = ImageBuffer<Float>;
-
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
      * They won't be exposed by the MTS_IMPORT_BASE_TYPES macro.
@@ -183,6 +178,7 @@ template <typename Float_> struct CoreAliases {
     using Array1f = ek::Array<Float, 1>;
     using Array3f = ek::Array<Float, 3>;
     using DynamicBuffer = mitsuba::DynamicBuffer<Float>;
+    using TensorXf = ek::Tensor<DynamicBuffer>;
 };
 
 //! @}
@@ -255,7 +251,7 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
-    using prefix ## ImageBuffer          = typename prefix ## CoreAliases::ImageBuffer;
+    using prefix ## TensorXf          = typename prefix ## CoreAliases::TensorXf;
 
 // Variadic macro to import a set of types from the base class
 #define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;

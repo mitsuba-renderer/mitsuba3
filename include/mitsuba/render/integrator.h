@@ -43,10 +43,10 @@ public:
      *
      * Returns the rendered image if \c develop_film is set to \c true.
      */
-    virtual ImageBuffer render(Scene *scene,
-                               uint32_t seed,
-                               uint32_t sensor_index = 0,
-                               bool develop_film = true) = 0;
+    virtual TensorXf render(Scene *scene,
+                            uint32_t seed,
+                            uint32_t sensor_index = 0,
+                            bool develop_film = true) = 0;
 
     /**
      * \brief Cancel a running render job
@@ -143,10 +143,10 @@ public:
     //! @{ \name Integrator interface implementation
     // =========================================================================
 
-    ImageBuffer render(Scene *scene,
-                       uint32_t seed,
-                       uint32_t sensor_index = 0,
-                       bool develop_film = true) override;
+    TensorXf render(Scene *scene,
+                    uint32_t seed,
+                    uint32_t sensor_index = 0,
+                    bool develop_film = true) override;
     void cancel() override;
 
     /**

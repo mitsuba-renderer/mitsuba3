@@ -49,7 +49,7 @@ MTS_VARIANT std::vector<std::string> SamplingIntegrator<Float, Spectrum>::aov_na
     return { };
 }
 
-MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::ImageBuffer
+MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             uint32_t seed,
                                             uint32_t sensor_index,
@@ -57,7 +57,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
-    ImageBuffer result;
+    TensorXf result;
 
     ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();

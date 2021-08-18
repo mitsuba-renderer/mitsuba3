@@ -178,10 +178,10 @@ public:
             m_max = (float) max;
 
             size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), 4 };
-            m_data = ek::Tensor<DynamicBuffer<Float>>(scaled_data.get(), 4, shape);
+            m_data = TensorXf(scaled_data.get(), 4, shape);
         } else {
             size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), m_volume_grid->channel_count() };
-            m_data = ek::Tensor<DynamicBuffer<Float>>(m_volume_grid->data(), 4, shape);
+            m_data = TensorXf(m_volume_grid->data(), 4, shape);
             m_max = m_volume_grid->max();
         }
 
@@ -226,7 +226,7 @@ protected:
 
 protected:
     bool m_raw;
-    ek::Tensor<DynamicBuffer<Float>> m_data;
+    TensorXf m_data;
     ref<VolumeGrid> m_volume_grid;
     Properties m_props;
     FilterType m_filter_type;
@@ -241,7 +241,7 @@ public:
     MTS_IMPORT_TYPES()
 
     GridVolumeImpl(const Properties &props,
-                   const ek::Tensor<DynamicBuffer<Float>> &data,
+                   const TensorXf &data,
                    ScalarFloat max,
                    const ScalarTransform4f &bbox_transform,
                    FilterType filter_type, WrapMode wrap_mode)
@@ -510,7 +510,7 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    ek::Tensor<DynamicBuffer<Float>> m_data;
+    TensorXf m_data;
     bool m_fixed_max = false;
     ek::divisor<int32_t> m_inv_resolution_x,
                          m_inv_resolution_y,
