@@ -172,7 +172,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         Timer timer;
         for (size_t i = 0; i < n_passes; i++) {
-
             render_sample(scene, sensor, sampler, block, aovs.data(),
                           pos, diff_scale_factor);
             sampler->schedule_state();

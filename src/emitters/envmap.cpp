@@ -7,7 +7,7 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
-#include <enoki/dynamic.h>
+#include <enoki/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -118,11 +118,12 @@ public:
             }
         }
 
-        m_resolution = bitmap->size();
-        m_data = ek::load<DynamicBuffer<Float>>(bitmap->data(), ek::hprod(m_resolution) * 4);
+        ScalarVector2u res = bitmap->size();
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), 4 };
+        m_data = ImageBuffer(bitmap->data(), 3, shape);
 
         m_scale = props.float_("scale", 1.f);
-        m_warp = Warp(luminance.get(), m_resolution);
+        m_warp = Warp(luminance.get(), res);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
         ek::set_attr(this, "flags", m_flags);
@@ -216,27 +217,27 @@ public:
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("scale", m_scale);
         callback->put_parameter("data", m_data);
-        callback->put_parameter("resolution", m_resolution);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        ScalarVector2u resolution = { m_data.shape()[1], m_data.shape()[0] };
         if (keys.empty() || string::contains(keys, "data")) {
-            auto&& data = ek::migrate(m_data, AllocType::Host);
+            auto&& data = ek::migrate(m_data.array(), AllocType::Host);
 
             if constexpr (ek::is_jit_array_v<Float>)
                 ek::sync_thread();
 
             std::unique_ptr<ScalarFloat[]> luminance(
-                new ScalarFloat[ek::hprod(m_resolution)]);
+                new ScalarFloat[ek::hprod(resolution)]);
 
             ScalarFloat *ptr     = (ScalarFloat *) data.data(),
                         *lum_ptr = (ScalarFloat *) luminance.get();
 
-            for (size_t y = 0; y < m_resolution.y(); ++y) {
+            for (size_t y = 0; y < resolution.y(); ++y) {
                 ScalarFloat sin_theta =
-                    ek::sin(y / ScalarFloat(m_resolution.y() - 1) * ek::Pi<ScalarFloat>);
+                    ek::sin(y / ScalarFloat(resolution.y() - 1) * ek::Pi<ScalarFloat>);
 
-                for (size_t x = 0; x < m_resolution.x(); ++x) {
+                for (size_t x = 0; x < resolution.x(); ++x) {
                     ScalarVector4f coeff = ek::load_aligned<ScalarVector4f>(ptr);
                     ScalarFloat lum;
 
@@ -254,15 +255,16 @@ public:
                 }
             }
 
-            m_warp = Warp(luminance.get(), m_resolution);
+            m_warp = Warp(luminance.get(), resolution);
         }
     }
 
     std::string to_string() const override {
+        ScalarVector2u resolution = { m_data.shape()[1], m_data.shape()[0] };
         std::ostringstream oss;
         oss << "EnvironmentMapEmitter[" << std::endl
             << "  filename = \"" << m_filename << "\"," << std::endl
-            << "  resolution = \"" << m_resolution << "\"," << std::endl
+            << "  resolution = \"" << resolution << "\"," << std::endl
             << "  bsphere = " << string::indent(m_bsphere) << std::endl
             << "]";
         return oss.str();
@@ -270,20 +272,21 @@ public:
 
 protected:
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths, Mask active) const {
-        uv *= Vector2f(m_resolution - 1u);
+        ScalarVector2u resolution = { m_data.shape()[1], m_data.shape()[0] };
+        uv *= Vector2f(resolution - 1u);
 
-        Point2u pos = ek::min(Point2u(uv), m_resolution - 2u);
+        Point2u pos = ek::min(Point2u(uv), resolution - 2u);
 
         Point2f w1 = uv - Point2f(pos),
                 w0 = 1.f - w1;
 
-        const uint32_t width = m_resolution.x();
+        const uint32_t width = resolution.x();
         UInt32 index = pos.x() + pos.y() * width;
 
-        Vector4f v00 = ek::gather<Vector4f>(m_data, index, active),
-                 v10 = ek::gather<Vector4f>(m_data, index + 1, active),
-                 v01 = ek::gather<Vector4f>(m_data, index + width, active),
-                 v11 = ek::gather<Vector4f>(m_data, index + width + 1, active);
+        Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
+                 v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
+                 v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
+                 v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
             UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
@@ -325,8 +328,7 @@ protected:
 protected:
     std::string m_filename;
     ScalarBoundingSphere3f m_bsphere;
-    DynamicBuffer<Float> m_data;
-    ScalarVector2u m_resolution;
+    ImageBuffer m_data;
     Warp m_warp;
     ref<Texture> m_d65;
     ScalarFloat m_scale;

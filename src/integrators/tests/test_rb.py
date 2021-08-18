@@ -120,8 +120,8 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
 
     # Finite difference
     fd_image_grad = ek.abs(image_1 - image_2) / epsilon
-    rgb_image_adj = ek.unravel(Color3f, ek.detach(image_adj))
-    rgb_fd_image_grad = ek.unravel(Color3f, ek.detach(fd_image_grad))
+    rgb_image_adj = ek.unravel(Color3f, ek.detach(image_adj.array))
+    rgb_fd_image_grad = ek.unravel(Color3f, ek.detach(fd_image_grad.array))
     grad_fd = rgb_fd_image_grad * rgb_image_adj
 
     # Compare the gradients

@@ -32,7 +32,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         # Sample forward paths (not differentiable)
         result, _ = self.Li(scene, sampler.clone(), ray)
 
-        grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
+        grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj.array), pos_idx)
         grad_values *= weight / spp
 
         for k, v in params.items():

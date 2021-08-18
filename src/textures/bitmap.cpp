@@ -7,7 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
-#include <enoki/dynamic.h>
+#include <enoki/tensor.h>
 #include <mutex>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -255,13 +255,13 @@ public:
                       FilterType filter_type,
                       WrapMode wrap_mode)
         : Texture(props),
-          m_resolution(ScalarVector2i(bitmap->size())),
           m_inv_resolution_x((int) bitmap->width()),
           m_inv_resolution_y((int) bitmap->height()),
           m_name(name), m_transform(transform), m_mean(mean),
           m_filter_type(filter_type), m_wrap_mode(wrap_mode) {
-        m_data = ek::load<DynamicBuffer<Float>>(bitmap->data(),
-            ek::hprod(m_resolution) * Channels);
+        ScalarVector2i res = ScalarVector2i(bitmap->size());
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), Channels };
+        m_data = ImageBuffer(bitmap->data(), 3, shape);
         ek::make_opaque(m_transform, m_mean);
     }
 
@@ -313,6 +313,7 @@ public:
                   to_string());
         }
         else {
+            ScalarVector2i res = resolution();
             if (m_filter_type == FilterType::Bilinear) {
                 // Storage representation underlying this texture
                 using StorageType = std::conditional_t<Channels == 1, Float, Color3f>;
@@ -325,7 +326,7 @@ public:
                 Point2f uv = m_transform.transform_affine(si.uv);
 
                 // Scale to bitmap resolution and apply shift
-                uv = ek::fmadd(uv, m_resolution, -0.5f);
+                uv = ek::fmadd(uv, res, -0.5f);
 
                 // Integer pixel positions for bilinear interpolation
                 Vector2i uv_i = ek::floor2int<Vector2i>(uv);
@@ -337,7 +338,7 @@ public:
                 Int24 uv_i_w = wrap(Int24(Int4(0, 1, 0, 1) + uv_i.x(),
                                           Int4(0, 0, 1, 1) + uv_i.y()));
 
-                Int4 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
+                Int4 index = uv_i_w.x() + uv_i_w.y() * res.x();
 
                 auto convert_to_monochrome = [](const auto& a) {
                     if constexpr (Channels == 3)
@@ -346,10 +347,10 @@ public:
                         return a;
                 };
 
-                Float f00 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.x(), active));
-                Float f10 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.y(), active));
-                Float f01 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.z(), active));
-                Float f11 = convert_to_monochrome(ek::gather<StorageType>(m_data, index.w(), active));
+                Float f00 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.x(), active));
+                Float f10 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.y(), active));
+                Float f01 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.z(), active));
+                Float f11 = convert_to_monochrome(ek::gather<StorageType>(m_data.array(), index.w(), active));
 
                 // Partials w.r.t. pixel coordinate x and y
                 Vector2f df_xy{ ek::fmadd(w0.y(), f10 - f00, w1.y() * (f11 - f01)),
@@ -359,7 +360,7 @@ public:
                 Matrix3f uv_tm = m_transform.matrix;
                 Vector2f df_uv{ uv_tm.entry(0, 0) * df_xy.x() + uv_tm.entry(1, 0) * df_xy.y(),
                                 uv_tm.entry(0, 1) * df_xy.x() + uv_tm.entry(1, 1) * df_xy.y() };
-                return m_resolution * df_uv;
+                return res * df_uv;
             }
             // else if (m_filter_type == FilterType::Nearest)
             return Vector2f(0.f);
@@ -385,17 +386,18 @@ public:
     }
 
     template <typename T> T wrap(const T &value) const {
+        ScalarVector2i res = resolution();
         if (m_wrap_mode == WrapMode::Clamp) {
-            return clamp(value, 0, m_resolution - 1);
+            return clamp(value, 0, res - 1);
         } else {
             T div = T(m_inv_resolution_x(value.x()),
                       m_inv_resolution_y(value.y())),
-              mod = value - div * m_resolution;
+              mod = value - div * res;
 
-            ek::masked(mod, mod < 0) += T(m_resolution);
+            ek::masked(mod, mod < 0) += T(res);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
+                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
 
             return mod;
         }
@@ -410,12 +412,13 @@ public:
 
         Point2f uv = m_transform.transform_affine(si.uv);
 
+        ScalarVector2i res = resolution();
         if (m_filter_type == FilterType::Bilinear) {
             using Int4  = ek::Array<Int32, 4>;
             using Int24 = ek::Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
-            uv = ek::fmadd(uv, m_resolution, -.5f);
+            uv = ek::fmadd(uv, res, -.5f);
 
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i = ek::floor2int<Vector2i>(uv);
@@ -428,13 +431,12 @@ public:
             Int24 uv_i_w = wrap(Int24(Int4(0, 1, 0, 1) + uv_i.x(),
                                       Int4(0, 0, 1, 1) + uv_i.y()));
 
-            Int4 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
+            Int4 index = uv_i_w.x() + uv_i_w.y() * res.x();
 
-            /// TODO: merge into a single gather with the upcoming Enoki
-            StorageType v00 = ek::gather<StorageType>(m_data, index.x(), active),
-                        v10 = ek::gather<StorageType>(m_data, index.y(), active),
-                        v01 = ek::gather<StorageType>(m_data, index.z(), active),
-                        v11 = ek::gather<StorageType>(m_data, index.w(), active);
+            StorageType v00 = ek::gather<StorageType>(m_data.array(), index.x(), active),
+                        v10 = ek::gather<StorageType>(m_data.array(), index.y(), active),
+                        v01 = ek::gather<StorageType>(m_data.array(), index.z(), active),
+                        v11 = ek::gather<StorageType>(m_data.array(), index.w(), active);
 
             // Bilinear interpolation
             if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3) {
@@ -458,15 +460,15 @@ public:
             }
         } else {
             // Scale to bitmap resolution, no shift
-            uv *= m_resolution;
+            uv *= res;
 
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i   = ek::floor2int<Vector2i>(uv),
                      uv_i_w = wrap(uv_i);
 
-            Int32 index = uv_i_w.x() + uv_i_w.y() * m_resolution.x();
+            Int32 index = uv_i_w.x() + uv_i_w.y() * res.x();
 
-            StorageType v = ek::gather<StorageType>(m_data, index, active);
+            StorageType v = ek::gather<StorageType>(m_data.array(), index, active);
             if constexpr (is_spectral_v<Spectrum> && !Raw && Channels == 3)
                 return srgb_model_eval<UnpolarizedSpectrum>(v, si.wavelengths);
             else
@@ -486,7 +488,9 @@ public:
         }
 
         auto [pos, pdf, sample2] = m_distr2d->sample(sample, active);
-        ScalarVector2f inv_resolution = ek::rcp(ScalarVector2f(m_resolution));
+
+        ScalarVector2i res = resolution();
+        ScalarVector2f inv_resolution = ek::rcp(ScalarVector2f(res));
 
         if (m_filter_type == FilterType::Nearest) {
             sample2 = (Point2f(pos) + sample2) * inv_resolution;
@@ -512,7 +516,7 @@ public:
             }
         }
 
-        return { sample2, pdf * ek::hprod(m_resolution) };
+        return { sample2, pdf * ek::hprod(res) };
     }
 
     Float pdf_position(const Point2f &pos_, Mask active = true) const override {
@@ -525,12 +529,13 @@ public:
             }
         }
 
+        ScalarVector2i res = resolution();
         if (m_filter_type == FilterType::Bilinear) {
             using Int4  = ek::Array<Int32, 4>;
             using Int24 = ek::Array<Int4, 2>;
 
             // Scale to bitmap resolution and apply shift
-            Point2f uv = ek::fmadd(pos_, m_resolution, -.5f);
+            Point2f uv = ek::fmadd(pos_, res, -.5f);
 
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i = ek::floor2int<Vector2i>(uv);
@@ -547,27 +552,26 @@ public:
             Float v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
                   v1 = ek::fmadd(w0.x(), v01, w1.x() * v11);
 
-            return ek::fmadd(w0.y(), v0, w1.y() * v1) * ek::hprod(m_resolution);
+            return ek::fmadd(w0.y(), v0, w1.y() * v1) * ek::hprod(res);
         } else {
             // Scale to bitmap resolution, no shift
-            Point2f uv = pos_ * m_resolution;
+            Point2f uv = pos_ * res;
 
             // Integer pixel positions for bilinear interpolation
             Vector2i uv_i = wrap(ek::floor2int<Vector2i>(uv));
 
-            return m_distr2d->pdf(uv_i, active) * ek::hprod(m_resolution);
+            return m_distr2d->pdf(uv_i, active) * ek::hprod(res);
         }
     }
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
-        callback->put_parameter("resolution", m_resolution);
         callback->put_parameter("transform", m_transform);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        m_inv_resolution_x = ek::divisor<int32_t>(m_resolution.x());
-        m_inv_resolution_y = ek::divisor<int32_t>(m_resolution.y());
+        m_inv_resolution_x = ek::divisor<int32_t>(resolution().x());
+        m_inv_resolution_y = ek::divisor<int32_t>(resolution().y());
 
         if (keys.empty() || string::contains(keys, "data")) {
             /// Convert m_data into a managed array (available in CPU/GPU address space)
@@ -575,7 +579,9 @@ public:
         }
     }
 
-    ScalarVector2i resolution() const override { return m_resolution; }
+    ScalarVector2i resolution() const override {
+        return { m_data.shape()[1], m_data.shape()[0] };
+    }
 
     Float mean() const override {
         return m_mean;
@@ -587,7 +593,7 @@ public:
         std::ostringstream oss;
         oss << "BitmapTextureImpl[" << std::endl
             << "  name = \"" << m_name << "\"," << std::endl
-            << "  resolution = \"" << m_resolution << "\"," << std::endl
+            << "  resolution = \"" << resolution() << "\"," << std::endl
             << "  raw = " << (int) Raw << "," << std::endl
             << "  mean = " << m_mean << "," << std::endl
             << "  transform = " << string::indent(m_transform) << std::endl
@@ -603,7 +609,7 @@ protected:
      * following an update
      */
     void rebuild_internals(bool init_mean, bool init_distr) {
-        auto&& data = ek::migrate(m_data, AllocType::Host);
+        auto&& data = ek::migrate(m_data.array(), AllocType::Host);
 
         if constexpr (ek::is_jit_array_v<Float>)
             ek::sync_thread();
@@ -613,7 +619,7 @@ protected:
         const ScalarFloat *ptr = data.data();
 
         double mean = 0.0;
-        size_t pixel_count = (size_t) ek::hprod(m_resolution);
+        size_t pixel_count = (size_t) ek::hprod(resolution());
         bool exceed_unit_range = false;
 
         if (Channels == 3) {
@@ -638,7 +644,7 @@ protected:
 
             if (init_distr)
                 m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                    importance_map.get(), m_resolution);
+                    importance_map.get(), resolution());
         } else {
             for (size_t i = 0; i < pixel_count; ++i) {
                 ScalarFloat value = ptr[i];
@@ -649,7 +655,7 @@ protected:
 
             if (init_distr)
                 m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                    ptr, m_resolution);
+                    ptr, resolution());
         }
 
         if (init_mean)
@@ -662,8 +668,7 @@ protected:
     }
 
 protected:
-    DynamicBuffer<Float> m_data;
-    ScalarVector2i m_resolution;
+    ImageBuffer m_data;
     ek::divisor<int32_t> m_inv_resolution_x;
     ek::divisor<int32_t> m_inv_resolution_y;
     std::string m_name;

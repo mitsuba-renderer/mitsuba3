@@ -32,7 +32,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
         ray, weight, _, pos_idx = sample_sensor_rays(sensor)
 
-        grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj), pos_idx)
+        grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj.array), pos_idx)
         grad_values *= weight / spp
 
         for k, v in params.items():

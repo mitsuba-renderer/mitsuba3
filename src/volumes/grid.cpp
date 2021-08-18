@@ -8,6 +8,7 @@
 #include <mitsuba/render/volume.h>
 #include <mitsuba/render/volumegrid.h>
 #include <enoki/dynamic.h>
+#include <enoki/tensor.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -149,8 +150,11 @@ public:
         fs::path file_path = fs->resolve(props.string("filename"));
         m_volume_grid = new VolumeGrid(file_path);
 
-        m_raw                     = props.bool_("raw", false);
-        ScalarUInt32 size         = ek::hprod(m_volume_grid->size());
+        m_raw = props.bool_("raw", false);
+
+        ScalarVector3i res = m_volume_grid->size();
+        ScalarUInt32 size = ek::hprod(res);
+
         // Apply spectral conversion if necessary
         if (is_spectral_v<Spectrum> && m_volume_grid->channel_count() == 3 && !m_raw) {
             ScalarFloat *ptr = m_volume_grid->data();
@@ -172,9 +176,12 @@ public:
                 scaled_data_ptr += 4;
             }
             m_max = (float) max;
-            m_data = ek::load<DynamicBuffer<Float>>(scaled_data.get(), size * 4);
+
+            size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), 4 };
+            m_data = ek::Tensor<DynamicBuffer<Float>>(scaled_data.get(), 4, shape);
         } else {
-            m_data = ek::load<DynamicBuffer<Float>>(m_volume_grid->data(), size * m_volume_grid->channel_count());
+            size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), m_volume_grid->channel_count() };
+            m_data = ek::Tensor<DynamicBuffer<Float>>(m_volume_grid->data(), 4, shape);
             m_max = m_volume_grid->max();
         }
 
@@ -212,14 +219,14 @@ protected:
     }
 
     template <uint32_t Channels, bool Raw> Object* expand_3() const {
-        return new GridVolumeImpl<Float, Spectrum, Channels, Raw>(m_props, m_data,
-                m_volume_grid->size(), m_volume_grid->channel_count(),
-                m_max, m_volume_grid->bbox_transform(), m_filter_type, m_wrap_mode);
+        return new GridVolumeImpl<Float, Spectrum, Channels, Raw>(
+            m_props, m_data, m_max, m_volume_grid->bbox_transform(),
+            m_filter_type, m_wrap_mode);
     }
 
 protected:
     bool m_raw;
-    DynamicBuffer<Float> m_data;
+    ek::Tensor<DynamicBuffer<Float>> m_data;
     ref<VolumeGrid> m_volume_grid;
     Properties m_props;
     FilterType m_filter_type;
@@ -234,19 +241,18 @@ public:
     MTS_IMPORT_TYPES()
 
     GridVolumeImpl(const Properties &props,
-               const DynamicBuffer<Float> &data,
-               ScalarVector3i resolution, ScalarUInt32 channel_count,
-               ScalarFloat max, const ScalarTransform4f &bbox_transform,
-               FilterType filter_type, WrapMode wrap_mode)
-        : Base(props),
-            m_data(data), m_resolution(resolution),
-            m_inv_resolution_x((int) resolution.x()),
-            m_inv_resolution_y((int) resolution.y()),
-            m_inv_resolution_z((int) resolution.z()),
-            m_channel_count(channel_count), m_max(max),
-            m_filter_type(filter_type), m_wrap_mode(wrap_mode){
+                   const ek::Tensor<DynamicBuffer<Float>> &data,
+                   ScalarFloat max,
+                   const ScalarTransform4f &bbox_transform,
+                   FilterType filter_type, WrapMode wrap_mode)
+        : Base(props), m_data(data), m_max(max), m_filter_type(filter_type),
+          m_wrap_mode(wrap_mode) {
 
-        m_size     = ek::hprod(m_resolution);
+        ScalarVector3i res = resolution();
+        m_inv_resolution_x = ek::divisor<int32_t>(res.x());
+        m_inv_resolution_y = ek::divisor<int32_t>(res.y());
+        m_inv_resolution_z = ek::divisor<int32_t>(res.z());
+
         if (props.bool_("use_grid_bbox", false)) {
             m_to_local = bbox_transform * m_to_local;
             update_bbox();
@@ -342,18 +348,19 @@ public:
     }
 
     template <typename T> T wrap(const T &value) const {
+        ScalarVector3i res = resolution();
         if (m_wrap_mode == WrapMode::Clamp) {
-            return clamp(value, 0, m_resolution - 1);
+            return clamp(value, 0, res - 1);
         } else {
             T div = T(m_inv_resolution_x(value.x()),
                       m_inv_resolution_y(value.y()),
                       m_inv_resolution_z(value.z())),
-              mod = value - div * m_resolution;
+              mod = value - div * res;
 
-            ek::masked(mod, mod < 0) += T(m_resolution);
+            ek::masked(mod, mod < 0) += T(res);
 
             if (m_wrap_mode == WrapMode::Mirror)
-                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, m_resolution - 1 - mod);
+                mod = ek::select(ek::eq(div & 1, 0) ^ (value < 0), mod, res - 1 - mod);
 
             return mod;
         }
@@ -375,15 +382,16 @@ public:
         if constexpr (!ek::is_array_v<Mask>)
             active = true;
 
-        const uint32_t nx = m_resolution.x();
-        const uint32_t ny = m_resolution.y();
+        ScalarVector3i res = resolution();
+        const uint32_t nx = res.x();
+        const uint32_t ny = res.y();
 
         if (m_filter_type == FilterType::Trilinear) {
             using Int8  = ek::Array<Int32, 8>;
             using Int38 = ek::Array<Int8, 3>;
 
             // Scale to bitmap resolution and apply shift
-            p = ek::fmadd(p, m_resolution, -.5f);
+            p = ek::fmadd(p, res, -.5f);
 
             // Integer pixel positions for trilinear interpolation
             Vector3i p_i  = ek::floor2int<Vector3i>(p);
@@ -399,14 +407,14 @@ public:
             Int8 index = (pi_i_w.z() * ny + pi_i_w.y()) * nx + pi_i_w.x();
 
             // Load 8 grid positions to perform trilinear interpolation
-            auto d000 = ek::gather<StorageType>(m_data, index[0], active),
-                 d100 = ek::gather<StorageType>(m_data, index[1], active),
-                 d010 = ek::gather<StorageType>(m_data, index[2], active),
-                 d110 = ek::gather<StorageType>(m_data, index[3], active),
-                 d001 = ek::gather<StorageType>(m_data, index[4], active),
-                 d101 = ek::gather<StorageType>(m_data, index[5], active),
-                 d011 = ek::gather<StorageType>(m_data, index[6], active),
-                 d111 = ek::gather<StorageType>(m_data, index[7], active);
+            auto d000 = ek::gather<StorageType>(m_data.array(), index[0], active),
+                 d100 = ek::gather<StorageType>(m_data.array(), index[1], active),
+                 d010 = ek::gather<StorageType>(m_data.array(), index[2], active),
+                 d110 = ek::gather<StorageType>(m_data.array(), index[3], active),
+                 d001 = ek::gather<StorageType>(m_data.array(), index[4], active),
+                 d101 = ek::gather<StorageType>(m_data.array(), index[5], active),
+                 d011 = ek::gather<StorageType>(m_data.array(), index[6], active),
+                 d111 = ek::gather<StorageType>(m_data.array(), index[7], active);
 
             ResultType v000, v001, v010, v011, v100, v101, v110, v111;
             Float scale = 1.f;
@@ -449,14 +457,14 @@ public:
             return result;
         } else {
             // Scale to volume resolution, no shift
-            p *= m_resolution;
+            p *= res;
 
             // Integer voxel positions for lookup
             Vector3i p_i   = ek::floor2int<Vector3i>(p),
                      p_i_w = wrap(p_i);
 
             Int32 index = (p_i_w.z() * ny + p_i_w.y()) * nx + p_i_w.x();
-            StorageType v = ek::gather<StorageType>(m_data, index, active);
+            StorageType v = ek::gather<StorageType>(m_data.array(), index, active);
 
             if constexpr (uses_srgb_model)
                 return v.w() * srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v), wavelengths);
@@ -467,48 +475,47 @@ public:
     }
 
     ScalarFloat max() const override { return m_max; }
-    ScalarVector3i resolution() const override { return m_resolution; };
+
+    ScalarVector3i resolution() const override {
+        auto shape = m_data.shape();
+        return { (int) shape[2], (int) shape[1], (int) shape[0] };
+    };
 
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("data", m_data);
-        callback->put_parameter("channels", m_channel_count);
-        callback->put_parameter("resolution", m_resolution);
         Base::traverse(callback);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/) override {
-        m_size = ek::hprod(m_resolution);
-        m_inv_resolution_x = ek::divisor<int32_t>(m_resolution.x());
-        m_inv_resolution_y = ek::divisor<int32_t>(m_resolution.y());
-        m_inv_resolution_z = ek::divisor<int32_t>(m_resolution.z());
+        ScalarVector3i res = resolution();
+        m_inv_resolution_x = ek::divisor<int32_t>(res.x());
+        m_inv_resolution_y = ek::divisor<int32_t>(res.y());
+        m_inv_resolution_z = ek::divisor<int32_t>(res.z());
 
         // Recompute maximum if necessary
-        if (!m_fixed_max) {
-            m_max = (float) ek::hmax(ek::hmax(ek::detach(m_data)));
-        }
+        if (!m_fixed_max)
+            m_max = (float) ek::hmax_nested(ek::detach(m_data.array()));
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "GridVolume[" << std::endl
             << "  to_local = " << m_to_local << "," << std::endl
-            << "  dimensions = " << m_resolution << "," << std::endl
+            << "  dimensions = " << resolution() << "," << std::endl
             << "  max = " << m_max << "," << std::endl
-            << "  channels = " << m_channel_count << std::endl
+            << "  channels = " << m_data.shape()[3] << std::endl
             << "]";
         return oss.str();
     }
 
     MTS_DECLARE_CLASS()
 protected:
-    DynamicBuffer<Float> m_data;
+    ek::Tensor<DynamicBuffer<Float>> m_data;
     bool m_fixed_max = false;
-    ScalarVector3i m_resolution;
-    ek::divisor<int32_t> m_inv_resolution_x, m_inv_resolution_y, m_inv_resolution_z;
-
-    ScalarUInt32 m_size, m_channel_count;
+    ek::divisor<int32_t> m_inv_resolution_x,
+                         m_inv_resolution_y,
+                         m_inv_resolution_z;
     ScalarFloat m_max;
-
     FilterType m_filter_type;
     WrapMode m_wrap_mode;
 };
