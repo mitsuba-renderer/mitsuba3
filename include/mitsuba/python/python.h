@@ -209,6 +209,22 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
                    [](const ek::uint32_array_t<Array> &a) {
                        return ek::reinterpret_array<Array>(a);
                    });
+
+    if constexpr (ek::is_jit_array_v<Array>) {
+        py::module module = py::module::import("enoki");
+        if constexpr (ek::is_cuda_array_v<Array>)
+            module = module.attr("cuda");
+        else
+            module = module.attr("llvm");
+        if constexpr (ek::is_diff_array_v<Array>)
+            module = module.attr("ad");
+        using UInt32 = ek::uint32_array_t<Array>;
+        py::class_<UInt32> uint32_obj = py::class_<UInt32>(module.attr("UInt32"));
+        uint32_obj.def_static("reinterpret_array_",
+                [](const Array &a) {
+                    return ek::reinterpret_array<UInt32>(a);
+                });
+    }
 }
 
 #define MTS_PY_CHECK_ALIAS(Type, Name)                \
