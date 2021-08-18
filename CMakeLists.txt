@@ -206,8 +206,8 @@ endif()
 
 if (MSVC)
   if (SKBUILD)
-    # Portable binaries for PyPI
-    set(MTS_NATIVE_FLAGS_DEFAULT "")
+    # Reasonably portable binaries for PyPI
+    set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX")
   else()
     set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX2")
   endif()
@@ -216,8 +216,9 @@ elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
   set(MTS_NATIVE_FLAGS_DEFAULT "-mcpu=apple-a12")
 else()
   if (SKBUILD)
-    # Portable binaries for PyPI
-    set(MTS_NATIVE_FLAGS_DEFAULT "-march=nehalem")
+    # Reasonably portable binaries for PyPI
+    # (Mitsuba requires F16C, which is first supported in Ivy Bridge)
+    set(MTS_NATIVE_FLAGS_DEFAULT "-march=ivybridge")
   else()
     set(MTS_NATIVE_FLAGS_DEFAULT "-march=native")
   endif()
