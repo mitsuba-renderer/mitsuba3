@@ -54,6 +54,11 @@ public:
                   "shape.");
 
         m_radiance = props.texture<Texture>("radiance", Texture::D65(1.f));
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
+            // TODO: this should probably be done in the parser, just like with
+            // non-textured spectra.
+            m_d65 = Texture::D65(1.f);
+        }
 
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
@@ -64,7 +69,12 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        return depolarizer<Spectrum>(m_radiance->eval(si, active)) & (Frame3f::cos_theta(si.wi) > 0.f);
+        auto result = depolarizer<Spectrum>(m_radiance->eval(si, active)) &
+                      (Frame3f::cos_theta(si.wi) > 0.f);
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
+            result *= m_d65->eval(si, active);
+
+        return result;
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -105,6 +115,8 @@ public:
 
             SurfaceInteraction3f si(ds, it.wavelengths);
             spec = m_radiance->eval(si, active) / ds.pdf;
+            if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
+                spec *= m_d65->eval(si, active);
         } else {
             // Importance sample the texture, then map onto the shape
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
@@ -131,7 +143,10 @@ public:
                                         dist_squared / -dp, 0.f);
 
             spec = m_radiance->eval(si, active) / ds.pdf;
+            if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
+                spec *= m_d65->eval(si, active);
         }
+
 
         ds.emitter = this;
         return { ds, depolarizer<Spectrum>(spec) & active };
@@ -169,8 +184,14 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
-        return m_radiance->sample_spectrum(
+        auto [wav, weight] = m_radiance->sample_spectrum(
             si, math::sample_shifted<Wavelength>(sample), active);
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
+            SurfaceInteraction3f si2(si);
+            si2.wavelengths = wav;
+            weight *= m_d65->eval(si2, active);
+        }
+        return { wav, weight };
     }
 
     Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
@@ -216,7 +237,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ref<Texture> m_radiance;
+    ref<Texture> m_radiance, m_d65;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(AreaLight, Emitter)
