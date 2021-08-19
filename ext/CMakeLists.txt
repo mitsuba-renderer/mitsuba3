@@ -180,7 +180,7 @@ set(OPENEXR_INCLUDE_DIRS
 )
 
 # ----------------------------------------------------------
-#  libpng16 (On Windows & MacOS)
+#  libpng (On Windows & MacOS)
 # ----------------------------------------------------------
 
 if (WIN32 OR APPLE)
@@ -189,11 +189,11 @@ if (WIN32 OR APPLE)
   set(PNG_TESTS OFF CACHE BOOL " " FORCE)
   set(PNG_SKIP_INSTALL_ALL TRUE)
   if (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-    set(PNG_ARM_NEON on)
+    set(PNG_ARM_NEON "on" CACHE STRING " " FORCE)
   endif()
   add_subdirectory(libpng)
   set_property(TARGET png PROPERTY FOLDER "dependencies")
-  set_property(TARGET png PROPERTY OUTPUT_NAME "png16-mitsuba")
+  set_property(TARGET png PROPERTY OUTPUT_NAME "png-mitsuba")
 
   set(PNG_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/libpng;${CMAKE_CURRENT_BINARY_DIR}/libpng" PARENT_SCOPE)
   set(PNG_LIBRARIES    "png" PARENT_SCOPE)
