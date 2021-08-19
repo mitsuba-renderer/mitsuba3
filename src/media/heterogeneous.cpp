@@ -122,7 +122,7 @@ public:
         m_scale = props.float_("scale", 1.0f);
         m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
 
-        m_max_density = m_scale * m_sigmat->max();
+        m_max_density = ek::opaque<Float>(m_scale * m_sigmat->max());
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
         ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
@@ -155,7 +155,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_max_density = m_scale * m_sigmat->max();
+        m_max_density = ek::opaque<Float>(m_scale * m_sigmat->max());
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -180,7 +180,7 @@ private:
     ref<Volume> m_sigmat, m_albedo;
     ScalarFloat m_scale;
 
-    ScalarFloat m_max_density;
+    Float m_max_density;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(HeterogeneousMedium, Medium)
