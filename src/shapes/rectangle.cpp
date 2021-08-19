@@ -249,8 +249,11 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world"))
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
             update();
+        }
         Base::parameters_changed();
     }
 

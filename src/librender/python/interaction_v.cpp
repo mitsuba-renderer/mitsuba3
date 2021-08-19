@@ -81,6 +81,7 @@ MTS_PY_EXPORT(SurfaceInteraction) {
             D(SurfaceInteraction, has_uv_partials))
         .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
             D(SurfaceInteraction, has_n_partials))
+        .def("boundary_test", &SurfaceInteraction3f::boundary_test, "ray"_a, "active"_a=true)
         .def_repr(SurfaceInteraction3f);
 
     MTS_PY_ENOKI_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths,

@@ -371,6 +371,12 @@ public:
 
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
+    Float boundary_test(const Ray3f &ray,
+                        const SurfaceInteraction3f &si,
+                        Mask /*active*/) const override {
+        return ek::abs(ek::dot(si.sh_frame.n, -ray.d));
+    }
+
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      PreliminaryIntersection3f pi,
                                                      uint32_t hit_flags,
@@ -459,8 +465,11 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "to_world"))
+        if (keys.empty() || string::contains(keys, "to_world")) {
+            // Update the scalar value of the matrix
+            m_to_world = m_to_world.value();
             update();
+        }
         Base::parameters_changed();
     }
 
