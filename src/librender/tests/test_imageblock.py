@@ -228,7 +228,7 @@ def test05_put_with_filter(variants_vec_rgb):
 
 
 def test06_put_values_basic(variant_scalar_spectral):
-    from mitsuba.core import MTS_WAVELENGTH_SAMPLES
+    from mitsuba.core import MTS_WAVELENGTH_SAMPLES, spectrum_to_srgb
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -236,7 +236,7 @@ def test06_put_values_basic(variant_scalar_spectral):
     rfilter = load_string("""<rfilter version="2.0.0" type="box">
             <float name="radius" value="0.4"/>
         </rfilter>""")
-    im = ImageBlock([10, 8], 5, filter=rfilter)
+    im = ImageBlock([10, 8], 5, filter=rfilter, warn_negative=False)
     im.clear()
 
     # From a spectrum & alpha value

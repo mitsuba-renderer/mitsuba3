@@ -113,7 +113,6 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             }
             oss << "]";
             Log(Warn, "%s", oss.str());
-            active &= is_valid;
         }
     }
 
