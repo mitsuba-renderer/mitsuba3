@@ -106,7 +106,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
                 ref<Sampler> sampler = sensor->sampler()->clone();
                 ref<ImageBlock> block = new ImageBlock(
                     film_size, channels.size(), film->reconstruction_filter(),
-                    /* warn_negative */ !has_aovs,
+                    /* warn_negative */ !has_aovs && !is_spectral_v<Spectrum>,
                     /* warn_invalid */ true, /* border */ true,
                     /* normalize */ true);
                 block->set_offset(film->crop_offset());
