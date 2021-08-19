@@ -214,7 +214,9 @@ MTS_PY_EXPORT(Bitmap) {
             void* ptr    = (void*) data[0].cast<size_t>();
 
             Struct::Type component_format;
-            if (typestr == "<f4")
+            if (typestr == "<f2")
+                component_format = Struct::Type::Float16;
+            else if (typestr == "<f4")
                 component_format = Struct::Type::Float32;
             else if (typestr == "<f8")
                 component_format = Struct::Type::Float64;

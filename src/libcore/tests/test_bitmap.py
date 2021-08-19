@@ -215,7 +215,7 @@ def test_read_write_ppm(variant_scalar_rgb, tmpdir):
 
 
 def test_read_bmp(variant_scalar_rgb):
-    from mitsuba.core import Bitmap, Struct
+    from mitsuba.core import Bitmap
     b = Bitmap(find_resource('resources/data/common/textures/flower.bmp'))
     ref = [ 136.50910448, 134.07641791,  85.67253731 ]
     assert np.allclose(np.mean(b, axis=(0, 1)), ref)
@@ -315,3 +315,21 @@ def test_split_data(variant_scalar_rgb):
     assert np.allclose(np.array(split[0][1]), np.array(b_0))
     assert np.allclose(np.array(split[1][1]), np.array(b_1))
     assert np.allclose(np.array(split[2][1]), np.array(b_2))
+
+
+def test_construct_from_array(variants_all_rgb):
+    from mitsuba.core import Bitmap, TensorXf
+    import numpy as np
+
+    b = Bitmap(find_resource('resources/data/tests/bitmap/spot_0.exr'))
+
+    b_np = np.array(b)
+    b_t = TensorXf(b_np)
+
+    assert ek.allclose(b_np, b_t)
+
+    b1 = Bitmap(b_np)
+    b2 = Bitmap(b_t)
+
+    assert ek.allclose(b_np, np.array(b1))
+    assert ek.allclose(b_np, np.array(b2))
