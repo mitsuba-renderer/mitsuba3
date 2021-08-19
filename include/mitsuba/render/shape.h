@@ -152,6 +152,11 @@ public:
      */
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
+    /// TODO add documentation
+    virtual Float boundary_test(const Ray3f &ray,
+                                const SurfaceInteraction3f &si,
+                                Mask active = true) const;
+
     /**
      * \brief Compute and return detailed information related to a surface interaction
      *
@@ -632,6 +637,7 @@ NAMESPACE_END(mitsuba)
 // -----------------------------------------------------------------------
 
 ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Shape)
+    ENOKI_VCALL_METHOD(boundary_test)
     ENOKI_VCALL_METHOD(compute_surface_interaction)
     ENOKI_VCALL_METHOD(eval_attribute)
     ENOKI_VCALL_METHOD(eval_attribute_1)

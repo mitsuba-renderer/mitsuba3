@@ -458,6 +458,13 @@ Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t hit_flags, Mask
     return pi.compute_surface_interaction(ray, hit_flags, active);
 }
 
+MTS_VARIANT
+Float Shape<Float, Spectrum>::boundary_test(const Ray3f &/*ray*/,
+                                            const SurfaceInteraction3f &/*si*/,
+                                            Mask /*active*/) const {
+    NotImplementedError("boundary_test");
+}
+
 MTS_VARIANT typename Shape<Float, Spectrum>::UnpolarizedSpectrum
 Shape<Float, Spectrum>::eval_attribute(const std::string & /*name*/,
                                        const SurfaceInteraction3f & /*si*/,

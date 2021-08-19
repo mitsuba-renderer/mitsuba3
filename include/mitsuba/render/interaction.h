@@ -387,6 +387,11 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return ek::any_nested(ek::neq(dn_du, 0.f) || ek::neq(dn_dv, 0.f));
     }
 
+    Float boundary_test(const Ray3f &ray, Mask active = true) {
+        Float B = shape->boundary_test(ray, *this, active && is_valid());
+        return ek::select(active && is_valid(), B, 1e8f);
+    }
+
     //! @}
     // =============================================================
 
