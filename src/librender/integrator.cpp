@@ -123,9 +123,10 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             [&](const ek::blocked_range<size_t> &range) {
                 ScopedSetThreadEnvironment set_env(env);
                 ref<Sampler> sampler = sensor->sampler()->fork();
-                ref<ImageBlock> block = new ImageBlock(m_block_size, channels.size(),
-                                                       film->reconstruction_filter(),
-                                                       !has_aovs);
+                ref<ImageBlock> block = new ImageBlock(
+                    m_block_size, channels.size(),
+                    film->reconstruction_filter(),
+                    /* warn_negative */ !has_aovs && !is_spectral_v<Spectrum>);
                 std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
 
                 // For each block
