@@ -18,7 +18,6 @@ SCENES = glob.glob(join(TEST_SCENE_DIR, '*', '*.xml'))
 # List of test scene folders to exclude
 EXCLUDE_FOLDERS = [
     'orthographic_sensor', #TODO remove this after rebase onto master
-    'various_emitters', #TODO remove this after ptracer merge
 ]
 
 # List of test scene folders to exclude for JIT modes
@@ -98,13 +97,25 @@ def read_rgb_bmp_to_xyz(fname):
     return Bitmap(fname).convert(Bitmap.PixelFormat.XYZ, Struct.Type.Float32, False)
 
 
-def bitmap_extract(bmp):
+def bitmap_extract(bmp, require_variance=True):
     """Extract different channels from moment integrator AOVs"""
     # AVOs from the moment integrator are in XYZ (float32)
+    from mitsuba.core import Bitmap, Struct
+
     split = bmp.split()
-    img = np.array(split[1][1], copy=False)
-    img_m2 = np.array(split[2][1], copy=False)
-    return img, img_m2 - img * img
+    if len(split) == 1:
+        if require_variance:
+            raise RuntimeError(
+                'Could not extract variance image from bitmap. '
+                'Did you wrap the integrator into a `moment` integrator?\n{}'.format(bmp))
+        b_root = split[0][1]
+        if b_root.channel_count() >= 3 and b_root.pixel_format() != Bitmap.PixelFormat.XYZ:
+            b_root = b_root.convert(Bitmap.PixelFormat.XYZ, Struct.Type.Float32, False)
+        return np.array(b_root, copy=True), None
+    else:
+        img = np.array(split[1][1], copy=False)
+        img_m2 = np.array(split[2][1], copy=False)
+        return img, img_m2 - img * img
 
 
 def z_test(mean, sample_count, reference, reference_var):
@@ -131,6 +142,7 @@ def z_test(mean, sample_count, reference, reference_var):
 @pytest.mark.parametrize("variant, scene_fname, jit_flags_key", list_all_render_test_configs())
 def test_render(gc_collect, variant, scene_fname, jit_flags_key):
     mitsuba.set_variant(variant)
+    from mitsuba.core import Bitmap
 
     if hasattr(ek, 'JitFlag'):
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
@@ -138,9 +150,9 @@ def test_render(gc_collect, variant, scene_fname, jit_flags_key):
 
     ref_fname, ref_var_fname = get_ref_fname(scene_fname)
     if not (exists(ref_fname) and exists(ref_var_fname)):
-        pytest.skip("Non-existent reference data.")
+        pytest.skip("Missing reference data:\n- Reference image: {}\n- Variance image: {}".format(
+            ref_fname, ref_var_fname))
 
-    from mitsuba.core import Bitmap, Struct, Thread
 
     ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
     ref_img = np.array(ref_bmp, copy=False)
@@ -161,7 +173,7 @@ def test_render(gc_collect, variant, scene_fname, jit_flags_key):
 
     # Compute variance image
     bmp = scene.sensors()[0].film().bitmap(raw=False)
-    img, var_img = bitmap_extract(bmp)
+    img, var_img = bitmap_extract(bmp, require_variance=False)
 
     # Compute Z-test p-value
     p_value = z_test(img, spp, ref_img, ref_var_img)
@@ -199,14 +211,15 @@ def test_render(gc_collect, variant, scene_fname, jit_flags_key):
         ref_img_rgb_bmp.write(fname)
         print('Saved reference image to: ' + fname)
 
-        var_fname = output_prefix + '_var.exr'
-        xyz_to_rgb_bmp(var_img).write(var_fname)
-        print('Saved variance image to: ' + var_fname)
+        if var_img is not None:
+            var_fname = output_prefix + '_var.exr'
+            xyz_to_rgb_bmp(var_img).write(var_fname)
+            print('Saved variance image to: ' + var_fname)
 
         err_fname = output_prefix + '_error.exr'
         err_img = 0.02 * np.array(img_rgb_bmp)
         err_img[~success] = 1.0
-        err_bmp = Bitmap(err_img).write(err_fname)
+        Bitmap(err_img).write(err_fname)
         print('Saved error image to: ' + err_fname)
 
         pvalue_fname = output_prefix + '_pvalue.exr'
@@ -216,20 +229,17 @@ def test_render(gc_collect, variant, scene_fname, jit_flags_key):
         assert False
 
 
-if __name__ == '__main__':
-    """
-    Generate reference images for all the scenes contained within the TEST_SCENE_DIR directory,
-    and for all the color mode having their `scalar_*` mode enabled.
-    """
-    parser = argparse.ArgumentParser(prog='RenderReferenceImages')
-    parser.add_argument('--overwrite', action='store_true',
-                        help='Force rerendering of all reference images. Otherwise, only missing references will be rendered.')
-    parser.add_argument('--spp', default=32000, type=int,
-                        help='Samples per pixel. Default value: 32000')
-    args = parser.parse_args()
-
-    ref_spp = args.spp
-    overwrite = args.overwrite
+def render_ref_images(scenes, spp, overwrite, scene=None):
+    if scene is not None:
+        if not scene.endswith('.xml'):
+            scene = scene + '.xml'
+        for s in scenes:
+            if os.path.basename(s) == scene:
+                scenes = [s]
+                break
+        else:
+            raise ValueError('Scene "{}" not found in available scenes: {}'.format(
+                scene, list(map(os.path.basename, scenes))))
 
     for scene_fname in SCENES:
         scene_dir = dirname(scene_fname)
@@ -245,13 +255,12 @@ if __name__ == '__main__':
                 continue
 
             mitsuba.set_variant(variant)
-            from mitsuba.core import Bitmap, Struct, Thread
 
             ref_fname, var_fname = get_ref_fname(scene_fname)
             if exists(ref_fname) and exists(var_fname) and not overwrite:
                 continue
 
-            scene = mitsuba.core.xml.load_file(scene_fname, spp=ref_spp)
+            scene = mitsuba.core.xml.load_file(scene_fname, spp=spp)
             scene.integrator().render(scene, seed=0, develop_film=False)
 
             bmp = scene.sensors()[0].film().bitmap(raw=False)
@@ -265,3 +274,19 @@ if __name__ == '__main__':
             # Write variance image to a file
             xyz_to_rgb_bmp(var_img).write(var_fname)
             print('Saved variance image to: ' + var_fname)
+
+
+if __name__ == '__main__':
+    """
+    Generate reference images for all the scenes contained within the TEST_SCENE_DIR directory,
+    and for all the color mode having their `scalar_*` mode enabled.
+    """
+    parser = argparse.ArgumentParser(prog='RenderReferenceImages')
+    parser.add_argument('--overwrite', action='store_true',
+                        help='Force rerendering of all reference images. Otherwise, only missing references will be rendered.')
+    parser.add_argument('--spp', default=32000, type=int,
+                        help='Samples per pixel. Default value: 32000')
+    parser.add_argument('--scene', default=None, type=str,
+                        help='Name of a specific scene to render. Otherwise, try to render reference images for all scenes.')
+    args = parser.parse_args()
+    render_ref_images(SCENES, **vars(args))
