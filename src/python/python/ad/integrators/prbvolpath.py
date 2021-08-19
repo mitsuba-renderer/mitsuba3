@@ -143,8 +143,9 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             # Handle medium sampling and potential medium escape
             u = sampler.next_1d(active_medium)
             mi = medium.sample_interaction(ray, u, channel, active_medium)
+            mi.t = ek.detach(mi.t)
 
-            ray.maxt[active_medium & medium.is_homogeneous() & mi.is_valid()] = ek.detach(mi.t)
+            ray.maxt[active_medium & medium.is_homogeneous() & mi.is_valid()] = mi.t
             intersect = needs_intersection & active_medium
             si_new = scene.ray_intersect(ray, intersect)
             si[intersect] = si_new
