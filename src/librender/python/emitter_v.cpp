@@ -54,7 +54,14 @@ MTS_PY_EXPORT(Emitter) {
     auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
         .def(py::init<const Properties&>())
         .def_method(Emitter, is_environment)
-        .def_method(Emitter, flags);
+        .def_method(Emitter, flags)
+        .def_property("m_flags",
+            [](PyEmitter &emitter){ return emitter.m_flags; },
+            [](PyEmitter &emitter, uint32_t flags){
+                emitter.m_flags = flags;
+                ek::set_attr(&emitter, "flags", flags);
+            }
+        );
 
     if constexpr (ek::is_array_v<EmitterPtr>) {
         py::object ek       = py::module_::import("enoki"),
@@ -87,13 +94,6 @@ MTS_PY_EXPORT(Emitter) {
                 },
                 "si"_a, "active"_a = true, D(Endpoint, eval))
         .def("flags", [](EmitterPtr ptr) { return ptr->flags(); }, D(Emitter, flags))
-        .def_property("m_flags",
-            [](PyEmitter &emitter){ return emitter.m_flags; },
-            [](PyEmitter &emitter, uint32_t flags){
-                emitter.m_flags = flags;
-                ek::set_attr(&emitter, "flags", flags);
-            }
-        )
         .def("is_environment",
              [](EmitterPtr ptr) { return ptr->is_environment(); },
              D(Emitter, is_environment));
