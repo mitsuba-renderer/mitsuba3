@@ -2,6 +2,7 @@
 #include <mitsuba/core/frame.h>
 #include <mitsuba/python/python.h>
 #include <enoki/dynamic.h>
+#include <enoki/tensor.h>
 
 /// Defines a list of types that plugins can expose as tweakable/differentiable parameters
 #define APPLY_FOR_EACH(T) \
@@ -9,8 +10,8 @@
     T(DynamicBuffer<Float64>); T(DynamicBuffer<Int32>);                        \
     T(DynamicBuffer<UInt32>); T(Color1f); T(Color3f); T(Vector2i); T(Vector2u);\
     T(Vector3i); T(Vector3u); T(Point2u); T(Point3u); T(Point2f); T(Point3f);  \
-    T(Vector2f); T(Vector3f); T(Vector4f); T(Normal3f); T(Frame3f);            \
-    T(Matrix3f); T(Matrix4f); T(Transform3f); T(Transform4f); T(Mask);         \
+    T(Vector2f); T(Vector3f); T(Vector4f); T(Normal3f); T(Frame3f); T(Mask);   \
+    T(Matrix3f); T(Matrix4f); T(Transform3f); T(Transform4f); T(TensorXf);     \
     if constexpr (!std::is_same_v<Float, ScalarFloat>) {                       \
         T(ScalarFloat32); T(ScalarFloat64); T(ScalarInt32); T(ScalarUInt32);   \
         T(ScalarColor1f); T(ScalarColor3f); T(ScalarVector2i);                 \
