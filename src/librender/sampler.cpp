@@ -31,6 +31,7 @@ MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
                 Throw("Sampler::seed(): wavefront_size should be specified!");
         }
     } else {
+        ENOKI_MARK_USED(wavefront_size);
         m_wavefront_size = 1;
     }
     m_dimension_index = ek::opaque<UInt32>(0);
@@ -90,7 +91,7 @@ Sampler<Float, Spectrum>::current_sample_index() const {
     return m_sample_index * m_samples_per_wavefront + wavefront_sample_offsets;
 }
 
-MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler& sampler) {
+MTS_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler& sampler) : Object() {
     m_sample_count          = sampler.m_sample_count;
     m_base_seed             = sampler.m_base_seed;
     m_wavefront_size        = sampler.m_wavefront_size;

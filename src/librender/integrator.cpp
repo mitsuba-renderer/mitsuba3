@@ -73,7 +73,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     size_t n_passes = (total_spp + samples_per_pass - 1) / samples_per_pass;
 
     std::vector<std::string> channels = aov_names();
-    bool has_aovs = !channels.empty();
 
     // Insert default channels and set up the film
     for (size_t i = 0; i < 5; ++i)
@@ -114,6 +113,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         size_t total_blocks = spiral.block_count() * n_passes,
                blocks_done = 0;
         size_t seed_offset = seed * total_spp * ek::hprod(film_size);
+        bool has_aovs = !channels.empty();
 
         ek::parallel_for(
             ek::blocked_range<size_t>(0, total_blocks, 1),
@@ -255,7 +255,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         }
     } else if constexpr (ek::is_array_v<Float> && !ek::is_jit_array_v<Float>) {
         // Ensure that the sample generation is fully deterministic
-        sampler->seed(block_id);
+        sampler->seed(block_id + seed_offset);
 
         for (auto [index, active] : ek::range<UInt32>(pixel_count * sample_count)) {
             if (should_stop())
@@ -273,6 +273,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
         ENOKI_MARK_USED(pixel_count);
         ENOKI_MARK_USED(sample_count);
         ENOKI_MARK_USED(block_id);
+        ENOKI_MARK_USED(seed_offset);
         Throw("Not implemented for JIT arrays.");
     }
 }

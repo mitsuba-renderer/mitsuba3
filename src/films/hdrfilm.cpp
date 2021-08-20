@@ -384,6 +384,7 @@ public:
                             dest_field.name = "A";
                             break;
                         }
+                        break;
 
                     case 2:
                         if (to_rgb) {
@@ -398,11 +399,14 @@ public:
                             };
                             break;
                         }
+                        break;
+
                     case 3:
                         if ((to_rgb || to_xyz) && has_alpha) {
                             dest_field.name = "A";
                             break;
                         }
+                        break;
 
                     default:
                         dest_field.name = m_channels[5 + i - aovs_channel];
