@@ -2,6 +2,30 @@ import enoki as ek
 import mitsuba
 import pytest
 
+def write_kernels(*args, output_dir='kernels', scene_fname=None):
+    import os
+    import json
+    assert mitsuba.variant() == 'cuda_rgb'
+
+    os.makedirs(output_dir, exist_ok=True)
+    for i, h in enumerate(args):
+        for j, entry in enumerate(h):
+            fname = os.path.join(output_dir, f'run_{i}_kernel_{j}.ptx')
+            ptx = entry['ir'].getvalue()
+
+            safe_entries = {k: v for k, v in entry.items() if k not in ('backend', 'ir')}
+
+            with open(fname, 'w') as f:
+                meta = '\n// '.join(json.dumps(safe_entries, indent=2).split('\n'))
+                f.write(f'// Run {i}, kernel {j} ({len(h)} kernels total)\n')
+                if scene_fname:
+                    f.write(f'// Scene: {scene_fname}\n')
+                f.write(f'// Variant: {mitsuba.variant()}\n')
+                f.write('// Hash: {}\n'.format(hex(safe_entries['hash'])[2:]))
+                f.write(f'// Kernel: {meta}\n\n\n')
+                f.write(ptx)
+
+
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
 def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
     """
@@ -58,7 +82,75 @@ def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
         assert history_3[i]['hash'] == history_1[i]['hash']
 
 
-def test03_kernel_launches_optimization(variants_vec_rgb, gc_collect):
+@pytest.mark.parametrize('scene_fname', [
+    '../resources/data/scenes/cbox/cbox.xml',
+    '../resources/data/tests/scenes/various_emitters/test_various_emitters.xml'])
+def test02_kernel_launches_ptracer(variants_vec_rgb, gc_collect, scene_fname):
+    """
+    Tests that forward rendering launches the correct number of kernels
+    for the particle tracer integrator
+    """
+    from mitsuba.core import xml
+
+    scene = xml.load_file(scene_fname)
+    film_size = scene.sensors()[0].film().crop_size()
+    spp = 2
+
+    integrator = xml.load_dict({
+        'type': 'ptracer',
+        'max_depth': 5
+    })
+
+    ek.set_flag(ek.JitFlag.KernelHistory, True)
+    # Perform 3 rendering in a row
+    integrator.render(scene, seed=0, spp=spp)
+    history_1 = ek.kernel_history()
+    integrator.render(scene, seed=0, spp=spp)
+    history_2 = ek.kernel_history()
+    integrator.render(scene, seed=0, spp=spp)
+    history_3 = ek.kernel_history()
+
+    # Role of each kernel
+    # 0. Seeding the sampler
+    # 1. Render visible emitters, trace and connect paths from the light source to the sensor
+    # 2. Normalization (overwrite weight channel)
+    # 3. Developing the film
+    assert len(history_1) == 4
+    assert len(history_2) == 4
+    assert len(history_3) == 4
+
+    # Kernels should all be identical (reused from the cached)
+    for i in range(len(history_1)):
+        assert history_2[i]['hash'] == history_1[i]['hash']
+        assert history_3[i]['hash'] == history_1[i]['hash']
+
+    # Only the rendering kernels should use optix
+    if mitsuba.variant().startswith('cuda'):
+        assert [e['uses_optix'] for e in history_1] == [False, True, False, False]
+        assert [e['uses_optix'] for e in history_2] == [False, True, False, False]
+        assert [e['uses_optix'] for e in history_3] == [False, True, False, False]
+
+    # Check seeding & rendering wavefront size
+    render_wavefront_size = ek.hprod(film_size) * spp
+    for i in range(2):
+        assert history_1[i]['size'] == render_wavefront_size
+        assert history_2[i]['size'] == render_wavefront_size
+        assert history_3[i]['size'] == render_wavefront_size
+
+    # Check film renormalization wavefront size
+    normalization_wavefront_size = ek.hprod(film_size) * 1 #(W)
+    assert history_1[2]['size'] == normalization_wavefront_size
+    assert history_2[2]['size'] == normalization_wavefront_size
+    assert history_3[2]['size'] == normalization_wavefront_size
+
+    # Check film development wavefront size
+    film_wavefront_size = ek.hprod(film_size) * 3 #(RGB)
+    assert history_1[3]['size'] == film_wavefront_size
+    assert history_2[3]['size'] == film_wavefront_size
+    assert history_3[3]['size'] == film_wavefront_size
+
+
+def test03_kernel_launches_optimization(variants_all_ad_rgb, gc_collect):
     """
     Check the history of kernel launches during a simple optimization loop
     using render_adjoint.
