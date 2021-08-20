@@ -203,7 +203,7 @@ int main(int argc, char *argv[]) {
         jit_set_log_level_stderr(log_level_enoki[std::min(log_level, 6)]);
 #endif
 
-        // Initialize Intel Thread Building Blocks with the requested number of threads
+        // Initialize enoki-thread with the requested number of threads
         size_t thread_count = Thread::thread_count();
         if (*arg_threads)
             thread_count = std::max(0, arg_threads->as_int());
