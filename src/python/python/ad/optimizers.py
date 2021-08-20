@@ -42,7 +42,7 @@ class Optimizer:
         """
         if not (ek.is_diff_array_v(value) and ek.is_floating_point_v(value)):
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
-        needs_reset = (key not in self.variables) or ek.width(self.variables[key]) != ek.width(value)
+        needs_reset = (key not in self.variables) or ek.shape(self.variables[key]) != ek.shape(value)
 
         self.variables[key] = type(value)(ek.detach(value))
         ek.enable_grad(self.variables[key])
@@ -216,12 +216,12 @@ class SGD(Optimizer):
         """Take a gradient step"""
         for k, p in self.variables.items():
             g_p = ek.grad(p)
-            size = ek.width(g_p)
-            if size == 0:
+            shape = ek.shape(g_p)
+            if shape == 0:
                 continue
 
             if self.momentum != 0:
-                if size != ek.width(self.state[k]):
+                if shape != ek.shape(self.state[k]):
                     # Reset state if data size has changed
                     self.reset(k)
 
@@ -244,8 +244,8 @@ class SGD(Optimizer):
         if self.momentum == 0:
             return
         p = self.variables[key]
-        size = ek.width(p)
-        self.state[key] = ek.zero(ek.detached_t(p), size)
+        shape = ek.shape(p) if p.IsTensor else ek.width(p)
+        self.state[key] = ek.zero(ek.detached_t(p), shape)
 
     def __repr__(self):
         return ('SGD[\n  params = %s,\n  lr = %s,\n  momentum = %.2g\n]') % \
@@ -291,11 +291,11 @@ class Adam(Optimizer):
 
             lr_t = self.lr_v[k] * lr_scale
             g_p = ek.grad(p)
-            size = ek.width(g_p)
+            shape = ek.shape(g_p)
 
-            if size == 0:
+            if shape == 0:
                 continue
-            elif size != ek.width(self.state[k][0]):
+            elif shape != ek.shape(self.state[k][0]):
                 # Reset state if data size has changed
                 self.reset(k)
 
@@ -316,9 +316,9 @@ class Adam(Optimizer):
     def reset(self, key):
         """Zero-initializes the internal state associated with a parameter"""
         p = self.variables[key]
-        size = ek.width(p)
-        self.state[key] = (ek.zero(ek.detached_t(p), size),
-                           ek.zero(ek.detached_t(p), size))
+        shape = ek.shape(p) if p.IsTensor else ek.width(p)
+        self.state[key] = (ek.zero(ek.detached_t(p), shape),
+                           ek.zero(ek.detached_t(p), shape))
         self.t[key] = 0
 
     def __repr__(self):
