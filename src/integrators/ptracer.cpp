@@ -214,8 +214,6 @@ public:
         sampler->loop_register(loop);
         loop.init();
 
-        ek::eval(block->data());
-
         // Incrementally build light path using BSDF sampling.
         while (loop(ek::detach(active))) {
             BSDFPtr bsdf = si.bsdf(ray);
