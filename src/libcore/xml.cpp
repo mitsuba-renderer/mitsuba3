@@ -979,7 +979,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
     if (it == ctx.instances.end())
         Throw("reference to unknown object \"%s\"!", id);
 
-    auto &inst = it->second;
+    XMLObject &inst = it->second;
 
     if (!inst.alias.empty())
         return instantiate_node(ctx, inst.alias, env, task_map, top_node);
@@ -1071,10 +1071,19 @@ static Task *instantiate_node(XMLParseContext &ctx,
 
     if (top_node) {
         // Top node always instantiated on the main thread
-        for (auto& task : deps)
-            task_wait(task);
+        std::exception_ptr eptr;
+        for (auto& task : deps) {
+            try {
+                task_wait(task);
+            } catch (...) {
+                if (!eptr)
+                    eptr = std::current_exception();
+            }
+        }
         for (auto& kv : task_map)
             task_release(kv.second);
+        if (eptr)
+            std::rethrow_exception(eptr);
         instantiate();
         return nullptr;
     } else {
