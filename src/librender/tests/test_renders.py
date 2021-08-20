@@ -31,6 +31,10 @@ SYMBOLIC_EXCLUDE_FOLDERS = [
     'instancing',      #TODO remove this once nested vcalls are supported
 ]
 
+POLARIZED_EXCLUDE_FOLDERS = [
+    'participating_media',
+]
+
 if hasattr(ek, 'JitFlag'):
     JIT_FLAG_OPTIONS = {
         'scalar': {},
@@ -48,10 +52,13 @@ def list_all_render_test_configs():
     configs = []
     for variant in mitsuba.variants():
         is_jit = "cuda" in variant or "llvm" in variant
+        is_polarized = "polarized" in variant
         for scene in SCENES:
             if any(ex in scene for ex in EXCLUDE_FOLDERS):
                 continue
             if is_jit and any(ex in scene for ex in JIT_EXCLUDE_FOLDERS):
+                continue
+            if is_polarized and any(ex in scene for ex in POLARIZED_EXCLUDE_FOLDERS):
                 continue
             if not is_jit:
                 configs.append((variant, scene, 'scalar'))
@@ -223,7 +230,7 @@ if __name__ == '__main__':
     ref_spp = args.spp
     overwrite = args.overwrite
 
-    for scene_fname in scenes:
+    for scene_fname in SCENES:
         scene_dir = dirname(scene_fname)
 
         if os.path.split(scene_dir)[1] in EXCLUDE_FOLDERS:
@@ -231,6 +238,9 @@ if __name__ == '__main__':
 
         for variant in mitsuba.variants():
             if not variant.split('_')[0] == 'scalar' or variant.endswith('double'):
+                continue
+
+            if 'polarized' in variant and os.path.split(scene_dir)[1] in POLARIZED_EXCLUDE_FOLDERS:
                 continue
 
             mitsuba.set_variant(variant)
