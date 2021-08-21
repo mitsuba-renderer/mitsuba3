@@ -170,8 +170,10 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
 
             sampler->schedule_state();
 
-            if (n_passes > 1)
+            if (n_passes > 1) {
                 ek::eval(block->data());
+                ek::sync_thread();
+            }
         }
 
         film->put(block);
@@ -181,6 +183,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
      * and `scatter` of different sizes will be executed in
      * order, so we force evaluation. */
     ek::eval();
+    ek::sync_thread();
 
     // Apply proper normalization.
     film->overwrite_channel("W", samples_per_pixel);
