@@ -351,6 +351,7 @@ public:
                     case 0:
                         if (to_rgb) {
                             dest_field.name = "R";
+                            break;
                         } else if (to_xyz) {
                             dest_field.name = "X";
                             dest_field.blend = {
@@ -358,6 +359,7 @@ public:
                                 { 0.357580f, "G" },
                                 { 0.180423f, "B" }
                             };
+                            break;
                         } else if (to_y) {
                             dest_field.name = "Y";
                             dest_field.blend = {
@@ -365,8 +367,9 @@ public:
                                 { 0.715160f, "G" },
                                 { 0.072169f, "B" }
                             };
+                            break;
                         }
-                        break;
+                        [[fallthrough]];
 
                     case 1:
                         if (to_rgb) {
@@ -384,7 +387,7 @@ public:
                             dest_field.name = "A";
                             break;
                         }
-                        break;
+                        [[fallthrough]];
 
                     case 2:
                         if (to_rgb) {
@@ -399,14 +402,14 @@ public:
                             };
                             break;
                         }
-                        break;
+                        [[fallthrough]];
 
                     case 3:
                         if ((to_rgb || to_xyz) && has_alpha) {
                             dest_field.name = "A";
                             break;
                         }
-                        break;
+                        [[fallthrough]];
 
                     default:
                         dest_field.name = m_channels[5 + i - aovs_channel];

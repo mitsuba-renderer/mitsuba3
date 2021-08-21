@@ -89,7 +89,7 @@ def test02_sample_local(variant_scalar_mono_polarized):
 
 
 def test03_sample_world(variant_scalar_mono_polarized):
-    from mitsuba.core import Ray3f, Spectrum
+    from mitsuba.core import Ray3f, Spectrum, Color0f
     from mitsuba.core.xml import load_string
     from mitsuba.render import BSDFContext, TransportMode
     from mitsuba.render.mueller import stokes_basis, rotate_mueller_basis_collinear
@@ -114,7 +114,7 @@ def test03_sample_world(variant_scalar_mono_polarized):
 
     ctx = BSDFContext()
     ctx.mode = TransportMode.Importance
-    ray = Ray3f([0, -100, 0], forward, 0.0, 0.0)
+    ray = Ray3f([0, -100, 0], forward, 0.0, Color0f())
 
     # Polarizer rotation angles
     angles = [0, 90, +45, -45]
