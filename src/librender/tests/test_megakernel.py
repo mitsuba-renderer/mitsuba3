@@ -32,7 +32,6 @@ def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
     Tests that forward rendering launches the correct number of kernels
     """
     from mitsuba.core import xml
-    import mitsuba.python.ad.integrators
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
@@ -157,7 +156,6 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb, gc_collect):
     """
     from mitsuba.core import xml, Color3f
     from mitsuba.python.util import traverse
-    import mitsuba.python.ad.integrators
 
     scene = xml.load_file('../resources/data/scenes/cbox/cbox.xml')
     film_size = scene.sensors()[0].film().crop_size()
