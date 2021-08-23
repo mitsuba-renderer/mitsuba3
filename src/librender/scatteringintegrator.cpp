@@ -42,7 +42,8 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
 
     ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
-    ScalarVector2i film_size = film->crop_size();
+    ScalarVector2i film_size = film->size();
+    ScalarVector2i crop_size = film->crop_size();
 
     if (unlikely(scene->emitters().empty())) {
         Log(Warn, "Scene does not contain any emitter, returning black image.");
@@ -60,7 +61,11 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
                 samples_per_pixel, samples_per_pass_per_pixel);
 
     /* Multiply sample count by pixel count to obtain a similar scale
-     * to the standard path tracer. */
+     * to the standard path tracer.
+     * When crop is enabled, in order to get comparable convergence and
+     * brightness as a with apath tracer, we still trace a number of
+     * rays corresponding to the full sensor size.
+     */
     size_t samples_per_pass = samples_per_pass_per_pixel * ek::hprod(film_size);
     size_t n_passes =
         (samples_per_pixel * ek::hprod(film_size) + samples_per_pass - 1) / samples_per_pass;
@@ -81,7 +86,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
         size_t n_threads = __global_thread_count;
 
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
-            film_size.x(), film_size.y(),
+            crop_size.x(), crop_size.y(),
             total_samples, total_samples == 1 ? "" : "s",
             n_passes > 1 ? tfm::format(" %d passes,", n_passes) : "",
             n_threads, n_threads == 1 ? "" : "s");
@@ -105,7 +110,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
 
                 ref<Sampler> sampler = sensor->sampler()->clone();
                 ref<ImageBlock> block = new ImageBlock(
-                    film_size, channels.size(), film->reconstruction_filter(),
+                    crop_size, channels.size(), film->reconstruction_filter(),
                     /* warn_negative */ !has_aovs && !is_spectral_v<Spectrum>,
                     /* warn_invalid */ true, /* border */ false,
                     /* normalize */ true);
@@ -141,7 +146,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     } else {
         // Wavefront rendering
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s)",
-            film_size.x(), film_size.y(),
+            crop_size.x(), crop_size.y(),
             total_samples, total_samples == 1 ? "" : "s",
             n_passes > 1 ? tfm::format(" %d passes", n_passes) : "");
 
@@ -156,7 +161,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
            reduction which is can be expensive, or even impossible in
            symbolic modes. */
         ref<ImageBlock> block = new ImageBlock(
-            film_size, channels.size(), film->reconstruction_filter(),
+            crop_size, channels.size(), film->reconstruction_filter(),
             /* warn_negative */ false,
             /* warn_invalid */ false, /* border */ false,
             /* normalize */ true);
@@ -186,7 +191,8 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     ek::sync_thread();
 
     // Apply proper normalization.
-    film->overwrite_channel("W", samples_per_pixel);
+    film->overwrite_channel("W", samples_per_pixel * ek::hprod(film_size) /
+                                     ScalarFloat(ek::hprod(crop_size)));
 
     TensorXf result;
     if (develop_film) {

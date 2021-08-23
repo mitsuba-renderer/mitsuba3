@@ -339,9 +339,13 @@ public:
 
         result = weight * surface_weight;
 
-        // Splatting
+        /* Splatting, adjusting UVs for sensor's crop window if needed.
+         * The crop window is already accounted for in the UV positions
+         * returned by the sensor, here we just need to compensate for
+         * the block's offset that will be applied in `put`. */
         Float alpha = ek::select(ek::neq(bsdf, nullptr), 1.f, 0.f);
-        block->put(sensor_ds.uv, si.wavelengths, result, alpha, active);
+        Vector2f adjusted_position = sensor_ds.uv + block->offset();
+        block->put(adjusted_position, si.wavelengths, result, alpha, active);
 
         return result;
     }
