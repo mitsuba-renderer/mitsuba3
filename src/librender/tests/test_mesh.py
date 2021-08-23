@@ -233,7 +233,7 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test09_eval_parameterization(variants_all_rgb):
+def test09_eval_parameterization(variants_all_rgb, gc_collect):
     from mitsuba.core.xml import load_string
     shape = load_string('''
         <shape type="obj" version="2.0.0">
