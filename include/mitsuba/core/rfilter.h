@@ -144,7 +144,7 @@ template <typename Scalar_> struct Resampler {
 
                 /* Determine the index of the first original sample
                    that might contribute */
-                m_start[i] = ek::floor2int<uint32_t>(center - filter_radius + Float(0.5));
+                m_start[i] = ek::floor2int<int32_t>(center - filter_radius + Float(0.5));
 
                 /* Determine the size of center region, on which to run
                    the fast non condition-aware code */
@@ -308,7 +308,7 @@ private:
             for (uint32_t ch = 0; ch < channels; ++ch) {
                 Scalar result = 0;
                 for (uint32_t j = 0; j < taps; ++j)
-                    result += lookup(source, offset + (uint32_t) j,
+                    result += lookup(source, offset + (int32_t) j,
                                      source_stride, ch) * weights[j];
 
                 *target++ = Clamp ? ek::template clamp<Scalar>(result, min, max) : result;
