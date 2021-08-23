@@ -176,7 +176,7 @@ def set_variant(value):
     _tls.variant = value
 
     # Automatically load/reload and register Python integrators for AD variants
-    if '_ad_' in value:
+    if value.startswith(('llvm_', 'cuda_')):
         import sys
         if 'mitsuba.python.ad.integrators' in sys.modules:
             _reload(sys.modules['mitsuba.python.ad.integrators'])
