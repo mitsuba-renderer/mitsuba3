@@ -394,7 +394,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
 
 
-def test06_optimizer_state(variant_cuda_ad_rgb):
+def test06_optimizer_state(variants_all_ad_rgb):
     from mitsuba.core import Float
     from mitsuba.python.ad import SGD, Adam
 
@@ -434,3 +434,55 @@ def test06_optimizer_state(variant_cuda_ad_rgb):
         state_after = ensure_iterable(opt.state[key])
         for s in state_after:
             assert ek.all(ek.eq(s, 0))
+
+
+@pytest.mark.parametrize('opt', ['SGD', 'Adam'])
+def test07_masked_updates(variants_all_ad_rgb, opt):
+    from mitsuba.core import Float, UInt32
+    from mitsuba.python.ad.optimizers import Adam, SGD
+
+    def ensure_iterable(v):
+        if isinstance(v, (tuple, list)):
+            return v
+        else:
+            return [v]
+
+    n = 5
+    x = ek.full(Float, 1.0, n)
+    params = {'x': x}
+
+    if opt == 'SGD':
+        opt = SGD(lr=1.0, momentum=0.8, params=params, mask_updates=True)
+    else:
+        assert opt == 'Adam'
+        opt = Adam(lr=1.0, params=params, mask_updates=True)
+    opt.load()
+
+    # Build momentum for a few iterations
+    g1 = ek.full(Float, -1.0, n)
+    for _ in range(5):
+        ek.set_grad(params['x'], g1)
+        opt.step()
+        opt.update()
+    assert ek.all(params['x'] > 2.4)
+
+    # Masked updates: parameters and state should only
+    # be updated where gradients are nonzero.
+    prev_x = Float(params['x'])
+    prev_state = [Float(vv) for vv in ensure_iterable(opt.state['x'])]
+    for zero_i in range(n):
+        is_zero = ek.eq(ek.arange(UInt32, n), zero_i)
+        g2 = ek.select(is_zero, 0, Float(g1))
+
+        ek.set_grad(params['x'], g2)
+        opt.step()
+        opt.update()
+
+        assert ek.all(ek.eq(params['x'], prev_x) | ~is_zero), 'Param should not be updated where grad == 0'
+        assert ek.all(ek.neq(params['x'], prev_x) | is_zero), 'Param should be updated where grad != 0'
+        for v1, v2 in zip(ensure_iterable(opt.state['x']), prev_state):
+            assert ek.all(ek.eq(v1, v2) | ~is_zero), 'State should not be updated where grad == 0'
+            assert ek.all(ek.neq(v1, v2) | is_zero), 'State should be updated where grad != 0'
+
+        prev_x = Float(params['x'])
+        prev_state = [Float(vv) for vv in ensure_iterable(opt.state['x'])]
