@@ -42,8 +42,8 @@ def test01_basics(variants_all_backends_once):
         )
 
 
-def test02_inverse(variant_scalar_rgb):
-    from mitsuba.core import Transform4f, Matrix4f
+def test02_inverse(variant_scalar_rgb, np_rng):
+    from mitsuba.core import Transform4f
 
     p = [1, 2, 3]
     def check_inverse(tr, expected):
@@ -98,7 +98,7 @@ def test02_inverse(variant_scalar_rgb):
     check_inverse(trafo, la.inv(expected))
 
     for i in range(10):
-        mtx = np.random.random((4, 4))
+        mtx = np_rng.random((4, 4))
         inv_ref = la.inv(mtx)
 
         trafo = Transform4f(mtx)
@@ -107,7 +107,7 @@ def test02_inverse(variant_scalar_rgb):
         assert ek.allclose(trafo.matrix, mtx, atol=1e-4)
         assert la.norm(inv_ref-inv_val, 'fro') / la.norm(inv_val, 'fro') < 5e-4
 
-        p = np.random.random((3,))
+        p = np_rng.random((3,))
         res = trafo.inverse() @ (trafo @ p)
         assert la.norm(res - p, 2) < 5e-3
 

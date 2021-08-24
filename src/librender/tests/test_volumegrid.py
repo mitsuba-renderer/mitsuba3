@@ -5,10 +5,10 @@ import enoki as ek
 import numpy as np
 import os
 
-def test01_numpy_conversion(variant_scalar_rgb):
+def test01_numpy_conversion(variant_scalar_rgb, np_rng):
     from mitsuba.render import VolumeGrid
 
-    a = np.random.rand(4, 8, 16, 3).astype(np.float32)
+    a = np_rng.random((4, 8, 16, 3)).astype(np.float32)
     grid = VolumeGrid(a)
     assert np.allclose(a, np.array(grid))
     assert np.allclose(np.max(a), grid.max())
@@ -23,11 +23,11 @@ def test01_numpy_conversion(variant_scalar_rgb):
     assert np.allclose(a.shape[3], grid.channel_count())
 
 
-def test02_read_write(variant_scalar_rgb, tmpdir):
+def test02_read_write(variant_scalar_rgb, tmpdir, np_rng):
     from mitsuba.render import VolumeGrid
 
     tmp_file = os.path.join(str(tmpdir), "out.vol")
-    grid = np.random.rand(4, 8, 16, 3).astype(np.float32)
+    grid = np_rng.random((4, 8, 16, 3)).astype(np.float32)
     VolumeGrid(grid).write(tmp_file)
     loaded = VolumeGrid(tmp_file)
     assert np.allclose(np.array(loaded), grid)

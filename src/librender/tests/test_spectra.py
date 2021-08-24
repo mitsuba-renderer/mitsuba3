@@ -44,7 +44,7 @@ def test03_blackbody(variant_scalar_spectral):
                        [0, 10997.9, 11812, 0])
 
 
-def test04_srgb_d65(variant_scalar_spectral):
+def test04_srgb_d65(variant_scalar_spectral, np_rng):
     """srgb_d65 emitters should evaluate to the product of D65 and sRGB spectra,
     with intensity factored out when evaluating the sRGB model."""
 
@@ -55,9 +55,8 @@ def test04_srgb_d65(variant_scalar_spectral):
     import numpy as np
 
 
-    np.random.seed(12345)
     wavelengths = np.linspace(300, 800, MTS_WAVELENGTH_SAMPLES)
-    wavelengths += (10 * np.random.uniform(size=wavelengths.shape)).astype(int)
+    wavelengths += (10 * np_rng.uniform(size=wavelengths.shape)).astype(int)
     d65 = load_string("<spectrum version='2.0.0' type='d65'/>").expand()[0]
 
     ps = PositionSample3f()

@@ -74,7 +74,7 @@ def test02_put_image_block(variant_scalar_rgb):
         im.put(im2)
         check_value(im, (i+1) * ref)
 
-def test03_put_values_basic(variant_scalar_rgb):
+def test03_put_values_basic(variant_scalar_rgb, np_rng):
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -90,7 +90,7 @@ def test03_put_values_basic(variant_scalar_rgb):
     ref = np.zeros(shape=(im.height() + 2 * border, im.width() + 2 * border, 3 + 1 + 1))
     for i in range(border, im.height() + border):
         for j in range(border, im.width() + border):
-            rgb = np.random.uniform(size=(3,))
+            rgb = np_rng.uniform(size=(3,))
             ref[i, j, :3] = rgb
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight
@@ -101,7 +101,7 @@ def test03_put_values_basic(variant_scalar_rgb):
     check_value(im, ref, atol=1e-6)
 
 
-def test04_put_vec_basic(variants_vec_rgb):
+def test04_put_vec_basic(variants_vec_rgb, np_rng):
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
 
@@ -117,7 +117,7 @@ def test04_put_vec_basic(variants_vec_rgb):
     im.clear()
 
     n = 29
-    positions = np.random.uniform(size=(n, 2))
+    positions = np_rng.uniform(size=(n, 2))
 
     positions[:, 0] = np.floor(positions[:, 0] * (im.width()-1)).astype(int)
     positions[:, 1] = np.floor(positions[:, 1] * (im.height()-1)).astype(int)
@@ -142,7 +142,7 @@ def test04_put_vec_basic(variants_vec_rgb):
     check_value(im, ref, atol=1e-6)
 
 
-def test05_put_with_filter(variants_vec_rgb):
+def test05_put_with_filter(variants_vec_rgb, np_rng):
     from mitsuba.core import float_dtype
     from mitsuba.core.xml import load_string as load_string_vec
     from mitsuba.render import ImageBlock as ImageBlockV
@@ -176,7 +176,7 @@ def test05_put_with_filter(variants_vec_rgb):
         [0, 1], [2, 5], [4, 1], [0, 11], [5, 4]
     ], dtype=float_dtype)
     n = positions.shape[0]
-    positions += np.random.uniform(size=positions.shape, low=0, high=0.95)
+    positions += np_rng.uniform(size=positions.shape, low=0, high=0.95)
 
     rgb = np.arange(n * 3).reshape((n, 3)) * 10
     alphas = np.ones(shape=(n,))
@@ -227,7 +227,7 @@ def test05_put_with_filter(variants_vec_rgb):
     check_value(im2, ref, atol=1e-6)
 
 
-def test06_put_values_basic(variant_scalar_spectral):
+def test06_put_values_basic(variant_scalar_spectral, np_rng):
     from mitsuba.core import MTS_WAVELENGTH_SAMPLES, spectrum_to_srgb
     from mitsuba.core.xml import load_string
     from mitsuba.render import ImageBlock
@@ -245,8 +245,8 @@ def test06_put_values_basic(variant_scalar_spectral):
                           3 + 1 + 1))
     for i in range(border, im.height() + border):
         for j in range(border, im.width() + border):
-            wavelengths = np.random.uniform(size=(MTS_WAVELENGTH_SAMPLES,), low=350, high=750)
-            spectrum = np.random.uniform(size=(MTS_WAVELENGTH_SAMPLES,))
+            wavelengths = np_rng.uniform(size=(MTS_WAVELENGTH_SAMPLES,), low=350, high=750)
+            spectrum = np_rng.uniform(size=(MTS_WAVELENGTH_SAMPLES,))
             ref[i, j, :3] = spectrum_to_srgb(spectrum, wavelengths)
             ref[i, j,  3] = 1  # Alpha
             ref[i, j,  4] = 1  # Weight

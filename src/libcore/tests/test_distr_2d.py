@@ -101,20 +101,20 @@ def test03_forward_inverse_nd(variant_scalar_rgb, warp, normalize):
 
     cls = getattr(mitsuba.core, warp)
     ndim = int(warp[-1]) + 2
-    np.random.seed(all_warps.index(warp))
+    rng = np.random.default_rng(seed=all_warps.index(warp))
 
     for i in range(10):
-        shape = np.random.randint(2, 8, ndim)
+        shape = rng.integers(2, 8, ndim)
         param_res = [
-            sorted(np.random.rand(s)) for s in shape[:-2]
+            sorted(rng.random(s)) for s in shape[:-2]
         ]
-        values = np.random.rand(*shape) * 10
+        values = rng.random(shape) * 10
         if i == 9:
             values = np.ones(shape)
         instance = cls(values, param_res, normalize=normalize)
 
         for j in range(10):
-            p_i = Vector2f(np.random.rand(2))
+            p_i = Vector2f(rng.random(2))
             p_o, pdf = instance.sample(p_i)
             assert ek.allclose(pdf, instance.eval(p_o), atol=1e-4)
             p_i_2, pdf2 = instance.invert(p_o)
@@ -134,17 +134,17 @@ def test04_chi2(variants_vec_backends_once, warp, attempt):
 
     cls = getattr(mitsuba.core, warp)
     ndim = int(warp[-1]) + 2
-    np.random.seed(all_warps.index(warp) * 10 + attempt)
+    rng = np.random.default_rng(seed=all_warps.index(warp) * 10 + attempt)
 
-    shape = np.random.randint(2, 8, ndim)
+    shape = rng.integers(2, 8, ndim)
     param_res = [
-        sorted(np.random.rand(s)) for s in shape[:-2]
+        sorted(rng.random(s)) for s in shape[:-2]
     ]
 
     if attempt == 9:
         values = np.ones(shape)
     else:
-        values = np.random.rand(*shape) * 10
+        values = rng.random(shape) * 10
 
     instance = cls(values, param_res)
 
@@ -153,7 +153,7 @@ def test04_chi2(variants_vec_backends_once, warp, attempt):
             ek.lerp(
                 param_res[i][0],
                 param_res[i][-1],
-                np.random.rand()
+                rng.random()
             ) for i in range(0, ndim - 2)
         ]
 

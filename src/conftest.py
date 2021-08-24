@@ -30,6 +30,12 @@ def gc_collect():
     gc.collect()
 
 
+@pytest.fixture
+def np_rng():
+    import numpy as np
+    return np.random.default_rng(seed=12345)
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     outcome = yield
