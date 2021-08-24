@@ -199,17 +199,23 @@ class SGD(Optimizer):
     :math:`\\varepsilon` is the learning rate, and :math:`\\mu` is
     the momentum parameter.
     """
-    def __init__(self, lr, momentum=0, params=None):
+    def __init__(self, lr, momentum=0, params=None, mask_updates=False):
         """
         Parameter ``lr``:
             learning rate
 
         Parameter ``momentum``:
             momentum factor
+
+        Parameter ``mask_updates``:
+            if enabled, parameters and state variables will only
+            be updated in a given iteration if it received
+            nonzero gradients in that iteration
         """
         assert momentum >= 0 and momentum < 1
         assert lr > 0
         self.momentum = momentum
+        self.mask_updates = mask_updates
         super().__init__(lr, params)
 
     def step(self):
@@ -225,8 +231,14 @@ class SGD(Optimizer):
                     # Reset state if data size has changed
                     self.reset(k)
 
-                self.state[k] = self.momentum * self.state[k] + g_p
-                value = ek.detach(p) - self.lr_v[k] * self.state[k]
+                next_state = self.momentum * self.state[k] + g_p
+                step = self.lr_v[k] * self.state[k]
+                if self.mask_updates:
+                    nonzero = ek.neq(g_p, 0.)
+                    next_state = ek.select(nonzero, next_state, self.state[k])
+                    step = ek.select(nonzero, step, 0)
+                self.state[k] = next_state
+                value = ek.detach(p) - step
                 ek.schedule(self.state[k])
             else:
                 value = ek.detach(p) - self.lr_v[k] * g_p
@@ -257,7 +269,8 @@ class Adam(Optimizer):
     Implements the Adam optimizer presented in the paper *Adam: A Method for
     Stochastic Optimization* by Kingman and Ba, ICLR 2015.
     """
-    def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8, params=None):
+    def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
+                 params=None, mask_updates=False):
         """
         Parameter ``lr``:
             learning rate
@@ -269,6 +282,11 @@ class Adam(Optimizer):
         Parameter ``beta_2``:
             controls the exponential averaging of second
             order gradient moments
+
+        Parameter ``mask_updates``:
+            if enabled, parameters and state variables will only
+            be updated in a given iteration if it received
+            nonzero gradients in that iteration
         """
         super().__init__(lr, params)
 
@@ -278,6 +296,7 @@ class Adam(Optimizer):
         self.beta_1 = beta_1
         self.beta_2 = beta_2
         self.epsilon = epsilon
+        self.mask_updates = mask_updates
         self.t = defaultdict(lambda: 0)
 
     def step(self):
@@ -302,10 +321,17 @@ class Adam(Optimizer):
             m_tp, v_tp = self.state[k]
             m_t = self.beta_1 * m_tp + (1 - self.beta_1) * g_p
             v_t = self.beta_2 * v_tp + (1 - self.beta_2) * ek.sqr(g_p)
+            if self.mask_updates:
+                nonzero = ek.neq(g_p, 0.)
+                m_t = ek.select(nonzero, m_t, m_tp)
+                v_t = ek.select(nonzero, v_t, v_tp)
             self.state[k] = (m_t, v_t)
             ek.schedule(self.state[k])
 
-            u = ek.detach(p) - lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
+            step = lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
+            if self.mask_updates:
+                step = ek.select(nonzero, step, 0.)
+            u = ek.detach(p) - step
             u = type(p)(u)
             ek.enable_grad(u)
             self.variables[k] = u
