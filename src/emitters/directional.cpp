@@ -159,6 +159,19 @@ public:
             si, math::sample_shifted<Wavelength>(sample), active);
     }
 
+    std::pair<PositionSample3f, Float>
+    sample_position(Float /*time*/, const Point2f & /*sample*/,
+                    Mask /*active*/) const override {
+        if constexpr (ek::is_jit_array_v<Float>) {
+            // When vcalls are recorded in symbolic mode, we can't throw an exception,
+            // even though this result will be unused.
+            return { ek::zero<PositionSample3f>(),
+                     ek::full<Float>(ek::NaN<ScalarFloat>) };
+        } else {
+            NotImplementedError("sample_position");
+        }
+    }
+
     ScalarBoundingBox3f bbox() const override {
         /* This emitter does not occupy any particular region
            of space, return an invalid bounding box */

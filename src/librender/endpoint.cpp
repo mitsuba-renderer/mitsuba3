@@ -18,6 +18,10 @@ MTS_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props) : m_id(
             props.mark_queried(name);
         }
     }
+
+    /* For some emitters, set_shape() will never be called, so we
+     * make sure that m_shape is at least initialized. */
+    ek::set_attr(this, "shape", m_shape);
 }
 
 MTS_VARIANT Endpoint<Float, Spectrum>::~Endpoint() { }
