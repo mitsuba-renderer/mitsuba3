@@ -58,11 +58,15 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
 
     if constexpr (ek::is_llvm_array_v<Float>) {
         // Get shapes registry ids
-        std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
-        for (size_t i = 0; i < m_shapes.size(); i++)
-            data[i] = jit_registry_get_id(JitBackend::LLVM, m_shapes[i]);
-        s.shapes_registry_ids
-            = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+        if (!m_shapes.empty()) {
+            std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
+            for (size_t i = 0; i < m_shapes.size(); i++)
+                data[i] = jit_registry_get_id(JitBackend::LLVM, m_shapes[i]);
+            s.shapes_registry_ids
+                = ek::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
+        } else {
+            s.shapes_registry_ids = ek::zero<DynamicBuffer<UInt32>>();
+        }
     }
 }
 

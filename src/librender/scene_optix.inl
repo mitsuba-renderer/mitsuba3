@@ -328,8 +328,6 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t,
                                                       Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        Assert(!m_shapes.empty());
-
         OptixState &s = *(OptixState *) m_accel;
 
         UInt64 handle = ek::opaque<UInt64>(s.ias_handle, 1);
@@ -414,8 +412,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        Assert(!m_shapes.empty());
-
         OptixState &s = *(OptixState *) m_accel;
 
         UInt64 handle = ek::opaque<UInt64>(s.ias_handle, 1);
