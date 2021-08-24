@@ -54,7 +54,12 @@ class SceneParameters(Mapping):
     def __repr__(self) -> str:
         param_list = ''
         for k, v in self.items():
-            is_diff = ek.is_diff_array_v(v) and ek.is_floating_point_v(v)
+            def is_diff(x):
+                return ek.is_diff_array_v(x) and ek.is_floating_point_v(x)
+            diff = is_diff(v)
+            if ek.is_enoki_struct_v(v):
+                for k2 in type(v).ENOKI_STRUCT.keys():
+                    diff |= is_diff(getattr(v, k2))
             param_list += '  %s %s,\n' % (('*' if is_diff else ' '), k)
         return 'SceneParameters[\n%s]' % param_list
 
