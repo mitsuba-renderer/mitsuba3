@@ -115,7 +115,7 @@ def test01_render_simple(variants_all, emitter):
     scene, integrator = create_test_scene(emitter=emitter)
     assert isinstance(integrator, ScatteringIntegrator)
     image = integrator.render(scene, seed=0, spp=2, develop_film=True)
-    assert ek.count(ek.ravel(image) > 0) >= 0.4 * ek.hprod(ek.shape(image))
+    assert ek.count(ek.ravel(image) > 0) >= 0.3 * ek.hprod(ek.shape(image))
 
 
 @pytest.mark.slow
@@ -218,3 +218,10 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     g = ek.grad(params[key])
     assert ek.shape(g) == ek.shape(params[key])
     assert ek.allclose(g, 0.3269110321)
+
+
+# TODO: this shouldn't be needed! Remove when LLVM mode segfaults are fixed.
+def test07_cleanup(variants_all, gc_collect):
+    ek.eval()
+    ek.sync_thread()
+    ek.registry_trim()
