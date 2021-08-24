@@ -32,7 +32,7 @@ def test01_sample_position(variants_vec_backends_once, filter_type, wrap_mode):
 
 
 @fresolver_append_path
-def test02_eval_grad(variant_scalar_rgb):
+def test02_eval_grad(variant_scalar_rgb, np_rng):
     # Tests evaluating the texture gradient under different rotation
     from mitsuba.render import SurfaceInteraction3f
     from mitsuba.core.xml import load_string
@@ -41,7 +41,7 @@ def test02_eval_grad(variant_scalar_rgb):
     import enoki as ek
     delta = 1e-4
     si = SurfaceInteraction3f()
-    for u01 in np.random.rand(10, 1):
+    for u01 in np_rng.random((10, 1)):
         angle = 360.0*u01[0]
         bitmap = load_string("""
         <texture type="bitmap" version="2.0.0">
@@ -50,7 +50,7 @@ def test02_eval_grad(variant_scalar_rgb):
                 <rotate angle="%f"/>
             </transform>
         </texture>""" % angle).expand()[0]
-        for uv in np.random.rand(10, 2):
+        for uv in np_rng.random((10, 2)):
             si.uv = Vector2f(uv)
             f = bitmap.eval_1(si)
             si.uv = uv + Vector2f(delta, 0)

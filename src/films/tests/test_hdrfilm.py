@@ -1,7 +1,6 @@
+import enoki as ek
 import mitsuba
 import pytest
-import os
-import enoki as ek
 
 
 def test01_construct(variant_scalar_rgb):
@@ -72,14 +71,14 @@ def test02_crops(variant_scalar_rgb):
 
 @pytest.mark.parametrize('file_format', ['exr', 'rgbe', 'pfm'])
 def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
+    """Create a test image. Develop it to a few file format, each time reading
+    it back and checking that contents are unchanged."""
     from mitsuba.core.xml import load_string
     from mitsuba.core import Bitmap, Struct
     from mitsuba.render import ImageBlock
     import numpy as np
 
-    """Create a test image. Develop it to a few file format, each time reading
-    it back and checking that contents are unchanged."""
-    np.random.seed(12345 + ord(file_format[0]))
+    rng = np.random.default_rng(seed=12345 + ord(file_format[0]))
     # Note: depending on the file format, the alpha channel may be automatically removed.
     film = load_string("""<film version="2.0.0" type="hdrfilm">
             <integer name="width" value="41"/>
@@ -90,7 +89,7 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
             <rfilter type="box"/>
         </film>""".format(file_format))
     # Regardless of the output file format, values are stored as RGBAW (5 channels).
-    contents = np.random.uniform(size=(film.size()[1], film.size()[0], 5))
+    contents = rng.uniform(size=(film.size()[1], film.size()[0], 5))
     # RGBE and will only reconstruct well images that have similar scales on
     # all channel (because exponent is shared between channels).
     if file_format == "rgbe":
@@ -178,14 +177,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     assert ek.hprod(image.shape) == ek.hprod(res) * (len(output_channels))
 
     data_bitmap = Bitmap(image, Bitmap.PixelFormat.MultiChannel, output_channels)
-
     bitmap = film.bitmap()
-
-    # print(data_bitmap)
-    # print(bitmap)
-    # data_bitmap.write('test_data_bitmap.exr')
-    # bitmap.write('test_bitmap.exr')
-
     assert np.allclose(np.array(bitmap), np.array(data_bitmap))
 
 

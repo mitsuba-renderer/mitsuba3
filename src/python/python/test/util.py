@@ -124,8 +124,8 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6, modes=['l
         arg_dims = [1 if t == float else t.Size for t in args_types]
 
     # Construct random argument arrays
-    np.random.seed(0)
-    args_np = [np.random.random(width) if d == 1 else np.random.random((width, d)) for d in arg_dims]
+    rng = np.random.default_rng(seed=0)
+    args_np = [rng.random(width) if d == 1 else rng.random((width, d)) for d in arg_dims]
 
     # Evaluate non-vectorized kernel
     from mitsuba.core import Float, Vector2f, Vector3f

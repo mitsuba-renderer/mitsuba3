@@ -48,7 +48,7 @@ def test_construct(variant_scalar_rgb):
     ("center", "radius"),
     [([2.0, 5.0, 8.3], 2.0), ([0.0, 0.0, 0.0], 1.0), ([1.0, 4.0, 0.0], 5.0)]
 )
-def test_sampling(variant_scalar_rgb, center, radius):
+def test_sampling(variant_scalar_rgb, center, radius, np_rng):
     """We construct an irradiance meter attached to a sphere and assert that
     sampled rays originate at the sphere's surface
     """
@@ -60,9 +60,9 @@ def test_sampling(variant_scalar_rgb, center, radius):
     sensor = sphere.sensor()
     num_samples = 100
 
-    wav_samples = np.random.rand(num_samples)
-    pos_samples = np.random.rand(num_samples, 2)
-    dir_samples = np.random.rand(num_samples, 2)
+    wav_samples = np_rng.random((num_samples,))
+    pos_samples = np_rng.random((num_samples, 2))
+    dir_samples = np_rng.random((num_samples, 2))
 
     for i in range(num_samples):
         ray = sensor.sample_ray_differential(
@@ -82,7 +82,7 @@ def constant_emitter_dict(radiance):
 
 
 @pytest.mark.parametrize("radiance", [2.04, 1.0, 0.0])
-def test_incoming_flux(variant_scalar_rgb, radiance):
+def test_incoming_flux(variant_scalar_rgb, radiance, np_rng):
     """
     We test the recorded power density of the irradiance meter, by creating a simple scene:
     The irradiance meter is attached to a sphere with unit radius at the coordinate origin
@@ -107,9 +107,9 @@ def test_incoming_flux(variant_scalar_rgb, radiance):
     power_density_cum = 0.0
     num_samples = 100
 
-    wav_samples = np.random.rand(num_samples)
-    pos_samples = np.random.rand(num_samples, 2)
-    dir_samples = np.random.rand(num_samples, 2)
+    wav_samples = np_rng.random((num_samples,))
+    pos_samples = np_rng.random((num_samples, 2))
+    dir_samples = np_rng.random((num_samples, 2))
 
     for i in range(num_samples):
         ray, weight = sensor.sample_ray_differential(

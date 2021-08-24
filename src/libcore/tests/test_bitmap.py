@@ -128,20 +128,19 @@ def test_premultiply_alpha(variant_scalar_rgb, tmpdir):
     assert np.allclose(b3, [1.0, 0.0, 0.0, 1.0, 0.0, 2, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0])
 
 
-def test_read_write_jpeg(variant_scalar_rgb, tmpdir):
+def test_read_write_jpeg(variant_scalar_rgb, tmpdir, np_rng):
     from mitsuba.core import Bitmap, Struct
-    np.random.seed(12345)
     tmp_file = os.path.join(str(tmpdir), "out.jpg")
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(np.random.random((10, 10))*255)
+    ref = np.uint8(np_rng.random((10, 10))*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file, quality=50)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) / (10*10*255) < 0.07
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(np.random.random((10, 10, 3))*255)
+    ref = np.uint8(np_rng.random((10, 10, 3))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file, quality=100)
     b2 = Bitmap(tmp_file)
@@ -150,20 +149,19 @@ def test_read_write_jpeg(variant_scalar_rgb, tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_png(variant_scalar_rgb, tmpdir):
+def test_read_write_png(variant_scalar_rgb, tmpdir, np_rng):
     from mitsuba.core import Bitmap, Struct
-    np.random.seed(12345)
     tmp_file = os.path.join(str(tmpdir), "out.png")
 
     b = Bitmap(Bitmap.PixelFormat.Y, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(np.random.random((10, 10))*255)
+    ref = np.uint8(np_rng.random((10, 10))*255)
     np.array(b, copy=False)[:] = ref[..., np.newaxis]
     b.write(tmp_file)
     b2 = Bitmap(tmp_file)
     assert np.sum(np.abs(np.float32(np.array(b2)[:, :, 0])-ref)) == 0
 
     b = Bitmap(Bitmap.PixelFormat.RGBA, Struct.Type.UInt8, [10, 10])
-    ref = np.uint8(np.random.random((10, 10, 4))*255)
+    ref = np.uint8(np_rng.random((10, 10, 4))*255)
     np.array(b, copy=False)[:] = ref
     b.write(tmp_file)
     b2 = Bitmap(tmp_file)
@@ -172,12 +170,11 @@ def test_read_write_png(variant_scalar_rgb, tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_hdr(variant_scalar_rgb, tmpdir):
+def test_read_write_hdr(variant_scalar_rgb, tmpdir, np_rng):
     from mitsuba.core import Bitmap, Struct
-    np.random.seed(12345)
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
-    ref = np.float32(np.random.random((20, 10, 3)))
+    ref = np.float32(np_rng.random((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.hdr")
     b.write(tmp_file)
@@ -186,12 +183,11 @@ def test_read_write_hdr(variant_scalar_rgb, tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_pfm(variant_scalar_rgb, tmpdir):
+def test_read_write_pfm(variant_scalar_rgb, tmpdir, np_rng):
     from mitsuba.core import Bitmap, Struct
-    np.random.seed(12345)
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.Float32, [10, 20])
-    ref = np.float32(np.random.random((20, 10, 3)))
+    ref = np.float32(np_rng.random((20, 10, 3)))
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.pfm")
     b.write(tmp_file)
@@ -200,12 +196,11 @@ def test_read_write_pfm(variant_scalar_rgb, tmpdir):
     os.remove(tmp_file)
 
 
-def test_read_write_ppm(variant_scalar_rgb, tmpdir):
+def test_read_write_ppm(variant_scalar_rgb, tmpdir, np_rng):
     from mitsuba.core import Bitmap, Struct
-    np.random.seed(12345)
 
     b = Bitmap(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, [10, 20])
-    ref = np.uint8(np.random.random((20, 10, 3))*255)
+    ref = np.uint8(np_rng.random((20, 10, 3))*255)
     np.array(b, copy=False)[:] = ref[...]
     tmp_file = os.path.join(str(tmpdir), "out.ppm")
     b.write(tmp_file)

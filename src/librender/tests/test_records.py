@@ -118,15 +118,14 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
     assert ek.allclose(record.d, d)
 
 
-def test05_direction_sample_construction_vec(variants_vec_backends_once):
+def test05_direction_sample_construction_vec(variants_vec_backends_once, np_rng):
     from mitsuba.render import DirectionSample3f, SurfaceInteraction3f
     import numpy as np
 
-    np.random.seed(12345)
     refs = np.array([[0.0, 0.5, 0.7],
                      [1.0, 1.5, 0.2],
                      [-1.3, 0.0, 99.1]])
-    its = refs + np.random.uniform(size=refs.shape)
+    its = refs + np_rng.uniform(size=refs.shape)
     directions = its - refs
     directions /= np.expand_dims(np.linalg.norm(directions, axis=1), 0).T
 
