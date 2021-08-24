@@ -45,11 +45,6 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     ScalarVector2i film_size = film->size();
     ScalarVector2i crop_size = film->crop_size();
 
-    if (unlikely(scene->emitters().empty())) {
-        Log(Warn, "Scene does not contain any emitter, returning black image.");
-        NotImplementedError("no emitters");
-    }
-
     // Figure out how to divide up samples into passes, if needed
     size_t samples_per_pixel = sensor->sampler()->sample_count();
     size_t samples_per_pass_per_pixel =
@@ -79,6 +74,19 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     for (size_t i = 0; i < 5; ++i)
         channels.insert(channels.begin() + i, std::string(1, "RGBAW"[i]));
     film->prepare(channels);
+
+    // Special case: no emitters present in the scene.
+    if (unlikely(scene->emitters().empty())) {
+        Log(Info, "Rendering finished (no emitters found, returning black image).");
+        TensorXf result;
+        if (develop_film) {
+            result = film->develop();
+            ek::schedule(result);
+        } else {
+            film->schedule_storage();
+        }
+        return result;
+    }
 
     size_t total_samples_done = 0;
     m_render_timer.reset();

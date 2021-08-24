@@ -137,14 +137,19 @@ def test03_render_hide_emitters(variants_all, emitter):
     be visible when hide_emitters is enabled."""
     scene, integrator = create_test_scene(emitter=emitter, shape=None, hide_emitters=True)
     image = integrator.render(scene, seed=0, spp=4, develop_film=True)
-    assert not ek.any(ek.ravel(image) > 0)
+    assert ek.all(ek.ravel(image) == 0)
 
-
-def test04_render_no_emitters(variants_all):
+@pytest.mark.slow
+@pytest.mark.parametrize('develop', [False, True])
+def test04_render_no_emitters(variants_all, develop):
     """It should be possible to render a scene with no emitter to get a black image."""
-    scene, integrator = create_test_scene(emitter=None, shape='receiver', hide_emitters=False)
-    image = integrator.render(scene, seed=0, spp=4, develop_film=True)
-    assert not ek.any(ek.ravel(image) > 0)
+    scene, integrator = create_test_scene(emitter=None, shape='receiver')
+
+    image = integrator.render(scene, seed=0, spp=2, develop_film=develop)
+    if not develop:
+        assert len(ek.shape(image)) == 0
+        image = scene.sensors()[0].film().develop()
+    assert ek.all((image == 0) | ek.isnan(image))
 
 
 def test05_render_crop_film(variants_all, gc_collect):
@@ -185,6 +190,7 @@ def test05_render_crop_film(variants_all, gc_collect):
         'Cropping at runtime should be equivalent to cropping at load time'
 
 
+@pytest.mark.slow
 def test06_ptracer_gradients(variants_all_ad_rgb):
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import SGD
