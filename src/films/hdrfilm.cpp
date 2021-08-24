@@ -228,6 +228,9 @@ public:
     }
 
     TensorXf develop(bool raw = false) const override {
+        if (!m_storage)
+            Throw("No storage allocated, was prepare() called first?");
+
         if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);
             return m_storage->data();
@@ -333,6 +336,9 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) const override {
+        if (!m_storage)
+            Throw("No storage allocated, was prepare() called first?");
+
         std::lock_guard<std::mutex> lock(m_mutex);
         auto &&storage = ek::migrate(m_storage->data().array(), AllocType::Host);
 

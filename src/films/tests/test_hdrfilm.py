@@ -187,3 +187,33 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     # bitmap.write('test_bitmap.exr')
 
     assert np.allclose(np.array(bitmap), np.array(data_bitmap))
+
+
+def test05_without_prepare(variant_scalar_rgb):
+    film = mitsuba.core.xml.load_dict({
+        'type': 'hdrfilm',
+        'width': 3,
+        'height': 2,
+    })
+
+    with pytest.raises(RuntimeError, match=r'prepare\(\)'):
+        _ = film.develop()
+
+
+@pytest.mark.parametrize('develop', [False, True])
+def test06_empty_film(variants_all_rgb, develop):
+    film = mitsuba.core.xml.load_dict({
+        'type': 'hdrfilm',
+        'width': 3,
+        'height': 2,
+    })
+    film.prepare([c for c in 'RGBAW'])
+
+    # TODO: do not allow NaNs from film
+    if develop:
+        image = ek.ravel(film.develop())
+        assert ek.all((image == 0) | ek.isnan(image))
+    else:
+        import numpy as np
+        image = np.array(film.bitmap())
+        assert np.all((image == 0) | np.isnan(image))
