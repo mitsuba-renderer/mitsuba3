@@ -439,6 +439,10 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                                                      bool within_spectrum = false) {
     try {
         if (!param.empty()) {
+            std::sort(param.begin(), param.end(),
+                [](const auto &a, const auto &b) -> bool {
+                    return a.first.length() > b.first.length();
+                });
             for (auto attr: node.attributes()) {
                 std::string value = attr.value();
                 if (value.find('$') == std::string::npos)
