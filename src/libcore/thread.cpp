@@ -24,7 +24,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-size_t __global_thread_count = 0;
+static size_t global_thread_count = 0;
 static thread_local Thread *self = nullptr;
 static std::atomic<uint32_t> thread_ctr { 0 };
 #if defined(__LINUX__) || defined(__OSX__)
@@ -509,7 +509,7 @@ void Thread::static_initialization() {
         pthread_key_create(&this_thread_id, nullptr);
     #endif
 
-    __global_thread_count = util::core_count();
+    global_thread_count = util::core_count();
 
     self = new MainThread();
     self->d->running = true;
@@ -530,11 +530,12 @@ void Thread::static_shutdown() {
     #endif
 }
 
-size_t Thread::thread_count() { return __global_thread_count; }
+size_t Thread::thread_count() { return global_thread_count; }
 
 void Thread::set_thread_count(size_t count) {
-    __global_thread_count = count;
-    pool_set_size(nullptr, (uint32_t) count);
+    global_thread_count = count;
+    // Main thread counts as one thread
+    pool_set_size(nullptr, (uint32_t) (count - 1));
 }
 
 ThreadEnvironment::ThreadEnvironment() {

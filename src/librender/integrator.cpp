@@ -85,7 +85,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     m_render_timer.reset();
     if constexpr (!ek::is_jit_array_v<Float>) {
         /// Render on the CPU using a spiral pattern
-        size_t n_threads = __global_thread_count;
+        size_t n_threads = Thread::thread_count();
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
             film_size.x(), film_size.y(),
             total_spp, total_spp == 1 ? "" : "s",

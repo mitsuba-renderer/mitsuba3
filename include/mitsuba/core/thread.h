@@ -141,7 +141,7 @@ public:
     /// Return the global thread count
     static size_t thread_count();
 
-    /// Set the global thread count (e.g. spawn new threads in thread pool)
+    /// Set the global thread count (e.g. spawn new threads in thread pool if > 1)
     static void set_thread_count(size_t);
 
     /**
@@ -213,7 +213,5 @@ private:
     uint64_t m_profiler_flags;
 #endif
 };
-
-extern MTS_EXPORT_CORE size_t __global_thread_count;
 
 NAMESPACE_END(mitsuba)

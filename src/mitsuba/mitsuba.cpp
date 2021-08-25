@@ -205,8 +205,14 @@ int main(int argc, char *argv[]) {
 
         // Initialize enoki-thread with the requested number of threads
         size_t thread_count = Thread::thread_count();
-        if (*arg_threads)
-            thread_count = std::max(0, arg_threads->as_int());
+        if (*arg_threads) {
+            thread_count = arg_threads->as_int();
+            if (thread_count < 1) {
+                Log(Warn, "Thread count should be greater than 0. It will be "
+                          "set to 1 instead.");
+                thread_count = 1;
+            }
+        }
         Thread::set_thread_count(thread_count);
 
         while (arg_define && *arg_define) {
@@ -289,9 +295,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (!*arg_extra || *arg_help) {
-            help((int) __global_thread_count);
+            help((int) Thread::thread_count());
         } else {
-            Log(Info, "%s", util::info_build((int) __global_thread_count));
+            Log(Info, "%s", util::info_build((int) Thread::thread_count()));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
 
