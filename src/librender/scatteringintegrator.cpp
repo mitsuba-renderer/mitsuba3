@@ -91,7 +91,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     size_t total_samples_done = 0;
     m_render_timer.reset();
     if constexpr (!ek::is_jit_array_v<Float>) {
-        size_t n_threads = __global_thread_count;
+        size_t n_threads = Thread::thread_count();
 
         Log(Info, "Starting render job (%ix%i, %i sample%s,%s %i thread%s)",
             crop_size.x(), crop_size.y(),
