@@ -170,6 +170,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                                film->reconstruction_filter(),
                                                false, false, false, false);
         block->clear();
+        block->set_offset(film->crop_offset());
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
                                 Float(idx / uint32_t(film_size[0])));
         std::vector<Float> aovs(channels.size());
@@ -177,7 +178,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         Timer timer;
         for (size_t i = 0; i < n_passes; i++) {
             render_sample(scene, sensor, sampler, block, aovs.data(),
-                          pos, diff_scale_factor);
+                          pos + film->crop_offset(), diff_scale_factor);
             sampler->schedule_state();
 
             if (n_passes > 1) {
