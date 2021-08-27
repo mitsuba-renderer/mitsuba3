@@ -22,7 +22,13 @@ MTS_PY_EXPORT(xml) {
 
     m.def(
         "load_file",
-        [](const std::string &name, bool update_scene, py::kwargs kwargs) {
+        [](const std::string &name, bool update_scene, py::object parallelized_, py::kwargs kwargs) {
+            // By default turn off scene loading parallelization for jit variants
+            bool parallelized = !(string::starts_with(GET_VARIANT(), "cuda_") ||
+                                  string::starts_with(GET_VARIANT(), "llvm_"));
+            if (!parallelized_.is_none())
+                parallelized = parallelized_.cast<bool>();
+
             xml::ParameterList param;
             if (kwargs) {
                 for (auto [k, v] : kwargs)
@@ -31,14 +37,22 @@ MTS_PY_EXPORT(xml) {
                         (std::string) py::str(v)
                     );
             }
+
             py::gil_scoped_release release;
-            return cast_object(xml::load_file(name, GET_VARIANT(), param, update_scene));
+            return cast_object(xml::load_file(name, GET_VARIANT(), param, update_scene, parallelized));
         },
-        "path"_a, "update_scene"_a = false, D(xml, load_file));
+        "path"_a, "update_scene"_a = false, "parallelized"_a = py::none(),
+        D(xml, load_file));
 
     m.def(
         "load_string",
-        [](const std::string &name, py::kwargs kwargs) {
+        [](const std::string &name, py::object parallelized_, py::kwargs kwargs) {
+            // By default turn off scene loading parallelization for jit variants
+            bool parallelized = !(string::starts_with(GET_VARIANT(), "cuda_") ||
+                                  string::starts_with(GET_VARIANT(), "llvm_"));
+            if (!parallelized_.is_none())
+                parallelized = parallelized_.cast<bool>();
+
             xml::ParameterList param;
             if (kwargs) {
                 for (auto [k, v] : kwargs)
@@ -47,10 +61,11 @@ MTS_PY_EXPORT(xml) {
                         (std::string) py::str(v)
                     );
             }
+
             py::gil_scoped_release release;
-            return cast_object(xml::load_string(name, GET_VARIANT(), param));
+            return cast_object(xml::load_string(name, GET_VARIANT(), param, parallelized));
         },
-        "string"_a, D(xml, load_string));
+        "string"_a, "parallelized"_a = py::none(), D(xml, load_string));
 
     m.def(
         "load_dict",

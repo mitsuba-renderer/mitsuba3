@@ -260,12 +260,13 @@ struct XMLParseContext {
     Transform4f transform;
     size_t id_counter = 0;
     ColorMode color_mode;
+    std::string variant;
+    bool parallelized;
 
-    XMLParseContext(const std::string &variant) : variant(variant) {
+    XMLParseContext(const std::string &variant, bool parallelized)
+        : variant(variant), parallelized(parallelized) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
     }
-
-    std::string variant;
 
     bool is_cuda() const { return string::starts_with(variant, "cuda_"); }
     bool is_llvm() const { return string::starts_with(variant, "llvm_"); }
@@ -1091,8 +1092,13 @@ static Task *instantiate_node(XMLParseContext &ctx,
         instantiate();
         return nullptr;
     } else {
-        // Instantiate object asynchronously
-        return ek::do_async(instantiate, deps.data(), deps.size());
+        if (ctx.parallelized) {
+            // Instantiate object asynchronously
+            return ek::do_async(instantiate, deps.data(), deps.size());
+        } else {
+            instantiate();
+            return nullptr;
+        }
     }
 }
 
@@ -1209,7 +1215,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 NAMESPACE_END(detail)
 
 ref<Object> load_string(const std::string &string, const std::string &variant,
-                        ParameterList param) {
+                        ParameterList param, bool parallelized) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -1230,7 +1236,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 
     try {
         pugi::xml_node root = doc.document_element();
-        detail::XMLParseContext ctx(variant);
+        detail::XMLParseContext ctx(variant, parallelized);
         Properties prop;
         size_t arg_counter; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
@@ -1246,7 +1252,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 }
 
 ref<Object> load_file(const fs::path &filename_, const std::string &variant,
-                      ParameterList param, bool write_update) {
+                      ParameterList param, bool write_update, bool parallelized) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1277,7 +1283,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     try {
         pugi::xml_node root = doc.document_element();
-        detail::XMLParseContext ctx(variant);
+        detail::XMLParseContext ctx(variant, parallelized);
         Properties prop;
         size_t arg_counter = 0; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,

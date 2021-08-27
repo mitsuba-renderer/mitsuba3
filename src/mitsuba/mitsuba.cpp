@@ -67,6 +67,11 @@ Options:
         Render in wavefront mode. Can be specified twice to
         disable recording of virtual calls as well.
 
+    -p, --parallel-loading
+        Force the loading of the scene to run on multiple threads. By default,
+        this is turned off for the cuda/llvm variants of the renderer to ensure
+        kernel consistency accross different executions.
+
     -O0
         Disable loop and virtual function call optimizations
 
@@ -144,6 +149,7 @@ int main(int argc, char *argv[]) {
     auto arg_mode      = parser.add(StringVec{ "-m", "--mode" }, true);
     auto arg_wavefront = parser.add(StringVec{ "-w", "--wavefront" });
     auto arg_paths     = parser.add(StringVec{ "-a" }, true);
+    auto arg_parallel  = parser.add(StringVec{ "-p", "--parallel-loading" });
     auto arg_extra     = parser.add("", true);
 
     auto arg_no_optim    = parser.add(StringVec{ "-O0" });
@@ -278,6 +284,8 @@ int main(int argc, char *argv[]) {
 
         size_t sensor_i  = (*arg_sensor_i ? arg_sensor_i->as_int() : 0);
 
+        bool parallel_loading = !(llvm || cuda) || (*arg_parallel);
+
         // Append the mitsuba directory to the FileResolver search path list
         ref<Thread> thread = Thread::thread();
         ref<FileResolver> fr = thread->file_resolver();
@@ -321,7 +329,8 @@ int main(int argc, char *argv[]) {
 
             // Try and parse a scene from the passed file.
             ref<Object> parsed =
-                xml::load_file(arg_extra->as_string(), mode, params, *arg_update);
+                xml::load_file(arg_extra->as_string(), mode, params,
+                               *arg_update, parallel_loading);
 
             MTS_INVOKE_VARIANT(mode, render, parsed.get(), sensor_i, filename,
                                graphviz_output);

@@ -32,12 +32,14 @@ using ParameterList = std::vector<std::pair<std::string, std::string>>;
 extern MTS_EXPORT_CORE ref<Object> load_file(const fs::path &path,
                                              const std::string &variant,
                                              ParameterList parameters = ParameterList(),
-                                             bool update_scene = false);
+                                             bool update_scene = false,
+                                             bool parallelized = true);
 
 /// Load a Mitsuba scene from an XML string
 extern MTS_EXPORT_CORE ref<Object> load_string(const std::string &string,
                                                const std::string &variant,
-                                               ParameterList parameters = ParameterList());
+                                               ParameterList parameters = ParameterList(),
+                                               bool parallelized = true);
 
 
 
