@@ -307,6 +307,9 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
+        // Ensure all raytracing kernels are terminated before releasing the scene
+        ek::sync_thread();
+
         OptixState &s = *(OptixState *) m_accel;
         jit_free(s.sbt.raygenRecord);
         jit_free(s.sbt.hitgroupRecordBase);

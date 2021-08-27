@@ -1341,8 +1341,8 @@ protected:
 
     MTS_INLINE
     std::pair<Point2f, Float> invert_continuous(Point2f sample,
-                                                 const Float *param,
-                                                 Mask active) const {
+                                                const Float *param,
+                                                Mask active) const {
         MTS_MASK_ARGUMENT(active);
 
         // Size of a slice of various tables (conditional/marginal/data)
@@ -1412,7 +1412,7 @@ protected:
 
         if (!m_normalized)
             sample.y() /= lookup(m_marg_cdf, 0, offset_marg + n_marg - 1,
-                          n_marg, param_weight, active);
+                                 n_marg, param_weight, active);
 
         return { sample, pdf };
     }

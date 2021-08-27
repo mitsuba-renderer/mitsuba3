@@ -69,8 +69,13 @@ MTS_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props) {
 
 MTS_VARIANT ShapeGroup<Float, Spectrum>::~ShapeGroup() {
 #if defined(MTS_ENABLE_EMBREE)
-    if constexpr (!ek::is_cuda_array_v<Float>)
+    if constexpr (!ek::is_cuda_array_v<Float>) {
+        // Ensure all raytracing kernels are terminated before releasing the scene
+        if constexpr (ek::is_llvm_array_v<Float>)
+            ek::sync_thread();
+
         rtcReleaseScene(m_embree_scene);
+    }
 #endif
 }
 
@@ -86,6 +91,11 @@ MTS_VARIANT RTCGeometry ShapeGroup<Float, Spectrum>::embree_geometry(RTCDevice d
                 rtcAttachGeometry(m_embree_scene, geom);
                 rtcReleaseGeometry(geom);
             }
+
+            // Ensure shape data pointers are finished evaluating before building
+            if constexpr (ek::is_llvm_array_v<Float>)
+                ek::sync_thread();
+
             rtcCommitScene(m_embree_scene);
         }
 

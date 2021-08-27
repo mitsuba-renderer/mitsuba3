@@ -85,6 +85,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
         rtcReleaseGeometry(geom);
     }
 
+    // Ensure shape data pointers are fully evaluated before building the BVH
+    if constexpr (ek::is_llvm_array_v<Float>)
+        ek::sync_thread();
+
     ek::parallel_for(
         ek::blocked_range<size_t>(0, __embree_threads, 1),
         [&](const ek::blocked_range<size_t> &) {
@@ -94,6 +98,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
+    // Ensure all raytracing kernels are terminated before releasing the scene
+    if constexpr (ek::is_llvm_array_v<Float>)
+        ek::sync_thread();
+
     EmbreeState<Float> *s = (EmbreeState<Float> *) m_accel;
     rtcReleaseScene(s->accel);
     delete s;
