@@ -18,7 +18,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
         self.max_depth = props.long_('max_depth', 4)
-
+        self.rr_depth = props.long_('rr_depth', 5)
         self.hide_emitters = props.bool_('hide_emitters', False)
 
         self.use_nee = False
@@ -128,14 +128,10 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         loop.init()
         while loop(active):
             active &= ek.any(ek.neq(throughput, 0.0))
-            # q = ek.min(ek.hmax(throughput) * ek.sqr(eta), 0.95)
-            # perform_rr = (depth > m_rr_depth)
-            # active &= sampler->next_1d(active) < q | ~perform_rr
-            # throughput[perform_rr] = throughput * ek.rcp(ek.detach(q))
-            sampler.next_1d(active)
-            # exceeded_max_depth = depth >= self.max_depth
-            # if ek.none(active) | ek.all(exceeded_max_depth):
-            #     break
+            q = ek.min(ek.hmax(throughput) * ek.sqr(eta), 0.99)
+            perform_rr = (depth > self.rr_depth)
+            active &= (sampler.next_1d(active) < q) | ~perform_rr
+            throughput[perform_rr] = throughput * ek.rcp(q)
 
             active_medium = active & ek.neq(medium, None)
             active_surface = active & ~active_medium
