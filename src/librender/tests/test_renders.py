@@ -140,7 +140,7 @@ def z_test(mean, sample_count, reference, reference_var):
 
 @pytest.mark.slow
 @pytest.mark.parametrize("variant, scene_fname, jit_flags_key", list_all_render_test_configs())
-def test_render(gc_collect, variant, scene_fname, jit_flags_key):
+def test_render(variant, scene_fname, jit_flags_key):
     mitsuba.set_variant(variant)
     from mitsuba.core import Bitmap
 

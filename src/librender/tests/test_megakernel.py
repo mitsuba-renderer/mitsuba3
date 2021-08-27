@@ -27,7 +27,7 @@ def write_kernels(*args, output_dir='kernels', scene_fname=None):
 
 
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
-def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
+def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     """
     Tests that forward rendering launches the correct number of kernels
     """
@@ -84,7 +84,7 @@ def test01_kernel_launches_path(variants_vec_rgb, gc_collect, integrator_name):
 @pytest.mark.parametrize('scene_fname', [
     '../resources/data/scenes/cbox/cbox.xml',
     '../resources/data/tests/scenes/various_emitters/test_various_emitters.xml'])
-def test02_kernel_launches_ptracer(variants_vec_rgb, gc_collect, scene_fname):
+def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     """
     Tests that forward rendering launches the correct number of kernels
     for the particle tracer integrator
@@ -149,7 +149,7 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, gc_collect, scene_fname):
     assert history_3[3]['size'] == film_wavefront_size
 
 
-def test03_kernel_launches_optimization(variants_all_ad_rgb, gc_collect):
+def test03_kernel_launches_optimization(variants_all_ad_rgb):
     """
     Check the history of kernel launches during a simple optimization loop
     using render_adjoint.

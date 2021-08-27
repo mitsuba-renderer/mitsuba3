@@ -233,7 +233,7 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
 
 
 @fresolver_append_path
-def test09_eval_parameterization(variants_all_rgb, gc_collect):
+def test09_eval_parameterization(variants_all_rgb):
     from mitsuba.core.xml import load_string
     shape = load_string('''
         <shape type="obj" version="2.0.0">
@@ -335,7 +335,7 @@ else:
 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, gc_collect, jit_flags):
+def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
     from mitsuba.render import HitComputeFlags
 
@@ -387,7 +387,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, gc_
 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, gc_collect, jit_flags):
+def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     # Set enoki JIT flags
@@ -433,7 +433,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, g
 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, gc_collect, jit_flags):
+def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
 
     # Set enoki JIT flags
@@ -467,7 +467,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, gc_collect, jit_flags):
+def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
 
     # Set enoki JIT flags
@@ -546,7 +546,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, gc_collect, jit_flags):
+def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
 
     # Set enoki JIT flags
@@ -685,7 +685,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, gc_collect, jit_flags):
+def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
     from mitsuba.render import HitComputeFlags
 
@@ -764,7 +764,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 @pytest.mark.parametrize("res", [4, 7])
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
-def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, gc_collect, res, wall, jit_flags):
+def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
     from mitsuba.render import HitComputeFlags
     from mitsuba.python.util import traverse

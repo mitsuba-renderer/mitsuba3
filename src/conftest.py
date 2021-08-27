@@ -24,11 +24,6 @@ def patch_tb(tb):  # tb: ReprTraceback
         entry.lines = [patch_line(l) for l in entry.lines]
 
 
-@pytest.fixture
-def gc_collect():
-    gc.collect() # Ensure no leftover instances from other tests in registry
-    gc.collect()
-
 
 @pytest.fixture
 def np_rng():
@@ -47,15 +42,25 @@ def pytest_runtest_makereport(item, call):
     return rep
 
 
+def clean_up():
+    '''
+    Ensure no leftover instances from other tests are still in registry, wait
+    for all running kernels to finish and reset the JitFlag to default.
+    '''
+    gc.collect()
+    gc.collect()
+    ek.sync_thread()
+    ek.registry_trim()
+    ek.set_flags(ek.JitFlag.Default)
+
+
 def generate_fixture(variant):
     @pytest.fixture()
     def fixture():
         try:
+            clean_up()
             import mitsuba
             mitsuba.set_variant(variant)
-            if variant.startswith('llvm') or variant.startswith('cuda'):
-                ek.registry_trim()
-                ek.set_flags(ek.JitFlag.Default)
         except Exception:
             pytest.skip('Mitsuba variant "%s" is not enabled!' % variant)
     globals()['variant_' + variant] = fixture
@@ -76,11 +81,9 @@ def generate_fixture_group(name, variants):
     def fixture(request):
         variant = request.param
         try:
+            clean_up()
             import mitsuba
             mitsuba.set_variant(variant)
-            if variant.startswith('llvm') or variant.startswith('cuda'):
-                ek.registry_trim()
-                ek.set_flags(ek.JitFlag.Default)
         except Exception:
             pytest.skip('Mitsuba variant "%s" is not enabled!' % variant)
         return variant

@@ -152,7 +152,7 @@ def test04_render_no_emitters(variants_all, develop):
     assert ek.all((image == 0) | ek.isnan(image))
 
 
-def test05_render_crop_film(variants_all, gc_collect):
+def test05_render_crop_film(variants_all):
     """Infinite emitters and directly visible emitters should not
     be visible when hide_emitters is enabled."""
     offset, size = (2, 3), (6, 4)
@@ -218,10 +218,3 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     g = ek.grad(params[key])
     assert ek.shape(g) == ek.shape(params[key])
     assert ek.allclose(g, 0.3269110321)
-
-
-# TODO: this shouldn't be needed! Remove when LLVM mode segfaults are fixed.
-def test07_cleanup(variants_all, gc_collect):
-    ek.eval()
-    ek.sync_thread()
-    ek.registry_trim()
