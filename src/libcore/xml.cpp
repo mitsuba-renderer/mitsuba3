@@ -261,10 +261,10 @@ struct XMLParseContext {
     size_t id_counter = 0;
     ColorMode color_mode;
     std::string variant;
-    bool parallelized;
+    bool parallel;
 
-    XMLParseContext(const std::string &variant, bool parallelized)
-        : variant(variant), parallelized(parallelized) {
+    XMLParseContext(const std::string &variant, bool parallel)
+        : variant(variant), parallel(parallel) {
         color_mode = MTS_INVOKE_VARIANT(variant, variant_to_color_mode);
     }
 
@@ -1092,7 +1092,7 @@ static Task *instantiate_node(XMLParseContext &ctx,
         instantiate();
         return nullptr;
     } else {
-        if (ctx.parallelized) {
+        if (ctx.parallel) {
             // Instantiate object asynchronously
             return ek::do_async(instantiate, deps.data(), deps.size());
         } else {
@@ -1215,7 +1215,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
 NAMESPACE_END(detail)
 
 ref<Object> load_string(const std::string &string, const std::string &variant,
-                        ParameterList param, bool parallelized) {
+                        ParameterList param, bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_buffer(string.c_str(), string.length(),
@@ -1236,7 +1236,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 
     try {
         pugi::xml_node root = doc.document_element();
-        detail::XMLParseContext ctx(variant, parallelized);
+        detail::XMLParseContext ctx(variant, parallel);
         Properties prop;
         size_t arg_counter; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
@@ -1252,7 +1252,7 @@ ref<Object> load_string(const std::string &string, const std::string &variant,
 }
 
 ref<Object> load_file(const fs::path &filename_, const std::string &variant,
-                      ParameterList param, bool write_update, bool parallelized) {
+                      ParameterList param, bool write_update, bool parallel) {
     ScopedPhase sp(ProfilerPhase::InitScene);
     fs::path filename = filename_;
     if (!fs::exists(filename))
@@ -1283,7 +1283,7 @@ ref<Object> load_file(const fs::path &filename_, const std::string &variant,
 
     try {
         pugi::xml_node root = doc.document_element();
-        detail::XMLParseContext ctx(variant, parallelized);
+        detail::XMLParseContext ctx(variant, parallel);
         Properties prop;
         size_t arg_counter = 0; // Unused
         auto scene_id = detail::parse_xml(src, ctx, root, Tag::Invalid, prop,
