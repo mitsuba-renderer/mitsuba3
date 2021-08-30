@@ -1408,7 +1408,7 @@ protected:
 
         UInt32 offset_marg = slice_offset * n_marg;
         sample.y() += lookup(m_marg_cdf, 0, offset_marg + pos.y() - 1,
-                             m_size.y(), param_weight, active && pos.y() > 0);
+                             n_marg, param_weight, active && pos.y() > 0);
 
         if (!m_normalized)
             sample.y() /= lookup(m_marg_cdf, 0, offset_marg + n_marg - 1,
