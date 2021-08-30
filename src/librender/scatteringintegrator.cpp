@@ -130,6 +130,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
 
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                     sample(scene, sensor, sampler, block);
+                    sampler->advance();
 
                     // TODO: it is possible that there are more than 1 sample / it ?
                     samples_done += 1;
@@ -181,9 +182,9 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
 
             total_samples_done += samples_per_pass;
 
-            sampler->schedule_state();
-
             if (n_passes > 1) {
+                sampler->advance(); // Will trigger a kernel launch of size 1
+                sampler->schedule_state();
                 ek::eval(block->data());
                 ek::sync_thread();
             }

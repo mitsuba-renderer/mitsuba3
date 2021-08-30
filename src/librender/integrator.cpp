@@ -179,9 +179,10 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         for (size_t i = 0; i < n_passes; i++) {
             render_sample(scene, sensor, sampler, block, aovs.data(),
                           pos + film->crop_offset(), diff_scale_factor);
-            sampler->schedule_state();
 
             if (n_passes > 1) {
+                sampler->advance(); // Will trigger a kernel launch of size 1
+                sampler->schedule_state();
                 ek::eval(block->data());
                 ek::sync_thread();
             }
@@ -256,6 +257,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
             for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
                 render_sample(scene, sensor, sampler, block, aovs,
                               pos, diff_scale_factor);
+                sampler->advance();
             }
         }
     } else if constexpr (ek::is_array_v<Float> && !ek::is_jit_array_v<Float>) {
@@ -269,6 +271,7 @@ MTS_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *
             active &= !any(pos >= block->size());
             pos += block->offset();
             render_sample(scene, sensor, sampler, block, aovs, pos, diff_scale_factor, active);
+            sampler->advance();
         }
     } else {
         ENOKI_MARK_USED(scene);
@@ -335,8 +338,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     aovs[4] = 1.f;
 
     block->put(position_sample, aovs, active);
-
-    sampler->advance();
 }
 
 MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>

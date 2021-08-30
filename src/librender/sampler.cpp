@@ -46,8 +46,7 @@ MTS_VARIANT void Sampler<Float, Spectrum>::seed(uint64_t /*seed_offset*/,
         m_wavefront_size = 1;
     }
     m_dimension_index = ek::opaque<UInt32>(0);
-    // Needs proper size otherwise will trigger a kernel of size 1 in advance()
-    m_sample_index = ek::opaque<UInt32>(0, m_wavefront_size);
+    m_sample_index = ek::opaque<UInt32>(0);
 }
 
 MTS_VARIANT void Sampler<Float, Spectrum>::advance() {
