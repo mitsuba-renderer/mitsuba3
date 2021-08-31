@@ -129,14 +129,18 @@ def sample_sensor_rays(sensor):
 
     adjusted_pos = (pos - film.crop_offset()) / Vector2f(film.crop_size())
 
+    aperture_samples = Vector2f(0.0)
+    if sensor.needs_aperture_sample():
+        aperture_samples = sampler.next_2d()
+
     rays, weights = sensor.sample_ray_differential(
         time=0.0,
         sample1=sampler.next_1d(),
         sample2=adjusted_pos,
-        sample3=0.0
+        sample3=aperture_samples
     )
 
-    return rays, weights, pos, pos_idx
+    return rays, weights, pos, pos_idx, aperture_samples
 
 
 def mis_weight(a, b):

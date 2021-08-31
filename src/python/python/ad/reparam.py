@@ -4,8 +4,13 @@ import enoki as ek
 import mitsuba
 
 
-def sample_warp_field(scene, sampler, ray, kappa, power, active):
-    from mitsuba.core import Float, UInt32, Vector3f, Frame3f, Ray3f
+def sample_warp_field(scene: mitsuba.render.Scene,
+                      sampler: mitsuba.render.Sampler,
+                      ray: mitsuba.core.RayDifferential3f,
+                      kappa: float,
+                      power: float,
+                      active: mitsuba.core.Mask):
+    from mitsuba.core import Frame3f, Ray3f
     from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
     from mitsuba.render import HitComputeFlags
 
@@ -34,7 +39,7 @@ def sample_warp_field(scene, sampler, ray, kappa, power, active):
     D = ek.exp(kappa - kappa * ek.dot(ray.d, aux_ray.d)) - 1.0
     w_denom = D + B
     w_denom_p = ek.pow(w_denom, power)
-    w = ek.select(w_denom > 1e-5, ek.rcp(w_denom_p), 0.0)
+    w = ek.select(w_denom > 1e-4, ek.rcp(w_denom_p), 0.0)
     w /= pdf_omega
     w = ek.detach(w)
 
@@ -49,9 +54,21 @@ def sample_warp_field(scene, sampler, ray, kappa, power, active):
     return w, d_w_omega, w * V_direct, ek.dot(d_w_omega, V_direct)
 
 
-def reparameterize_ray(scene, sampler, ray_, active_,
-                       params={}, num_auxiliary_rays=4, kappa=1e5, power=3.0,
+def reparameterize_ray(scene: mitsuba.render.Scene,
+                       sampler: mitsuba.render.Sampler,
+                       ray_: mitsuba.core.RayDifferential3f,
+                       active_: mitsuba.core.Mask,
+                       params: mitsuba.python.util.SceneParameters={},
+                       num_auxiliary_rays: int=4,
+                       kappa: float=1e5,
+                       power: float=3.0,
                        forward_update_callback=None):
+    """
+    Reparameterize given ray by "attaching" the derivatives of its direction to
+    moving geometry in the scene.
+
+    TODO
+    """
 
     class Reparameterizer(ek.CustomOp):
         """
@@ -63,8 +80,7 @@ def reparameterize_ray(scene, sampler, ray_, active_,
             self.add_input(params)
             self.ray = ray
             self.active = active
-            return self.ray.d, ek.full(Float, 3.0, ek.width(self.ray.d))
-
+            return self.ray.d, ek.zero(Float, ek.width(self.ray.d))
 
         def forward(self):
             from mitsuba.core import Float, UInt32, Vector3f, Loop
@@ -84,11 +100,13 @@ def reparameterize_ray(scene, sampler, ray_, active_,
             loop.init()
 
             while loop(it < num_auxiliary_rays):
-                # Re-attach and enqueue theta to AD graph
-                forward_update_callback()
+                theta = Float(0.0)
+                forward_update_callback(theta)
                 Z_i, dZ_i, V_i, divergence_lhs_i = sample_warp_field(scene, sampler, self.ray, kappa, power, self.active)
 
-                ek.traverse(Float, reverse=False, retain_graph=False)
+                ek.set_grad(theta, 1.0)
+                ek.enqueue(ek.ADMode.Forward, theta)
+                ek.traverse(Float, retain_graph=False)
 
                 Z  += Z_i
                 dZ += dZ_i
@@ -127,8 +145,8 @@ def reparameterize_ray(scene, sampler, ray_, active_,
                     it = it + 1
 
             # Un-normalized values
-            V       = Vector3f(0.0)
-            div_V_1 = Float(0.0)
+            V       = ek.zero(Vector3f, ek.width(Z))
+            div_V_1 = ek.zero(Float, ek.width(Z))
             ek.enable_grad(V, div_V_1)
 
             # Compute normalized values
@@ -138,8 +156,8 @@ def reparameterize_ray(scene, sampler, ray_, active_,
 
             ek.set_grad(direction, grad_direction)
             ek.set_grad(divergence, grad_divergence)
-            ek.enqueue(direction, divergence)
-            ek.traverse(Float, reverse=True, retain_graph=False)
+            ek.enqueue(ek.ADMode.Reverse, direction, divergence)
+            ek.traverse(Float, retain_graph=False)
 
             grad_V       = ek.grad(V)
             grad_div_V_1 = ek.grad(div_V_1)
@@ -154,11 +172,11 @@ def reparameterize_ray(scene, sampler, ray_, active_,
                 # print(ek.graphviz_str(Float(1)))
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
-                ek.enqueue(V_i, div_V_1_i)
-                ek.traverse(Float, reverse=True, retain_graph=False)
+                ek.enqueue(ek.ADMode.Reverse, V_i, div_V_1_i)
+                ek.traverse(Float, retain_graph=False)
                 it = it + 1
 
         def name(self):
-            return "Reparameterizer"
+            return "ReparameterizeRay"
 
     return ek.custom(Reparameterizer, ray_, active_)

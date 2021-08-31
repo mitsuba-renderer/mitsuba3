@@ -44,7 +44,7 @@ class Optimizer:
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
         needs_reset = (key not in self.variables) or ek.shape(self.variables[key]) != ek.shape(value)
 
-        self.variables[key] = type(value)(ek.detach(value))
+        self.variables[key] = ek.detach(value, True)
         ek.enable_grad(self.variables[key])
         if needs_reset:
             self.reset(key)
