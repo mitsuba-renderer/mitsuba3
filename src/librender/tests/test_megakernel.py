@@ -241,7 +241,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
         # print(f"\n----- ADJOINT\n")
 
         # Adjoint rendering of the scene
-        integrator.render_backward(scene, opt, image_adj, seed=0, spp=spp)
+        integrator.render_backward(scene, params, image_adj, seed=0, spp=spp)
 
         history_adjoint = ek.kernel_history()
         assert len(history_adjoint) == 1 # (gather rays weights in image_adj)

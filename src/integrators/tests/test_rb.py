@@ -98,6 +98,7 @@ def test_gradients(variants_all_ad_rgb, jit_flags):
     key = 'redwall.bsdf.reflectance.value'
     params.keep([key])
     params[key] += epsilon
+    ek.enable_grad(params[key])
     params.update()
 
     # Render primal image

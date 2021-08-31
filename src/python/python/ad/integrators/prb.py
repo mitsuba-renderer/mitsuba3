@@ -32,7 +32,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
         sampler.seed(seed, ek.hprod(film_size) * spp)
 
-        ray, weight, pos, _ = sample_sensor_rays(sensor)
+        ray, weight, pos, _, _ = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
@@ -40,9 +40,6 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
         block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter)
         grad_values = block.read(pos) * weight / spp
-
-        for k, v in params.items():
-            ek.enable_grad(v)
 
         # Replay light paths by using the same seed and accumulate gradients
         # This uses the result from the first pass to compute gradients

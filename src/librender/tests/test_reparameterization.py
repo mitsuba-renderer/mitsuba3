@@ -30,28 +30,29 @@ def make_rectangle_mesh_scene():
     })
 
 
-def test01_reparameterization_forward(variants_all_ad_rgb):
+@pytest.mark.parametrize("shape", ['sphere', 'rectangle'])
+def test01_reparameterization_forward(variants_all_ad_rgb, shape):
     from mitsuba.core import xml, Float, Bool, Point3f, Vector3f, Ray3f, Transform4f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
     ek.set_flag(ek.JitFlag.LoopRecord, False)
 
-    scene = make_rectangle_mesh_scene()
-    # scene = make_sphere_mesh_scene()
+    if shape == 'rectangle':
+        scene = make_rectangle_mesh_scene()
+    else:
+        scene = make_sphere_mesh_scene()
 
     sampler = xml.load_dict({ 'type': 'independent'})
     sampler.seed(0, 1)
-    # print(scene)
 
     params = traverse(scene)
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    theta = Float(0.0)
     trans = Vector3f([1.0, 0.0, 0.0])
     init_vertex_pos = ek.unravel(Point3f, params[key])
-    def apply_transform():
+    def apply_transform(theta):
         ek.enable_grad(theta)
         ek.set_label(theta, 'theta')
         transform = Transform4f.translate(theta * trans)
@@ -60,31 +61,29 @@ def test01_reparameterization_forward(variants_all_ad_rgb):
         params.update()
         ek.eval()
 
-        ek.enqueue(theta)
-        ek.set_grad(theta, 1.0)
-
     num_aux_rays = 64
     power = 3.0
     kappa = 1e5
 
     def check_warp_field(ray):
-        apply_transform()
+        theta = Float(0.0)
+        apply_transform(theta)
 
         d, div = reparameterize_ray(scene, sampler, ray, True, params,
                                     num_aux_rays, kappa, power, apply_transform)
 
         assert d == ray.d
-        assert div == 3.0
+        assert div == 0.0
 
-        # ek.set_label(d, 'd')
-        # ek.set_label(div, 'div')
+        ek.set_label(d, 'd')
+        ek.set_label(div, 'div')
         # print(ek.graphviz_str(Float(1)))
 
         ek.forward(theta)
         grad_d = ek.grad(d)
         grad_div = ek.grad(div)
 
-        # Compute atteched ray direction if the shape moves along the translation axis
+        # Compute attached ray direction if the shape moves along the translation axis
         si_p = scene.ray_intersect(ray).p
         new_d = ek.normalize((si_p + trans - ray.o))
 
@@ -106,8 +105,8 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
 
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
 
-    # scene = make_sphere_mesh_scene()
     scene = make_rectangle_mesh_scene()
+
     sampler = xml.load_dict({ 'type': 'independent'})
     sampler.seed(0, 1)
 
@@ -138,8 +137,8 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
 
             ek.set_grad(d, grad_direction)
             ek.set_grad(div, grad_divergence)
-            ek.enqueue(d, div)
-            ek.traverse(Float, reverse=True, retain_graph=False)
+            ek.enqueue(ek.ADMode.Reverse, d, div)
+            ek.traverse(Float, retain_graph=False)
 
             res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
 
@@ -225,8 +224,8 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
 
 #     #     ek.set_grad(d, 0.0)
 #     #     ek.set_grad(div, 1.0)
-#     #     ek.enqueue(d, div)
-#     #     ek.traverse(Float, reverse=True, retain_graph=False)
+#     #     ek.enqueue(ek.ADMode.Reverse, d, div)
+#     #     ek.traverse(Float, retain_graph=False)
 
 #     #     res_grad += ek.unravel(Vector3f, ek.grad(params[key])) / float(n_passes)
 
@@ -255,7 +254,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
 #         params.update()
 #         ek.eval()
 
-#         ek.enqueue(theta)
+#         ek.enqueue(ek.ADMode.Forward, theta)
 #         ek.set_grad(theta, 1.0)
 
 #     def compute_warp_field_value(ray, passes=1):
@@ -306,8 +305,8 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
 
 # #             ek.set_grad(d, grad_direction)
 # #             ek.set_grad(div, grad_divergence)
-# #             ek.enqueue(d, div)
-# #             ek.traverse(Float, reverse=True, retain_graph=False)
+# #             ek.enqueue(ek.ADMode.Reverse, d, div)
+# #             ek.traverse(Float, retain_graph=False)
 
 # #             res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
 
@@ -369,16 +368,15 @@ if __name__ == '__main__':
     sampler = camera.sampler()
     sampler.seed(0, res*res*spp)
 
-    rays, weight, pos, pos_idx = sample_sensor_rays(camera)
+    rays, weight, pos, pos_idx, _ = sample_sensor_rays(camera)
 
     params = traverse(scene)
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    theta = Float(0.0)
     trans = Vector3f([1.0, 0.0, 0.0])
     init_vertex_pos = ek.unravel(Point3f, params[key])
-    def apply_transform():
+    def apply_transform(theta):
         ek.enable_grad(theta)
         ek.set_label(theta, 'theta')
         transform = Transform4f.translate(theta * trans)
@@ -387,10 +385,8 @@ if __name__ == '__main__':
         params.update()
         ek.eval()
 
-        ek.enqueue(theta)
-        ek.set_grad(theta, 1.0)
-
-    apply_transform()
+    theta = Float(0.0)
+    apply_transform(theta)
 
     num_aux_rays = 64
     power = 3.0
