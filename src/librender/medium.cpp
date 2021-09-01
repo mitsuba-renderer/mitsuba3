@@ -286,9 +286,9 @@ Medium<Float, Spectrum>::static_sample_interaction_drrt(const MediumPtr medium,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint              = ek::max(0.f, mint);
-    maxt              = ek::min(ray.maxt, maxt);
-    mi.mint           = mint;
+    mint                    = ek::max(0.f, mint);
+    maxt                    = ek::min(ray.maxt, maxt);
+    mi.mint                 = mint;
     const Mask did_traverse = active;
 
     // Get majorant
@@ -386,9 +386,9 @@ Medium<Float, Spectrum>::prepare_interaction_sampling(const Ray3f &ray,
     ek::masked(mint, !active) = 0.f;
     ek::masked(maxt, !active) = ek::Infinity<Float>;
 
-    mint = ek::max(0.f, mint);
-    maxt = ek::min(ray.maxt, maxt);
-    mi.mint   = mint;
+    mint    = ek::max(0.f, mint);
+    maxt    = ek::min(ray.maxt, maxt);
+    mi.mint = mint;
 
     return std::make_tuple(mi, mint, maxt, active);
 }

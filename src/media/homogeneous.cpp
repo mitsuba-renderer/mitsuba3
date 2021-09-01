@@ -133,7 +133,8 @@ public:
     get_combined_extinction(const MediumInteraction3f &mi,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return eval_sigmat(mi, active) & active;
+        UnpolarizedSpectrum majorant = ek::max(1e-6f, eval_sigmat(mi, active));
+        return majorant & active;
     }
 
     UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
