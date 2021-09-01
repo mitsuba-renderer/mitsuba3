@@ -196,8 +196,10 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     /* Enoki does not guarantee that subsequent `scatter_add`
      * and `scatter` of different sizes will be executed in
      * order, so we force evaluation. */
-    ek::eval();
-    ek::sync_thread();
+    if constexpr (ek::is_jit_array_v<Float>) {
+        ek::eval();
+        ek::sync_thread();
+    }
 
     // Apply proper normalization.
     film->overwrite_channel("W", samples_per_pixel * ek::hprod(film_size) /
@@ -210,8 +212,11 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
     } else {
         film->schedule_storage();
     }
-    ek::eval();
-    ek::sync_thread();  // To get an accurate timing below
+
+    if constexpr (ek::is_jit_array_v<Float>) {
+        ek::eval();
+        ek::sync_thread();  // To get an accurate timing below
+    }
 
     if (!m_stop) {
         Assert(total_samples == total_samples_done);
