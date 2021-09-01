@@ -424,8 +424,10 @@ public:
                                     -rd);
 
                 Mask singularity_mask = active && ek::eq(rd, 0.f);
-                if (unlikely(ek::any_or<true>(singularity_mask)))
+                if (unlikely(ek::any_or<true>(singularity_mask))) {
+                    si.dp_du[singularity_mask] = Vector3f(0.f, 1.f, 0.f);
                     si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
+                }
 
                 si.dp_du = m_to_world.value() * si.dp_du * (2.f * ek::Pi<Float>);
                 si.dp_dv = m_to_world.value() * si.dp_dv * ek::Pi<Float>;
