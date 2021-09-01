@@ -1849,6 +1849,8 @@ static const char *__doc_mitsuba_DirectionSample_operator_assign_3 = R"doc()doc"
 
 static const char *__doc_mitsuba_DirectionSample_operator_assign_4 = R"doc()doc";
 
+static const char *__doc_mitsuba_DirectionSample_sensor = R"doc()doc";
+
 static const char *__doc_mitsuba_DiscreteDistribution =
 R"doc(Discrete 1D probability distribution
 

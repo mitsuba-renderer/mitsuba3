@@ -120,6 +120,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     using Interaction3f        = typename RenderAliases::Interaction3f;
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
     using EmitterPtr           = typename RenderAliases::EmitterPtr;
+    using SensorPtr            = typename RenderAliases::SensorPtr;
 
     //! @}
     // =============================================================
@@ -135,14 +136,22 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     Float dist;
 
     /**
-      * \brief Optional: pointer to an associated object
+      * \brief Optional: pointer to an associated emitter
       *
       * In some uses of this record, sampling a position also involves choosing
-      * one of several objects (shapes, emitters, ..) on which the position
-      * lies. In that case, the \c object attribute stores a pointer to this
-      * object.
+      * one of several emitters on which the position lies. In that case, the
+      * \c emitter attribute stores a pointer to this it.
       */
     EmitterPtr emitter = nullptr;
+
+    /**
+      * \brief Optional: pointer to an associated sensor
+      *
+      * In some uses of this record, sampling a position also involves choosing
+      * one of several sensors on which the position lies. In that case, the
+      * \c sensor attribute stores a pointer to this it.
+      */
+    SensorPtr sensor = nullptr;
 
     //! @}
     // =============================================================
@@ -183,8 +192,10 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     /// Element-by-element constructor
     DirectionSample(const Point3f &p, const Normal3f &n, const Point2f &uv,
                     const Float &time, const Float &pdf, const Mask &delta,
-                    const Vector3f &d, const Float &dist, const EmitterPtr &emitter)
-        : Base(p, n, uv, time, pdf, delta), d(d), dist(dist), emitter(emitter) { }
+                    const Vector3f &d, const Float &dist, const EmitterPtr &emitter,
+                    const SensorPtr &sensor)
+        : Base(p, n, uv, time, pdf, delta), d(d), dist(dist), emitter(emitter),
+          sensor(sensor) { }
 
     /// Construct from a position sample
     DirectionSample(const Base &base) : Base(base) { }
@@ -192,7 +203,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     //! @}
     // =============================================================
 
-    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)
+    ENOKI_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter, sensor)
 };
 
 // -----------------------------------------------------------------------------
@@ -222,6 +233,7 @@ std::ostream &operator<<(std::ostream &os,
        << "  pdf = " << ds.pdf << "," << std::endl
        << "  delta = " << ds.delta << "," << std::endl
        << "  emitter = " << string::indent(ds.emitter) << "," << std::endl
+       << "  sensor = " << string::indent(ds.sensor) << "," << std::endl
        << "  d = " << string::indent(ds.d, 6) << "," << std::endl
        << "  dist = " << ds.dist << std::endl
        << "]";

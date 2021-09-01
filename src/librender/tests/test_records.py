@@ -98,6 +98,7 @@ def test04_direction_sample_construction_single(variant_scalar_rgb):
   pdf = 0.002,
   delta = 0,
   emitter = nullptr,
+  sensor = nullptr,
   d = [0, 42, -1],
   dist = 0.13
 ]"""
@@ -152,4 +153,3 @@ def test05_direction_sample_construction_vec(variants_vec_backends_once, np_rng)
     assert ek.allclose(records_batch.p, its)
     assert ek.allclose(records_batch.d, directions)
     assert ek.allclose(records_batch.pdf, pdfs)
-
