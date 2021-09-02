@@ -33,9 +33,7 @@
 #endif
 
 // Choose a parallelization scheme
-#if defined(RGB2SPEC_USE_TBB)
-#  include <tbb/parallel_for.h>
-#elif defined(_OPENMP)
+#if defined(_OPENMP)
 #  define RGB2SPEC_USE_OPENMP 1
 #elif defined(__APPLE__)
 #  define RGB2SPEC_USE_GCD    1
@@ -315,12 +313,10 @@ int main(int argc, char **argv) {
     float *out = new float[bufsize];
 
 #if defined(RGB2SPEC_USE_OPENMP)
-#  pragma omp parallel for collapse(2) default(none) schedule(dynamic) shared(stdout,scale,out)
+#  pragma omp parallel for collapse(2) default(none) schedule(dynamic) shared(stdout,scale,out,res)
 #endif
     for (int l = 0; l < 3; ++l) {
-#if defined(RGB2SPEC_USE_TBB)
-        tbb::parallel_for(0, res, [&](size_t j) {
-#elif defined(RGB2SPEC_USE_GCD)
+#if defined(RGB2SPEC_USE_GCD)
         dispatch_apply(res, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
         for (int j = 0; j < res; ++j) {

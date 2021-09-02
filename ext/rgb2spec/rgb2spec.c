@@ -81,6 +81,22 @@ void rgb2spec_fetch(RGB2Spec *model, float rgb_[3], float out[RGB2SPEC_N_COEFFS]
     for (int j = 0; j < 3; ++j)
         rgb[j] = rgb2spec_max(rgb2spec_min(rgb_[j], 1.f), 0.f);
 
+    if (rgb[0] == rgb[1] && rgb[1] == rgb[2]) {
+        // Monochromatic case, solve analytically
+        float v = rgb[0], r;
+
+        if (v == 0)
+            r = -INFINITY;
+        else if (v == 1)
+            r = INFINITY;
+        else
+            r = (v - .5f) / sqrtf(v * (1.f - v));
+
+        out[0] = out[1] = 0.f;
+        out[2] = r;
+        return;
+    }
+
     for (int j = 1; j < 3; ++j)
         if (rgb[j] >= rgb[i])
             i = j;
@@ -90,7 +106,7 @@ void rgb2spec_fetch(RGB2Spec *model, float rgb_[3], float out[RGB2SPEC_N_COEFFS]
           x     = rgb[(i + 1) % 3] * scale,
           y     = rgb[(i + 2) % 3] * scale;
 
-    /* Trilinearly interpolated lookup */
+    // Trilinearly interpolated lookup
     uint32_t xi = rgb2spec_min((uint32_t) x, (uint32_t) (res - 2)),
              yi = rgb2spec_min((uint32_t) y, (uint32_t) (res - 2)),
              zi = rgb2spec_find_interval(model->scale, model->res, z),
@@ -149,7 +165,7 @@ static inline __m128 rgb2spec_fma128(__m128 a, __m128 b, __m128 c) {
     #if defined(__FMA__)
         return _mm_fmadd_ps(a, b, c);
     #else
-        /// Fallback for pre-Haswell architectures
+        // Fallback for pre-Haswell architectures
         return _mm_add_ps(_mm_mul_ps(a, b), c);
     #endif
 }
@@ -171,7 +187,7 @@ __m256 rgb2spec_fma256(__m256 a, __m256 b, __m256 c) {
     #if defined(__FMA__)
         return _mm256_fmadd_ps(a, b, c);
     #else
-        /// Fallback for pre-Haswell architectures
+        // Fallback for pre-Haswell architectures
         return _mm256_add_ps(_mm256_mul_ps(a, b), c);
     #endif
 }
