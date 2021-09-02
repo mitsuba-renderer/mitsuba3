@@ -180,8 +180,14 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
+        // When dp_du is invalid, use orthonormal basis
+        Vector3f d = dp_du;
+        Mask singularity_mask = ek::all(ek::eq(d, 0.f));
+        if (unlikely(ek::any_or<true>(singularity_mask)))
+            d[singularity_mask] = coordinate_system(sh_frame.n).first;
+
         sh_frame.s = ek::normalize(
-            ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, dp_du), dp_du));
+            ek::fnmadd(sh_frame.n, ek::dot(sh_frame.n, d), d));
         sh_frame.t = ek::cross(sh_frame.n, sh_frame.s);
     }
 

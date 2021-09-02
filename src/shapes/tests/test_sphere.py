@@ -230,3 +230,20 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     si = pi.compute_surface_interaction(ray)
     ek.backward(si.t)
     assert ek.allclose(ek.grad(ray.o), [0, 0, -1])
+
+
+def test08_si_singularity(variants_all_rgb):
+    from mitsuba.core import xml, Ray3f
+
+    scene = xml.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
+    ray = Ray3f([0, 0, -1], [0, 0, 1], 0, [])
+
+    si = scene.ray_intersect(ray)
+
+    print(f"si: {si}")
+
+    assert ek.allclose(si.dp_du, [0, 0, 0])
+    assert ek.allclose(si.dp_dv, [ek.Pi, 0, 0])
+    assert ek.allclose(si.sh_frame.s, [1, 0, 0])
+    assert ek.allclose(si.sh_frame.t, [0, -1, 0])
+    assert ek.allclose(si.sh_frame.n, [0, 0, -1])
