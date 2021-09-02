@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
 #  include <windows.h>
 #endif
 
@@ -48,7 +48,7 @@ std::string StreamAppender::read_log() {
 }
 
 void StreamAppender::append(LogLevel level, const std::string &text) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     HANDLE console = nullptr;
     CONSOLE_SCREEN_BUFFER_INFO console_info;
     memset(&console_info, 0, sizeof(CONSOLE_SCREEN_BUFFER_INFO));
@@ -58,7 +58,7 @@ void StreamAppender::append(LogLevel level, const std::string &text) {
         if (m_last_message_was_progress)
             (*m_stream) << std::endl;
         if (level == Debug || level == Warn || level == Error) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
             console = GetStdHandle(STD_OUTPUT_HANDLE);
             GetConsoleScreenBufferInfo(console, &console_info);
             if (level == Warn || level == Error)
@@ -76,7 +76,7 @@ void StreamAppender::append(LogLevel level, const std::string &text) {
     (*m_stream) << text << std::endl;
     if (!m_is_file && (level == Debug || level == Warn || level == Error)) {
         // Reset text color
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
         SetConsoleTextAttribute(console, console_info.wAttributes);
 #else
         (*m_stream) << "\x1b[0m";

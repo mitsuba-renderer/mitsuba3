@@ -25,7 +25,7 @@ NAMESPACE_BEGIN(filesystem)
 /** Type of characters used on the system (in particular, type of characters
  * to use when calling system APIs).
  */
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     using value_type = wchar_t;
     using string_type = std::wstring;
 #else
@@ -34,7 +34,7 @@ NAMESPACE_BEGIN(filesystem)
 #endif
 
 /// System-specific separator used to write paths.
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     constexpr value_type preferred_separator = L'\\';
 #else
     constexpr value_type preferred_separator = '/';
@@ -68,7 +68,7 @@ public:
      */
     path(const value_type *string) { set(string); }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     /** \brief Constructs a path from an std::string, even if it's not the
      * native string type. Assumes the string is UTF-8 encoded to carry
      * conversion to native type.
@@ -151,7 +151,7 @@ public:
      */
     path& operator=(const string_type &str) { set(str); return *this; }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     /** \brief Constructs a path from an std::string, even if it's not the
      * native string type. Assumes the string is UTF-8 encoded to carry
      * conversion to native type.

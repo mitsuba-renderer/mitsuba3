@@ -1,6 +1,5 @@
 #pragma once
 
-#include <enoki/jit.h>
 #include <enoki/vcall.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/core/spectrum.h>

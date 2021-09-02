@@ -80,7 +80,7 @@ void FileStream::truncate(size_t size) {
 
     flush();
     const size_t old_pos = tell();
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     // Windows won't allow a resize if the file is open
     close();
 #else
@@ -89,7 +89,7 @@ void FileStream::truncate(size_t size) {
 
     fs::resize_file(m_path, size);
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     m_file->open(m_path, detail::ios_flag(EReadWrite));
     if (!m_file->good())
         Throw("\"%s\": I/O error while attempting to open file: %s",

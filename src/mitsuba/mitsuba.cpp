@@ -14,7 +14,7 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
 
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
 #  include <signal.h>
 #endif
 
@@ -116,7 +116,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename,
     film->write(filename);
 }
 
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
 // Handle the hang-up signal and write a partially rendered image to disk
 void hup_signal_handler(int signal) {
     if (signal != SIGHUP)
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
     std::string error_msg, mode;
     fs::path graphviz_output;
 
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     /* Initialize signal handlers */
     struct sigaction sa;
     sa.sa_handler = hup_signal_handler;
@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
             error_msg = error_msg.substr(0, it) + error_msg.substr(it + 3);
         }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
         HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_SCREEN_BUFFER_INFO console_info;
         GetConsoleScreenBufferInfo(console, &console_info);
@@ -362,7 +362,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "\x1b[31m";
 #endif
         std::cerr << std::endl << error_msg << std::endl;
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
         SetConsoleTextAttribute(console, console_info.wAttributes);
 #else
         std::cerr << "\x1b[0m";

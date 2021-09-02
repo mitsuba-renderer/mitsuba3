@@ -27,11 +27,6 @@ ek::Array<float, 3> srgb_model_fetch(const Color<float, 3> &c) {
         }
     }
 
-    if (c == Array3f(0.f))
-        return Array3f(0.f, 0.f, -ek::Infinity<float>);
-    else if (c == Array3f(1.f))
-        return Array3f(0.f, 0.f,  ek::Infinity<float>);
-
     float rgb[3] = { (float) c.r(), (float) c.g(), (float) c.b() };
     float out[3];
     rgb2spec_fetch(model, rgb, out);

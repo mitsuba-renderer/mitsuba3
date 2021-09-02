@@ -11,21 +11,21 @@
 #include <stdexcept>
 #include <sstream>
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
 #  include <windows.h>
 #else
 #  include <unistd.h>
 #  include <sys/stat.h>
 #endif
 
-#if defined(__LINUX__)
+#if defined(__linux__)
 #  include <linux/limits.h>
 #endif
 
 /** Macro allowing to type hardocded character sequences
  * with the right type prefix (char_t: no prefix, wchar_t: 'L' prefix)
  */
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
 #  define NSTR(str) L##str
 #else
 #  define NSTR(str) str
@@ -35,7 +35,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(filesystem)
 
 inline string_type to_native(const std::string &str) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.from_bytes(str);
 #else
@@ -44,7 +44,7 @@ inline string_type to_native(const std::string &str) {
 }
 
 inline std::string from_native(const string_type &str) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(str);
 #else
@@ -52,12 +52,12 @@ inline std::string from_native(const string_type &str) {
 #endif
 }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
 path::path(const std::string &string) { set(to_native(string)); }
 #endif
 
 path current_path() {
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     char temp[PATH_MAX];
     if (::getcwd(temp, PATH_MAX) == NULL)
         throw std::runtime_error("Internal error in filesystem::current_path(): " + std::string(strerror(errno)));
@@ -71,7 +71,7 @@ path current_path() {
 }
 
 path absolute(const path& p) {
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     char temp[PATH_MAX];
     if (realpath(p.native().c_str(), temp) == NULL)
         throw std::runtime_error("Internal error in realpath(): " + std::string(strerror(errno)));
@@ -86,7 +86,7 @@ path absolute(const path& p) {
 }
 
 bool is_regular_file(const path& p) noexcept {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     DWORD attr = GetFileAttributesW(p.native().c_str());
     return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0);
 #else
@@ -98,7 +98,7 @@ bool is_regular_file(const path& p) noexcept {
 }
 
 bool is_directory(const path& p) noexcept {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     DWORD result = GetFileAttributesW(p.native().c_str());
     if (result == INVALID_FILE_ATTRIBUTES)
         return false;
@@ -112,7 +112,7 @@ bool is_directory(const path& p) noexcept {
 }
 
 bool exists(const path& p) noexcept {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     return GetFileAttributesW(p.native().c_str()) != INVALID_FILE_ATTRIBUTES;
 #else
     struct stat sb;
@@ -121,7 +121,7 @@ bool exists(const path& p) noexcept {
 }
 
 size_t file_size(const path& p) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     struct _stati64 sb;
     if (_wstati64(p.native().c_str(), &sb) != 0)
         throw std::runtime_error("filesystem::file_size(): cannot stat file \"" + p.string() + "\"!");
@@ -134,7 +134,7 @@ size_t file_size(const path& p) {
 }
 
 bool equivalent(const path& p1, const path& p2) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     struct _stati64 sb1, sb2;
     if (_wstati64(p1.native().c_str(), &sb1) != 0)
         throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
@@ -155,7 +155,7 @@ bool create_directory(const path& p) noexcept {
     if (exists(p))
         return is_directory(p);
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     return CreateDirectoryW(p.native().c_str(), NULL) != 0;
 #else
     return mkdir(p.native().c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == 0;
@@ -163,7 +163,7 @@ bool create_directory(const path& p) noexcept {
 }
 
 bool resize_file(const path& p, size_t target_length) noexcept {
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     return ::truncate(p.native().c_str(), (off_t) target_length) == 0;
 #else
     HANDLE handle = CreateFileW(p.native().c_str(), GENERIC_WRITE, 0,
@@ -187,7 +187,7 @@ bool resize_file(const path& p, size_t target_length) noexcept {
 }
 
 bool remove(const path& p) {
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     return std::remove(p.native().c_str()) == 0;
 #else
     if (is_directory(p))
@@ -198,7 +198,7 @@ bool remove(const path& p) {
 }
 
 bool rename(const path& src, const path &dst) {
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     return std::rename(src.native().c_str(), dst.native().c_str()) == 0;
 #else
     return MoveFileW(src.native().c_str(), dst.native().c_str()) != 0;
@@ -296,7 +296,7 @@ path & path::operator=(path &&path) {
     return *this;
 }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
 path & path::operator=(const std::string &str) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     set(converter.from_bytes(str));
@@ -307,7 +307,7 @@ path & path::operator=(const std::string &str) {
 string_type path::str() const {
     std::basic_ostringstream<value_type> oss;
 
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
     if (m_absolute)
         oss << preferred_separator;
 #endif
@@ -327,7 +327,7 @@ void path::set(const string_type &str) {
         return;
     }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     m_path = tokenize(str, NSTR("/\\"));
     m_absolute = str.size() >= 2 && std::isalpha(str[0]) && str[1] == NSTR(':');
 #else

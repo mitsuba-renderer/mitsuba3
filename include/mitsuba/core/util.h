@@ -8,7 +8,7 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(util)
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     /// Return a std::string version of GetLastError()
     extern std::string MTS_EXPORT_CORE last_error();
 #endif
