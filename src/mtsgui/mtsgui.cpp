@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
             error_msg = error_msg.substr(0, it) + error_msg.substr(it + 3);
         }
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
         HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_SCREEN_BUFFER_INFO console_info;
         GetConsoleScreenBufferInfo(console, &console_info);
@@ -189,7 +189,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "\x1b[31m";
 #endif
         std::cerr << std::endl << error_msg << std::endl;
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
         SetConsoleTextAttribute(console, console_info.wAttributes);
 #else
         std::cerr << "\x1b[0m";

@@ -13,12 +13,12 @@
 #include <cstring>
 
 // Required for native thread functions
-#if defined(__LINUX__)
+#if defined(__linux__)
 #  include <sys/prctl.h>
 #  include <unistd.h>
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
 #  include <pthread.h>
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
 #  include <windows.h>
 #endif
 
@@ -27,9 +27,9 @@ NAMESPACE_BEGIN(mitsuba)
 static size_t global_thread_count = 0;
 static thread_local Thread *self = nullptr;
 static std::atomic<uint32_t> thread_ctr { 0 };
-#if defined(__LINUX__) || defined(__OSX__)
+#if defined(__linux__) || defined(__APPLE__)
 static pthread_key_t this_thread_id;
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
 static __declspec(thread) int this_thread_id;
 #endif
 static std::mutex task_mutex;
@@ -197,9 +197,9 @@ int Thread::core_affinity() const {
 }
 
 uint32_t Thread::thread_id() {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     return this_thread_id;
-#elif defined(__OSX__) || defined(__LINUX__)
+#elif defined(__APPLE__) || defined(__linux__)
     /* pthread_self() doesn't provide nice increasing IDs, and syscall(SYS_gettid)
        causes a context switch. Thus, this function uses a thread-local variable
        to provide a nice linearly increasing sequence of thread IDs */
@@ -212,7 +212,7 @@ bool Thread::set_priority(EPriority priority) {
     if (!d->running)
         return true;
 
-#if defined(__LINUX__) || defined(__OSX__)
+#if defined(__linux__) || defined(__APPLE__)
     float factor;
     switch (priority) {
         case EIdlePriority: factor = 0.f; break;
@@ -248,7 +248,7 @@ bool Thread::set_priority(EPriority priority) {
             param.sched_priority, strerror(retval));
         return false;
     }
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
     int win32_priority;
     switch (priority) {
         case EIdlePriority:     win32_priority = THREAD_PRIORITY_IDLE; break;
@@ -276,9 +276,9 @@ void Thread::set_core_affinity(int core_id) {
     if (!d->running)
         return;
 
-#if defined(__OSX__)
+#if defined(__APPLE__)
     /* CPU affinity not supported on OSX */
-#elif defined(__LINUX__)
+#elif defined(__linux__)
     int core_count = sysconf(_SC_NPROCESSORS_CONF),
         logical_core_count = core_count;
 
@@ -351,7 +351,7 @@ void Thread::set_core_affinity(int core_id) {
     }
 
     CPU_FREE(cpuset);
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
     int core_count = util::core_count();
     const HANDLE handle = d->native_handle;
 
@@ -395,9 +395,9 @@ void Thread::dispatch() {
     d->native_handle = d->thread.native_handle();
 
     uint32_t id = thread_ctr++;
-    #if defined(__LINUX__) || defined(__OSX__)
+    #if defined(__linux__) || defined(__APPLE__)
         pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
-    #elif defined(__WINDOWS__)
+    #elif defined(_WIN32)
         this_thread_id = id;
     #endif
 
@@ -408,11 +408,11 @@ void Thread::dispatch() {
 
     if (!d->name.empty()) {
         const std::string thread_name = "Mitsuba: " + name();
-        #if defined(__LINUX__)
+        #if defined(__linux__)
             pthread_setname_np(pthread_self(), thread_name.c_str());
-        #elif defined(__OSX__)
+        #elif defined(__APPLE__)
             pthread_setname_np(thread_name.c_str());
-        #elif defined(__WINDOWS__)
+        #elif defined(_WIN32)
             set_thread_name_(thread_name.c_str());
         #endif
     }
@@ -470,10 +470,10 @@ std::string Thread::to_string() const {
 bool Thread::register_external_thread(const std::string &prefix) {
     uint32_t id = thread_ctr++;
     self = new WorkerThread(prefix);
-    #if defined(__LINUX__) || defined(__OSX__)
+    #if defined(__linux__) || defined(__APPLE__)
         self->d->native_handle = pthread_self();
         pthread_setspecific(this_thread_id, reinterpret_cast<void *>(id));
-    #elif defined(__WINDOWS__)
+    #elif defined(_WIN32)
         self->d->native_handle = GetCurrentThread();
         this_thread_id = id;
     #endif
@@ -481,11 +481,11 @@ bool Thread::register_external_thread(const std::string &prefix) {
     self->d->external_thread = true;
 
     const std::string &thread_name = self->name();
-    #if defined(__LINUX__)
+    #if defined(__linux__)
         pthread_setname_np(pthread_self(), thread_name.c_str());
-    #elif defined(__OSX__)
+    #elif defined(__APPLE__)
         pthread_setname_np(thread_name.c_str());
-    #elif defined(__WINDOWS__)
+    #elif defined(_WIN32)
         set_thread_name_(thread_name.c_str());
     #endif
 
@@ -505,7 +505,7 @@ void Thread::register_task(Task *task) {
 }
 
 void Thread::static_initialization() {
-    #if defined(__LINUX__) || defined(__OSX__)
+    #if defined(__linux__) || defined(__APPLE__)
         pthread_key_create(&this_thread_id, nullptr);
     #endif
 
@@ -525,7 +525,7 @@ void Thread::static_shutdown() {
     thread()->d->running = false;
     delete self;
     self = nullptr;
-    #if defined(__LINUX__) || defined(__OSX__)
+    #if defined(__linux__) || defined(__APPLE__)
         pthread_key_delete(this_thread_id);
     #endif
 }

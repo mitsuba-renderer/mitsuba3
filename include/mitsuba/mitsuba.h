@@ -1,6 +1,6 @@
 /*
     Mitsuba 2: A Retargetable Forward and Inverse Renderer
-    Copyright 2019, Realistic Graphics Lab, EPFL.
+    Copyright 2021, Realistic Graphics Lab, EPFL.
 
     All rights reserved. Use of this source code is governed by a
     BSD-style license that can be found in the LICENSE.txt file.
@@ -22,7 +22,7 @@
     MTS_TOSTRING(MTS_VERSION_PATCH)
 
 /// Year of the current release
-#define MTS_YEAR "2020"
+#define MTS_YEAR "2021"
 
 /// Authors list
 #define MTS_AUTHORS "Realistic Graphics Lab, EPFL"

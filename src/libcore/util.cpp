@@ -6,7 +6,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/vector.h>
 
-#if defined(__LINUX__)
+#if defined(__linux__)
 #  if !defined(_GNU_SOURCE)
 #    define _GNU_SOURCE
 #  endif
@@ -14,19 +14,19 @@
 #  include <unistd.h>
 #  include <limits.h>
 #  include <sys/ioctl.h>
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
 #  include <sys/sysctl.h>
 #  include <mach-o/dyld.h>
 #  include <unistd.h>
 #  include <sys/ioctl.h>
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
 #  include <windows.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(util)
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
 std::string last_error() {
     DWORD errCode = GetLastError();
     char *errorText = nullptr;
@@ -55,12 +55,12 @@ int core_count() {
     if (__cached_core_count)
         return __cached_core_count;
 
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     SYSTEM_INFO sys_info;
     GetSystemInfo(&sys_info);
     __cached_core_count = sys_info.dwNumberOfProcessors;
     return sys_info.dwNumberOfProcessors;
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
     int nprocs;
     size_t nprocsSize = sizeof(int);
     if (sysctlbyname("hw.activecpu", &nprocs, &nprocsSize, NULL, 0))
@@ -121,7 +121,7 @@ done:
 }
 
 bool detect_debugger() {
-#if defined(__LINUX__)
+#if defined(__linux__)
     char exePath[PATH_MAX];
     memset(exePath, 0, PATH_MAX);
     std::string procPath = tfm::format("/proc/%i/exe", getppid());
@@ -130,7 +130,7 @@ bool detect_debugger() {
         if (strstr(exePath, "bin/gdb") || strstr(exePath, "bin/lldb"))
             return true;
     }
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
     int                 mib[4];
     struct kinfo_proc   info;
     size_t              size;
@@ -144,7 +144,7 @@ bool detect_debugger() {
 
     if (info.kp_proc.p_flag & P_TRACED)
         return true;
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
     if (IsDebuggerPresent())
         return true;
 #endif
@@ -155,9 +155,9 @@ void trap_debugger() {
     if (!detect_debugger())
         return;
 
-#if defined(__LINUX__) || defined(__OSX__)
+#if defined(__linux__) || defined(__APPLE__)
     __builtin_trap();
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
     __debugbreak();
 #endif
 }
@@ -199,17 +199,17 @@ std::string mem_string(size_t size, bool precise) {
     return tfm::format(precise ? "%.5g %s" : "%.3g %s", value, orders[i]);
 }
 
-#if defined(__WINDOWS__) || defined(__LINUX__)
+#if defined(_WIN32) || defined(__linux__)
     void MTS_EXPORT __dummySymbol() { }
 #endif
 
 fs::path library_path() {
     fs::path result;
-#if defined(__LINUX__)
+#if defined(__linux__)
     Dl_info info;
     if (dladdr((const void *) &__dummySymbol, &info) != 0)
         result = fs::path(info.dli_fname);
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i=0; i<imageCount; ++i) {
         const char *imageName = _dyld_get_image_name(i);
@@ -218,7 +218,7 @@ fs::path library_path() {
             break;
         }
     }
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
     std::vector<WCHAR> lpFilename(MAX_PATH);
 
     // Module handle to this DLL. If the function fails it sets handle to nullptr.
@@ -252,7 +252,7 @@ int terminal_width() {
     static int cached_width = -1;
 
     if (cached_width == -1) {
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
         HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
         if (h != INVALID_HANDLE_VALUE && h != nullptr) {
             CONSOLE_SCREEN_BUFFER_INFO bufferInfo = {0};
@@ -277,11 +277,11 @@ std::string info_build(int thread_count) {
     std::ostringstream oss;
     oss << "Mitsuba version " << MTS_VERSION << " (";
     oss << MTS_BRANCH << "[" << MTS_HASH << "], ";
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     oss << "Windows, ";
-#elif defined(__LINUX__)
+#elif defined(__linux__)
     oss << "Linux, ";
-#elif defined(__OSX__)
+#elif defined(__APPLE__)
     oss << "Mac OS, ";
 #else
     oss << "Unknown, ";

@@ -1,6 +1,6 @@
 /*
     Mitsuba 2: A Retargetable Forward and Inverse Renderer
-    Copyright 2019, Realistic Graphics Lab, EPFL.
+    Copyright 2021, Realistic Graphics Lab, EPFL.
 
     All rights reserved. Use of this source code is governed by a
     BSD-style license that can be found in the LICENSE.txt file.
@@ -70,20 +70,17 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/* Reduce namespace pollution from windows.h */
-#if defined(__WINDOWS__)
+// Reduce namespace pollution from windows.h
+#if defined(_WIN32)
 #  if !defined(WIN32_LEAN_AND_MEAN)
 #    define WIN32_LEAN_AND_MEAN
-#  endif
-#  if !defined(NOMINMAX)
-#    define NOMINMAX
 #  endif
 #  if !defined(_USE_MATH_DEFINES)
 #    define _USE_MATH_DEFINES
 #  endif
 #endif
 
-/* Likely/unlikely macros (only on GCC/Clang) */
+// Likely/unlikely macros (only on GCC/Clang)
 #if defined(__GNUG__) || defined(__clang__)
 #  define likely(x)   __builtin_expect(!!(x), 1)
 #  define unlikely(x) __builtin_expect(!!(x), 0)
@@ -92,24 +89,14 @@ NAMESPACE_BEGIN(mitsuba)
 #  define unlikely(x)     (x)
 #endif
 
-/* Processor architecture */
-#if defined(_MSC_VER)
-#  if defined(_M_X86) && !defined(__i386__)
-#    error 32-bit builds are not supported. Please run cmake-gui.exe, delete the cache, and \
-           regenerate a new version of the build system that uses a 64 bit version of the compiler
-#  endif
-#  if defined(_M_X64) && !defined(__x86_64__)
-#    define __x86_64__
-#  endif
+// Processor architecture
+#if defined(_MSC_VER) && defined(_M_X86)
+#  error 32-bit builds are not supported. Please run cmake-gui.exe, delete the cache, and \
+         regenerate a new version of the build system that uses a 64 bit version of the compiler
 #endif
 
 #if defined(_MSC_VER) // warning C4127: conditional expression is constant
 #  pragma warning (disable: 4127)
-#endif
-
-/* C++ version */
-#if __cplusplus > 201402L
-#  define MTS_CPP17
 #endif
 
 NAMESPACE_END(mitsuba)

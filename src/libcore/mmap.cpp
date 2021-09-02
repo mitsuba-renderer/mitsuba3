@@ -1,11 +1,11 @@
 #include <mitsuba/core/mmap.h>
 #include <mitsuba/core/util.h>
 
-#if defined(__LINUX__) || defined(__OSX__)
+#if defined(__linux__) || defined(__APPLE__)
 # include <sys/mman.h>
 # include <fcntl.h>
 # include <unistd.h>
-#elif defined(__WINDOWS__)
+#elif defined(_WIN32)
 # include <windows.h>
 #endif
 
@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 struct MemoryMappedFile::MemoryMappedFilePrivate {
     fs::path filename;
-#if defined(__WINDOWS__)
+#if defined(_WIN32)
     HANDLE file;
     HANDLE file_mapping;
 #endif
@@ -26,7 +26,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
         : filename(f), size(s), data(nullptr), can_write(false), temp(false) { }
 
     void create() {
-        #if defined(__LINUX__) || defined(__OSX__)
+        #if defined(__linux__) || defined(__APPLE__)
             int fd = open(filename.string().c_str(), O_RDWR | O_CREAT | O_TRUNC, 0664);
             if (fd == -1)
                 Throw("Could not open \"%s\"!", filename.string());
@@ -45,7 +45,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
             }
             if (close(fd) != 0)
                 Throw("close(): unable to close file!");
-        #elif defined(__WINDOWS__)
+        #elif defined(_WIN32)
             file = CreateFileW(filename.native().c_str(), GENERIC_WRITE | GENERIC_READ,
                 FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
             if (file == INVALID_HANDLE_VALUE)
@@ -70,7 +70,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
         can_write = true;
         temp = true;
 
-        #if defined(__LINUX__) || defined(__OSX__)
+        #if defined(__linux__) || defined(__APPLE__)
             const char *tmpdir = getenv("TMPDIR");
             std::string path_template = tmpdir != nullptr ? tmpdir : "/tmp";
             path_template += "/mitsuba_XXXXXXXX";
@@ -97,7 +97,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
 
             if (close(fd) != 0)
                 Throw("close(): unable to close file!");
-        #elif defined(__WINDOWS__)
+        #elif defined(_WIN32)
             WCHAR temp_path[MAX_PATH];
             WCHAR temp_filename[MAX_PATH];
 
@@ -137,7 +137,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
             Throw("\"%s\" is not a regular file!", filename.string());
         size = (size_t) fs::file_size(filename);
 
-        #if defined(__LINUX__) || defined(__OSX__)
+        #if defined(__linux__) || defined(__APPLE__)
             int fd = open(filename.string().c_str(), can_write ? O_RDWR : O_RDONLY);
             if (fd == -1)
                 Throw("Could not open \"%s\"!", filename.string());
@@ -150,7 +150,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
 
             if (close(fd) != 0)
                 Throw("close(): unable to close file!");
-        #elif defined(__WINDOWS__)
+        #elif defined(_WIN32)
             file = CreateFileW(filename.native().c_str(), GENERIC_READ | (can_write ? GENERIC_WRITE : 0),
                 FILE_SHARE_WRITE|FILE_SHARE_READ, nullptr, OPEN_EXISTING,
                 FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -174,7 +174,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
     void unmap() {
         Log(Trace, "Unmapping \"%s\" from memory", filename.string());
 
-        #if defined(__LINUX__) || defined(__OSX__)
+        #if defined(__linux__) || defined(__APPLE__)
             if (temp) {
                 /* Temporary file that will be deleted in any case:
                    invalidate dirty pages to avoid a costly flush to disk */
@@ -186,7 +186,7 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
             int retval = munmap(data, size);
             if (retval != 0)
                 Throw("munmap(): unable to unmap memory: %s", strerror(errno));
-        #elif defined(__WINDOWS__)
+        #elif defined(_WIN32)
             if (!UnmapViewOfFile(data))
                 Throw("UnmapViewOfFile(): unable to unmap memory: %s", util::last_error());
             if (!CloseHandle(file_mapping))

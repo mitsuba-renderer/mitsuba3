@@ -5,16 +5,61 @@ cmake_minimum_required (VERSION 3.13...3.18)
 
 project(mitsuba
   DESCRIPTION
-    "Mitsuba Renderer 2"
+    "Mitsuba"
   LANGUAGES
     CXX C
 )
+
+# ----------------------------------------------------------
+#  Optional features available to users
+# ----------------------------------------------------------
 
 # A number of Mitsuba 2 features (scripting, differentiable rendering, testing
 # infrastructure, etc.) are only available if Python bindings are built.
 option(MTS_ENABLE_PYTHON "Build Python bindings for Mitsuba, Enoki, and NanoGUI?" ON)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
+# Mitsuba 2 ships with its own ray tracing acceleration data structure. If
+# desired, Embree (which tends to be quite a bit faster) can be used instead.
+# Embree lacks some features provided by Mitsuba 2, like support for double
+# precision arithmetic.
+option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
+
+# Build the graphical user interface? (Note that this feature remains incomplete)
+option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
+
+if (UNIX)
+  # Mitsuba 2 ships with a built-in sampling profiler that highlights where
+  # rendering time is spent. Only supported on Linux/macOS at the moment.
+  option(MTS_ENABLE_PROFILER "Enable sampling profiler" ON)
+endif()
+
+# Use GCC/Clang address sanitizer?
+# NOTE: To use this in conjunction with Python plugin, you will need to call
+# On OSX:
+#   export DYLD_INSERT_LIBRARIES=<path to libclang_rt.asan_osx_dynamic.dylib>
+# On Linux:
+#   export LD_LIBRARY_PATH=<path to libasan.so>
+
+option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
+option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
+
+option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
+if(MTS_THROW_TRAPS_DEBUGGER)
+  add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
+endif()
+
+option(MTS_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
+option(MTS_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
+
+# ----------------------------------------------------------
+#  Check if submodules have been checked out, or fail early
+# ----------------------------------------------------------
+
+if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/enoki/ext/enoki-jit/ext/enoki-thread/ext/cmake-defaults")
+  message(FATAL_ERROR "The Mitsuba 2 dependencies are missing! "
+    "You probably did not clone the project with --recursive. It is possible to recover "
+    "by invoking\n$ git submodule update --init --recursive")
+endif()
 
 # ----------------------------------------------------------
 #  In-tree builds are not permitted
@@ -25,7 +70,30 @@ if (PROJECT_SOURCE_DIR STREQUAL "${PROJECT_BINARY_DIR}")
 endif()
 
 # ----------------------------------------------------------
-#  Copy mitsuba.conf if not found
+#  Build defaults for projects by the Realistic Graphics Lab
+# ----------------------------------------------------------
+
+set(P "MTS") # <-- prefix for CMake variables, used by the following script
+set(MTS_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/mitsuba/mitsuba.h")
+include(ext/enoki/ext/enoki-jit/ext/enoki-thread/ext/cmake-defaults/CMakeLists.txt)
+
+# ----------------------------------------------------------
+#  scikit-build: find installed version of dependencies
+# ----------------------------------------------------------
+
+if (SKBUILD)
+  execute_process(
+    COMMAND
+    "${PYTHON_EXECUTABLE}" -c
+    "import enoki; print(enoki.get_cmake_dir())"
+    OUTPUT_VARIABLE _tmp_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
+  list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
+  find_package(enoki CONFIG REQUIRED)
+endif()
+
+# ----------------------------------------------------------
+#  Create the 'mitsuba.conf' file if none is found
 # ----------------------------------------------------------
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
@@ -42,48 +110,15 @@ if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
 endif()
 
 # ----------------------------------------------------------
-#  Check if submodules have been checked out, or fail early
-# ----------------------------------------------------------
-
-if (NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ext/openexr/OpenEXR")
-  message(FATAL_ERROR "The Mitsuba dependencies are missing! "
-    "You probably did not clone the project with --recursive. It is possible to recover "
-    "by invoking\n$ git submodule update --init --recursive")
-endif()
-
-# ----------------------------------------------------------
-#  We require Python in the following
-# ----------------------------------------------------------
-
-if (SKBUILD)
-  execute_process(
-    COMMAND
-      "${PYTHON_EXECUTABLE}" -c
-      "import pybind11; import enoki; print('%s;%s' % (pybind11.get_cmake_dir(), enoki.get_cmake_dir()))"
-    OUTPUT_VARIABLE _tmp_dir
-    OUTPUT_STRIP_TRAILING_WHITESPACE COMMAND_ECHO STDOUT)
-  list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
-  MESSAGE(STATUS ${_tmp_dir})
-  find_package(pybind11 CONFIG REQUIRED)
-  find_package(enoki CONFIG REQUIRED)
-  set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
-elseif (MTS_ENABLE_PYTHON)
-  set(Python_FIND_FRAMEWORK LAST) # Prefer Brew/Conda to Apple framework python
-  find_package(Python COMPONENTS Interpreter Development REQUIRED)
-
-  add_subdirectory(ext/pybind11)
-  mark_as_advanced(
-    PYBIND11_FINDPYTHON
-    PYBIND11_NOPYTHON)
-else()
-  find_package(Python COMPONENTS Interpreter REQUIRED)
-endif()
-
-# ----------------------------------------------------------
 #  Parse 'mitsuba.conf' and generate derived files:
 #   1. include/core/config.h
 #   2. python/mitsuba/config.py
 # ----------------------------------------------------------
+
+if (NOT Python_EXECUTABLE)
+  # We require Python for the next step, even if Python bindings are deactivated
+  find_package(Python COMPONENTS Interpreter REQUIRED)
+endif()
 
 execute_process(
   COMMAND ${Python_EXECUTABLE}
@@ -103,7 +138,7 @@ endif()
 
 list(LENGTH MTS_VARIANTS MTS_VARIANTS_COUNT)
 
-message(STATUS "Building the following variants of Mitsuba:")
+message(STATUS "Mitsuba: building the following variants:")
 foreach (MTS_VARIANT ${MTS_VARIANTS})
   string(REPLACE "|" ";" MTS_VARIANT ${MTS_VARIANT})
   list(GET MTS_VARIANT 0 MTS_VARIANT_NAME)
@@ -113,6 +148,8 @@ foreach (MTS_VARIANT ${MTS_VARIANTS})
   message(STATUS " * ${MTS_VARIANT_NAME}")
 endforeach()
 
+string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
+
 if (MTS_VARIANTS MATCHES "cuda_")
   set(MTS_ENABLE_CUDA ON)
 endif()
@@ -121,25 +158,27 @@ if (MTS_VARIANTS MATCHES "llvm_")
   set(MTS_ENABLE_LLVM ON)
 endif()
 
-if (MTS_VARIANTS MATCHES "ad_")
-  set(MTS_ENABLE_AUTODIFF ON)
-endif()
-
 if (MTS_ENABLE_LLVM OR MTS_ENABLE_CUDA)
   set(MTS_ENABLE_JIT ON)
+endif()
+
+if (MTS_VARIANTS MATCHES "ad_")
+  set(MTS_ENABLE_AUTODIFF ON)
 endif()
 
 # ----------------------------------------------------------
 #  Re-run CMake when 'mitsuba.conf' changes (we must
 #  dynamically add or remove targets based on this file).
-#  Abuses the 'configure_file' mechanism to achieve this
-#  and generates setpath.sh/bat at the same time.
+#  Abuses the 'configure_file' mechanism to achieve this.
 # ----------------------------------------------------------
 
 configure_file(${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf
                ${CMAKE_CURRENT_BINARY_DIR}/ext/unused)
 
-string(REPLACE ";" " " MTS_VARIANT_NAMES_STR "${MTS_VARIANT_NAMES}")
+
+# ----------------------------------------------------------
+#  Automatically generate a suitable 'setpath.sh' file
+# ----------------------------------------------------------
 
 # Directory for build products
 if (MSVC)
@@ -195,145 +234,7 @@ if (NOT SKBUILD)
   endif()
 endif()
 
-# ----------------------------------------------------------
-#  Optional features available to users
-# ----------------------------------------------------------
-
-# Compile for the native processor architecture by default. MSVC cannot detect
-# this automatically, and the following assumes a reasonably modern CPU with
-# AVX2 instructions. You may want to overwrite MTS_NATIVE_FLAGS when building
-# binaries that will be distributed to others.
-
-if (MSVC)
-  if (SKBUILD)
-    # Reasonably portable binaries for PyPI
-    set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX")
-  else()
-    set(MTS_NATIVE_FLAGS_DEFAULT "/arch:AVX2")
-  endif()
-elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-  # Apple M1 compatibility
-  set(MTS_NATIVE_FLAGS_DEFAULT "-mcpu=apple-a12")
-else()
-  if (SKBUILD)
-    # Reasonably portable binaries for PyPI
-    # (Mitsuba requires F16C, which is first supported in Ivy Bridge)
-    set(MTS_NATIVE_FLAGS_DEFAULT "-march=ivybridge")
-  else()
-    set(MTS_NATIVE_FLAGS_DEFAULT "-march=native")
-  endif()
-endif()
-
-set(MTS_NATIVE_FLAGS ${MTS_NATIVE_FLAGS_DEFAULT} CACHE STRING
-    "Compilation flags used to target the host processor architecture.")
-
-# Mitsuba 2 ships with its own ray tracing acceleration data structure. If
-# desired, Embree (which tends to be quite a bit faster) can be used instead.
-# Embree lacks some features provided by Mitsuba 2, like support for double
-# precision arithmetic.
-option(MTS_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
-
-# Build the graphical user interface? (Note that this feature remains incomplete)
-option(MTS_ENABLE_GUI     "Build the graphical user interface?" OFF)
-
-if (UNIX)
-  # Mitsuba 2 ships with a built-in sampling profiler that highlights where
-  # rendering time is spent. Only supported on Linux/macOS at the moment.
-  option(MTS_ENABLE_PROFILER "Enable sampling profiler" ON)
-endif()
-
-# Use GCC/Clang address sanitizer?
-# NOTE: To use this in conjunction with Python plugin, you will need to call
-# On OSX:
-#   export DYLD_INSERT_LIBRARIES=<path to libclang_rt.asan_osx_dynamic.dylib>
-# On Linux:
-#   export LD_LIBRARY_PATH=<path to libasan.so>
-
-option(MTS_SANITIZE_ADDRESS "Enable GCC/Clang address sanitizer?" OFF) # To catch out-of-bounds accesses
-option(MTS_SANITIZE_MEMORY  "Enable GCC/Clang memory sanitizer?"  OFF) # To catch use of unitialized memory
-
-option(MTS_THROW_TRAPS_DEBUGGER "Trap the debugger on calls to `Throw`?" OFF)
-if(MTS_THROW_TRAPS_DEBUGGER)
-  add_definitions(-DMTS_THROW_TRAPS_DEBUGGER)
-endif()
-
-option(MTS_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
-option(MTS_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
-
 # ----------------------------------
-
-include(CheckCXXCompilerFlag)
-include(CheckCXXSourceRuns)
-include(TestBigEndian)
-
-# ----------------------------------------------------------
-#  Set a default build configuration (Release)
-# ----------------------------------------------------------
-
-if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to 'Release' as none was specified.")
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-    "MinSizeRel" "RelWithDebInfo")
-endif()
-string(TOUPPER "${CMAKE_BUILD_TYPE}" U_CMAKE_BUILD_TYPE)
-
-# ----------------------------------------------------------
-#  Compiler version check
-# ----------------------------------------------------------
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "^(GNU)$")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
-     message(FATAL_ERROR "Your version of GCC is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least GCC 8.0)")
-  endif()
-endif()
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
-    message(FATAL_ERROR "Your version of Clang is too old (found version ${CMAKE_CXX_COMPILER_VERSION}. Please use at least Clang 7.0)")
-  endif()
-endif()
-
-if (MSVC)
-  if (${MSVC_VERSION} LESS 1924)
-    message(FATAL_ERROR "MSVC 1924 or higher is required. You are running version ${MSVC_VERSION}.")
-  endif()
-endif()
-
-# ----------------------------------------------------------
-#  Use libc++ together with Clang
-# ----------------------------------------------------------
-
-macro(CHECK_CXX_COMPILER_AND_LINKER_FLAGS _RESULT _CXX_FLAGS _LINKER_FLAGS)
-  set(CMAKE_REQUIRED_FLAGS ${_CXX_FLAGS})
-  set(CMAKE_REQUIRED_LIBRARIES ${_LINKER_FLAGS})
-  set(CMAKE_REQUIRED_QUIET TRUE)
-  check_cxx_source_runs("#include <iostream>\nint main(int argc, char **argv) { std::cout << \"test\"; return 0; }" ${_RESULT})
-  set(CMAKE_REQUIRED_FLAGS "")
-  set(CMAKE_REQUIRED_LIBRARIES "")
-endmacro()
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_FLAGS MATCHES "-stdlib=libc\\+\\+")
-  CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP "-stdlib=libc++" "-stdlib=libc++")
-  if (HAS_LIBCPP)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -D_LIBCPP_VERSION")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++")
-    message(STATUS "Mitsuba: using libc++.")
-  else()
-    CHECK_CXX_COMPILER_AND_LINKER_FLAGS(HAS_LIBCPP_AND_CPPABI "-stdlib=libc++" "-stdlib=libc++ -lc++abi")
-    if (HAS_LIBCPP_AND_CPPABI)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++ -D_LIBCPP_VERSION")
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-      set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
-      message(STATUS "Mitsuba: using libc++ and libc++abi.")
-    else()
-      message(FATAL_ERROR "When Clang is used to compile Mitsuba, libc++ must be available -- GCC's libstdc++ is not supported! (please install the libc++ development headers, provided e.g. by the packages 'libc++-dev' and 'libc++abi-dev' on Debian/Ubuntu).")
-    endif()
-  endif()
-endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MTS_NATIVE_FLAGS}")
 
 # Clang/GCC address sanitizer
 if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND
@@ -364,18 +265,6 @@ if ((MTS_SANITIZE_ADDRESS OR MTS_SANITIZE_MEMORY) AND
   endif()
 endif()
 
-# Enable folders for projects in Visual Studio
-if (CMAKE_GENERATOR MATCHES "Visual Studio")
-  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-endif()
-
-if (NOT WIN32)
-  # Variables for printing colorful CMake warnings
-  string(ASCII 27 Esc)
-  set(ColorReset "${Esc}[m")
-  set(BoldRed "${Esc}[1;31m")
-endif()
-
 # Adapt to variations in rpath handling on Linux and macOS
 if (APPLE)
   set(MTS_ORIGIN "@loader_path")
@@ -403,10 +292,6 @@ if (MTS_ENABLE_LLVM)
   add_definitions(-DMTS_ENABLE_LLVM=1)
 endif()
 
-if (MTS_ENABLE_AUTODIFF)
-  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
-endif()
-
 if (MTS_ENABLE_EMBREE)
   include_directories(${EMBREE_INCLUDE_DIRS})
   add_definitions(-DMTS_ENABLE_EMBREE=1)
@@ -415,36 +300,13 @@ else()
   message(STATUS "Mitsuba: using builtin implementation for CPU ray tracing.")
 endif()
 
+if (MTS_ENABLE_AUTODIFF)
+  add_definitions(-DMTS_ENABLE_AUTODIFF=1)
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 
-# Language and optimization flags that are used to compile Mitsuba
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang"
-    AND U_CMAKE_BUILD_TYPE MATCHES REL)
-  # Set the default symbol visibility to hidden to reduce binary
-  # size--don't do it on GCC, which seems to have some issues with
-  # extern partial template specialization
-  add_compile_options("-fvisibility=hidden")
-endif()
-
-# Force colored output for the ninja generator
-if (CMAKE_GENERATOR STREQUAL "Ninja")
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fcolor-diagnostics")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
-  elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=always")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
-  endif()
-endif()
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
-  add_definitions(-fno-math-errno -ffp-contract=fast -fno-trapping-math)
-endif()
-
 if (MSVC)
-  # Disable problematic windows.h min/max macros
-  add_definitions(-DNOMINMAX)
-
   # Don't complain about not DLL-exporting STL classes
   add_compile_options(/wd4251)
 
@@ -479,17 +341,7 @@ if (MSVC)
   add_compile_options(/wd4910)
 endif()
 
-# Set platform-specific flags
-if (WIN32)
-  add_definitions(-D__WINDOWS__)
-elseif(UNIX)
-  if(APPLE)
-    add_definitions(-D__OSX__)
-  else()
-    add_definitions(-D__LINUX__)
-  endif()
-endif()
-
+include(TestBigEndian)
 test_big_endian(IS_BIG_ENDIAN)
 if (IS_BIG_ENDIAN)
   add_definitions(-DBIG_ENDIAN)
@@ -543,24 +395,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)" AND NOT MTS_VARIANTS MATCHES "do
   add_compile_options("-Wdouble-promotion")
 endif()
 
-# Compile with compiler warnings turned on
-if (MSVC)
-  if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  else()
-    add_compile_options("/W4")
-  endif()
-
-  # Disable annoying MSVC security features + warnings
-  add_definitions(
-    -D_CRT_SECURE_NO_WARNINGS
-    -D_SCL_SECURE_NO_WARNINGS
-    -D_SILENCE_CXX17_UNCAUGHT_EXCEPTION_DEPRECATION_WARNING
-  )
-else()
-  add_compile_options(-Wall -Wextra -Wno-unused-local-typedefs)
-endif()
-
 # Forwarding of profiler events to external tools
 if (MTS_ENABLE_PROFILER)
   if (MTS_PROFILER_ITTNOTIFY)
@@ -583,6 +417,7 @@ add_subdirectory(src)
 
 # Documentation
 if (NOT SKBUILD)
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
   find_package(Sphinx)
   if (Sphinx_FOUND)
     set(SPHINX_INPUT_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/docs")
@@ -613,16 +448,6 @@ if (MTS_COPIED_CONFIG_FILE AND NOT SKBUILD)
   message(WARNING "\n${BoldRed}Created a default 'mitsuba.conf' configuration "
           "file. You will probably want to edit this file to specify the "
           "desired configurations before starting to compile.${ColorReset}")
-endif()
-
-# Warn about Unix Makefiles
-if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-  message(WARNING "\n${BoldRed}You're using CMake's \"Unix Makefiles\" "
-    "generator. Compilation speed is going to be impacted due to its limited "
-    "ability to express build parallelism. We strongly recommend using Ninja "
-    "for development on Linux and macOS. To do so, install \"ninja\" (brew, "
-    "MacPorts, Arch) or \"ninja-build\" elsewhere, and then invoke CMake using "
-    "\"-GNinja\") ${ColorReset}")
 endif()
 
 # Installation targets

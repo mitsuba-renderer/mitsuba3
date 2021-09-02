@@ -7,7 +7,7 @@
 #include <mutex>
 #include <unordered_map>
 
-#if !defined(__WINDOWS__)
+#if !defined(_WIN32)
 # include <dlfcn.h>
 #else
 # include <windows.h>
@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
 class Plugin {
 public:
     Plugin(const fs::path &path) : m_path(path) {
-        #if defined(__WINDOWS__)
+        #if defined(_WIN32)
             m_handle = LoadLibraryW(path.native().c_str());
             if (!m_handle)
                 Throw("Error while loading plugin \"%s\": %s", path.string(),
@@ -41,7 +41,7 @@ public:
     }
 
     ~Plugin() {
-        #if defined(__WINDOWS__)
+        #if defined(_WIN32)
             FreeLibrary(m_handle);
         #else
             dlclose(m_handle);
@@ -50,7 +50,7 @@ public:
 
 private:
     void *symbol(const std::string &name) const {
-        #if defined(__WINDOWS__)
+        #if defined(_WIN32)
             void *ptr = GetProcAddress(m_handle, name.c_str());
             if (!ptr)
                 Throw("Could not resolve symbol \"%s\" in \"%s\": %s", name,
@@ -69,7 +69,7 @@ public:
     const char *plugin_descr = nullptr;
 
 private:
-    #if defined(__WINDOWS__)
+    #if defined(_WIN32)
         HMODULE m_handle;
     #else
         void *m_handle;
@@ -93,9 +93,9 @@ struct PluginManager::PluginManagerPrivate {
         // Build the full plugin file name
         fs::path filename = fs::path("plugins") / name;
 
-        #if defined(__WINDOWS__)
+        #if defined(_WIN32)
             filename.replace_extension(".dll");
-        #elif defined(__OSX__)
+        #elif defined(__APPLE__)
             filename.replace_extension(".dylib");
         #else
             filename.replace_extension(".so");

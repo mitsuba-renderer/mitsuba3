@@ -1,8 +1,17 @@
-# ----------------------------------------------------------
-#  Intel ITT (profiler events for VTune, optional)
-# ----------------------------------------------------------
+# ---------------------------------------------------------------------------
+#  Undo 'cmake-defaults' settings that interfere with dependencies
+# ---------------------------------------------------------------------------
+
+get_directory_property(MTS_EXT_COMPILE_OPTIONS        COMPILE_OPTIONS)
+get_directory_property(MTS_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
+list(REMOVE_ITEM MTS_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
+
+# ---------------------------------------------------------------------------
+#  Link against Intel ITT (profiler events for VTune, optional)
+# ---------------------------------------------------------------------------
 
 if (MTS_ENABLE_PROFILER AND MTS_PROFILER_ITTNOTIFY)
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS_NOWARN}")
   add_subdirectory(ittnotify/ittnotify)
   set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ittnotify/ittnotify/include)
   set(ITT_INCLUDE_DIRS ${ITT_INCLUDE_DIRS} PARENT_SCOPE)
@@ -10,17 +19,14 @@ if (MTS_ENABLE_PROFILER AND MTS_PROFILER_ITTNOTIFY)
   message(STATUS "Mitsuba: emitting profiling events with Intel ITT.")
 endif()
 
-# ----------------------------------------------------------
-#  Enoki (+ Python bindings, JIT compiler, etc.)
-# ----------------------------------------------------------
+# ---------------------------------------------------------------------------
+#  Build Enoki (+ Python bindings, JIT compiler, etc.)
+# ---------------------------------------------------------------------------
 
+set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS}")
 set(ENOKI_ENABLE_JIT      ${MTS_ENABLE_JIT} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_AUTODIFF ${MTS_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
 set(ENOKI_ENABLE_PYTHON   ${MTS_ENABLE_PYTHON} CACHE BOOL " " FORCE)
-set(ENOKI_PYBIND11_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pybind11" CACHE STRING
-    "Path containing the 'pybind11' library used to compile Enoki." FORCE)
-set(ENOKI_NATIVE_FLAGS "${MTS_NATIVE_FLAGS}" CACHE STRING
-    "Compilation flags used to target the host processor architecture." FORCE)
 if (MTS_ENABLE_PROFILER AND MTS_PROFILER_NVTX)
     include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
     set(ENOKI_ENABLE_NVTX ON)
@@ -50,10 +56,12 @@ if (NOT SKBUILD)
 endif()
 
 # ----------------------------------------------------------
-#  Intel Embree, optional
+#  Compile Intel Embree (optional)
 # ----------------------------------------------------------
 
 if (MTS_ENABLE_EMBREE)
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "")
+
   set(EMBREE_ISPC_SUPPORT              OFF CACHE BOOL " " FORCE)
   set(EMBREE_TUTORIALS                 OFF CACHE BOOL " " FORCE)
   set(EMBREE_FILTER_FUNCTION           OFF CACHE BOOL " " FORCE)
@@ -70,6 +78,7 @@ if (MTS_ENABLE_EMBREE)
   set(EMBREE_MAX_ISA "NONE"            CACHE STRING " " FORCE)
   set(EMBREE_STAT_COUNTERS             OFF CACHE BOOL " " FORCE)
   set(EMBREE_MAX_INSTANCE_LEVEL_COUNT  1 CACHE STRING " " FORCE)
+  set(EMBREE_TASKING_SYSTEM            "INTERNAL" CACHE STRING " " FORCE)
 
   if (MSVC)
     set(EMBREE_ISA_SSE2             OFF CACHE BOOL " " FORCE)
@@ -107,17 +116,14 @@ if (MTS_ENABLE_EMBREE)
     endif()
   endif()
 
-  set(EMBREE_TASKING_SYSTEM "INTERNAL" CACHE STRING " " FORCE)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable")
+    add_compile_options(-Wno-unused-variable)
   endif()
 
   # Briefly remove -march=native and let Embree do it's own ISA selection
-  set(MTS_CXX_FLAGS_BACKUP "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "${MTS_NATIVE_FLAGS}" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  string(REPLACE "/W3" "/W2" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  unset(CMAKE_CXX_VISIBILITY_PRESET)
   add_subdirectory(embree)
-  set(CMAKE_CXX_FLAGS "${MTS_CXX_FLAGS_BACKUP}")
+  set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
   set(EMBREE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/embree/include" PARENT_SCOPE)
 
   if (MSVC)
@@ -131,9 +137,10 @@ if (MTS_ENABLE_EMBREE)
 endif()
 
 # ----------------------------------------------------------
-#  OpenEXR (& zlib on Windows)
+#  Build OpenEXR (and zlib on Windows)
 # ----------------------------------------------------------
 
+set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MTS_EXT_COMPILE_OPTIONS_NOWARN}")
 if (WIN32)
   set(ZLIB_BUILD_STATIC_LIBS ON CACHE BOOL " " FORCE)
   set(ZLIB_BUILD_SHARED_LIBS ON CACHE BOOL " " FORCE)
@@ -157,7 +164,10 @@ set(OPENEXR_INSTALL_PKG_CONFIG OFF CACHE BOOL "" FORCE)
 set(PYILMBASE_ENABLE           OFF CACHE BOOL "" FORCE)
 set(INSTALL_OPENEXR_DOCS OFF CACHE BOOL "" FORCE)
 set(INSTALL_OPENEXR_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+unset(CMAKE_CXX_VISIBILITY_PRESET)
 add_subdirectory(openexr)
+set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
 
 set_property(TARGET
   IexMath IlmThread Half Iex Imath IlmImf IexMath
@@ -305,11 +315,6 @@ endif()
 #  sRGB spectral upsampling model
 # ----------------------------------------------------------
 
-# Disable annoying MSVC warnings in rgb2spec build
-if (MSVC)
-  add_definitions(/D "_CRT_SECURE_NO_WARNINGS")
-endif()
-
 # build rgb2spec
 add_subdirectory(rgb2spec)
 set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
@@ -328,6 +333,7 @@ mark_as_advanced(
   EMBREE_ISPC_SUPPORT EMBREE_LIBRARY_NAME EMBREE_MAX_INSTANCE_LEVEL_COUNT
   EMBREE_MAX_ISA EMBREE_RAY_MASK EMBREE_ISA_SSE2 EMBREE_ISA_SSE42
   EMBREE_ISA_AVX EMBREE_ISA_AVX2 EMBREE_ISA_AVX512SKX  EMBREE_ISA_AVX512KNL
+  EMBREE_ISA_AVX512 EMBREE_ISA_NEON
   EMBREE_STACK_PROTECTOR EMBREE_STAT_COUNTERS EMBREE_TUTORIALS
   EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR
   EMBREE_MAX_INSTANCE_LEVEL_COUN EMBREE_MIN_WIDTH EMBREE_RAY_PACKETS
