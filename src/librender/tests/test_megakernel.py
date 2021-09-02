@@ -2,8 +2,16 @@ import enoki as ek
 import mitsuba
 import pytest
 
-from mitsuba.python.test.util import fresolver_append_path
-
+def find_resource(fname):
+    import os
+    path = os.path.dirname(os.path.realpath(__file__))
+    while True:
+        full = os.path.join(path, fname)
+        if os.path.exists(full):
+            return full
+        if path == '' or path == '/':
+            raise Exception("find_resource(): could not find \"%s\"" % fname)
+        path = os.path.dirname(path)
 
 def write_kernels(*args, output_dir='kernels', scene_fname=None):
     import os
@@ -30,14 +38,13 @@ def write_kernels(*args, output_dir='kernels', scene_fname=None):
 
 
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
-@fresolver_append_path
 def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     """
     Tests that forward rendering launches the correct number of kernels
     """
     from mitsuba.core import xml
 
-    scene = xml.load_file('resources/data/scenes/cbox/cbox.xml')
+    scene = xml.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 2
 
@@ -92,7 +99,6 @@ def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
 @pytest.mark.parametrize('scene_fname', [
     'resources/data/scenes/cbox/cbox.xml',
     'resources/data/tests/scenes/various_emitters/test_various_emitters.xml'])
-@fresolver_append_path
 def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     """
     Tests that forward rendering launches the correct number of kernels
@@ -100,7 +106,7 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     """
     from mitsuba.core import xml
 
-    scene = xml.load_file(scene_fname)
+    scene = xml.load_file(find_resource(scene_fname))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 2
 
@@ -157,7 +163,6 @@ def test02_kernel_launches_ptracer(variants_vec_rgb, scene_fname):
     assert history_3[2]['size'] == film_wavefront_size
 
 
-@fresolver_append_path
 def test03_kernel_launches_optimization(variants_all_ad_rgb):
     """
     Check the history of kernel launches during a simple optimization loop
@@ -166,7 +171,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
     from mitsuba.core import xml, Color3f
     from mitsuba.python.util import traverse
 
-    scene = xml.load_file('resources/data/scenes/cbox/cbox.xml')
+    scene = xml.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
     film_size = scene.sensors()[0].film().crop_size()
     spp = 4
 
