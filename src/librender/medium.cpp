@@ -115,97 +115,11 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
 
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
+    const Mask did_traverse = active;
+
     // Get majorant
     auto combined_extinction = get_combined_extinction(mi, active);
-    Float m                  = extract_channel(combined_extinction, channel);
-
-    // Sample proportional to transmittance only using reservoir sampling
-    MediumInteraction3f mi_sub = mi;
-    Float transmittance = 1.f;
-    Float running_t = mint;
-    Float acc_weight = 0.f;
-    Float sampled_t = ek::NaN<Float>;
-    Float sampled_t_step = ek::NaN<Float>;
-    Float sampling_weight = ek::NaN<Float>;
-    const Mask did_traverse = active;
-
-    ek::Loop<Float> loop("Medium::sample_interaction_drt");
-    loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
-             running_t, mi_sub, transmittance);
-    sampler->loop_register(loop);
-    loop.init();
-    while (loop(ek::detach(active))) {
-        Float dt = -ek::log(1 - sampler->next_1d(active)) / m;
-        Float dt_clamped = ek::min(dt, maxt - running_t);
-
-        // Reservoir sampling with replacement
-        Float current_weight = transmittance * dt_clamped;
-        acc_weight += current_weight;
-
-        // Note: this will always trigger at the first step
-        Mask did_interact =
-            (sampler->next_1d(active) * acc_weight) < current_weight;
-        // Adopt step with replacement
-        ek::masked(sampled_t, active & did_interact) = running_t;
-        ek::masked(sampled_t_step, active & did_interact) = dt_clamped;
-        ek::masked(sampling_weight, active) = acc_weight;
-
-        // Continue stepping
-        running_t += dt;
-
-        ek::masked(mi_sub.t, active) = running_t;
-        ek::masked(mi_sub.p, active) = ray(running_t);
-        auto [_1, _2, current_sigma_t] = get_scattering_coefficients(mi_sub, active);
-        Float s = extract_channel(current_sigma_t, channel);
-        transmittance *= (1.f - (s / m));
-        // Recall that replacement is possible in this loop.
-        active &= (running_t < maxt);
-    }
-
-    sampled_t = sampled_t + sampler->next_1d(did_traverse) * sampled_t_step;
-
-    Mask valid_mi   = (sampled_t <= maxt);
-    mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
-    mi.p            = ray(sampled_t);
-    std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
-        get_scattering_coefficients(mi, valid_mi);
-    mi.combined_extinction = combined_extinction;
-
-    return { mi, sampling_weight };
-}
-
-// TODO: remove this, shouldn't need this function as static
-MTS_VARIANT
-std::pair<typename Medium<Float, Spectrum>::MediumInteraction3f, Spectrum>
-Medium<Float, Spectrum>::static_sample_interaction_drt(const MediumPtr medium,
-                                                       const Ray3f &ray,
-                                                       Sampler *sampler,
-                                                       UInt32 channel,
-                                                       Mask active) {
-    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
-
-    // Initialize basic medium interaction fields
-    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-    mi.sh_frame    = Frame3f(ray.d);
-    mi.wi          = -ray.d;
-    mi.time        = ray.time;
-    mi.wavelengths = ray.wavelengths;
-    mi.medium      = medium;
-
-    auto [aabb_its, mint, maxt] = medium->intersect_aabb(ray);
-    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
-    active &= aabb_its;
-    ek::masked(mint, !active) = 0.f;
-    ek::masked(maxt, !active) = ek::Infinity<Float>;
-
-    mint                    = ek::max(0.f, mint);
-    maxt                    = ek::min(ray.maxt, maxt);
-    mi.mint                 = mint;
-    const Mask did_traverse = active;
-
-    // Get majorant
-    auto combined_extinction = medium->get_combined_extinction(mi, active);
-    Float m = Medium::extract_channel(combined_extinction, channel);
+    Float m = extract_channel(combined_extinction, channel);
 
     // Sample proportional to transmittance only using reservoir sampling
     MediumInteraction3f mi_sub = mi;
@@ -243,8 +157,8 @@ Medium<Float, Spectrum>::static_sample_interaction_drt(const MediumPtr medium,
         ek::masked(mi_sub.t, active) = running_t;
         ek::masked(mi_sub.p, active) = ray(running_t);
         auto [_1, _2, current_sigma_t] =
-            medium->get_scattering_coefficients(mi_sub, active);
-        Float s = Medium::extract_channel(current_sigma_t, channel);
+            get_scattering_coefficients(mi_sub, active);
+        Float s = extract_channel(current_sigma_t, channel);
         transmittance *= (1.f - (s / m));
         // Recall that replacement is possible in this loop.
         active &= (running_t < maxt);
@@ -256,46 +170,27 @@ Medium<Float, Spectrum>::static_sample_interaction_drt(const MediumPtr medium,
     mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p            = ray(sampled_t);
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
-        medium->get_scattering_coefficients(mi, valid_mi);
-    mi.combined_extinction = medium->get_combined_extinction(mi, valid_mi);
+        get_scattering_coefficients(mi, valid_mi);
+    mi.combined_extinction = get_combined_extinction(mi, valid_mi);
 
     return { mi, sampling_weight };
 }
 
-// TODO: remove this, shouldn't need this function as static
 MTS_VARIANT
 std::pair<typename Medium<Float, Spectrum>::MediumInteraction3f, Spectrum>
-Medium<Float, Spectrum>::static_sample_interaction_drrt(const MediumPtr medium,
-                                                        const Ray3f &ray,
-                                                        Sampler *sampler,
-                                                        UInt32 channel,
-                                                        Mask active) {
-    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, active);
+Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
+                                                 Sampler *sampler,
+                                                 UInt32 channel, Mask _active) const {
+    MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
 
-    // Initialize basic medium interaction fields
-    MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-    mi.sh_frame    = Frame3f(ray.d);
-    mi.wi          = -ray.d;
-    mi.time        = ray.time;
-    mi.wavelengths = ray.wavelengths;
-    mi.medium      = medium;
-
-    auto [aabb_its, mint, maxt] = medium->intersect_aabb(ray);
-    aabb_its &= (ek::isfinite(mint) || ek::isfinite(maxt));
-    active &= aabb_its;
-    ek::masked(mint, !active) = 0.f;
-    ek::masked(maxt, !active) = ek::Infinity<Float>;
-
-    mint                    = ek::max(0.f, mint);
-    maxt                    = ek::min(ray.maxt, maxt);
-    mi.mint                 = mint;
-    const Mask did_traverse = active;
+    auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
 
     // Get majorant
-    auto combined_extinction = medium->get_combined_extinction(mi, active);
-    Float m = Medium::extract_channel(combined_extinction, channel);
+    auto combined_extinction = get_combined_extinction(mi, active);
+    Float m = extract_channel(combined_extinction, channel);
     // TODO: need to tweak this?
-    Float control = 0.5f * m;
+    Float control           = 0.5f * m;
+    const Mask did_traverse = active;
 
     // Sample proportional to transmittance only using reservoir sampling
     MediumInteraction3f mi_sub = mi;
@@ -306,7 +201,7 @@ Medium<Float, Spectrum>::static_sample_interaction_drrt(const MediumPtr medium,
     Float sampled_t_step = ek::NaN<Float>;
     Float sampling_weight = ek::NaN<Float>;
 
-    ek::Loop<Float> loop("Medium::sample_interaction_drt");
+    ek::Loop<Float> loop("Medium::sample_interaction_drrt");
     loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
              running_t, mi_sub, transmittance);
     sampler->loop_register(loop);
@@ -334,22 +229,23 @@ Medium<Float, Spectrum>::static_sample_interaction_drrt(const MediumPtr medium,
         ek::masked(mi_sub.t, active) = running_t;
         ek::masked(mi_sub.p, active) = ray(running_t);
         auto [_1, _2, current_sigma_t] =
-            medium->get_scattering_coefficients(mi_sub, active);
-        Float s = Medium::extract_channel(current_sigma_t, channel);
+            get_scattering_coefficients(mi_sub, active);
+        Float s = extract_channel(current_sigma_t, channel);
         transmittance *= (1.f - (s - control) / m) * ek::exp(-control * dt);
         // Recall that replacement is possible in this loop.
         active &= (running_t < maxt);
     }
 
     Float scale = 1 - ek::exp(-control * sampled_t_step);
-    sampled_t = sampled_t - ek::log(1.f - sampler->next_1d(did_traverse) * scale) / control;
+    sampled_t   = sampled_t -
+                ek::log(1.f - sampler->next_1d(did_traverse) * scale) / control;
 
-    Mask valid_mi   = (sampled_t <= maxt);
-    mi.t            = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
-    mi.p            = ray(sampled_t);
+    Mask valid_mi = (sampled_t <= maxt);
+    mi.t          = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
+    mi.p          = ray(sampled_t);
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
-        medium->get_scattering_coefficients(mi, valid_mi);
-    mi.combined_extinction = medium->get_combined_extinction(mi, valid_mi);
+        get_scattering_coefficients(mi, valid_mi);
+    mi.combined_extinction = get_combined_extinction(mi, valid_mi);
 
     return { mi, sampling_weight };
 }

@@ -79,24 +79,14 @@ public:
                            Mask active) const;
 
     /**
-     * Static variant of \ref sample_interaction_drt to try and
-     * work around some ek::Loop limitations.
+     * Sample an interaction with Differential Residual Ratio Tracking.
+     * Intended for adjoint integration.
+     *
+     * Returns the interaction record and a sampling weight.
      */
-    // TODO: remove this
-    static std::pair<MediumInteraction3f, Spectrum>
-    static_sample_interaction_drt(const MediumPtr medium, const Ray3f &ray,
-                                  Sampler *sampler, UInt32 channel,
-                                  Mask active);
-
-    /**
-     * Static variant of \ref sample_interaction_drrt to try and
-     * work around some ek::Loop limitations.
-     */
-    // TODO: remove this
-    static std::pair<MediumInteraction3f, Spectrum>
-    static_sample_interaction_drrt(const MediumPtr medium, const Ray3f &ray,
-                                   Sampler *sampler, UInt32 channel,
-                                   Mask active);
+    std::pair<MediumInteraction3f, Spectrum>
+    sample_interaction_drrt(const Ray3f &ray, Sampler *sampler, UInt32 channel,
+                            Mask active) const;
 
     /**
      * \brief Compute the transmittance and PDF
@@ -180,6 +170,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_METHOD(sample_interaction)
     ENOKI_VCALL_METHOD(sample_interaction_real)
     ENOKI_VCALL_METHOD(sample_interaction_drt)
+    ENOKI_VCALL_METHOD(sample_interaction_drrt)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)
 
