@@ -89,6 +89,10 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->eval_tr_and_pdf(mi, si, active); },
             "mi"_a, "si"_a, "active"_a,
             D(Medium, eval_tr_and_pdf))
+       .def("prepare_interaction_sampling",
+            [](Ptr ptr, const Ray3f &ray, Mask active) {
+                return ptr->prepare_interaction_sampling(ray, active); },
+            "ray"_a, "active"_a)
        .def("get_albedo",
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_albedo(mi, active); },

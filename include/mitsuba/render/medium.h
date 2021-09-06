@@ -107,6 +107,14 @@ public:
     eval_tr_and_pdf(const MediumInteraction3f &mi,
                     const SurfaceInteraction3f &si, Mask active) const;
 
+    /**
+     * Compute the ray-medium overlap range and prepare a
+     * medium interaction to be filled by a sampling routine.
+     * Exposed as part of the API to enable testing.
+     */
+    std::tuple<MediumInteraction3f, Float, Float, Mask>
+    prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
+
     /// Return the phase function of this medium
     MTS_INLINE const PhaseFunction *phase_function() const {
         return m_phase_function.get();
@@ -140,7 +148,6 @@ protected:
     Medium(const Properties &props);
     virtual ~Medium();
 
-    auto prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
     static Float extract_channel(Spectrum value, UInt32 channel);
 
 protected:
@@ -172,6 +179,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_METHOD(sample_interaction_drt)
     ENOKI_VCALL_METHOD(sample_interaction_drrt)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)
+    ENOKI_VCALL_METHOD(prepare_interaction_sampling)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Medium)
 
 //! @}

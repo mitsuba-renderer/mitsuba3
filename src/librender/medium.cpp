@@ -265,7 +265,9 @@ Medium<Float, Spectrum>::eval_tr_and_pdf(const MediumInteraction3f &mi,
 }
 
 MTS_VARIANT
-MTS_INLINE auto
+MTS_INLINE
+std::tuple<typename Medium<Float, Spectrum>::MediumInteraction3f, Float, Float,
+           typename Medium<Float, Spectrum>::Mask>
 Medium<Float, Spectrum>::prepare_interaction_sampling(const Ray3f &ray,
                                                       Mask active) const {
     // Initialize basic medium interaction fields
