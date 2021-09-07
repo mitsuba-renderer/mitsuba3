@@ -30,6 +30,10 @@ PLY (Stanford Triangle Format) mesh loader (:monosp:`ply`)
    - When set to |true|, any existing or computed vertex normals are
      discarded and *face normals* will instead be used during rendering.
      This gives the rendered object a faceted appearance. (Default: |false|)
+ * - flip_normals
+   - |bool|
+   - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
+     the normals point outside)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.

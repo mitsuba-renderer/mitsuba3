@@ -1,14 +1,5 @@
 #include <mitsuba/core/fwd.h>
-#include <mitsuba/core/properties.h>
-#include <mitsuba/core/transform.h>
-#include <mitsuba/core/util.h>
-#include <mitsuba/core/warp.h>
-#include <mitsuba/render/emitter.h>
-#include <mitsuba/render/fwd.h>
-#include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
-#include <mitsuba/render/sensor.h>
-
 #include <array>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -26,6 +17,10 @@ Cube (:monosp:`cube`)
    - |transform|
    - Specifies an optional linear object-to-world transformation.
      (Default: none (i.e. object space = world space))
+ * - flip_normals
+   - |bool|
+   - Is the cube inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
+     the normals point outside)
 
 This shape plugin describes a cube intersection primitive, based on the triangle
 mesh class.  By default, it creates a cube between the world-space positions 
@@ -100,6 +95,7 @@ public:
                 InputNormal3f n = normals[i];
                 p               = m_to_world.scalar().transform_affine(p);
                 n               = ek::normalize(m_to_world.scalar().transform_affine(n));
+
                 ek::store(position_ptr, p);
                 ek::store(normal_ptr, n);
                 ek::store(texcoord_ptr, texcoords[i]);
@@ -115,6 +111,8 @@ public:
     }
 
     MTS_DECLARE_CLASS()
+private:
+    bool m_flip_normals;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Cube, Mesh)

@@ -30,6 +30,10 @@ Wavefront OBJ mesh loader (:monosp:`obj`)
  * - flip_tex_coords
    - |bool|
    - Treat the vertical component of the texture as inverted? Most OBJ files use this convention. (Default: |true|)
+ * - flip_normals
+   - |bool|
+   - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
+     the normals point outside)
  * - to_world
    - |transform|
    - Specifies an optional linear object-to-world transformation.

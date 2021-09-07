@@ -28,6 +28,8 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
        appearance. Default: ``false`` */
     if (props.bool_("face_normals", false))
         m_disable_vertex_normals = true;
+
+    m_flip_normals = props.bool_("flip_normals", false);
 }
 
 MTS_VARIANT
@@ -427,8 +429,10 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
                  n2 = vertex_normal(fi[2], active);
         ps.n = ek::normalize(n0 * (1.f - b.x() - b.y())
                        + n1 * b.x() + n2 * b.y());
+        if (m_flip_normals) ps.n = -ps.n;
     } else {
         ps.n = ek::normalize(ek::cross(e0, e1));
+        if (m_flip_normals) ps.n = -ps.n;
     }
 
     return ps;
@@ -537,6 +541,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));
+    if (m_flip_normals) si.n = -si.n;
 
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
@@ -578,6 +583,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         n *= il;
 
         si.sh_frame.n = n;
+        if (m_flip_normals) si.sh_frame.n = -n;
 
         if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
