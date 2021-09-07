@@ -147,7 +147,14 @@ public:
 
         Mask needs_intersection = true, last_event_was_null = false;
         Interaction3f last_scatter_event = ek::zero<Interaction3f>();
-        for (int bounce = 0;; ++bounce) {
+
+        ek::Loop<Float> loop("Volpath MIS integrator");
+        loop.put(active, depth, ray, p_over_f, p_over_f_nee, result, si, mi,
+                 medium, eta, last_scatter_event, needs_intersection,
+                 specular_chain, valid_ray);
+        sampler->loop_register(loop);
+        loop.init();
+        while (loop(ek::detach(active))) {
             // ----------------- Handle termination of paths ------------------
 
             // Russian roulette: try to keep path weights equal to one, while accounting for the
@@ -161,11 +168,9 @@ public:
 
             last_event_was_null = false;
 
-            Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
-            active &= !exceeded_max_depth;
+            active &= depth < (uint32_t) m_max_depth;
             active &= ek::any(ek::neq(unpolarized_spectrum(mis_weight(p_over_f)), 0.f));
-
-            if (ek::none(active))
+            if (ek::none_or<false>(active))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
@@ -373,11 +378,17 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
         Mask needs_intersection = true;
-        while (ek::any(active)) {
+        ek::Loop<Float> loop("Volpath MIS integrator emitter sampling");
+        loop.put(active, ray, total_dist, needs_intersection, medium, si,
+                 p_over_f_nee, p_over_f_uni);
+        sampler->loop_register(loop);
+        loop.init();
+        while (loop(ek::detach(active))) {
+
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
-            if (ek::none(active))
+            if (ek::none_or<false>(active))
                 break;
 
             Mask escaped_medium = false;
@@ -414,7 +425,7 @@ public:
                 ek::masked(total_dist, active_medium) += mi.t;
 
                 if (ek::any_or<true>(active_medium)) {
-                    ek::masked(ray.o, active_medium)    = mi.p;
+                    ek::masked(ray.o, active_medium) = mi.p;
                     // Update si.t since we continue the ray into the same direction
                     ek::masked(si.t, active_medium) = si.t - mi.t;
                     if (ek::any_or<true>(is_spectral)) {

@@ -110,7 +110,13 @@ public:
         Interaction3f last_scatter_event = ek::zero<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
-        for (int bounce = 0;; ++bounce) {
+        ek::Loop<Float> loop("Volpath integrator");
+        loop.put(active, depth, ray, throughput, result, si, mi, medium, eta,
+                 last_scatter_event, last_scatter_direction_pdf,
+                 needs_intersection, specular_chain, valid_ray);
+        sampler->loop_register(loop);
+        loop.init();
+        while (loop(ek::detach(active))) {
             // ----------------- Handle termination of paths ------------------
             // Russian roulette: try to keep path weights equal to one, while accounting for the
             // solid angle compression at refractive index boundaries. Stop with at least some
@@ -121,8 +127,8 @@ public:
             active &= sampler->next_1d(active) < q || !perform_rr;
             ek::masked(throughput, perform_rr) *= ek::rcp(ek::detach(q));
 
-            Mask exceeded_max_depth = depth >= (uint32_t) m_max_depth;
-            if (ek::none(active) || ek::all(exceeded_max_depth))
+            active &= depth < (uint32_t) m_max_depth;
+            if (ek::none_or<false>(active))
                 break;
 
             // ----------------------- Sampling the RTE -----------------------
@@ -316,11 +322,17 @@ public:
         Float total_dist = 0.f;
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         Mask needs_intersection = true;
-        while (ek::any(active)) {
+
+        ek::Loop<Float> loop("Volpath integrator emitter sampling");
+        loop.put(active, ray, total_dist, needs_intersection, medium, si,
+                 transmittance);
+        sampler->loop_register(loop);
+        loop.init();
+        while (loop(ek::detach(active))) {
             Float remaining_dist = ds.dist * (1.f - math::ShadowEpsilon<Float>) - total_dist;
             ray.maxt = remaining_dist;
             active &= remaining_dist > 0.f;
-            if (ek::none(active))
+            if (ek::none_or<false>(active))
                 break;
 
             Mask escaped_medium = false;
