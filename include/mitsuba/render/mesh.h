@@ -412,6 +412,7 @@ protected:
 
     /// Flag that can be set by the user to disable loading/computation of vertex normals
     bool m_disable_vertex_normals = false;
+    bool m_flip_normals = false;
 
     /* Surface area distribution -- generated on demand when \ref
        prepare_area_pmf() is first called. */
