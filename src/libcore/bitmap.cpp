@@ -606,24 +606,23 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
 
         std::vector<std::string> field_names;
         for (auto it2 = range.first; it2 != range.second; ++it2) {
-            if (it2->second.first == "Y") {
+            if (it2->second.first == "Y")
                 has_y = true;
-            } else if (it2->second.first == "A") {
+            else if (it2->second.first == "A")
                 has_a = true;
-            } else if (it2->second.first == "W") {
+            else if (it2->second.first == "W")
                 has_w = true;
-                if (prefix != "<root>")
-                    Throw("Bitmap::split: Unexpected weight channel in image '%s'", prefix);
-                if (!has_a)
-                    Throw("Bitmap::split: Expect alpha channel is weight channel is present");
-            } else {
-                if (std::string("RGB").find(it2->second.first) == std::string::npos)
-                    has_rgb = false;
-                if (std::string("XYZ").find(it2->second.first) == std::string::npos)
-                    has_xyz = false;
-            }
+            else if (std::string("RGB").find(it2->second.first) == std::string::npos)
+                has_rgb = false;
+            else if (std::string("XYZ").find(it2->second.first) == std::string::npos)
+                has_xyz = false;
             field_names.push_back(it2->second.first);
         }
+
+        if (has_w && prefix != "<root>")
+            Throw("Bitmap::split: Unexpected weight channel in image '%s'", prefix);
+        if (has_w && !has_a)
+            Throw("Bitmap::split: presence of weight channel implies alpha channel!");
 
         size_t extra_ch = 0;
         extra_ch += has_a ? 1 : 0;
