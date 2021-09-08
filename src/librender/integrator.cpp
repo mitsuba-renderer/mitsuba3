@@ -315,7 +315,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     auto [ray, ray_weight] = sensor->sample_ray_differential(
         time, wavelength_sample, adjusted_position, aperture_sample);
 
-    ray.scale_differential(diff_scale_factor);
+    if (ray.has_differentials)
+        ray.scale_differential(diff_scale_factor);
 
     const Medium *medium = sensor->medium();
     std::pair<Spectrum, Mask> result = sample(scene, sampler, ray, medium, aovs + 5, active);
