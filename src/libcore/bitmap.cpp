@@ -911,8 +911,9 @@ public:
     void addTask(IlmThread::Task* task) override {
         Task *t = ek::do_async([task]() {
             task->execute();
-            task->group()->finishOneTask();
+            IlmThread::TaskGroup *group = task->group();
             delete task;
+            group->finishOneTask();
         });
         if (pool_size() == 0)
             task_wait_and_release(t);
