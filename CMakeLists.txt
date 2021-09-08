@@ -306,6 +306,11 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL GNU)
+  # Hidden default symbol visibility issues with GCC
+  set(CMAKE_CXX_VISIBILITY_PRESET "default")
+endif()
+
 if (MSVC)
   # Don't complain about not DLL-exporting STL classes
   add_compile_options(/wd4251)
