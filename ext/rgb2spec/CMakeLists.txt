@@ -21,7 +21,10 @@ set_target_properties(rgb2spec_opt PROPERTIES
 if (NOT APPLE)
   find_package(OpenMP)
   if(OpenMP_CXX_FOUND)
-      target_link_libraries(rgb2spec_opt PUBLIC OpenMP::OpenMP_CXX)
+      target_link_libraries(rgb2spec_opt PRIVATE OpenMP::OpenMP_CXX)
+      if (MSVC)
+        target_compile_options(rgb2spec_opt PRIVATE -openmp:experimental)
+      endif()
   endif()
 endif()
 
