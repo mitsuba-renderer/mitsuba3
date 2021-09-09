@@ -367,7 +367,7 @@ public:
 
         uint32_t img_ch = to_y ? 1 : 3;
         uint32_t aovs_channel = (has_aovs ? img_ch + (has_alpha ? 1 : 0) : 0);
-        uint32_t target_ch = m_storage->channel_count() - 5 + aovs_channel;
+        uint32_t target_ch = (uint32_t) m_storage->channel_count() - 5 + aovs_channel;
 
         ref<Bitmap> target = new Bitmap(
             has_aovs ? Bitmap::PixelFormat::MultiChannel : m_pixel_format,
