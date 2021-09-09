@@ -1,0 +1,36 @@
+name: Windows build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Windows build (MSVC, amd64)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.GHA_TOKEN }}
+          persist-credentials: false
+
+      - name: Setup Python ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Update CMake
+        uses: jwlawson/actions-setup-cmake@v1.10
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        run: |
+          mkdir build
+          cmake -S . -B build
+
+      - name: Build
+        run: |
+          cmake --build build
