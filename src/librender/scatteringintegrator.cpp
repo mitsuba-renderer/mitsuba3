@@ -109,7 +109,7 @@ ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
         ThreadEnvironment env;
         std::mutex mutex;
         ref<ProgressReporter> progress = new ProgressReporter("Rendering");
-        size_t update_threshold = std::max(grain_count / 10, 10000lu);
+        size_t update_threshold = std::max(grain_count / 10, (size_t) 10000);
 
         ek::parallel_for(
             ek::blocked_range<size_t>(0, total_samples, grain_count),

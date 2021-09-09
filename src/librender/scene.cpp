@@ -246,8 +246,9 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
                            (uint32_t) emitters_size - 1);
     // Rescale sample to lie in [0,1) again
     index_sample = (index_sample - index / (ScalarFloat) emitters_size) * emitters_size;
+
     // pdf = 1 / emitters_size  =>  sampling_weight = emitters_size
-    return { index, emitters_size, index_sample };
+    return { index, Float(emitters_size), index_sample };
 }
 
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
