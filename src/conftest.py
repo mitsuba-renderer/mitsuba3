@@ -49,9 +49,10 @@ def clean_up():
     '''
     gc.collect()
     gc.collect()
-    ek.sync_thread()
-    ek.registry_trim()
-    ek.set_flags(ek.JitFlag.Default)
+    if hasattr(ek, 'sync_thread'):
+        ek.sync_thread()
+        ek.registry_trim()
+        ek.set_flags(ek.JitFlag.Default)
 
 
 def generate_fixture(variant):
