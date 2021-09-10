@@ -45,8 +45,7 @@ jobs:
           cmake --build build --config Release --parallel
 
       - name: Run test suite
-        shell: cmd
         run: |
-          cd build
-          setpath.bat
+          cd build/Release
+          ./setpath.ps1
           python -m pytest -v

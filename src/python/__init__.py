@@ -5,9 +5,18 @@ import sys
 import threading
 from importlib import import_module as _import, reload as _reload
 import enoki as ek
+import os
 
 if sys.version_info < (3, 6):
     raise ImportError("Mitsuba requires Python 3.6 or greater.")
+
+if os.name == 'nt':
+    # Specify DLL search path for windows (no rpath on this platform..)
+    d = __file__
+    for i in range(3):
+        d = os.path.dirname(d)
+    os.add_dll_directory(d)
+    del d, i
 
 try:
     _import('mitsuba.core_ext')
@@ -201,3 +210,4 @@ del sys
 del MitsubaModule
 del types
 del threading
+del os
