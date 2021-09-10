@@ -97,15 +97,16 @@ endif()
 # ----------------------------------------------------------
 
 if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf)
-  if (NOT SKBUILD)
-    # Default: only scalar modes (RGB, Spectral)
-    set(INSERT_CONFIGURATIONS_HERE "\"scalar_rgb\", \"scalar_spectral\"")
-  else()
-    # Scikit-build default: enable CUDA & LLVM RGB mode as well
-    set(INSERT_CONFIGURATIONS_HERE "\"scalar_rgb\", \"scalar_spectral\", \"cuda_ad_rgb\", \"llvm_ad_rgb\"")
-  endif()
+  # Default: only scalar modes (RGB, Spectral)
+  set(MTS_DEFAULT_VARIANTS "scalar_rgb;scalar_spectral;cuda_ad_rgb;llvm_ad_rgb" CACHE STRING "Default Mitsuba variants that should be included if no mitsuba.conf file exists")
+  mark_as_advanced(MTS_DEFAULT_VARIANTS)
+  foreach(TMP ${MTS_DEFAULT_VARIANTS})
+    string(APPEND INSERT_CONFIGURATIONS_HERE "\"${TMP}\", ")
+  endforeach()
+  string(REGEX REPLACE ", $" "" INSERT_CONFIGURATIONS_HERE "${INSERT_CONFIGURATIONS_HERE}")
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/resources/mitsuba.conf.template
                  ${CMAKE_CURRENT_BINARY_DIR}/mitsuba.conf @ONLY)
+  unset(INSERT_CONFIGURATIONS_HERE)
   set(MTS_COPIED_CONFIG_FILE 1)
 endif()
 

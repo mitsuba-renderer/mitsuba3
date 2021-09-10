@@ -38,4 +38,4 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build
+          cmake --build build --config Release
