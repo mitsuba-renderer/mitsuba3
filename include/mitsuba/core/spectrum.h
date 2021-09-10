@@ -239,7 +239,7 @@ Result cie1931_xyz(Float wavelength, ek::mask_t<Float> active = true) {
 
     return Result(ek::fmadd(w0, v0_x, w1 * v1_x),
                   ek::fmadd(w0, v0_y, w1 * v1_y),
-                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active);
+                  ek::fmadd(w0, v0_z, w1 * v1_z)) & ek::mask_t<Result>(active, active, active);
 }
 
 /**
@@ -305,7 +305,7 @@ Result linear_rgb_rec(Float wavelength, ek::mask_t<Float> active = true) {
 
     return Result(ek::fmadd(w0, v0_r, w1 * v1_r),
                   ek::fmadd(w0, v0_g, w1 * v1_g),
-                  ek::fmadd(w0, v0_b, w1 * v1_b)) & ek::mask_t<Result>(active);
+                  ek::fmadd(w0, v0_b, w1 * v1_b)) & ek::mask_t<Result>(active, active, active);
 }
 
 /// Spectral responses to XYZ.
