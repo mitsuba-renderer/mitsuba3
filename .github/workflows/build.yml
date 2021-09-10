@@ -45,6 +45,7 @@ jobs:
           cmake --build build --config Release
 
       - name: Run test suite
+        shell: cmd
         run: |
           cd build
           setpath.bat
