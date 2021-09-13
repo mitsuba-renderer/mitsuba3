@@ -502,8 +502,10 @@ public:
         m_inv_resolution_z = ek::divisor<int32_t>(res.z());
 
         // Recompute maximum if necessary
-        if (!m_fixed_max)
+        if (!m_fixed_max) {
             m_max = (float) ek::hmax_nested(ek::detach(m_data.array()));
+            Log(Info, "Grid max value was updated to: %s", m_max);
+        }
     }
 
 

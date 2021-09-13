@@ -119,11 +119,13 @@ public:
         m_albedo = props.volume<Volume>("albedo", 0.75f);
         m_sigmat = props.volume<Volume>("sigma_t", 1.f);
 
-        m_scale = props.get<ScalarFloat>("scale", 1.0f);
-        m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
-
-        m_max_density = ek::opaque<Float>(
-            ek::max(1e-6f, m_scale * m_sigmat->max()));
+        ScalarFloat scale = props.get<ScalarFloat>("scale", 1.0f);
+        m_has_spectral_extinction =
+            props.get<bool>("has_spectral_extinction", true);
+        m_max_density =
+            ek::opaque<Float>(ek::max(1e-6f, scale * m_sigmat->max()));
+        m_scale = scale;
+        Log(Info, "Heterogeneous max density: %s", m_max_density);
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
         ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
@@ -163,8 +165,16 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        ScalarFloat scale;
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (ek::width(m_scale) != 1)
+                Throw("Expected a single number for `m_scale`, found: %s", m_scale);
+            scale = m_scale[0];
+        } else {
+            scale = m_scale;
+        }
         m_max_density = ek::opaque<Float>(
-            ek::max(1e-6f, m_scale * m_sigmat->max()));
+            ek::max(1e-6f, scale * m_sigmat->max()));
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -187,7 +197,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_sigmat, m_albedo;
-    ScalarFloat m_scale;
+    Float m_scale;
 
     Float m_max_density;
 };
