@@ -108,7 +108,7 @@ void render(Object *scene_, size_t sensor_i, fs::path filename,
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
         develop_callback = [&]() { film->write(filename); };
     }
-    integrator->render(scene, 0, sensor_i, false);
+    integrator->render(scene, 0, (uint32_t) sensor_i, false);
     /* critical section */ {
         std::lock_guard<std::mutex> guard(develop_callback_mutex);
         develop_callback = nullptr;

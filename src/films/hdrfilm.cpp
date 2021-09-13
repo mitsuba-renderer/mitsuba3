@@ -238,13 +238,14 @@ public:
 
         if constexpr (ek::is_jit_array_v<Float>) {
             Float data;
-            size_t ch, pixel_count;
+            uint32_t ch;
+            size_t pixel_count;
             ScalarVector2i size;
             /* locked */ {
                 std::lock_guard<std::mutex> lock(m_mutex);
                 data        = m_storage->data();
                 size        = m_storage->size();
-                ch          = m_storage->channel_count();
+                ch          = (uint32_t) m_storage->channel_count();
                 pixel_count = ek::hprod(m_storage->size());
             }
 
