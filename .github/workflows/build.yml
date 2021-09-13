@@ -33,10 +33,9 @@ jobs:
       - name: Configure
         run: |
           mkdir build
-          cmake -S . -B build -DMTS_DEFAULT_VARIANTS="scalar_rgb;scalar_spectral;llvm_ad_rgb"
+          cmake -S . -B build -DMTS_DEFAULT_VARIANTS="scalar_rgb;scalar_spectral;llvm_ad_rgb" -DPython_ROOT_DIR="$env:pythonLocation"
 
       - name: Download LLVM (12.0.1)
-        shell: pwsh
         run: |
           Invoke-WebRequest "https://rgl.s3.eu-central-1.amazonaws.com/media/uploads/wjakob/2021/09/09/llvm-c.dll" -OutFile "build/LLVM-C.dll"
 
