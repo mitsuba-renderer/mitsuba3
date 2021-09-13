@@ -208,7 +208,8 @@ public:
                 if (ek::any_or<true>(active_e)) {
                     auto [emitted, ds] = sample_emitter(mi, scene, sampler, medium, channel, active_e);
                     Float phase_val = phase->eval(phase_ctx, mi, ds.d, active_e);
-                    ek::masked(result, active_e) += throughput * phase_val * emitted * mis_weight(ds.pdf, phase_val);
+                    ek::masked(result, active_e) += throughput * phase_val * emitted *
+                                                    mis_weight(ds.pdf, ek::select(ds.delta, 0.f, phase_val));
                 }
 
                 // ------------------ Phase function sampling -----------------
