@@ -130,7 +130,10 @@ MTS_PY_EXPORT(Enoki) {
             enoki_scalar.attr(ek_name.c_str());
     }
 
-    m.attr("TensorXf") = enoki_variant.attr("TensorXf");
+    if constexpr (std::is_same_v<float, ScalarFloat>)
+        m.attr("TensorXf") = enoki_variant.attr("TensorXf");
+    else
+        m.attr("TensorXf") = enoki_variant.attr("TensorXf64");
 
     m.attr("PCG32") = enoki_variant.attr("PCG32");
     m.attr("Loop") = enoki_variant.attr("Loop");
