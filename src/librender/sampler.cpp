@@ -69,7 +69,7 @@ MTS_VARIANT void Sampler<Float, Spectrum>::schedule_state() {
 
 MTS_VARIANT
 void Sampler<Float, Spectrum>::loop_register(
-    ek::Loop<Float> &loop) {
+    ek::Loop<Mask> &loop) {
     loop.put(m_sample_index, m_dimension_index);
 }
 
@@ -132,7 +132,7 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::schedule_state() {
 }
 
 MTS_VARIANT void PCG32Sampler<Float, Spectrum>::loop_register(
-    ek::Loop<Float> &loop) {
+    ek::Loop<Mask> &loop) {
     Base::loop_register(loop);
     loop.put(m_rng.state);
 }

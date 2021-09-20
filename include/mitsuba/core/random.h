@@ -262,7 +262,7 @@ UInt32 permute_kensler(UInt32 index, uint32_t sample_count, UInt32 seed,
 
     if constexpr (ek::is_jit_array_v<UInt32>) {
         if (jit_flag(JitFlag::LoopRecord)) {
-            ek::Loop<UInt32> loop("perm", active, index);
+            ek::Loop<ek::mask_t<UInt32>> loop("perm", active, index);
             while (loop(ek::detach(active))) {
                 ek::masked(index, active) = body(index);
                 active &= (index >= sample_count);

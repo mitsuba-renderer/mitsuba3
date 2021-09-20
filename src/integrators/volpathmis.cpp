@@ -148,7 +148,7 @@ public:
         Mask needs_intersection = true, last_event_was_null = false;
         Interaction3f last_scatter_event = ek::zero<Interaction3f>();
 
-        ek::Loop<Float> loop("Volpath MIS integrator");
+        ek::Loop<Mask> loop("Volpath MIS integrator");
         loop.put(active, depth, ray, p_over_f, p_over_f_nee, result, si, mi,
                  medium, eta, last_scatter_event, needs_intersection,
                  specular_chain, valid_ray);
@@ -378,7 +378,7 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
 
         Mask needs_intersection = true;
-        ek::Loop<Float> loop("Volpath MIS integrator emitter sampling");
+        ek::Loop<Mask> loop("Volpath MIS integrator emitter sampling");
         loop.put(active, ray, total_dist, needs_intersection, medium, si,
                  p_over_f_nee, p_over_f_uni);
         sampler->loop_register(loop);
