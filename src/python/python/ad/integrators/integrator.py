@@ -47,8 +47,8 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     ek.set_flag(ek.JitFlag.LoopRecord, False)
     image = self.render(scene, seed, sensor_index, spp=spp)
     ek.set_grad(image, image_adj)
-    ek.enqueue(image)
-    ek.traverse(mitsuba.core.Float, reverse=True, retain_graph=False)
+    ek.enqueue(ek.ADMode.Reverse, image)
+    ek.traverse(mitsuba.core.Float, ek.ADMode.Reverse, retain_graph=False)
     ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
 
 

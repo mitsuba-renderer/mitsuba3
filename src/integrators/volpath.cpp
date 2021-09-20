@@ -110,7 +110,7 @@ public:
         Interaction3f last_scatter_event = ek::zero<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
-        ek::Loop<Float> loop("Volpath integrator");
+        ek::Loop<Mask> loop("Volpath integrator");
         loop.put(active, depth, ray, throughput, result, si, mi, medium, eta,
                  last_scatter_event, last_scatter_direction_pdf,
                  needs_intersection, specular_chain, valid_ray);
@@ -324,7 +324,7 @@ public:
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
         Mask needs_intersection = true;
 
-        ek::Loop<Float> loop("Volpath integrator emitter sampling");
+        ek::Loop<Mask> loop("Volpath integrator emitter sampling");
         loop.put(active, ray, total_dist, needs_intersection, medium, si,
                  transmittance);
         sampler->loop_register(loop);
