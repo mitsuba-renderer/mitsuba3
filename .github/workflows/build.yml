@@ -52,4 +52,4 @@ jobs:
         run: |
           cd build/Release
           ./setpath.ps1
-          python -m pytest -v
+          python -m pytest -v --color yes
