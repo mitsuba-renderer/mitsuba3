@@ -67,7 +67,6 @@ file(WRITE
   "[pytest]\n"
   "minversion = 3.0\n"
   "testpaths = \"${MTS_TEST_BASE}\"\n"
-  "python_paths = ./python\n"
 )
 
 if (MSVC)
