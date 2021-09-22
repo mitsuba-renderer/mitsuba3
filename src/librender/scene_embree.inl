@@ -175,12 +175,15 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         }
         return pi;
     } else if constexpr (ek::is_llvm_array_v<Float>) {
-        if (jit_llvm_vector_width() != MTS_RAY_WIDTH)
+        uint32_t jit_width = jit_llvm_vector_width();
+        if (unlikely(jit_width != MTS_RAY_WIDTH))
             Throw("ray_intersect_preliminary_cpu(): LLVM backend and "
-                  "Mitsuba/Embree don't have matching vector widths!");
+                  "Mitsuba/Embree don't have matching vector widths! "
+                  "(Embree: %u vs Mitsuba: %u)",
+                  jit_width, MTS_RAY_WIDTH);
 
         void *scene_ptr = (void *) s.accel,
-             *func_ptr  = nullptr;
+             *func_ptr = nullptr;
 
         if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
             func_ptr = (void *) embree_func_wrapper<false, true>;
@@ -285,9 +288,11 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
 
         return ray2.tfar != (float) ray.maxt;
     } else if constexpr (ek::is_llvm_array_v<Float>) {
-        if (jit_llvm_vector_width() != MTS_RAY_WIDTH)
-            Throw("ray_test_cpu(): LLVM backend and "
-                  "Mitsuba/Embree don't have matching vector widths!");
+        uint32_t jit_width = jit_llvm_vector_width();
+        if (unlikely(jit_width != MTS_RAY_WIDTH))
+            Throw("ray_test_cpu(): LLVM backend and Mitsuba/Embree don't "
+                  "have matching vector widths! (Embree: %u vs Mitsuba: %u)",
+                  jit_width, MTS_RAY_WIDTH);
 
         void *scene_ptr = (void *) s.accel,
              *func_ptr  = nullptr;
