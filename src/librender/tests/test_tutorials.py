@@ -44,9 +44,12 @@ def test_tutorials(notebook, tmp_path):
     for cell in nb.cells:
         if 'outputs' in cell:
             execution_count = cell['execution_count']
+            msg = ''
             for output in cell['outputs']:
                 if output.output_type == 'error':
-                    msg = f'\nError in cell #{execution_count}'
-                    for l in output['traceback']:
-                        msg += '\n' + l
-                    pytest.fail(msg)
+                    ename = output['ename']
+                    evalue = output['evalue']
+                    msg += f'\nError in cell #{execution_count}: {ename}: {evalue}\n'
+                    msg += '\n'.join(output['traceback'])
+            if msg != '':
+                pytest.fail(msg)
