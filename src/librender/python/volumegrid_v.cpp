@@ -6,7 +6,8 @@
 
 MTS_PY_EXPORT(VolumeGrid) {
     MTS_PY_IMPORT_TYPES(VolumeGrid)
-    MTS_PY_CLASS(VolumeGrid, Object).def(py::init([](py::array obj, bool compute_max = true) {
+    MTS_PY_CLASS(VolumeGrid, Object)
+        .def(py::init([](py::array obj, bool compute_max = true) {
             if (!obj.dtype().is(py::dtype("f")))
                 throw py::type_error("Expected floating point (float32) array");
 
@@ -33,6 +34,7 @@ MTS_PY_EXPORT(VolumeGrid) {
             volumegrid->set_max(max);
             return volumegrid;
         }), "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a NumPy array")
+        .def(py::init<const fs::path &>())
 
         .def_method(VolumeGrid, size)
         .def_method(VolumeGrid, channel_count)
