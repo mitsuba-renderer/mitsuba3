@@ -23,7 +23,7 @@ jobs:
           python -m pip install pytest numpy
 
       - name: Update CMake
-        uses: jwlawson/actions-setup-cmake@v1.10
+        uses: jwlawson/actions-setup-cmake@v1.11
 
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
