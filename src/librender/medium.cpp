@@ -72,7 +72,7 @@ Medium<Float, Spectrum>::sample_interaction_real(const Ray3f &ray,
     MediumInteraction3f mi_next = mi;
     Mask escaped = !active;
     Spectrum weight = ek::full<Spectrum>(1.f, ek::width(ray));
-    ek::Loop<Float> loop("Medium::sample_interaction");
+    ek::Loop<Mask> loop("Medium::sample_interaction");
     loop.put(active, mi, mi_next, escaped, weight);
     sampler->loop_register(loop);
     loop.init();
@@ -130,7 +130,7 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     Float sampled_t_step = ek::NaN<Float>;
     Float sampling_weight = ek::NaN<Float>;
 
-    ek::Loop<Float> loop("Medium::sample_interaction_drt");
+    ek::Loop<Mask> loop("Medium::sample_interaction_drt");
     loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
              running_t, mi_sub, transmittance);
     sampler->loop_register(loop);
@@ -201,7 +201,7 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
     Float sampled_t_step = ek::NaN<Float>;
     Float sampling_weight = ek::NaN<Float>;
 
-    ek::Loop<Float> loop("Medium::sample_interaction_drrt");
+    ek::Loop<Mask> loop("Medium::sample_interaction_drrt");
     loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
              running_t, mi_sub, transmittance);
     sampler->loop_register(loop);
