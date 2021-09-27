@@ -310,6 +310,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         // Ensure all raytracing kernels are terminated before releasing the scene
         ek::sync_thread();
 
+        jit_optix_configure(nullptr, nullptr, nullptr, 0);
+
         OptixState &s = *(OptixState *) m_accel;
         jit_free(s.sbt.raygenRecord);
         jit_free(s.sbt.hitgroupRecordBase);
