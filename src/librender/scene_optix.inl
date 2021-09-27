@@ -191,25 +191,27 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 
         size_t shapes_count = hg_sbts.size();
 
-        s.sbt.missRecordBase = jit_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
+        s.sbt.missRecordBase =
+            jit_malloc(AllocType::HostPinned, sizeof(MissSbtRecord));
         s.sbt.missRecordStrideInBytes = sizeof(MissSbtRecord);
-        s.sbt.missRecordCount         = 1;
+        s.sbt.missRecordCount = 1;
 
-        s.sbt.hitgroupRecordBase = jit_malloc(AllocType::HostPinned,
-                                               shapes_count * sizeof(HitGroupSbtRecord));
+        s.sbt.hitgroupRecordBase = jit_malloc(
+            AllocType::HostPinned, shapes_count * sizeof(HitGroupSbtRecord));
         s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
-        s.sbt.hitgroupRecordCount         = (unsigned int) shapes_count;
+        s.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
 
-        jit_optix_check(optixSbtRecordPackHeader(s.program_groups[0], s.sbt.missRecordBase));
-        jit_memcpy_async(JitBackend::CUDA,
-                         s.sbt.hitgroupRecordBase,
+        jit_optix_check(optixSbtRecordPackHeader(s.program_groups[0],
+                                                 s.sbt.missRecordBase));
+
+        jit_memcpy_async(JitBackend::CUDA, s.sbt.hitgroupRecordBase,
                          hg_sbts.data(),
                          shapes_count * sizeof(HitGroupSbtRecord));
 
-        s.sbt.missRecordBase = jit_malloc_migrate(s.sbt.missRecordBase,
-                                                   AllocType::Device, 1);
-        s.sbt.hitgroupRecordBase = jit_malloc_migrate(s.sbt.hitgroupRecordBase,
-                                                       AllocType::Device, 1);
+        s.sbt.missRecordBase =
+            jit_malloc_migrate(s.sbt.missRecordBase, AllocType::Device, 1);
+        s.sbt.hitgroupRecordBase =
+            jit_malloc_migrate(s.sbt.hitgroupRecordBase, AllocType::Device, 1);
 
         // =====================================================
         //  Acceleration data structure building
@@ -226,6 +228,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
             &s.sbt,
             s.program_groups, ProgramGroupCount
         );
+
         Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
     }
 }
