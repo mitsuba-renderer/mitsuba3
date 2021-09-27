@@ -103,3 +103,53 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
     params.set_dirty(shape_param_key)
     params.update()
     assert scene.shapes_grad_enabled() == True
+
+
+@pytest.mark.parametrize("shadow", [True, False])
+def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
+    from mitsuba.core import xml, ScalarTransform4f as T, Ray3f, Point3f, Vector3f
+
+    # Create and raytrace scene in a function, so that the scene object gets
+    # destroyed (attempt) when leaving the function call
+    def render():
+        scene = xml.load_dict({
+            'type': 'scene',
+            'integrator': { 'type': 'path' },
+            'mysensor': {
+                'type': 'perspective',
+                'to_world': T.look_at(origin=[0, 0, 3], target=[0, 0, 0], up=[0, 1, 0]),
+                'myfilm': {
+                    'type': 'hdrfilm',
+                    'rfilter': { 'type': 'box'},
+                    'width': 4,
+                    'height': 4,
+                    'pixel_format': 'rgba',
+
+                },
+                'mysampler': {
+                    'type': 'independent',
+                    'sample_count': 4,
+                },
+            },
+            'wall': { 'type': 'rectangle' },
+            'emitter': {
+                'type': 'point',
+                'position': [0, 0, 1]
+            }
+        })
+
+        ray = Ray3f(Point3f(1, 2, 3), Vector3f(4, 5, 6), 0, [])
+        if shadow:
+            return scene.ray_test(ray)
+        else:
+            return scene.ray_intersect_preliminary(ray)
+
+    pi = render()
+
+    # Ensure scene object would be garbage collected if not "attached" to ray tracing operation
+    import gc
+    gc.collect()
+    gc.collect()
+
+    import enoki as ek
+    ek.eval(pi)

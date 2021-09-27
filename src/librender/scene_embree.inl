@@ -195,6 +195,9 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
+        // Ensure scene isn't destructed before evaluation of this ratracing operation
+        register_ias_dependency(this, func_v);
+
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();
 
@@ -306,6 +309,9 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
                    jit_var_new_pointer(JitBackend::LLVM, func_ptr, 0, 0)),
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
+
+        // Ensure scene isn't destructed before evaluation of this ratracing operation
+        register_ias_dependency(this, func_v);
 
         Int32 valid = ek::select(active, (int32_t) -1, 0);
         UInt32 zero = ek::zero<UInt32>();

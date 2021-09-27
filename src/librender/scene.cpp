@@ -136,6 +136,19 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
     }
 }
 
+MTS_VARIANT
+void register_ias_dependency(const Scene<Float, Spectrum> *scene,
+                             const ek::uint64_array_t<Float> &handle) {
+    jit_var_set_callback(
+        handle.index(),
+        [](uint32_t /* index */, int free, void *payload) {
+            if (free)
+                ((Scene<Float, Spectrum> *) payload)->dec_ref();
+        },
+        (void *) scene);
+    scene->inc_ref();
+}
+
 MTS_VARIANT ref<Bitmap>
 Scene<Float, Spectrum>::render(uint32_t sensor_index) {
     m_integrator->render(this, 0, sensor_index, false);
