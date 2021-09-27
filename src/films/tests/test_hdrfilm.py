@@ -138,11 +138,10 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
         assert ek.allclose(img[:, :, 3:5], 1.0, atol=1e-6)
 
 
-@pytest.mark.skip("Skipping this test for now, it generates huge kernels that crash the windows test suite..")
 @pytest.mark.parametrize('pixel_format', ['RGB', 'RGBA', 'XYZ', 'XYZA', 'luminance', 'luminance_alpha'])
 @pytest.mark.parametrize('has_aovs', [False, True])
 def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
-    from mitsuba.core import xml, Bitmap
+    from mitsuba.core import xml, Bitmap, Float, UInt32, Point2f
     from mitsuba.render import ImageBlock
     import numpy as np
 
@@ -166,10 +165,22 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     res = film.size()
     block = ImageBlock(res, 5 + len(aovs_channels), film.reconstruction_filter())
     block.clear()
-    for x in range(res[1]):
-        for y in range(res[0]):
-            aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
-            block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
+
+    if ek.is_jit_array_v(Float):
+        pixel_idx = ek.arange(UInt32, ek.hprod(res))
+        x = pixel_idx % res[0]
+        y = pixel_idx // res[0]
+
+        pos = Point2f(x, y) + 0.5
+
+        aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
+        block.put(pos, [x, 2*y, 0.1, 0.5, 1.0] + aovs)
+    else:
+        for x in range(res[1]):
+            for y in range(res[0]):
+                aovs = [10 + x, 20 + y, 10.1] if has_aovs else []
+                block.put([y + 0.5, x + 0.5], [x, 2*y, 0.1, 0.5, 1.0] + aovs)
+
     film.prepare(['R', 'G', 'B', 'A', 'W'] + aovs_channels)
     film.put(block)
 
