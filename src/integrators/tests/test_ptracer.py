@@ -2,7 +2,9 @@ import enoki as ek
 import mitsuba
 import pytest
 
+from mitsuba.python.test.util import fresolver_append_path
 
+@fresolver_append_path
 def create_test_scene(max_depth=4, emitter='area',
                       shape=None, hide_emitters=False, crop_window=None):
     from mitsuba.core import ScalarTransform4f
@@ -56,7 +58,7 @@ def create_test_scene(max_depth=4, emitter='area',
                     {'type': 'rgb', 'value': (1.0, 0.5, 0.2)}
                     if emitter == 'area' else {
                         'type': 'bitmap',
-                        'filename': '../resources/data/common/textures/flower.bmp',
+                        'filename': 'resources/data/common/textures/flower.bmp',
                     }
                 ),
             },
@@ -88,7 +90,7 @@ def create_test_scene(max_depth=4, emitter='area',
     elif emitter == 'envmap':
         emitter = {
             'type': 'envmap',
-            'filename': '../resources/data/common/textures/museum.exr',
+            'filename': 'resources/data/common/textures/museum.exr',
         }
     if emitter is not None:
         scene['emitter'] = emitter
