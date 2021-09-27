@@ -357,7 +357,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
         if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
             ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
-        // Ensure scene isn't destructed before evaluation of this ratracing operation
+        // Ensure scene isn't destructed before evaluation of this ray tracing operation
         register_ias_dependency(this, handle);
 
         uint32_t trace_args[] {
@@ -439,7 +439,7 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) co
         if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
             ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
-        // Ensure scene isn't destructed before evaluation of this ratracing operation
+        // Ensure scene isn't destructed before evaluation of this ray tracing operation
         register_ias_dependency(this, handle);
 
         uint32_t trace_args[] {
