@@ -265,42 +265,35 @@ def suspend_gradients(node: 'mitsuba.core.Object', state: 'bool') -> None:
     node.traverse(cb)
 
 
-def convert_to_bitmap(data, resolution, uint8_srgb=True):
+def convert_to_bitmap(data, uint8_srgb=True):
     """
-    Convert the linearized RGB image in `data` to a `Bitmap` with
-    resolution `resolution`. `uint8_srgb` defines whether the resulting
-    bitmap should be translated to a uint8 sRGB bitmap.
+    Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
+    the resulting bitmap should be translated to a uint8 sRGB bitmap.
     """
     from mitsuba.core import Bitmap, Struct
 
     if isinstance(data, Bitmap):
         bitmap = data
-        assert bitmap.size() == resolution, \
-               'Resolution mismatch: {} vs expected {}'.format(bitmap.size(), resolution)
     else:
-        import numpy as np
         if type(data).__name__ == 'Tensor':
             data = data.detach().cpu().numpy()
-        elif not isinstance(data, np.ndarray):
-            data = np.array(data.numpy())
-        bitmap = Bitmap(data.reshape(resolution[1], resolution[0], -1))
+        bitmap = Bitmap(data)
 
     if uint8_srgb:
-        bitmap = bitmap.convert(Bitmap.PixelFormat.RGB,
-                                Struct.Type.UInt8, True)
+        bitmap = bitmap.convert(Bitmap.PixelFormat.RGB, Struct.Type.UInt8, True)
+
     return bitmap
 
 
-def write_bitmap(filename, data, resolution, write_async=True, quality=-1):
+def write_bitmap(filename, data, write_async=True, quality=-1):
     """
-    Write the linearized RGB image in `data` to a PNG/EXR/.. file with
-    resolution `resolution`.
+    Write the RGB image in `data` to a PNG/EXR/.. file.
     """
     uint8_srgb = filename.endswith('.png') or \
                  filename.endswith('.jpg') or \
                  filename.endswith('.jpeg')
 
-    bitmap = convert_to_bitmap(data, resolution, uint8_srgb)
+    bitmap = convert_to_bitmap(data, uint8_srgb)
 
     if write_async:
         bitmap.write_async(filename, quality=quality)

@@ -39,7 +39,7 @@
 #     # Rendering reference image
 #     sampler.seed(0, spp_primal * ek.hprod(film_size))
 #     image_1 = integrator.render(scene, spp=spp_primal)
-#     # write_bitmap('image_1.exr', image_1, film_size)
+#     # write_bitmap('image_1.exr', image_1)
 
 #     # Backpropagate uniform gradients through the scene
 #     image_adj = ek.full(Float, 1.0, len(image_1))
@@ -55,7 +55,7 @@
 #     # Render primal image
 #     sampler.seed(0)
 #     image_2 = integrator.render(scene, spp=spp_primal)
-#     # write_bitmap('image_2.exr', image_2, film_size)
+#     # write_bitmap('image_2.exr', image_2)
 # ​
 #     # Finite difference on 1 by 1 rendered image
 #     grad_fd = (image_2 - image_1) / fd_epsilon
