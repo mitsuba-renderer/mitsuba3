@@ -121,14 +121,27 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
-    // Ensure all raytracing kernels are terminated before releasing the scene
-    if constexpr (ek::is_llvm_array_v<Float>)
+    if constexpr (ek::is_llvm_array_v<Float>) {
+        // Ensure all ray tracing kernels are terminated before releasing the scene
         ek::sync_thread();
 
-    /* Decrease the reference count of the handle variable. This will trigger
-       the release of the Embree acceleration data structure if no ray
-       tracing calls are pending. */
-    m_accel_handle = 0;
+        uint32_t handle_index = m_accel_handle.index();
+
+        /* Decrease the reference count of the handle variable. This will
+           trigger the release of the Embree acceleration data structure if no
+           ray tracing calls are pending. */
+        m_accel_handle = 0;
+
+        bool scene_contains_others = false;
+        for (auto& shape : m_shapes)
+            scene_contains_others |= !shape->is_mesh();
+        if (scene_contains_others && jit_var_exists(handle_index) && jit_var_ref_ext(handle_index) != 0) {
+            Throw("accel_release_cpu(): Scene deletion with pending ray tracing "
+                  "calls is only supported with Embree if the scene contains any "
+                  "non mesh shapes (e.g. instances, sphere, ...)!");
+        }
+    }
+
     m_accel = nullptr;
 }
 

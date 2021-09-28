@@ -105,6 +105,7 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
     assert scene.shapes_grad_enabled() == True
 
 
+@fresolver_append_path
 @pytest.mark.parametrize("shadow", [True, False])
 def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
     from mitsuba.core import xml, ScalarTransform4f as T, Ray3f, Point3f, Vector3f
@@ -131,7 +132,10 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
                     'sample_count': 4,
                 },
             },
-            'wall': { 'type': 'rectangle' },
+            'sphere': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/sphere.obj'
+            },
             'emitter': {
                 'type': 'point',
                 'position': [0, 0, 1]
