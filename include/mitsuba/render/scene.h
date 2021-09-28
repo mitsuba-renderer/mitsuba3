@@ -291,8 +291,10 @@ protected:
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
 protected:
-    /// Acceleration data structure (type depends on implementation)
+    /// Acceleration data structure (IAS) (type depends on implementation)
     void *m_accel = nullptr;
+    /// Handle to the IAS used to ensure its lifetime in jit variants
+    UInt64 m_accel_handle;
 
     ScalarBoundingBox3f m_bbox;
 

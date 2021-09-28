@@ -32,8 +32,8 @@ struct OptixState {
     OptixAccelData accel;
     OptixTraversableHandle ias_handle = 0ull;
     void* ias_buffer = nullptr;
-
     char *custom_shapes_program_names[2 * custom_optix_shapes_count];
+    bool guard_delete = false;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
@@ -223,6 +223,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
         // Let Enoki know about all of this
         // =====================================================
 
+        /* TODO sbt and program groups should be passed during the ray tracing
+                call to enable the support of multiple Scene instances at the
+                same time. Moreover, the pipeline config options should be the
+                union of the configs of all scene instances. */
         jit_optix_configure(
             &s.pipeline_compile_options,
             &s.sbt,
@@ -236,75 +240,107 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*prop
 MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
     if constexpr (ek::is_cuda_array_v<Float>) {
         ek::sync_thread();
-
-        if (m_shapes.empty())
-            return;
-
         OptixState &s = *(OptixState *) m_accel;
 
-        // Build geometry acceleration structures for all the shapes
-        build_gas(s.context, m_shapes, s.accel);
-        for (auto& shapegroup: m_shapegroups)
-            shapegroup->optix_build_gas(s.context);
+        if (!m_shapes.empty()) {
+            // Build geometry acceleration structures for all the shapes
+            build_gas(s.context, m_shapes, s.accel);
+            for (auto& shapegroup: m_shapegroups)
+                shapegroup->optix_build_gas(s.context);
 
-        // Gather information about the instance acceleration structures to be built
-        std::vector<OptixInstance> ias;
-        prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
+            // Gather information about the instance acceleration structures to be built
+            std::vector<OptixInstance> ias;
+            prepare_ias(s.context, m_shapes, 0, s.accel, 0u, ScalarTransform4f(), ias);
 
-        // If there is only a single IAS, no need to build the "master" IAS
-        if (ias.size() == 1) {
-            s.ias_buffer = nullptr;
-            s.ias_handle = ias[0].traversableHandle;
-            return;
+            // If there is only a single IAS, no need to build the "master" IAS
+            if (ias.size() == 1) {
+                s.ias_buffer = nullptr;
+                s.ias_handle = ias[0].traversableHandle;
+            } else {
+                // Build a "master" IAS that contains all the IAS of the scene (meshes,
+                // custom shapes, instances, ...)
+                OptixAccelBuildOptions accel_options = {};
+                accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+                accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+                accel_options.motionOptions.numKeys = 0;
+
+                size_t ias_data_size = ias.size() * sizeof(OptixInstance);
+                void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
+                jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
+
+                OptixBuildInput build_input;
+                build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+                build_input.instanceArray.instances =
+                    (CUdeviceptr) jit_malloc_migrate(d_ias, AllocType::Device, 1);
+                build_input.instanceArray.numInstances = (unsigned int) ias.size();
+
+                OptixAccelBufferSizes buffer_sizes;
+                jit_optix_check(optixAccelComputeMemoryUsage(
+                    s.context,
+                    &accel_options,
+                    &build_input,
+                    1,
+                    &buffer_sizes
+                ));
+
+                void* d_temp_buffer
+                    = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
+                s.ias_buffer
+                    = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
+
+                jit_optix_check(optixAccelBuild(
+                    s.context,
+                    (CUstream) jit_cuda_stream(),
+                    &accel_options,
+                    &build_input,
+                    1, // num build inputs
+                    (CUdeviceptr)d_temp_buffer,
+                    buffer_sizes.tempSizeInBytes,
+                    (CUdeviceptr)s.ias_buffer,
+                    buffer_sizes.outputSizeInBytes,
+                    &s.ias_handle,
+                    0, // emitted property list
+                    0  // num emitted properties
+                ));
+
+                jit_free(d_temp_buffer);
+            }
         }
 
-        // Build a "master" IAS that contains all the IAS of the scene (meshes,
-        // custom shapes, instances, ...)
-        OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-        accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-        accel_options.motionOptions.numKeys = 0;
+        /* Set up a callback on the handle variable to release the OptiX
+           pipeline when this variable is freed. This ensures that the lifetime
+           of the pipeline goes beyond the one of the Scene instance if there
+           are still some pending ray tracing calls (e.g. non evaluated
+           variables depending on a ray tracing call). */
 
-        size_t ias_data_size = ias.size() * sizeof(OptixInstance);
-        void* d_ias = jit_malloc(AllocType::HostPinned, ias_data_size);
-        jit_memcpy_async(JitBackend::CUDA, d_ias, ias.data(), ias_data_size);
+        // Prevents the pipeline to be released when updating the scene parameters
+        s.guard_delete = true;
+        m_accel_handle = ek::opaque<UInt64>(s.ias_handle);
+        s.guard_delete = false;
 
-        OptixBuildInput build_input;
-        build_input.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-        build_input.instanceArray.instances =
-            (CUdeviceptr) jit_malloc_migrate(d_ias, AllocType::Device, 1);
-        build_input.instanceArray.numInstances = (unsigned int) ias.size();
+        jit_var_set_callback(
+            m_accel_handle.index(),
+            [](uint32_t /* index */, int should_free, void *payload) {
+                OptixState &s = *(OptixState *) payload;
+                if (should_free && !s.guard_delete) {
+                    // TODO should enable this otherwise further Optix kernels will use invalid program groups
+                    // jit_optix_configure(nullptr, nullptr, nullptr, 0);
+                    jit_free(s.sbt.raygenRecord);
+                    jit_free(s.sbt.hitgroupRecordBase);
+                    jit_free(s.sbt.missRecordBase);
+                    jit_free(s.ias_buffer);
 
-        OptixAccelBufferSizes buffer_sizes;
-        jit_optix_check(optixAccelComputeMemoryUsage(
-            s.context,
-            &accel_options,
-            &build_input,
-            1,
-            &buffer_sizes
-        ));
+                    for (size_t i = 0; i < ProgramGroupCount; i++)
+                        jit_optix_check(optixProgramGroupDestroy(s.program_groups[i]));
+                    for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
+                        free(s.custom_shapes_program_names[i]);
+                    jit_optix_check(optixModuleDestroy(s.module));
 
-        void* d_temp_buffer
-            = jit_malloc(AllocType::Device, buffer_sizes.tempSizeInBytes);
-        s.ias_buffer
-            = jit_malloc(AllocType::Device, buffer_sizes.outputSizeInBytes);
-
-        jit_optix_check(optixAccelBuild(
-            s.context,
-            (CUstream) jit_cuda_stream(),
-            &accel_options,
-            &build_input,
-            1, // num build inputs
-            (CUdeviceptr)d_temp_buffer,
-            buffer_sizes.tempSizeInBytes,
-            (CUdeviceptr)s.ias_buffer,
-            buffer_sizes.outputSizeInBytes,
-            &s.ias_handle,
-            0, // emitted property list
-            0  // num emitted properties
-        ));
-
-        jit_free(d_temp_buffer);
+                    delete (OptixState *) payload;
+                }
+            },
+            (void *) m_accel
+        );
     }
 }
 
@@ -313,21 +349,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
         // Ensure all raytracing kernels are terminated before releasing the scene
         ek::sync_thread();
 
-        jit_optix_configure(nullptr, nullptr, nullptr, 0);
-
-        OptixState &s = *(OptixState *) m_accel;
-        jit_free(s.sbt.raygenRecord);
-        jit_free(s.sbt.hitgroupRecordBase);
-        jit_free(s.sbt.missRecordBase);
-        jit_free(s.ias_buffer);
-
-        for (size_t i = 0; i < ProgramGroupCount; i++)
-            jit_optix_check(optixProgramGroupDestroy(s.program_groups[i]));
-        for (size_t i = 0; i < 2 * custom_optix_shapes_count; i++)
-            free(s.custom_shapes_program_names[i]);
-        jit_optix_check(optixModuleDestroy(s.module));
-
-        delete (OptixState *) m_accel;
+        /* Decrease the reference count of the handle variable. This will
+           trigger the release of the Embree acceleration data structure if no
+           ray tracing calls are pending. */
+        m_accel_handle = 0;
         m_accel = nullptr;
     }
 }
@@ -336,9 +361,6 @@ MTS_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t,
                                                       Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        OptixState &s = *(OptixState *) m_accel;
-
-        UInt64 handle = ek::opaque<UInt64>(s.ias_handle, 1);
         UInt32 ray_mask(255), ray_flags(OPTIX_RAY_FLAG_NONE),
                sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
@@ -357,11 +379,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
         if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
             ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
-        // Ensure scene isn't destructed before evaluation of this ray tracing operation
-        register_ias_dependency(this, handle);
-
         uint32_t trace_args[] {
-            handle.index(),
+            m_accel_handle.index(),
             ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
             ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
             ray_mint.index(), ray_maxt.index(), ray_time.index(),
@@ -423,9 +442,6 @@ Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) const {
     if constexpr (ek::is_cuda_array_v<Float>) {
-        OptixState &s = *(OptixState *) m_accel;
-
-        UInt64 handle = ek::opaque<UInt64>(s.ias_handle, 1);
         UInt32 ray_mask(255),
                ray_flags(OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                          OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
@@ -439,11 +455,8 @@ Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &ray, uint32_t, Mask active) co
         if constexpr (std::is_same_v<double, ek::scalar_t<Float>>)
             ray_maxt[ek::eq(ray.maxt, ek::Largest<Float>)] = ek::Largest<Single>;
 
-        // Ensure scene isn't destructed before evaluation of this ray tracing operation
-        register_ias_dependency(this, handle);
-
         uint32_t trace_args[] {
-            handle.index(),
+            m_accel_handle.index(),
             ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
             ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
             ray_mint.index(), ray_maxt.index(), ray_time.index(),

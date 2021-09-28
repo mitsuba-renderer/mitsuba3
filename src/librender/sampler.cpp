@@ -119,7 +119,7 @@ MTS_VARIANT void PCG32Sampler<Float, Spectrum>::seed(uint64_t seed_offset,
 
     if constexpr (ek::is_array_v<Float>) {
         UInt64 idx = ek::arange<UInt64>(m_wavefront_size);
-        UInt64 tmp = ek::opaque<UInt64>(seed_value, 1);
+        UInt64 tmp = ek::opaque<UInt64>(seed_value);
         m_rng.seed(m_wavefront_size, sample_tea_64(tmp, idx), sample_tea_64(idx, tmp));
     } else {
         m_rng.seed(1, seed_value, PCG32_DEFAULT_STREAM);

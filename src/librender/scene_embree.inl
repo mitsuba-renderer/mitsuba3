@@ -29,6 +29,7 @@ struct EmbreeState {
     RTCScene accel;
     std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
+    bool guard_delete = false;
 };
 
 MTS_VARIANT void
@@ -95,6 +96,29 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
             rtcJoinCommitScene(s.accel);
         }
     );
+
+    /* Set up a callback on the handle variable to release the Embree
+       acceleration data structure (IAS) when this variable is freed. This
+       ensures that the lifetime of the IAS goes beyond the one of the Scene
+       instance if there are still some pending ray tracing calls (e.g. non
+       evaluated variables depending on a ray tracing call). */
+    if constexpr (ek::is_llvm_array_v<Float>) {
+        // Prevents the IAS to be released when updating the scene parameters
+        s.guard_delete = true;
+        m_accel_handle = ek::opaque<UInt64>(s.accel);
+        s.guard_delete = false;
+        jit_var_set_callback(
+            m_accel_handle.index(),
+            [](uint32_t /* index */, int free, void *payload) {
+                EmbreeState<Float> *s = (EmbreeState<Float> *) payload;
+                if (free && !s->guard_delete) {
+                    rtcReleaseScene(s->accel);
+                    delete s;
+                }
+            },
+            (void *) m_accel
+        );
+    }
 }
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
@@ -102,9 +126,10 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_cpu() {
     if constexpr (ek::is_llvm_array_v<Float>)
         ek::sync_thread();
 
-    EmbreeState<Float> *s = (EmbreeState<Float> *) m_accel;
-    rtcReleaseScene(s->accel);
-    delete s;
+    /* Decrease the reference count of the handle variable. This will trigger
+       the release of the Embree acceleration data structure if no ray
+       tracing calls are pending. */
+    m_accel_handle = 0;
     m_accel = nullptr;
 }
 
@@ -190,12 +215,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         else
             func_ptr = (void *) embree_func_wrapper<false, false>;
 
-        // Ensure scene isn't destructed before evaluation of this ray tracing operation
-        UInt64 handle = ek::opaque<UInt64>(scene_ptr, 1);
-        register_ias_dependency(this, handle);
-
-        UInt64 func_v = UInt64::steal(
-                   jit_var_new_pointer(JitBackend::LLVM, func_ptr, handle.index(), 0)),
+        UInt64 func_v  = UInt64::steal(jit_var_new_pointer(
+                   JitBackend::LLVM, func_ptr, m_accel_handle.index(), 0)),
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
@@ -306,12 +327,8 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         else
             func_ptr = (void *) embree_func_wrapper<true, false>;
 
-        // Ensure scene isn't destructed before evaluation of this ray tracing operation
-        UInt64 handle = ek::opaque<UInt64>(scene_ptr, 1);
-        register_ias_dependency(this, handle);
-
-        UInt64 func_v = UInt64::steal(
-                   jit_var_new_pointer(JitBackend::LLVM, func_ptr, handle.index(), 0)),
+        UInt64 func_v  = UInt64::steal(jit_var_new_pointer(
+                   JitBackend::LLVM, func_ptr, m_accel_handle.index(), 0)),
                scene_v = UInt64::steal(
                    jit_var_new_pointer(JitBackend::LLVM, scene_ptr, 0, 0));
 
