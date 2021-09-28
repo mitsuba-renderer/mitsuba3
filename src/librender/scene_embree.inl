@@ -29,7 +29,6 @@ struct EmbreeState {
     RTCScene accel;
     std::vector<int> geometries;
     DynamicBuffer<UInt32> shapes_registry_ids;
-    bool guard_delete = false;
 };
 
 MTS_VARIANT void
@@ -104,14 +103,14 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
        evaluated variables depending on a ray tracing call). */
     if constexpr (ek::is_llvm_array_v<Float>) {
         // Prevents the IAS to be released when updating the scene parameters
-        s.guard_delete = true;
+        if (m_accel_handle.index())
+            jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
         m_accel_handle = ek::opaque<UInt64>(s.accel);
-        s.guard_delete = false;
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int free, void *payload) {
                 EmbreeState<Float> *s = (EmbreeState<Float> *) payload;
-                if (free && !s->guard_delete) {
+                if (free) {
                     rtcReleaseScene(s->accel);
                     delete s;
                 }

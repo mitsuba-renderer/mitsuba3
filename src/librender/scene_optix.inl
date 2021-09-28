@@ -33,7 +33,6 @@ struct OptixState {
     OptixTraversableHandle ias_handle = 0ull;
     void* ias_buffer = nullptr;
     char *custom_shapes_program_names[2 * custom_optix_shapes_count];
-    bool guard_delete = false;
 };
 
 MTS_VARIANT void Scene<Float, Spectrum>::accel_init_gpu(const Properties &/*props*/) {
@@ -314,15 +313,15 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_gpu() {
            variables depending on a ray tracing call). */
 
         // Prevents the pipeline to be released when updating the scene parameters
-        s.guard_delete = true;
+        if (m_accel_handle.index())
+            jit_var_set_callback(m_accel_handle.index(), nullptr, nullptr);
         m_accel_handle = ek::opaque<UInt64>(s.ias_handle);
-        s.guard_delete = false;
 
         jit_var_set_callback(
             m_accel_handle.index(),
             [](uint32_t /* index */, int should_free, void *payload) {
                 OptixState &s = *(OptixState *) payload;
-                if (should_free && !s.guard_delete) {
+                if (should_free) {
                     // TODO should enable this otherwise further Optix kernels will use invalid program groups
                     // jit_optix_configure(nullptr, nullptr, nullptr, 0);
                     jit_free(s.sbt.raygenRecord);
