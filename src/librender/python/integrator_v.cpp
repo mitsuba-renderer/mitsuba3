@@ -34,6 +34,20 @@ public:
         }
     }
 
+    TensorXf render(Scene *scene,
+                    uint32_t seed,
+                    uint32_t sensor_index,
+                    bool develop_film) override {
+        py::gil_scoped_acquire gil;
+        py::function overload = py::get_overload(this, "render");
+
+        if (overload) {
+            return overload(scene, seed, sensor_index, develop_film).template cast<TensorXf>();
+        } else {
+            return SamplingIntegrator::render(scene, seed, sensor_index, develop_film);
+        }
+    }
+
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,

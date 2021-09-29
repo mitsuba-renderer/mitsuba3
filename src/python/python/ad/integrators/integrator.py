@@ -7,12 +7,12 @@ import mitsuba.python.util
 # -------------------------------------------------------------------
 
 def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
-                        scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,
-                        image_adj: mitsuba.core.Spectrum,
-                        seed: int,
-                        sensor_index: int=0,
-                        spp: int=0) -> None:
+                         scene: mitsuba.render.Scene,
+                         params: mitsuba.python.util.SceneParameters,
+                         image_adj: mitsuba.core.Spectrum,
+                         seed: int,
+                         sensor_index: int=0,
+                         spp: int=0) -> None:
     """
     Performs the adjoint phase of differentiable rendering by backpropagating
     image gradients back to the scene parameters.
