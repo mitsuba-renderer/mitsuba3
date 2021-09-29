@@ -184,6 +184,75 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 }
 
 MTS_VARIANT void
+ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask active) {
+    ScalarVector2i size = m_size + 2 * m_border_size;
+
+    // Convert to pixel coordinates within the image block
+    Point2f pos = pos_ - (m_offset - m_border_size + 0.5f);
+
+    if (m_filter != nullptr && m_filter->radius() > 0.5f + math::RayEpsilon<Float>) {
+        ScalarFloat filter_radius = m_filter->radius();
+
+        // Determine the affected range of pixels
+        Point2u lo = Point2u(ek::max(ek::ceil2int <Point2i>(pos - filter_radius), 0)),
+                hi = Point2u(ek::min(ek::floor2int<Point2i>(pos + filter_radius), size - 1));
+
+        uint32_t n = ek::ceil2int<uint32_t>(
+            (filter_radius - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
+        Assert(n <= ek::ceil(2 * filter_radius) + 1);
+
+        Point2f base = lo - pos;
+        for (uint32_t i = 0; i < n; ++i) {
+            Point2f p = base + i;
+            if constexpr (!ek::is_jit_array_v<Float>) {
+                m_weights_x[i] = m_filter->eval_discretized(p.x(), active);
+                m_weights_y[i] = m_filter->eval_discretized(p.y(), active);
+            } else {
+                m_weights_x[i] = m_filter->eval(p.x(), active);
+                m_weights_y[i] = m_filter->eval(p.y(), active);
+            }
+        }
+
+        if (unlikely(m_normalize)) {
+            Float wx(0), wy(0);
+            for (uint32_t i = 0; i < n; ++i) {
+                wx += m_weights_x[i];
+                wy += m_weights_y[i];
+            }
+
+            Float factor = ek::rcp(wx * wy);
+            for (uint32_t i = 0; i < n; ++i)
+                m_weights_x[i] *= factor;
+        }
+
+        for (uint32_t k = 0; k < m_channel_count; ++k)
+            output[k] = ek::zero<Float>(ek::width(pos));
+
+        ENOKI_NOUNROLL for (uint32_t yr = 0; yr < n; ++yr) {
+            UInt32 y = lo.y() + yr;
+            Mask enabled = active && y <= hi.y();
+
+            ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
+                UInt32 x       = lo.x() + xr,
+                       offset  = m_channel_count * (y * size.x() + x);
+                Float weight = m_weights_y[yr] * m_weights_x[xr];
+
+                enabled &= x <= hi.x();
+                ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
+                    output[k] += ek::gather<Float>(m_data.array(), offset + k, enabled) * weight;
+            }
+        }
+    } else {
+        Point2i lo = ek::ceil2int<Point2i>(pos - .5f);
+        UInt32 offset = m_channel_count * (lo.y() * size.x() + lo.x());
+
+        Mask enabled = active && ek::all(lo >= 0 && lo < size);
+        ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)
+            output[k] = ek::gather<Float>(m_data.array(), offset + k, enabled);
+    }
+}
+
+MTS_VARIANT void
 ImageBlock<Float, Spectrum>::overwrite_channel(size_t channel, const Float &value) {
     // Include the border on each side
     size_t pixel_count = ek::hprod(m_size + 2 * m_border_size);

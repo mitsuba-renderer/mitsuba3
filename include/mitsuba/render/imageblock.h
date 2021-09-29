@@ -139,6 +139,20 @@ public:
      */
     Mask put(const Point2f &pos, const Float *value, Mask active = true);
 
+    /**
+     * \brief Read a single sample inside the block using the pixel filter.
+     *
+     * \param pos
+     *    Denotes the sample position in fractional pixel coordinates. It is
+     *    not checked, and so must be valid. The block's offset is subtracted
+     *    from the given position to obtain the
+     *
+     * \param output
+     *    Pointer to an array containing each channel of the output values.
+     *    The array must match the length given by \ref channel_count()
+     */
+    void read(const Point2f &pos, Float* output, Mask active = true);
+
     /// Overwrite entire channel with the given value.
     void overwrite_channel(size_t channel, const Float &value);
 

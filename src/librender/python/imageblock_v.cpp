@@ -25,6 +25,12 @@ MTS_PY_EXPORT(ImageBlock) {
                     throw std::runtime_error("Incompatible channel count!");
                 ib.put(pos, data.data(), mask);
             }, "pos"_a, "data"_a, "active"_a = true)
+        .def("read",
+            [](ImageBlock &ib, const Point2f &pos, Mask mask) {
+                std::vector<Float> output(ib.channel_count());
+                ib.read(pos, output.data(), mask);
+                return output;
+            }, "pos"_a, "active"_a = true)
         .def_method(ImageBlock, overwrite_channel, "channel"_a, "value"_a)
         .def_method(ImageBlock, clear)
         .def_method(ImageBlock, set_offset, "offset"_a)
@@ -38,5 +44,6 @@ MTS_PY_EXPORT(ImageBlock) {
         .def_method(ImageBlock, set_warn_negative, "value"_a)
         .def_method(ImageBlock, border_size)
         .def_method(ImageBlock, channel_count)
-        .def("data", py::overload_cast<>(&ImageBlock::data, py::const_), D(ImageBlock, data));
+        .def("data", py::overload_cast<>(&ImageBlock::data),
+             py::return_value_policy::reference_internal, D(ImageBlock, data));
 }
