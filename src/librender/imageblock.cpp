@@ -124,8 +124,8 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
     if (filter_radius > 0.5f + math::RayEpsilon<Float>) {
         // Determine the affected range of pixels
-        Point2u lo = ek::max(ek::ceil2int <Point2u>(pos - filter_radius), 0),
-                hi = ek::min(ek::floor2int<Point2u>(pos + filter_radius), size - 1);
+        Point2u lo = Point2u(ek::max(ek::ceil2int <Point2i>(pos - filter_radius), 0)),
+                hi = Point2u(ek::min(ek::floor2int<Point2i>(pos + filter_radius), size - 1));
 
         uint32_t n = ek::ceil2int<uint32_t>(
             (filter_radius - 2.f * math::RayEpsilon<ScalarFloat>) * 2.f);
@@ -171,7 +171,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
             }
         }
     } else {
-        Point2u lo = ek::ceil2int<Point2u>(pos - .5f);
+        Point2i lo = ek::ceil2int<Point2i>(pos - .5f);
         UInt32 offset = m_channel_count * (lo.y() * size.x() + lo.x());
 
         Mask enabled = active && ek::all(lo >= 0 && lo < size);

@@ -255,3 +255,29 @@ def test06_put_values_basic(variant_scalar_spectral, np_rng):
             im.put([j + 0.5, i + 0.5], wavelengths, spectrum, alpha=1.0)
 
     check_value(im, ref, atol=1e-6)
+
+
+@pytest.mark.parametrize("filter_name", ['gaussian', 'box'])
+def test07_put_samples_at_boundaries(variants_all_rgb, filter_name):
+    from mitsuba.core import xml
+    from mitsuba.render import ImageBlock
+
+    rfilter = xml.load_dict({'type': filter_name})
+    im = ImageBlock([3, 3], 1, filter=rfilter, warn_negative=False, border=False)
+    im.clear()
+    im.put([1.5, 1.5], [1.0])
+    if ek.is_jit_array_v(mitsuba.core.Float):
+        a = ek.slice(rfilter.eval(0))
+        b = ek.slice(rfilter.eval(1))
+        c = b**2
+        assert ek.allclose(im.data().array, [c, b, c,
+                                             b, a, b,
+                                             c, b, c], atol=1e-3)
+    else:
+        a = rfilter.eval_discretized(0)
+        b = rfilter.eval_discretized(1)
+        c = b**2
+        assert ek.allclose(im.data().array, [c, b, c,
+                                             b, a, b,
+                                             c, b, c], atol=1e-3)
+
