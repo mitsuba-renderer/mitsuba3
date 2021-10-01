@@ -237,7 +237,7 @@ protected:
 template <typename Float, typename Spectrum, uint32_t Channels, bool Raw>
 class GridVolumeImpl final : public Volume<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Volume, update_bbox, m_to_local)
+    MTS_IMPORT_BASE(Volume, update_bbox, m_to_local, m_bbox)
     MTS_IMPORT_TYPES()
 
     GridVolumeImpl(const Properties &props,
@@ -501,6 +501,7 @@ public:
         std::ostringstream oss;
         oss << "GridVolume[" << std::endl
             << "  to_local = " << m_to_local << "," << std::endl
+            << "  bbox = " << string::indent(m_bbox) << "," << std::endl
             << "  dimensions = " << resolution() << "," << std::endl
             << "  max = " << m_max << "," << std::endl
             << "  channels = " << m_data.shape()[3] << std::endl
