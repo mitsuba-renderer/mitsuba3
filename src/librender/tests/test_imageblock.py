@@ -288,7 +288,7 @@ def test08_read_values(variants_vec_rgb, filter_name):
 
     rfilter = xml.load_dict({'type': filter_name})
     data = TensorXf([0, 0, 0, 0, 1, 0, 0, 0, 0], [3, 3, 1])
-    im = ImageBlock(data, filter=rfilter, warn_negative=False, border=False)
+    im = ImageBlock(data, filter=rfilter, warn_negative=False)
 
     assert ek.allclose(im.read([1.5, 1.5]), ek.slice(rfilter.eval(0.0)), atol=1e-3)
     assert ek.allclose(im.read([0.5, 1.5]), ek.slice(rfilter.eval(1.0)), atol=1e-3)
