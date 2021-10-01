@@ -27,12 +27,10 @@ MTS_VARIANT
 ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &data,
                                         const ReconstructionFilter *filter,
                                         bool warn_negative, bool warn_invalid,
-                                        bool border, bool normalize)
+                                        bool normalize)
     : m_offset(0), m_filter(filter), m_weights_x(nullptr), m_weights_y(nullptr),
       m_warn_negative(warn_negative), m_warn_invalid(warn_invalid),
-      m_normalize(normalize) {
-    m_border_size = (uint32_t)((filter != nullptr && border) ? filter->border_size() : 0);
-
+      m_normalize(normalize), m_border_size(0) {
     if (filter) {
         // Temporary buffers used in put()
         int filter_size = (int) ek::ceil(2 * filter->radius()) + 1;

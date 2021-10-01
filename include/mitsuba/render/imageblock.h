@@ -87,11 +87,6 @@ public:
      *    Warn when writing samples with components that are equal to
      *    NaN (not a number) or +/- infinity?
      *
-     * \param border
-     *    Allocate a border region around the image block to support
-     *    contributions to adjacent pixels when using wide (i.e. non-box)
-     *    reconstruction filters?
-     *
      * \param normalize
      *    Ensure that splats created via ``ImageBlock::put()`` add a
      *    unit amount of energy? Stratified sampling techniques that
@@ -103,7 +98,6 @@ public:
                const ReconstructionFilter *filter = nullptr,
                bool warn_negative = std::is_scalar_v<Float>,
                bool warn_invalid = std::is_scalar_v<Float>,
-               bool border = true,
                bool normalize = false);
 
     /// Accumulate another image block into this one

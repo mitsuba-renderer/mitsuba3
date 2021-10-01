@@ -12,11 +12,11 @@ MTS_PY_EXPORT(ImageBlock) {
             "warn_invalid"_a = std::is_scalar_v<Float>,
             "border"_a = true, "normalize"_a = false)
         .def(py::init<const TensorXf &, const ReconstructionFilter *,
-             bool, bool, bool, bool>(),
+             bool, bool, bool>(),
             "data"_a, "filter"_a = nullptr,
             "warn_negative"_a = std::is_scalar_v<Float>,
             "warn_invalid"_a = std::is_scalar_v<Float>,
-            "border"_a = true, "normalize"_a = false)
+            "normalize"_a = false)
         .def("put", py::overload_cast<const ImageBlock *>(&ImageBlock::put),
             D(ImageBlock, put), "block"_a)
         .def("put", py::overload_cast<const Point2f &,
