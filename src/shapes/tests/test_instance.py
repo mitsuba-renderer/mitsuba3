@@ -192,28 +192,28 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     time = 0.0 if scalar_mode else [0.0] * width
 
     ray = Ray3f([-0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect(ray)
     assert ek.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, -0.5]' in instance_str
     assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect(ray)
     assert ek.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, -0.5]' in instance_str
     assert '[0, 0.5, 0, 0.5]' in instance_str
 
     ray = Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect(ray)
     assert ek.all(pi.is_valid())
     instance_str = str(pi.instance) if scalar_mode else str(pi.instance[0])
     assert '[0.5, 0, 0, 0.5]' in instance_str
     assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
-    pi = scene.ray_intersect_preliminary(ray)
+    pi = scene.ray_intersect(ray)
 
     assert ek.all(pi.is_valid())
 

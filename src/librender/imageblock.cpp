@@ -28,9 +28,9 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &data,
                                         const ReconstructionFilter *filter,
                                         bool warn_negative, bool warn_invalid,
                                         bool normalize)
-    : m_offset(0), m_filter(filter), m_weights_x(nullptr), m_weights_y(nullptr),
-      m_warn_negative(warn_negative), m_warn_invalid(warn_invalid),
-      m_normalize(normalize), m_border_size(0) {
+    : m_offset(0), m_border_size(0), m_filter(filter), m_weights_x(nullptr),
+      m_weights_y(nullptr), m_warn_negative(warn_negative),
+      m_warn_invalid(warn_invalid), m_normalize(normalize) {
     if (filter) {
         // Temporary buffers used in put()
         int filter_size = (int) ek::ceil(2 * filter->radius()) + 1;

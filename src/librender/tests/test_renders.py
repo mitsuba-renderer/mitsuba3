@@ -27,8 +27,7 @@ JIT_EXCLUDE_FOLDERS = [
 
 # List of test scene folders to exclude for symbolic modes
 SYMBOLIC_EXCLUDE_FOLDERS = [
-    'mesh_attributes', #TODO remove this once nested vcalls are supported
-    'instancing',      #TODO remove this once nested vcalls are supported
+    # all working now, yay
 ]
 
 POLARIZED_EXCLUDE_FOLDERS = [
