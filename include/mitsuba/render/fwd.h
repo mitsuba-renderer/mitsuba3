@@ -102,6 +102,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using PhaseFunctionPtr       = ek::replace_scalar_t<Float, const PhaseFunction *>;
     using ShapePtr               = ek::replace_scalar_t<Float, const Shape *>;
     using EmitterPtr             = ek::replace_scalar_t<Float, const Emitter *>;
+    using SensorPtr              = ek::replace_scalar_t<Float, const Sensor *>;
 };
 
 #define MMTS_USING_MEMBERS_MACRO2(x) \

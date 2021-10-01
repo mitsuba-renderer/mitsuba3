@@ -116,6 +116,7 @@ MTS_PY_EXPORT(Scene) {
         .def("sensors", py::overload_cast<>(&Scene::sensors), D(Scene, sensors))
         .def("emitters", py::overload_cast<>(&Scene::emitters), D(Scene, emitters))
         .def("emitters_ek", &Scene::emitters_ek, D(Scene, emitters_ek))
+        .def("sensors_ek", &Scene::sensors_ek, D(Scene, sensors_ek))
         .def("shapes_ek", &Scene::shapes_ek, D(Scene, shapes_ek))
         .def_method(Scene, environment)
         .def("shapes", [](const Scene &scene) {

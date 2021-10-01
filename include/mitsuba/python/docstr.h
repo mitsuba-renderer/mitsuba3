@@ -3656,6 +3656,9 @@ May not be supported by all media.
 Becomes necessary when we need to evaluate the albedo at a
 location where sigma_t = 0.)doc";
 
+static const char *__doc_mitsuba_Medium_get_emission =
+R"doc(Returns the medium's emission at the queried location.)doc";
+
 static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
 at a given MediumInteraction mi)doc";
@@ -5764,6 +5767,8 @@ static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitt
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters (const version))doc";
 
 static const char *__doc_mitsuba_Scene_emitters_ek = R"doc(Return the list of emitters as an Enoki array)doc";
+
+static const char *__doc_mitsuba_Scene_sensors_ek = R"doc(Return the list of sensors as an Enoki array)doc";
 
 static const char *__doc_mitsuba_Scene_environment = R"doc(Return the environment emitter (if any))doc";
 

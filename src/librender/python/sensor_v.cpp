@@ -53,7 +53,7 @@ public:
 };
 
 MTS_PY_EXPORT(Sensor) {
-    MTS_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint)
+    MTS_PY_IMPORT_TYPES(Sensor, ProjectiveCamera, Endpoint, SensorPtr)
     using PySensor = PySensor<Float, Spectrum>;
 
     py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
@@ -65,6 +65,24 @@ MTS_PY_EXPORT(Sensor) {
         .def_method(Sensor, needs_aperture_sample)
         .def("film", py::overload_cast<>(&Sensor::film, py::const_), D(Sensor, film))
         .def("sampler", py::overload_cast<>(&Sensor::sampler, py::const_), D(Sensor, sampler));
+
+    if constexpr (ek::is_array_v<SensorPtr>) {
+        py::object ek       = py::module_::import("enoki"),
+                   ek_array = ek.attr("ArrayBase");
+
+        py::class_<SensorPtr> cls(m, "SensorPtr", ek_array);
+        cls.def(
+            "sample_ray_differential",
+            [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
+               const Point2f &sample3, Mask active) {
+                return ptr->sample_ray_differential(time, sample1, sample2,
+                                                    sample3, active);
+            },
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+            D(Sensor, sample_ray_differential));
+
+        bind_enoki_ptr_array(cls);
+    }
 
     MTS_PY_REGISTER_OBJECT("register_sensor", Sensor)
 

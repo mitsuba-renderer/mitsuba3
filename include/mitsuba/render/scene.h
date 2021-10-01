@@ -12,7 +12,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Scene : public Object {
 public:
     MTS_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, Film, Sampler, Shape, ShapePtr,
-                     ShapeGroup, Sensor, Integrator, Medium, MediumPtr)
+                     ShapeGroup, Sensor, SensorPtr, Integrator, Medium, MediumPtr)
 
     /// Instantiate a scene from a \ref Properties object
     Scene(const Properties &props);
@@ -238,6 +238,9 @@ public:
     /// Return the list of emitters as an Enoki array
     const DynamicBuffer<EmitterPtr> &emitters_ek() const { return m_emitters_ek; }
 
+    /// Return the list of sensors as an Enoki array
+    const DynamicBuffer<SensorPtr> &sensors_ek() const { return m_sensors_ek; }
+
     /// Return the list of shapes as an Enoki array
     const DynamicBuffer<ShapePtr> &shapes_ek() const { return m_shapes_ek; }
 
@@ -315,6 +318,7 @@ protected:
     DynamicBuffer<ShapePtr> m_shapes_ek;
     std::vector<ref<ShapeGroup>> m_shapegroups;
     std::vector<ref<Sensor>> m_sensors;
+    DynamicBuffer<SensorPtr> m_sensors_ek;
     std::vector<ref<Object>> m_children;
     ref<Integrator> m_integrator;
     ref<Emitter> m_environment;

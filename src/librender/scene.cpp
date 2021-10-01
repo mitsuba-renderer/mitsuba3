@@ -108,9 +108,10 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
 
     m_shapes_ek = ek::load<DynamicBuffer<ShapePtr>>(
         m_shapes.data(), m_shapes.size());
-
     m_emitters_ek = ek::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
+    m_sensors_ek = ek::load<DynamicBuffer<SensorPtr>>(
+        m_sensors.data(), m_sensors.size());
 
     m_shapes_grad_enabled = false;
 }
