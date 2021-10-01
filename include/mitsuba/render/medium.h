@@ -32,6 +32,10 @@ public:
     virtual UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
                                            Mask active = true) const = 0;
 
+    /// Returns the medium's emission at the queried location.
+    virtual UnpolarizedSpectrum get_emission(const MediumInteraction3f &mi,
+                                             Mask active = true) const = 0;
+
     /// Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
     /// at a given MediumInteraction mi
     virtual std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum,
@@ -172,6 +176,7 @@ ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_GETTER(has_spectral_extinction, bool)
     ENOKI_VCALL_METHOD(get_combined_extinction)
     ENOKI_VCALL_METHOD(get_albedo)
+    ENOKI_VCALL_METHOD(get_emission)
     ENOKI_VCALL_METHOD(get_scattering_coefficients)
     ENOKI_VCALL_METHOD(intersect_aabb)
     ENOKI_VCALL_METHOD(sample_interaction)

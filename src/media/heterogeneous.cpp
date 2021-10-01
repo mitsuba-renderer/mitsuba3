@@ -116,8 +116,9 @@ public:
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
-        m_albedo = props.volume<Volume>("albedo", 0.75f);
-        m_sigmat = props.volume<Volume>("sigma_t", 1.f);
+        m_albedo         = props.volume<Volume>("albedo", 0.75f);
+        m_sigmat         = props.volume<Volume>("sigma_t", 1.f);
+        m_emission       = props.volume<Volume>("emission", 0.f);
 
         ScalarFloat scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction =
@@ -142,6 +143,13 @@ public:
                                    Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         auto value = m_albedo->eval(mi, active);
+        return value & active;
+    }
+
+    UnpolarizedSpectrum get_emission(const MediumInteraction3f &mi,
+                                     Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        auto value = m_emission->eval(mi, active);
         return value & active;
     }
 
@@ -181,6 +189,7 @@ public:
         callback->put_parameter("scale", m_scale);
         callback->put_object("albedo", m_albedo.get());
         callback->put_object("sigma_t", m_sigmat.get());
+        callback->put_object("emission", m_emission.get());
         Base::traverse(callback);
     }
 
@@ -189,6 +198,7 @@ public:
         oss << "HeterogeneousMedium[" << std::endl
             << "  albedo = " << string::indent(m_albedo) << std::endl
             << "  sigma_t = " << string::indent(m_sigmat) << std::endl
+            << "  emission = " << string::indent(m_emission) << std::endl
             << "  scale = " << string::indent(m_scale) << std::endl
             << "]";
         return oss.str();
@@ -196,7 +206,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
-    ref<Volume> m_sigmat, m_albedo;
+    ref<Volume> m_sigmat, m_albedo, m_emission;
     Float m_scale;
 
     Float m_max_density;
