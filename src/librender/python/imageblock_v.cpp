@@ -6,8 +6,14 @@ MTS_PY_EXPORT(ImageBlock) {
     MTS_PY_IMPORT_TYPES(ImageBlock, ReconstructionFilter)
     MTS_PY_CLASS(ImageBlock, Object)
         .def(py::init<const ScalarVector2i &, size_t,
-                const ReconstructionFilter *, bool, bool, bool, bool>(),
+             const ReconstructionFilter *, bool, bool, bool, bool>(),
             "size"_a, "channel_count"_a, "filter"_a = nullptr,
+            "warn_negative"_a = std::is_scalar_v<Float>,
+            "warn_invalid"_a = std::is_scalar_v<Float>,
+            "border"_a = true, "normalize"_a = false)
+        .def(py::init<const TensorXf &, const ReconstructionFilter *,
+             bool, bool, bool, bool>(),
+            "data"_a, "filter"_a = nullptr,
             "warn_negative"_a = std::is_scalar_v<Float>,
             "warn_invalid"_a = std::is_scalar_v<Float>,
             "border"_a = true, "normalize"_a = false)

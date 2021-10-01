@@ -23,6 +23,31 @@ ImageBlock<Float, Spectrum>::ImageBlock(const ScalarVector2i &size, size_t chann
     set_size(size);
 }
 
+MTS_VARIANT
+ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &data,
+                                        const ReconstructionFilter *filter,
+                                        bool warn_negative, bool warn_invalid,
+                                        bool border, bool normalize)
+    : m_offset(0), m_filter(filter), m_weights_x(nullptr), m_weights_y(nullptr),
+      m_warn_negative(warn_negative), m_warn_invalid(warn_invalid),
+      m_normalize(normalize) {
+    m_border_size = (uint32_t)((filter != nullptr && border) ? filter->border_size() : 0);
+
+    if (filter) {
+        // Temporary buffers used in put()
+        int filter_size = (int) ek::ceil(2 * filter->radius()) + 1;
+        m_weights_x = new Float[2 * filter_size];
+        m_weights_y = m_weights_x + filter_size;
+    }
+
+    m_size = ScalarVector2i(data.shape(1), data.shape(0));
+    m_channel_count = data.shape(2);
+    if constexpr (ek::is_jit_array_v<Float>)
+        m_data = TensorXf(data.array().copy(), 3, data.shape().data());
+    else
+        m_data = TensorXf(data.array(), 3, data.shape().data());
+}
+
 MTS_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() {
     /* Note that m_weights_y points to the same array as
        m_weights_x, so there is no need to delete it. */

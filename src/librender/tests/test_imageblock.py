@@ -283,16 +283,12 @@ def test07_put_samples_at_boundaries(variants_all_rgb, filter_name):
 
 @pytest.mark.parametrize("filter_name", ['gaussian', 'box'])
 def test08_read_values(variants_vec_rgb, filter_name):
-    from mitsuba.core import xml
+    from mitsuba.core import xml, TensorXf
     from mitsuba.render import ImageBlock
 
     rfilter = xml.load_dict({'type': filter_name})
-    im = ImageBlock([3, 3], 1, filter=rfilter, warn_negative=False, border=False)
-    im.clear()
-
-    im.data()[:] = type(im.data().array)([0, 0, 0,
-                                          0, 1, 0,
-                                          0, 0, 0])
+    data = TensorXf([0, 0, 0, 0, 1, 0, 0, 0, 0], [3, 3, 1])
+    im = ImageBlock(data, filter=rfilter, warn_negative=False, border=False)
 
     assert ek.allclose(im.read([1.5, 1.5]), ek.slice(rfilter.eval(0.0)), atol=1e-3)
     assert ek.allclose(im.read([0.5, 1.5]), ek.slice(rfilter.eval(1.0)), atol=1e-3)
