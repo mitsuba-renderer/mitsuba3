@@ -15,25 +15,26 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       image_adj: mitsuba.core.Spectrum,
+                       image_adj: mitsuba.core.TensorXf,
                        seed: int,
                        sensor_index: int = 0,
                        spp: int = 0) -> None:
 
         sensor = scene.sensors()[sensor_index]
+        rfilter = sensor.film().reconstruction_filter()
         sampler = sensor.sampler()
         if spp > 0:
             sampler.set_sample_count(spp)
         spp = sampler.sample_count()
         sampler.seed(seed, ek.hprod(sensor.film().crop_size()) * spp)
 
-        ray, weight, _, pos_idx = sample_sensor_rays(sensor)
+        ray, weight, pos, _ = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
         result, _ = self.Li(scene, sampler.clone(), ray)
 
-        grad_values = ek.gather(mitsuba.core.Spectrum, ek.detach(image_adj.array), pos_idx)
-        grad_values *= weight / spp
+        block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter)
+        grad_values = block.read(pos) * weight / spp
 
         for k, v in params.items():
             ek.enable_grad(v)
