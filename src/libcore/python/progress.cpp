@@ -22,6 +22,10 @@ std::string escape_html(const std::string& data) {
     return buffer;
 }
 
+#if defined(__GNUG__)
+#pragma GCC visibility push(hidden)
+#endif
+
 class JupyterNotebookAppender : public Appender {
 public:
     JupyterNotebookAppender() {
@@ -97,6 +101,10 @@ private:
     py::object m_bar;
     py::object m_label;
 };
+
+#if defined(__GNUG__)
+#pragma GCC visibility pop
+#endif
 
 MTS_PY_EXPORT(ProgressReporter) {
     /* Install a custom appender for log + progress messages if Mitsuba is
