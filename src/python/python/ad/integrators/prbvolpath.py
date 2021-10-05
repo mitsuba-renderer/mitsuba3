@@ -79,7 +79,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         with ek.suspend_grad():
             result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
-        block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter)
+        block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
         grad_values = block.read(pos) * weight / spp
 
         # Replay light paths and accumulate gradients

@@ -237,16 +237,19 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
             }
         }
 
+        Float factor = 1.f;
         if (unlikely(m_normalize)) {
-            Float wx(0), wy(0);
-            for (uint32_t i = 0; i < n; ++i) {
-                wx += m_weights_x[i];
-                wy += m_weights_y[i];
+            Float weight = 0.f;
+            for (uint32_t yr = 0; yr < n; ++yr) {
+                UInt32 y = lo.y() + yr;
+                Mask enabled = active && y <= hi.y();
+                for (uint32_t xr = 0; xr < n; ++xr) {
+                    UInt32 x = lo.x() + xr;
+                    enabled &= x <= hi.x();
+                    ek::masked(weight, enabled) += m_weights_y[yr] * m_weights_x[xr];
+                }
             }
-
-            Float factor = ek::rcp(wx * wy);
-            for (uint32_t i = 0; i < n; ++i)
-                m_weights_x[i] *= factor;
+            factor = ek::rcp(weight);
         }
 
         for (uint32_t k = 0; k < m_channel_count; ++k)
@@ -259,7 +262,7 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
             ENOKI_NOUNROLL for (uint32_t xr = 0; xr < n; ++xr) {
                 UInt32 x       = lo.x() + xr,
                        offset  = m_channel_count * (y * size.x() + x);
-                Float weight = m_weights_y[yr] * m_weights_x[xr];
+                Float weight = m_weights_y[yr] * m_weights_x[xr] * factor;
 
                 enabled &= x <= hi.x();
                 ENOKI_NOUNROLL for (uint32_t k = 0; k < m_channel_count; ++k)

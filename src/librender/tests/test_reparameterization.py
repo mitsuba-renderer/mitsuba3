@@ -6,9 +6,7 @@ from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
 def make_sphere_mesh_scene():
-    from mitsuba.core import xml, ScalarTransform4f
-
-    return xml.load_dict({
+    return mitsuba.core.xml.load_dict({
         'type' : 'scene',
         'mesh' : {
             'type' : 'obj',
@@ -18,9 +16,7 @@ def make_sphere_mesh_scene():
 
 @fresolver_append_path
 def make_rectangle_mesh_scene():
-    from mitsuba.core import xml, ScalarTransform4f
-
-    return xml.load_dict({
+    return mitsuba.core.xml.load_dict({
         'type' : 'scene',
         'mesh' : {
             'type' : 'obj',
@@ -30,13 +26,23 @@ def make_rectangle_mesh_scene():
     })
 
 
-@pytest.mark.parametrize("shape", ['sphere', 'rectangle'])
-def test01_reparameterization_forward(variants_all_ad_rgb, shape):
-    from mitsuba.core import xml, Float, Bool, Point3f, Vector3f, Ray3f, Transform4f
+@pytest.mark.parametrize("shape, ray_o, ray_d", [
+    ('rectangle', [0, 1, -5], [0, 0, 1]),       # Target one side of the rectangle
+    ('rectangle', [0, 0.0, -5], [0, 0, 1]),     # Target center of the rectangle
+    ('rectangle', [0.99, -0.99, -5], [0, 0, 1]) # Target one corner of the rectangle
+])
+def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
+    from mitsuba.core import xml, Float, Point3f, Vector3f, Ray3f, Transform4f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
     ek.set_flag(ek.JitFlag.LoopRecord, False)
+
+    num_aux_rays = 2
+    power = 3.0
+    kappa = 1e5
+
+    ray = Ray3f(ray_o, ray_d, 0.0, [])
 
     if shape == 'rectangle':
         scene = make_rectangle_mesh_scene()
@@ -50,60 +56,69 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape):
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    trans = Vector3f([1.0, 0.0, 0.0])
     init_vertex_pos = ek.unravel(Point3f, params[key])
-    def apply_transform(theta):
-        ek.enable_grad(theta)
-        ek.set_label(theta, 'theta')
-        transform = Transform4f.translate(theta * trans)
-        positions_new = transform @ init_vertex_pos
-        params[key] = ek.ravel(positions_new)
-        params.update()
-        ek.eval()
 
-    num_aux_rays = 64
-    power = 3.0
-    kappa = 1e5
+    theta = Float(0.0)
+    ek.enable_grad(theta)
+    trans = Vector3f([1.0, 0.0, 0.0])
+    transform = Transform4f.translate(theta * trans)
+    positions_new = transform @ init_vertex_pos
+    params[key] = ek.ravel(positions_new)
+    params.update()
+    ek.forward(theta, retain_graph=False, retain_grad=True)
 
-    def check_warp_field(ray):
-        theta = Float(0.0)
-        apply_transform(theta)
+    ek.set_label(theta, 'theta')
+    ek.set_label(params, 'params')
 
-        d, div = reparameterize_ray(scene, sampler, ray, True, params,
-                                    num_aux_rays, kappa, power, apply_transform)
+    d, div = reparameterize_ray(scene, sampler, ray, True, params,
+                                num_aux_rays, kappa, power)
 
-        assert d == ray.d
-        assert div == 0.0
+    assert d == ray.d
+    assert div == 0.0
 
-        ek.set_label(d, 'd')
-        ek.set_label(div, 'div')
-        # print(ek.graphviz_str(Float(1)))
+    ek.set_label(d, 'd')
+    ek.set_label(div, 'div')
 
-        ek.forward(theta)
-        grad_d = ek.grad(d)
-        grad_div = ek.grad(div)
+    # print(ek.graphviz_str(Float(1)))
 
-        # Compute attached ray direction if the shape moves along the translation axis
-        si_p = scene.ray_intersect(ray).p
-        new_d = ek.normalize((si_p + trans - ray.o))
+    ek.enqueue(ek.ADMode.Forward, params)
+    ek.traverse(mitsuba.core.Float)
 
-        # Gradient should match direction difference along the translation axis
-        assert ek.allclose(ek.dot(new_d - ray.d, trans), ek.dot(grad_d, trans), atol=1e-2)
+    grad_d = ek.grad(d)
+    grad_div = ek.grad(div)
 
-        # Other dimensions should be insignificant
-        assert ek.all(ek.dot(grad_d, 1-trans) < 1e-4)
+    # Compute attached ray direction if the shape moves along the translation axis
+    si_p = scene.ray_intersect(ray).p
+    new_d = ek.normalize((si_p + trans - ray.o))
 
-    check_warp_field(Ray3f([0, 1, -5], [0, 0, 1], 0.0, []))
-    check_warp_field(Ray3f([0, 0.0, -5], [0, 0, 1], 0.0, []))
-    check_warp_field(Ray3f([0.99, -0.99, -5], [0, 0, 1], 0.0, []))
+    # Gradient should match direction difference along the translation axis
+    assert ek.allclose(ek.dot(new_d - ray.d, trans), ek.dot(grad_d, trans), atol=1e-2)
+
+    # Other dimensions should be insignificant
+    assert ek.all(ek.dot(grad_d, 1-trans) < 1e-4)
 
 
-def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
+@pytest.mark.parametrize("ray_o, ray_d, ref, atol", [
+    # Hit the center of the triangle, only the vertices of the diagonal should move
+    ([0, 0, -1], [0, 0, 1], [[0.5, 0.5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 1e-3),
+    # Hit corner of the triangle, only that vertex should move
+    ([1, 1, -1], [0, 0, 1], [[0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0]], 1e-1),
+    # Hit side of the triangle, only those vertices should move
+    ([1, 0, -1], [0, 0, 1], [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0]], 1e-2),
+])
+def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, ray_o, ray_d, ref, atol):
     from mitsuba.core import xml, Float, Ray3f, Vector3f
     from mitsuba.python.util import traverse
     from mitsuba.python.ad import reparameterize_ray
 
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
+
+    grad_direction = Vector3f(1, 0, 0)
+    grad_divergence = 0.0
+    n_passes = 4
+    num_auxiliary_rays = 128
+    kappa = 1e6
+    power = 3.0
 
     scene = make_rectangle_mesh_scene()
 
@@ -114,74 +129,35 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb):
     key = 'mesh.vertex_positions'
     params.keep([key])
 
-    def check_gradients(ray, grad_direction, grad_divergence, n_passes,
-                        num_auxiliary_rays, kappa, power, ref, atol):
-        ek.set_label(ray, 'ray')
+    ray = Ray3f(ray_o, ray_d, 0.0, [])
+    ek.set_label(ray, 'ray')
 
-        res_grad = 0.0
-        for i in range(n_passes):
-            ek.enable_grad(params[key])
-            ek.set_grad(params[key], 0.0)
-            ek.set_label(params[key], key)
-            params.set_dirty(key)
-            params.update()
-            ek.eval()
+    res_grad = 0.0
+    for i in range(n_passes):
+        ek.enable_grad(params[key])
+        ek.set_grad(params[key], 0.0)
+        ek.set_label(params[key], key)
+        params.set_dirty(key)
+        params.update()
+        ek.eval()
 
-            d, div = reparameterize_ray(scene, sampler, ray, True,
-                                        params, num_auxiliary_rays, kappa, power)
+        d, div = reparameterize_ray(scene, sampler, ray, True,
+                                    params, num_auxiliary_rays, kappa, power)
 
-            ek.set_label(d, 'd')
-            ek.set_label(div, 'div')
+        ek.set_label(d, 'd')
+        ek.set_label(div, 'div')
 
-            # print(ek.graphviz_str(Float(1)))
+        # print(ek.graphviz_str(Float(1)))
 
-            ek.set_grad(d, grad_direction)
-            ek.set_grad(div, grad_divergence)
-            ek.enqueue(ek.ADMode.Reverse, d, div)
-            ek.traverse(Float, retain_graph=False)
+        ek.set_grad(d, grad_direction)
+        ek.set_grad(div, grad_divergence)
+        ek.enqueue(ek.ADMode.Reverse, d, div)
+        ek.traverse(Float, retain_graph=False)
 
-            res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
+        res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
 
-        assert ek.allclose(res_grad / float(n_passes), ref, atol=atol)
+    assert ek.allclose(res_grad / float(n_passes), ref, atol=atol)
 
-    # Hit the center of the triangle, only the vertices of the diagonal should move
-    check_gradients(
-        ray=Ray3f([0, 0, -1], [0, 0, 1], 0, []),
-        grad_direction=Vector3f(1, 0, 0),
-        grad_divergence=0.0,
-        n_passes = 4,
-        num_auxiliary_rays=64,
-        kappa=1e6,
-        power=3.0,
-        ref=[[0.5, 0.5, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-        atol=1e-3,
-    )
-
-    # Hit corner of the triangle, only that vertex should move
-    check_gradients(
-        ray=Ray3f([1, 1, -1], [0, 0, 1], 0, []),
-        grad_direction=Vector3f(1, 0, 0),
-        grad_divergence=0.0,
-        n_passes=4,
-        num_auxiliary_rays=128,
-        kappa=1e6,
-        power=3.0,
-        ref=[[0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
-        atol=1e-1,
-    )
-
-    # Hit side of the triangle, only those vertices should move
-    check_gradients(
-        ray=Ray3f([1, 0, -1], [0, 0, 1], 0, []),
-        grad_direction=Vector3f(1, 0, 0),
-        grad_divergence=0.0,
-        n_passes=4,
-        num_auxiliary_rays=128,
-        kappa=1e6,
-        power=3.0,
-        ref=[[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0]],
-        atol=1e-2,
-    )
 
 
 # def test03_reparameterization_backward_divergence_gradient(variant_cuda_ad_rgb):
@@ -376,30 +352,31 @@ if __name__ == '__main__':
 
     trans = Vector3f([1.0, 0.0, 0.0])
     init_vertex_pos = ek.unravel(Point3f, params[key])
-    def apply_transform(theta):
-        ek.enable_grad(theta)
-        ek.set_label(theta, 'theta')
-        transform = Transform4f.translate(theta * trans)
-        positions_new = transform @ init_vertex_pos
-        params[key] = ek.ravel(positions_new)
-        params.update()
-        ek.eval()
 
     theta = Float(0.0)
-    apply_transform(theta)
+    ek.enable_grad(theta)
+    ek.set_label(theta, 'theta')
+
+    transform = Transform4f.translate(theta * trans)
+    positions_new = transform @ init_vertex_pos
+    params[key] = ek.ravel(positions_new)
+    params.update()
+    ek.eval()
+
+    ek.forward(theta, retain_graph=False, retain_grad=True)
 
     num_aux_rays = 64
     power = 3.0
     kappa = 1e5
 
     d, div = reparameterize_ray(scene, sampler, rays, True, params,
-                                num_aux_rays, kappa, power, apply_transform)
+                                num_aux_rays, kappa, power)
     ek.set_label(d, 'd')
     ek.set_label(div, 'div')
 
     # print(ek.graphviz_str(Float(1)))
 
-    ek.forward(theta)
+    ek.forward(params[key])
 
     grad_d = ek.grad(d)
     grad_div = ek.grad(div)
