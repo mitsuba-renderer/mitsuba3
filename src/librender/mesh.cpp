@@ -429,11 +429,12 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
                  n2 = vertex_normal(fi[2], active);
         ps.n = ek::normalize(n0 * (1.f - b.x() - b.y())
                        + n1 * b.x() + n2 * b.y());
-        if (m_flip_normals) ps.n = -ps.n;
     } else {
         ps.n = ek::normalize(ek::cross(e0, e1));
-        if (m_flip_normals) ps.n = -ps.n;
     }
+    
+    if (m_flip_normals) 
+        ps.n = -ps.n;
 
     return ps;
 }
@@ -541,7 +542,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Face normal
     si.n = ek::normalize(ek::cross(dp0, dp1));
-    if (m_flip_normals) si.n = -si.n;
 
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
@@ -583,7 +583,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         n *= il;
 
         si.sh_frame.n = n;
-        if (m_flip_normals) si.sh_frame.n = -n;
 
         if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
@@ -603,6 +602,11 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         }
     } else {
         si.sh_frame.n = si.n;
+    }
+    
+    if (m_flip_normals) {
+        si.n = -si.n;
+        si.sh_frame.n = -si.sh_frame.n;
     }
 
     si.shape    = this;
