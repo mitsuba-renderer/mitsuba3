@@ -69,7 +69,7 @@ master_doc = 'list_api'
 
 # General information about the project.
 project = 'mitsuba2'
-copyright = '2019, Realistic Graphics Lab (RGL), EPFL'
+copyright = '2021, Realistic Graphics Lab (RGL), EPFL'
 author = 'Realistic Graphics Lab, EPFL'
 
 
@@ -561,7 +561,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
         last_block_name = name
 
     # Get rid of default 'name' property in enums
-    if what == 'property' and lines[0] == '(self: handle) -> str':
+    if what == 'property' and lines and lines[0] == '(self: handle) -> str':
         return
 
     # Adjust the indentation
@@ -582,7 +582,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             directive_indent, directive_type, name)
 
         # Display signature for methods and functions
-        if what in ['method', 'function']:
+        if what in ['method', 'function'] and cached_signature:
             directive += cached_signature
 
         # Display signature for classes for python doc
