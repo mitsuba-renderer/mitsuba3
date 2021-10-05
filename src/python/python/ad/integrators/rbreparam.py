@@ -95,7 +95,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         When `params` is defined, the method will backpropagate `grad` to the
         scene parameters in `params` and return nothing.
         """
-        from mitsuba.core import Spectrum, Float, UInt32, RayDifferential3f, Loop
+        from mitsuba.core import Spectrum, Float, UInt32, Ray3f, Loop
         from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
         from mitsuba.python.ad import reparameterize_ray
 
@@ -126,7 +126,8 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                       num_auxiliary_rays=self.num_aux_rays,
                                       kappa=self.kappa, power=self.power)
 
-        ray = RayDifferential3f(ray_)
+        ray = Ray3f(ray_)
+        prev_ray = Ray3f(ray_)
 
         si = scene.ray_intersect(ray, active_)
         valid_ray = active_ & si.is_valid()
@@ -145,6 +146,11 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
+            # Attach incoming direction (reparameterization from the previous bounce)
+            with params.resume_gradients():
+                reparam_d, _ = reparam(prev_ray, active)
+                si.wi = -si.to_local(reparam_d)
+
             # ---------------------- Direct emission ----------------------
 
             with params.resume_gradients():
@@ -163,7 +169,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
             active_e = active & has_flag(bsdf.flags(), BSDFFlags.Smooth)
             ds, emitter_val = scene.sample_emitter_direction(
-                si, sampler.next_2d(active_e), True, active_e)
+                ek.detach(si), sampler.next_2d(active_e), True, active_e)
 
             with params.resume_gradients():
                 ray_e = ek.detach(si.spawn_ray(ds.d))
@@ -184,20 +190,21 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ---------------------- BSDF sampling ----------------------
 
-            bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
+            bs, bsdf_weight = bsdf.sample(ctx, ek.detach(si),
+                                          sampler.next_1d(active),
                                           sampler.next_2d(active), active)
 
             active &= bs.pdf > 0.0
+            prev_ray = ray
             ray = si.spawn_ray(si.to_world(bs.wo))
-            ray = RayDifferential3f(ray)
             si_bsdf = scene.ray_intersect(ray, active)
 
             # Compute MIS weight for the BSDF sampling
-            ds = DirectionSample3f(scene, si_bsdf, si)
+            ds = DirectionSample3f(scene, si_bsdf, ek.detach(si))
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
             active_b = active & ek.neq(ds.emitter, None) & ~delta
-            emitter_pdf = scene.pdf_emitter_direction(si, ds, active_b)
+            emitter_pdf = scene.pdf_emitter_direction(ek.detach(si), ds, active_b)
             emission_weight = ek.select(active_b, mis_weight(bs.pdf, emitter_pdf), 1.0)
 
             if not is_primal:
