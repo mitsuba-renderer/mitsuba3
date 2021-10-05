@@ -111,8 +111,6 @@ public:
     }
 
     MTS_DECLARE_CLASS()
-private:
-    bool m_flip_normals;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(Cube, Mesh)
