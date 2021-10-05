@@ -59,7 +59,6 @@ if __name__ == "__main__":
 
     rb_integrator = xml.load_dict({
         'type': 'rbreparam',
-        # 'type': 'rbreparamdepth',
         'max_depth': 3,
         'num_aux_rays': 64,
         'kappa': 1e6,
@@ -85,8 +84,9 @@ if __name__ == "__main__":
     params.update()
     ek.eval()
 
-    image = rb_integrator.render(scene, seed=0, spp=128)
-    write_bitmap('image.exr', image)
+    with params.suspend_gradients():
+        image = rb_integrator.render(scene, seed=0, spp=128)
+        write_bitmap('image.exr', image)
 
     ek.enable_grad(image)
     ob_val = ek.hsum_async(ek.sqr(image - image_ref)) / len(image)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
     image_init2 = rb_integrator.render(scene, seed=0, spp=128)
 
-    fd_image_grad = ek.abs(image_init - image_init2) / eps
+    fd_image_grad = ek.abs(image_ref - image_init2) / eps
     write_bitmap('fd_image_grad.exr', fd_image_grad)
 
     rgb_image_adj = ek.unravel(Color3f, ek.detach(image_adj.array))
