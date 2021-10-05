@@ -4,7 +4,7 @@ import enoki as ek
 
 class Optimizer:
     """
-    Base class of all gradient-based optimizers (currently SGD and Adam)
+    Base class of all gradient-based optimizers.
     """
     def __init__(self, lr, params):
         """
@@ -12,7 +12,7 @@ class Optimizer:
             learning rate
 
         Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
-            Scene parameters dictionary
+            Scene parameters dictionary containing the parameters to optimize.
         """
         self.lr = defaultdict(lambda: self.lr_default)
         self.lr_v = defaultdict(lambda: self.lr_default_v)
@@ -109,7 +109,7 @@ class Optimizer:
 
     def update(self, keys=None):
         """
-        Update a set of scene parameters.
+        Propagate updates of the parameters being optimized back to the scene state.
 
         Parameter ``params`` (:py:class:`mitsuba.python.util.SceneParameters`):
             Scene parameters dictionary
@@ -144,9 +144,9 @@ class Optimizer:
         """
 
         from mitsuba.core import Float
-        # Ensure that the JIT compiler does merge 'lr' into the PTX code
-        # (this would trigger a recompile every time it is changed)
-
+        # We use `ek.opaque` so the that the JIT compiler does not include
+        # the learning rate as a scalar literal into genereated code, which
+        # would defeat kernel caching when updating learning rates.
         if key is None:
             self.lr_default = lr
             self.lr_default_v = ek.opaque(ek.detached_t(Float), lr, shape=1)
@@ -155,7 +155,7 @@ class Optimizer:
             self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, shape=1)
 
     def set_grad_suspended(self, value):
-        """Temporarily disable the generation of gradients."""
+        """Temporarily enable or disable the generation of gradients."""
         self.params.set_grad_suspended(value)
 
     @contextmanager
@@ -179,6 +179,7 @@ class Optimizer:
     def reset(self, key):
         """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
         pass
+
 
 class SGD(Optimizer):
     """
@@ -208,9 +209,10 @@ class SGD(Optimizer):
             momentum factor
 
         Parameter ``mask_updates``:
-            if enabled, parameters and state variables will only
-            be updated in a given iteration if it received
-            nonzero gradients in that iteration
+            if enabled, parameters and state variables will only be updated
+            in a given iteration if it received nonzero gradients in that iteration.
+            This only has an effect if momentum is enabled.
+            See :py:class:`mitsuba.python.optimizers.Adam`'s documentation for more details.
         """
         assert momentum >= 0 and momentum < 1
         assert lr > 0
@@ -268,6 +270,24 @@ class Adam(Optimizer):
     """
     Implements the Adam optimizer presented in the paper *Adam: A Method for
     Stochastic Optimization* by Kingman and Ba, ICLR 2015.
+
+    When optimizing many variables (e.g. a high resolution texture) with
+    momentum enabled, it may be beneficial to restrict state and variable
+    updates to the entries that received nonzero gradients in the current
+    iteration (``mask_updates=True``).
+    In the context of differentiable Monte Carlo simulations, many of those
+    variables may not be observed at each iteration, e.g. when a surface is
+    not visible from the current camera. Gradients for unobserved variables
+    will remain at zero by default.
+    If we do not take special care, at each new iteration:
+
+    1. Momentum accumulated at previous iterations (potentially very noisy)
+       will keep being applied to the variable.
+    2. The optimizer's state will be updated to incorporate ``gradient = 0``,
+       even though it is not an actual gradient value but rather lack of one.
+
+    Enabling ``mask_updates`` avoids these two issues. This is similar to
+    `PyTorch's SparseAdam optimizer <https://pytorch.org/docs/1.9.0/generated/torch.optim.SparseAdam.html>`_.
     """
     def __init__(self, lr, beta_1=0.9, beta_2=0.999, epsilon=1e-8,
                  params=None, mask_updates=False):
@@ -284,9 +304,8 @@ class Adam(Optimizer):
             order gradient moments
 
         Parameter ``mask_updates``:
-            if enabled, parameters and state variables will only
-            be updated in a given iteration if it received
-            nonzero gradients in that iteration
+            if enabled, parameters and state variables will only be updated in a
+            given iteration if it received nonzero gradients in that iteration
         """
         super().__init__(lr, params)
 
