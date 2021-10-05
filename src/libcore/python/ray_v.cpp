@@ -44,4 +44,6 @@ MTS_PY_EXPORT(Ray) {
         MTS_PY_ENOKI_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
                             wavelengths, o_x, o_y, d_x, d_y)
     }
+
+    py::implicitly_convertible<Ray3f, RayDifferential3f>();
 }
