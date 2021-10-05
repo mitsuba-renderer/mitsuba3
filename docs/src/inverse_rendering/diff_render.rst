@@ -202,8 +202,8 @@ discusses standalone mode, and the section on :ref:`PyTorch integration
 <sec-pytorch>` shows how to adapt the example code for PyTorch.
 
 Mitsuba ships with standard optimizers including *Stochastic Gradient Descent*
-(:py:class:`~mitsuba.python.autodiff.SGD`) with and without momentum, as well
-as :py:class:`~mitsuba.python.autodiff.Adam` :cite:`kingma2014adam` We will
+(:py:class:`~mitsuba.python.ad.optimizers.SGD`) with and without momentum, as well
+as :py:class:`~mitsuba.python.ad.optimizers.Adam` :cite:`kingma2014adam` We will
 instantiate the latter and optimize our reduced
 :py:class:`~mitsuba.python.util.SceneParameters` ``params`` with a learning rate
 of 0.2. The optimizer class automatically requests derivative information for
@@ -214,7 +214,7 @@ explained in the introduction.
 .. code-block:: python
 
     # Construct an Adam optimizer that will adjust the parameters 'params'
-    from mitsuba.python.autodiff import Adam
+    from mitsuba.python.ad.optimizers import Adam
     opt = Adam(params, lr=.2)
 
 The remaining commands are all part of a loop that executes 100 differentiable
@@ -340,7 +340,7 @@ image.
 
 Forward mode differentiable rendering begins analogously to reverse mode, by
 declaring parameters and marking them as differentiable (we do so manually
-instead of using an :py:class:`mitsuba.python.autodiff.Optimizer`).
+instead of using an :py:class:`mitsuba.python.ad.optimizers.Optimizer`).
 
 .. code-block:: python
 

@@ -8,6 +8,10 @@
 
 .. autoclass:: mitsuba.core.Bitmap
 
+.. autoclass:: mitsuba.core.BitmapReconstructionFilter
+
+.. autoclass:: mitsuba.core.Bool
+
 .. autoclass:: mitsuba.core.BoundingBox2f
 
 .. autoclass:: mitsuba.core.BoundingBox3f
@@ -15,6 +19,8 @@
 .. autoclass:: mitsuba.core.BoundingSphere3f
 
 .. autoclass:: mitsuba.core.Class
+
+.. autoclass:: mitsuba.core.Color0f
 
 .. autoclass:: mitsuba.core.Color1f
 
@@ -56,6 +62,8 @@
 
 .. autoclass:: mitsuba.core.Hierarchical2D3
 
+.. autoclass:: mitsuba.core.Int
+
 .. autoclass:: mitsuba.core.Int32
 
 .. autoclass:: mitsuba.core.Int64
@@ -68,11 +76,13 @@
 
 .. autoclass:: mitsuba.core.Logger
 
+.. autoclass:: mitsuba.core.Loop
+
 .. autofunction:: mitsuba.core.MTS_AUTHORS
 
-.. autofunction:: mitsuba.core.MTS_ENABLE_EMBREE
-
 .. autofunction:: mitsuba.core.MTS_ENABLE_CUDA
+
+.. autofunction:: mitsuba.core.MTS_ENABLE_EMBREE
 
 .. autofunction:: mitsuba.core.MTS_FILTER_RESOLUTION
 
@@ -146,7 +156,15 @@
 
 .. autoclass:: mitsuba.core.Point3u
 
+.. autoclass:: mitsuba.core.Point4f
+
+.. autoclass:: mitsuba.core.Point4i
+
+.. autoclass:: mitsuba.core.Point4u
+
 .. autoclass:: mitsuba.core.Properties
+
+.. autoclass:: mitsuba.core.PyObjectWrapper
 
 .. autoclass:: mitsuba.core.RadicalInverse
 
@@ -158,6 +176,10 @@
 
 .. autoclass:: mitsuba.core.Resampler
 
+.. autoclass:: mitsuba.core.ScalarBool
+
+.. autoclass:: mitsuba.core.ScalarColor0f
+
 .. autoclass:: mitsuba.core.ScalarColor1f
 
 .. autoclass:: mitsuba.core.ScalarColor3f
@@ -167,6 +189,8 @@
 .. autoclass:: mitsuba.core.ScalarFloat32
 
 .. autoclass:: mitsuba.core.ScalarFloat64
+
+.. autoclass:: mitsuba.core.ScalarInt
 
 .. autoclass:: mitsuba.core.ScalarInt32
 
@@ -206,9 +230,17 @@
 
 .. autoclass:: mitsuba.core.ScalarPoint3u
 
+.. autoclass:: mitsuba.core.ScalarPoint4f
+
+.. autoclass:: mitsuba.core.ScalarPoint4i
+
+.. autoclass:: mitsuba.core.ScalarPoint4u
+
 .. autoclass:: mitsuba.core.ScalarTransform3f
 
 .. autoclass:: mitsuba.core.ScalarTransform4f
+
+.. autoclass:: mitsuba.core.ScalarUInt
 
 .. autoclass:: mitsuba.core.ScalarUInt32
 
@@ -238,6 +270,12 @@
 
 .. autoclass:: mitsuba.core.ScalarVector3u
 
+.. autoclass:: mitsuba.core.ScalarVector4f
+
+.. autoclass:: mitsuba.core.ScalarVector4i
+
+.. autoclass:: mitsuba.core.ScalarVector4u
+
 .. autoclass:: mitsuba.core.ScopedSetThreadEnvironment
 
 .. autoclass:: mitsuba.core.Spectrum
@@ -250,6 +288,8 @@
 
 .. autoclass:: mitsuba.core.StructConverter
 
+.. autoclass:: mitsuba.core.TensorXf
+
 .. autoclass:: mitsuba.core.Thread
 
 .. autoclass:: mitsuba.core.ThreadEnvironment
@@ -260,13 +300,11 @@
 
 .. autoclass:: mitsuba.core.TraversalCallback
 
+.. autoclass:: mitsuba.core.UInt
+
 .. autoclass:: mitsuba.core.UInt32
 
 .. autoclass:: mitsuba.core.UInt64
-
-.. autofunction:: mitsuba.core.USE_EMBREE
-
-.. autofunction:: mitsuba.core.USE_OPTIX
 
 .. autoclass:: mitsuba.core.UnpolarizedSpectrum
 
@@ -294,6 +332,12 @@
 
 .. autoclass:: mitsuba.core.Vector3u
 
+.. autoclass:: mitsuba.core.Vector4f
+
+.. autoclass:: mitsuba.core.Vector4i
+
+.. autoclass:: mitsuba.core.Vector4u
+
 .. autoclass:: mitsuba.core.ZStream
 
 .. autofunction:: mitsuba.core.cast_object
@@ -306,7 +350,7 @@
 
 .. autofunction:: mitsuba.core.coordinate_system
 
-.. autofunction:: mitsuba.core.depolarize
+.. autofunction:: mitsuba.core.depolarizer
 
 .. autofunction:: mitsuba.core.filesystem.absolute
 
@@ -344,45 +388,13 @@
 
 .. autofunction:: mitsuba.core.is_spectral
 
+.. autofunction:: mitsuba.core.linear_rgb_rec
+
 .. autofunction:: mitsuba.core.luminance
-
-.. autofunction:: mitsuba.core.math.E
-
-.. autofunction:: mitsuba.core.math.Epsilon
-
-.. autofunction:: mitsuba.core.math.Infinity
-
-.. autofunction:: mitsuba.core.math.InvFourPi
-
-.. autofunction:: mitsuba.core.math.InvPi
-
-.. autofunction:: mitsuba.core.math.InvSqrtPi
-
-.. autofunction:: mitsuba.core.math.InvSqrtTwo
-
-.. autofunction:: mitsuba.core.math.InvSqrtTwoPi
-
-.. autofunction:: mitsuba.core.math.InvTwoPi
-
-.. autofunction:: mitsuba.core.math.Max
-
-.. autofunction:: mitsuba.core.math.Min
-
-.. autofunction:: mitsuba.core.math.OneMinusEpsilon
-
-.. autofunction:: mitsuba.core.math.Pi
 
 .. autofunction:: mitsuba.core.math.RayEpsilon
 
-.. autofunction:: mitsuba.core.math.RecipOverflow
-
 .. autofunction:: mitsuba.core.math.ShadowEpsilon
-
-.. autofunction:: mitsuba.core.math.SqrtPi
-
-.. autofunction:: mitsuba.core.math.SqrtTwo
-
-.. autofunction:: mitsuba.core.math.SqrtTwoPi
 
 .. autofunction:: mitsuba.core.math.chi2
 
@@ -422,6 +434,8 @@
 
 .. autofunction:: mitsuba.core.permute_kensler
 
+.. autofunction:: mitsuba.core.quad.chebyshev
+
 .. autofunction:: mitsuba.core.quad.composite_simpson
 
 .. autofunction:: mitsuba.core.quad.composite_simpson_38
@@ -436,6 +450,8 @@
 
 .. autofunction:: mitsuba.core.sample_tea_32
 
+.. autofunction:: mitsuba.core.sample_tea_64
+
 .. autofunction:: mitsuba.core.sample_tea_float
 
 .. autofunction:: mitsuba.core.sample_tea_float32
@@ -445,8 +461,6 @@
 .. autofunction:: mitsuba.core.sample_uniform_spectrum
 
 .. autofunction:: mitsuba.core.set_property
-
-.. autofunction:: mitsuba.core.set_thread_count
 
 .. autofunction:: mitsuba.core.sobol_2
 
@@ -470,7 +484,7 @@
 
 .. autofunction:: mitsuba.core.srgb_to_xyz
 
-.. autofunction:: mitsuba.core.unpolarized
+.. autofunction:: mitsuba.core.unpolarized_spectrum
 
 .. autofunction:: mitsuba.core.util.core_count
 
@@ -628,13 +642,13 @@
 
 .. autoclass:: mitsuba.render.SamplingIntegrator
 
+.. autoclass:: mitsuba.render.ScatteringIntegrator
+
 .. autoclass:: mitsuba.render.Scene
 
 .. autoclass:: mitsuba.render.Sensor
 
 .. autoclass:: mitsuba.render.Shape
-
-.. autoclass:: mitsuba.render.ShapeKDTree
 
 .. autoclass:: mitsuba.render.Spiral
 
@@ -643,6 +657,10 @@
 .. autoclass:: mitsuba.render.Texture
 
 .. autoclass:: mitsuba.render.TransportMode
+
+.. autoclass:: mitsuba.render.Volume
+
+.. autoclass:: mitsuba.render.VolumeGrid
 
 .. autofunction:: mitsuba.render.eval_reflectance
 
@@ -664,8 +682,6 @@
 
 .. autofunction:: mitsuba.render.mueller.linear_retarder
 
-.. autofunction:: mitsuba.render.mueller.reverse
-
 .. autofunction:: mitsuba.render.mueller.rotate_mueller_basis
 
 .. autofunction:: mitsuba.render.mueller.rotate_mueller_basis_collinear
@@ -685,6 +701,10 @@
 .. autofunction:: mitsuba.render.mueller.stokes_basis
 
 .. autofunction:: mitsuba.render.mueller.unit_angle
+
+.. autofunction:: mitsuba.render.parse_fov
+
+.. autofunction:: mitsuba.render.perspective_projection
 
 .. autofunction:: mitsuba.render.reflect
 
@@ -708,6 +728,28 @@
 
 .. autofunction:: mitsuba.render.srgb_model_mean
 
+.. autofunction:: mitsuba.python.math.rlgamma
+
+.. autoclass:: mitsuba.python.polvis.Bitmap
+
+.. autofunction:: mitsuba.python.polvis.Log
+
+.. autoclass:: mitsuba.python.polvis.LogLevel
+
+.. autoclass:: mitsuba.python.polvis.ScopedSetThreadEnvironment
+
+.. autoclass:: mitsuba.python.polvis.Struct
+
+.. autoclass:: mitsuba.python.polvis.Thread
+
+.. autoclass:: mitsuba.python.polvis.ThreadEnvironment
+
+.. autoclass:: mitsuba.python.polvis.ThreadPoolExecutor
+
+.. autofunction:: mitsuba.python.polvis.polvis
+
+.. autofunction:: mitsuba.python.polvis.te
+
 .. autofunction:: mitsuba.python.chi2.BSDFAdapter
 
 .. autoclass:: mitsuba.python.chi2.ChiSquareTest
@@ -724,27 +766,19 @@
 
 .. autoclass:: mitsuba.python.chi2.SphericalDomain
 
-.. autoclass:: mitsuba.python.util.ParameterMap
+.. autoclass:: mitsuba.python.util.Mapping
 
-.. autofunction:: mitsuba.python.util.is_differentiable
+.. autoclass:: mitsuba.python.util.SceneParameters
+
+.. autofunction:: mitsuba.python.util.contextmanager
+
+.. autofunction:: mitsuba.python.util.convert_to_bitmap
+
+.. autofunction:: mitsuba.python.util.suspend_gradients
 
 .. autofunction:: mitsuba.python.util.traverse
 
-.. autofunction:: mitsuba.python.math.rlgamma
-
-.. autoclass:: mitsuba.python.autodiff.Adam
-
-.. autoclass:: mitsuba.python.autodiff.Optimizer
-
-.. autoclass:: mitsuba.python.autodiff.SGD
-
-.. autofunction:: mitsuba.python.autodiff._render_helper
-
-.. autofunction:: mitsuba.python.autodiff.render
-
-.. autofunction:: mitsuba.python.autodiff.render_torch
-
-.. autofunction:: mitsuba.python.autodiff.write_bitmap
+.. autofunction:: mitsuba.python.util.write_bitmap
 
 .. autoclass:: mitsuba.python.xml.Files
 
@@ -754,15 +788,81 @@
 
 .. autofunction:: mitsuba.python.xml.dict_to_xml
 
+.. autoclass:: mitsuba.python.tonemap.Bitmap
+
+.. autofunction:: mitsuba.python.tonemap.Log
+
+.. autoclass:: mitsuba.python.tonemap.LogLevel
+
+.. autoclass:: mitsuba.python.tonemap.ScopedSetThreadEnvironment
+
+.. autoclass:: mitsuba.python.tonemap.Struct
+
+.. autoclass:: mitsuba.python.tonemap.Thread
+
+.. autoclass:: mitsuba.python.tonemap.ThreadEnvironment
+
+.. autoclass:: mitsuba.python.tonemap.ThreadPoolExecutor
+
+.. autofunction:: mitsuba.python.tonemap.te
+
+.. autofunction:: mitsuba.python.tonemap.tonemap
+
+.. autoclass:: mitsuba.python.test.util._empty
+
+.. autofunction:: mitsuba.python.test.util.check_vectorization
+
 .. autofunction:: mitsuba.python.test.util.fresolver_append_path
 
 .. autofunction:: mitsuba.python.test.util.getframeinfo
 
 .. autofunction:: mitsuba.python.test.util.make_tmpfile
 
+.. autofunction:: mitsuba.python.test.util.signature
+
 .. autofunction:: mitsuba.python.test.util.stack
 
 .. autofunction:: mitsuba.python.test.util.tmpfile
 
 .. autofunction:: mitsuba.python.test.util.wraps
+
+.. autofunction:: mitsuba.python.ad.torch.render_torch
+
+.. autoclass:: mitsuba.python.ad.optimizers.Adam
+
+.. autoclass:: mitsuba.python.ad.optimizers.Optimizer
+
+.. autoclass:: mitsuba.python.ad.optimizers.SGD
+
+.. autofunction:: mitsuba.python.ad.optimizers.contextmanager
+
+.. autoclass:: mitsuba.python.ad.optimizers.defaultdict
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.render_backward_impl
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_adjoint_impl
+
+.. autofunction:: mitsuba.python.ad.integrators.integrator.sample_sensor_rays
+
+.. autoclass:: mitsuba.python.ad.integrators.prbvolpath.PRBVolpathIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.index_spectrum
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.prbvolpath.sample_sensor_rays
+
+.. autoclass:: mitsuba.python.ad.integrators.prb.PRBIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.prb.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.prb.sample_sensor_rays
+
+.. autoclass:: mitsuba.python.ad.integrators.rb.RBIntegrator
+
+.. autofunction:: mitsuba.python.ad.integrators.rb.mis_weight
+
+.. autofunction:: mitsuba.python.ad.integrators.rb.sample_sensor_rays
 
