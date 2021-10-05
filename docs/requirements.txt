@@ -3,3 +3,4 @@ guzzle_sphinx_theme
 pygments-mathematica
 sphinxcontrib-bibtex<2.0.0
 pybtex
+nbsphinx
