@@ -84,7 +84,7 @@ if __name__ == "__main__":
     params.update()
     ek.eval()
 
-    with params.suspend_gradients():
+    with ek.suspend_grad():
         image = rb_integrator.render(scene, seed=0, spp=128)
         write_bitmap('image.exr', image)
 

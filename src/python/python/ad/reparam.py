@@ -61,8 +61,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters={},
                        num_auxiliary_rays: int=4,
                        kappa: float=1e5,
-                       power: float=3.0,
-                       forward_update_callback=None):
+                       power: float=3.0):
     """
     Reparameterize given ray by "attaching" the derivatives of its direction to
     moving geometry in the scene.
@@ -85,8 +84,6 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         def forward(self):
             from mitsuba.core import Float, UInt32, Vector3f, Loop
 
-            assert not forward_update_callback is None
-
             # Initialize some accumulators
             Z  = Float(0.0)
             dZ = Vector3f(0.0)
@@ -100,13 +97,10 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             loop.init()
 
             while loop(it < num_auxiliary_rays):
-                theta = Float(0.0)
-                forward_update_callback(theta)
                 Z_i, dZ_i, V_i, divergence_lhs_i = sample_warp_field(scene, sampler, self.ray, kappa, power, self.active)
 
-                ek.set_grad(theta, 1.0)
-                ek.enqueue(ek.ADMode.Forward, theta)
-                ek.traverse(Float, retain_graph=False)
+                ek.enqueue(ek.ADMode.Forward, params)
+                ek.traverse(Float, retain_graph=False, retain_grad=True)
 
                 Z  += Z_i
                 dZ += dZ_i
@@ -126,7 +120,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
 
             grad_direction, grad_divergence = self.grad_out()
 
-            with params.suspend_gradients():
+            with ek.suspend_grad():
                 # We need to trace the auxiliary rays a first time to compute the
                 # constants Z and dZ in order to properly weight the incoming gradients
                 Z       = Float(0.0)

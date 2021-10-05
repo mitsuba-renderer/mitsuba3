@@ -6,6 +6,54 @@ import mitsuba.python.util
 #        Default implementation for Integrator adjoint methods
 # -------------------------------------------------------------------
 
+def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
+                        scene: mitsuba.render.Scene,
+                        params: mitsuba.python.util.SceneParameters,
+                        image_adj: mitsuba.core.TensorXf,
+                        seed: int,
+                        sensor_index: int=0,
+                        spp: int=0) -> None:
+    """
+    Performs the adjoint phase of differentiable rendering by backpropagating
+    image gradients from the scene parameters to the film.
+
+    This method assumes params already contains some gradient.
+
+    The default implementation provided by this function relies on automatic
+    differentiation, which tends to be relatively inefficient due to the need
+    to track intermediate state of the program execution. More efficient
+    implementations are provided by special adjoint integrators like ``rb`` and
+    ``prb``.
+
+    Parameter ``scene``:
+        The scene to render
+
+    Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
+       SceneParameters data structure that will receive parameter gradients.
+
+    Parameter ``image_adj`` (``mitsuba.core.TensorXf``):
+        Gradient image that should be backpropagated.
+
+    Parameter ``seed` (``int``)
+        Seed value for the sampler.
+
+    Parameter ``sensor_index`` (``int``):
+        Optional parameter to specify which sensor to use for rendering.
+
+    Parameter ``spp`` (``int``):
+        Optional parameter to override the number of samples per pixel.
+        This parameter will be ignored if set to 0.
+    """
+    ek.enable_grad(params)
+    prev_flag = ek.flag(ek.JitFlag.LoopRecord)
+    ek.set_flag(ek.JitFlag.LoopRecord, False)
+    image = self.render(scene, seed, sensor_index, spp=spp)
+    ek.enqueue(ek.ADMode.Forward, params)
+    ek.traverse(mitsuba.core.Float, retain_graph=False)
+    ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
+    return ek.grad(image) * image_adj
+
+
 def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
                          scene: mitsuba.render.Scene,
                          params: mitsuba.python.util.SceneParameters,
@@ -48,50 +96,15 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     image = self.render(scene, seed, sensor_index, spp=spp)
     ek.set_grad(image, image_adj)
     ek.enqueue(ek.ADMode.Backward, image)
-    ek.traverse(mitsuba.core.Float)
+    ek.traverse(mitsuba.core.Float, retain_graph=False)
     ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
-
-
-def sample_adjoint_impl(self: mitsuba.render.SamplingIntegrator,
-                        scene: mitsuba.render.Scene,
-                        sampler: mitsuba.render.Sampler,
-                        ray: mitsuba.core.Ray3f,
-                        params: mitsuba.python.util.SceneParameters,
-                        grad: mitsuba.core.Spectrum,
-                        medium: mitsuba.render.Medium=None,
-                        active: mitsuba.core.Mask=True) -> None:
-    """
-    Propagate adjoint radiance along a ray.
-
-    Parameter ``scene``:
-        The underlying scene in which the adjoint radiance should be propagated
-
-    Parameter ``sampler``:
-        A source of (pseudo-/quasi-) random numbers
-
-    Parameter ``ray`` (``mitsuba.core.Ray3f``):
-        Rays along which the adjoint radiance should be propagated
-
-    Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
-        Scene parameters expecting gradients
-
-    Parameter ``grad`` (``mitsuba.core.Spectrum``):
-        Gradient value to be backpropagated
-
-    Parameter ``medium`` (``mitsuba.render.MediumPtr``):
-         If the ray starts inside a medium, this argument holds a pointer
-         to that medium
-    """
-
-    raise NotImplementedError(
-        "Integrator.sample_adjoint is not implemented!")
 
 
 # Bind adjoint methods to the integrator classes
 mitsuba.render.SamplingIntegrator.render_backward = render_backward_impl
-mitsuba.render.SamplingIntegrator.sample_adjoint = sample_adjoint_impl
+mitsuba.render.SamplingIntegrator.render_forward = render_forward_impl
 mitsuba.render.ScatteringIntegrator.render_backward = render_backward_impl
-mitsuba.render.ScatteringIntegrator.sample_adjoint = sample_adjoint_impl
+mitsuba.render.ScatteringIntegrator.render_forward = render_forward_impl
 
 
 # -------------------------------------------------------------
