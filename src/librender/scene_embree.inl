@@ -20,8 +20,8 @@ NAMESPACE_BEGIN(mitsuba)
 #define rtcIntersectW     JOIN(rtcIntersect, MTS_RAY_WIDTH)
 #define rtcOccludedW      JOIN(rtcOccluded,  MTS_RAY_WIDTH)
 
-static uint32_t __embree_threads = 0;
-static RTCDevice __embree_device = nullptr;
+static uint32_t embree_threads = 0;
+static RTCDevice embree_device = nullptr;
 
 template <typename Float>
 struct EmbreeState {
@@ -31,14 +31,18 @@ struct EmbreeState {
     DynamicBuffer<UInt32> shapes_registry_ids;
 };
 
+static void embree_error_callback(void * /*user_ptr */, RTCError code, const char *str) {
+    Log(Warn, "Embree device error %i: %s.", (int) code, str);
+}
+
 MTS_VARIANT void
 Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
-
-    if (!__embree_device) {
-        __embree_threads = std::max((uint32_t) 1, pool_size());
+    if (!embree_device) {
+        embree_threads = std::max((uint32_t) 1, pool_size());
         std::string config_str = tfm::format(
-            "threads=%i,user_threads=%i", __embree_threads, __embree_threads);
-        __embree_device = rtcNewDevice(config_str.c_str());
+            "threads=%i,user_threads=%i", embree_threads, embree_threads);
+        embree_device = rtcNewDevice(config_str.c_str());
+        rtcSetDeviceErrorFunction(embree_device, embree_error_callback, nullptr);
     }
 
     Timer timer;
@@ -46,7 +50,7 @@ Scene<Float, Spectrum>::accel_init_cpu(const Properties & /*props*/) {
     m_accel = new EmbreeState<Float>();
     EmbreeState<Float> &s = *(EmbreeState<Float> *) m_accel;
 
-    s.accel = rtcNewScene(__embree_device);
+    s.accel = rtcNewScene(embree_device);
     rtcSetSceneBuildQuality(s.accel, RTC_BUILD_QUALITY_HIGH);
     rtcSetSceneFlags(s.accel, RTC_SCENE_FLAG_NONE);
 
@@ -80,7 +84,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
     s.geometries.clear();
 
     for (Shape *shape : m_shapes) {
-        RTCGeometry geom = shape->embree_geometry(__embree_device);
+        RTCGeometry geom = shape->embree_geometry(embree_device);
         s.geometries.push_back(rtcAttachGeometry(s.accel, geom));
         rtcReleaseGeometry(geom);
     }
@@ -90,7 +94,7 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_parameters_changed_cpu() {
         ek::sync_thread();
 
     ek::parallel_for(
-        ek::blocked_range<size_t>(0, __embree_threads, 1),
+        ek::blocked_range<size_t>(0, embree_threads, 1),
         [&](const ek::blocked_range<size_t> &) {
             rtcJoinCommitScene(s.accel);
         }
