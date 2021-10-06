@@ -45,7 +45,9 @@ def pytest_runtest_makereport(item, call):
 def clean_up():
     '''
     Ensure no leftover instances from other tests are still in registry, wait
-    for all running kernels to finish and reset the JitFlag to default.
+    for all running kernels to finish and reset the JitFlag to default. Also
+    periodically frees the malloc cache to prevent the testcases from hogging
+    all system memory.
     '''
     gc.collect()
     gc.collect()

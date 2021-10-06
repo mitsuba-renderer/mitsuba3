@@ -143,7 +143,8 @@ def test_render(variant, scene_fname, jit_flags_key):
     mitsuba.set_variant(variant)
     from mitsuba.core import Bitmap
 
-    if hasattr(ek, 'JitFlag'):
+    if 'cuda' in variant or 'llvm' in variant:
+        ek.malloc_trim()
         for k, v in JIT_FLAG_OPTIONS[jit_flags_key].items():
             ek.set_flag(k, v)
 
