@@ -2,12 +2,13 @@
 #include <enoki-thread/thread.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
-#if defined(ENOKI_X86_AVX512)
+#if defined(ENOKI_DISABLE_VECTORIZATION)
+#  define MTS_RAY_WIDTH 1
+#elif defined(__AVX512F__)
 #  define MTS_RAY_WIDTH 16
-#elif defined(ENOKI_X86_AVX2)
+#elif defined(__AVX2__)
 #  define MTS_RAY_WIDTH 8
-#elif defined(ENOKI_X86_SSE42) || defined(ENOKI_ARM_NEON)
+#elif defined(__SSE4_2__) || defined(__ARM_NEON)
 #  define MTS_RAY_WIDTH 4
 #else
 #  error Expected to use vectorization
