@@ -69,7 +69,7 @@ public:
      * \brief Evaluate the density function of the \ref sample_spectrum()
      * method as a probability per unit wavelength (in units of 1/nm).
      *
-     * Not every implementation necessarily provides this function. The default
+     * Not every implementation necessarily overrides this function. The default
      * implementation throws an exception.
      *
      * \param si
@@ -181,6 +181,21 @@ public:
      * The default implementation returns <tt>(1, 1)</tt>
      */
     virtual ScalarVector2i resolution() const;
+
+    /**
+     * \brief Returns the resolution of the spectrum in nanometers (if discretized)
+     *
+     * Not every implementation necessarily provides this function. The default
+     * implementation throws an exception.
+     */
+    virtual ScalarFloat spectral_resolution() const;
+
+    /**
+     * \brief Returns the range of wavelengths covered by the spectrum
+     *
+     * The default implementation returns <tt>(MTS_CIE_MIN, MTS_CIE_MAX)</tt>
+     */
+    virtual ScalarVector2f wavelength_range() const;
 
     //! @}
     // ======================================================================

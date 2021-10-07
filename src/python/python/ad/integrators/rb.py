@@ -40,7 +40,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         block.set_offset(film.crop_offset())
         block.clear()
         block.put(pos, ray.wavelengths, grad_img, 1.0)
-        film.prepare(['R', 'G', 'B', 'A', 'W'])
+        film.prepare([])
         film.put(block)
         return film.develop()
 

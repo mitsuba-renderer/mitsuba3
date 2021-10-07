@@ -51,6 +51,15 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 
 MTS_VARIANT Film<Float, Spectrum>::~Film() {}
 
+MTS_VARIANT void Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum &/* spec */, const Wavelength &/* wavelengths */,
+                                                       Float* /* aovs */, Mask /* active */) const {
+    NotImplementedError("prepare_sample")
+}
+
+MTS_VARIANT const typename Film<Float, Spectrum>::Texture* Film<Float, Spectrum>::sensor_response_function() {
+        return m_srf.get();
+    }
+
 MTS_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2i &crop_offset,
                                                         const ScalarVector2i &crop_size) {
     if (ek::any(crop_offset < 0 || crop_size <= 0 || crop_offset + crop_size > m_size))

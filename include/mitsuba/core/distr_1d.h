@@ -463,6 +463,11 @@ public:
                  ek::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
+    /// Return the minimum resolution of the discretization
+    ScalarFloat interval_resolution() const {
+        return m_interval_size_scalar;
+    }
+
 private:
     void compute_cdf(const ScalarFloat *pdf, size_t size) {
         if (size < 2)
@@ -504,6 +509,7 @@ private:
         m_integral = ek::opaque<Float>(integral);
         m_normalization = ek::opaque<Float>(1. / integral);
         m_interval_size = ek::opaque<Float>(interval_size);
+        m_interval_size_scalar = interval_size;
         m_inv_interval_size = ek::opaque<Float>(1. / interval_size);
         m_cdf = ek::load<FloatStorage>(cdf.data(), size - 1);
     }
@@ -514,6 +520,7 @@ private:
     Float m_integral = 0.f;
     Float m_normalization = 0.f;
     Float m_interval_size = 0.f;
+    ScalarFloat m_interval_size_scalar = 0.f;
     Float m_inv_interval_size = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
     ScalarVector2u m_valid;
@@ -564,8 +571,7 @@ public:
     IrregularContinuousDistribution(const ScalarFloat *nodes,
                                     const ScalarFloat *pdf,
                                     size_t size)
-        : IrregularContinuousDistribution(ek::load<FloatStorage>(nodes, size),
-                                          ek::load<FloatStorage>(pdf, size)) {
+        : m_nodes(ek::load<FloatStorage>(nodes, size)), m_pdf(ek::load<FloatStorage>(pdf, size)) {
         compute_cdf(nodes, pdf, size);
     }
 
@@ -613,6 +619,12 @@ public:
 
     /// Is the distribution object empty/uninitialized?
     bool empty() const { return m_pdf.empty(); }
+
+    /// Return the range of the distribution
+    ScalarVector2f &range() { return m_range; }
+
+    /// Return the range of the distribution (const version)
+    const ScalarVector2f &range() const { return m_range; }
 
     /// Evaluate the unnormalized probability mass function (PDF) at position \c x
     Value eval_pdf(Value x, Mask active = true) const {
@@ -759,15 +771,23 @@ public:
                  ek::fmadd(t, y1 - y0, y0) * m_normalization };
     }
 
+    /**
+     * \brief Return the minimum resolution of the discretization
+     */
+    ScalarFloat interval_resolution() const {
+        return m_interval_size;
+    }
+
 private:
     void compute_cdf(const ScalarFloat *nodes, const ScalarFloat *pdf, size_t size) {
         if (size < 2)
             Throw("IrregularContinuousDistribution: needs at least two entries!");
 
+        m_interval_size = ek::Infinity<Float>;
         m_valid = (uint32_t) -1;
         m_range = ScalarVector2f(
-             ek::Infinity<Float>,
-            -ek::Infinity<Float>
+             ek::Infinity<ScalarFloat>,
+            -ek::Infinity<ScalarFloat>
         );
 
         double integral = 0.;
@@ -783,6 +803,8 @@ private:
 
             m_range.x() = ek::min(m_range.x(), (ScalarFloat) x0);
             m_range.y() = ek::max(m_range.y(), (ScalarFloat) x1);
+
+            m_interval_size = ek::min(m_interval_size, (ScalarFloat) x1 - (ScalarFloat) x0);
 
             integral += value;
             cdf[i] = (ScalarFloat) integral;
@@ -816,6 +838,7 @@ private:
     Float m_normalization = 0.f;
     ScalarVector2f m_range { 0.f, 0.f };
     ScalarVector2u m_valid;
+    ScalarFloat m_interval_size = 0.f;
 };
 
 template <typename Value>

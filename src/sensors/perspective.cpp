@@ -50,6 +50,10 @@ Perspective pinhole camera (:monosp:`perspective`)
  * - principal_point_offset_x, principal_point_offset_y
    - |float|
    - Specifies the position of the camera's principal point relative to the center of the film.
+ * - srf
+   - |spectrum|
+   - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
+     of the sensor (Default: :monosp:`none`)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_perspective.jpg
@@ -91,7 +95,8 @@ class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
-                    m_shutter_open_time, m_near_clip, m_far_clip)
+                    m_shutter_open_time, m_near_clip, m_far_clip,
+                    sample_wavelengths)
     MTS_IMPORT_TYPES()
 
     // =============================================================
@@ -154,7 +159,10 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
+        auto [wavelengths, wav_weight] =
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         Ray3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;
@@ -185,7 +193,10 @@ public:
                             const Point2f & /*aperture_sample*/, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
+        auto [wavelengths, wav_weight] =
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         RayDifferential3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;

@@ -40,6 +40,10 @@ Distant radiancemeter sensor (:monosp:`distant`)
      If a |point| is passed, rays will target it.
      If a shape plugin is passed, ray target points will be sampled from its
      surface.
+ * - srf
+   - |spectrum|
+   - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
+     of the sensor (Default: :monosp:`none`)
 
 This sensor plugin implements a distant directional sensor which records
 radiation leaving the scene in a given direction. It records the spectral
@@ -95,6 +99,7 @@ public:
     // instantiated.
     ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }
 
+
     template <RayTargetType TargetType>
     using Impl = DistantSensorImpl<Float, Spectrum, TargetType>;
 
@@ -128,7 +133,7 @@ protected:
 template <typename Float, typename Spectrum, RayTargetType TargetType>
 class DistantSensorImpl final : public Sensor<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Sensor, m_to_world, m_film)
+    MTS_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths)
     MTS_IMPORT_TYPES(Scene, Shape)
 
     DistantSensorImpl(const Properties &props) : Base(props) {
@@ -192,7 +197,9 @@ public:
 
         // Sample spectrum
         auto [wavelengths, wav_weight] =
-            sample_wavelength<Float, Spectrum>(wavelength_sample);
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         ray.wavelengths = wavelengths;
 
         // Sample ray origin

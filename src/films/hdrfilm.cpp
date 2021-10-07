@@ -95,7 +95,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset,
-                    m_high_quality_edges, m_filter)
+                    m_high_quality_edges, m_filter, m_flags)
     MTS_IMPORT_TYPES(ImageBlock)
 
     HDRFilm(const Properties &props) : Base(props) {
@@ -135,12 +135,11 @@ public:
             m_pixel_format = Bitmap::PixelFormat::XYZ;
         else if (pixel_format == "xyza")
             m_pixel_format = Bitmap::PixelFormat::XYZA;
-        else {
+        else
             Throw("The \"pixel_format\" parameter must either be equal to "
                   "\"luminance\", \"luminance_alpha\", \"rgb\", \"rgba\", "
                   " \"xyz\", \"xyza\". Found %s.",
                   pixel_format);
-        }
 
         if (component_format == "float16")
             m_component_format = Struct::Type::Float16;
@@ -148,11 +147,10 @@ public:
             m_component_format = Struct::Type::Float32;
         else if (component_format == "uint32")
             m_component_format = Struct::Type::UInt32;
-        else {
+        else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
                   " Found %s instead.", component_format);
-        }
 
         if (m_file_format == Bitmap::FileFormat::RGBE) {
             if (m_pixel_format != Bitmap::PixelFormat::RGB) {
@@ -179,32 +177,42 @@ public:
             }
         }
 
+        m_flags = +FilmFlags::None;
+
         props.mark_queried("banner"); // no banner in Mitsuba 2
     }
 
-    void prepare(const std::vector<std::string> &channels) override {
-        if (channels.size() < 5)
-            Throw("Film::prepare(): expects at least 5 channels (RGBAW)!");
+    size_t prepare(const std::vector<std::string> &channels) override {
+        std::vector<std::string> sorted = channels;
 
-        for (size_t i = 0; i < 5; ++i) {
-            if (channels[i] != std::string(1, "RGBAW"[i])) {
-                Throw("Film::prepare(): expects the first 5 channels to be RGBAW!");
-            }
+        // Add basic RGBAW channels to the film
+        for (size_t i = 0; i < 5; ++i)
+            sorted.insert(sorted.begin() + i, std::string(1, "RGBAW"[i]));
+
+        /* locked */ {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_storage = new ImageBlock(m_crop_size, sorted.size());
+            m_storage->set_offset(m_crop_offset);
+            m_storage->clear();
+            m_channels = sorted;
         }
 
-        std::vector<std::string> sorted = channels;
         std::sort(sorted.begin(), sorted.end());
         auto it = std::unique(sorted.begin(), sorted.end());
         if (it != sorted.end())
             Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
 
-        /* locked */ {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, channels.size());
-            m_storage->set_offset(m_crop_offset);
-            m_storage->clear();
-            m_channels = channels;
-        }
+        return m_channels.size();
+    }
+
+    ref<ImageBlock> create_storage(bool normalize, bool borders) override {
+        bool warn  = !ek::is_jit_array_v<Float> && (m_channels.size() <= 5) && !is_spectral_v<Spectrum>;
+        return new ImageBlock(m_crop_size, m_channels.size(),
+                              m_filter.get(),
+                              warn /* warn_negative */,
+                              warn /* warn_invalid */,
+                              borders || m_high_quality_edges /* border */,
+                              normalize /* normalize */);
     }
 
     void put(const ImageBlock *block) override {
@@ -314,13 +322,12 @@ public:
         } else {
             ref<Bitmap> source = bitmap();
 
-            // Convert to Float32 bitmap
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
                 channel_names.push_back(source->struct_()->operator[](i).name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
-                Struct::Type::Float32,
+                struct_type_v<ScalarFloat>,  // Convert to 'float' if single mode or 'double'
                 source->size(),
                 source->channel_count(),
                 channel_names);

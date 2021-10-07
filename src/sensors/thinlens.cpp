@@ -52,6 +52,10 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
    - |float|
    - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
      and :monosp:`far_clip=1e4` (i.e. :monosp:`10000`))
+ * - srf
+   - |spectrum|
+   - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
+     of the sensor (Default: :monosp:`none`)
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_thinlens_small_aperture.jpg
@@ -100,7 +104,7 @@ class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3, m_film, m_sampler,
                     m_resolution, m_shutter_open, m_shutter_open_time, m_near_clip,
-                    m_far_clip, m_focus_distance)
+                    m_far_clip, m_focus_distance, sample_wavelengths)
     MTS_IMPORT_TYPES()
 
     // =============================================================
@@ -158,7 +162,10 @@ public:
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
+        auto [wavelengths, wav_weight] =
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         Ray3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;
@@ -195,7 +202,10 @@ public:
                                  Mask active) const {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
+        auto [wavelengths, wav_weight] =
+            sample_wavelengths(ek::zero<SurfaceInteraction3f>(),
+                               wavelength_sample,
+                               active);
         RayDifferential3f ray;
         ray.time = time;
         ray.wavelengths = wavelengths;

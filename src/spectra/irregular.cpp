@@ -39,12 +39,12 @@ public:
 
             for (size_t i = 0; i < values_str.size(); ++i) {
                 try {
-                    wavelengths.push_back((ScalarFloat) std::stod(wavelengths_str[i]));
+                    wavelengths.push_back(string::stof<ScalarFloat>(wavelengths_str[i]));
                 } catch (...) {
                     Throw("Could not parse floating point value '%s'", wavelengths_str[i]);
                 }
                 try {
-                    values.push_back((ScalarFloat) std::stod(values_str[i]));
+                    values.push_back(string::stof<ScalarFloat>(values_str[i]));
                 } catch (...) {
                     Throw("Could not parse floating point value '%s'", values_str[i]);
                 }
@@ -54,12 +54,21 @@ public:
                 wavelengths.data(), values.data(), values.size()
             );
         } else {
-            size_t size = props.get<size_t>("size");
             // Scene/property parsing is in double precision, cast to single precision depending on variant.
-            using DataInput = DynamicBuffer<ek::replace_scalar_t<Float, Properties::Float>>;
-            auto wavelengths = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("wavelengths"), size));
-            auto values      = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("values"), size));
-            m_distr = IrregularContinuousDistribution<Wavelength>(wavelengths, values);
+            size_t size = props.get<size_t>("size");
+            const double *whl = static_cast<const double*>(props.pointer("wavelengths"));
+            const double *ptr = static_cast<const double*>(props.pointer("values"));
+
+            if constexpr (std::is_same_v<ScalarFloat, double>) {
+                m_distr = IrregularContinuousDistribution<Wavelength>(whl, ptr, size);
+            } else {
+                std::vector<ScalarFloat> values(size), wavelengths(size);
+                for (size_t i=0; i < size; ++i) {
+                    values[i] = ptr[i];
+                    wavelengths[i] = whl[i];
+                }
+                m_distr = IrregularContinuousDistribution<Wavelength>(wavelengths.data(), values.data(), size);
+            }
         }
     }
 
@@ -108,7 +117,16 @@ public:
     }
 
     Float mean() const override {
-        return m_distr.integral() / (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
+        ScalarVector2f range = m_distr.range();
+        return m_distr.integral() / (range[1] - range[0]);
+    }
+
+    ScalarVector2f wavelength_range() const override {
+        return m_distr.range();
+    }
+
+    ScalarFloat spectral_resolution() const override {
+        return m_distr.interval_resolution();
     }
 
     std::string to_string() const override {

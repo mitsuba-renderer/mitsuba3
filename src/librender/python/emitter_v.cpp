@@ -56,7 +56,7 @@ MTS_PY_EXPORT(Emitter) {
     auto emitter = py::class_<Emitter, PyEmitter, Endpoint, ref<Emitter>>(m, "Emitter", D(Emitter))
         .def(py::init<const Properties&>())
         .def_method(Emitter, is_environment)
-        .def_method(Emitter, flags)
+        .def_method(Emitter, flags, "active"_a = true)
         .def_property("m_flags",
             [](PyEmitter &emitter){ return emitter.m_flags; },
             [](PyEmitter &emitter, uint32_t flags){
