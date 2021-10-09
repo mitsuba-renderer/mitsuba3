@@ -26,6 +26,10 @@ public:
         PYBIND11_OVERRIDE_PURE(Return, Medium, get_scattering_coefficients, mi, active);
     }
 
+    UnpolarizedSpectrum get_radiance(const MediumInteraction3f &mi, Mask active = true) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_radiance, mi, active);
+    }
+
     std::string to_string() const override {
         PYBIND11_OVERRIDE_PURE(std::string, Medium, to_string, );
     }
@@ -41,12 +45,18 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
     cls.def("phase_function",
             [](Ptr ptr) { return ptr->phase_function(); },
             D(Medium, phase_function))
+        .def("emitter",
+            [](Ptr ptr) { return ptr->emitter(); },
+            D(Medium, emitter))
        .def("use_emitter_sampling",
             [](Ptr ptr) { return ptr->use_emitter_sampling(); },
             D(Medium, use_emitter_sampling))
        .def("is_homogeneous",
             [](Ptr ptr) { return ptr->is_homogeneous(); },
             D(Medium, is_homogeneous))
+       .def("is_emitter",
+            [](Ptr ptr) { return ptr->is_emitter(); },
+            D(Medium, is_emitter))
        .def("has_spectral_extinction",
             [](Ptr ptr) { return ptr->has_spectral_extinction(); },
             D(Medium, has_spectral_extinction))
@@ -55,6 +65,11 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->get_combined_extinction(mi, active); },
             "mi"_a, "active"_a=true,
             D(Medium, get_combined_extinction))
+       .def("get_radiance",
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
+                return ptr->get_radiance(mi, active); },
+            "mi"_a, "active"_a=true,
+            D(Medium, get_radiance))
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
                 return ptr->intersect_aabb(ray); },

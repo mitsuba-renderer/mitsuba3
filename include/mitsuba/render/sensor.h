@@ -60,6 +60,7 @@ public:
     virtual std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float sample1,
                             const Point2f &sample2, const Point2f &sample3,
+                            const Float &volume_sample,
                             Mask active = true) const;
 
     //! @}

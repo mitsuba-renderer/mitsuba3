@@ -37,6 +37,7 @@ def write_kernels(*args, output_dir='kernels', scene_fname=None):
                 f.write(ptx)
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize('integrator_name', ['rb', 'path'])
 def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
     """

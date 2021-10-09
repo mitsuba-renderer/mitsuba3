@@ -60,6 +60,9 @@ public:
     /// Return the precomputed maximum over the volume grid
     ScalarFloat max() const { return m_max; }
 
+    /// Returns whether the medium is spatially varying or not
+    bool is_spatially_varying() const { return true; };
+
     /// Set the precomputed maximum over the volume grid
     void set_max(ScalarFloat max) { m_max = max; }
 

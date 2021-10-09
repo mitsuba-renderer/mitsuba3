@@ -11,18 +11,19 @@ public:
 
     std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float sample1, const Point2f &sample2,
-           const Point2f &sample3, Mask active) const override {
+           const Point2f &sample3, const Float &volume_sample, Mask active) const override {
         using Return = std::pair<Ray3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_ray, time, sample1, sample2, sample3,
+        PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_ray, time, sample1, sample2, sample3, volume_sample,
                                active);
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
                      const Point2f &sample,
+                     const Float &volume_sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_direction, ref, sample, active);
+        PYBIND11_OVERRIDE_PURE(Return, Emitter, sample_direction, ref, sample, volume_sample, active);
     }
 
     Float pdf_direction(const Interaction3f &ref,
@@ -71,16 +72,16 @@ MTS_PY_EXPORT(Emitter) {
 
         cls.def("sample_ray",
                 [](EmitterPtr ptr, Float time, Float sample1, const Point2f &sample2,
-                const Point2f &sample3, Mask active) {
-                    return ptr->sample_ray(time, sample1, sample2, sample3, active);
+                const Point2f &sample3, const Float &volume_sample, Mask active) {
+                    return ptr->sample_ray(time, sample1, sample2, sample3, volume_sample, active);
                 },
-                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+                "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "volume_sample"_a = 0.0, "active"_a = true,
                 D(Endpoint, sample_ray))
         .def("sample_direction",
-                [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, Mask active) {
-                return ptr->sample_direction(it, sample, active);
+                [](EmitterPtr ptr, const Interaction3f &it, const Point2f &sample, const Float &volume_sample, Mask active) {
+                return ptr->sample_direction(it, sample, volume_sample, active);
                 },
-                "it"_a, "sample"_a, "active"_a = true,
+                "it"_a, "sample"_a, "volume_sample"_a = 0.0, "active"_a = true,
                 D(Endpoint, sample_direction))
         .def("pdf_direction",
                 [](EmitterPtr ptr, const Interaction3f &it, const DirectionSample3f &ds, Mask active) {

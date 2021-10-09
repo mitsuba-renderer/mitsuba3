@@ -184,7 +184,8 @@ public:
     std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float wavelength_sample,
                     const Point2f & /*film_sample*/,
-                    const Point2f &aperture_sample, Mask active) const override {
+                    const Point2f &aperture_sample,
+                    const Float &/*volume_sample*/, Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
         Ray3f ray;
@@ -226,14 +227,15 @@ public:
 
     std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
         Float time, Float wavelength_sample, const Point2f &film_sample,
-        const Point2f &aperture_sample, Mask active) const override {
+        const Point2f &aperture_sample, const Float &/*volume_sample*/,
+        Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         RayDifferential3f ray;
         Spectrum ray_weight;
 
         std::tie(ray, ray_weight) = sample_ray(
-            time, wavelength_sample, film_sample, aperture_sample, active);
+            time, wavelength_sample, film_sample, aperture_sample, ek::zero<Float>(), active);
 
         // Since the film size is always 1x1, we don't have differentials
         ray.has_differentials = false;

@@ -11,26 +11,28 @@ public:
 
     std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float sample1, const Point2f &sample2,
-           const Point2f &sample3, Mask active) const override {
+           const Point2f &sample3, const Float &volume_sample = 0.0f, Mask active = true) const override {
         using Return = std::pair<Ray3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3,
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray, time, sample1, sample2, sample3, volume_sample,
                                active);
     }
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
-                            const Point2f &sample3, Mask active) const override {
+                            const Point2f &sample3, const Float &volume_sample, 
+                            Mask active) const override {
         using Return = std::pair<RayDifferential3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3,
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_ray_differential, time, sample1, sample2, sample3, volume_sample,
                                active);
     }
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
                      const Point2f &sample,
+                     const Float &volume_sample,
                      Mask active) const override {
         using Return = std::pair<DirectionSample3f, Spectrum>;
-        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_direction, ref, sample, active);
+        PYBIND11_OVERRIDE_PURE(Return, Sensor, sample_direction, ref, sample, volume_sample, active);
     }
 
     Float pdf_direction(const Interaction3f &ref,
@@ -59,7 +61,7 @@ MTS_PY_EXPORT(Sensor) {
     py::class_<Sensor, PySensor, Endpoint, ref<Sensor>>(m, "Sensor", D(Sensor))
         .def(py::init<const Properties&>())
         .def("sample_ray_differential", &Sensor::sample_ray_differential,
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true)
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "volume_sample"_a = 0.0f, "active"_a = true)
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)

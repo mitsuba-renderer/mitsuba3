@@ -123,6 +123,7 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &spatial_sample,
                                           const Point2f & /*dir_sample*/,
+                                          const Float &/*volume_sample*/,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -146,6 +147,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum> sample_direction(const Interaction3f &it,
                                                             const Point2f &/*sample*/,
+                                                            const Float &/*volume_sample*/,
                                                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
@@ -187,6 +189,7 @@ public:
 
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f & /*sample*/,
+                    const Float &/*volume_sample*/,
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 

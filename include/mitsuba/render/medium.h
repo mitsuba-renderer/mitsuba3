@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Medium : public Object {
 public:
-    MTS_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MTS_IMPORT_TYPES(PhaseFunction, Emitter, Sampler, Scene, Texture);
 
     /// Intersets a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -28,6 +28,12 @@ public:
                        UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active = true) const = 0;
+
+    /// Returns the medium radiance evaluated
+    /// at a given MediumInteraction mi
+    virtual UnpolarizedSpectrum
+    get_radiance(const MediumInteraction3f &mi,
+                 Mask active = true) const = 0;
 
     /**
      * \brief Sample a free-flight distance in the medium.
@@ -74,11 +80,20 @@ public:
         return m_phase_function.get();
     }
 
+    /// Return the volume emitter associated with this shape (if any)
+    Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
+
+    /// Return the volume emitter associated with this shape (if any)
+    const Emitter *emitter(Mask /*unused*/ = true) const { return m_emitter.get(); }
+    
     /// Returns whether this specific medium instance uses emitter sampling
     MTS_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
     /// Returns whether this medium is homogeneous
     MTS_INLINE bool is_homogeneous() const { return m_is_homogeneous; }
+
+    /// Returns whether this medium is emitting
+    MTS_INLINE bool is_emitter() const { return m_emitter.get() != nullptr; }
 
     /// Returns whether this medium has a spectrally varying extinction
     MTS_INLINE bool has_spectral_extinction() const {
@@ -104,6 +119,7 @@ protected:
 
 protected:
     ref<PhaseFunction> m_phase_function;
+    ref<Emitter> m_emitter;
     bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
 
     /// Identifier (if available)
@@ -119,10 +135,13 @@ NAMESPACE_END(mitsuba)
 
 ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Medium)
     ENOKI_VCALL_GETTER(phase_function, const typename Class::PhaseFunction*)
+    ENOKI_VCALL_GETTER(emitter, const typename Class::Emitter*)
     ENOKI_VCALL_GETTER(use_emitter_sampling, bool)
     ENOKI_VCALL_GETTER(is_homogeneous, bool)
+    ENOKI_VCALL_GETTER(is_emitter, bool)
     ENOKI_VCALL_GETTER(has_spectral_extinction, bool)
     ENOKI_VCALL_METHOD(get_combined_extinction)
+    ENOKI_VCALL_METHOD(get_radiance)
     ENOKI_VCALL_METHOD(intersect_aabb)
     ENOKI_VCALL_METHOD(sample_interaction)
     ENOKI_VCALL_METHOD(eval_tr_and_pdf)

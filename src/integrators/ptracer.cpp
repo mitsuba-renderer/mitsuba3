@@ -114,7 +114,7 @@ public:
                                 sensor->world_transform().translation());
 
             auto [ds, dir_weight] = emitter->sample_direction(
-                ref_it, sampler->next_2d(active), active_e);
+                ref_it, sampler->next_2d(active), ek::zero<Float>(), active_e);
             /* Note: `dir_weight` already includes the emitter radiance, but
             * that will be accounted for again when sampling the wavelength
             * below. Instead, we recompute just the factor due to the PDF.
@@ -128,7 +128,7 @@ public:
         active_e = active && !is_infinite;
         if (ek::any_or<true>(active_e)) {
             auto [ps, pos_weight] =
-                emitter->sample_position(time, sampler->next_2d(active), active_e);
+                emitter->sample_position(time, sampler->next_2d(active), ek::zero<Float>(), active_e);
             emitter_weight[active_e] = pos_weight;
             si[active_e] = SurfaceInteraction3f(ps, ek::zero<Wavelength>());
         }
@@ -137,7 +137,7 @@ public:
         * Query sensor for a direction connecting to `si.p`. This also gives
         * us UVs on the sensor (for splatting). The resulting direction points
         * from si.p (on the emitter) toward the sensor. */
-        auto [sensor_ds, sensor_weight] = sensor->sample_direction(si, sampler->next_2d(), active);
+        auto [sensor_ds, sensor_weight] = sensor->sample_direction(si, sampler->next_2d(), ek::zero<Float>(), active);
         si.wi = sensor_ds.d;
 
         // 5. Sample spectrum of the emitter (accounts for its radiance)
@@ -170,7 +170,7 @@ public:
         Point2f position_sample  = sampler->next_2d(active);
         // Sample one ray from an emitter in the scene.
         auto [ray, ray_weight, emitter] = scene->sample_emitter_ray(
-            time, wavelength_sample, direction_sample, position_sample, active);
+            time, wavelength_sample, direction_sample, position_sample, ek::zero<Float>(), active);
         return std::make_pair(ray, ray_weight);
     }
 
@@ -221,7 +221,7 @@ public:
             // Connect to sensor and splat if successful.
             // Sample a direction from the sensor to the current surface point.
             auto [sensor_ds, sensor_weight] =
-                sensor->sample_direction(si, sampler->next_2d(), active);
+                sensor->sample_direction(si, sampler->next_2d(), ek::zero<Float>(), active);
             connect_sensor(scene, si, sensor_ds, bsdf,
                            throughput * sensor_weight, block, active);
 

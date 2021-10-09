@@ -152,7 +152,7 @@ public:
 
             if (likely(ek::any_or<true>(active_e))) {
                 auto [ds, emitter_val] = scene->sample_emitter_direction(
-                    si, sampler->next_2d(active_e), true, active_e);
+                    si, sampler->next_2d(active_e), ek::zero<Float>(), true, active_e);
                 active_e &= ek::neq(ds.pdf, 0.f);
 
                 // Query the BSDF for that emitter-sampled direction

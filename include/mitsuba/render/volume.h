@@ -55,6 +55,9 @@ public:
      */
     virtual ScalarVector3i resolution() const;
 
+    /// Returns whether the medium is spatially varying or not
+    virtual bool is_spatially_varying() const;
+
     //! @}
     // ======================================================================
 

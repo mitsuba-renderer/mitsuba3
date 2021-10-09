@@ -79,11 +79,12 @@ public:
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2, const Point2f &sample3,
+                                          const Float &/*volume_sample*/, 
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         // 1. Sample spatial component
-        auto [ps, pos_weight] = sample_position(time, sample2, active);
+        auto [ps, pos_weight] = sample_position(time, sample2, ek::zero<Float>(), active);
 
         // 2. Sample directional component
         Vector3f local = warp::square_to_cosine_hemisphere(sample3);
@@ -101,7 +102,8 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     const Float &/*volume_sample*/,  Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         DirectionSample3f ds;
@@ -154,6 +156,7 @@ public:
 
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f &sample,
+                    const Float &/*volume_sample*/, 
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
         Assert(m_shape, "Cannot sample from an area emitter without an associated Shape.");

@@ -45,6 +45,7 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2,
                                           const Point2f & /*sample3*/,
+                                          const Float &/*volume_sample*/,
                                           Mask active) const override {
         // 1. Sample spatial component
         PositionSample3f ps = m_shape->sample_position(time, sample2);
@@ -73,6 +74,7 @@ public:
      */
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f & /*it*/, const Point2f & /*sample*/,
+                     const Float &/*volume_sample*/,
                      Mask /*active*/) const override {
         return { ek::zero<DirectionSample3f>(), ek::zero<Spectrum>() };
     }
@@ -85,6 +87,7 @@ public:
 
     std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f &sample,
+                    const Float &/*volume_sample*/,
                     Mask active) const override {
         Assert(m_shape, "Can't sample from an area emitter without an associated Shape.");
         PositionSample3f ps = m_shape->sample_position(time, sample, active);

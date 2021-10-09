@@ -12,10 +12,10 @@ MTS_PY_EXPORT(Endpoint) {
     MTS_PY_IMPORT_TYPES()
     MTS_PY_CLASS(Endpoint, Object)
         .def("sample_ray", &Endpoint::sample_ray,
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
+            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "volume_sample"_a = 0.0f, "active"_a = true,
             D(Endpoint, sample_ray))
         .def("sample_direction", &Endpoint::sample_direction,
-            "it"_a, "sample"_a, "active"_a = true, D(Endpoint, sample_direction))
+            "it"_a, "sample"_a, "volume_sample"_a = 0.0f, "active"_a = true, D(Endpoint, sample_direction))
         .def("pdf_direction", &Endpoint::pdf_direction,
             "it"_a, "ds"_a, "active"_a = true, D(Endpoint, pdf_direction))
         .def("eval", &Endpoint::eval,

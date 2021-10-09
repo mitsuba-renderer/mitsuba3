@@ -67,10 +67,17 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
                 if (m_interior_medium)
                     Throw("Only a single interior medium can be specified per shape.");
                 m_interior_medium = medium;
+                if (m_interior_medium->is_emitter()) {
+                    if (m_emitter)
+                        Throw("Only a single Emitter can be specified per shape");
+                    m_emitter = m_interior_medium->emitter();
+                }
             } else if (name == "exterior") {
                 if (m_exterior_medium)
                     Throw("Only a single exterior medium can be specified per shape.");
                 m_exterior_medium = medium;
+                if (m_exterior_medium->is_emitter())
+                    Throw("The exterior medium of a shape cannot be emissive");
             }
         } else {
             continue;

@@ -140,7 +140,7 @@ public:
                 DirectionSample3f ds;
                 Spectrum emitter_val;
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(active_e), true, active_e);
+                    si, sampler->next_2d(active_e), ek::zero<Float>(), true, active_e);
                 active_e &= ek::neq(ds.pdf, 0.f);
                 if (ek::none_or<false>(active_e))
                     continue;

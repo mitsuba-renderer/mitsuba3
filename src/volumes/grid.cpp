@@ -476,6 +476,8 @@ public:
 
     ScalarFloat max() const override { return m_max; }
 
+    bool is_spatially_varying() const override { return true; }
+
     ScalarVector3i resolution() const override {
         auto shape = m_data.shape();
         return { (int) shape[2], (int) shape[1], (int) shape[0] };

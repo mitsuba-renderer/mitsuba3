@@ -103,7 +103,7 @@ MTS_PY_EXPORT(Scene) {
             &Scene::sample_emitter, "sample"_a, "active"_a = true)
         .def("sample_emitter_direction",
             &Scene::sample_emitter_direction,
-            "ref"_a, "sample"_a, "test_visibility"_a = true, "active"_a = true)
+            "ref"_a, "sample"_a, "volume_sample"_a, "test_visibility"_a = true, "active"_a = true)
         .def("pdf_emitter",
             &Scene::pdf_emitter, "index"_a, "active"_a = true)
         .def("pdf_emitter_direction",

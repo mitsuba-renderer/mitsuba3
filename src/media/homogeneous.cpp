@@ -107,7 +107,8 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, 
+                    m_phase_function, m_emitter)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -134,6 +135,24 @@ public:
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
         return eval_sigmat(mi, active) & active;
+    }
+
+    UnpolarizedSpectrum
+    get_radiance(const MediumInteraction3f & mi,
+                 Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        if (m_emitter) {
+            SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+            si.t = mi.t;
+            si.time = mi.time;
+            si.wavelengths = mi.wavelengths;
+            si.p = mi.p;
+            si.sh_frame = mi.sh_frame;
+            si.wi = mi.wi;
+            return unpolarized_spectrum<Spectrum>(m_emitter->eval(si, active));
+        } else {
+            return ek::zero<UnpolarizedSpectrum>();
+        }
     }
 
     std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>

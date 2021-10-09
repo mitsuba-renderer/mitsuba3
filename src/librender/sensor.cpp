@@ -58,10 +58,11 @@ MTS_VARIANT Sensor<Float, Spectrum>::~Sensor() {}
 
 MTS_VARIANT std::pair<typename Sensor<Float, Spectrum>::RayDifferential3f, Spectrum>
 Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, const Point2f &sample2,
-                                                 const Point2f &sample3, Mask active) const {
+                                                 const Point2f &sample3, const Float &volume_sample, 
+                                                 Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-    auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, active);
+    auto [temp_ray, result_spec] = sample_ray(time, sample1, sample2, sample3, volume_sample, active);
 
     RayDifferential result_ray(temp_ray);
 
@@ -69,13 +70,13 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
     Vector2f dy(0.f, 1.f / m_resolution.y());
 
     // Sample a result_ray for X+1
-    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dx, sample3, active);
+    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dx, sample3, volume_sample, active);
 
     result_ray.o_x = temp_ray.o;
     result_ray.d_x = temp_ray.d;
 
     // Sample a result_ray for Y+1
-    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dy, sample3, active);
+    std::tie(temp_ray, std::ignore) = sample_ray(time, sample1, sample2 + dy, sample3, volume_sample, active);
 
     result_ray.o_y = temp_ray.o;
     result_ray.d_y = temp_ray.d;

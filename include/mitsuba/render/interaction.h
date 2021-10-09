@@ -123,6 +123,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     using Index            = typename CoreAliases::UInt32;
     using PositionSample3f = typename RenderAliases::PositionSample3f;
+    using MediumInteraction3f = typename RenderAliases::MediumInteraction3f;
 
     //! @}
     // =============================================================
@@ -177,6 +178,18 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         : Base(0.f, ps.time, wavelengths, ps.p, ps.n), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
           duv_dx(0), duv_dy(0), wi(0), prim_index(0) {}
+
+    /**
+     * Construct from a Medium interaction.
+     * Unavailable fields such as `wi` and the partial derivatives are left
+     * uninitialized.
+     * The `shape` pointer is left uninitialized because we can't guarantee that
+     * the given \ref PositionSample::object points to a Shape instance.
+     */
+    explicit SurfaceInteraction(const MediumInteraction3f &mi)
+        : Base(mi.t, mi.time, mi.wavelengths, mi.p, mi.n), uv(mi.uv),
+          sh_frame(mi.sh_frame), wi(mi.wi), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
+          duv_dx(0), duv_dy(0), prim_index(0) {}
 
     /// Initialize local shading frame using Gram-schmidt orthogonalization
     void initialize_sh_frame() {
@@ -409,6 +422,8 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     MTS_IMPORT_RENDER_BASIC_TYPES()
     MTS_IMPORT_OBJECT_TYPES()
     using Index = typename CoreAliases::UInt32;
+    using PositionSample3f = typename RenderAliases::PositionSample3f;
+    using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
 
     // Make parent fields/functions visible
     MTS_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
@@ -429,7 +444,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     /// Incident direction in the local shading frame
     Vector3f wi;
 
-    UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, combined_extinction;
+    UnpolarizedSpectrum sigma_s, sigma_n, sigma_t, radiance, combined_extinction;
 
     /// mint used when sampling the given distance "t".
     Float mint;
@@ -440,6 +455,27 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
     //! @{ \name Methods
     // =============================================================
+
+    /**
+     * Construct from a surface interaction.
+     * The `medium` pointer is left uninitialized
+     */
+    explicit MediumInteraction(const SurfaceInteraction3f &si)
+        : Base(si.t, si.time, si.wavelengths, si.p, si.n), sh_frame(si.sh_frame), 
+          wi(si.wi), sigma_s(0), sigma_n(0), sigma_t(0),
+          radiance(0), combined_extinction(0), mint(0) {}
+
+    /**
+     * Construct from a position sample.
+     * Unavailable fields such as `wi` and the sigma_* are left
+     * uninitialized.
+     * The `medium` pointer is left uninitialized
+     */
+    explicit MediumInteraction(const PositionSample3f &ps,
+                               const Wavelength &wavelengths)
+        : Base(0.f, ps.time, wavelengths, ps.p, ps.n),
+          sh_frame(Frame3f(ps.n)), wi(0), sigma_s(0), sigma_n(0), sigma_t(0),
+          radiance(0), combined_extinction(0), mint(0) { }
 
 
     /// Convert a local shading-space vector into world space
@@ -452,11 +488,17 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
         return sh_frame.to_local(v);
     }
 
+    /**
+     * Return the emitter associated with the intersection (if any)
+     * \note Defined in scene.h
+     */
+    EmitterPtr emitter(const Scene *scene, Mask active = true) const;
+
     //! @}
     // =============================================================
 
     ENOKI_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
-                 sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                 sh_frame, wi, sigma_s, sigma_n, sigma_t, radiance,
                  combined_extinction, mint)
 };
 

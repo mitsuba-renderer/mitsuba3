@@ -217,6 +217,7 @@ MTS_VARIANT std::tuple<typename Scene<Float, Spectrum>::Ray3f, Spectrum,
 Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
                                            const Point2f &sample2,
                                            const Point2f &sample3,
+                                           const Float &volume_sample,
                                            Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterRay, active);
 
@@ -230,7 +231,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
 
     // Note that the sampling weight includes emitted radiance.
     auto [ray, ray_weight] =
-        emitter->sample_ray(time, sample1, sample2, sample3, active);
+        emitter->sample_ray(time, sample1, sample2, sample3, volume_sample, active);
 
     return { ray, emitter_weight * ray_weight, emitter };
 }
@@ -254,10 +255,12 @@ Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
 
 MTS_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
+                                                 const Float &volume_sample_,
                                                  bool test_visibility, Mask active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
     Point2f sample(sample_);
+    Float volume_sample(volume_sample_);
     DirectionSample3f ds;
     Spectrum spec;
 
@@ -269,7 +272,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
         // Sample a direction towards the emitter
         EmitterPtr emitter = ek::gather<EmitterPtr>(m_emitters_ek, index, active);
-        std::tie(ds, spec) = emitter->sample_direction(ref, sample, active);
+        std::tie(ds, spec) = emitter->sample_direction(ref, sample, volume_sample, active);
 
         // Account for the discrete probability of sampling this emitter
         ds.pdf *= pdf_emitter(index, active);

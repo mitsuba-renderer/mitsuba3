@@ -7,6 +7,7 @@ MTS_PY_EXPORT(Volume) {
         .def_method(Volume, resolution)
         .def_method(Volume, bbox)
         .def_method(Volume, max)
+        .def_method(Volume, is_spatially_varying)
         .def("eval", &Volume::eval, "it"_a, "active"_a = true, D(Volume, eval))
         .def("eval_1", &Volume::eval_1, "it"_a, "active"_a = true,
              D(Volume, eval_1))

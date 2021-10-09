@@ -146,7 +146,7 @@ public:
      */
     std::tuple<Ray3f, Spectrum, const EmitterPtr>
     sample_emitter_ray(Float time, Float sample1, const Point2f &sample2,
-                       const Point2f &sample3, Mask active = true) const;
+                       const Point2f &sample3, const Float &volume_sample, Mask active = true) const;
 
     /**
      * \brief Direct illumination sampling routine
@@ -175,6 +175,7 @@ public:
     std::pair<DirectionSample3f, Spectrum>
     sample_emitter_direction(const Interaction3f &ref,
                              const Point2f &sample,
+                             const Float &volume_sample,
                              bool test_visibility = true,
                              Mask active = true) const;
 
@@ -326,6 +327,21 @@ SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) co
     } else {
         Mask valid = is_valid();
         return ek::select(valid, shape->emitter(active && valid), scene->environment());
+    }
+}
+
+// See interaction.h
+template <typename Float, typename Spectrum>
+typename MediumInteraction<Float, Spectrum>::EmitterPtr
+MediumInteraction<Float, Spectrum>::emitter(const Scene * /*scene*/, Mask active) const {
+    if constexpr (!ek::is_array_v<ShapePtr>) {
+        if (is_valid())
+            return medium->emitter(active);
+        else
+            return nullptr;
+    } else {
+        Mask valid = is_valid();
+        return ek::select(valid, medium->emitter(active && valid), nullptr);
     }
 }
 

@@ -157,6 +157,7 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &sample2,
                                           const Point2f &sample3,
+                                          const Float &/*volume_sample*/,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -199,7 +200,8 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     const Float &/*volume_sample*/, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
@@ -272,6 +274,7 @@ public:
 
     std::pair<PositionSample3f, Float>
     sample_position(Float /*time*/, const Point2f & /*sample*/,
+                    const Float &/*volume_sample*/,
                     Mask /*active*/) const override {
         if constexpr (ek::is_jit_array_v<Float>) {
             // When vcalls are recorded in symbolic mode, we can't throw an exception,

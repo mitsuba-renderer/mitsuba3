@@ -151,6 +151,7 @@ public:
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &position_sample,
                                           const Point2f & /*aperture_sample*/,
+                                          const Float &/*volume_sample*/,
                                           Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -182,7 +183,8 @@ public:
 
     std::pair<RayDifferential3f, Spectrum>
     sample_ray_differential(Float time, Float wavelength_sample, const Point2f &position_sample,
-                            const Point2f & /*aperture_sample*/, Mask active) const override {
+                            const Point2f & /*aperture_sample*/, const Float &/*volume_sample*/,
+                            Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         auto [wavelengths, wav_weight] = sample_wavelength<Float, Spectrum>(wavelength_sample);
@@ -219,6 +221,7 @@ public:
 
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
+                     const Float &/*volume_sample*/,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
         Transform4f trafo = m_to_world.value();

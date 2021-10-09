@@ -3679,6 +3679,8 @@ static const char *__doc_mitsuba_Medium_get_scattering_coefficients =
 R"doc(Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
 at a given MediumInteraction mi)doc";
 
+static const char *__doc_mitsuba_Medium_get_radiance = R"doc(Returns the medium's radiance evaluated at a given MediumInteraction)doc";
+
 static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
 
 static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
@@ -3687,13 +3689,19 @@ static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc(Intersets a ray w
 
 static const char *__doc_mitsuba_Medium_is_homogeneous = R"doc(Returns whether this medium is homogeneous)doc";
 
+static const char *__doc_mitsuba_Medium_is_emitter = R"doc(Returns whether this medium is emissive)doc";
+
 static const char *__doc_mitsuba_Medium_m_has_spectral_extinction = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_m_id = R"doc(Identifier (if available))doc";
 
 static const char *__doc_mitsuba_Medium_m_is_homogeneous = R"doc()doc";
 
+static const char *__doc_mitsuba_Medium_m_is_emitter = R"doc()doc";
+
 static const char *__doc_mitsuba_Medium_m_phase_function = R"doc()doc";
+
+static const char *__doc_mitsuba_Medium_m_emitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_m_sample_emitters = R"doc()doc";
 
@@ -3706,6 +3714,8 @@ static const char *__doc_mitsuba_Medium_operator_new = R"doc()doc";
 static const char *__doc_mitsuba_Medium_operator_new_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_phase_function = R"doc(Return the phase function of this medium)doc";
+
+static const char *__doc_mitsuba_Medium_emitter = R"doc(Return the emitter of this medium)doc";
 
 static const char *__doc_mitsuba_Medium_sample_interaction =
 R"doc(Sample a free-flight distance in the medium.
@@ -8445,6 +8455,8 @@ static const char *__doc_mitsuba_VolumeGrid_m_size = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_max = R"doc(Return the precomputed maximum over the volume grid)doc";
 
+static const char *__doc_mitsuba_VolumeGrid_is_spatially_varying = R"doc(Return whether the volume is spatially varying)doc";
+
 static const char *__doc_mitsuba_VolumeGrid_read = R"doc()doc";
 
 static const char *__doc_mitsuba_VolumeGrid_set_max = R"doc(Set the precomputed maximum over the volume grid)doc";
@@ -8495,6 +8507,8 @@ static const char *__doc_mitsuba_Volume_m_bbox = R"doc(Bounding box)doc";
 static const char *__doc_mitsuba_Volume_m_to_local = R"doc(Used to bring points in world coordinates to local coordinates.)doc";
 
 static const char *__doc_mitsuba_Volume_max = R"doc(Returns the maximum value of the volume over all dimensions.)doc";
+
+static const char *__doc_mitsuba_Volume_is_spatially_varying = R"doc(Returns whether the volume is spatially varying.)doc";
 
 static const char *__doc_mitsuba_Volume_resolution =
 R"doc(Returns the resolution of the volume, assuming that it is based on a

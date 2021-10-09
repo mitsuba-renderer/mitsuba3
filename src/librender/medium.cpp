@@ -13,10 +13,17 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
 
     for (auto &[name, obj] : props.objects(false)) {
         auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
+        auto *emitter = dynamic_cast<Emitter *>(obj.get());
         if (phase) {
             if (m_phase_function)
                 Throw("Only a single phase function can be specified per medium");
             m_phase_function = phase;
+            props.mark_queried(name);
+        }
+        if (emitter) {
+            if (m_emitter)
+                Throw("Only a single emitter child object can be specified per volume.");
+            m_emitter = emitter;
             props.mark_queried(name);
         }
     }
@@ -29,6 +36,7 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
     m_sample_emitters = props.bool_("sample_emitters", true);
     ek::set_attr(this, "use_emitter_sampling", m_sample_emitters);
     ek::set_attr(this, "phase_function", m_phase_function.get());
+    ek::set_attr(this, "emitter", m_emitter.get());
 }
 
 MTS_VARIANT Medium<Float, Spectrum>::~Medium() {}
@@ -74,6 +82,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
         get_scattering_coefficients(mi, valid_mi);
     mi.combined_extinction = combined_extinction;
+    mi.radiance            = get_radiance(mi, valid_mi);
     return mi;
 }
 

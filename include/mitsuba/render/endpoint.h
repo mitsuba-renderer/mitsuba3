@@ -86,7 +86,7 @@ public:
      */
     virtual std::pair<Ray3f, Spectrum>
     sample_ray(Float time, Float sample1, const Point2f &sample2,
-               const Point2f &sample3, Mask active = true) const;
+               const Point2f &sample3, const Float &volume_sample, Mask active = true) const;
 
     /**
      * \brief Given a reference point in the scene, sample a direction from the
@@ -120,6 +120,7 @@ public:
     virtual std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &ref,
                      const Point2f &sample,
+                     const Float &volume_sample,
                      Mask active = true) const;
 
     /**
@@ -152,6 +153,7 @@ public:
      */
     virtual std::pair<PositionSample3f, Float>
     sample_position(Float time, const Point2f &sample,
+                    const Float &volume_sample,
                     Mask active = true) const;
 
     /**

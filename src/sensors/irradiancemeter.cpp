@@ -60,6 +60,7 @@ public:
     sample_ray_differential(Float time, Float wavelength_sample,
                             const Point2f & sample2,
                             const Point2f & sample3,
+                            const Float &/*volume_sample*/,
                             Mask active) const override {
 
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
@@ -83,7 +84,8 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     const Float &/*volume_sample*/, Mask active) const override {
         return { m_shape->sample_direction(it, sample, active), ek::Pi<ScalarFloat> };
     }
 
