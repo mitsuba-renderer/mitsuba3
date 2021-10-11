@@ -1724,8 +1724,6 @@ Returns:
 1. the sampled position. 2. the normalized probability density of the
 sample.)doc";
 
-static const char *__doc_mitsuba_ContinuousDistribution_set_grad_suspended = R"doc()doc";
-
 static const char *__doc_mitsuba_ContinuousDistribution_size = R"doc(Return the number of discretizations)doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pdf.)doc";
@@ -2054,8 +2052,6 @@ Returns:
 
 1. the discrete index associated with the sample 2. the re-scaled
 sample value 3. the normalized probability value of the sample)doc";
-
-static const char *__doc_mitsuba_DiscreteDistribution_set_grad_suspended = R"doc()doc";
 
 static const char *__doc_mitsuba_DiscreteDistribution_size = R"doc(Return the number of entries)doc";
 
@@ -3350,8 +3346,6 @@ Returns:
 1. the sampled position. 2. the normalized probability density of the
 sample.)doc";
 
-static const char *__doc_mitsuba_IrregularContinuousDistribution_set_grad_suspended = R"doc()doc";
-
 static const char *__doc_mitsuba_IrregularContinuousDistribution_size = R"doc(Return the number of discretizations)doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution_update =
@@ -4045,8 +4039,6 @@ static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute s
 
 static const char *__doc_mitsuba_Mesh_sample_position = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_set_grad_suspended = R"doc()doc";
-
 static const char *__doc_mitsuba_Mesh_surface_area = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
@@ -4366,26 +4358,6 @@ See also:
     TraversalCallback)doc";
 
 static const char *__doc_mitsuba_Object_ref_count = R"doc(Return the current reference count)doc";
-
-static const char *__doc_mitsuba_Object_set_grad_suspended =
-R"doc(Suspend or resume tracking of derivatives.
-
-One important use case of Mitsuba 2 entails the propagation of
-derivatives through the full rendering process, typically via
-automatic differentiation. To this end, certain variants of the
-renderer perform all computation via Enoki's DiffArray<T> class, which
-internally builds a computation graph of all involved arithmetic. In
-certain situations, this is undesirable, and we need to temporarily
-suspend the propagation of gradients. That is typically done using the
-Object::traverse mechanism. However, some parameters may not be
-exposed through traverse, and we need to suspend them too, otherwise
-parts of the computation will still be recorded. This method handles
-such cases: its default implementation doed nothing, but classes using
-such "hidden" parameters may override it to properly suspend the
-tracking of their gradients.
-
-Parameter ``state``:
-    Whether to stop or resume recording derivatives.)doc";
 
 static const char *__doc_mitsuba_Object_set_id = R"doc(Set an identifier to the current instance (if applicable))doc";
 

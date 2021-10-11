@@ -217,7 +217,7 @@ def test03_kernel_launches_optimization(variants_all_ad_rgb):
         # print(f"\n----- PRIMAL\n")
 
         # Primal rendering of the scene
-        with opt.suspend_gradients():
+        with ek.suspend_grad():
             image = integrator.render(scene, seed=0, spp=spp)
 
         history_primal = ek.kernel_history()

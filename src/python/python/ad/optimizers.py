@@ -154,28 +154,6 @@ class Optimizer:
             self.lr[key] = lr
             self.lr_v[key] = ek.opaque(ek.detached_t(Float), lr, shape=1)
 
-    def set_grad_suspended(self, value):
-        """Temporarily enable or disable the generation of gradients."""
-        self.params.set_grad_suspended(value)
-
-    @contextmanager
-    def suspend_gradients(self):
-        """Temporarily disable the generation of gradients."""
-        self.params.set_grad_suspended(True)
-        try:
-            yield
-        finally:
-            self.params.set_grad_suspended(False)
-
-    @contextmanager
-    def resume_gradients(self):
-        """Temporarily enable the generation of gradients"""
-        self.params.set_grad_suspended(False)
-        try:
-            yield
-        finally:
-            self.params.set_grad_suspended(True)
-
     def reset(self, key):
         """Resets the internal state associated with a parameter, if any (e.g. momentum)."""
         pass

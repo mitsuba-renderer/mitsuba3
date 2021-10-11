@@ -69,7 +69,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         ray, weight, pos, _ = sample_sensor_rays(sensor)
 
         # sample forward path (not differentiable)
-        with params.suspend_gradients():
+        with ek.suspend_grad():
             result, _ = self.Li(scene, sampler.clone(), ray, medium=sensor.medium())
 
         block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter)
@@ -97,7 +97,6 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                                     SurfaceInteraction3f, has_flag)
 
         is_primal = len(params) == 0
-        params.set_grad_suspended(is_primal)
 
         active = Mask(active_)
         ray = Ray3f(ray)
@@ -191,7 +190,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             phase[~act_medium_scatter] = ek.zero(mitsuba.render.PhaseFunctionPtr, 1)
 
             valid_ray |= act_medium_scatter
-            with params.suspend_gradients():
+            with ek.suspend_grad():
                 wo, phase_pdf = phase.sample(phase_ctx, mi, sampler.next_1d(act_medium_scatter), sampler.next_2d(act_medium_scatter), act_medium_scatter)
             new_ray = mi.spawn_ray(wo)
             ray[act_medium_scatter] = new_ray
@@ -254,7 +253,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                         ek.backward(grad * contrib)
 
             # ----------------------- BSDF sampling ----------------------
-            with params.suspend_gradients():
+            with ek.suspend_grad():
                 bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active_surface),
                                            sampler.next_2d(active_surface), active_surface)
                 active_surface &= bs.pdf > 0

@@ -432,8 +432,8 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     } else {
         ps.n = ek::normalize(ek::cross(e0, e1));
     }
-    
-    if (m_flip_normals) 
+
+    if (m_flip_normals)
         ps.n = -ps.n;
 
     return ps;
@@ -603,7 +603,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     } else {
         si.sh_frame.n = si.n;
     }
-    
+
     if (m_flip_normals) {
         si.n = -si.n;
         si.sh_frame.n = -si.sh_frame.n;
@@ -923,10 +923,6 @@ MTS_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std
         mark_dirty();
     }
     Base::parameters_changed();
-}
-
-MTS_VARIANT void Mesh<Float, Spectrum>::set_grad_suspended(bool state) {
-    m_area_pmf.set_grad_suspended(state);
 }
 
 MTS_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {

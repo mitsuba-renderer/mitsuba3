@@ -207,7 +207,7 @@ def test06_ptracer_gradients(variants_all_ad_rgb):
     opt.load()
     opt.update()
 
-    with opt.suspend_gradients():
+    with ek.suspend_grad():
         image = integrator.render(scene, seed=0, spp=4)
 
     ek.enable_grad(image)

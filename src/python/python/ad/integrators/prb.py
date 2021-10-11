@@ -31,7 +31,8 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         ray, weight, pos, _ = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
-        result, _ = self.Li(scene, sampler.clone(), ray)
+        with ek.suspend_grad():
+            result, _ = self.Li(scene, sampler.clone(), ray)
 
         block = mitsuba.render.ImageBlock(ek.detach(image_adj), rfilter)
         grad_values = block.read(pos) * weight / spp
@@ -56,7 +57,6 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
 
         is_primal = len(params) == 0
-        params.set_grad_suspended(is_primal)
 
         ray = RayDifferential3f(ray)
 
@@ -99,7 +99,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
             result += ek.detach(emitter_contrib if is_primal else -emitter_contrib)
 
             # ---------------------- BSDF sampling ----------------------
-            with params.suspend_gradients():
+            with ek.suspend_grad():
                 bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
                                               sampler.next_2d(active), active)
                 active &= bs.pdf > 0.0

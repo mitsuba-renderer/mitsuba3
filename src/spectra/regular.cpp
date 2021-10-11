@@ -108,10 +108,6 @@ public:
         return oss.str();
     }
 
-    void set_grad_suspended(bool state) override {
-        m_distr.set_grad_suspended(state);
-    }
-
     MTS_DECLARE_CLASS()
 private:
     ContinuousDistribution<Wavelength> m_distr;

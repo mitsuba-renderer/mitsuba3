@@ -45,7 +45,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         return *self.Li(scene, sampler, ray), []
 
     def sample_adjoint(self, scene, sampler, ray, params, grad):
-        with params.suspend_gradients():
+        with ek.suspend_grad():
             self.Li(scene, sampler, ray, params=params, grad=grad)
 
     def Li(self: mitsuba.render.SamplingIntegrator,
@@ -104,7 +104,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         while loop(active):
             # ---------------------- Direct emission ----------------------
 
-            with params.resume_gradients():
+            with ek.resume_grad():
                 result += adjoint(
                     si.emitter(scene, active).eval(si, active),
                     throughput * emission_weight,
@@ -125,7 +125,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             active_e &= ek.neq(ds.pdf, 0.0)
             wo = si.to_local(ds.d)
 
-            with params.resume_gradients():
+            with ek.resume_grad():
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
                 mis = ek.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf))
 
@@ -162,7 +162,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                 else:
                     li = ds.emitter.eval(si_bsdf, active_b) * emission_weight
 
-                with params.resume_gradients():
+                with ek.resume_grad():
                     bsdf_eval = bsdf.eval(ctx, si, bs.wo, active)
 
                     adjoint(

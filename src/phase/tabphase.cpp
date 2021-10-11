@@ -103,10 +103,6 @@ public:
         m_distr.update();
     }
 
-    void set_grad_suspended(bool state) override {
-        m_distr.set_grad_suspended(state);
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "TabulatedPhaseFunction[" << std::endl
