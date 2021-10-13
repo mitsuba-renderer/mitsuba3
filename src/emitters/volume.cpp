@@ -55,6 +55,11 @@ public:
                   "shape.");
 
         m_radiance = props.volume<Volume>("radiance", 1.f);
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
+            // TODO: this should probably be done in the parser, just like with
+            // non-textured spectra.
+            m_d65 = Texture::D65(1.f);
+        }
 
         m_flags = +EmitterFlags::Volume;
         if (m_radiance->is_spatially_varying())
@@ -78,26 +83,22 @@ public:
 
         // 1. Two strategies to sample spatial component based on 'm_radiance'
         // Currently only supports homogeneous sampling within the bounding box of the shape
-        auto [ps, pdf] = this->sample_position(time, sample2, volume_sample, active);
+        auto [ps, pos_weight] = this->sample_position(time, sample2, volume_sample, active);
         mi = MediumInteraction3f(ps, ek::zero<Wavelength>());
 
         // 2. Sample directional component
         Vector3f local = warp::square_to_uniform_sphere(sample3);
 
-        Wavelength wavelength;
-        Spectrum spec_weight;
+        // 3. Sample spectral component
+        SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
+        auto [wavelength, wav_weight] =
+            sample_wavelengths(si, wavelength_sample, active);
 
-        if constexpr (is_spectral_v<Spectrum>) {
-            wavelength = MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * wavelength_sample;
-            spec_weight = (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
-        } else {
-            wavelength = ek::zero<Wavelength>();
-            spec_weight = m_radiance->eval(mi, active);
-            ENOKI_MARK_USED(wavelength_sample);
-        }
+        // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
+        Spectrum weight = pos_weight * wav_weight * ek::Pi<ScalarFloat>;
 
         return { Ray3f(mi.p, mi.to_world(local), time, wavelength),
-                 depolarizer<Spectrum>(spec_weight) * ps.pdf };
+                 depolarizer<Spectrum>(weight) * ps.pdf };
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -116,6 +117,7 @@ public:
         ds.dist = ek::sqrt(dist_squared);
         ds.d /= ds.dist;
         ds.n = ds.d;
+        ds.pdf = pdf;
 
         // // First term is the distance term and the second term is the solid angle term
         // // based on the sample point
@@ -123,18 +125,21 @@ public:
         ds.pdf = ek::select(ek::isfinite(x), ds.pdf * x, 0.f);
 
         MediumInteraction3f mi = MediumInteraction3f(ds, it.wavelengths);
+        SurfaceInteraction3f si = SurfaceInteraction3f(ds, it.wavelengths);
         spec = m_radiance->eval(mi, active) / ds.pdf;
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying())
+            spec *= m_d65->eval(si, active);
 
         ds.emitter = this;
         active &= mi.is_valid();
 
-        Log(Debug, "Emission of volume is finite: %s ~ %s ~ pdf: %s ~ mint: %s ~ active: %s", spec,  ek::isfinite(spec), ds.pdf, mi.mint, active);
+        // Log(Debug, "Emission of volume is finite: %s ~ %s ~ pdf: %s ~ mint: %s ~ active: %s", spec,  ek::isfinite(spec), ds.pdf, mi.mint, active);
 
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
 
     std::pair<PositionSample3f, Float>
-    sample_position(Float /*time*/, const Point2f &sample_,
+    sample_position(Float time, const Point2f &sample_,
                     const Float &volume_sample, 
                     Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
@@ -142,11 +147,17 @@ public:
 
         ScalarBoundingBox3f shape_bbox = m_shape->bbox();
         // Log(Debug, "%s, %s", shape_bbox, m_shape);
-        PositionSample3f ps = ek::zero<PositionSample3f>();
+        PositionSample3f ps = PositionSample3f(ek::zero<Point3f>(), 
+                                               ek::zero<Point3f>(), 
+                                               ek::zero<Point2f>(), 
+                                               time, 
+                                               ek::zero<Float>(), 
+                                               ek::zero<Mask>()
+        );
         Point3f sample = Point3f(sample_.x(), sample_.y(), volume_sample);
         ek::masked(ps.p, active) = shape_bbox.min + sample * (shape_bbox.max - shape_bbox.min);
         ek::masked(ps.pdf, active) = 1.f / shape_bbox.volume();
-        Log(Debug, "bbox: %s, sample: %s, p: %s, pdf: %s", shape_bbox, sample, ps.p, ps.pdf);
+        // Log(Debug, "bbox: %s, sample: %s, p: %s, pdf: %s", shape_bbox, sample, ps.p, ps.pdf);
         Float weight = ek::select(active & (ps.pdf > 0.f), ek::rcp(ps.pdf), Float(0.f));
         return { ps, weight };
     }
@@ -156,12 +167,32 @@ public:
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         MTS_MASK_ARGUMENT(active);
 
-        Mask is_inside = this->m_shape->bbox().contains(ds.p + ds.d * ds.dist);
+        Mask is_inside = this->m_shape->bbox().contains(ds.p);
         Float pdf = ek::select(is_inside, ds.dist * ds.dist / this->m_shape->bbox().volume(), 0.f);
 
         active &= is_inside;
 
         return pdf;
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        Wavelength wav;
+        SurfaceInteraction3f si2(si);
+        if (is_spectral_v<Spectrum>) {
+            wav = MTS_WAVELENGTH_MIN +
+                 (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * sample;
+        } else {
+            wav = ek::zero<Wavelength>();
+        }
+        si2.wavelengths = wav;
+        auto weight = m_radiance->eval(si2, active);
+        // Log(Debug, "%s %s %s", weight, si2, m_radiance);
+        if (is_spectral_v<Spectrum> && m_radiance->is_spatially_varying()) {
+            weight *= m_d65->eval(si2, active);
+        }
+        return { wav, weight };
     }
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
@@ -187,6 +218,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_radiance;
+    ref<Texture> m_d65;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumeLight, Emitter)
