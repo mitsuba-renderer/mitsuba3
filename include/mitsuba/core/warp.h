@@ -544,7 +544,7 @@ MTS_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
 /// Warp a uniformly distributed square sample to a von Mises Fisher distribution
 template <typename Value>
 MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sample,
-                                                       const ek::scalar_t<Value> &kappa) {
+                                                       const Value &kappa) {
 #if 0
     // Approach 1: warping method based on standard disk mapping
 
@@ -584,7 +584,8 @@ MTS_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sa
 
 /// Inverse of the mapping \ref von_mises_fisher_to_square
 template <typename Value>
-MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v, ek::scalar_t<Value> kappa) {
+MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
+                                                      Value kappa) {
     Value expm2k = ek::exp(-2.f * kappa),
           t      = ek::exp((v.z() - 1.f) * kappa),
           sy     = (expm2k - t) / (expm2k - 1.f),
@@ -596,16 +597,13 @@ MTS_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
 
 /// Probability density of \ref square_to_von_mises_fisher()
 template <typename Value>
-MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, ek::scalar_t<Value> kappa) {
+MTS_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, Value kappa) {
     /* Stable algorithm for evaluating the von Mises Fisher distribution
        https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
 
-    assert(kappa >= 0);
-    if (unlikely(kappa == 0))
-        return ek::InvFourPi<Value>;
-    else
-        return ek::exp(kappa * (v.z() - 1.f)) * (kappa * ek::InvTwoPi<Value>) /
-               (1.f - ek::exp(-2.f * kappa));
+    Value res = ek::exp(kappa * (v.z() - 1.f)) * (kappa * ek::InvTwoPi<Value>) /
+                (1.f - ek::exp(-2.f * kappa));
+    return ek::select(kappa > 0, res, ek::InvFourPi<Value>);
 }
 
 // =======================================================================
@@ -635,7 +633,7 @@ Vector<Value, 3> square_to_rough_fiber(const Point<Value, 3> &sample,
 
     // Sample a roughness perturbation from a vMF distribution
     Vector3 perturbation =
-        square_to_von_mises_fisher(Point2(sample.y(), sample.z()), kappa);
+        square_to_von_mises_fisher(Point2(sample.y(), sample.z()), Value(kappa));
 
     // Express perturbation relative to 'wo'
     wo = Frame3(wo).to_world(perturbation);
