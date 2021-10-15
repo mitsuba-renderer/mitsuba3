@@ -286,7 +286,7 @@ public:
             }
 
             // Gather the pixel values from the image data buffer
-            Float weight = ek::gather<Float>(data, weight_idx);
+            Float weight = ek::detach(ek::gather<Float>(data, weight_idx));
             Float values = ek::gather<Float>(data, values_idx);
 
             if (to_xyz || to_y) {
