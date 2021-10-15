@@ -174,7 +174,7 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
                 wy += m_weights_y[i];
             }
 
-            Float factor = ek::rcp(wx * wy);
+            Float factor = ek::detach(ek::rcp(wx * wy));
             for (uint32_t i = 0; i < n; ++i)
                 m_weights_x[i] *= factor;
         }
@@ -249,7 +249,7 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
                     ek::masked(weight, enabled) += m_weights_y[yr] * m_weights_x[xr];
                 }
             }
-            factor = ek::rcp(weight);
+            factor = ek::detach(ek::rcp(weight));
         }
 
         for (uint32_t k = 0; k < m_channel_count; ++k)
