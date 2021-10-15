@@ -138,6 +138,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
             bsdf = si.bsdf(ray)
 
             # ---------------------- Emitter sampling ----------------------
+
             active_e = active & has_flag(bsdf.flags(), BSDFFlags.Smooth)
             ds, emitter_val = scene.sample_emitter_direction(
                 si, sampler.next_2d(active_e), True, active_e)
@@ -157,6 +158,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                 primal_result -= ek.detach(accum)
 
             # ---------------------- BSDF sampling ----------------------
+
             with ek.suspend_grad():
                 bs, bsdf_weight = bsdf.sample(ctx, si, sampler.next_1d(active),
                                               sampler.next_2d(active), active)
@@ -178,7 +180,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                 accum += ek.select(active, bsdf_eval * primal_result / ek.max(1e-8, ek.detach(bsdf_eval)), 0.0)
 
             if mode is ek.ADMode.Reverse:
-                ek.backward(accum * grad)
+                ek.backward(accum * grad, retain_graph=True)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
                 ek.traverse(mitsuba.core.Float, retain_graph=False, retain_grad=True)
