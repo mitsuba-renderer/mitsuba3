@@ -79,6 +79,7 @@ public:
         UV,
         GeometricNormal,
         ShadingNormal,
+        BoundaryTest,
         dPdU,
         dPdV,
         dUVdx,
@@ -119,6 +120,9 @@ public:
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
+            } else if (item[1] == "boundary_test") {
+                m_aov_types.push_back(Type::BoundaryTest);
+                m_aov_names.push_back(item[0]);
             } else if (item[1] == "dp_du") {
                 m_aov_types.push_back(Type::dPdU);
                 m_aov_names.push_back(item[0] + ".X");
@@ -208,6 +212,10 @@ public:
                     *aovs++ = si.sh_frame.n.x();
                     *aovs++ = si.sh_frame.n.y();
                     *aovs++ = si.sh_frame.n.z();
+                    break;
+
+                case Type::BoundaryTest:
+                    *aovs++ = ek::select(si.is_valid(), si.boundary_test(ray), 1.f);
                     break;
 
                 case Type::dPdU:
