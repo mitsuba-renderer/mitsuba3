@@ -28,7 +28,7 @@ class Optimizer:
     def __getitem__(self, key: str):
         return self.variables[key]
 
-    def __setitem__(self, key: str, value):
+    def __setitem__(self, key: str, value, copy=True):
         """
         Overwrite the value of a parameter.
 
@@ -44,10 +44,13 @@ class Optimizer:
             raise Exception('Optimizer.__setitem__(): value should be differentiable!')
         needs_reset = (key not in self.variables) or ek.shape(self.variables[key]) != ek.shape(value)
 
-        self.variables[key] = ek.detach(value, True)
+        self.variables[key] = type(value)(ek.detach(value, True)) if copy else value
         ek.enable_grad(self.variables[key])
         if needs_reset:
             self.reset(key)
+
+    def set(self, key: str, value, copy):
+        return self.__setitem__(key, value, copy=copy)
 
     def __delitem__(self, key: str) -> None:
         del self.variables[key]
@@ -327,7 +330,7 @@ class Adam(Optimizer):
             step = lr_t * m_t / (ek.sqrt(v_t) + self.epsilon)
             if self.mask_updates:
                 step = ek.select(nonzero, step, 0.)
-            u = ek.detach(p) - step
+            u = ek.detach(p, True) - step
             u = type(p)(u)
             ek.enable_grad(u)
             self.variables[k] = u
