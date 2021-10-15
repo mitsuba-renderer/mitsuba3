@@ -173,7 +173,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                 accum += ek.select(active, bsdf_eval * throughput * li / bs.pdf, 0.0)
 
             if mode is ek.ADMode.Reverse:
-                ek.backward(accum * grad)
+                ek.backward(accum * grad, retain_graph=True)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
                 ek.traverse(mitsuba.core.Float, retain_graph=False, retain_grad=True)

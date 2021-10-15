@@ -249,7 +249,7 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
                     ek::masked(weight, enabled) += m_weights_y[yr] * m_weights_x[xr];
                 }
             }
-            factor = ek::detach(ek::rcp(weight));
+            factor = ek::detach(ek::select(weight > 0.f, ek::rcp(weight), 1.f));
         }
 
         for (uint32_t k = 0; k < m_channel_count; ++k)
