@@ -476,8 +476,6 @@ public:
 
                     UnpolarizedSpectrum c = prob_emission + prob_scatter + prob_null;
                     ek::masked(c, ek::eq(c, 0.f)) = 1.f;
-                    prob_emission /= c;
-                    prob_scatter  /= c;
                     prob_null     /= c;
 
                     update_weights(p_over_f_uni, prob_null, mi.sigma_n, channel, is_spectral || not_spectral);
