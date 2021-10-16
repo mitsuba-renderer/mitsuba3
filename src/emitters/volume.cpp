@@ -72,32 +72,7 @@ public:
                                           const Point2f &sample2, const Point2f &sample3,
                                           const Float &volume_sample,
                                           Mask active) const override {
-        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-
-        MediumInteraction3f mi = ek::zero<MediumInteraction3f>();
-
-        // 1. Two strategies to sample spatial component based on 'm_radiance'
-        // Currently only supports homogeneous sampling within the bounding box of the shape
-        auto [ps, pdf] = this->sample_position(time, sample2, volume_sample, active);
-        mi = MediumInteraction3f(ps, ek::zero<Wavelength>());
-
-        // 2. Sample directional component
-        Vector3f local = warp::square_to_uniform_sphere(sample3);
-
-        Wavelength wavelength;
-        Spectrum spec_weight;
-
-        if constexpr (is_spectral_v<Spectrum>) {
-            wavelength = MTS_WAVELENGTH_MIN + (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN) * wavelength_sample;
-            spec_weight = (MTS_WAVELENGTH_MAX - MTS_WAVELENGTH_MIN);
-        } else {
-            wavelength = ek::zero<Wavelength>();
-            spec_weight = m_radiance->eval(mi, active);
-            ENOKI_MARK_USED(wavelength_sample);
-        }
-
-        return { Ray3f(mi.p, mi.to_world(local), time, wavelength),
-                 depolarizer<Spectrum>(spec_weight) * ps.pdf };
+        NotImplementedError("sample_ray");
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -128,8 +103,6 @@ public:
         ds.emitter = this;
         active &= mi.is_valid();
 
-        Log(Debug, "Emission of volume is finite: %s ~ %s ~ pdf: %s ~ mint: %s ~ active: %s", spec,  ek::isfinite(spec), ds.pdf, mi.mint, active);
-
         return { ds, depolarizer<Spectrum>(spec) & active };
     }
 
@@ -146,7 +119,7 @@ public:
         Point3f sample = Point3f(sample_.x(), sample_.y(), volume_sample);
         ek::masked(ps.p, active) = shape_bbox.min + sample * (shape_bbox.max - shape_bbox.min);
         ek::masked(ps.pdf, active) = 1.f / shape_bbox.volume();
-        Log(Debug, "bbox: %s, sample: %s, p: %s, pdf: %s", shape_bbox, sample, ps.p, ps.pdf);
+
         Float weight = ek::select(active & (ps.pdf > 0.f), ek::rcp(ps.pdf), Float(0.f));
         return { ps, weight };
     }
@@ -154,9 +127,8 @@ public:
     Float pdf_direction(const Interaction3f &/*it*/, const DirectionSample3f &ds,
                         Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
-        MTS_MASK_ARGUMENT(active);
 
-        Mask is_inside = this->m_shape->bbox().contains(ds.p + ds.d * ds.dist);
+        Mask is_inside = this->m_shape->bbox().contains(ds.p);
         Float pdf = ek::select(is_inside, ds.dist * ds.dist / this->m_shape->bbox().volume(), 0.f);
 
         active &= is_inside;
