@@ -55,6 +55,7 @@ public:
                   "shape.");
 
         m_radiance = props.volume<Volume>("radiance", 1.f);
+        m_scale = props.float_("scale", 1.0f);
 
         m_flags = +EmitterFlags::Volume;
         if (m_radiance->is_spatially_varying())
@@ -65,7 +66,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
         MediumInteraction3f mi = MediumInteraction3f(si);
-        return depolarizer<Spectrum>(m_radiance->eval(mi, active));
+        return m_scale * depolarizer<Spectrum>(m_radiance->eval(mi, active));
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -98,7 +99,7 @@ public:
         ds.pdf = ek::select(ek::isfinite(x), ds.pdf * x, 0.f);
 
         MediumInteraction3f mi = MediumInteraction3f(ds, it.wavelengths);
-        spec = m_radiance->eval(mi, active) / ds.pdf;
+        spec = m_scale * m_radiance->eval(mi, active) / ds.pdf;
 
         ds.emitter = this;
         active &= mi.is_valid();
@@ -114,7 +115,6 @@ public:
         Assert(m_shape, "Cannot sample from a volume emitter without an associated Shape.");
 
         ScalarBoundingBox3f shape_bbox = m_shape->bbox();
-        // Log(Debug, "%s, %s", shape_bbox, m_shape);
         PositionSample3f ps = ek::zero<PositionSample3f>();
         Point3f sample = Point3f(sample_.x(), sample_.y(), volume_sample);
         ek::masked(ps.p, active) = shape_bbox.min + sample * (shape_bbox.max - shape_bbox.min);
@@ -159,6 +159,7 @@ public:
     MTS_DECLARE_CLASS()
 private:
     ref<Volume> m_radiance;
+    float m_scale;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(VolumeLight, Emitter)
