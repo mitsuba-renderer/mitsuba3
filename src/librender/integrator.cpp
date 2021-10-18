@@ -168,7 +168,10 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
                                                film->reconstruction_filter(),
-                                               false, false, false, false);
+                                               false /* warn_negative */,
+                                               false /* warn_invalid */,
+                                               film->has_high_quality_edges() /* border */,
+                                               false /* normalize */);
         block->clear();
         block->set_offset(film->crop_offset());
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
@@ -308,9 +311,17 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     Float wavelength_sample = sampler->next_1d(active);
 
-    Vector2f adjusted_position =
-        (position_sample - sensor->film()->crop_offset()) /
-        sensor->film()->crop_size();
+    const Film *film = sensor->film();
+    ScalarVector2i size   = film->crop_size();
+    ScalarVector2i offset = film->crop_offset();
+
+    if (film->has_high_quality_edges()) {
+        uint32_t border_size = film->reconstruction_filter()->border_size();
+        position_sample -= border_size;
+        position_sample *= Vector2f(size + 2 * border_size) / size;
+    }
+
+    Vector2f adjusted_position = (position_sample - offset) / size;
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
         time, wavelength_sample, adjusted_position, aperture_sample);

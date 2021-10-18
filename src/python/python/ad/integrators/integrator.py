@@ -114,16 +114,22 @@ def sample_sensor_rays(sensor):
 
     pos_idx = ek.arange(UInt32, total_sample_count)
     pos_idx //= ek.opaque(UInt32, spp)
-    scale = ek.rcp(Vector2f(film_size))
     pos = Vector2f(Float(pos_idx %  int(film_size[0])),
                    Float(pos_idx // int(film_size[0])))
-
+    pos += film.crop_offset()
     pos += sampler.next_2d()
+
+    if film.has_high_quality_edges():
+        border_size = film.reconstruction_filter().border_size()
+        pos -= border_size
+        pos *= Vector2f(film_size + 2 * border_size) / Vector2f(film_size)
+
+    adjusted_pos = (pos - film.crop_offset()) / Vector2f(film_size)
 
     rays, weights = sensor.sample_ray_differential(
         time=0.0,
         sample1=sampler.next_1d(),
-        sample2=pos * scale,
+        sample2=adjusted_pos,
         sample3=0.0
     )
 
