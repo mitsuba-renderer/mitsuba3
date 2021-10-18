@@ -92,11 +92,13 @@ public:
         SurfaceInteraction3f si(ps, ek::zero<Wavelength>());
         auto [wavelength, wav_weight] =
             sample_wavelengths(si, wavelength_sample, active);
+        si.time = time;
+        si.wavelengths = wavelength;
 
         // Note: some terms cancelled out with `warp::square_to_cosine_hemisphere_pdf`.
-        Spectrum weight = 2.f * pos_weight * wav_weight * ek::Pi<ScalarFloat>;
+        Spectrum weight = pos_weight * wav_weight * ek::Pi<ScalarFloat>;
 
-        return { Ray3f(ps.p, Frame3f(ps.n).to_world(local), time, wavelength),
+        return { si.spawn_ray(si.to_world(local)),
                  depolarizer<Spectrum>(weight) & active };
     }
 
