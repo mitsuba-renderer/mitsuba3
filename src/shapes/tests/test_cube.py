@@ -10,7 +10,7 @@ def test01_create(variant_scalar_rgb):
     assert s is not None
     assert s.primitive_count() == 12
     assert ek.allclose(s.surface_area(), 24.0)
-    
+
 
 def test02_bbox(variant_scalar_rgb):
     from mitsuba.core import xml, Transform4f
@@ -40,15 +40,15 @@ def test03_ray_intersect(variant_scalar_rgb):
                         "type" : 'cube',
                         "to_world": Transform4f.scale(scale),
                     }
-                    
+
                 })
 
                 ray = Ray3f(o=[coordsX, coordsY, -8], d=[0.0, 0.0, 1.0],
                                     time=0.0, wavelengths=[])
-                
+
                 si_found = s.ray_test(ray)
                 assert si_found == ((abs(coordsX) <= scale.x) and (abs(coordsY) <= scale.y))
-                
+
                 if si_found:
                     si = s.ray_intersect(ray)
                     ray_u = Ray3f(ray)
@@ -70,7 +70,7 @@ def test03_ray_intersect(variant_scalar_rgb):
 
                     # Check UV
                     oo  = (coordsY - (-scale.y)) / ((scale.y) - (-scale.y))
-                    tt = (coordsX - (-scale.x)) / (scale.x - (-scale.x )) 
+                    tt = (coordsX - (-scale.x)) / (scale.x - (-scale.x ))
                     assert ek.allclose(si.uv, Vector2f([1.0-oo, tt]), atol=1e-5, rtol=1e-5)
 
 def test04_ray_intersect_vec(variant_scalar_rgb):
@@ -91,7 +91,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o = 2.0 * o - 1.0
         o.z = -8.0
 
-        t = scene.ray_intersect(Ray3f(o, [0, 0, 1], 0.0, [])).t
+        t = scene.ray_intersect(Ray3f(o, [0, 0, 1])).t
         ek.eval(t)
         return t
 
@@ -100,7 +100,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 def test05_check_normals(variant_scalar_rgb):
     from mitsuba.core import xml, Vector3f, Ray3f
-    
+
     s = xml.load_dict({
         "type" : "scene",
         "foo" : {

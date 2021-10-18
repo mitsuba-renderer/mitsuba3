@@ -110,7 +110,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o = 2.0 * o - 1.0
         o.z = 5.0
 
-        t = scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+        t = scene.ray_intersect(Ray3f(o, [0, 0, -1])).t
         ek.eval(t)
         return t
 
@@ -140,7 +140,7 @@ def test05_sample_direct(variant_scalar_rgb):
         for xi_2 in ek.linspace(Float, 1e-3, 1 - 1e-3, 10):
             sample = sphere.sample_direction(it, [xi_2, 1 - xi_1])
             d = sample_cone([xi_1, xi_2], cos_cone_angle)
-            its = sphere.ray_intersect(Ray3f(it.p, d, 0, []))
+            its = sphere.ray_intersect(Ray3f(it.p, d))
             assert ek.allclose(d, sample.d, atol=1e-5, rtol=1e-5)
             assert ek.allclose(its.t, sample.dist, atol=1e-5, rtol=1e-5)
             assert ek.allclose(its.p, sample.p, atol=1e-5, rtol=1e-5)
@@ -151,7 +151,7 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     shape = xml.load_dict({'type' : 'sphere'})
 
-    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0), 0, [])
+    ray = Ray3f(Vector3f(0.0, -10.0, 0.0), Vector3f(0.0, 1.0, 0.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -215,7 +215,7 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
 
     shape = xml.load_dict({'type' : 'sphere'})
 
-    ray = Ray3f(Vector3f(0.0, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.0, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -236,7 +236,7 @@ def test08_si_singularity(variants_all_rgb):
     from mitsuba.core import xml, Ray3f
 
     scene = xml.load_dict({"type" : "scene", 's': { 'type': 'sphere' }})
-    ray = Ray3f([0, 0, -1], [0, 0, 1], 0, [])
+    ray = Ray3f([0, 0, -1], [0, 0, 1])
 
     si = scene.ray_intersect(ray)
 

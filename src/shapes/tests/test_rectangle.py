@@ -82,7 +82,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o = 2.0 * o - 1.0
         o.z = 5.0
 
-        t = scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+        t = scene.ray_intersect(Ray3f(o, [0, 0, -1])).t
         ek.eval(t)
         return t
 
@@ -128,7 +128,7 @@ def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     shape = xml.load_dict({'type' : 'rectangle'})
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -170,7 +170,7 @@ def test07_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
 
     shape = xml.load_dict({'type' : 'rectangle'})
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)

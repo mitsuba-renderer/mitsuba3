@@ -8,9 +8,11 @@ MTS_PY_EXPORT(Ray) {
             .def(py::init<>(), "Create an unitialized ray")
             .def(py::init<const Ray3f &>(), "Copy constructor", "other"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
-                D(Ray, Ray, 5), "o"_a, "d"_a, "time"_a, "wavelengths"_a)
+                 D(Ray, Ray, 5),
+                 "o"_a, "d"_a, "time"_a=0.0, "wavelengths"_a=Wavelength())
             .def(py::init<Point3f, Vector3f, Float, Float, const Wavelength &>(),
-                D(Ray, Ray, 6), "o"_a, "d"_a, "maxt"_a, "time"_a, "wavelengths"_a)
+                 D(Ray, Ray, 6),
+                "o"_a, "d"_a, "maxt"_a, "time"_a, "wavelengths"_a)
             .def(py::init<const Ray3f &, Float>(),
                 D(Ray, Ray, 7), "other"_a, "maxt"_a)
             .def("__call__", &Ray3f::operator(), D(Ray, operator, call), "t"_a)
@@ -29,10 +31,10 @@ MTS_PY_EXPORT(Ray) {
             .def(py::init<>(), "Create an unitialized ray")
             .def(py::init<const Ray3f &>(), "ray"_a)
             .def(py::init<Point3f, Vector3f, Float, const Wavelength &>(),
-                "Initialize without differentials.",
-                "o"_a, "d"_a, "time"_a, "wavelengths"_a)
+                 "Initialize without differentials.",
+                 "o"_a, "d"_a, "time"_a=0.0, "wavelengths"_a=Wavelength())
             .def("scale_differential", &RayDifferential3f::scale_differential,
-                "amount"_a, D(RayDifferential, scale_differential))
+                 "amount"_a, D(RayDifferential, scale_differential))
             .def_field(RayDifferential3f, o_x, D(RayDifferential, o_x))
             .def_field(RayDifferential3f, o_y, D(RayDifferential, o_y))
             .def_field(RayDifferential3f, d_x, D(RayDifferential, d_x))

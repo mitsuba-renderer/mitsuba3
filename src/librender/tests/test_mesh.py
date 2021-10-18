@@ -267,7 +267,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     assert ek.allclose(pi.t, 10)
@@ -281,7 +281,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
     assert ek.allclose(si.dp_du, [2.0, 0.0, 0.0])
     assert ek.allclose(si.dp_dv, [0.0, 2.0, 0.0])
 
-    ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.3, 0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
     assert ek.allclose(pi.t, 10)
     assert pi.prim_index == 1
@@ -351,7 +351,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # si should not be attached if not necessary
@@ -402,7 +402,7 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -448,7 +448,7 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
         </scene>
     ''')
 
-    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.4, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -502,7 +502,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # ---------------------------------------
     # Test translation
 
-    ray = Ray3f(Vector3f(-0.2, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.2, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # # If the vertices are shifted along z-axis, so does si.t
@@ -533,7 +533,7 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
     # ---------------------------------------
     # Test rotation
 
-    ray = Ray3f(Vector3f(-0.99999, -0.99999, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.99999, -0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # If the vertices are rotated around the center, so does si.uv (times 0.5)
@@ -574,7 +574,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
     params.update()
 
     # Hit the upper right corner of the rectangle (the 4th vertex)
-    ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.99999, 0.99999, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # ---------------------------------------
@@ -721,7 +721,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
     # ---------------------------------------
     # Test translation
 
-    ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.2, 0.3, -5.0), Vector3f(0.0, 0.0, 1.0))
     pi = scene.ray_intersect_preliminary(ray)
 
     # If the vertices are shifted along x-axis, si.p won't move
@@ -826,7 +826,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
                    Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
-    ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1], 0.0, [])
+    ray = Ray3f([pos[0], pos[1], -5], [0, 0, 1])
     ek.set_label(ray, 'ray')
 
     # Intersect rays against objects in the scene
@@ -874,7 +874,7 @@ def test19_update_geometry(variants_vec_rgb):
                    Float(pos // int(film_size[0])))
     pos = 2.0 * (pos / (film_size - 1.0) - 0.5)
 
-    ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0], 0.0, [])
+    ray = Ray3f([pos[0], -5, pos[1]], [0, 1, 0])
     init_t = scene.ray_intersect_preliminary(ray).t
     ek.eval(init_t)
 

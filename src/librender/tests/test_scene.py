@@ -142,7 +142,7 @@ def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
             }
         })
 
-        ray = Ray3f(Point3f(1, 2, 3), Vector3f(4, 5, 6), 0, [])
+        ray = Ray3f(Point3f(1, 2, 3), Vector3f(4, 5, 6))
         if shadow:
             return scene.ray_test(ray)
         else:

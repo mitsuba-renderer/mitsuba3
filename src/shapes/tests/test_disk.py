@@ -105,7 +105,7 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
         o = 2.0 * o - 1.0
         o.z = 5.0
 
-        t = scene.ray_intersect(Ray3f(o, [0, 0, -1], 0.0, [])).t
+        t = scene.ray_intersect(Ray3f(o, [0, 0, -1])).t
         ek.eval(t)
         return t
 
@@ -117,7 +117,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
 
     shape = xml.load_dict({'type' : 'disk'})
 
-    ray = Ray3f(Vector3f(0.1, -0.2, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.1, -0.2, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
@@ -148,7 +148,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     assert ek.allclose(ek.grad(si.p), [10, 0, 0])
 
     # If the ray origin is shifted toward the center of the disk, so does si.uv.x
-    ray = Ray3f(Vector3f(0.9999999, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(0.9999999, 0.0, -10.0), Vector3f(0.0, 0.0, 1.0))
     ek.enable_grad(ray.o)
     si = shape.ray_intersect(ray)
     si.uv *= 1.0
@@ -173,7 +173,7 @@ def test06_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
 
     shape = xml.load_dict({'type' : 'disk'})
 
-    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0), 0, [])
+    ray = Ray3f(Vector3f(-0.3, -0.3, -10.0), Vector3f(0.0, 0.0, 1.0))
     pi = shape.ray_intersect_preliminary(ray)
 
     ek.enable_grad(ray.o)
