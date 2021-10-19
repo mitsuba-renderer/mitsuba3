@@ -259,8 +259,8 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfig):
             }
         }
         self.spp = 12000
-        self.error_mean_threshold = 0.1
-        self.error_max_threshold = 1.0
+        self.error_mean_threshold = 0.6
+        self.error_max_threshold = 5.0
 
 
 # Translate area emitter (sphere) on black background
@@ -282,8 +282,8 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfig):
             }
         }
         self.spp = 12000
-        self.error_mean_threshold = 0.1
-        self.error_max_threshold = 1.0
+        self.error_mean_threshold = 0.6
+        self.error_max_threshold = 6.0
 
 # Scale area emitter (sphere) on black background
 class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfig):
@@ -303,8 +303,8 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfig):
             }
         }
         self.spp = 12000
-        self.error_mean_threshold = 0.1
-        self.error_max_threshold = 1.5
+        self.error_mean_threshold = 0.6
+        self.error_max_threshold = 5.5
 
 
 # Translate occluder (sphere) casting shadow on gray wall
@@ -398,25 +398,25 @@ BASIC_CONFIGS = [
     AreaLightRadianceConfig,
     DirectlyVisibleAreaLightRadianceConfig,
     PointLightIntensityConfig,
-    ConstantEmitterRadianceConfig,
+    # ConstantEmitterRadianceConfig,
 ]
 
 REPARAM_CONFIGS = [
-    # TranslateRectangleEmitterOnBlackConfig,
-    # TranslateSphereEmitterOnBlackConfig,
-    # ScaleSphereEmitterOnBlackConfig,
-    # TranslateOccluderPointLightConfig,
-    # ScaleOccluderPointLightConfig,
-    # TranslateOccluderAreaLightConfig,
+    TranslateRectangleEmitterOnBlackConfig,
+    TranslateSphereEmitterOnBlackConfig,
+    ScaleSphereEmitterOnBlackConfig,
+    TranslateOccluderPointLightConfig,
+    ScaleOccluderPointLightConfig,
+    TranslateOccluderAreaLightConfig,
 ]
 
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
     # ('path', False),
-    ('rb', False),
-    ('prb', False),
-    # ('rbreparam', True),
-    # ('prbreparam', True),
+    # ('rb', False),
+    # ('prb', False),
+    ('rbreparam', True),
+    ('prbreparam', True),
 ]
 
 CONFIGS = []
@@ -448,7 +448,7 @@ def test01_rendering_primal(integrator_name, config):
 
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
-    error = ek.abs(image - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 1e-1)
+    error = ek.abs(image - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
     error_mean = ek.hmean(error)
     error_max = ek.hmax(error)
 
@@ -482,8 +482,6 @@ def test02_rendering_forward(integrator_name, config):
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
     image_fwd_ref = load_image(filename)
 
-    image_adj = TensorXf(1.0, image_fwd_ref.shape)
-
     theta = Float(0.0)
     ek.enable_grad(theta)
     ek.set_label(theta, 'theta')
@@ -494,10 +492,10 @@ def test02_rendering_forward(integrator_name, config):
 
     ek.set_label(config.params, 'params')
     image_fwd = integrator.render_forward(
-        config.scene, config.params, image_adj, seed=0, spp=config.spp)
+        config.scene, config.params, seed=0, spp=config.spp)
     image_fwd = ek.detach(image_fwd)
 
-    error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 5e-1)
+    error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
     error_mean = ek.hmean(error)
     error_max = ek.hmax(error)
 
@@ -556,6 +554,7 @@ def test03_rendering_backward(integrator_name, config):
         print(f"-> grad:     {grad}")
         print(f"-> grad_ref: {grad_ref}")
         print(f"-> error: {error} (threshold={config.error_mean_threshold})")
+        print(f"-> ratio: {grad / grad_ref}")
         assert False
 
 # -------------------------------------------------------------------
