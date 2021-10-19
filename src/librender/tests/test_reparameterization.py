@@ -65,7 +65,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     positions_new = transform @ init_vertex_pos
     params[key] = ek.ravel(positions_new)
     params.update()
-    ek.forward(theta, retain_graph=False, retain_grad=True)
+    ek.forward(theta, ek.ADFlag.ClearEdges)
 
     ek.set_label(theta, 'theta')
     ek.set_label(params, 'params')
@@ -152,7 +152,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
         ek.set_grad(d, grad_direction)
         ek.set_grad(div, grad_divergence)
         ek.enqueue(ek.ADMode.Reverse, d, div)
-        ek.traverse(Float, retain_graph=False)
+        ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         res_grad += ek.unravel(Vector3f, ek.grad(params[key]))
 
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     params.update()
     ek.eval()
 
-    ek.forward(theta, retain_graph=False, retain_grad=True)
+    ek.forward(theta, ek.ADFlag.ClearEdges)
 
     num_aux_rays = 64
     power = 3.0
@@ -232,7 +232,8 @@ if __name__ == '__main__':
 
     # print(ek.graphviz_str(Float(1)))
 
-    ek.forward(params[key])
+    ek.enqueue(ek.ADMode.Forward, params)
+    ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
     grad_d = ek.grad(d)
     grad_div = ek.grad(div)

@@ -100,7 +100,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 Z_i, dZ_i, V_i, divergence_lhs_i = sample_warp_field(scene, sampler, self.ray, kappa, power, self.active)
 
                 ek.enqueue(ek.ADMode.Forward, params)
-                ek.traverse(Float, retain_graph=False, retain_grad=True)
+                ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
                 Z  += Z_i
                 dZ += dZ_i
@@ -151,7 +151,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             ek.set_grad(direction, grad_direction)
             ek.set_grad(divergence, grad_divergence)
             ek.enqueue(ek.ADMode.Reverse, direction, divergence)
-            ek.traverse(Float, retain_graph=False)
+            ek.traverse(Float)
 
             grad_V       = ek.grad(V)
             grad_div_V_1 = ek.grad(div_V_1)
@@ -167,7 +167,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
                 ek.enqueue(ek.ADMode.Reverse, V_i, div_V_1_i)
-                ek.traverse(Float, retain_graph=False)
+                ek.traverse(Float, ek.ADFlag.ClearVertices)
                 it = it + 1
 
         def name(self):
