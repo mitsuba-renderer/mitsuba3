@@ -258,9 +258,9 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfig):
                 'to_world': T.translate([1.25, 0.0, 0.0]),
             }
         }
-        self.spp = 12000
         self.error_mean_threshold = 0.6
-        self.error_max_threshold = 5.0
+        self.error_max_threshold = 6.0
+        self.spp = 12000
 
 
 # Translate area emitter (sphere) on black background
@@ -281,9 +281,9 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfig):
                 'to_world': T.translate([1.25, 0.0, 0.0]),
             }
         }
-        self.spp = 12000
         self.error_mean_threshold = 0.6
         self.error_max_threshold = 6.0
+        self.spp = 12000
 
 # Scale area emitter (sphere) on black background
 class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfig):
@@ -302,62 +302,8 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfig):
                 },
             }
         }
-        self.spp = 12000
         self.error_mean_threshold = 0.6
         self.error_max_threshold = 5.5
-
-
-# Translate occluder (sphere) casting shadow on gray wall
-class TranslateOccluderPointLightConfig(TranslateShapeConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = 'translate_occluder_pointlight'
-        self.key = 'occluder.vertex_positions'
-        self.scene_dict = {
-            'type': 'scene',
-            'plane': {
-                'type': 'rectangle',
-                'bsdf': { 'type': 'diffuse' }
-            },
-            'occluder': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
-            },
-            'light': {
-                'type': 'point',
-                'position': [4.0, 0.0, 4.0],
-            }
-        }
-        self.spp = 12000
-
-
-# Scale occluder (sphere) casting shadow on gray wall
-class ScaleOccluderPointLightConfig(ScaleShapeConfig):
-    def __init__(self) -> None:
-        super().__init__()
-        self.name = 'scale_occluder_pointlight'
-        self.key = 'occluder.vertex_positions'
-        self.scene_dict = {
-            'type': 'scene',
-            'plane': {
-                'type': 'rectangle',
-                'bsdf': { 'type': 'diffuse' }
-            },
-            'occluder': {
-                'type': 'obj',
-                'filename': 'resources/data/common/meshes/sphere.obj',
-                'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
-            },
-            'light': {
-                'type': 'point',
-                'position': [4.0, 0.0, 4.0],
-            }
-        }
-        self.spp = 12000
-        self.error_mean_threshold = 0.2
-        self.error_max_threshold = 1.0
-
 
 # Translate occluder (sphere) casting shadow on gray wall
 class TranslateOccluderAreaLightConfig(TranslateShapeConfig):
@@ -398,23 +344,21 @@ BASIC_CONFIGS = [
     AreaLightRadianceConfig,
     DirectlyVisibleAreaLightRadianceConfig,
     PointLightIntensityConfig,
-    # ConstantEmitterRadianceConfig,
+    ConstantEmitterRadianceConfig,
 ]
 
 REPARAM_CONFIGS = [
     TranslateRectangleEmitterOnBlackConfig,
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
-    TranslateOccluderPointLightConfig,
-    ScaleOccluderPointLightConfig,
     TranslateOccluderAreaLightConfig,
 ]
 
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
     # ('path', False),
-    # ('rb', False),
-    # ('prb', False),
+    ('rb', False),
+    ('prb', False),
     ('rbreparam', True),
     ('prbreparam', True),
 ]
@@ -540,6 +484,8 @@ def test03_rendering_backward(integrator_name, config):
     ek.enable_grad(theta)
     config.update(theta)
 
+    # ek.set_flag(ek.JitFlag.KernelHistory, True)
+    # ek.set_flag(ek.JitFlag.LaunchBlocking, True)
     # ek.set_log_level(3)
 
     integrator.render_backward(

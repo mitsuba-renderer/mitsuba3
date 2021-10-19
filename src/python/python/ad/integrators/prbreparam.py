@@ -108,8 +108,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
             Li = self.Li(None, scene, sampler.clone(), ray)[0]
-        sampler.schedule_state()
-        ek.eval(Li, grad)
+            sampler.schedule_state()
+            ek.eval(Li, grad)
 
         # Replay light paths by using the same seed and accumulate gradients
         # This uses the result from the first pass to compute gradients
