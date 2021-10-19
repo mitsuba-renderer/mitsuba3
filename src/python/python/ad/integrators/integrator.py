@@ -9,7 +9,6 @@ import mitsuba.python.util
 def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
-                        image_adj: mitsuba.core.TensorXf,
                         seed: int,
                         sensor_index: int=0,
                         spp: int=0) -> None:
@@ -31,9 +30,6 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
        SceneParameters data structure that will receive parameter gradients.
 
-    Parameter ``image_adj`` (``mitsuba.core.TensorXf``):
-        Gradient image that should be backpropagated.
-
     Parameter ``seed` (``int``)
         Seed value for the sampler.
 
@@ -51,7 +47,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     ek.enqueue(ek.ADMode.Forward, params)
     ek.traverse(mitsuba.core.Float)
     ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
-    return ek.grad(image) * image_adj
+    return ek.grad(image)
 
 
 def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
@@ -111,6 +107,19 @@ mitsuba.render.ScatteringIntegrator.render_forward = render_forward_impl
 #        Helper functions for integrators implementation
 # -------------------------------------------------------------
 
+def prepare_sampler(sensor, seed, spp):
+    film = sensor.film()
+    rfilter = film.reconstruction_filter()
+    sampler = sensor.sampler()
+    if spp > 0:
+        sampler.set_sample_count(spp)
+    spp = sampler.sample_count()
+
+    film_size = film.crop_size()
+    if film.has_high_quality_edges():
+        film_size += 2 * rfilter.border_size()
+    sampler.seed(seed, ek.hprod(film_size) * spp)
+    return spp
 
 def sample_sensor_rays(sensor):
     """Sample a 2D grid of primary rays for a given sensor"""

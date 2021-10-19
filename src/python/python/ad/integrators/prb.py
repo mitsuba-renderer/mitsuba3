@@ -1,6 +1,6 @@
 import enoki as ek
 import mitsuba
-from .integrator import sample_sensor_rays, mis_weight
+from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
 
 
 class PRBIntegrator(mitsuba.render.SamplingIntegrator):
@@ -15,7 +15,6 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       image_adj: mitsuba.core.TensorXf,
                        seed: int,
                        sensor_index: int=0,
                        spp: int=0) -> None:
@@ -25,28 +24,24 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         film = sensor.film()
         rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()
-        if spp > 0:
-            sampler.set_sample_count(spp)
-        spp = sampler.sample_count()
-        sampler.seed(seed, ek.hprod(film.crop_size()) * spp)
+
+        # Seed the sampler and compute the number of sample per pixels
+        spp = prepare_sampler(sensor, seed, spp)
 
         ray, weight, pos, _, _ = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
-            primal_result, _ = self.Li(None, scene, sampler.clone(), ray)
-
-        block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
-        grad = Spectrum(block.read(pos)) * weight
+            primal_result = self.Li(None, scene, sampler.clone(), ray)[0]
 
         grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
-                           ray, params=params, grad=grad,
+                           ray, params=params, grad=weight,
                            primal_result=primal_result)[0]
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=False)
         block.clear()
-        block.put(pos, ray.wavelengths, grad_img, 1.0)
+        block.put(pos, ray.wavelengths, grad_img)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
         return film.develop()
@@ -64,21 +59,15 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         sensor = scene.sensors()[sensor_index]
         rfilter = sensor.film().reconstruction_filter()
         sampler = sensor.sampler()
-        if spp > 0:
-            sampler.set_sample_count(spp)
-        spp = sampler.sample_count()
 
-        film_size = sensor.film().crop_size()
-        if sensor.film().has_high_quality_edges():
-            film_size += 2 * rfilter.border_size()
-
-        sampler.seed(seed, ek.hprod(film_size) * spp)
+        # Seed the sampler and compute the number of sample per pixels
+        spp = prepare_sampler(sensor, seed, spp)
 
         ray, weight, pos, _, _ = sample_sensor_rays(sensor)
 
         # Sample forward paths (not differentiable)
         with ek.suspend_grad():
-            primal_result, _ = self.Li(None, scene, sampler.clone(), ray)
+            primal_result = self.Li(None, scene, sampler.clone(), ray)[0]
 
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
         grad = Spectrum(block.read(pos)) * weight / spp
@@ -149,8 +138,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
             mis = ek.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf))
 
-            accum += ek.select(active_e, bsdf_val *
-                               throughput * mis * emitter_val, 0.0)
+            accum += ek.select(active_e, bsdf_val * throughput * mis * emitter_val, 0.0)
 
             # Update accumulated radiance. When propagating gradients, we subtract the
             # emitter contributions instead of adding them

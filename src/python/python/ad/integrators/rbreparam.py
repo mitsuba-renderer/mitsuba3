@@ -1,6 +1,6 @@
 import enoki as ek
 import mitsuba
-from .integrator import sample_sensor_rays, mis_weight
+from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
 
 
 class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
@@ -19,7 +19,6 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
-                       image_adj: mitsuba.core.TensorXf,
                        seed: int,
                        sensor_index: int=0,
                        spp: int=0) -> None:
@@ -30,27 +29,25 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         sensor = scene.sensors()[sensor_index]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
+        sampler = sensor.sampler()
+
         assert not rfilter.class_().name() == 'BoxFilter'
         assert film.has_high_quality_edges()
 
-        sampler = sensor.sampler()
-        if spp > 0:
-            sampler.set_sample_count(spp)
-        spp = sampler.sample_count()
-        sampler.seed(seed, ek.hprod(film.crop_size()) * spp)
+        # Seed the sampler and compute the number of sample per pixels
+        spp = prepare_sampler(sensor, seed, spp)
 
         # Sample primary rays
         ray, weight, pos, _, aperture_samples = sample_sensor_rays(sensor)
 
-        # Read image gradient values per sample through the pixel filter
-        block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
-        grad = Spectrum(block.read(pos)) * weight
+        result = self.Li(ek.ADMode.Forward, scene, sampler,
+                         ray, params=params, grad=Spectrum(weight))[0]
 
         # Compute and splat (no pixel filter) directly visible light
         with ek.suspend_grad():
             Li = self.Li(None, scene, sampler, ray)[0]
         sampler.schedule_state()
-        ek.eval(Li, grad)
+        ek.eval(Li)
 
         # Reparameterize primary rays
         reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, True,
@@ -58,34 +55,28 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                                     self.kappa, self.power)
         it = ek.zero(Interaction3f)
         it.p = ray.o + reparam_d
-        ds, weight = sensor.sample_direction(it, aperture_samples)
-        weight = ek.select(weight > 0.0, weight / ek.detach(weight), 1.0)
+        ds, w_reparam = sensor.sample_direction(it, aperture_samples)
+        w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=True)
         block.clear()
-        block.put(ds.uv, ray.wavelengths, Li * weight)
+        block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
         Li_attached = film.develop()
 
         ek.enqueue(ek.ADMode.Forward, params)
-        ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+        ek.traverse(Float)
 
-        Wk_grad = ek.grad(Li_attached) * image_adj
-
-        div_grad = grad * Li * ek.grad(reparam_div)
-        ek.eval(Wk_grad, div_grad)
-
-        result = self.Li(ek.ADMode.Forward, scene, sampler,
-                         ray, params=params, grad=grad)[0]
+        div_grad = weight * Li * ek.grad(reparam_div)
 
         block.clear()
         block.put(pos, ray.wavelengths, result + div_grad)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
 
-        return Wk_grad + film.develop()
+        return ek.grad(Li_attached) + film.develop()
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
@@ -105,14 +96,13 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         sensor = scene.sensors()[sensor_index]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
+        sampler = sensor.sampler()
+
         assert not rfilter.class_().name() == 'BoxFilter'
         assert film.has_high_quality_edges()
 
-        sampler = sensor.sampler()
-        if spp > 0:
-            sampler.set_sample_count(spp)
-        spp = sampler.sample_count()
-        sampler.seed(seed, ek.hprod(film.crop_size()) * spp)
+        # Seed the sampler and compute the number of sample per pixels
+        spp = prepare_sampler(sensor, seed, spp)
 
         ray, weight, pos, _, aperture_samples = sample_sensor_rays(sensor)
 
@@ -120,10 +110,15 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
         grad = Spectrum(block.read(pos)) * weight / spp
 
+        # Backpropagate trough Li term
+        self.Li(ek.ADMode.Reverse, scene, sampler, ray, params=params, grad=grad)
+        sampler.schedule_state()
+        ek.eval()
+
         with ek.suspend_grad():
             Li, _ = self.Li(None, scene, sampler, ray)
         sampler.schedule_state()
-        ek.eval(Li, grad)
+        ek.eval(Li)
 
         # Reparameterize primary rays
         reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, True,
@@ -131,13 +126,13 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                                     self.kappa, self.power)
         it = ek.zero(Interaction3f)
         it.p = ray.o + reparam_d
-        ds, weight = sensor.sample_direction(it, aperture_samples)
-        weight = ek.select(weight > 0.0, weight / ek.detach(weight), 1.0)
+        ds, w_reparam = sensor.sample_direction(it, aperture_samples)
+        w_reparam = ek.select(w_reparam > 0.0, w_reparam / ek.detach(w_reparam), 1.0)
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=True)
         block.clear()
-        block.put(ds.uv, ray.wavelengths, Li * weight)
+        block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
         Li_attached = film.develop()
@@ -145,10 +140,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.set_grad(Li_attached, image_adj)
         ek.set_grad(reparam_div, ek.hsum(grad * Li))
         ek.enqueue(ek.ADMode.Reverse, Li_attached, reparam_div)
-        ek.traverse(Float, ek.ADFlag.ClearVertices)
-
-        self.Li(ek.ADMode.Reverse, scene, sampler, ray,
-                params=params, grad=grad)
+        ek.traverse(Float)
 
     def sample(self, scene, sampler, ray, medium, active):
         return *self.Li(None, scene, sampler, ray), []
@@ -175,7 +167,6 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                       kappa=self.kappa, power=self.power)
 
         ray = Ray3f(ray_)
-        prev_ray = Ray3f(ray_)
 
         pi = scene.ray_intersect_preliminary(ray, active_)
         valid_ray = active_ & pi.is_valid()
@@ -190,14 +181,13 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         depth_i = UInt32(depth)
         loop = Loop("RBPLoop" + '_recursive_li' if is_primal else '')
-        loop.put(lambda:(depth_i, active, ray, prev_ray, emission_weight,
-                         throughput, pi, result))
+        loop.put(lambda:(depth_i, active, ray, emission_weight, throughput, pi, result))
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
             # Attach incoming direction (reparameterization from the previous bounce)
             si = pi.compute_surface_interaction(ray, HitComputeFlags.All, active)
-            reparam_d, _ = reparam(prev_ray, active)
+            reparam_d, _ = reparam(ray, active)
             si.wi = -si.to_local(reparam_d)
 
             # ---------------------- Direct emission ----------------------
@@ -237,7 +227,6 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                               sampler.next_1d(active),
                                               sampler.next_2d(active), active)
                 active &= bs.pdf > 0.0
-                prev_ray = ray
                 ray = ek.detach(si.spawn_ray(si.to_world(bs.wo)))
                 pi_bsdf = scene.ray_intersect_preliminary(ray, active)
                 si_bsdf = pi_bsdf.compute_surface_interaction(ray, HitComputeFlags.All, active)

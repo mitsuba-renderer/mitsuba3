@@ -334,7 +334,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     Float wavelength_sample = sampler->next_1d(active);
 
     const Film *film = sensor->film();
-
     Vector2f adjusted_position =
         (position_sample - film->crop_offset()) / film->crop_size();
 
@@ -345,7 +344,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
         ray.scale_differential(diff_scale_factor);
 
     const Medium *medium = sensor->medium();
-    std::pair<Spectrum, Mask> result = sample(scene, sampler, ray, medium, aovs + 5, active);
+    std::pair<Spectrum, Mask> result =
+        sample(scene, sampler, ray, medium, aovs + 5, active);
     result.first = ray_weight * result.first;
 
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(result.first);

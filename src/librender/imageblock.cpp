@@ -209,6 +209,9 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
 MTS_VARIANT void
 ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask active) {
+    if (m_border_size == 0)
+        active &= ek::all(pos_ >= 0.0) && ek::all(pos_ < m_size);
+
     ScalarVector2i size = m_size + 2 * m_border_size;
 
     // Convert to pixel coordinates within the image block
@@ -246,7 +249,10 @@ ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask activ
                 for (uint32_t xr = 0; xr < n; ++xr) {
                     UInt32 x = lo.x() + xr;
                     enabled &= x <= hi.x();
-                    ek::masked(weight, enabled) += m_weights_y[yr] * m_weights_x[xr];
+                    if (m_border_size == 0)
+                        ek::masked(weight, enabled) += m_weights_y[yr] * m_weights_x[xr];
+                    else
+                        weight += m_weights_y[yr] * m_weights_x[xr];
                 }
             }
             factor = ek::detach(ek::select(weight > 0.f, ek::rcp(weight), 1.f));
