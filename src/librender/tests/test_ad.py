@@ -263,7 +263,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
 
     ek.set_grad(loss, loss_grad)
     ek.enqueue(ek.ADMode.Reverse, loss)
-    ek.traverse(Float, retain_graph=True)
+    ek.traverse(Float, ek.ADFlag.ClearVertices)
 
     # Check gradients
     grad = ek.grad(bsdf_params['reflectance.value'])
@@ -271,7 +271,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
     assert ek.allclose(grad, v * ek.hsum(ek.select(mask, loss_grad, 0.0)))
 
     # Forward propagate gradients to loss
-    ek.forward(bsdf_params['reflectance.value'], retain_graph=True)
+    ek.forward(bsdf_params['reflectance.value'], ek.ADFlag.ClearVertices)
     assert ek.allclose(ek.grad(loss), ek.select(mask, 3 * v, 0.0))
 
 
@@ -368,7 +368,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
 
         ek.set_grad(loss, loss_grad)
         ek.enqueue(ek.ADMode.Reverse, loss)
-        ek.traverse(Float, retain_graph=True)
+        ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         # Check gradients
         grad1 = ek.grad(p1)
@@ -383,13 +383,13 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
         ek.set_grad(p2, 0)
         ek.enqueue(ek.ADMode.Forward, p1)
         ek.enqueue(ek.ADMode.Forward, p2)
-        ek.traverse(Float, retain_graph=True)
+        ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         ek.set_grad(p1, 0)
         ek.set_grad(p2, 1)
         ek.enqueue(ek.ADMode.Forward, p1)
         ek.enqueue(ek.ADMode.Forward, p2)
-        ek.traverse(Float, retain_graph=True)
+        ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         assert ek.allclose(ek.grad(loss), 3 * v * ek.select(mask, mult1, mult2))
 
