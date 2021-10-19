@@ -74,9 +74,11 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         Custom Enoki operator to reparameterize rays in order to account for
         gradient discontinuities due to moving geometry in the scene.
         """
-        def eval(self, ray, active):
+        def eval(self, scene, params, ray, active):
             from mitsuba.core import Float
-            self.add_input(params)
+            self.scene = scene
+            self.params = params
+            self.add_input(self.params)
             self.ray = ray
             self.active = active
             return self.ray.d, ek.zero(Float, ek.width(self.ray.d))
@@ -97,9 +99,9 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             loop.init()
 
             while loop(it < num_auxiliary_rays):
-                Z_i, dZ_i, V_i, divergence_lhs_i = sample_warp_field(scene, sampler, self.ray, kappa, power, self.active)
+                Z_i, dZ_i, V_i, divergence_lhs_i = sample_warp_field(self.scene, sampler, self.ray, kappa, power, self.active)
 
-                ek.enqueue(ek.ADMode.Forward, params)
+                ek.enqueue(ek.ADMode.Forward, self.params)
                 ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
                 Z  += Z_i
@@ -133,7 +135,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 sampler_clone.loop_register(loop)
                 loop.init()
                 while loop(it < num_auxiliary_rays):
-                    Z_i, dZ_i, _, _ = sample_warp_field(scene, sampler_clone, self.ray, kappa, power, self.active)
+                    Z_i, dZ_i, _, _ = sample_warp_field(self.scene, sampler_clone, self.ray, kappa, power, self.active)
                     Z  += Z_i
                     dZ += dZ_i
                     it = it + 1
@@ -162,7 +164,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             sampler.loop_register(loop)
             loop.init()
             while loop(it < num_auxiliary_rays):
-                _, _, V_i, div_V_1_i = sample_warp_field(scene, sampler, self.ray, kappa, power, self.active)
+                _, _, V_i, div_V_1_i = sample_warp_field(self.scene, sampler, self.ray, kappa, power, self.active)
                 # print(ek.graphviz_str(Float(1)))
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
@@ -173,4 +175,4 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         def name(self):
             return "ReparameterizeRay"
 
-    return ek.custom(Reparameterizer, ray_, active_)
+    return ek.custom(Reparameterizer, scene, params, ray_, active_)
