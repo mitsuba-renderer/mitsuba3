@@ -117,8 +117,8 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         with ek.suspend_grad():
             Li, _ = self.Li(None, scene, sampler, ray)
-        sampler.schedule_state()
-        ek.eval(Li)
+            sampler.schedule_state()
+            ek.eval(Li)
 
         # Reparameterize primary rays
         reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, True,
