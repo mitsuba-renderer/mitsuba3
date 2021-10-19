@@ -27,6 +27,17 @@ using ::operator<<;
 
 NAMESPACE_BEGIN(string)
 
+/**
+ * \brief Locale-independent conversion from a string to double precision
+ *
+ * Throws if the conversion is unsuccessful, or if the portion of the string
+ * following the parsed number contains non-whitespace characters.
+ */
+extern MTS_EXPORT_CORE float stof(const std::string &s);
+
+/// Analogous, but in double precision
+extern MTS_EXPORT_CORE double stod(const std::string &s);
+
 /// Check if the given string starts with a specified prefix
 inline bool starts_with(const std::string &string, const std::string &prefix) {
     if (prefix.size() > string.size())

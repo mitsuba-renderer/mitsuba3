@@ -386,6 +386,12 @@ add_subdirectory(rgb2spec)
 set(RGB2SPEC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/rgb2spec PARENT_SCOPE)
 set_target_properties(rgb2spec rgb2spec_opt rgb2spec_opt_run PROPERTIES FOLDER "dependencies/rgb2spec")
 
+# ----------------------------------------------------------
+#  Fast floating point parser (interface library)
+# ----------------------------------------------------------
+
+add_subdirectory(fastfloat)
+
 mark_as_advanced(
   BUILD_SHARED_LIBS BUILD_TESTING CMAKE_DEBUG_POSTFIX CMAKE_INSTALL_PREFIX
   CMAKE_VERBOSE_MAKEFILE INSTALL_BIN_DIR INSTALL_INC_DIR INSTALL_LIB_DIR

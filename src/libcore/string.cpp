@@ -1,8 +1,41 @@
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/object.h>
+#include <mitsuba/core/logger.h>
+
+#if defined(__clang__)
+#  pragma clang diagnostic ignored "-Wfortify-source"
+#  pragma clang diagnostic ignored "-Wshift-count-overflow"
+#endif
+#include <fast_float/fast_float.h>
 
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
+
+float stof(const std::string &s) {
+    const char *cs = s.c_str();
+
+    float result;
+    fast_float::from_chars_result status =
+        fast_float::from_chars(cs, cs + s.length(), result);
+
+    if (status.ec != std::errc())
+        Throw("Floating point number \"%s\" could not be parsed!", s);
+
+    return result;
+}
+
+double stod(const std::string &s) {
+    const char *cs = s.c_str();
+
+    double result;
+    fast_float::from_chars_result status =
+        fast_float::from_chars(cs, cs + s.length(), result);
+
+    if (status.ec != std::errc())
+        Throw("Floating point number \"%s\" could not be parsed!", s);
+
+    return result;
+}
 
 std::vector<std::string> tokenize(const std::string &string,
                                   const std::string &delim,
