@@ -393,18 +393,18 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfig):
 # -------------------------------------------------------------------
 
 BASIC_CONFIGS = [
-    # DiffuseAlbedoConfig,
-    # DiffuseAlbedoGIConfig,
-    # AreaLightRadianceConfig,
-    # DirectlyVisibleAreaLightRadianceConfig,
-    # PointLightIntensityConfig,
-    # ConstantEmitterRadianceConfig,
+    DiffuseAlbedoConfig,
+    DiffuseAlbedoGIConfig,
+    AreaLightRadianceConfig,
+    DirectlyVisibleAreaLightRadianceConfig,
+    PointLightIntensityConfig,
+    ConstantEmitterRadianceConfig,
 ]
 
 REPARAM_CONFIGS = [
     # TranslateRectangleEmitterOnBlackConfig,
     # TranslateSphereEmitterOnBlackConfig,
-    ScaleSphereEmitterOnBlackConfig,
+    # ScaleSphereEmitterOnBlackConfig,
     # TranslateOccluderPointLightConfig,
     # ScaleOccluderPointLightConfig,
     # TranslateOccluderAreaLightConfig,
@@ -413,9 +413,9 @@ REPARAM_CONFIGS = [
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
     # ('path', False),
-    # ('rb', False),
-    # ('prb', False),
-    ('rbreparam', True),
+    ('rb', False),
+    ('prb', False),
+    # ('rbreparam', True),
     # ('prbreparam', True),
 ]
 
@@ -488,7 +488,7 @@ def test02_rendering_forward(integrator_name, config):
     ek.enable_grad(theta)
     ek.set_label(theta, 'theta')
     config.update(theta)
-    ek.forward(theta, retain_graph=False, retain_grad=True)
+    ek.forward(theta, ek.ADFlag.ClearEdges)
 
     # ek.set_log_level(3)
 
@@ -550,7 +550,7 @@ def test03_rendering_backward(integrator_name, config):
     grad = ek.grad(theta)[0] / ek.width(image_fwd_ref)
     grad_ref = ek.hmean(image_fwd_ref)
 
-    error = ek.abs(grad - grad_ref) / ek.max(grad_ref, 1e-3)
+    error = ek.abs(grad - grad_ref) / ek.max(ek.abs(grad_ref), 1e-3)
     if error > config.error_mean_threshold:
         print(f"Failure in config: {config.name}, {integrator_name}")
         print(f"-> grad:     {grad}")

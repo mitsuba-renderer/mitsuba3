@@ -49,7 +49,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     ek.set_flag(ek.JitFlag.LoopRecord, False)
     image = self.render(scene, seed, sensor_index, spp=spp)
     ek.enqueue(ek.ADMode.Forward, params)
-    ek.traverse(mitsuba.core.Float, retain_graph=False)
+    ek.traverse(mitsuba.core.Float)
     ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
     return ek.grad(image) * image_adj
 
@@ -96,7 +96,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     image = self.render(scene, seed, sensor_index, spp=spp)
     ek.set_grad(image, image_adj)
     ek.enqueue(ek.ADMode.Backward, image)
-    ek.traverse(mitsuba.core.Float, retain_graph=False)
+    ek.traverse(mitsuba.core.Float)
     ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
 
 

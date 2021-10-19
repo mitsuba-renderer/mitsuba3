@@ -23,7 +23,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                        seed: int,
                        sensor_index: int=0,
                        spp: int=0) -> None:
-        from mitsuba.core import Spectrum
+        from mitsuba.core import Float, Spectrum
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
 
@@ -70,7 +70,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         Li_attached = film.develop()
 
         ek.enqueue(ek.ADMode.Forward, params)
-        ek.traverse(mitsuba.core.Float, retain_graph=False, retain_grad=True)
+        ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
 
         Wk_grad = ek.grad(Li_attached) * image_adj
 
@@ -145,7 +145,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.set_grad(Li_attached, image_adj)
         ek.set_grad(reparam_div, ek.hsum(grad * Li))
         ek.enqueue(ek.ADMode.Reverse, Li_attached, reparam_div)
-        ek.traverse(Float, retain_graph=True)
+        ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         self.Li(ek.ADMode.Reverse, scene, sampler, ray,
                 params=params, grad=grad)
@@ -267,10 +267,10 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                 accum += ek.select(active, contrib + reparam_div * ek.detach(contrib), 0.0)
 
             if mode is ek.ADMode.Reverse:
-                ek.backward(accum * grad, retain_graph=True)
+                ek.backward(accum * grad, ek.ADFlag.ClearVertices)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
-                ek.traverse(mitsuba.core.Float, retain_graph=False, retain_grad=True)
+                ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
                 result += ek.grad(accum) * grad
             else:
                 result += accum

@@ -180,10 +180,10 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                 accum += ek.select(active, bsdf_eval * primal_result / ek.max(1e-8, ek.detach(bsdf_eval)), 0.0)
 
             if mode is ek.ADMode.Reverse:
-                ek.backward(accum * grad, retain_graph=True)
+                ek.backward(accum * grad, ek.ADFlag.ClearVertices)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
-                ek.traverse(mitsuba.core.Float, retain_graph=False, retain_grad=True)
+                ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
                 result += ek.grad(accum) * grad
             else:
                 result += accum
