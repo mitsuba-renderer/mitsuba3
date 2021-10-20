@@ -11,31 +11,86 @@
 NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(string)
 
-float stof(const std::string &s) {
-    const char *cs = s.c_str();
+template <typename T> T strtof(const char *s, char **endptr) {
+    const char *p = s;
 
-    float result;
+    // Skip leading space
+    do {
+        char c = *p;
+        if (c == ' ' || c == '\t')
+            ++p;
+        else
+            break;
+    } while (true);
+
+    // Skip leading '+' signs (not handled by from_chars)
+    if (*p == '+')
+        ++p;
+
+    T result;
     fast_float::from_chars_result status =
-        fast_float::from_chars(cs, cs + s.length(), result);
+        fast_float::from_chars(p, p + strlen(p), result);
 
-    if (status.ec != std::errc())
+    bool success = status.ec == std::errc();
+
+    if (likely(success)) {
+        *endptr = (char *) status.ptr;
+        p = status.ptr;
+    } else {
+        Throw("Floating point number \"%s\" could not be parsed!", s);
+    }
+
+    return result;
+}
+
+template <typename T> T stof(const std::string &s) {
+    const char *p = s.c_str();
+
+    // Skip leading space
+    do {
+        char c = *p;
+        if (c == ' ' || c == '\t')
+            ++p;
+        else
+            break;
+    } while (true);
+
+    // Skip leading '+' signs (not handled by from_chars)
+    if (*p == '+')
+        ++p;
+
+    T result;
+    fast_float::from_chars_result status =
+        fast_float::from_chars(p, p + s.length(), result);
+
+    bool success = status.ec == std::errc();
+
+    if (likely(success)) {
+        p = status.ptr;
+
+        // Skip trailing space
+        do {
+            char c = *p;
+
+            if (c == ' ' || c == '\t') {
+                ++p;
+            } else  {
+                success = c == '\0';
+                break;
+            }
+        } while (true);
+    }
+
+    if (unlikely(!success))
         Throw("Floating point number \"%s\" could not be parsed!", s);
 
     return result;
 }
 
-double stod(const std::string &s) {
-    const char *cs = s.c_str();
-
-    double result;
-    fast_float::from_chars_result status =
-        fast_float::from_chars(cs, cs + s.length(), result);
-
-    if (status.ec != std::errc())
-        Throw("Floating point number \"%s\" could not be parsed!", s);
-
-    return result;
-}
+template MTS_EXPORT_CORE float  stof<float>(const std::string &);
+template MTS_EXPORT_CORE double stof<double>(const std::string &);
+template MTS_EXPORT_CORE float  strtof<float>(const char *, char **);
+template MTS_EXPORT_CORE double strtof<double>(const char *, char **);
 
 std::vector<std::string> tokenize(const std::string &string,
                                   const std::string &delim,

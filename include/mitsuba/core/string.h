@@ -28,15 +28,27 @@ using ::operator<<;
 NAMESPACE_BEGIN(string)
 
 /**
- * \brief Locale-independent conversion from a string to double precision
+ * \brief Locale-independent string to floating point conversion analogous
+ * to std::stof. (implemented using Daniel Lemire's fast_float library.)
  *
- * Throws if the conversion is unsuccessful, or if the portion of the string
- * following the parsed number contains non-whitespace characters.
+ * Throws an exception if the conversion is unsuccessful, or if the portion of
+ * the string following the parsed number contains non-whitespace characters.
  */
-extern MTS_EXPORT_CORE float stof(const std::string &s);
+template <typename T> T stof(const std::string &s);
 
-/// Analogous, but in double precision
-extern MTS_EXPORT_CORE double stod(const std::string &s);
+/**
+ * \brief Locale-independent string to floating point conversion analogous
+ * to std::strtof. (implemented using Daniel Lemire's fast_float library.)
+ *
+ * Throws an exception if the conversion is unsuccessful.
+ */
+template <typename T> T strtof(const char *s, char **endptr);
+
+extern template MTS_EXPORT_CORE float  stof<float>(const std::string &str);
+extern template MTS_EXPORT_CORE double stof<double>(const std::string &str);
+
+extern template MTS_EXPORT_CORE float  strtof<float>(const char *str, char **endptr);
+extern template MTS_EXPORT_CORE double strtof<double>(const char *str, char **endptr);
 
 /// Check if the given string starts with a specified prefix
 inline bool starts_with(const std::string &string, const std::string &prefix) {

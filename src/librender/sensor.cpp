@@ -134,7 +134,7 @@ float parse_fov(const Properties &props, float aspect) {
 
         float value;
         try {
-            value = string::stof(f);
+            value = string::stof<float>(f);
         } catch (...) {
             Throw("Could not parse the focal length (must be of the form "
                 "<x>mm, where <x> is a positive integer)!");

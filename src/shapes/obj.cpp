@@ -96,10 +96,6 @@ public:
     using typename Base::InputNormal3f;
     using typename Base::FloatStorage;
 
-    InputFloat strtof(const char *nptr, char **endptr) {
-            return std::strtof(nptr, endptr);
-    }
-
     OBJMesh(const Properties &props) : Base(props) {
         /* Causes all texture coordinates to be vertically flipped.
            Enabled by default, for consistence with the Mitsuba 1 behavior. */
@@ -174,7 +170,7 @@ public:
                 cur += 2;
                 for (size_t i = 0; i < 3; ++i) {
                     const char *orig = cur;
-                    p[i] = strtof(cur, (char **) &cur);
+                    p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
                 p = m_to_world.scalar().transform_affine(p);
@@ -188,7 +184,7 @@ public:
                 cur += 3;
                 for (size_t i = 0; i < 3; ++i) {
                     const char *orig = cur;
-                    n[i] = strtof(cur, (char **) &cur);
+                    n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
                 n = ek::normalize(m_to_world.scalar().transform_affine(n));
@@ -201,7 +197,7 @@ public:
                 cur += 3;
                 for (size_t i = 0; i < 2; ++i) {
                     const char *orig = cur;
-                    uv[i] = strtof(cur, (char **) &cur);
+                    uv[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                     parse_error |= cur == orig;
                 }
                 if (flip_tex_coords)
