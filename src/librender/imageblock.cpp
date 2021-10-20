@@ -38,8 +38,9 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &data,
         m_weights_y = m_weights_x + filter_size;
     }
 
-    m_size = ScalarVector2i(data.shape(1), data.shape(0));
-    m_channel_count = data.shape(2);
+    m_size = ScalarVector2i((int32_t) data.shape(1),
+                            (int32_t) data.shape(0));
+    m_channel_count = (uint32_t) data.shape(2);
     if constexpr (ek::is_jit_array_v<Float>)
         m_data = TensorXf(data.array().copy(), 3, data.shape().data());
     else
