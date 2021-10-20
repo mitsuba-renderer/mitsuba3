@@ -91,18 +91,15 @@ NAMESPACE_BEGIN(detail)
 using Float = float;
 MTS_IMPORT_CORE_TYPES()
 
-/// Throws if non-whitespace characters are found after the given index.
-static void check_whitespace_only(const std::string &s, size_t offset) {
-    for (size_t i = offset; i < s.size(); ++i) {
-        if (!std::isspace(s[i]))
-            Throw("Invalid trailing characters in floating point number \"%s\"", s);
-    }
-}
-
 static int64_t stoll(const std::string &s) {
     size_t offset = 0;
     int64_t result = std::stoll(s, &offset);
-    check_whitespace_only(s, offset);
+
+    for (size_t i = offset; i < s.size(); ++i) {
+        if (!std::isspace(s[i]))
+            Throw("Invalid trailing characters in integer \"%s\"", s);
+    }
+
     return result;
 }
 
@@ -308,9 +305,9 @@ Vector3f parse_named_vector(XMLSource &src, pugi::xml_node &node, const std::str
     if (list.size() != 3)
         src.throw_error(node, "\"%s\" attribute must have exactly 3 elements", attr_name);
     try {
-        return Vector3f(string::stof(list[0]),
-                        string::stof(list[1]),
-                        string::stof(list[2]));
+        return Vector3f(string::stof<Float>(list[0]),
+                        string::stof<Float>(list[1]),
+                        string::stof<Float>(list[2]));
     } catch (...) {
         src.throw_error(node, "could not parse floating point values in \"%s\"", vec_str);
     }
@@ -321,11 +318,11 @@ Vector3f parse_vector(XMLSource &src, pugi::xml_node &node, Float def_val = 0.f)
     try {
         Float x = def_val, y = def_val, z = def_val;
         value = node.attribute("x").value();
-        if (!value.empty()) x = string::stof(value);
+        if (!value.empty()) x = string::stof<Float>(value);
         value = node.attribute("y").value();
-        if (!value.empty()) y = string::stof(value);
+        if (!value.empty()) y = string::stof<Float>(value);
         value = node.attribute("z").value();
-        if (!value.empty()) z = string::stof(value);
+        if (!value.empty()) z = string::stof<Float>(value);
         return Vector3f(x, y, z);
     } catch (...) {
         src.throw_error(node, "could not parse floating point value \"%s\"", value);
@@ -385,19 +382,19 @@ void upgrade_tree(XMLSource &src, pugi::xml_node &node, const Version &version) 
 
             Vector2f offset(0.f), scale(1.f);
             if (uoffset) {
-                offset.x() = string::stof(uoffset.attribute("value").value());
+                offset.x() = string::stof<Float>(uoffset.attribute("value").value());
                 n.remove_child(uoffset);
             }
             if (voffset) {
-                offset.y() = string::stof(voffset.attribute("value").value());
+                offset.y() = string::stof<Float>(voffset.attribute("value").value());
                 n.remove_child(voffset);
             }
             if (uscale) {
-                scale.x() = string::stof(uscale.attribute("value").value());
+                scale.x() = string::stof<Float>(uscale.attribute("value").value());
                 n.remove_child(uscale);
             }
             if (vscale) {
-                scale.y() = string::stof(vscale.attribute("value").value());
+                scale.y() = string::stof<Float>(vscale.attribute("value").value());
                 n.remove_child(vscale);
             }
 
@@ -710,7 +707,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     std::string value = node.attribute("value").value();
                     Float value_float;
                     try {
-                        value_float = string::stof(value);
+                        value_float = string::stof<Float>(value);
                     } catch (...) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", value);
                     }
@@ -777,9 +774,9 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                     Color3f color;
                     try {
-                        color = Color3f(string::stof(tokens[0]),
-                                        string::stof(tokens[1]),
-                                        string::stof(tokens[2]));
+                        color = Color3f(string::stof<Float>(tokens[0]),
+                                        string::stof<Float>(tokens[1]),
+                                        string::stof<Float>(tokens[2]));
                     } catch (...) {
                         src.throw_error(node, "could not parse RGB value \"%s\"", node.attribute("value").value());
                     }
@@ -812,7 +809,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         std::vector<std::string> tokens = string::tokenize(node.attribute("value").value());
 
                         try {
-                            const_value = string::stof(tokens[0]);
+                            const_value = string::stof<Float>(tokens[0]);
                         } catch (...) {
                             src.throw_error(node, "could not parse constant spectrum \"%s\"", tokens[0]);
                         }
@@ -829,8 +826,8 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
 
                                 Float wavelength, value;
                                 try {
-                                    wavelength = string::stof(pair[0]);
-                                    value = string::stof(pair[1]);
+                                    wavelength = string::stof<Float>(pair[0]);
+                                    value = string::stof<Float>(pair[1]);
                                 } catch (...) {
                                     src.throw_error(node, "could not parse wavelength:value pair: \"%s\"", token);
                                 }
@@ -866,7 +863,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     std::string angle = node.attribute("angle").value();
                     Float angle_float;
                     try {
-                        angle_float = string::stof(angle);
+                        angle_float = string::stof<Float>(angle);
                     } catch (...) {
                         src.throw_error(node, "could not parse floating point value \"%s\"", angle);
                     }
@@ -921,7 +918,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         for (int i = 0; i < 4; ++i) {
                             for (int j = 0; j < 4; ++j) {
                                 try {
-                                    matrix(i, j) = string::stof(tokens[i * 4 + j]);
+                                    matrix(i, j) = string::stof<Float>(tokens[i * 4 + j]);
                                 } catch (...) {
                                     src.throw_error(node, "could not parse floating point value \"%s\"",
                                                     tokens[i * 4 + j]);
@@ -934,7 +931,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                         for (int i = 0; i < 3; ++i) {
                             for (int j = 0; j < 3; ++j) {
                                 try {
-                                    mat3(i, j) = string::stof(tokens[i * 3 + j]);
+                                    mat3(i, j) = string::stof<Float>(tokens[i * 3 + j]);
                                 } catch (...) {
                                     src.throw_error(node, "could not parse floating point value \"%s\"",
                                                     tokens[i * 3 + j]);

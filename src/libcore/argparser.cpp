@@ -35,7 +35,7 @@ int ArgParser::Arg::as_int() const {
 }
 
 double ArgParser::Arg::as_float() const {
-    return string::stod(m_value);
+    return string::stof<double>(m_value);
 }
 
 void ArgParser::parse(int argc, const char **argv) {
