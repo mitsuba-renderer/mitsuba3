@@ -216,7 +216,7 @@ public:
             if (ek::any_or<true>(use_rr)) {
                 Float q = ek::min(ek::hmax(unpolarized_spectrum(throughput)) * ek::sqr(eta), .95f);
                 ek::masked(active, use_rr) &= sampler->next_1d(active) < q;
-                ek::masked(throughput, use_rr) *= ek::rcp(q);
+                ek::masked(throughput, use_rr) *= ek::detach(ek::rcp(q));
             }
         }
 
