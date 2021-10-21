@@ -188,7 +188,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
             # Attach incoming direction (reparameterization from the previous bounce)
             si = pi.compute_surface_interaction(ray, HitComputeFlags.All, active)
             reparam_d, _ = reparam(ray, active)
-            si.wi = -si.to_local(reparam_d)
+            si.wi = -ek.select(active & si.is_valid(), si.to_local(reparam_d), reparam_d)
 
             # ---------------------- Direct emission ----------------------
 
