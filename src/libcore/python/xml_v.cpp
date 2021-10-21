@@ -139,6 +139,7 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
         SET_PROPS(py::int_, int64_t, set_long);
         SET_PROPS(py::float_, Properties::Float, set_float);
         SET_PROPS(py::str, std::string, set_string);
+        SET_PROPS(ScalarColor3f, ScalarColor3f, set_color);
         SET_PROPS(ScalarArray3f, ScalarArray3f, set_array3f);
         SET_PROPS(ScalarTransform4f, ScalarTransform4f, set_transform);
 

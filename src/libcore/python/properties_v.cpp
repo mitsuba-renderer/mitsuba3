@@ -34,7 +34,9 @@ py::object properties_get(const Properties& p, const std::string &key) {
         return py::cast(p.float_(key));
     else if (type == Properties::Type::String)
         return py::cast(p.string(key));
-        else if (type == Properties::Type::Array3f)
+    else if (type == Properties::Type::Color)
+        return py::cast(p.color(key));
+    else if (type == Properties::Type::Array3f)
         return py::cast(p.array3f(key));
     else if (type == Properties::Type::Transform)
         return py::cast(p.transform(key));
@@ -75,6 +77,7 @@ MTS_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(bool, bool)
             .SET_ITEM_BINDING(long, int64_t)
             .SET_ITEM_BINDING(string, std::string)
+            .SET_ITEM_BINDING(color, typename Properties::Color3f)
             .SET_ITEM_BINDING(array3f, typename Properties::Array3f)
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
             .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
@@ -83,6 +86,7 @@ MTS_PY_EXPORT(Properties) {
             .GET_ITEM_DEFAULT_BINDING(bool_, bool, bool)
             .GET_ITEM_DEFAULT_BINDING(long_, long, int64_t)
             .GET_ITEM_DEFAULT_BINDING(string, string, std::string)
+            .GET_ITEM_DEFAULT_BINDING(color, color, typename Properties::Color3f)
             .GET_ITEM_DEFAULT_BINDING(array3f, array3f, typename Properties::Array3f)
             .GET_ITEM_DEFAULT_BINDING(transform, transform, typename Properties::Transform4f)
             .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
