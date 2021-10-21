@@ -412,7 +412,10 @@ def test02_rendering_forward(integrator_name, config):
     mitsuba.set_variant('cuda_ad_rgb')
     # mitsuba.set_variant('llvm_ad_rgb')
 
-    from mitsuba.core import xml, Float, TensorXf
+    # ek.set_flag(ek.JitFlag.LoopRecord, False)
+    # ek.set_flag(ek.JitFlag.VCallRecord, False)
+
+    from mitsuba.core import xml, Float
     from mitsuba.python.util import write_bitmap
 
     config = config()
@@ -465,7 +468,8 @@ def test03_rendering_backward(integrator_name, config):
 
     from mitsuba.core import xml, Float, TensorXf
 
-    # ek.set_flag(ek.JitFlag.LoopRecord, False) # TODO should this work?
+    # ek.set_flag(ek.JitFlag.LoopRecord, False)
+    # ek.set_flag(ek.JitFlag.VCallRecord, False)
 
     config = config()
     config.initialize()
@@ -501,6 +505,88 @@ def test03_rendering_backward(integrator_name, config):
         print(f"-> grad_ref: {grad_ref}")
         print(f"-> error: {error} (threshold={config.error_mean_threshold})")
         print(f"-> ratio: {grad / grad_ref}")
+        assert False
+
+
+@pytest.mark.slow
+def test04_render_custom_op():
+    import mitsuba
+    mitsuba.set_variant('cuda_ad_rgb')
+    # mitsuba.set_variant('llvm_ad_rgb')
+
+    from mitsuba.core import xml, Float
+    from mitsuba.python.util import write_bitmap
+    from mitsuba.python.ad import render
+
+    config = DiffuseAlbedoConfig()
+    config.initialize()
+
+    integrator = xml.load_dict({ 'type': 'rb' })
+
+    filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
+    image_primal_ref = load_image(filename)
+
+    filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
+    image_fwd_ref = load_image(filename)
+
+    theta = Float(0.0)
+    ek.enable_grad(theta)
+    config.update(theta)
+
+    image_primal = render(config.scene, integrator, config.params, seed=0, spp=config.spp)
+
+    error = ek.abs(image_primal - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
+    error_mean = ek.hmean(error)
+    error_max = ek.hmax(error)
+
+    if error_mean > config.error_mean_threshold  or error_max > config.error_max_threshold:
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
+        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+        filename = f"test_{integrator_name}_{config.name}_image_primal.exr"
+        write_bitmap(filename, image_primal)
+        assert False
+
+    filename = f"test_render_custom_op_image_primal.exr"
+    write_bitmap(filename, image_primal)
+
+    obj = ek.hmean_async(image_primal)
+    ek.backward(obj)
+
+    grad = ek.grad(theta)[0]
+    grad_ref = ek.hmean(image_fwd_ref)
+
+    error = ek.abs(grad - grad_ref) / ek.max(ek.abs(grad_ref), 1e-3)
+    if error > config.error_mean_threshold:
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> grad:     {grad}")
+        print(f"-> grad_ref: {grad_ref}")
+        print(f"-> error: {error} (threshold={config.error_mean_threshold})")
+        print(f"-> ratio: {grad / grad_ref}")
+        assert False
+
+    theta = Float(0.0)
+    ek.enable_grad(theta)
+    config.update(theta)
+
+    image_primal = render(config.scene, integrator, config.params, seed=0, spp=config.spp)
+
+    ek.forward(theta)
+
+    image_fwd = ek.grad(image_primal)
+
+    error = ek.abs(image_fwd - image_fwd_ref) / ek.max(ek.abs(image_fwd_ref), 2e-1)
+    error_mean = ek.hmean(error)
+    error_max = ek.hmax(error)
+
+    if error_mean > config.error_mean_threshold or error_max > config.error_max_threshold:
+        print(f"Failure in config: {config.name}, {integrator_name}")
+        print(f"-> error mean: {error_mean} (threshold={config.error_mean_threshold})")
+        print(f"-> error max: {error_max} (threshold={config.error_max_threshold})")
+        filename = f"test_{integrator_name}_{config.name}_image_fwd.exr"
+        write_bitmap(filename, image_fwd)
+        filename = f"test_{integrator_name}_{config.name}_image_error.exr"
+        write_bitmap(filename, error)
         assert False
 
 # -------------------------------------------------------------------

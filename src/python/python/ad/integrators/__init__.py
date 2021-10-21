@@ -12,3 +12,5 @@ for m in modules:
         _reload(globals()[m])
     else:
         _import('mitsuba.python.ad.integrators.' + m)
+
+from .integrator import render

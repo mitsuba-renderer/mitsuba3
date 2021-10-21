@@ -102,6 +102,89 @@ mitsuba.render.SamplingIntegrator.render_forward = render_forward_impl
 mitsuba.render.ScatteringIntegrator.render_backward = render_backward_impl
 mitsuba.render.ScatteringIntegrator.render_forward = render_forward_impl
 
+# -------------------------------------------------------------
+#                  Rendering Custom Operation
+# -------------------------------------------------------------
+
+def render(scene: mitsuba.render.Scene,
+           integrator: mitsuba.render.Integrator,
+           params: mitsuba.python.util.SceneParameters,
+           seed: int,
+           sensor_index: int=0,
+           spp: int=None,
+           seed_adjoint:int=None,
+           spp_adjoint: int=None):
+    """
+    This function encapsulates the full primal and adjoint rendering pipeline
+    within an Enoki custom operation. This enables seemless differentiation
+    using ek.backward/ek.forward, where the appropriate adjoint implementation
+    of the light transport algorithm will be executed under the hood.
+
+    Parameter ``scene``:
+        The scene to render
+
+    Parameter ``integrator``:
+        The integrator object implementing the light transport algorithm
+
+    Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
+       SceneParameters data structure that will receive parameter gradients.
+
+    Parameter ``seed` (``int``)
+        Seed value for the sampler.
+
+    Parameter ``sensor_index`` (``int``):
+        Optional parameter to specify which sensor to use for rendering.
+
+    Parameter ``spp`` (``int``):
+        Optional parameter to override the number of samples per pixel.
+        This parameter will be ignored if set to 0.
+
+    Parameter ``seed_adjoint` (``int``)
+        Optional seed value for the adjoint light transport simulation. By
+        default, a random seed based on the primal `seed` will be used.
+
+    Parameter ``spp_adjoint`` (``int``):
+        Optional parameter to override the number of samples per pixel used
+        during the adjoint light transport simulation. By default the adjoint
+        simulation uses the same number of samples per pixel as the primal
+        simulation.
+    """
+
+    assert isinstance(scene, mitsuba.render.Scene)
+    assert isinstance(integrator, mitsuba.render.Integrator)
+    assert isinstance(params, mitsuba.python.util.SceneParameters)
+
+    if spp and spp_adjoint is None:
+        spp_adjoint = spp
+
+    if seed_adjoint is None:
+        seed_adjoint = mitsuba.core.sample_tea_32(seed, 1)
+
+    class Render(ek.CustomOp):
+        def eval(self, scene, integrator, params):
+            self.scene = scene
+            self.integrator = integrator
+            self.params = params
+            self.add_input(self.params)
+            with ek.suspend_grad():
+                image = self.integrator.render(
+                    self.scene, seed, sensor_index, spp=spp)
+            return image
+
+        def forward(self):
+            grad_out = self.integrator.render_forward(
+                self.scene, self.params, seed=seed_adjoint, spp=spp_adjoint)
+            self.set_grad_out(grad_out)
+
+        def backward(self):
+            grad_out = self.grad_out()
+            self.integrator.render_backward(
+                self.scene, self.params, grad_out, seed=seed_adjoint, spp=spp_adjoint)
+
+        def name(self):
+            return "rendering custom operation"
+
+    return ek.custom(Render, scene, integrator, params)
 
 # -------------------------------------------------------------
 #        Helper functions for integrators implementation
