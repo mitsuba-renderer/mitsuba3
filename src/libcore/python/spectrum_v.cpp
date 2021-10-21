@@ -62,4 +62,7 @@ MTS_PY_EXPORT(Spectrum) {
 
     m.def("unpolarized_spectrum", [](const Spectrum &s) { return unpolarized_spectrum(s); }, "");
     m.def("depolarizer", [](const Spectrum &s) { return depolarizer(s); }, "");
+
+    m.def("spectrum_list_to_srgb", &spectrum_list_to_srgb<ScalarFloat>,
+          "wavelengths"_a, "values"_a, "bounded"_a=true);
 }
