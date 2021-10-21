@@ -158,7 +158,7 @@ def render(scene: mitsuba.render.Scene,
         spp_adjoint = spp
 
     if seed_adjoint is None:
-        seed_adjoint = mitsuba.core.sample_tea_32(seed, 1)
+        seed_adjoint = mitsuba.core.sample_tea_32(seed, 1)[0]
 
     class Render(ek.CustomOp):
         def eval(self, scene, integrator, params):

@@ -1,3 +1,4 @@
+import time
 import enoki as ek
 import mitsuba
 from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
@@ -22,9 +23,12 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                        seed: int,
                        sensor_index: int=0,
                        spp: int=0) -> None:
-        from mitsuba.core import Float, Spectrum
+        from mitsuba.core import Float, Spectrum, Log, LogLevel
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
+
+        Log(LogLevel.Info, 'start rendering ..')
+        starting_time = time.time()
 
         sensor = scene.sensors()[sensor_index]
         film = sensor.film()
@@ -75,7 +79,12 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
 
-        return ek.grad(Li_attached) + film.develop()
+        grad_out = ek.grad(Li_attached) + film.develop()
+
+        Log(LogLevel.Info, 'rendering finished. (took %s)' %
+            mitsuba.core.util.time_string(time.time() - starting_time))
+
+        return grad_out
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
@@ -84,9 +93,12 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                         seed: int,
                         sensor_index: int = 0,
                         spp: int = 0) -> None:
-        from mitsuba.core import Float, Spectrum
+        from mitsuba.core import Float, Spectrum, Log, LogLevel
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
+
+        Log(LogLevel.Info, 'start rendering ..')
+        starting_time = time.time()
 
         sensor = scene.sensors()[sensor_index]
         film = sensor.film()
@@ -140,6 +152,9 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.enqueue(ek.ADMode.Reverse, Li_attached, reparam_div)
         ek.traverse(Float)
 
+        Log(LogLevel.Info, 'rendering finished. (took %s)' %
+            mitsuba.core.util.time_string(time.time() - starting_time))
+
     def sample(self, scene, sampler, ray, medium, active):
         return *self.Li(None, scene, sampler, ray), []
 
@@ -186,7 +201,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
             # Attach incoming direction (reparameterization from the previous bounce)
             si = pi.compute_surface_interaction(ray, HitComputeFlags.All, active)
             reparam_d, _ = reparam(ray, active)
-            si.wi = -si.to_local(reparam_d)
+            si.wi = -ek.select(active & si.is_valid(), si.to_local(reparam_d), reparam_d)
 
             # ---------------------- Direct emission ----------------------
 
