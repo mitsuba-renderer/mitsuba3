@@ -5,7 +5,7 @@ import mitsuba
 from mitsuba.python.test.util import fresolver_append_path
 
 
-def test1_dict_plugins(variants_all):
+def test01_dict_plugins(variants_all):
     from mitsuba.core import xml
 
     plugins = [('emitter', 'point'), ('film', 'hdrfilm'),
@@ -19,7 +19,7 @@ def test1_dict_plugins(variants_all):
         assert str(o1) == str(o2)
 
 
-def test2_dict_missing_type(variants_all):
+def test02_dict_missing_type(variants_all):
     from mitsuba.core import xml
     with pytest.raises(Exception) as e:
         xml.load_dict({
@@ -29,7 +29,7 @@ def test2_dict_missing_type(variants_all):
     e.match("""Missing key 'type'""")
 
 
-def test3_dict_simple_field(variants_all):
+def test03_dict_simple_field(variants_all):
     from mitsuba.core import xml, ScalarPoint3f
     import numpy as np
 
@@ -75,7 +75,7 @@ def test3_dict_simple_field(variants_all):
     assert str(s1) == str(s5)
 
 
-def test4_dict_nested(variants_all):
+def test04_dict_nested(variants_all):
     from mitsuba.core import xml
 
     s1 = xml.load_dict({
@@ -141,7 +141,7 @@ def test4_dict_nested(variants_all):
     assert str(s1.bsdf()) == str(s2.bsdf())
 
 
-def test5_dict_nested_object(variants_all):
+def test05_dict_nested_object(variants_all):
     from mitsuba.core import xml
 
     bsdf = xml.load_dict({"type" : "diffuse"})
@@ -160,7 +160,7 @@ def test5_dict_nested_object(variants_all):
     assert str(s1.bsdf()) == str(s2.bsdf())
 
 
-def test6_dict_rgb(variants_all_scalar):
+def test06_dict_rgb(variants_all_scalar):
     from mitsuba.core import xml, ScalarColor3f
 
     e1 = xml.load_dict({
@@ -205,7 +205,7 @@ def test6_dict_rgb(variants_all_scalar):
     assert str(e1) == str(e2)
 
 
-def test7_dict_spectrum(variants_all_scalar):
+def test07_dict_spectrum(variants_all_scalar):
     from mitsuba.core import xml
 
     e1 = xml.load_dict({
@@ -251,7 +251,7 @@ def test7_dict_spectrum(variants_all_scalar):
     e.match("Wavelengths must be specified in increasing order")
 
 
-def test7_dict_scene(variant_scalar_rgb):
+def test07_dict_scene(variant_scalar_rgb):
     from mitsuba.core import xml, ScalarTransform4f
 
     s1 = xml.load_dict({
@@ -333,7 +333,7 @@ def test7_dict_scene(variant_scalar_rgb):
     assert len(scene.shapes())   == 4
 
 
-def test8_dict_unreferenced_attribute_error(variants_all):
+def test08_dict_unreferenced_attribute_error(variants_all):
     from mitsuba.core import xml
     with pytest.raises(Exception) as e:
         xml.load_dict({
@@ -344,7 +344,7 @@ def test8_dict_unreferenced_attribute_error(variants_all):
 
 
 
-def test9_dict_scene_reference(variant_scalar_rgb):
+def test09_dict_scene_reference(variant_scalar_rgb):
     from mitsuba.core import xml
 
     scene = xml.load_dict({
@@ -494,3 +494,47 @@ def test10_dict_expand_nested_object(variant_scalar_rgb):
         },
     })
     assert str(b0) == str(scene.shapes()[0].bsdf())
+
+
+def test11_dict_spectrum_srgb(variant_scalar_rgb):
+    from mitsuba.core import xml, spectrum_list_to_srgb
+
+    CIE_Y_NORMALIZATION = 1.0 / 106.7502593994140625
+    spectrum = [(400.0, 0.1), (500.0, 0.2), (600.0, 0.4), (700.0, 0.1)]
+
+    w = [s[0] for s in spectrum]
+    v = [s[1] * CIE_Y_NORMALIZATION for s in spectrum]
+    rgb = spectrum_list_to_srgb(w, v)
+    assert ek.allclose(rgb, [0.442716, 0.278475, 0.118373])
+
+    s1 = xml.load_dict({
+        "type" : "spectrum",
+        "value" : spectrum
+    })
+
+    s2 = xml.load_string(f"""
+        <spectrum  type='srgb' version='2.0.0'>
+            <rgb name="color" value="{rgb.x}, {rgb.y}, {rgb.z}"/>
+        </spectrum>
+    """)
+
+    assert str(s1) == str(s2)
+
+
+def test12_dict_spectrum(variant_scalar_spectral):
+    from mitsuba.core import xml
+
+    s1 = xml.load_dict({
+        "type" : "spectrum",
+        "value" : [(400.0, 0.1), (500.0, 0.2), (600.0, 0.4), (700.0, 0.1)]
+    })
+
+    s2 = xml.load_string(f"""
+        <spectrum  type='regular' version='2.0.0'>
+           <float name="lambda_min" value="400"/>
+           <float name="lambda_max" value="700"/>
+           <string name="values" value="0.1, 0.2, 0.4, 0.1"/>
+       </spectrum>
+    """)
+
+    assert str(s1) == str(s2)
