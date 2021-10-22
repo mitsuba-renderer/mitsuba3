@@ -9,11 +9,11 @@ extern Caster cast_object;
 #  pragma clang diagnostic ignored "-Wduplicate-decl-specifier" // warning: duplicate 'const' declaration specifier
 #endif
 
-#define SET_ITEM_BINDING(Name, Type)                                   \
+#define SET_ITEM_BINDING(Name, Type, ...)                              \
     def("__setitem__", [](Properties& p,                               \
                           const std::string &key, const Type &value) { \
         p.set_##Name(key, value, false);                               \
-    }, D(Properties, set_##Name))
+    }, D(Properties, set_##Name), ##__VA_ARGS__)
 
 
 #define GET_ITEM_DEFAULT_BINDING(Name, DName, Type)       \
@@ -77,7 +77,7 @@ MTS_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(bool, bool)
             .SET_ITEM_BINDING(long, int64_t)
             .SET_ITEM_BINDING(string, std::string)
-            .SET_ITEM_BINDING(color, typename Properties::Color3f)
+            .SET_ITEM_BINDING(color, typename Properties::Color3f, py::arg(), py::arg().noconvert())
             .SET_ITEM_BINDING(array3f, typename Properties::Array3f)
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
             .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
