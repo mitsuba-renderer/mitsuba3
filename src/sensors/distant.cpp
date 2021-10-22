@@ -31,7 +31,7 @@ Distant radiancemeter sensor (:monosp:`distant`)
  * - direction
    - |vector|
    - Alternative (and exclusive) to ``to_world``. Direction orienting the
-     sensor's reference hemisphere.
+     sensor.
  * - target
    - |point| or nested :paramtype:`shape` plugin
    - *Optional.* Define the ray target sampling strategy.
@@ -241,6 +241,48 @@ public:
         return { ray, ray_weight & active };
     }
 
+    Spectrum eval(const SurfaceInteraction3f & /*si*/,
+                  Mask /*active*/) const override {
+        return 0.f;
+    }
+
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
+                     Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+
+        Vector3f d = m_to_world.value().transform_affine(Vector3f(0.f, 0.f, 1.f));
+        Float dist = 2.f * m_bsphere.radius + math::RayEpsilon<Float>;
+
+        DirectionSample3f ds = ek::zero<DirectionSample3f>();
+        ds.p     = it.p - d * dist;
+        ds.n     = d;
+        ds.uv    = Point2f(0.f);
+        ds.time  = it.time;
+        ds.pdf   = 1.f;
+        ds.delta = true;
+        ds.d     = -d;
+        ds.dist  = dist;
+        // ds.emitter = this;
+        // TODO: --^ must be fixed as soon as SurfaceInteraction3f is fit for
+        // sensor sampling
+
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.wavelengths = it.wavelengths;
+
+        // No need to divide by the PDF here (always equal to 1.f)
+        // Note: Must be updated if a sensor response function is added to this plugin
+        UnpolarizedSpectrum spec = 1.f;
+
+        return { ds, spec & active };
+    }
+
+    Float pdf_direction(const Interaction3f & /*it*/,
+                        const DirectionSample3f & /*ds*/,
+                        Mask /*active*/) const override {
+        return 0.f;
+    }
+
     // This sensor does not occupy any particular region of space, return an
     // invalid bounding box
     ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }
@@ -248,13 +290,13 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "DistantSensor[" << std::endl
-            << "  to_world = " << m_to_world << "," << std::endl
-            << "  film = " << m_film << "," << std::endl;
+            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  film = " << string::indent(m_film) << "," << std::endl;
 
         if constexpr (TargetType == RayTargetType::Point)
             oss << "  target = " << m_target_point << std::endl;
         else if constexpr (TargetType == RayTargetType::Shape)
-            oss << "  target = " << m_target_shape << std::endl;
+            oss << "  target = " << string::indent(m_target_shape) << std::endl;
         else // if constexpr (TargetType == RayTargetType::None)
             oss << "  target = none" << std::endl;
 
