@@ -40,8 +40,8 @@ def test02_type_is_preserved(variant_scalar_rgb):
     assert isinstance(p['prop_2'], str)
     assert isinstance(p['prop_3'], bool)
     assert isinstance(p['prop_4'], float)
-    assert isinstance(p['prop_5'], Array3f)
-    assert isinstance(p['prop_6'], ScalarColor3f)
+    assert type(p['prop_5']) is Array3f
+    assert type(p['prop_6']) is ScalarColor3f
 
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
@@ -53,6 +53,10 @@ def test02_type_is_preserved(variant_scalar_rgb):
     # Updating an existing property but using a different type
     p['prop_2'] = 2
     assert p['prop_2'] == 2
+
+    p['prop_7'] = [1, 2, 3]
+    print()
+    assert type(p['prop_7']) is Array3f
 
 
 def test03_management_of_properties(variant_scalar_rgb):
