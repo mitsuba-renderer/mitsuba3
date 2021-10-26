@@ -549,6 +549,45 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     return sample_functor, pdf_functor
 
 
+def EmitterAdapter(emitter_type, extra):
+    """
+    Adapter to test Emitter sampling using the Chi^2 test.
+
+    Parameter ``emitter_type`` (string):
+        Name of the emitter plugin to instantiate.
+
+    Parameter ``extra`` (string):
+        Additional XML used to specify the emitter's parameters.
+
+    """
+
+    from mitsuba.render import Interaction3f, DirectionSample3f
+    from mitsuba.core.xml import load_string
+    
+    def instantiate(args):
+        xml = """<emitter version="2.0.0" type="%s">
+            %s
+        </emitter>""" % (emitter_type, extra)
+        return load_string(xml % args)
+
+    def sample_functor(sample, *args):
+        n = ek.width(sample)
+        plugin = instantiate(args)
+        si = ek.zero(Interaction3f)
+        di, w = plugin.sample_direction(si, sample)
+        return di.d
+
+    def pdf_functor(wo, *args):
+        n = ek.width(wo)
+        plugin = instantiate(args)
+        si = ek.zero(Interaction3f)
+        ds = ek.zero(DirectionSample3f)
+        ds.d = wo
+        return plugin.pdf_direction(si, ds)
+
+    return sample_functor, pdf_functor
+
+
 def MicrofacetAdapter(md_type, alpha, sample_visible=False):
     """
     Adapter for testing microfacet distribution sampling techniques
