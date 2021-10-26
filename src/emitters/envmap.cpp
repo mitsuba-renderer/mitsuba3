@@ -10,6 +10,13 @@
 #include <enoki/tensor.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/core/fstream.h>
+#include <enoki/struct.h>
+
+// #include <mitsuba/core/fwd.h>
+#include <mitsuba/core/traits.h>
+#include <mitsuba/core/math.h>
+#include <enoki/matrix.h>
+#include <enoki/dynamic.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -89,25 +96,38 @@ public:
             m_filename = file_path.filename().string();
         }
 
-        // FileResolver *fs = Thread::thread()->file_resolver();
-        // fs::path file_path = fs->resolve(props.string("filename"));
-        // m_filename = file_path.filename().string();
-
-        // ref<Bitmap> bitmap = new Bitmap(file_path);
         if (bitmap->width() < 2 || bitmap->height() < 3)
             Throw("\"%s\": the environment map resolution must be at "
                   "least 2x3 pixels", m_filename);
 
-        /* Convert to linear RGBA float bitmap, will undergo further
-           conversion into coefficients of a spectral upsampling model below */
-        bitmap = bitmap->convert(Bitmap::PixelFormat::RGBA, struct_type_v<Float>, false);
-
+        
+        std::vector<std::string> channel_names;
+        for (size_t i = 0; i < bitmap->channel_count(); i++)
+            channel_names.push_back(bitmap->struct_()->operator[](i).name);
+        
         /* Allocate a larger image including an extra column to
            account for the periodic boundary */
         ScalarVector2u res(bitmap->width() + 1, bitmap->height());
-        ref<Bitmap> bitmap_2 = new Bitmap(bitmap->pixel_format(),
-                                          bitmap->component_format(), res);
+        ref<Bitmap> bitmap_2;
 
+        if (bitmap->pixel_format() == Bitmap::PixelFormat::MultiChannel){
+            m_is_spectral = true;
+    
+            bitmap_2 = new Bitmap(bitmap->pixel_format(),
+                                            bitmap->component_format(), res,
+                                            bitmap->channel_count(),
+                                            channel_names);
+        }else{
+            /* Convert to linear RGBA float bitmap, will undergo further
+            conversion into coefficients of a spectral upsampling model below */
+            bitmap = bitmap->convert(Bitmap::PixelFormat::RGBA, struct_type_v<Float>, false);
+            m_is_spectral = false;
+
+            bitmap_2 = new Bitmap(bitmap->pixel_format(),
+                                            bitmap->component_format(), res);
+        }
+        m_channel_count = bitmap->channel_count();
+            
         // Luminance image used for importance sampling
         std::unique_ptr<ScalarFloat[]> luminance(new ScalarFloat[ek::hprod(res)]);
 
@@ -117,45 +137,78 @@ public:
 
         ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * ek::Pi<Float>;
 
-        for (size_t y = 0; y < bitmap->size().y(); ++y) {
-            ScalarFloat sin_theta = ek::sin(y * theta_scale);
+        // If bitmap contains non-spectral data
+        if (bitmap->pixel_format() != Bitmap::PixelFormat::MultiChannel){
+            for (size_t y = 0; y < bitmap->size().y(); ++y) {
+                ScalarFloat sin_theta = ek::sin(y * theta_scale);
 
-            for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
-                ScalarFloat lum = mitsuba::luminance(rgb);
+                for (size_t x = 0; x < bitmap->size().x(); ++x) {
+                    ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+                    ScalarFloat lum = mitsuba::luminance(rgb);
 
-                ScalarVector4f coeff;
-                if constexpr (is_monochromatic_v<Spectrum>) {
-                    coeff = ScalarVector4f(lum, lum, lum, 1.f);
-                } else if constexpr (is_rgb_v<Spectrum>) {
-                    coeff = ek::concat(rgb, ek::Array<ScalarFloat, 1>(1.f));
-                } else {
-                    static_assert(is_spectral_v<Spectrum>);
-                    /* Evaluate the spectral upsampling model. This requires a
-                       reflectance value (colors in [0, 1]) which is accomplished here by
-                       scaling. We use a color where the highest component is 50%,
-                       which generally yields a fairly smooth spectrum. */
-                    ScalarFloat scale = ek::hmax(rgb) * 2.f;
-                    ScalarColor3f rgb_norm = rgb / ek::max(1e-8f, scale);
-                    coeff = ek::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
-                                       ek::Array<ScalarFloat, 1>(scale));
+                    ScalarVector4f coeff;
+                    if constexpr (is_monochromatic_v<Spectrum>) {
+                        coeff = ScalarVector4f(lum, lum, lum, 1.f);
+                    } else if constexpr (is_rgb_v<Spectrum>) {
+                        coeff = ek::concat(rgb, ek::Array<ScalarFloat, 1>(1.f));
+                    } else {
+                        static_assert(is_spectral_v<Spectrum>);
+                        /* Evaluate the spectral upsampling model. This requires a
+                        reflectance value (colors in [0, 1]) which is accomplished here by
+                        scaling. We use a color where the highest component is 50%,
+                        which generally yields a fairly smooth spectrum. */
+                        ScalarFloat scale = ek::hmax(rgb) * 2.f;
+                        ScalarColor3f rgb_norm = rgb / ek::max(1e-8f, scale);
+                        coeff = ek::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
+                                        ek::Array<ScalarFloat, 1>(scale));
+                    }
+
+                    *lum_ptr++ = lum * sin_theta;
+                    ek::store(out_ptr, coeff);
+                    in_ptr += 4;
+                    out_ptr += 4;
                 }
-
-                *lum_ptr++ = lum * sin_theta;
-                ek::store(out_ptr, coeff);
-                in_ptr += 4;
+                // Last column of pixels mirrors first
+                ScalarFloat temp = *(lum_ptr - bitmap->size().x());
+                *lum_ptr++ = temp;
+                ek::store(out_ptr, ek::load<ScalarVector4f>(
+                                    out_ptr - bitmap->size().x() * 4));
                 out_ptr += 4;
             }
+        } else{ //bitmap contains spectral data
+            if (!is_spectral_v<Spectrum>)
+                Throw("Bitmap pixel format is MultiChannel but not compiled in Spectral mode");
 
-            // Last column of pixels mirrors first
-            ScalarFloat temp = *(lum_ptr - bitmap->size().x());
-            *lum_ptr++ = temp;
-            ek::store(out_ptr, ek::load<ScalarVector4f>(
-                                   out_ptr - bitmap->size().x() * 4));
-            out_ptr += 4;
+            for (size_t i = 0; i < bitmap->channel_count(); i++){
+                m_channels.push_back(std::stof(channel_names[i]));
+            }          
+
+            for (size_t y = 0; y < bitmap->size().y(); ++y) {
+                ScalarFloat sin_theta = ek::sin(y * theta_scale);
+                
+                for (size_t x = 0; x < bitmap->size().x(); ++x) {
+                    ScalarFloat lum = 0.f;
+
+                    for (size_t i = 0; i < m_channel_count; i++){
+                        ScalarFloat coeff = *in_ptr++;
+                        lum += mitsuba::cie1931_y(m_channels[i]) * coeff;
+                        *out_ptr++ = coeff;
+                    }
+
+                    *lum_ptr++ = lum * sin_theta;   
+                }
+                // Last column of pixels mirrors first
+                ScalarFloat temp = *(lum_ptr - bitmap->size().x());
+                *lum_ptr++ = temp;
+                float *first_col = out_ptr - bitmap->size().x() * m_channel_count;
+
+                for (size_t k = 0; k < m_channel_count; k ++ )
+                    *out_ptr++ = *(first_col + k);
+                
+            }
         }
 
-        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), 4 };
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), m_channel_count };
         m_data = TensorXf(bitmap_2->data(), 3, shape);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
@@ -305,8 +358,17 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active) const override {
-        auto [wavelengths, weight] = m_d65->sample_spectrum(
-            si, math::sample_shifted<Wavelength>(sample), active);
+        Wavelength wavelengths;
+        UnpolarizedSpectrum weight;
+
+        if (is_spectral_v<Spectrum> && m_is_spectral) {
+            float max_wl = m_channels.back();
+            float min_wl = m_channels.front();
+            wavelengths = math::sample_shifted<Wavelength>(sample) * (max_wl- min_wl) / (m_channel_count - 1) + min_wl;
+            weight = 1 / (max_wl - min_wl);
+        } else {
+            std::tie(wavelengths, weight) = m_d65->sample_spectrum(si, math::sample_shifted<Wavelength>(sample), active);
+        }
 
         return { wavelengths,
                  weight * eval_spectrum(si.uv, wavelengths, active, false) };
@@ -402,6 +464,7 @@ public:
     }
 
 protected:
+
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths,
                                       Mask active, bool include_whitepoint = true) const {
         ScalarVector2u res = { m_data.shape(1), m_data.shape(0) };
@@ -418,39 +481,14 @@ protected:
         const uint32_t width = res.x();
         UInt32 index = pos.x() + pos.y() * width;
 
-        Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
-                 v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
-                 v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
-                 v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
-
-        if constexpr (is_spectral_v<Spectrum>) {
-            UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
-            Float f0, f1, f;
-
-            s00 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v00), wavelengths);
-            s10 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v10), wavelengths);
-            s01 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v01), wavelengths);
-            s11 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v11), wavelengths);
-
-            s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
-            s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
-            f0  = ek::fmadd(w0.x(), v00.w(), w1.x() * v10.w());
-            f1  = ek::fmadd(w0.x(), v01.w(), w1.x() * v11.w());
-
-            s   = ek::fmadd(w0.y(), s0, w1.y() * s1);
-            f   = ek::fmadd(w0.y(), f0, w1.y() * f1);
-
-            UnpolarizedSpectrum result = s * f * m_scale;
-
-            if (include_whitepoint) {
-                SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-                si.wavelengths = wavelengths;
-                result *= m_d65->eval(si, active);
-            }
-
-            return result;
-        } else {
+        if constexpr (!is_spectral_v<Spectrum>) {
             ENOKI_MARK_USED(wavelengths);
+
+            Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
+                     v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
+                     v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
+                     v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
+
             Vector4f v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
                      v1 = ek::fmadd(w0.x(), v01, w1.x() * v11),
                      v  = ek::fmadd(w0.y(), v0, w1.y() * v1);
@@ -459,8 +497,75 @@ protected:
                 return ek::head<1>(v) * m_scale;
             else
                 return ek::head<3>(v) * m_scale;
+
+        } else {
+            
+            //upsamping needed for non-spectral data
+            if (!m_is_spectral){
+                Float f0, f1, f;
+
+                UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
+                Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
+                         v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
+                         v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
+                         v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
+
+                s00 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v00), wavelengths);
+                s10 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v10), wavelengths);
+                s01 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v01), wavelengths);
+                s11 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v11), wavelengths);
+
+
+                s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
+                s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
+                f0  = ek::fmadd(w0.x(), v00.w(), w1.x() * v10.w());
+                f1  = ek::fmadd(w0.x(), v01.w(), w1.x() * v11.w());
+
+                s   = ek::fmadd(w0.y(), s0, w1.y() * s1);
+                f   = ek::fmadd(w0.y(), f0, w1.y() * f1);
+
+                UnpolarizedSpectrum result = s * f * m_scale;
+
+                if (include_whitepoint) {
+                    SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+                    si.wavelengths = wavelengths;
+                    result *= m_d65->eval(si, active);
+                }
+
+                return result;
+
+            } else{ 
+                using WavelengthIndex = ek::uint32_array_t<Wavelength>;
+                using WavelengthWeight = ek::float32_array_t<Wavelength>;
+
+                float min_wl = m_channels.front();
+                float interval_wl = (m_channels.back() - min_wl) / (m_channel_count - 1);
+
+                WavelengthIndex wl_idx = WavelengthIndex((wavelengths - min_wl) / interval_wl);
+                WavelengthWeight wl_weight = (wavelengths - (wl_idx * interval_wl) - min_wl) / interval_wl;
+
+                UnpolarizedSpectrum s[2];
+
+                for (int j = 0; j < 2; ++j) {
+                    WavelengthIndex index_combined = index * m_channel_count + clamp(wl_idx + j, 0, m_channel_count - 1);
+
+                    for (size_t i = 0; i < UnpolarizedSpectrum::Size; i++) {
+                        Float s00 = ek::gather<Float>(m_data.array(), index_combined[i], active),
+                              s10 = ek::gather<Float>(m_data.array(), index_combined[i] + m_channel_count, active),
+                              s01 = ek::gather<Float>(m_data.array(), index_combined[i] + width * m_channel_count, active),
+                              s11 = ek::gather<Float>(m_data.array(), index_combined[i] + (width + 1) * m_channel_count, active);
+
+                        Float s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
+                        Float s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
+                        s[j][i]   = ek::fmadd(w0.y(), s0, w1.y() * s1);
+                    }
+                }
+                return (s[0] * (1 - wl_weight) + s[1] * wl_weight) * m_scale;
+            }
         }
     }
+
+
 
     MTS_DECLARE_CLASS()
 protected:
@@ -470,6 +575,10 @@ protected:
     Warp m_warp;
     ref<Texture> m_d65;
     ScalarFloat m_scale;
+    size_t m_channel_count;
+    // true if incoming bitmap is MultiChannel;
+    bool m_is_spectral;
+    std::vector<float> m_channels;
 };
 
 MTS_IMPLEMENT_CLASS_VARIANT(EnvironmentMapEmitter, Emitter)
