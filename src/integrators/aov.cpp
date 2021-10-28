@@ -58,6 +58,8 @@ Currently, the following AOVs types are available:
     - :monosp:`sh_normal`: Shading normal.
     - :monosp:`dp_du`, :monosp:`dp_dv`: Position partials wrt. the UV parameterization.
     - :monosp:`duv_dx`, :monosp:`duv_dy`: UV partials wrt. changes in screen-space.
+    - :monosp:`prim_index`: Primitive index (e.g. triangle index in the mesh).
+    - :monosp:`shape_index`: Shape index.
 
  */
 
@@ -77,6 +79,8 @@ public:
         dPdV,
         dUVdx,
         dUVdy,
+        PrimIndex,
+        ShapeIndex,
         IntegratorRGBA
     };
 
@@ -129,6 +133,12 @@ public:
                 m_aov_types.push_back(Type::dUVdy);
                 m_aov_names.push_back(item[0] + ".U");
                 m_aov_names.push_back(item[0] + ".V");
+            } else if (item[1] == "prim_index") {
+                m_aov_types.push_back(Type::PrimIndex);
+                m_aov_names.push_back(item[0] + ".I");
+            } else if (item[1] == "shape_index") {
+                m_aov_types.push_back(Type::ShapeIndex);
+                m_aov_names.push_back(item[0] + ".I");
             } else {
                 Throw("Invalid AOV type \"%s\"!", item[1]);
             }
@@ -216,6 +226,14 @@ public:
                 case Type::dUVdy:
                     *aovs++ = si.duv_dy.x();
                     *aovs++ = si.duv_dy.y();
+                    break;
+
+                case Type::PrimIndex:
+                    *aovs++ = si.prim_index;
+                    break;
+
+                case Type::ShapeIndex:
+                    *aovs++ = ek::reinterpret_array<UInt32>(si.shape);
                     break;
 
                 case Type::IntegratorRGBA: {
