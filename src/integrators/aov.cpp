@@ -61,6 +61,10 @@ Currently, the following AOVs types are available:
     - :monosp:`prim_index`: Primitive index (e.g. triangle index in the mesh).
     - :monosp:`shape_index`: Shape index.
 
+Note that integer-valued AOVs (e.g. :monosp:`prim_index`, :monosp:`shape_index`)
+are meaningless whenever there is only partial pixel coverage or when using a
+wide pixel reconstruction filter as it will result in fractional values.
+
  */
 
 template <typename Float, typename Spectrum>
