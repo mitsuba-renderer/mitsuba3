@@ -138,8 +138,8 @@ MTS_VARIANT Scene<Float, Spectrum>::~Scene() {
 
 
 MTS_VARIANT ref<Bitmap>
-Scene<Float, Spectrum>::render(uint32_t sensor_index) {
-    m_integrator->render(this, 0, sensor_index, false);
+Scene<Float, Spectrum>::render(uint32_t seed, uint32_t sensor_index) {
+    m_integrator->render(this, seed, sensor_index, false);
     return m_sensors[sensor_index]->film()->bitmap();
 }
 

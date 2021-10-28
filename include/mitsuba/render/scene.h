@@ -22,7 +22,7 @@ public:
     // =============================================================
 
     /// Render the scene with the sensor specified by its index
-    ref<Bitmap> render(uint32_t sensor_index);
+    ref<Bitmap> render(uint32_t seed, uint32_t sensor_index);
 
     //! @}
     // =============================================================
