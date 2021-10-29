@@ -21,10 +21,10 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
     : m_stop(false) {
-    m_timeout = props.float_("timeout", -1.f);
+    m_timeout = props.get<ScalarFloat>("timeout", -1.f);
 
     /// Disable direct visibility of emitters if needed
-    m_hide_emitters = props.bool_("hide_emitters", false);
+    m_hide_emitters = props.get<bool>("hide_emitters", false);
 }
 
 MTS_VARIANT typename Integrator<Float, Spectrum>::TensorXf
@@ -48,7 +48,7 @@ MTS_VARIANT void Integrator<Float, Spectrum>::cancel() {
 MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Properties &props)
     : Base(props) {
 
-    m_block_size = (uint32_t) props.size_("block_size", 0);
+    m_block_size = props.get<uint32_t>("block_size", 0);
     uint32_t block_size = math::round_to_power_of_two(m_block_size);
     if (m_block_size > 0 && block_size != m_block_size) {
         Log(Warn, "Setting block size from %i to next higher power of two: %i", m_block_size,
@@ -56,7 +56,7 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::SamplingIntegrator(const Proper
         m_block_size = block_size;
     }
 
-    m_samples_per_pass = (uint32_t) props.size_("samples_per_pass", (size_t) -1);
+    m_samples_per_pass = (uint32_t) props.get<size_t>("samples_per_pass", (size_t) -1);
 }
 
 MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
@@ -374,14 +374,14 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
 MTS_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
     : Base(props) {
     /// Depth to begin using russian roulette
-    m_rr_depth = props.int_("rr_depth", 5);
+    m_rr_depth = props.get<int>("rr_depth", 5);
     if (m_rr_depth <= 0)
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
     /*  Longest visualized path depth (``-1 = infinite``). A value of \c 1 will
         visualize only directly visible light sources. \c 2 will lead to
         single-bounce (direct-only) illumination, and so on. */
-    m_max_depth = props.int_("max_depth", -1);
+    m_max_depth = props.get<int>("max_depth", -1);
     if (m_max_depth < 0 && m_max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
 }

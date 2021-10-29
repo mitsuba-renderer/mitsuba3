@@ -78,7 +78,7 @@ static float lookup_ior(const std::string &name) {
 inline float lookup_ior(const Properties &props, const std::string &param_name,
                         const std::string &default_value) {
     if (props.has_property(param_name) && props.type(param_name) == Properties::Type::Float)
-        return props.float_(param_name);
+        return props.get<float>(param_name);
     else
         return lookup_ior(props.string(param_name, default_value));
 }
@@ -87,7 +87,7 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
                         float default_value) {
     if (props.has_property(param_name)) {
         if (props.type(param_name) == Properties::Type::Float)
-            return props.float_(param_name);
+            return props.get<float>(param_name);
         else
             return lookup_ior(props.string(param_name));
     }

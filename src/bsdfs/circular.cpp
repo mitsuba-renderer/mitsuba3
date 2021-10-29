@@ -58,7 +58,7 @@ public:
     CircularPolarizer(const Properties &props) : Base(props) {
         m_theta = props.texture<Texture>("theta", 0.f);
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
-        m_left_handed = props.bool_("left_handed", false);
+        m_left_handed = props.get<bool>("left_handed", false);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         m_components.push_back(m_flags);

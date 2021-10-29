@@ -9,19 +9,19 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
 
     // Horizontal and vertical film resolution in pixels
     m_size = ScalarVector2i(
-        props.int_("width", is_m_film ? 1 : 768),
-        props.int_("height", is_m_film ? 1 : 576)
+        props.get<int>("width", is_m_film ? 1 : 768),
+        props.get<int>("height", is_m_film ? 1 : 576)
     );
 
     // Crop window specified in pixels - by default, this matches the full sensor area.
     ScalarPoint2i crop_offset = ScalarPoint2i(
-        props.int_("crop_offset_x", 0),
-        props.int_("crop_offset_y", 0)
+        props.get<int>("crop_offset_x", 0),
+        props.get<int>("crop_offset_y", 0)
     );
 
     ScalarVector2i crop_size = ScalarVector2i(
-        props.int_("crop_width", m_size.x()),
-        props.int_("crop_height", m_size.y())
+        props.get<int>("crop_width", m_size.x()),
+        props.get<int>("crop_height", m_size.y())
     );
 
     set_crop_window(crop_offset, crop_size);
@@ -29,7 +29,7 @@ MTS_VARIANT Film<Float, Spectrum>::Film(const Properties &props) : Object() {
     /* If set to true, regions slightly outside of the film plane will also be
        sampled, which improves the image quality at the edges especially with
        large reconstruction filters. */
-    m_high_quality_edges = props.bool_("high_quality_edges", false);
+    m_high_quality_edges = props.get<bool>("high_quality_edges", false);
 
     // Use the provided reconstruction filter, if any.
     for (auto &[name, obj] : props.objects(false)) {

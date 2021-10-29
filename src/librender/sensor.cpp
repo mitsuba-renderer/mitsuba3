@@ -1,7 +1,6 @@
 #include <mitsuba/render/sensor.h>
 
 #include <mitsuba/core/plugin.h>
-#include <mitsuba/core/properties.h>
 #include <mitsuba/core/logger.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/sampler.h>
@@ -13,8 +12,8 @@ NAMESPACE_BEGIN(mitsuba)
 // =============================================================================
 
 MTS_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props) {
-    m_shutter_open      = props.float_("shutter_open", 0.f);
-    m_shutter_open_time = props.float_("shutter_close", 0.f) - m_shutter_open;
+    m_shutter_open      = props.get<ScalarFloat>("shutter_open", 0.f);
+    m_shutter_open_time = props.get<ScalarFloat>("shutter_close", 0.f) - m_shutter_open;
 
     if (m_shutter_open_time < 0)
         Throw("Shutter opening time must be less than or equal to the shutter "
@@ -91,11 +90,11 @@ Sensor<Float, Spectrum>::sample_ray_differential(Float time, Float sample1, cons
 MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props)
     : Base(props) {
     /* Distance to the near clipping plane */
-    m_near_clip = props.float_("near_clip", 1e-2f);
+    m_near_clip = props.get<ScalarFloat>("near_clip", 1e-2f);
     /* Distance to the far clipping plane */
-    m_far_clip = props.float_("far_clip", 1e4f);
+    m_far_clip = props.get<ScalarFloat>("far_clip", 1e4f);
     /* Distance to the focal plane */
-    m_focus_distance = props.float_("focus_distance", (float) m_far_clip);
+    m_focus_distance = props.get<ScalarFloat>("focus_distance", (float) m_far_clip);
 
     if (m_near_clip <= 0.f)
         Throw("The 'near_clip' parameter must be greater than zero!");
@@ -105,66 +104,6 @@ MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties
 }
 
 MTS_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
-
-// =============================================================================
-// Helper functions
-// =============================================================================
-
-float parse_fov(const Properties &props, float aspect) {
-    if (props.has_property("fov") && props.has_property("focal_length"))
-        Throw("Please specify either a focal length ('focal_length') or a "
-                "field of view ('fov')!");
-
-    float fov;
-    std::string fov_axis;
-
-    if (props.has_property("fov")) {
-        fov = props.float_("fov");
-
-        fov_axis = string::to_lower(props.string("fov_axis", "x"));
-
-        if (fov_axis == "smaller")
-            fov_axis = aspect > 1 ? "y" : "x";
-        else if (fov_axis == "larger")
-            fov_axis = aspect > 1 ? "x" : "y";
-    } else {
-        std::string f = props.string("focal_length", "50mm");
-        if (string::ends_with(f, "mm"))
-            f = f.substr(0, f.length()-2);
-
-        float value;
-        try {
-            value = string::stof<float>(f);
-        } catch (...) {
-            Throw("Could not parse the focal length (must be of the form "
-                "<x>mm, where <x> is a positive integer)!");
-        }
-
-        fov = 2.f *
-                ek::rad_to_deg(ek::atan(ek::sqrt(float(36 * 36 + 24 * 24)) / (2.f * value)));
-        fov_axis = "diagonal";
-    }
-
-    float result;
-    if (fov_axis == "x") {
-        result = fov;
-    } else if (fov_axis == "y") {
-        result = ek::rad_to_deg(
-            2.f * ek::atan(ek::tan(.5f * ek::deg_to_rad(fov)) * aspect));
-    } else if (fov_axis == "diagonal") {
-        float diagonal = 2.f * ek::tan(.5f * ek::deg_to_rad(fov));
-        float width    = diagonal / ek::sqrt(1.f + 1.f / (aspect * aspect));
-        result = ek::rad_to_deg(2.f * ek::atan(width*.5f));
-    } else {
-        Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
-                "'larger', 'diagonal', 'x', or 'y'!");
-    }
-
-    if (result <= 0.f || result >= 180.f)
-        Throw("The horizontal field of view must be in the range [0, 180]!");
-
-    return result;
-}
 
 MTS_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
 MTS_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)

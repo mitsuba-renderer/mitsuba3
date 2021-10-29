@@ -69,13 +69,82 @@ struct Properties::PropertiesPrivate {
     std::string id, plugin_name;
 };
 
-#define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
+template <typename T>
+T Properties::get(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Throw("Property \"%s\" has not been specified!", name);
+    return get_routing<T>(it);
+}
+
+template <typename T>
+T Properties::get(const std::string &name, const T &def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return def_val;
+    return get_routing<T>(it);
+}
+
+template <typename T, typename It>
+T Properties::get_routing(const It &it) const {
+    if constexpr (ek::is_static_array_v<T>) {
+        Assert(T::Size == 3);
+        if constexpr (std::is_same_v<T, Color<typename T::Value, 3>>)
+            return (T) get_impl<Color3f>(it);
+        return (T) get_impl<Array3f>(it);
+    }
+
+    if constexpr (std::is_same_v<T, Transform<Point<float, 4>>> ||
+                  std::is_same_v<T, Transform<Point<double, 4>>>)
+        return (T) get_impl<Transform4f>(it);
+
+    if constexpr (std::is_floating_point_v<T>)
+        return (T) get_impl<Float, int64_t>(it);
+
+    if constexpr (std::is_same_v<T, ref<Object>>)
+        return get_impl<ref<Object>>(it);
+
+    if constexpr (std::is_same_v<T, bool>)
+        return get_impl<T>(it);
+
+    if constexpr (std::is_integral_v<T> && !std::is_pointer_v<T>) {
+        int64_t v = get_impl<int64_t>(it);
+        if constexpr (std::is_unsigned_v<T>) {
+            if (v < 0) {
+                Throw("Property \"%s\" has negative value %i, but was queried as a"
+                    " size_t (unsigned).", it->first, v);
+            }
+        }
+        return v;
+    }
+
+    if constexpr (std::is_same_v<T, std::string>)
+        return get_impl<T>(it);
+
+    Throw("Unsupported type: <%s>.", typeid(T).name());
+}
+
+template <typename T, typename T2, typename It>
+T Properties::get_impl(const It &it) const {
+    if (!it->second.data.template is<T>() && !it->second.data.template is<T2>())
+        Throw("The property \"%s\" has the wrong type (expected <%s> or <%s>, is <%s>)",
+              it->first, typeid(T).name(), typeid(T2).name(), it->second.data.type().name());
+    it->second.queried = true;
+    if (it->second.data.template is<T2>())
+        return (T const &) (T2 const &) it->second.data;
+    return (T const &) it->second.data;
+}
+
+#define DEFINE_PROPERTY_SETTER(Type, SetterName) \
     void Properties::SetterName(const std::string &name, Type const &value, bool error_duplicates) { \
         if (has_property(name) && error_duplicates) \
             Log(Error, "Property \"%s\" was specified multiple times!", name); \
         d->entries[name].data = (Type) value; \
         d->entries[name].queried = false; \
-    } \
+    }
+
+#define DEFINE_PROPERTY_ACCESSOR(Type, TagName, SetterName, GetterName) \
+    DEFINE_PROPERTY_SETTER(Type, SetterName) \
     \
     Type const & Properties::GetterName(const std::string &name) const { \
         const auto it = d->entries.find(name); \
@@ -97,14 +166,15 @@ struct Properties::PropertiesPrivate {
         return (Type const &) it->second.data; \
     }
 
-DEFINE_PROPERTY_ACCESSOR(bool,              boolean,   set_bool,              bool_)
-DEFINE_PROPERTY_ACCESSOR(int64_t,           integer,   set_long,              long_)
-DEFINE_PROPERTY_ACCESSOR(std::string,       string,    set_string,            string)
-DEFINE_PROPERTY_ACCESSOR(NamedReference,    ref,       set_named_reference,   named_reference)
-DEFINE_PROPERTY_ACCESSOR(Transform4f,       transform, set_transform,         transform)
-DEFINE_PROPERTY_ACCESSOR(Color3f,           color,     set_color,             color)
-DEFINE_PROPERTY_ACCESSOR(ref<Object>,       object,    set_object,            object)
-DEFINE_PROPERTY_ACCESSOR(const void *,      pointer,   set_pointer,           pointer)
+DEFINE_PROPERTY_SETTER(bool,         set_bool)
+DEFINE_PROPERTY_SETTER(int64_t,      set_long)
+DEFINE_PROPERTY_SETTER(Transform4f,  set_transform)
+DEFINE_PROPERTY_SETTER(Color3f,      set_color)
+DEFINE_PROPERTY_ACCESSOR(std::string,    string,  set_string,          string)
+DEFINE_PROPERTY_ACCESSOR(NamedReference, ref,     set_named_reference, named_reference)
+DEFINE_PROPERTY_ACCESSOR(ref<Object>,    object,  set_object,          object)
+DEFINE_PROPERTY_ACCESSOR(const void *,   pointer, set_pointer,         pointer)
+
 // See at the end of the file for custom-defined accessors.
 
 Properties::Properties()
@@ -336,37 +406,6 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
 // === Custom accessors
 // =============================================================================
 
-// size_t getter
-size_t Properties::size_(const std::string &name) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    if (!it->second.data.is<int64_t>())
-        Throw("The property \"%s\" has the wrong type (expected <integer>).", name);
-
-    auto v = (int64_t) it->second.data;
-    if (v < 0) {
-        Throw("Property \"%s\" has negative value %i, but was queried as a"
-              " size_t (unsigned).", name, v);
-    }
-    it->second.queried = true;
-    return (size_t) v;
-}
-// size_t getter (with default value)
-size_t Properties::size_(const std::string &name, const size_t &def_val) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-
-    auto v = (int64_t) it->second.data;
-    if (v < 0) {
-        Throw("Property \"%s\" has negative value %i, but was queried as a"
-              " size_t (unsigned).", name, v);
-    }
-    it->second.queried = true;
-    return (size_t) v;
-}
-
 /// Float setter
 void Properties::set_float(const std::string &name, const Float &value, bool error_duplicates) {
     if (has_property(name) && error_duplicates)
@@ -374,61 +413,12 @@ void Properties::set_float(const std::string &name, const Float &value, bool err
     d->entries[name].data = (Float) value;
     d->entries[name].queried = false;
 }
-
-/// Float getter (without default)
-Float Properties::float_(const std::string &name) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    if (!(it->second.data.is<Float>() || it->second.data.is<int64_t>()))
-        Throw("The property \"%s\" has the wrong type (expected <float>).", name);
-    it->second.queried = true;
-    if (it->second.data.is<int64_t>())
-        return (Float) (int64_t) it->second.data;
-    return (Float) it->second.data;
-}
-
-/// Float getter (with default)
-Float Properties::float_(const std::string &name, const Float &def_val) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    if (!(it->second.data.is<Float>() || it->second.data.is<int64_t>()))
-        Throw("The property \"%s\" has the wrong type (expected <float>).", name);
-    it->second.queried = true;
-    if (it->second.data.is<int64_t>())
-        return (Float) (int64_t) it->second.data;
-    return (Float) it->second.data;
-}
-
 /// Array3f setter
 void Properties::set_array3f(const std::string &name, const Array3f &value, bool error_duplicates) {
     if (has_property(name) && error_duplicates)
         Log(Error, "Property \"%s\" was specified multiple times!", name);
     d->entries[name].data = (Array3f) value;
     d->entries[name].queried = false;
-}
-
-/// Array3f getter (without default)
-Array3f Properties::array3f(const std::string &name) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    if (!it->second.data.is<Array3f>())
-        Throw("The property \"%s\" has the wrong type (expected <vector> or <point>).", name);
-    it->second.queried = true;
-    return it->second.data.operator Array3f&();
-}
-
-/// Array3f getter (with default)
-Array3f Properties::array3f(const std::string &name, const Array3f &def_val) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    if (!it->second.data.is<Array3f>())
-        Throw("The property \"%s\" has the wrong type (expected <vector> or <point>).", name);
-    it->second.queried = true;
-    return it->second.data.operator Array3f&();
 }
 
 /// AnimatedTransform setter.
@@ -514,5 +504,31 @@ ref<Object> Properties::find_object(const std::string &name) const {
 
     return it->second.data;
 }
+
+#define EXPORT_PROPERTY_ACCESSOR(T) \
+    template MTS_EXPORT_CORE T Properties::get<T>(const std::string &) const; \
+    template MTS_EXPORT_CORE T Properties::get<T>(const std::string &, const T&) const;
+
+#define T(...) __VA_ARGS__
+EXPORT_PROPERTY_ACCESSOR(T(bool))
+EXPORT_PROPERTY_ACCESSOR(T(float))
+EXPORT_PROPERTY_ACCESSOR(T(double))
+EXPORT_PROPERTY_ACCESSOR(T(uint32_t))
+EXPORT_PROPERTY_ACCESSOR(T(int32_t))
+EXPORT_PROPERTY_ACCESSOR(T(uint64_t))
+EXPORT_PROPERTY_ACCESSOR(T(int64_t))
+EXPORT_PROPERTY_ACCESSOR(T(ek::Array<float, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(ek::Array<double, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Point<float, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Point<double, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Vector<float, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Vector<double, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Color<float, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Color<double, 3>))
+EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<float, 4>>))
+EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<double, 4>>))
+EXPORT_PROPERTY_ACCESSOR(T(std::string))
+EXPORT_PROPERTY_ACCESSOR(T(ref<Object>))
+#undef T
 
 NAMESPACE_END(mitsuba)

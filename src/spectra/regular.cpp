@@ -25,8 +25,8 @@ public:
 public:
     RegularSpectrum(const Properties &props) : Texture(props) {
         ScalarVector2f wavelength_range(
-            props.float_("lambda_min"),
-            props.float_("lambda_max")
+            props.get<ScalarFloat>("lambda_min"),
+            props.get<ScalarFloat>("lambda_max")
         );
 
         if (props.type("values") == Properties::Type::String) {
@@ -47,7 +47,7 @@ public:
                 wavelength_range, data.data(), data.size()
             );
         } else {
-            size_t size = props.size_("size");
+            size_t size = props.get<size_t>("size");
             const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
 
             m_distr = ContinuousDistribution<Wavelength>(

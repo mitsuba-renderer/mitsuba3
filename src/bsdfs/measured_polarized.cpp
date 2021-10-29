@@ -102,8 +102,8 @@ public:
         m_flags = BSDFFlags::GlossyReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
 
-        m_alpha_sample = props.float_("alpha_sample", 0.1f);
-        m_wavelength = props.float_("wavelength", -1.f);
+        m_alpha_sample = props.get<ScalarFloat>("alpha_sample", 0.1f);
+        m_wavelength = props.get<ScalarFloat>("wavelength", -1.f);
 
         if (!is_spectral_v<Spectrum> && m_wavelength == -1.f)
             Throw("In non-spectral modes, the measured polarized plugin can only render a specific wavelength specified by the `wavelength` parameter.");

@@ -31,9 +31,9 @@ public:
         // Filter radius
         m_radius = 2.f;
         // B parameter from the paper
-        m_b = props.float_("B", 1.f / 3.f);
+        m_b = props.get<ScalarFloat>("B", 1.f / 3.f);
         // C parameter from the paper
-        m_c = props.float_("C", 1.f / 3.f);
+        m_c = props.get<ScalarFloat>("C", 1.f / 3.f);
         init_discretization();
     }
 

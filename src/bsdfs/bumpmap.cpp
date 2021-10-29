@@ -88,7 +88,7 @@ public:
         if (!m_nested_texture)
             Throw("Exactly one Texture child object must be specified.");
 
-        m_scale = props.float_("scale", 1.f);
+        m_scale = props.get<ScalarFloat>("scale", 1.f);
 
         // Add all nested components
         m_components.clear();

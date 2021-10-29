@@ -48,7 +48,7 @@ public:
                 Throw("Only one of the parameters 'position' and 'to_world' "
                       "can be specified at the same time!'");
 
-            m_to_world = ScalarTransform4f::translate(ScalarVector3f(props.point3f("position")));
+            m_to_world = ScalarTransform4f::translate(ScalarVector3f(props.get<ScalarPoint3f>("position")));
             ek::make_opaque(m_to_world);
         }
 

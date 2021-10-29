@@ -88,7 +88,7 @@ bool is_unbounded_spectrum(const std::string &name) {
 
 NAMESPACE_BEGIN(detail)
 
-using Float = float;
+using Float = Properties::Float;
 MTS_IMPORT_CORE_TYPES()
 
 static int64_t stoll(const std::string &s) {

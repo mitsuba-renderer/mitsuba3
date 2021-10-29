@@ -73,7 +73,7 @@ public:
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
-        if (props.bool_("flip_normals", false))
+        if (props.get<bool>("flip_normals", false))
             m_to_world =
                 m_to_world.scalar() *
                 ScalarTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));

@@ -31,7 +31,7 @@ public:
 
     GaussianFilter(const Properties &props) : Base(props) {
         // Standard deviation
-        m_stddev = props.float_("stddev", 0.5f);
+        m_stddev = props.get<ScalarFloat>("stddev", 0.5f);
 
         // Cut off after 4 standard deviations
         m_radius = 4 * m_stddev;
