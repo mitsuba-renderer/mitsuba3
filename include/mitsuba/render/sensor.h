@@ -17,7 +17,7 @@ template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Sensor : public Endpoint<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Film, Sampler)
-    MTS_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
+    MTS_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3, m_to_world)
 
     // =============================================================
     //! @{ \name Sensor-specific sampling functions
@@ -69,6 +69,11 @@ public:
     // =============================================================
     //! @{ \name Additional query functions
     // =============================================================
+
+    /// Return the local space to world space transformation
+    Transform4f my_world_transform() const {
+        return m_to_world.value();
+    }
 
     /// Return the time value of the shutter opening event
     ScalarFloat shutter_open() const { return m_shutter_open; }
@@ -248,6 +253,7 @@ NAMESPACE_END(mitsuba)
 
 ENOKI_VCALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     ENOKI_VCALL_METHOD(sample_ray_differential)
+    ENOKI_VCALL_METHOD(my_world_transform)
 ENOKI_VCALL_TEMPLATE_END(mitsuba::Sensor)
 
 //! @}

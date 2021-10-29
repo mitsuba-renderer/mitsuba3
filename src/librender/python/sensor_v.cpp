@@ -72,14 +72,17 @@ MTS_PY_EXPORT(Sensor) {
 
         py::class_<SensorPtr> cls(m, "SensorPtr", ek_array);
         cls.def(
-            "sample_ray_differential",
-            [](SensorPtr ptr, Float time, Float sample1, const Point2f &sample2,
-               const Point2f &sample3, Mask active) {
-                return ptr->sample_ray_differential(time, sample1, sample2,
-                                                    sample3, active);
-            },
-            "time"_a, "sample1"_a, "sample2"_a, "sample3"_a, "active"_a = true,
-            D(Sensor, sample_ray_differential));
+               "sample_ray_differential",
+               [](SensorPtr ptr, Float time, Float sample1,
+                  const Point2f &sample2, const Point2f &sample3, Mask active) {
+                   return ptr->sample_ray_differential(time, sample1, sample2,
+                                                       sample3, active);
+               },
+               "time"_a, "sample1"_a, "sample2"_a, "sample3"_a,
+               "active"_a = true, D(Sensor, sample_ray_differential))
+            .def(
+                "my_world_transform",
+                [](SensorPtr ptr) { return ptr->my_world_transform(); });
 
         bind_enoki_ptr_array(cls);
     }

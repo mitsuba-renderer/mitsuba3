@@ -2434,6 +2434,10 @@ static const char *__doc_mitsuba_Endpoint_traverse = R"doc(//! @})doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
+static const char *__doc_mitsuba_Endpoint_set_world_transform = R"doc(Update the local space to world space transformation.
+Warning: as implemented, some cached quantities may not
+be updated. May not be valid for all types of endpoints.)doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
