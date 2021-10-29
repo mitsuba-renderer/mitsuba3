@@ -471,6 +471,49 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_gpu(const Ray3f &ray, uint32_t
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_gpu(const Ray3f &ray, uint32_t hit_flags,
                                           Mask active) const {
+#if 0
+    // Attempt a fast path for scenes that are only made of a single AABB.
+    if (true) {
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+
+        const ref<Shape> shape = m_shapes[0];
+        const ScalarBoundingBox3f bbox = shape->bbox();
+
+        auto [hit, mint, maxt] = bbox.ray_intersect(ray);
+        Mask starts_outside = mint > 0.f;
+        Float t = ek::select(starts_outside, mint, maxt);
+        hit &= t <= ray.maxt && t > math::RayEpsilon<Float>;
+        si.t = ek::select(hit, t, ek::Infinity<Float>);
+        si.time = ray.time;
+        si.wavelengths = ray.wavelengths;
+        si.p = ray(si.t);
+
+        // Normal vector: assuming axis-aligned bbox, figure
+        // out the normal direction based on the relative position
+        // of the intersection point to the bbox's center.
+        Point3f p_local = si.p - bbox.center();
+        // The axis with the largest local coordinate (magnitude)
+        // is the axis of the normal vector.
+        Point3f p_local_abs = ek::abs(p_local);
+        Float vmax = ek::hmax(p_local_abs);
+        Normal3f n(ek::eq(p_local_abs.x(), vmax), ek::eq(p_local_abs.y(), vmax),
+                   ek::eq(p_local_abs.z(), vmax));
+        // Normal always points to the outside of the bbox, independently
+        // of the ray direction.
+        // n = ek::normalize(ek::select(ek::dot(ray.d, n) > 0, -n, n));
+        n = ek::normalize(ek::sign(p_local) * n);
+        si.n = ek::select(hit, n, -ray.d);
+
+        si.shape = ek::select(hit, ek::opaque<ShapePtr>(shape.get()), ek::zero<ShapePtr>());
+        si.uv = 0.f;  // TODO: proper UVs
+        si.sh_frame.n = si.n;
+        if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
+            si.initialize_sh_frame();
+        si.wi = ek::select(hit, si.to_local(-ray.d), -ray.d);
+        return si;
+    }
+#endif
+
     if constexpr (ek::is_cuda_array_v<Float>) {
         PreliminaryIntersection3f pi = ray_intersect_preliminary_gpu(ray, hit_flags, active);
         return pi.compute_surface_interaction(ray, hit_flags, active);
