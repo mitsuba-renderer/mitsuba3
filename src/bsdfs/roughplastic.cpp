@@ -164,7 +164,7 @@ public:
         if (props.has_property("specular_reflectance"))
             m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
 
-        m_nonlinear = props.bool_("nonlinear", false);
+        m_nonlinear = props.get<bool>("nonlinear", false);
 
         mitsuba::MicrofacetDistribution<ScalarFloat, Spectrum> distr(props);
         m_type = distr.type();

@@ -192,7 +192,7 @@ public:
             fail("file not found");
 
         /// When the file contains multiple meshes, this index specifies which one to load
-        int shape_index = props.int_("shape_index", 0);
+        int shape_index = props.get<int>("shape_index", 0);
         if (shape_index < 0)
             fail("shape index must be nonnegative!");
 

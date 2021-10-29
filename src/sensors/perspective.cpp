@@ -100,7 +100,7 @@ public:
 
     PerspectiveCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
-        m_x_fov = parse_fov(props, size.x() / (float) size.y());
+        m_x_fov = parse_fov<Float>(props, size.x() / (float) size.y());
 
         if (m_to_world.scalar().has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
@@ -108,8 +108,8 @@ public:
         update_camera_transforms();
 
         m_principal_point_offset = ScalarPoint2f(
-            props.float_("principal_point_offset_x", 0.f),
-            props.float_("principal_point_offset_y", 0.f)
+            props.get<ScalarFloat>("principal_point_offset_x", 0.f),
+            props.get<ScalarFloat>("principal_point_offset_y", 0.f)
         );
         ScalarVector2f crop_size = ScalarVector2f(m_film->crop_size());
         m_principal_point_offset *= size / crop_size;

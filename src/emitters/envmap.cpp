@@ -122,7 +122,7 @@ public:
         size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), 4 };
         m_data = TensorXf(bitmap->data(), 3, shape);
 
-        m_scale = props.float_("scale", 1.f);
+        m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_warp = Warp(luminance.get(), res);
         m_d65 = Texture::D65(1.f);
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;

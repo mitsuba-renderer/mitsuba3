@@ -96,7 +96,7 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     BitmapTexture(const Properties &props) : Texture(props) {
-        m_transform = props.transform("to_uv", ScalarTransform4f()).extract();
+        m_transform = props.get<ScalarTransform4f>("to_uv", ScalarTransform4f()).extract();
 
         if (props.has_property("bitmap")) {
             // Creates a Bitmap texture directly from an existing Bitmap object
@@ -162,7 +162,7 @@ public:
 
         /* Should Mitsuba disable transformations to the stored color data?
            (e.g. sRGB to linear, spectral upsampling, etc.) */
-        m_raw = props.bool_("raw", false);
+        m_raw = props.get<bool>("raw", false);
         if (m_raw) {
             /* Don't undo gamma correction in the conversion below.
                This is needed, e.g., for normal maps. */

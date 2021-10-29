@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/endpoint.h>
@@ -191,7 +192,64 @@ protected:
 // ========================================================================
 
 /// Helper function to parse the field of view field of a camera
-extern MTS_EXPORT_RENDER float parse_fov(const Properties &props, float aspect);
+template <typename Float>
+extern MTS_EXPORT_RENDER ek::scalar_t<Float>
+parse_fov(const Properties &props, ek::scalar_t<Float> aspect) {
+    using ScalarFloat = ek::scalar_t<Float>;
+    if (props.has_property("fov") && props.has_property("focal_length"))
+        Throw("Please specify either a focal length ('focal_length') or a "
+                "field of view ('fov')!");
+
+    ScalarFloat fov;
+    std::string fov_axis;
+
+    if (props.has_property("fov")) {
+        fov = props.get<ScalarFloat>("fov");
+
+        fov_axis = string::to_lower(props.string("fov_axis", "x"));
+
+        if (fov_axis == "smaller")
+            fov_axis = aspect > 1 ? "y" : "x";
+        else if (fov_axis == "larger")
+            fov_axis = aspect > 1 ? "x" : "y";
+    } else {
+        std::string f = props.string("focal_length", "50mm");
+        if (string::ends_with(f, "mm"))
+            f = f.substr(0, f.length()-2);
+
+        ScalarFloat value;
+        try {
+            value = string::stof<ScalarFloat>(f);
+        } catch (...) {
+            Throw("Could not parse the focal length (must be of the form "
+                "<x>mm, where <x> is a positive integer)!");
+        }
+
+        fov = 2.f *
+                ek::rad_to_deg(ek::atan(ek::sqrt(ScalarFloat(36 * 36 + 24 * 24)) / (2.f * value)));
+        fov_axis = "diagonal";
+    }
+
+    ScalarFloat result;
+    if (fov_axis == "x") {
+        result = fov;
+    } else if (fov_axis == "y") {
+        result = ek::rad_to_deg(
+            2.f * ek::atan(ek::tan(.5f * ek::deg_to_rad(fov)) * aspect));
+    } else if (fov_axis == "diagonal") {
+        ScalarFloat diagonal = 2.f * ek::tan(.5f * ek::deg_to_rad(fov));
+        ScalarFloat width    = diagonal / ek::sqrt(1.f + 1.f / (aspect * aspect));
+        result = ek::rad_to_deg(2.f * ek::atan(width*.5f));
+    } else {
+        Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
+                "'larger', 'diagonal', 'x', or 'y'!");
+    }
+
+    if (result <= 0.f || result >= 180.f)
+        Throw("The horizontal field of view must be in the range [0, 180]!");
+
+    return result;
+}
 
 /// Helper function to create a perspective projection transformation matrix
 template <typename Float> Transform<Point<Float, 4>>

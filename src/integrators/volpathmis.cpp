@@ -58,7 +58,7 @@ public:
                      Medium, MediumPtr, PhaseFunctionContext)
 
     VolumetricMisPathIntegrator(const Properties &props) : Base(props) {
-        m_use_spectral_mis = props.bool_("use_spectral_mis", true);
+        m_use_spectral_mis = props.get<bool>("use_spectral_mis", true);
         m_props = props;
     }
 

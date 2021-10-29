@@ -25,9 +25,9 @@ public:
     MTS_IMPORT_TYPES(Texture)
 
     SRGBReflectanceSpectrum(const Properties &props) : Texture(props) {
-        ScalarColor3f color = props.color("color");
+        ScalarColor3f color = props.get<ScalarColor3f>("color");
 
-        if (ek::any(color < 0 || color > 1) && !props.bool_("unbounded", false))
+        if (ek::any(color < 0 || color > 1) && !props.get<bool>("unbounded", false))
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
 
         if constexpr (is_spectral_v<Spectrum>)

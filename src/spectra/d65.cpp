@@ -45,7 +45,7 @@ public:
         /* The default scale factor is set so that integrating
            the spectrum against the CIE curves & converting to
            sRGB yields a pixel value of (1, 1, 1) */
-        m_scale = props.float_("scale", 1.f);
+        m_scale = props.get<ScalarFloat>("scale", 1.f);
         m_scale *= 1.f / 10568.f;
     }
 

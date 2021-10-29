@@ -21,13 +21,14 @@ template <typename Float, typename Spectrum>
 class BoxFilter final : public ReconstructionFilter<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(ReconstructionFilter, init_discretization, m_radius)
+    MTS_IMPORT_TYPES()
 
     BoxFilter(const Properties &props) : Base(props) {
         /* Filter radius in pixels. A tiny epsilon is added, since some
            samplers (Hammersley and Halton in particular) place samples
            at positions like (0, 0). Without such an epsilon and rounding
            errors, samples may end up not contributing to any pixel. */
-        m_radius = props.float_("radius", .5f) + math::RayEpsilon<Float>;
+        m_radius = props.get<ScalarFloat>("radius", 0.5f) + math::RayEpsilon<Float>;
         init_discretization();
     }
 

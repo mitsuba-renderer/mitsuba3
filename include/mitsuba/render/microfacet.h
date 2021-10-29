@@ -119,7 +119,7 @@ public:
         }
 
         if (props.has_property("alpha")) {
-            m_alpha_u = m_alpha_v = props.float_("alpha");
+            m_alpha_u = m_alpha_v = props.get<ScalarFloat>("alpha");
             if (props.has_property("alpha_u") || props.has_property("alpha_v"))
                 Throw("Microfacet model: please specify"
                       "either 'alpha' or 'alpha_u'/'alpha_v'.");
@@ -129,8 +129,8 @@ public:
             if (props.has_property("alpha"))
                 Throw("Microfacet model: please specify"
                     "either 'alpha' or 'alpha_u'/'alpha_v'.");
-            m_alpha_u = props.float_("alpha_u");
-            m_alpha_v = props.float_("alpha_v");
+            m_alpha_u = props.get<ScalarFloat>("alpha_u");
+            m_alpha_v = props.get<ScalarFloat>("alpha_v");
         }
 
         if (alpha_u == 0.f || alpha_v == 0.f)
@@ -138,7 +138,7 @@ public:
                 "Cannot create a microfacet distribution with alpha_u/alpha_v=0 (clamped to 10^-4). "
                 "Please use the corresponding smooth reflectance model to get zero roughness.");
 
-        m_sample_visible = props.bool_("sample_visible", sample_visible);
+        m_sample_visible = props.get<bool>("sample_visible", sample_visible);
 
         configure();
     }

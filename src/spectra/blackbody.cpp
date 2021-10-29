@@ -52,7 +52,7 @@ public:
     constexpr static ScalarFloat c1 = h * c / k;
 
     BlackBodySpectrum(const Properties &props) : Texture(props) {
-        m_temperature = props.float_("temperature");
+        m_temperature = props.get<ScalarFloat>("temperature");
         parameters_changed();
     }
 

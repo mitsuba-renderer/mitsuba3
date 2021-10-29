@@ -17,9 +17,9 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
 
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
-        self.max_depth = props.long_('max_depth', 4)
-        self.rr_depth = props.long_('rr_depth', 5)
-        self.hide_emitters = props.bool_('hide_emitters', False)
+        self.max_depth = props.get('max_depth', 4)
+        self.rr_depth = props.get('rr_depth', 5)
+        self.hide_emitters = props.get('hide_emitters', False)
 
         self.use_nee = False
         self.nee_handle_homogeneous = False

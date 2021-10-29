@@ -151,7 +151,7 @@ public:
         if (props.has_property("specular_reflectance"))
             m_specular_reflectance = props.texture<Texture>("specular_reflectance", 1.f);
 
-        m_nonlinear = props.bool_("nonlinear", false);
+        m_nonlinear = props.get<bool>("nonlinear", false);
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide);
         m_components.push_back(BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide);

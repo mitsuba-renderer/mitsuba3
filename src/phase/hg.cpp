@@ -41,7 +41,7 @@ public:
     MTS_IMPORT_TYPES(PhaseFunctionContext)
 
     HGPhaseFunction(const Properties &props) : Base(props) {
-        m_g = props.float_("g", 0.8f);
+        m_g = props.get<ScalarFloat>("g", 0.8f);
         if (m_g >= 1 || m_g <= -1)
             Log(Error, "The asymmetry parameter must lie in the interval (-1, 1)!");
 

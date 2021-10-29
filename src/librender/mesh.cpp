@@ -26,10 +26,10 @@ MTS_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     /* When set to ``true``, Mitsuba will use per-face instead of per-vertex
        normals when rendering the object, which will give it a faceted
        appearance. Default: ``false`` */
-    if (props.bool_("face_normals", false))
+    if (props.get<bool>("face_normals", false))
         m_disable_vertex_normals = true;
 
-    m_flip_normals = props.bool_("flip_normals", false);
+    m_flip_normals = props.get<bool>("flip_normals", false);
 }
 
 MTS_VARIANT
