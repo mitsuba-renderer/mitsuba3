@@ -66,7 +66,7 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
 MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             uint32_t seed,
-                                            Sensor *sensor,
+                                            ref<Sensor> sensor,
                                             bool develop_film) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;

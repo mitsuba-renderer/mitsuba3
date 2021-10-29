@@ -21,7 +21,7 @@ public:
     virtual ~ScatteringIntegrator();
 
     /// Perform the main rendering job
-    TensorXf render(Scene *scene, uint32_t seed, Sensor *sensor,
+    TensorXf render(Scene *scene, uint32_t seed, ref<Sensor> index,
                     bool develop_film = true) override;
 
     /**

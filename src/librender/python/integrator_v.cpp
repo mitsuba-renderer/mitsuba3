@@ -24,7 +24,8 @@ static void (*sigint_handler_prev)(int) = nullptr;
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium,
+                     Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
         if constexpr (!ek::is_jit_array_v<Float>) {
@@ -36,7 +37,7 @@ public:
 
     TensorXf render(Scene *scene,
                     uint32_t seed,
-                    Sensor *sensor,
+                    ref<Sensor> sensor,
                     bool develop_film) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "render");
@@ -79,7 +80,7 @@ public:
 };
 
 MTS_PY_EXPORT(Integrator) {
-    MTS_PY_IMPORT_TYPES()
+    MTS_PY_IMPORT_TYPES(Sensor)
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
 
     MTS_PY_CLASS(Integrator, Object)
@@ -88,7 +89,7 @@ MTS_PY_EXPORT(Integrator) {
             [&](Integrator *integrator,
                 Scene *scene,
                 uint32_t seed,
-                Sensor *sensor,
+                ref<Sensor> sensor,
                 bool develop_film,
                 uint32_t spp) {
                 py::gil_scoped_release release;

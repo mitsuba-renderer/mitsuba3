@@ -45,12 +45,11 @@ public:
      */
     virtual TensorXf render(Scene *scene,
                             uint32_t seed,
-                            Sensor *sensor,
+                            ref<Sensor> sensor,
                             bool develop_film = true) = 0;
 
-    TensorXf render(Scene *scene,
-                    uint32_t seed,
-                    uint32_t sensor_index = 0,
+    /// Convenience overload.
+    TensorXf render(Scene *scene, uint32_t seed, uint32_t sensor_index = 0,
                     bool develop_film = true);
 
     /**
@@ -180,7 +179,7 @@ public:
 
     TensorXf render(Scene *scene,
                     uint32_t seed,
-                    Sensor *sensor,
+                    ref<Sensor> sensor,
                     bool develop_film = true) override;
 
     //! @}
