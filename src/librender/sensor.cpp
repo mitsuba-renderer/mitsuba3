@@ -105,6 +105,66 @@ MTS_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties
 
 MTS_VARIANT ProjectiveCamera<Float, Spectrum>::~ProjectiveCamera() { }
 
+// =============================================================================
+// Helper functions
+// =============================================================================
+
+double parse_fov(const Properties &props, double aspect) {
+    if (props.has_property("fov") && props.has_property("focal_length"))
+        Throw("Please specify either a focal length ('focal_length') or a "
+                "field of view ('fov')!");
+
+    double fov;
+    std::string fov_axis;
+
+    if (props.has_property("fov")) {
+        fov = props.get<double>("fov");
+
+        fov_axis = string::to_lower(props.string("fov_axis", "x"));
+
+        if (fov_axis == "smaller")
+            fov_axis = aspect > 1 ? "y" : "x";
+        else if (fov_axis == "larger")
+            fov_axis = aspect > 1 ? "x" : "y";
+    } else {
+        std::string f = props.string("focal_length", "50mm");
+        if (string::ends_with(f, "mm"))
+            f = f.substr(0, f.length() - 2);
+
+        double value;
+        try {
+            value = string::stof<double>(f);
+        } catch (...) {
+            Throw("Could not parse the focal length (must be of the form "
+                "<x>mm, where <x> is a positive integer)!");
+        }
+
+        fov = 2.0 *
+                ek::rad_to_deg(ek::atan(ek::sqrt(double(36 * 36 + 24 * 24)) / (2.0 * value)));
+        fov_axis = "diagonal";
+    }
+
+    double result;
+    if (fov_axis == "x") {
+        result = fov;
+    } else if (fov_axis == "y") {
+        result = ek::rad_to_deg(
+            2.0 * ek::atan(ek::tan(0.5 * ek::deg_to_rad(fov)) * aspect));
+    } else if (fov_axis == "diagonal") {
+        double diagonal = 2.0 * ek::tan(0.5 * ek::deg_to_rad(fov));
+        double width    = diagonal / ek::sqrt(1.0 + 1.0 / (aspect * aspect));
+        result = ek::rad_to_deg(2.0 * ek::atan(width * 0.5));
+    } else {
+        Throw("The 'fov_axis' parameter must be set to one of 'smaller', "
+                "'larger', 'diagonal', 'x', or 'y'!");
+    }
+
+    if (result <= 0.0 || result >= 180.0)
+        Throw("The horizontal field of view must be in the range [0, 180]!");
+
+    return result;
+}
+
 MTS_IMPLEMENT_CLASS_VARIANT(Sensor, Endpoint, "sensor")
 MTS_IMPLEMENT_CLASS_VARIANT(ProjectiveCamera, Sensor)
 

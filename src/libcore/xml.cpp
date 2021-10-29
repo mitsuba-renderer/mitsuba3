@@ -14,7 +14,6 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/profiler.h>
-#include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/transform.h>
@@ -313,7 +312,7 @@ Vector3f parse_named_vector(XMLSource &src, pugi::xml_node &node, const std::str
     }
 }
 
-Vector3f parse_vector(XMLSource &src, pugi::xml_node &node, Float def_val = 0.f) {
+Vector3f parse_vector(XMLSource &src, pugi::xml_node &node, Float def_val = 0) {
     std::string value;
     try {
         Float x = def_val, y = def_val, z = def_val;
@@ -796,7 +795,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
                     check_attributes(src, node, { "name", "value", "filename" }, false);
                     std::string name = node.attribute("name").value();
 
-                    ScalarFloat const_value(1.f);
+                    ScalarFloat const_value(1);
                     std::vector<Float> wavelengths, values;
 
                     bool has_value = !node.attribute("value").empty(),
@@ -882,7 +881,7 @@ static std::pair<std::string, std::string> parse_xml(XMLSource &src, XMLParseCon
             case Tag::Scale: {
                     detail::expand_value_to_xyz(src, node);
                     check_attributes(src, node, { "x", "y", "z" }, false);
-                    Vector3f vec = detail::parse_vector(src, node, 1.f);
+                    Vector3f vec = detail::parse_vector(src, node, 1);
                     ctx.transform = Transform4f::scale(vec) * ctx.transform;
                 }
                 break;
@@ -1114,9 +1113,9 @@ ref<Object> create_texture_from_rgb(const std::string &name,
 }
 
 ref<Object> create_texture_from_spectrum(const std::string &name,
-                                         float const_value,
-                                         std::vector<float> &wavelengths,
-                                         std::vector<float> &values,
+                                         Float const_value,
+                                         std::vector<Float> &wavelengths,
+                                         std::vector<Float> &values,
                                          const std::string &variant,
                                          bool within_emitter,
                                          bool is_spectral_mode,
@@ -1141,14 +1140,14 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
     } else {
         /* Values are scaled so that integrating the spectrum against the CIE curves
             and converting to sRGB yields (1, 1, 1) for D65. */
-        float unit_conversion = 1.f;
+        Float unit_conversion = 1;
         if (within_emitter || !is_spectral_mode)
             unit_conversion = MTS_CIE_Y_NORMALIZATION;
 
         /* Detect whether wavelengths are regularly sampled and potentially
             apply the conversion factor. */
         bool is_regular = true;
-        float interval = 0.f;
+        Float interval = 0;
 
         for (size_t n = 0; n < wavelengths.size(); ++n) {
             values[n] *= unit_conversion;
@@ -1156,12 +1155,12 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             if (n <= 0)
                 continue;
 
-            float distance = (wavelengths[n] - wavelengths[n - 1]);
+            Float distance = (wavelengths[n] - wavelengths[n - 1]);
             if (distance < 0.f)
                 Throw("Wavelengths must be specified in increasing order!");
             if (n == 1)
                 interval = distance;
-            else if (ek::abs(distance - interval) > ek::Epsilon<float>)
+            else if (ek::abs(distance - interval) > ek::Epsilon<Float>)
                 is_regular = false;
         }
 

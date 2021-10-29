@@ -76,7 +76,4 @@ MTS_PY_EXPORT(Sensor) {
     m.def("perspective_projection", &perspective_projection<Float>,
           "film_size"_a, "crop_size"_a, "crop_offset"_a, "fov_x"_a, "near_clip"_a, "far_clip"_a,
           D(perspective_projection));
-
-    m.def("parse_fov", &parse_fov<Float>, "props"_a, "aspect"_a, D(parse_fov));
-
 }

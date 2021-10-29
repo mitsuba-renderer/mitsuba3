@@ -60,7 +60,7 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
     if (m_sensors.empty()) {
         Log(Warn, "No sensors found! Instantiating a perspective camera..");
         Properties sensor_props("perspective");
-        sensor_props.set_float("fov", 45.0f);
+        sensor_props.set_float("fov", 45.0);
 
         /* Create a perspective camera with a 45 deg. field of view
            and positioned so that it can see the entire scene */
@@ -71,10 +71,10 @@ MTS_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props) {
             ScalarFloat distance =
                 ek::hmax(extents) / (2.f * ek::tan(45.f * .5f * ek::Pi<ScalarFloat> / 180.f));
 
-            sensor_props.set_float("far_clip", (float) (ek::hmax(extents) * 5 + distance));
-            sensor_props.set_float("near_clip", (float) distance / 100);
+            sensor_props.set_float("far_clip", (Properties::Float) (ek::hmax(extents) * 5 + distance));
+            sensor_props.set_float("near_clip", (Properties::Float) distance / 100);
 
-            sensor_props.set_float("focus_distance", (float) (distance + extents.z() / 2));
+            sensor_props.set_float("focus_distance", (Properties::Float) (distance + extents.z() / 2));
             sensor_props.set_transform(
                 "to_world", ScalarTransform4f::translate(ScalarVector3f(
                                 center.x(), center.y(), m_bbox.min.z() - distance)));

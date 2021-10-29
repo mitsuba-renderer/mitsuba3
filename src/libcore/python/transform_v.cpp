@@ -162,6 +162,13 @@ MTS_PY_EXPORT(Transform) {
         }
     }
 
+    MTS_PY_CHECK_ALIAS(ScalarTransform3d, "ScalarTransform3d") {
+        if constexpr (ek::is_dynamic_v<Float>) {
+            bind_transform3f<ScalarFloat64>(m, "ScalarTransform3d");
+            py::implicitly_convertible<ScalarTransform3d, ScalarTransform3f>();
+        }
+    }
+
     MTS_PY_CHECK_ALIAS(Transform4f, "Transform4f") {
         bind_transform4f<Float, Spectrum>(m, "Transform4f");
     }
@@ -170,6 +177,13 @@ MTS_PY_EXPORT(Transform) {
         if constexpr (ek::is_dynamic_v<Float>) {
             bind_transform4f<ScalarFloat, ScalarSpectrum>(m, "ScalarTransform4f");
             py::implicitly_convertible<ScalarTransform4f, Transform4f>();
+        }
+    }
+
+    MTS_PY_CHECK_ALIAS(ScalarTransform4d, "ScalarTransform4d") {
+        if constexpr (ek::is_dynamic_v<Float>) {
+            bind_transform4f<ScalarFloat64, ScalarSpectrum>(m, "ScalarTransform4d");
+            py::implicitly_convertible<ScalarTransform4d, ScalarTransform4f>();
         }
     }
 

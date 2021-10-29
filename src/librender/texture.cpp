@@ -66,7 +66,7 @@ Float Texture<Float, Spectrum>::pdf_position(const Point2f &, Mask) const {
 MTS_VARIANT ref<Texture<Float, Spectrum>>
 Texture<Float, Spectrum>::D65(ScalarFloat scale) {
     Properties props(is_spectral_v<Spectrum> ? "d65" : "uniform");
-    props.set_float(is_spectral_v<Spectrum> ? "scale" : "value", (float) scale);
+    props.set_float(is_spectral_v<Spectrum> ? "scale" : "value", Properties::Float(scale));
     ref<Texture> texture = PluginManager::instance()->create_object<Texture>(props);
     std::vector<ref<Object>> children = texture->expand();
     if (!children.empty())

@@ -88,8 +88,8 @@ public:
 
         // Update the to_world transform if face points and radius are also provided
         ScalarFloat radius = props.get<ScalarFloat>("radius", 1.f);
-        ScalarPoint3f p0 = props.get<ScalarPoint3f>("p0", { 0.f, 0.f, 0.f }),
-                      p1 = props.get<ScalarPoint3f>("p1", { 0.f, 0.f, 1.f });
+        ScalarPoint3f p0 = props.get<ScalarPoint3f>("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
+                      p1 = props.get<ScalarPoint3f>("p1", ScalarPoint3f(0.f, 0.f, 1.f));
 
         ScalarVector3f d = p1 - p0;
         ScalarFloat length = ek::norm(d);

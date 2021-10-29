@@ -134,7 +134,7 @@ ref<Object> create_texture_from(const py::dict &dict, bool within_emitter) {
                     "entries ('type' and 'value'), got %u.", dict.size());
         }
         // Read info from the dictionary
-        Properties::Float const_value(1.f);
+        Properties::Float const_value(1);
         std::vector<Properties::Float> wavelengths;
         std::vector<Properties::Float> values;
         for (auto& [k2, value2] : dict) {
@@ -217,7 +217,7 @@ ref<Object> load_dict(const std::string &dict_key, const py::dict &dict,
         if (py::isinstance<py::dict>(value)) {
             py::dict dict2 = value.template cast<py::dict>();
             std::string type2 = get_type(dict2);
-            
+
             if (type2 == "spectrum" || type2 == "rgb") {
                 props.set_object(key, create_texture_from<Float, Spectrum>(dict2, within_emitter));
                 continue;

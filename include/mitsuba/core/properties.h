@@ -50,7 +50,8 @@ public:
         Pointer            ///< const void* pointer (for internal communication between plugins)
     };
 
-    using Float = float;
+    // Scene parsing in double precision
+    using Float = double;
     using Array3f = ek::Array<Float, 3>;
     MTS_IMPORT_CORE_TYPES()
 
@@ -258,11 +259,11 @@ public:  // Type-specific getters and setters ----------------------------------
     }
 
     /// Retrieve a texture (or create uniform texture with default value)
-    template <typename Texture>
-    ref<Texture> texture(const std::string &name, Float def_val) const {
+    template <typename Texture, typename FloatType>
+    ref<Texture> texture(const std::string &name, FloatType def_val) const {
         if (!has_property(name)) {
             Properties props("uniform");
-            props.set_float("value", def_val);
+            props.set_float("value", Float(def_val));
             return (Texture *) PluginManager::instance()->create_object<Texture>(props).get();
         }
         return texture<Texture>(name);
@@ -309,25 +310,18 @@ public:  // Type-specific getters and setters ----------------------------------
         return volume<Volume>(name);
     }
 
-    template <typename Volume>
-    ref<Volume> volume(const std::string &name, Float def_val) const {
+    template <typename Volume, typename FloatType>
+    ref<Volume> volume(const std::string &name, FloatType def_val) const {
         if (!has_property(name)) {
             Properties props("constvolume");
-            props.set_float("value", def_val);
+            props.set_float("value", Float(def_val));
             return (Volume *) PluginManager::instance()->create_object<Volume>(props).get();
         }
         return volume<Volume>(name);
     }
 
-
-
 private:
-    template <typename T, typename It>
-    T get_routing(const It &it) const;
-    template <typename T, typename T2 = T, typename It = int>
-    T get_impl(const It &it) const;
-
-    // Return a reference to an object for a specific name (return null ref if doesn't exist)
+    /// Return a reference to an object for a specific name (return null ref if doesn't exist)
     ref<Object> find_object(const std::string &name) const;
     struct PropertiesPrivate;
     std::unique_ptr<PropertiesPrivate> d;
@@ -358,5 +352,6 @@ EXTERN_EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<double, 4>>))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(std::string))
 EXTERN_EXPORT_PROPERTY_ACCESSOR(T(ref<Object>))
 #undef T
+#undef EXTERN_EXPORT_PROPERTY_ACCESSOR
 
 NAMESPACE_END(mitsuba)
