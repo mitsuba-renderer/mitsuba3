@@ -30,8 +30,8 @@ def test01_name_and_id(variant_scalar_rgb):
 
 
 def test02_type_is_preserved(variant_scalar_rgb):
-    from mitsuba.core import Properties as Prop, ScalarColor3f
-    from enoki.scalar import Array3f
+    from mitsuba.core import Properties as Prop, ScalarColor3f, ScalarColor3d
+    from enoki.scalar import Array3f, Array3f64
 
     p = Prop()
     fill_properties(p)
@@ -40,8 +40,8 @@ def test02_type_is_preserved(variant_scalar_rgb):
     assert isinstance(p['prop_2'], str)
     assert isinstance(p['prop_3'], bool)
     assert isinstance(p['prop_4'], float)
-    assert type(p['prop_5']) is Array3f
-    assert type(p['prop_6']) is ScalarColor3f
+    assert type(p['prop_5']) is Array3f64
+    assert type(p['prop_6']) is ScalarColor3d
 
     assert p['prop_1'] == 1
     assert p['prop_2'] == '1'
@@ -56,7 +56,7 @@ def test02_type_is_preserved(variant_scalar_rgb):
 
     p['prop_7'] = [1, 2, 3]
     print()
-    assert type(p['prop_7']) is Array3f
+    assert type(p['prop_7']) is Array3f64
 
 
 def test03_management_of_properties(variant_scalar_rgb):
@@ -187,7 +187,7 @@ def test08_get_default(variant_scalar_rgb):
 @pytest.mark.skip("TODO fix AnimatedTransform")
 def test09_animated_transforms(variant_scalar_rgb):
     """An AnimatedTransform can be built from a given Transform."""
-    from mitsuba.core import Properties as Prop, Transform4f, AnimatedTransform
+    from mitsuba.core import Properties as Prop, Transform4f, Transform4d, AnimatedTransform
 
     p = Prop()
     p["trafo"] = Transform4f.translate([1, 2, 3])
@@ -197,6 +197,6 @@ def test09_animated_transforms(variant_scalar_rgb):
     atrafo.append(1, Transform4f.translate([4, 3, 2]))
     p["atrafo"] = atrafo
 
-    assert type(p["trafo"]) is Transform4f
+    assert type(p["trafo"]) is Transform4d
     assert type(p["atrafo"]) is AnimatedTransform
 

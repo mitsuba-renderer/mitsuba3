@@ -103,6 +103,10 @@ MTS_PY_EXPORT(Enoki) {
     bind_ek<Color<ScalarFloat, 1>, ek::Array<ScalarFloat, 1>>(m, "ScalarColor1f");
     bind_ek<Color<ScalarFloat, 3>, ek::Array<ScalarFloat, 3>>(m, "ScalarColor3f");
 
+    bind_ek<Color<ScalarFloat64, 0>, ek::Array<ScalarFloat64, 0>>(m, "ScalarColor0d");
+    bind_ek<Color<ScalarFloat64, 1>, ek::Array<ScalarFloat64, 1>>(m, "ScalarColor1d");
+    bind_ek<Color<ScalarFloat64, 3>, ek::Array<ScalarFloat64, 3>>(m, "ScalarColor3d");
+
     bind_ek<Normal3f, ek::Array<Float, 3>>(m, "Normal3f");
     bind_ek<ScalarNormal3f, ek::Array<ScalarFloat, 3>>(m, "ScalarNormal3f");
 

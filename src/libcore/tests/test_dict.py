@@ -505,7 +505,7 @@ def test11_dict_spectrum_srgb(variant_scalar_rgb):
     w = [s[0] for s in spectrum]
     v = [s[1] * CIE_Y_NORMALIZATION for s in spectrum]
     rgb = spectrum_list_to_srgb(w, v)
-    assert ek.allclose(rgb, [0.442716, 0.278475, 0.118373])
+    assert ek.allclose(rgb, [0.442717, 0.278474, 0.118373])
 
     s1 = xml.load_dict({
         "type" : "spectrum",
@@ -514,7 +514,7 @@ def test11_dict_spectrum_srgb(variant_scalar_rgb):
 
     s2 = xml.load_string(f"""
         <spectrum  type='srgb' version='2.0.0'>
-            <rgb name="color" value="{rgb.x}, {rgb.y}, {rgb.z}"/>
+            <rgb name="color" value="0.442717, 0.278474, 0.118373"/>
         </spectrum>
     """)
 

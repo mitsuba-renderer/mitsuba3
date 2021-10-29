@@ -128,7 +128,7 @@ template <typename Vector3f> std::pair<Vector3f, Vector3f> coordinate_system(con
           b    = n.x() * n.y() * a;
 
     return {
-        Vector3f(ek::mulsign(ek::sqr(n.x()) * a, n.z()) + 1.f,
+        Vector3f(ek::mulsign(ek::sqr(n.x()) * a, n.z()) + 1,
                  ek::mulsign(b, n.z()),
                  ek::mulsign_neg(n.x(), n.z())),
         Vector3f(b, sign + ek::sqr(n.y()) * a, -n.y())

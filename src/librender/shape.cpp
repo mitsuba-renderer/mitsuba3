@@ -83,7 +83,7 @@ MTS_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props) : m_id(props.
     if (!m_bsdf) {
         Properties props2("diffuse");
         if (m_emitter)
-            props2.set_float("reflectance", 0.f);
+            props2.set_float("reflectance", 0);
         m_bsdf = PluginManager::instance()->create_object<BSDF>(props2);
     }
 

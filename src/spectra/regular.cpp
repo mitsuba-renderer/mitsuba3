@@ -48,11 +48,10 @@ public:
             );
         } else {
             size_t size = props.get<size_t>("size");
-            const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
-
-            m_distr = ContinuousDistribution<Wavelength>(
-                wavelength_range, values, size
-            );
+            // Scene/property parsing is in double precision, cast to single precision depending on variant.
+            using DataInput = DynamicBuffer<ek::replace_scalar_t<Float, Properties::Float>>;
+            auto data = DynamicBuffer<Float>(ek::load<DataInput>(props.pointer("values"), size));
+            m_distr = ContinuousDistribution<Wavelength>(wavelength_range, data);
         }
     }
 

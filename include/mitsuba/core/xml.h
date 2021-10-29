@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mitsuba/mitsuba.h>
+#include <mitsuba/core/properties.h>
 #include <string>
 
 /// Max level of nested <include> directives
@@ -54,9 +55,9 @@ extern MTS_EXPORT_CORE ref<Object> create_texture_from_rgb(
 /// Create a Texture object from a constant value or spectral values if available
 extern MTS_EXPORT_CORE ref<Object> create_texture_from_spectrum(
                                         const std::string &name,
-                                        float const_value,
-                                        std::vector<float> &wavelengths,
-                                        std::vector<float> &values,
+                                        Properties::Float const_value,
+                                        std::vector<Properties::Float> &wavelengths,
+                                        std::vector<Properties::Float> &values,
                                         const std::string &variant,
                                         bool within_emitter,
                                         bool is_spectral_mode,

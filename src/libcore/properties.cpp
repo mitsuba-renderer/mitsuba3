@@ -34,7 +34,7 @@ using VariantType = variant<
     const void *
 >;
 
-struct alignas(16) Entry {
+struct alignas(32) Entry {
     VariantType data;
     bool queried;
 };
@@ -69,29 +69,28 @@ struct Properties::PropertiesPrivate {
     std::string id, plugin_name;
 };
 
-template <typename T>
-T Properties::get(const std::string &name) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        Throw("Property \"%s\" has not been specified!", name);
-    return get_routing<T>(it);
+using Iterator = typename std::map<std::string, Entry, SortKey>::iterator;
+
+template <typename T, typename T2 = T>
+T get_impl(const Iterator &it) {
+    if (!it->second.data.template is<T>() && !it->second.data.template is<T2>())
+        Throw("The property \"%s\" has the wrong type (expected <%s> or <%s>, is <%s>)",
+              it->first, typeid(T).name(), typeid(T2).name(), it->second.data.type().name());
+    it->second.queried = true;
+    if (it->second.data.template is<T2>())
+        return (T const &) (T2 const &) it->second.data;
+    return (T const &) it->second.data;
 }
 
 template <typename T>
-T Properties::get(const std::string &name, const T &def_val) const {
-    const auto it = d->entries.find(name);
-    if (it == d->entries.end())
-        return def_val;
-    return get_routing<T>(it);
-}
-
-template <typename T, typename It>
-T Properties::get_routing(const It &it) const {
+T get_routing(const Iterator &it) {
     if constexpr (ek::is_static_array_v<T>) {
         Assert(T::Size == 3);
-        if constexpr (std::is_same_v<T, Color<typename T::Value, 3>>)
+        if constexpr (std::is_same_v<T, Color<float, 3>> ||
+                      std::is_same_v<T, Color<double, 3>>)
             return (T) get_impl<Color3f>(it);
-        return (T) get_impl<Array3f>(it);
+        else
+            return (T) get_impl<Array3f>(it);
     }
 
     if constexpr (std::is_same_v<T, Transform<Point<float, 4>>> ||
@@ -124,17 +123,21 @@ T Properties::get_routing(const It &it) const {
     Throw("Unsupported type: <%s>.", typeid(T).name());
 }
 
-template <typename T, typename T2, typename It>
-T Properties::get_impl(const It &it) const {
-    if (!it->second.data.template is<T>() && !it->second.data.template is<T2>())
-        Throw("The property \"%s\" has the wrong type (expected <%s> or <%s>, is <%s>)",
-              it->first, typeid(T).name(), typeid(T2).name(), it->second.data.type().name());
-    it->second.queried = true;
-    if (it->second.data.template is<T2>())
-        return (T const &) (T2 const &) it->second.data;
-    return (T const &) it->second.data;
+template <typename T>
+T Properties::get(const std::string &name) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        Throw("Property \"%s\" has not been specified!", name);
+    return get_routing<T>(it);
 }
 
+template <typename T>
+T Properties::get(const std::string &name, const T &def_val) const {
+    const auto it = d->entries.find(name);
+    if (it == d->entries.end())
+        return def_val;
+    return get_routing<T>(it);
+}
 #define DEFINE_PROPERTY_SETTER(Type, SetterName) \
     void Properties::SetterName(const std::string &name, Type const &value, bool error_duplicates) { \
         if (has_property(name) && error_duplicates) \
@@ -413,6 +416,7 @@ void Properties::set_float(const std::string &name, const Float &value, bool err
     d->entries[name].data = (Float) value;
     d->entries[name].queried = false;
 }
+
 /// Array3f setter
 void Properties::set_array3f(const std::string &name, const Array3f &value, bool error_duplicates) {
     if (has_property(name) && error_duplicates)
