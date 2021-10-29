@@ -55,9 +55,9 @@ public:
         props.set_float("lambda_min", 360);
         props.set_float("lambda_max", 830);
         props.set_int("size", 95);
-        ScalarFloat tmp[95];
+        Properties::Float tmp[95];
         for (size_t i = 0; i < 95; ++i)
-            tmp[i] = data[i] * m_scale;
+            tmp[i] = Properties::Float(data[i] * m_scale);
         props.set_pointer("values", (const void *) &tmp[0]);
 
         PluginManager *pmgr = PluginManager::instance();

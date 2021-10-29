@@ -1,11 +1,18 @@
 #pragma once
 
+#if defined(__GNUG__)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdouble-promotion"
+#elif defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdouble-promotion"
+#endif
+
 #include <mitsuba/core/ray.h>
 #include <enoki/transform.h>
 #include <enoki/sphere.h>
 
 NAMESPACE_BEGIN(mitsuba)
-
 /**
  * \brief Encapsulates a 4x4 homogeneous coordinate transformation along with
  * its inverse transpose
@@ -544,5 +551,11 @@ std::ostream &operator<<(std::ostream &os, const AnimatedTransform &t);
 
 //! @}
 // -----------------------------------------------------------------------
+
+#if defined(__GNUG__)
+#  pragma GCC diagnostic pop
+#elif defined(__clang__)
+#  pragma clang diagnostic pop
+#endif
 
 NAMESPACE_END(mitsuba)

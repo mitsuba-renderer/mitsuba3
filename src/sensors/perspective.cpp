@@ -100,7 +100,7 @@ public:
 
     PerspectiveCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
-        m_x_fov = parse_fov<Float>(props, size.x() / (float) size.y());
+        m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
 
         if (m_to_world.scalar().has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");

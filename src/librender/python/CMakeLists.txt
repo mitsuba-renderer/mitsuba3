@@ -60,6 +60,7 @@ pybind11_add_module(render_ext
   interaction.cpp
   microfacet.cpp
   phase.cpp
+  sensor.cpp
   spiral.cpp
 )
 

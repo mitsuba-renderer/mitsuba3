@@ -949,10 +949,10 @@ void Bitmap::read_exr(Stream *stream) {
             m_metadata.set_long(name, v->value());
         } else if (type_name == "float") {
             auto v = static_cast<const Imf::FloatAttribute *>(attr);
-            m_metadata.set_float(name, Float(v->value()));
+            m_metadata.set_float(name, Properties::Float(v->value()));
         } else if (type_name == "double") {
             auto v = static_cast<const Imf::DoubleAttribute *>(attr);
-            m_metadata.set_float(name, Float(v->value()));
+            m_metadata.set_float(name, Properties::Float(v->value()));
         } else if (type_name == "v3f") {
             auto v = static_cast<const Imf::V3fAttribute *>(attr);
             Imath::V3f vec = v->value();
@@ -1324,10 +1324,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                 header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(*it)));
                 break;
             case Type::Float:
-                if constexpr (std::is_same_v<Float, double>)
-                    header.insert(it->c_str(), Imf::DoubleAttribute((double)metadata.get<ScalarFloat>(*it)));
-                else
-                    header.insert(it->c_str(), Imf::FloatAttribute(metadata.get<ScalarFloat>(*it)));
+                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<Float>(*it)));
                 break;
             case Type::Array3f: {
                     Vector3f val = metadata.get<Vector3f>(*it);

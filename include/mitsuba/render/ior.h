@@ -98,11 +98,11 @@ inline float lookup_ior(const Properties &props, const std::string &param_name,
 
 template <typename Spectrum, typename Texture>
 ref<Texture> ior_from_file(const std::string &filename) {
-    using ScalarFloat = ek::scalar_t<ek::value_t<Spectrum>>;
-    std::vector<ScalarFloat> wavelengths, values;
+    using Float = Properties::Float;
+    std::vector<Float> wavelengths, values;
     spectrum_from_file(filename, wavelengths, values);
 
-    float unit_conversion = is_spectral_v<Spectrum> ? 1.f : MTS_CIE_Y_NORMALIZATION;
+    Float unit_conversion = is_spectral_v<Spectrum> ? 1 : Float(MTS_CIE_Y_NORMALIZATION);
     for (size_t k = 0; k < wavelengths.size(); ++k)
         values[k] *= unit_conversion;
 
@@ -115,12 +115,12 @@ ref<Texture> ior_from_file(const std::string &filename) {
     ref<Texture> tex = PluginManager::instance()->create_object<Texture>(props);
 
     if (!is_spectral_v<Spectrum>) {
-        Color<float, 3> color = spectrum_list_to_srgb(wavelengths, values, false);
+        Color<Float, 3> color = spectrum_list_to_srgb(wavelengths, values, false);
 
         Properties props2;
         if (is_monochromatic_v<Spectrum>) {
             props2 = Properties("uniform");
-            props2.set_float("value", luminance(color));
+            props2.set_float("value", Float(luminance(color)));
         } else {
             props2 = Properties("srgb");
             props2.set_color("color", color);

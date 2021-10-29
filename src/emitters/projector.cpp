@@ -94,7 +94,7 @@ public:
 
         m_irradiance = props.texture<Texture>("irradiance");
         ScalarVector2i size = m_irradiance->resolution();
-        m_x_fov = parse_fov<Float>(props, size.x() / (float) size.y());
+        m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
 
         m_camera_to_sample = perspective_projection(size, size, 0, m_x_fov,
                                                     (ScalarFloat) 1e-4f,
