@@ -269,8 +269,17 @@ public:
         // fixed to an initial value computed from the reference data, for convenience.
         if (props.has_property("fixed_max")) {
             m_fixed_max = props.bool_("fixed_max");
-            Log(Info, "Medium will keep majorant fixed to: %s", m_max);
+            // It's easy to get incorrect results by e.g.:
+            // 1. Loading the scene with some data X with fixed_max = true
+            // 2. From Python, overwriting the grid data with Y > X
+            // 3. The medium majorant will not get updated, which is incorrect.
+            if (m_fixed_max)
+                Throw("This feature should probably not be used until more correctness checks are in place");
         }
+
+
+        if (m_fixed_max)
+            Log(Info, "Medium will keep majorant fixed to: %s", m_max);
     }
 
     UnpolarizedSpectrum eval(const Interaction3f &it, Mask active) const override {
