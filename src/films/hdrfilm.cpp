@@ -328,7 +328,7 @@ public:
 
             ScalarVector2i size = target->size();
             size_t width = target->channel_count() * ek::hprod(size);
-            auto data = ek::load<DynamicBuffer<Float>>(target->data(), width);
+            auto data = DynamicBuffer<Float64>(ek::load<DynamicBuffer<Float32>>(target->data(), width));
             size_t shape[3] = { (size_t) target->height(),
                                 (size_t) target->width(),
                                 target->channel_count() };
