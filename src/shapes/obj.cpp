@@ -99,7 +99,7 @@ public:
     OBJMesh(const Properties &props) : Base(props) {
         /* Causes all texture coordinates to be vertically flipped.
            Enabled by default, for consistence with the Mitsuba 1 behavior. */
-        bool flip_tex_coords = props.bool_("flip_tex_coords", true);
+        bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
         auto fs = Thread::thread()->file_resolver();
         fs::path file_path = fs->resolve(props.string("filename"));

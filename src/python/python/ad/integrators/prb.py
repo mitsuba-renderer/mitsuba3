@@ -10,7 +10,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
-        self.max_depth = props.long_('max_depth', 4)
+        self.max_depth = props.get('max_depth', 4)
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,

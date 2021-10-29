@@ -100,23 +100,23 @@ public:
         }
 
         m_name     = props.string("name");
-        short mat_nr = (short) props.int_("mat_nr");
-        size_t vertex_count = props.int_("vert_count");
-        size_t loop_tri_count = props.int_("loop_tri_count");
+        short mat_nr = (short) props.get<int>("mat_nr");
+        size_t vertex_count = props.get<int>("vert_count");
+        size_t loop_tri_count = props.get<int>("loop_tri_count");
         const blender::MLoop *loops =
-            reinterpret_cast<const blender::MLoop *>(props.long_("loops"));
+            reinterpret_cast<const blender::MLoop *>(props.get<int64_t>("loops"));
         const blender::MLoopTri *tri_loops =
-            reinterpret_cast<const blender::MLoopTri *>(props.long_("loop_tris"));
+            reinterpret_cast<const blender::MLoopTri *>(props.get<int64_t>("loop_tris"));
         const blender::MPoly *polygons =
-            reinterpret_cast<const blender::MPoly *>(props.long_("polys"));
+            reinterpret_cast<const blender::MPoly *>(props.get<int64_t>("polys"));
         const blender::MVert *verts =
-            reinterpret_cast<const blender::MVert *>(props.long_("verts"));
+            reinterpret_cast<const blender::MVert *>(props.get<int64_t>("verts"));
 
         bool has_cols = false;
         std::vector<std::pair<std::string, const blender::MLoopCol *>> cols;
         for (std::string &s : props.property_names()){
             if (s.rfind("vertex_", 0) == 0){
-                cols.push_back({s, reinterpret_cast<const blender::MLoopCol *>(props.long_(s))});
+                cols.push_back({s, reinterpret_cast<const blender::MLoopCol *>(props.get<int64_t>(s))});
                 has_cols = true;
             }
         }
@@ -124,7 +124,7 @@ public:
         bool has_uvs = props.has_property("uvs");
         const blender::MLoopUV *uvs = nullptr;
         if (has_uvs)
-            uvs = reinterpret_cast<const blender::MLoopUV *>(props.long_("uvs"));
+            uvs = reinterpret_cast<const blender::MLoopUV *>(props.get<int64_t>("uvs"));
         else
             Log(Warn, "Mesh %s has no texture coordinates!", m_name);
 

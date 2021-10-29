@@ -109,9 +109,9 @@ public:
 
     ThinLensCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
-        m_x_fov = parse_fov(props, size.x() / (float) size.y());
+        m_x_fov = parse_fov<Float>(props, size.x() / (float) size.y());
 
-        m_aperture_radius = props.float_("aperture_radius");
+        m_aperture_radius = props.get<ScalarFloat>("aperture_radius");
 
         if (m_aperture_radius == 0.f) {
             Log(Warn, "Can't have a zero aperture radius -- setting to %f", ek::Epsilon<Float>);

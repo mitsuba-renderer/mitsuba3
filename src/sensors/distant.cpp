@@ -73,7 +73,7 @@ public:
         // Get target
         if (props.has_property("target")) {
             if (props.type("target") == Properties::Type::Array3f) {
-                props.point3f("target");
+                props.get<ScalarPoint3f>("target");
                 m_target_type = RayTargetType::Point;
             } else if (props.type("target") == Properties::Type::Object) {
                 // We assume it's a shape
@@ -150,7 +150,7 @@ public:
                       "can be specified at the same time!'");
             }
 
-            ScalarVector3f direction(normalize(props.vector3f("direction")));
+            ScalarVector3f direction(normalize(props.get<ScalarVector3f>("direction")));
             ScalarVector3f up;
 
             std::tie(std::ignore, up) = coordinate_system(direction);
@@ -161,7 +161,7 @@ public:
 
         // Set ray target if relevant
         if constexpr (TargetType == RayTargetType::Point) {
-            m_target_point = props.point3f("target");
+            m_target_point = props.get<ScalarPoint3f>("target");
         } else if constexpr (TargetType == RayTargetType::Shape) {
             auto obj       = props.object("target");
             m_target_shape = dynamic_cast<Shape *>(obj.get());

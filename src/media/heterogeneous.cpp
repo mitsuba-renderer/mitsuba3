@@ -119,8 +119,8 @@ public:
         m_albedo = props.volume<Volume>("albedo", 0.75f);
         m_sigmat = props.volume<Volume>("sigma_t", 1.f);
 
-        m_scale = props.float_("scale", 1.0f);
-        m_has_spectral_extinction = props.bool_("has_spectral_extinction", true);
+        m_scale = props.get<ScalarFloat>("scale", 1.0f);
+        m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
         m_max_density = ek::opaque<Float>(m_scale * m_sigmat->max());
 

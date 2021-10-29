@@ -54,7 +54,7 @@ public:
                 wavelengths.data(), values.data(), values.size()
             );
         } else {
-            size_t size = props.size_("size");
+            size_t size = props.get<size_t>("size");
             const ScalarFloat *wavelengths = (ScalarFloat *) props.pointer("wavelengths");
             const ScalarFloat *values = (ScalarFloat *) props.pointer("values");
 

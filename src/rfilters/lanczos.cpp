@@ -33,7 +33,7 @@ public:
     MTS_IMPORT_TYPES()
 
     LanczosSincFilter(const Properties &props) : Base(props) {
-        m_radius = (ScalarFloat) props.int_("lobes", 3);
+        m_radius = (ScalarFloat) props.get<int>("lobes", 3);
         init_discretization();
     }
 

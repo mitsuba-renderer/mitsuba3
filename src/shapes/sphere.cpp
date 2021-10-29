@@ -95,13 +95,13 @@ public:
 
     Sphere(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
-        m_flip_normals = props.bool_("flip_normals", false);
+        m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
         m_to_world =
             m_to_world.scalar() *
-            ScalarTransform4f::translate(props.point3f("center", 0.f)) *
-            ScalarTransform4f::scale(props.float_("radius", 1.f));
+            ScalarTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
+            ScalarTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
 
         update();
         initialize();

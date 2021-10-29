@@ -167,9 +167,15 @@ template <typename Float_> struct CoreAliases {
     using Frame3f     = Frame<Float>;
     using Transform3f = Transform<Point3f>;
     using Transform4f = Transform<Point4f>;
+    using Transform3d = Transform<Point3d>;
+    using Transform4d = Transform<Point4d>;
 
     using Color1f = Color<Float, 1>;
     using Color3f = Color<Float, 3>;
+    using Color1d = Color<Float64, 1>;
+    using Color3d = Color<Float64, 3>;
+
+    using TensorXf = ek::Tensor<mitsuba::DynamicBuffer<Float>>;
 
     /*
      * The following aliases are only used for casting to python object with PY_CAST_VARIANTS.
@@ -178,7 +184,7 @@ template <typename Float_> struct CoreAliases {
     using Array1f = ek::Array<Float, 1>;
     using Array3f = ek::Array<Float, 3>;
     using DynamicBuffer = mitsuba::DynamicBuffer<Float>;
-    using TensorXf = ek::Tensor<DynamicBuffer>;
+
 };
 
 //! @}
@@ -249,9 +255,13 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
     using prefix ## Transform3f          = typename prefix ## CoreAliases::Transform3f;            \
     using prefix ## Transform4f          = typename prefix ## CoreAliases::Transform4f;            \
+    using prefix ## Transform3d          = typename prefix ## CoreAliases::Transform3d;            \
+    using prefix ## Transform4d          = typename prefix ## CoreAliases::Transform4d;            \
     using prefix ## Color1f              = typename prefix ## CoreAliases::Color1f;                \
     using prefix ## Color3f              = typename prefix ## CoreAliases::Color3f;                \
-    using prefix ## TensorXf          = typename prefix ## CoreAliases::TensorXf;
+    using prefix ## Color1d              = typename prefix ## CoreAliases::Color1d;                \
+    using prefix ## Color3d              = typename prefix ## CoreAliases::Color3d;                \
+    using prefix ## TensorXf             = typename prefix ## CoreAliases::TensorXf;
 
 // Variadic macro to import a set of types from the base class
 #define __MTS_USING_TYPES_MACRO__(x) using typename Base::x;

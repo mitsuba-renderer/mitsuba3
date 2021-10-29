@@ -84,15 +84,15 @@ public:
 
     Cylinder(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
-        m_flip_normals = props.bool_("flip_normals", false);
+        m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if face points and radius are also provided
-        float radius = props.float_("radius", 1.f);
-        ScalarPoint3f p0 = props.point3f("p0", ScalarPoint3f(0.f, 0.f, 0.f)),
-                      p1 = props.point3f("p1", ScalarPoint3f(0.f, 0.f, 1.f));
+        ScalarFloat radius = props.get<ScalarFloat>("radius", 1.f);
+        ScalarPoint3f p0 = props.get<ScalarPoint3f>("p0", { 0.f, 0.f, 0.f }),
+                      p1 = props.get<ScalarPoint3f>("p1", { 0.f, 0.f, 1.f });
 
         ScalarVector3f d = p1 - p0;
-        float length = ek::norm(d);
+        ScalarFloat length = ek::norm(d);
 
         m_to_world =
             m_to_world.scalar() * ScalarTransform4f::translate(p0) *

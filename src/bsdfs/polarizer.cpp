@@ -71,7 +71,7 @@ public:
     LinearPolarizer(const Properties &props) : Base(props) {
         m_theta = props.texture<Texture>("theta", 0.f);
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
-        m_polarizing = props.bool_("polarizing", true);
+        m_polarizing = props.get<bool>("polarizing", true);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         ek::set_attr(this, "flags", m_flags);

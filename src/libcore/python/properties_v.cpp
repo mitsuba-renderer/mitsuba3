@@ -27,19 +27,19 @@ py::object properties_get(const Properties& p, const std::string &key) {
     // We need to ask for type information to return the right cast
     auto type = p.type(key);
     if (type == Properties::Type::Bool)
-        return py::cast(p.bool_(key));
+        return py::cast(p.get<bool>(key));
     else if (type == Properties::Type::Long)
-        return py::cast(p.long_(key));
+        return py::cast(p.get<int64_t>(key));
     else if (type == Properties::Type::Float)
-        return py::cast(p.float_(key));
+        return py::cast(p.get<Properties::Float>(key));
     else if (type == Properties::Type::String)
         return py::cast(p.string(key));
     else if (type == Properties::Type::Color)
-        return py::cast(p.color(key));
+        return py::cast(p.get<Color<Properties::Float, 3>>(key));
     else if (type == Properties::Type::Array3f)
-        return py::cast(p.array3f(key));
+        return py::cast(p.get<ek::Array<Properties::Float, 3>>(key));
     else if (type == Properties::Type::Transform)
-        return py::cast(p.transform(key));
+        return py::cast(p.get<Transform<Point<Properties::Float, 4>>>(key));
     else if (type == Properties::Type::AnimatedTransform)
         return py::cast(p.animated_transform(key));
     else if (type == Properties::Type::Object) {
@@ -82,13 +82,7 @@ MTS_PY_EXPORT(Properties) {
             .SET_ITEM_BINDING(transform, typename Properties::Transform4f)
             .SET_ITEM_BINDING(animated_transform, ref<AnimatedTransform>)
             .SET_ITEM_BINDING(object, ref<Object>)
-            .GET_ITEM_DEFAULT_BINDING(float_, float, py::float_)
-            .GET_ITEM_DEFAULT_BINDING(bool_, bool, bool)
-            .GET_ITEM_DEFAULT_BINDING(long_, long, int64_t)
             .GET_ITEM_DEFAULT_BINDING(string, string, std::string)
-            .GET_ITEM_DEFAULT_BINDING(color, color, typename Properties::Color3f)
-            .GET_ITEM_DEFAULT_BINDING(array3f, array3f, typename Properties::Array3f)
-            .GET_ITEM_DEFAULT_BINDING(transform, transform, typename Properties::Transform4f)
             .GET_ITEM_DEFAULT_BINDING(animated_transform, animated_transform, ref<AnimatedTransform>)
             .def("__getitem__", [](const Properties& p, const std::string &key) {
                 return properties_get(p, key);

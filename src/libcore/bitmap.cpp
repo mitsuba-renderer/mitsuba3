@@ -1321,22 +1321,22 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                 header.insert(it->c_str(), Imf::StringAttribute(metadata.string(*it)));
                 break;
             case Type::Long:
-                header.insert(it->c_str(), Imf::IntAttribute(metadata.int_(*it)));
+                header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(*it)));
                 break;
             case Type::Float:
                 if constexpr (std::is_same_v<Float, double>)
-                    header.insert(it->c_str(), Imf::DoubleAttribute((double)metadata.float_(*it)));
+                    header.insert(it->c_str(), Imf::DoubleAttribute((double)metadata.get<ScalarFloat>(*it)));
                 else
-                    header.insert(it->c_str(), Imf::FloatAttribute(metadata.float_(*it)));
+                    header.insert(it->c_str(), Imf::FloatAttribute(metadata.get<ScalarFloat>(*it)));
                 break;
             case Type::Array3f: {
-                    Vector3f val = metadata.array3f(*it);
+                    Vector3f val = metadata.get<Vector3f>(*it);
                     header.insert(it->c_str(), Imf::V3fAttribute(
                         Imath::V3f((float) val.x(), (float) val.y(), (float) val.z())));
                 }
                 break;
             case Type::Transform: {
-                    Matrix4f val = metadata.transform(*it).matrix;
+                    Matrix4f val = metadata.get<ScalarTransform4f>(*it).matrix;
                     header.insert(it->c_str(), Imf::M44fAttribute(Imath::M44f(
                         (float) val(0, 0), (float) val(0, 1),
                         (float) val(0, 2), (float) val(0, 3),

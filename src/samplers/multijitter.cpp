@@ -66,7 +66,7 @@ public:
     MTS_IMPORT_TYPES()
 
     MultijitterSampler(const Properties &props) : Base(props) {
-        m_jitter = props.bool_("jitter", true);
+        m_jitter = props.get<bool>("jitter", true);
         set_sample_count(m_sample_count);
     }
 
