@@ -123,13 +123,15 @@ MTS_PY_EXPORT(Integrator) {
             D(Integrator, render), "scene"_a, "seed"_a, "sensor"_a,
             "develop_film"_a = true, "spp"_a = 0)
 
-        .def("render", [&](Integrator *integrator,
+        .def("render",
+            [&](Integrator *integrator,
                 Scene *scene,
                 uint32_t seed,
                 uint32_t sensor_idx,
                 bool develop_film,
                 uint32_t spp) {
-                return py::cast(integrator).attr("render")(scene, seed, scene->sensors()[sensor_idx], develop_film, spp);
+                Sensor *sensor = scene->sensors()[sensor_idx].get();
+                return py::cast(integrator).attr("render")(scene, seed, sensor, develop_film, spp);
             },
             D(Integrator, render), "scene"_a, "seed"_a, "sensor_index"_a = 0,
             "develop_film"_a = true, "spp"_a = 0)

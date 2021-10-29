@@ -36,11 +36,10 @@ MTS_VARIANT ScatteringIntegrator<Float, Spectrum>::~ScatteringIntegrator() {}
 
 MTS_VARIANT typename ScatteringIntegrator<Float, Spectrum>::TensorXf
 ScatteringIntegrator<Float, Spectrum>::render(Scene *scene, uint32_t seed,
-                                              uint32_t sensor_index,
+                                              Sensor *sensor,
                                               bool develop_film) {
     m_stop = false;
 
-    ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->size();
     ScalarVector2i crop_size = film->crop_size();

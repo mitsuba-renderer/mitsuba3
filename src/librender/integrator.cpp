@@ -33,7 +33,7 @@ Integrator<Float, Spectrum>::render(Scene *scene,
                                     uint32_t sensor_index,
                                     bool develop_film) {
     return render(scene, seed, scene->sensors()[sensor_index].get(), develop_film);
-};;
+}
 
 MTS_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
     return { };
