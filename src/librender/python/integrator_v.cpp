@@ -24,7 +24,7 @@ static void (*sigint_handler_prev)(int) = nullptr;
 /// Trampoline for derived types implemented in Python
 MTS_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MTS_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
         if constexpr (!ek::is_jit_array_v<Float>) {
@@ -36,15 +36,15 @@ public:
 
     TensorXf render(Scene *scene,
                     uint32_t seed,
-                    uint32_t sensor_index,
+                    Sensor *sensor,
                     bool develop_film) override {
         py::gil_scoped_acquire gil;
         py::function overload = py::get_overload(this, "render");
 
         if (overload) {
-            return overload(scene, seed, sensor_index, develop_film).template cast<TensorXf>();
+            return overload(scene, seed, sensor, develop_film).template cast<TensorXf>();
         } else {
-            return SamplingIntegrator::render(scene, seed, sensor_index, develop_film);
+            return SamplingIntegrator::render(scene, seed, sensor, develop_film);
         }
     }
 
@@ -88,7 +88,7 @@ MTS_PY_EXPORT(Integrator) {
             [&](Integrator *integrator,
                 Scene *scene,
                 uint32_t seed,
-                uint32_t sensor_idx,
+                Sensor *sensor,
                 bool develop_film,
                 uint32_t spp) {
                 py::gil_scoped_release release;
@@ -110,8 +110,8 @@ MTS_PY_EXPORT(Integrator) {
                 });
 #endif
                 if (spp > 0)
-                    scene->sensors()[sensor_idx]->sampler()->set_sample_count(spp);
-                auto res = integrator->render(scene, seed, sensor_idx, develop_film);
+                    sensor->sampler()->set_sample_count(spp);
+                auto res = integrator->render(scene, seed, sensor, develop_film);
 
 #if MTS_HANDLE_SIGINT
                 // Restore previous signal handler
@@ -119,6 +119,17 @@ MTS_PY_EXPORT(Integrator) {
 #endif
 
                 return res;
+            },
+            D(Integrator, render), "scene"_a, "seed"_a, "sensor"_a,
+            "develop_film"_a = true, "spp"_a = 0)
+
+        .def("render", [&](Integrator *integrator,
+                Scene *scene,
+                uint32_t seed,
+                uint32_t sensor_idx,
+                bool develop_film,
+                uint32_t spp) {
+                return py::cast(integrator).attr("render")(scene, seed, scene->sensors()[sensor_idx], develop_film, spp);
             },
             D(Integrator, render), "scene"_a, "seed"_a, "sensor_index"_a = 0,
             "develop_film"_a = true, "spp"_a = 0)

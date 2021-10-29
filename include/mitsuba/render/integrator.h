@@ -45,8 +45,13 @@ public:
      */
     virtual TensorXf render(Scene *scene,
                             uint32_t seed,
-                            uint32_t sensor_index = 0,
+                            Sensor *sensor,
                             bool develop_film = true) = 0;
+
+    virtual TensorXf render(Scene *scene,
+                            uint32_t seed,
+                            uint32_t sensor_index = 0,
+                            bool develop_film = true);
 
     /**
      * \brief Cancel a running render job
@@ -175,7 +180,7 @@ public:
 
     TensorXf render(Scene *scene,
                     uint32_t seed,
-                    uint32_t sensor_index = 0,
+                    Sensor *sensor,
                     bool develop_film = true) override;
 
     //! @}

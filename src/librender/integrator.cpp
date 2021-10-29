@@ -27,6 +27,14 @@ MTS_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties & props)
     m_hide_emitters = props.bool_("hide_emitters", false);
 }
 
+MTS_VARIANT typename Integrator<Float, Spectrum>::TensorXf
+Integrator<Float, Spectrum>::render(Scene *scene,
+                                    uint32_t seed,
+                                    uint32_t sensor_index,
+                                    bool develop_film) {
+    return render(scene, seed, scene->sensors()[sensor_index].get(), develop_film);
+};;
+
 MTS_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
     return { };
 }
@@ -56,14 +64,13 @@ MTS_VARIANT SamplingIntegrator<Float, Spectrum>::~SamplingIntegrator() { }
 MTS_VARIANT typename SamplingIntegrator<Float, Spectrum>::TensorXf
 SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             uint32_t seed,
-                                            uint32_t sensor_index,
+                                            Sensor *sensor,
                                             bool develop_film) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
     TensorXf result;
 
-    ref<Sensor> sensor = scene->sensors()[sensor_index];
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->crop_size();
 
