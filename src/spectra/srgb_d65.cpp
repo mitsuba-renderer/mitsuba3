@@ -39,7 +39,7 @@ public:
             m_value = srgb_model_fetch(color);
 
             Properties props2("d65");
-            props2.set_float("scale", props.get<ScalarFloat>("scale", 1.f) * scale);
+            props2.set_float("scale", (double) (props.get<ScalarFloat>("scale", 1.f) * scale));
             PluginManager *pmgr = PluginManager::instance();
             m_d65 = (Texture *) pmgr->create_object<Texture>(props2)->expand().at(0).get();
         } else if constexpr (is_rgb_v<Spectrum>) {
