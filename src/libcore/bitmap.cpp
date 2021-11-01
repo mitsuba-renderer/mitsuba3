@@ -1324,7 +1324,7 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
                 header.insert(it->c_str(), Imf::IntAttribute(metadata.get<int>(*it)));
                 break;
             case Type::Float:
-                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<Float>(*it)));
+                header.insert(it->c_str(), Imf::DoubleAttribute(metadata.get<double>(*it)));
                 break;
             case Type::Array3f: {
                     Vector3f val = metadata.get<Vector3f>(*it);
