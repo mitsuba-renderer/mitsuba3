@@ -1142,7 +1142,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
             and converting to sRGB yields (1, 1, 1) for D65. */
         Float unit_conversion = 1;
         if (within_emitter || !is_spectral_mode)
-            unit_conversion = MTS_CIE_Y_NORMALIZATION;
+            unit_conversion = Float(MTS_CIE_Y_NORMALIZATION);
 
         /* Detect whether wavelengths are regularly sampled and potentially
             apply the conversion factor. */
@@ -1156,7 +1156,7 @@ ref<Object> create_texture_from_spectrum(const std::string &name,
                 continue;
 
             Float distance = (wavelengths[n] - wavelengths[n - 1]);
-            if (distance < 0.f)
+            if (distance < 0)
                 Throw("Wavelengths must be specified in increasing order!");
             if (n == 1)
                 interval = distance;
