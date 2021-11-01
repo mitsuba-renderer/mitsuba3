@@ -13,6 +13,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
         self.max_depth = props.get('max_depth', 4)
+        self.max_depth_reparam = props.get('max_depth_reparam', self.max_depth)
         self.num_aux_rays = props.get('num_aux_rays', 16)
         self.kappa = props.get('kappa', 1e5)
         self.power = props.get('power', 3.0)
@@ -23,7 +24,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                        seed: int,
                        sensor_index: int=0,
                        spp: int=0) -> None:
-        from mitsuba.core import Float, Spectrum, Log, LogLevel
+        from mitsuba.core import Float, Spectrum, Log, LogLevel, util
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
 
@@ -75,16 +76,18 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.traverse(Float)
 
         div_grad = weight * Li * ek.grad(reparam_div)
+        Li_grad = ek.grad(Li_attached)
+        ek.eval(div_grad, Li_grad)
 
         block.clear()
         block.put(pos, ray.wavelengths, grad_img + div_grad)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
 
-        grad_out = ek.grad(Li_attached) + film.develop()
+        grad_out = Li_grad + film.develop()
 
         Log(LogLevel.Info, 'rendering finished. (took %s)' %
-            mitsuba.core.util.time_string(time.time() - starting_time))
+            util.time_string(1e3 * (time.time() - starting_time)))
 
         return grad_out
 
@@ -155,7 +158,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.traverse(Float)
 
         Log(LogLevel.Info, 'rendering finished. (took %s)' %
-            mitsuba.core.util.time_string(time.time() - starting_time))
+            mitsuba.core.util.time_string(1e3 * (time.time() - starting_time)))
 
     def sample(self, scene, sampler, ray, medium, active):
         return *self.Li(None, scene, sampler, ray), []
@@ -202,7 +205,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         while loop(active):
             # Attach incoming direction (reparameterization from the previous bounce)
             si = pi.compute_surface_interaction(ray, HitComputeFlags.All, active)
-            reparam_d, _ = reparam(ray, active)
+            reparam_d, _ = reparam(ray, active & ((depth_i-1) < self.max_depth_reparam))
             si.wi = -ek.select(active & si.is_valid(), si.to_local(reparam_d), reparam_d)
 
             # ---------------------- Direct emission ----------------------
@@ -226,7 +229,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
             active_e &= ek.neq(ds.pdf, 0.0)
 
             ray_e = ek.detach(si.spawn_ray(ds.d))
-            reparam_d, reparam_div = reparam(ray_e, active_e)
+            reparam_d, reparam_div = reparam(ray_e, active_e & (depth_i < self.max_depth_reparam))
             wo = si.to_local(reparam_d)
 
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
@@ -263,7 +266,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
             # Backpropagate gradients related to the current bounce
             if not is_primal:
-                reparam_d, reparam_div = reparam(ray, active)
+                reparam_d, reparam_div = reparam(ray, active & (depth_i < self.max_depth_reparam))
                 bsdf_eval = bsdf.eval(ctx, si, si.to_local(reparam_d), active)
 
                 contrib = bsdf_eval * primal_result / ek.max(1e-8, ek.detach(bsdf_eval))

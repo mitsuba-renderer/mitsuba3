@@ -119,12 +119,20 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             V_theta  = grad_V / Z
             div_V_theta = (grad_divergence_lhs - ek.dot(V_theta, dZ)) / Z
 
+            # Ignore inactive lanes
+            V_theta[~self.active] = 0.0
+            div_V_theta[~self.active] = 0.0
+
             self.set_grad_out((V_theta, div_V_theta))
 
         def backward(self):
             from mitsuba.core import Float, UInt32, Vector3f, Loop
 
             grad_direction, grad_divergence = self.grad_out()
+
+            # Ignore inactive lanes
+            grad_direction[~self.active] = 0.0
+            grad_divergence[~self.active] = 0.0
 
             with ek.suspend_grad():
                 # We need to trace the auxiliary rays a first time to compute the
