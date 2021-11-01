@@ -164,6 +164,7 @@ def test05_render_crop_film(variants_all):
     scene, integrator = create_test_scene(emitter='texturedarea')
     image1 = integrator.render(scene, seed=0, spp=4, develop_film=True)
     image1_cropped = image1[offset[1]:offset[1]+size[1], offset[0]:offset[0]+size[0], :]
+    ek.eval(image1_cropped)
 
     # 2. Use the film's crop window via the Python API
     film = scene.sensors()[0].film()
@@ -172,10 +173,12 @@ def test05_render_crop_film(variants_all):
         # TODO: ideally, we shouldn't need to call this explicitly
         scene.sensors()[0].parameters_changed()
     image2 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    ek.eval(image2)
 
     # 3. Specify the crop window at scene loading time
     scene, integrator = create_test_scene(emitter='texturedarea', crop_window=(offset, size))
     image3 = integrator.render(scene, seed=0, spp=4, develop_film=True)
+    ek.eval(image3)
 
     if False:
         from mitsuba.core import Bitmap
