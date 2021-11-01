@@ -32,6 +32,8 @@ Integrator<Float, Spectrum>::render(Scene *scene,
                                     uint32_t seed,
                                     uint32_t sensor_index,
                                     bool develop_film) {
+    if (sensor_index >= scene->sensors().size())
+        Throw("Out-of-bound sensor index: %i", sensor_index);
     return render(scene, seed, scene->sensors()[sensor_index].get(), develop_film);
 }
 

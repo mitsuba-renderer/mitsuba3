@@ -130,6 +130,8 @@ MTS_PY_EXPORT(Integrator) {
                 uint32_t sensor_idx,
                 bool develop_film,
                 uint32_t spp) {
+                if (sensor_idx >= scene->sensors().size())
+                    Throw("Out-of-bound sensor index: %i", sensor_idx);
                 Sensor *sensor = scene->sensors()[sensor_idx].get();
                 return py::cast(integrator).attr("render")(scene, seed, sensor, develop_film, spp);
             },
