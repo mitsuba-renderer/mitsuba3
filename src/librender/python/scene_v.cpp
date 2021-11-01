@@ -64,6 +64,9 @@ MTS_PY_EXPORT(Scene) {
                 });
 #endif
 
+                if (sensor_idx >= scene->sensors().size())
+                    Throw("Out-of-bound sensor index: %i", sensor_idx);
+
                 if (spp > 0)
                     scene->sensors()[sensor_idx]->sampler()->set_sample_count(spp);
                 ref<Bitmap> bitmap = scene->render(seed, sensor_idx);
