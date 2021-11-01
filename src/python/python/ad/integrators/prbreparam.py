@@ -12,10 +12,10 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
     def __init__(self, props=mitsuba.core.Properties()):
         super().__init__(props)
-        self.max_depth = props.long_('max_depth', 4)
-        self.num_aux_rays = props.long_('num_aux_rays', 16)
-        self.kappa = props.float_('kappa', 1e5)
-        self.power = props.float_('power', 3.0)
+        self.max_depth = props.get('max_depth', 4)
+        self.num_aux_rays = props.get('num_aux_rays', 16)
+        self.kappa = props.get('kappa', 1e5)
+        self.power = props.get('power', 3.0)
 
     def render_forward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
