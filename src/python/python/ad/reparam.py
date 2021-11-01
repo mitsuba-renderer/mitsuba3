@@ -69,6 +69,10 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
     TODO
     """
 
+    num_auxiliary_rays = ek.opaque(mitsuba.core.UInt32, num_auxiliary_rays)
+    kappa = ek.opaque(mitsuba.core.Float, kappa)
+    power = ek.opaque(mitsuba.core.Float, power)
+
     class Reparameterizer(ek.CustomOp):
         """
         Custom Enoki operator to reparameterize rays in order to account for
