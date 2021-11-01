@@ -25,6 +25,7 @@ MTS_PY_DECLARE(ZStream);
 MTS_PY_DECLARE(ProgressReporter);
 MTS_PY_DECLARE(rfilter);
 MTS_PY_DECLARE(Thread);
+MTS_PY_DECLARE(Timer);
 MTS_PY_DECLARE(util);
 
 PYBIND11_MODULE(core_ext, m) {
@@ -91,6 +92,7 @@ PYBIND11_MODULE(core_ext, m) {
     MTS_PY_IMPORT(ZStream);
     MTS_PY_IMPORT(ProgressReporter);
     MTS_PY_IMPORT(Thread);
+    MTS_PY_IMPORT(Timer);
     MTS_PY_IMPORT(util);
 
     /* Register a cleanup callback function that is invoked when
