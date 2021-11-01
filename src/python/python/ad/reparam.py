@@ -45,7 +45,7 @@ def sample_warp_field(scene: mitsuba.render.Scene,
 
     # Analytic weight gradients w.r.t. `ray.d`
     tmp0 = ek.pow(w_denom, power + 1.0)
-    tmp1 = (D + 1.0) * ek.rcp(tmp0) * kappa * power
+    tmp1 = (D + 1.0) * ek.select(w_denom > 1e-4, ek.rcp(tmp0), 0.0) * kappa * power
     tmp2 = omega - ray.d * ek.dot(ray.d, omega)
     d_w_omega = ek.sign(tmp1) * ek.min(ek.abs(tmp1), 1e10) * tmp2
     d_w_omega /= pdf_omega
@@ -150,6 +150,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             ek.enable_grad(V, div_V_1)
 
             # Compute normalized values
+            Z = ek.max(Z, 1e-8)
             V_theta = V / Z
             divergence = (div_V_1 - ek.dot(V_theta, dZ)) / Z
             direction = ek.normalize(self.ray.d + V_theta)
