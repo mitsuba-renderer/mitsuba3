@@ -40,8 +40,10 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         # Sample primary rays
         ray, weight, pos, _, aperture_samples = sample_sensor_rays(sensor)
 
-        result = self.Li(ek.ADMode.Forward, scene, sampler,
-                         ray, params=params, grad=Spectrum(weight))[0]
+        grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
+                           ray, params=params, grad=Spectrum(weight))[0]
+        sampler.schedule_state()
+        ek.eval(grad_img)
 
         # Compute and splat (no pixel filter) directly visible light
         with ek.suspend_grad():
@@ -72,7 +74,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         div_grad = weight * Li * ek.grad(reparam_div)
 
         block.clear()
-        block.put(pos, ray.wavelengths, result + div_grad)
+        block.put(pos, ray.wavelengths, grad_img + div_grad)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
         film.put(block)
 
