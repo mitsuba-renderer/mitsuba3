@@ -533,6 +533,9 @@ EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<float, 4>>))
 EXPORT_PROPERTY_ACCESSOR(T(Transform<Point<double, 4>>))
 EXPORT_PROPERTY_ACCESSOR(T(std::string))
 EXPORT_PROPERTY_ACCESSOR(T(ref<Object>))
+#if defined(__APPLE__)
+EXPORT_PROPERTY_ACCESSOR(T(size_t))
+#endif
 #undef T
 
 NAMESPACE_END(mitsuba)
