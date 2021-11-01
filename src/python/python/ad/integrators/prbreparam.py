@@ -51,6 +51,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         grad_img = self.Li(ek.ADMode.Forward, scene, sampler,
                            ray, params=params, grad=weight,
                            primal_result=Spectrum(Li))[0]
+        sampler.schedule_state()
+        ek.eval(grad_img)
 
         # Reparameterize primary rays
         reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, True,

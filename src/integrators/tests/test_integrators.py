@@ -372,10 +372,7 @@ for integrator_name, reparam in INTEGRATORS:
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test01_rendering_primal(integrator_name, config):
-    import mitsuba
-    mitsuba.set_variant('cuda_ad_rgb')
-
+def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     from mitsuba.core import xml
     from mitsuba.python.util import write_bitmap
 
@@ -407,16 +404,13 @@ def test01_rendering_primal(integrator_name, config):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test02_rendering_forward(integrator_name, config):
-    import mitsuba
-    mitsuba.set_variant('cuda_ad_rgb')
-    # mitsuba.set_variant('llvm_ad_rgb')
-
-    # ek.set_flag(ek.JitFlag.LoopRecord, False)
-    # ek.set_flag(ek.JitFlag.VCallRecord, False)
-
+def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     from mitsuba.core import xml, Float
     from mitsuba.python.util import write_bitmap
+
+    # ek.set_flag(ek.JitFlag.PrintIR, True)
+    # ek.set_flag(ek.JitFlag.LoopRecord, False)
+    # ek.set_flag(ek.JitFlag.VCallRecord, False)
 
     config = config()
     config.initialize()
@@ -462,10 +456,7 @@ def test02_rendering_forward(integrator_name, config):
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
-def test03_rendering_backward(integrator_name, config):
-    import mitsuba
-    mitsuba.set_variant('cuda_ad_rgb')
-
+def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     from mitsuba.core import xml, Float, TensorXf
 
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
@@ -509,11 +500,7 @@ def test03_rendering_backward(integrator_name, config):
 
 
 @pytest.mark.slow
-def test04_render_custom_op():
-    import mitsuba
-    mitsuba.set_variant('cuda_ad_rgb')
-    # mitsuba.set_variant('llvm_ad_rgb')
-
+def test04_render_custom_op(variants_all_ad_rgb):
     from mitsuba.core import xml, Float
     from mitsuba.python.util import write_bitmap
     from mitsuba.python.ad import render
@@ -535,7 +522,7 @@ def test04_render_custom_op():
 
     image_primal = render(config.scene, integrator, config.params, seed=0, spp=config.spp)
 
-    error = ek.abs(image_primal - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
+    error = ek.abs(ek.detach(image_primal) - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
     error_mean = ek.hmean(error)
     error_max = ek.hmax(error)
 
