@@ -117,7 +117,7 @@ def test01_render_simple(variants_all, emitter):
     scene, integrator = create_test_scene(emitter=emitter)
     assert isinstance(integrator, ScatteringIntegrator)
     image = integrator.render(scene, seed=0, spp=2, develop_film=True)
-    assert ek.count(ek.ravel(image) > 0) >= 0.3 * ek.hprod(ek.shape(image))
+    assert ek.count(ek.ravel(image) > 0) >= 0.2 * ek.hprod(ek.shape(image))
 
 
 @pytest.mark.slow
@@ -130,7 +130,7 @@ def test02_render_infinite_emitter(variants_all, emitter, shape):
     image = integrator.render(scene, seed=0, spp=4, develop_film=True)
     # Infinite emitters are sampled very inefficiently, so with such low spp
     # it's possible that the vast majority of pixels are still zero.
-    assert ek.count(ek.ravel(image) > 0) >= 0.03 * ek.hprod(ek.shape(image))
+    assert ek.count(ek.ravel(image) > 0) >= 0.02 * ek.hprod(ek.shape(image))
 
 
 @pytest.mark.parametrize('emitter', ['constant', 'envmap', 'area', 'texturedarea'])
