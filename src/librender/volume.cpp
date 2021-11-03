@@ -43,6 +43,23 @@ Volume<Float, Spectrum>::eval_gradient(const Interaction3f & /*it*/, Mask /*acti
 MTS_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
 Volume<Float, Spectrum>::max() const { NotImplementedError("max"); }
 
+MTS_VARIANT typename Volume<Float, Spectrum>::TensorXf
+Volume<Float, Spectrum>::local_majorants(size_t /*resolution_factor*/, ScalarFloat /*value_scale*/) {
+    NotImplementedError("local_majorants");
+}
+
+MTS_VARIANT typename Volume<Float, Spectrum>::ScalarVector3f
+Volume<Float, Spectrum>::voxel_size() const {
+    // Extract the scale from the to_world matrix, assuming an affine transformation.
+    ScalarTransform4f to_world = m_to_local.inverse();
+    ScalarVector3f scale(
+        ek::norm(to_world.matrix.x()),
+        ek::norm(to_world.matrix.y()),
+        ek::norm(to_world.matrix.z())
+    );
+    return ek::rcp(ScalarVector3f(resolution())) * scale;
+}
+
 MTS_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
 Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);

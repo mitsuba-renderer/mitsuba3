@@ -1,7 +1,8 @@
 #pragma once
 
-#include <mitsuba/core/spectrum.h>
+#include <enoki/tensor.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
@@ -44,8 +45,23 @@ public:
     /// Returns the maximum value of the volume over all dimensions.
     virtual ScalarFloat max() const;
 
+    /// Returns the local to world transform
+    ScalarTransform4f world_transform() const {
+        return m_to_local.inverse();
+    }
+
+    /**
+     * Returns the local maxima for each cell of a lower resolution grid.
+     * Only available for grid-based volumes.
+     */
+    virtual TensorXf local_majorants(size_t resolution_factor,
+                                     ScalarFloat value_scale = 1.f);
+
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
+
+    /// If applicable, returns the dimensions of one grid cell in world space.
+    ScalarVector3f voxel_size() const;
 
     /**
      * \brief Returns the resolution of the volume, assuming that it is based

@@ -494,6 +494,62 @@ public:
 
     ScalarFloat max() const override { return m_max; }
 
+    TensorXf local_majorants(size_t resolution_factor, ScalarFloat value_scale) override {
+        MTS_IMPORT_TYPES()
+        using Value = mitsuba::DynamicBuffer<Float>;
+        using Index = mitsuba::DynamicBuffer<UInt32>;
+
+        if constexpr (Channels == 1) {
+            const ScalarVector3i full_resolution = resolution();
+            if ((full_resolution.x() % resolution_factor) != 0 ||
+                (full_resolution.y() % resolution_factor) != 0 ||
+                (full_resolution.z() % resolution_factor) != 0) {
+                Throw("Supergrid construction: grid resolution %s must be divisible by %s",
+                    full_resolution, resolution_factor);
+            }
+            const ScalarVector3i resolution(
+                full_resolution.x() / resolution_factor,
+                full_resolution.y() / resolution_factor,
+                full_resolution.z() / resolution_factor
+            );
+
+            Log(Info, "Constructing supergrid of resolution %s from full grid of resolution %s",
+                resolution, full_resolution);
+            size_t n = ek::hprod(resolution);
+            Value result = ek::full<Value>(-ek::Infinity<Float>, n);
+
+            auto [Z, Y, X] = ek::meshgrid(
+                ek::arange<Index>(resolution.x()), ek::arange<Index>(resolution.y()),
+                ek::arange<Index>(resolution.z()), /*index_xy*/ false);
+
+            Index base_idx =
+                resolution_factor * (X + Y * full_resolution.z() +
+                                    Z * full_resolution.z() * full_resolution.y());
+
+            // TODO: any way to do this without the many operations?
+            for (size_t dz = 0; dz < resolution_factor; ++dz) {
+                for (size_t dy = 0; dy < resolution_factor; ++dy) {
+                    for (size_t dx = 0; dx < resolution_factor; ++dx) {
+                        const auto offset =
+                            dx + dy * full_resolution.z() +
+                            dz * full_resolution.z() * full_resolution.y();
+                        const auto idx = base_idx + offset;
+                        Value values   = ek::gather<Value>(m_data.array(), idx);
+                        result = ek::max(result, values);
+                    }
+                }
+            }
+
+            size_t shape[4] = { (size_t) resolution.x(),
+                                (size_t) resolution.y(),
+                                (size_t) resolution.z(),
+                                1 };
+            return TensorXf(value_scale * result, 4, shape);
+        } else {
+            NotImplementedError("local_majorants() when Channels != 1");
+        }
+    }
+
     ScalarVector3i resolution() const override {
         auto shape = m_data.shape();
         return { (int) shape[2], (int) shape[1], (int) shape[0] };
