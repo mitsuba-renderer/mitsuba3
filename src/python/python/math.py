@@ -28,7 +28,7 @@ def rlgamma(a, x):
             c2 = c2 * x / r2
             ans2 += c2
 
-            if c2 / ans2 <= eps:
+            if not (c2 / ans2 > eps):
                 break
 
         return ek.exp(ax) * ans2 / a
@@ -69,7 +69,7 @@ def rlgamma(a, x):
             q3 *= biginv
             q2 *= biginv
 
-        if error <= eps:
+        if not (error > eps):
             break;
 
     return 1 - ek.exp(ax) * ans
