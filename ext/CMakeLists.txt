@@ -391,6 +391,14 @@ set_target_properties(rgb2spec rgb2spec_opt rgb2spec_opt_run PROPERTIES FOLDER "
 # ----------------------------------------------------------
 
 add_subdirectory(fastfloat)
+mark_as_advanced(
+  FASTFLOAT_SANITIZE
+  FASTFLOAT_TEST
+)
+
+# ----------------------------------------------------------
+#  Hide a few more settings that aren't relevant for users
+# ----------------------------------------------------------
 
 mark_as_advanced(
   BUILD_SHARED_LIBS BUILD_TESTING CMAKE_DEBUG_POSTFIX CMAKE_INSTALL_PREFIX

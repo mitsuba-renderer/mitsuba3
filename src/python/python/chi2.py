@@ -128,8 +128,9 @@ class ChiSquareTest:
         samples_out = self.sample_func(samples_in)
 
         if type(samples_out) is tuple:
-            weights_out = samples_out[1]
             samples_out = samples_out[0]
+            weights_out = samples_out[1]
+            assert ek.array_depth_v(weights_out) == 1
         else:
             weights_out = Float(1.0)
 
