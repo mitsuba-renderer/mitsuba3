@@ -130,7 +130,7 @@ public:
         m_majorant_resolution_factor = props.size_("majorant_resolution_factor", 0);
         update_majorant_supergrid();
         if (m_majorant_resolution_factor > 0) {
-            Log(Info, "Using majorant supergrid: %s", m_majorant_grid);
+            Log(Info, "Using majorant supergrid with resolution %s", m_majorant_grid->resolution());
         }
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
@@ -180,17 +180,29 @@ public:
         return m_sigmat->bbox().ray_intersect(ray);
     }
 
+    void update_majorant_supergrid() {
+        if (m_majorant_resolution_factor <= 0)
+            return;
+
+        // Build a majorant grid, with the scale factor baked-in for convenience
+        TensorXf majorants =
+            m_sigmat->local_majorants(m_majorant_resolution_factor, scalar_scale());
+        Properties props("gridvolume");
+        props.set_string("filter_type", "nearest");
+        props.set_transform("to_world", m_sigmat->world_transform());
+        props.set_pointer("data", &majorants);
+        m_majorant_grid = (Volume *) PluginManager::instance()
+                              ->create_object<Volume>(props)
+                              ->expand()
+                              .front()
+                              .get();
+    }
+
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ScalarFloat scale;
-        if constexpr (ek::is_jit_array_v<Float>) {
-            if (ek::width(m_scale) != 1)
-                Throw("Expected a single number for `m_scale`, found: %s", m_scale);
-            scale = m_scale[0];
-        } else {
-            scale = m_scale;
-        }
+        ScalarFloat scale = scalar_scale();
         m_max_density = ek::opaque<Float>(
             ek::max(1e-6f, scale * m_sigmat->max()));
+        update_majorant_supergrid();
     }
 
     void traverse(TraversalCallback *callback) override {
@@ -199,6 +211,16 @@ public:
         callback->put_object("sigma_t", m_sigmat.get());
         callback->put_object("emission", m_emission.get());
         Base::traverse(callback);
+    }
+
+    ScalarFloat scalar_scale() const {
+        if constexpr (ek::is_jit_array_v<Float>) {
+            if (ek::width(m_scale) != 1)
+                Throw("Expected a single number for `m_scale`, found: %s", m_scale);
+            return m_scale[0];
+        } else {
+            return m_scale;
+        }
     }
 
     std::string to_string() const override {
