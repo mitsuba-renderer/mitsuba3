@@ -45,6 +45,14 @@ public:
 
     VolumeGrid(ScalarVector3u size, ScalarUInt32 channel_count);
 
+    /**
+     * Creates a VolumeGrid instance with the desired metadata, but
+     * no associated storage.
+     */
+    static ref<VolumeGrid> empty(ScalarVector3u size,
+                                 ScalarUInt32 channel_count,
+                                 ScalarBoundingBox3f bbox, ScalarFloat max);
+
     /// Return a pointer to the underlying volume storage
     ScalarFloat *data() { return m_data.get(); }
 
@@ -91,6 +99,9 @@ public:
     MTS_DECLARE_CLASS()
 
 protected:
+    /// Creates an invalid volume grid.
+    VolumeGrid();
+
     void read(Stream *stream);
 
 protected:

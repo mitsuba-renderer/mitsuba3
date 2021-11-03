@@ -7,6 +7,9 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT
+VolumeGrid<Float, Spectrum>::VolumeGrid() { }
+
+MTS_VARIANT
 VolumeGrid<Float, Spectrum>::VolumeGrid(Stream *stream) { read(stream); }
 
 MTS_VARIANT
@@ -22,6 +25,19 @@ VolumeGrid<Float, Spectrum>::VolumeGrid(ScalarVector3u size,
       m_bbox(ScalarBoundingBox3f(ScalarPoint3f(0.f), ScalarPoint3f(1.f))) {
     m_data = std::unique_ptr<ScalarFloat[]>(
         new ScalarFloat[ek::hprod(m_size) * m_channel_count]);
+}
+
+MTS_VARIANT
+ref<VolumeGrid<Float, Spectrum>>
+VolumeGrid<Float, Spectrum>::empty(ScalarVector3u size,
+                                   ScalarUInt32 channel_count,
+                                   ScalarBoundingBox3f bbox, ScalarFloat max) {
+    ref<VolumeGrid> grid = new VolumeGrid();
+    grid->m_size = size;
+    grid->m_channel_count = channel_count;
+    grid->m_bbox = bbox;
+    grid->m_max = max;
+    return grid;
 }
 
 MTS_VARIANT

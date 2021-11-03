@@ -146,43 +146,68 @@ public:
             Throw("Invalid wrap mode \"%s\", must be one of: \"repeat\", "
                   "\"mirror\", or \"clamp\"!", wrap_mode);
 
-        FileResolver* fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
-        m_volume_grid = new VolumeGrid(file_path);
+        if (props.has_property("filename")) {
+            // --- Loading grid data from a file
+            FileResolver* fs = Thread::thread()->file_resolver();
+            fs::path file_path = fs->resolve(props.string("filename"));
+            m_volume_grid = new VolumeGrid(file_path);
 
-        m_raw = props.get<bool>("raw", false);
+            m_raw = props.get<bool>("raw", false);
 
-        ScalarVector3i res = m_volume_grid->size();
-        ScalarUInt32 size = ek::hprod(res);
+            ScalarVector3i res = m_volume_grid->size();
+            ScalarUInt32 size = ek::hprod(res);
 
-        // Apply spectral conversion if necessary
-        if (is_spectral_v<Spectrum> && m_volume_grid->channel_count() == 3 && !m_raw) {
-            ScalarFloat *ptr = m_volume_grid->data();
+            // Apply spectral conversion if necessary
+            if (is_spectral_v<Spectrum> && m_volume_grid->channel_count() == 3 && !m_raw) {
+                ScalarFloat *ptr = m_volume_grid->data();
 
-            auto scaled_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * 4]);
-            ScalarFloat *scaled_data_ptr = scaled_data.get();
-            ScalarFloat max = 0.0;
-            for (ScalarUInt32 i = 0; i < size; ++i) {
-                ScalarColor3f rgb = ek::load<ScalarColor3f>(ptr);
-                // TODO: Make this scaling optional if the RGB values are between 0 and 1
-                ScalarFloat scale = ek::hmax(rgb) * 2.f;
-                ScalarColor3f rgb_norm = rgb / ek::max((ScalarFloat) 1e-8, scale);
-                ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
-                max = ek::max(max, scale);
-                ek::store(
-                    scaled_data_ptr,
-                    ek::concat(coeff, ek::Array<ScalarFloat, 1>(scale)));
-                ptr += 3;
-                scaled_data_ptr += 4;
+                auto scaled_data = std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * 4]);
+                ScalarFloat *scaled_data_ptr = scaled_data.get();
+                ScalarFloat max = 0.0;
+                for (ScalarUInt32 i = 0; i < size; ++i) {
+                    ScalarColor3f rgb = ek::load<ScalarColor3f>(ptr);
+                    // TODO: Make this scaling optional if the RGB values are between 0 and 1
+                    ScalarFloat scale = ek::hmax(rgb) * 2.f;
+                    ScalarColor3f rgb_norm = rgb / ek::max((ScalarFloat) 1e-8, scale);
+                    ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
+                    max = ek::max(max, scale);
+                    ek::store(
+                        scaled_data_ptr,
+                        ek::concat(coeff, ek::Array<ScalarFloat, 1>(scale)));
+                    ptr += 3;
+                    scaled_data_ptr += 4;
+                }
+                m_max = (float) max;
+
+                size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), 4 };
+                m_data = TensorXf(scaled_data.get(), 4, shape);
+            } else {
+                size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), m_volume_grid->channel_count() };
+                m_data = TensorXf(m_volume_grid->data(), 4, shape);
+                m_max = m_volume_grid->max();
             }
-            m_max = (float) max;
-
-            size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), 4 };
-            m_data = TensorXf(scaled_data.get(), 4, shape);
         } else {
-            size_t shape[4] = { (size_t) res.z(), (size_t) res.y(), (size_t) res.x(), m_volume_grid->channel_count() };
-            m_data = TensorXf(m_volume_grid->data(), 4, shape);
-            m_max = m_volume_grid->max();
+            // --- Getting grid data directly from the properties
+            const void *ptr = props.pointer("data");
+            const TensorXf *data = (TensorXf *) ptr;
+            const auto &shape = data->shape();
+            m_data = TensorXf(data->array(), data->ndim(), shape.data());
+
+            if (!props.bool_("raw", true))
+                Throw("Passing grid data directly implies raw = true");
+            if (props.bool_("use_grid_bbox", false))
+                Throw("Passing grid data directly implies use_grid_bbox = false");
+
+            if (m_data.ndim() != 4)
+                Throw("The given \"data\" tensor must have 4 dimensions, found %s", m_data.ndim());
+
+            // Initialize the rest of the fields from the given data
+            // TODO: initialize it properly if it's really needed
+            m_max = ek::NaN<ScalarFloat>;
+            ScalarBoundingBox3f invalid_bbox;
+            m_volume_grid =
+                VolumeGrid::empty(ScalarVector3u(shape[0], shape[1], shape[2]),
+                                  shape[3], invalid_bbox, m_max);
         }
 
         // Mark values which are only used in the implementation class as queried
@@ -276,7 +301,6 @@ public:
             if (m_fixed_max)
                 Throw("This feature should probably not be used until more correctness checks are in place");
         }
-
 
         if (m_fixed_max)
             Log(Info, "Medium will keep majorant fixed to: %s", m_max);
