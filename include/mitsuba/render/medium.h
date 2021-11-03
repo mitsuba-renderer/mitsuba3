@@ -1,17 +1,18 @@
 #pragma once
 
+#include <enoki/vcall.h>
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/render/fwd.h>
-#include <enoki/vcall.h>
+#include <mitsuba/render/volume.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Medium : public Object {
 public:
-    MTS_IMPORT_TYPES(PhaseFunction, MediumPtr, Sampler, Scene, Texture);
+    MTS_IMPORT_TYPES(PhaseFunction, MediumPtr, Sampler, Scene, Volume);
 
     /// Intersets a ray with the medium's bounding box
     virtual std::tuple<Mask, Float, Float>
@@ -124,6 +125,19 @@ public:
         return m_phase_function.get();
     }
 
+    /// Return true if a majorant supergrid is available.
+    MTS_INLINE bool has_majorant_grid() const {
+        return (bool) m_majorant_grid;
+    }
+
+    /// Return the majorant grid, if any
+    MTS_INLINE Vector3f majorant_grid_voxel_size() const {
+        if (m_majorant_grid)
+            return m_majorant_grid->voxel_size();
+        else
+            return ek::zero<Vector3f>();
+    }
+
     /// Returns whether this specific medium instance uses emitter sampling
     MTS_INLINE bool use_emitter_sampling() const { return m_sample_emitters; }
 
@@ -157,6 +171,9 @@ protected:
 protected:
     ref<PhaseFunction> m_phase_function;
     bool m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction;
+
+    size_t m_majorant_resolution_factor;
+    ref<Volume> m_majorant_grid;
 
     /// Identifier (if available)
     std::string m_id;

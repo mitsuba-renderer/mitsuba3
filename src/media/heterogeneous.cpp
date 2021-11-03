@@ -105,13 +105,12 @@ and both parameters are allowed to be spectrally varying.
         -->
     </shape>
 
-
 */
 template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function)
+                    m_phase_function, m_majorant_grid, m_majorant_resolution_factor)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
@@ -128,15 +127,24 @@ public:
         m_scale = scale;
         Log(Info, "Heterogeneous max density: %s", m_max_density);
 
+        m_majorant_resolution_factor = props.size_("majorant_resolution_factor", 0);
+        update_majorant_supergrid();
+        if (m_majorant_resolution_factor > 0) {
+            Log(Info, "Using majorant supergrid: %s", m_majorant_grid);
+        }
+
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
         ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);
     }
 
     UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f & /* mi */,
+    get_combined_extinction(const MediumInteraction3f & mi,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        return m_max_density;
+        if (m_majorant_grid)
+            return m_majorant_grid->eval_1(mi, active);
+        else
+            return m_max_density;
     }
 
     UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,

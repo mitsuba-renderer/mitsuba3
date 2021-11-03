@@ -107,7 +107,7 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function, m_majorant_grid)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -118,6 +118,9 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
+
+        if (props.has_property("majorant_resolution_factor") || m_majorant_grid)
+            Throw("Not supoprted: majorant grid for a homogeneous medium.");
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
         ek::set_attr(this, "has_spectral_extinction", m_has_spectral_extinction);

@@ -3669,6 +3669,10 @@ at a given MediumInteraction mi)doc";
 
 static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
 
+static const char *__doc_mitsuba_Medium_has_majorant_grid = R"doc(Return true if a majorant supergrid is available.)doc";
+
+static const char *__doc_mitsuba_Medium_majorant_grid_voxel_size = R"doc(Return the majorant grid, if any)doc";
+
 static const char *__doc_mitsuba_Medium_id = R"doc(Return a string identifier)doc";
 
 static const char *__doc_mitsuba_Medium_intersect_aabb = R"doc(Intersets a ray with the medium's bounding box)doc";

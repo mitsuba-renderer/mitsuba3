@@ -3,11 +3,13 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
-#include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Medium<Float, Spectrum>::Medium() : m_is_homogeneous(false), m_has_spectral_extinction(true) {}
+MTS_VARIANT Medium<Float, Spectrum>::Medium()
+    : m_is_homogeneous(false), m_has_spectral_extinction(true),
+      m_majorant_resolution_factor(0) {}
 
 MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
 
