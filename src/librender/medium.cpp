@@ -9,7 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MTS_VARIANT Medium<Float, Spectrum>::Medium()
     : m_is_homogeneous(false), m_has_spectral_extinction(true),
-      m_majorant_resolution_factor(0) {}
+      m_majorant_resolution_factor(0), m_majorant_grid(nullptr) {}
 
 MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
 
@@ -52,39 +52,29 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         // TODO: allow precomputing all this (but be careful when ray origin is updated)
         Vector3f voxel_size = m_majorant_grid->voxel_size();
 
-        // This id of the first/current voxel hit by the ray.
-        Point3f ray_start = ray(mint);
-        Point3f ray_end = ray(maxt);
-        Vector3i current_voxel(ek::floor(ray_start / voxel_size));
-        // Warning: the `dda_t` parameters used below refer to the unormalized
-        // ray direction that already start at `mint`.
-        Vector3f ray_dir = ray_end - ray_start;
-        Float dda_t = 0.f;
-        Float ray_norm = ek::norm(ray_dir);
-        const Float mint_copy = mint;  // See https://stackoverflow.com/questions/46114214
-        const auto to_global_t = [&](const Float &local_t) {
-            return mint_copy + local_t * ray_norm;
-        };
+        // Current ray parameter throughout DDA traversal
+        Float dda_t = mint;
 
-        // The id of the last voxel hit by the ray.
-        Vector3i last_voxel = Vector3i(ek::floor(ray_end / voxel_size));
-        // Increment (in number of voxels) to take at each step.
-        Vector3i step = ek::select(ray_dir >= 0, 1, -1);
+        // The id of the first and last voxels hit by the ray
+        Vector3i current_voxel(ek::floor(ray(mint) / voxel_size));
+        Vector3i last_voxel(ek::floor(ray(maxt) / voxel_size));
+        // Increment (in number of voxels) to take at each step
+        Vector3i step = ek::select(ray.d >= 0, 1, -1);
 
         // Distance along the ray to the next voxel border from the current position
         Vector3f next_voxel_boundary = (current_voxel + step) * voxel_size;
-        next_voxel_boundary += ek::select(ek::neq(current_voxel, last_voxel) & (ray_dir < 0),
+        next_voxel_boundary += ek::select(ek::neq(current_voxel, last_voxel) & (ray.d < 0),
                                           voxel_size, 0);
 
         // Value of ray parameter until next intersection with voxel-border along each axis
-        auto ray_nonzero = ek::neq(ray_dir, 0);
+        auto ray_nonzero = ek::neq(ray.d, 0);
         Vector3f dda_tmax =
-            ek::select(ray_nonzero, (next_voxel_boundary - ray_start) / ray_dir,
+            ek::select(ray_nonzero, (next_voxel_boundary - ray.o) / ray.d,
                        ek::Infinity<Float>);
 
         // How far along the ray we must move for the horizontal component to equal the width of a voxel
         Vector3f dda_tdelta = ek::select(
-            ray_nonzero, step * voxel_size / ray_dir, ek::Infinity<Float>);
+            ray_nonzero, step * voxel_size / ray.d, ek::Infinity<Float>);
 
         // 2. Traverse the medium with DDA until we reach the desired optical depth.
         Mask active_dda = active;
@@ -105,35 +95,32 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
             }
 
             // Lookup & accumulate majorant in current cell.
-            // Recall: we need to convert from unnormalized ray parameter `dda_t`
-            // to a proper `t` parameter for `ray`.
-            mi.t = to_global_t(0.5f * (dda_t + t_next));
-            mi.p = ray(mi.t);
-            Float majorant = m_majorant_grid->eval_1(mi, active_dda);
-            Float distance = ray_norm * (t_next - dda_t);
-            Float tau_next = tau_acc + majorant * distance;
+            Mask valid = active & (t_next < maxt);
+            ek::masked(mi.t, active_dda) = 0.5f * (dda_t + t_next);
+            ek::masked(mi.p, active_dda) = ray(mi.t);
+            // TODO: avoid this vcall, could lookup directly from the array
+            // of floats (but we still need to account for the bbox, etc).
+            Float majorant = m_majorant_grid->eval_1(mi, valid);
+            Float tau_next = tau_acc + majorant * (t_next - dda_t);
 
             // For rays that will stop within this cell, figure out
             // the precise `t` parameter where `desired_tau` is reached.
-            Float distance_needed = (desired_tau - tau_acc) / majorant;
-            Float t_precise = dda_t + distance_needed / ray_norm;
-            reached |= (tau_next >= desired_tau) & (to_global_t(t_precise) < maxt);
-
+            reached |= valid & (tau_next >= desired_tau);
+            Float t_precise = dda_t + (desired_tau - tau_acc) / majorant;
             ek::masked(dda_t, active_dda) = ek::select(reached, t_precise, t_next);
-            mi.combined_extinction[active_dda & reached] = majorant;
 
-            active_dda &= ~reached & (to_global_t(dda_t) < maxt);
+            // Prepare for next iteration
+            active_dda &= ~reached & valid;
             ek::masked(dda_tmax, active_dda) = dda_tmax + tmax_update;
             ek::masked(tau_acc, active_dda) = tau_next;
         }
 
         // Adopt the stopping location, making sure to convert to the main
         // ray's parametrization.
-        dda_t = to_global_t(dda_t);
         sampled_t = ek::select(reached, dda_t, ek::Infinity<Float>);
     } else {
         // --- A single majorant for the whole volume.
-        mi.combined_extinction = get_combined_extinction(mi, active);
+        mi.combined_extinction = ek::detach(get_combined_extinction(mi, active));
         Float m                = extract_channel(mi.combined_extinction, channel);
         sampled_t              = mint + (desired_tau / m);
     }
@@ -142,6 +129,10 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
     mi.t          = ek::select(valid_mi, sampled_t, ek::Infinity<Float>);
     mi.p          = ray(sampled_t);
 
+    if (m_majorant_grid) {
+        // Otherwise it was already looked up above
+        mi.combined_extinction = ek::detach(m_majorant_grid->eval_1(mi, valid_mi));
+    }
     std::tie(mi.sigma_s, mi.sigma_n, mi.sigma_t) =
         get_scattering_coefficients(mi, valid_mi);
     return mi;
