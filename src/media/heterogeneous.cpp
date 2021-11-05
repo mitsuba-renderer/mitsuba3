@@ -122,15 +122,17 @@ public:
         ScalarFloat scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction =
             props.get<bool>("has_spectral_extinction", true);
-        m_max_density =
-            ek::opaque<Float>(ek::max(1e-6f, scale * m_sigmat->max()));
         m_scale = scale;
-        Log(Info, "Heterogeneous max density: %s", m_max_density);
 
         m_majorant_resolution_factor = props.size_("majorant_resolution_factor", 0);
         update_majorant_supergrid();
         if (m_majorant_resolution_factor > 0) {
             Log(Info, "Using majorant supergrid with resolution %s", m_majorant_grid->resolution());
+            m_max_density = ek::NaN<Float>;
+        } else {
+            m_max_density =
+                ek::opaque<Float>(ek::max(1e-6f, scale * m_sigmat->max()));
+            Log(Info, "Heterogeneous max density: %s", m_max_density);
         }
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
@@ -171,7 +173,12 @@ public:
             sigmat *= m_phase_function->projected_area(mi, active);
 
         auto sigmas = sigmat * m_albedo->eval(mi, active);
-        auto sigman = m_max_density - sigmat;
+
+        UnpolarizedSpectrum local_majorant =
+            m_majorant_grid ? m_majorant_grid->eval_1(mi, active)
+                            : m_max_density;
+        auto sigman = local_majorant - sigmat;
+
         return { sigmas, sigman, sigmat };
     }
 
@@ -199,10 +206,14 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        ScalarFloat scale = scalar_scale();
-        m_max_density = ek::opaque<Float>(
-            ek::max(1e-6f, scale * m_sigmat->max()));
-        update_majorant_supergrid();
+        if (m_majorant_resolution_factor > 0) {
+            // TODO: make this more configurable (could be slow)
+            update_majorant_supergrid();
+        } else {
+            ScalarFloat scale = scalar_scale();
+            m_max_density = ek::opaque<Float>(
+                ek::max(1e-6f, scale * m_sigmat->max()));
+        }
     }
 
     void traverse(TraversalCallback *callback) override {
