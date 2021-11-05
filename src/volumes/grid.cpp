@@ -520,10 +520,15 @@ public:
 
     TensorXf local_majorants(size_t resolution_factor, ScalarFloat value_scale) override {
         MTS_IMPORT_TYPES()
-        using Value = mitsuba::DynamicBuffer<Float>;
-        using Index = mitsuba::DynamicBuffer<UInt32>;
+        using Value  = mitsuba::DynamicBuffer<Float>;
+        using Index  = mitsuba::DynamicBuffer<UInt32>;
+        using Index3i = mitsuba::Vector<mitsuba::DynamicBuffer<Int32>, 3>;
 
         if constexpr (Channels == 1) {
+            if constexpr (ek::is_jit_array_v<Float>) {
+                ek::eval(m_data);
+                ek::sync_thread();
+            }
             const ScalarVector3i full_resolution = resolution();
             if ((full_resolution.x() % resolution_factor) != 0 ||
                 (full_resolution.y() % resolution_factor) != 0 ||
@@ -537,7 +542,7 @@ public:
                 full_resolution.z() / resolution_factor
             );
 
-            Log(Info, "Constructing supergrid of resolution %s from full grid of resolution %s",
+            Log(Debug, "Constructing supergrid of resolution %s from full grid of resolution %s",
                 resolution, full_resolution);
             size_t n = ek::hprod(resolution);
             Value result = ek::full<Value>(-ek::Infinity<Float>, n);
@@ -545,20 +550,45 @@ public:
             auto [Z, Y, X] = ek::meshgrid(
                 ek::arange<Index>(resolution.x()), ek::arange<Index>(resolution.y()),
                 ek::arange<Index>(resolution.z()), /*index_xy*/ false);
+            Index3i cell_indices = resolution_factor * Index3i(X, Y, Z);
 
-            Index base_idx =
-                resolution_factor * (X + Y * full_resolution.z() +
-                                    Z * full_resolution.z() * full_resolution.y());
+            // We have to include all values that participate in interpolated
+            // lookups if we want the true maximum over a region.
+            int32_t begin_offset, end_offset;
+            switch (m_filter_type) {
+                case FilterType::Nearest: {
+                    begin_offset = 0;
+                    end_offset = resolution_factor;
+                    break;
+                }
+                case FilterType::Trilinear: {
+                    begin_offset = -1;
+                    end_offset = resolution_factor + 1;
+                    break;
+                }
+            };
+
+            Value scaled_data = value_scale * ek::detach(m_data.array());
 
             // TODO: any way to do this without the many operations?
-            for (size_t dz = 0; dz < resolution_factor; ++dz) {
-                for (size_t dy = 0; dy < resolution_factor; ++dy) {
-                    for (size_t dx = 0; dx < resolution_factor; ++dx) {
-                        const auto offset =
-                            dx + dy * full_resolution.z() +
-                            dz * full_resolution.z() * full_resolution.y();
-                        const auto idx = base_idx + offset;
-                        Value values   = ek::gather<Value>(m_data.array(), idx);
+            for (int32_t dz = begin_offset; dz < end_offset; ++dz) {
+                for (int32_t dy = begin_offset; dy < end_offset; ++dy) {
+                    for (int32_t dx = begin_offset; dx < end_offset; ++dx) {
+                        // Ensure valid lookups with clamping
+                        Index3i offset_indices = Index3i(
+                            ek::clamp(cell_indices.x() + dx, 0, full_resolution.x() - 1),
+                            ek::clamp(cell_indices.y() + dy, 0, full_resolution.y() - 1),
+                            ek::clamp(cell_indices.z() + dz, 0, full_resolution.z() - 1)
+                        );
+                        // Linearize indices
+                        const Index idx =
+                            offset_indices.x() +
+                            offset_indices.y() * full_resolution.z() +
+                            offset_indices.z() * full_resolution.z() *
+                                full_resolution.y();
+
+                        Value values =
+                            ek::gather<Value>(scaled_data, idx);
                         result = ek::max(result, values);
                     }
                 }
@@ -568,7 +598,7 @@ public:
                                 (size_t) resolution.y(),
                                 (size_t) resolution.z(),
                                 1 };
-            return TensorXf(value_scale * result, 4, shape);
+            return TensorXf(result, 4, shape);
         } else {
             NotImplementedError("local_majorants() when Channels != 1");
         }

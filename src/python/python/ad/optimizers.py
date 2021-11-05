@@ -1,6 +1,6 @@
-from contextlib import contextmanager
 from collections import defaultdict
 import enoki as ek
+
 
 class Optimizer:
     """
@@ -305,7 +305,7 @@ class Adam(Optimizer):
         for k, p in self.variables.items():
             self.t[k] += 1
             lr_scale = ek.sqrt(1 - self.beta_2 ** self.t[k]) / (1 - self.beta_1 ** self.t[k])
-            lr_scale = ek.opaque(ek.detached_t(Float), lr_scale, shape=1)
+            lr_scale = ek.opaque(ek.detached_t(Float), lr_scale)
 
             lr_t = self.lr_v[k] * lr_scale
             g_p = ek.grad(p)
