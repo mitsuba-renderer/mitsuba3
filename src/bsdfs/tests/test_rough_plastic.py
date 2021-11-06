@@ -16,6 +16,7 @@ def test01_chi2_smooth(variants_vec_backends_once_rgb):
         sample_func=sample_func,
         pdf_func=pdf_func,
         sample_dim=3,
+        ires=16,
         res=201
     )
 
