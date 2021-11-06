@@ -183,38 +183,48 @@ class ChiSquareTest:
         intervals discretized into ``self.ires`` separate function evaluations.
         """
 
-        from mitsuba.core import Float, Vector2f, ScalarVector2f
-
-        extents = self.bounds.extents()
-        endpoint = self.bounds.max - extents / ScalarVector2f(self.res)
-
-        # Compute a set of nodes where the PDF should be evaluated
-        x, y = ek.meshgrid(
-            ek.linspace(Float, self.bounds.min.x, endpoint.x, self.res.x),
-            ek.linspace(Float, self.bounds.min.y, endpoint.y, self.res.y)
-        )
-
-        endpoint = extents / ScalarVector2f(self.res)
-        eps = 1e-4
-        nx = ek.linspace(Float, eps, endpoint.x * (1 - eps), self.ires)
-        ny = ek.linspace(Float, eps, endpoint.y * (1 - eps), self.ires)
-        wx = [1 / (self.ires - 1)] * self.ires
-        wy = [1 / (self.ires - 1)] * self.ires
-        wx[0] = wx[-1] = wx[0] * .5
-        wy[0] = wy[-1] = wy[0] * .5
-
-        integral = 0
+        from mitsuba.core import Float, Vector2f, Vector2u, ScalarVector2f, UInt32
 
         self.histogram_start = time.time()
-        for yi, dy in enumerate(ny):
-            for xi, dx in enumerate(nx):
-                xy = self.domain.map_forward(Vector2f(x + dx, y + dy))
-                pdf = self.pdf_func(xy)
-                integral = ek.fmadd(pdf, wx[xi] * wy[yi], integral)
-        self.histogram_end = time.time()
 
-        self.pdf = integral * (ek.hprod(extents / ScalarVector2f(self.res))
-                               * self.sample_count)
+        # Determine total number of samples and construct an initial index
+        sample_count    = self.ires**2
+        cell_count      = self.res.x * self.res.y
+        index           = ek.arange(UInt32, cell_count * sample_count)
+        extents         = self.bounds.extents()
+        cell_size       = extents / self.res
+        sample_spacing  = cell_size / (self.ires - 1)
+
+        # Determine cell and integration sample indices
+        cell_index      = index // sample_count
+        sample_index    = index - cell_index * sample_count
+        cell_y          = cell_index // self.res.x
+        cell_x          = cell_index - cell_y * self.res.x
+        sample_y        = sample_index // self.ires
+        sample_x        = sample_index - sample_y * self.ires
+        cell_index_2d   = Vector2u(cell_x, cell_y)
+        sample_index_2d = Vector2u(sample_x, sample_y)
+
+        # Compute the position of each sample
+        p = self.bounds.min + cell_index_2d * cell_size
+        p += (sample_index_2d + 1e-4) * (1-2e-4) * sample_spacing
+
+        # Trapezoid rule integration weights
+        weights = ek.hprod(ek.select(ek.eq(sample_index_2d, 0) |
+                                     ek.eq(sample_index_2d, self.ires - 1), 0.5, 1))
+        weights *= ek.hprod(sample_spacing) * self.sample_count
+
+        # Remap onto the target domain
+        p = self.domain.map_forward(p)
+
+        # Evaluate the model density
+        pdf = self.pdf_func(p)
+
+        # Sum over each cell
+        self.pdf = ek.block_sum(pdf * weights, sample_count)
+
+        ek.eval(self.pdf)
+        self.histogram_end = time.time()
 
         if len(self.pdf) == 1:
             ek.resize(self.pdf, ek.width(xy))
@@ -348,9 +358,9 @@ class ChiSquareTest:
             f.write('    diff=histogram - pdf\n')
             f.write('    absdiff=np.abs(diff).max()\n')
             f.write('    a = pdf.shape[1] / pdf.shape[0]\n')
-            f.write('    pdf_plot = axs[0].imshow(pdf, aspect=a,'
+            f.write('    pdf_plot = axs[0].imshow(pdf, vmin=0, aspect=a,'
                     ' interpolation=\'nearest\')\n')
-            f.write('    hist_plot = axs[1].imshow(histogram, aspect=a,'
+            f.write('    hist_plot = axs[1].imshow(histogram, vmin=0, aspect=a,'
                     ' interpolation=\'nearest\')\n')
             f.write('    diff_plot = axs[2].imshow(diff, aspect=a, '
                     'vmin=-absdiff, vmax=absdiff, interpolation=\'nearest\','
