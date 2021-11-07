@@ -339,6 +339,14 @@ public:
             for (size_t y = 0; y < res.y(); ++y) {
                 ScalarFloat sin_theta = ek::sin(y * theta_scale);
 
+                // Enforce horizontal continuity
+                ScalarFloat *ptr2 = ptr + 4 * (res.x() - 1);
+                ScalarVector4f v0  = ek::load_aligned<ScalarVector4f>(ptr),
+                               v1  = ek::load_aligned<ScalarVector4f>(ptr2),
+                               v01 = .5f * (v0 + v1);
+                ek::store_aligned(ptr, v01),
+                ek::store_aligned(ptr2, v01);
+
                 for (size_t x = 0; x < res.x(); ++x) {
                     ScalarVector4f coeff = ek::load_aligned<ScalarVector4f>(ptr);
                     ScalarFloat lum;
@@ -358,6 +366,11 @@ public:
             }
 
             m_warp = Warp(luminance.get(), res);
+
+            if constexpr (ek::is_jit_array_v<Float>)
+                m_data.array() = ek::migrate(data, ek::is_cuda_array_v<Float>
+                                                       ? AllocType::Device
+                                                       : AllocType::HostAsync);
         }
     }
 
