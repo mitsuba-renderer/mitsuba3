@@ -109,6 +109,8 @@ class ChiSquareTest:
         considered to be weighted.
         """
 
+        self.pdf_start = time.time()
+
         # Generate a table of uniform variates
         from mitsuba.core import Float, Vector2f, Vector2u, Float32, \
             UInt64, PCG32, sample_tea_64
@@ -121,8 +123,6 @@ class ChiSquareTest:
         for i in range(self.sample_dim):
             samples_in[i] = rng.next_float32() if Float is Float32 \
                 else rng.next_float64()
-
-        self.pdf_start = time.time()
 
         # Invoke sampling strategy
         samples_out = self.sample_func(samples_in)
@@ -161,8 +161,6 @@ class ChiSquareTest:
             xy.x + xy.y * self.res.x,
         )
 
-        self.pdf_end = time.time()
-
         histogram_min = ek.hmin(self.histogram)
         if not histogram_min >= 0:
             self._log('Encountered a cell with negative sample '
@@ -174,6 +172,8 @@ class ChiSquareTest:
             self._log('Sample weights add up to a value greater '
                       'than 1.0: %f' % self.histogram_sum)
             self.fail = True
+
+        self.pdf_end = time.time()
 
     def tabulate_pdf(self):
         """
@@ -223,9 +223,6 @@ class ChiSquareTest:
         # Sum over each cell
         self.pdf = ek.block_sum(pdf * weights, sample_count)
 
-        ek.eval(self.pdf)
-        self.histogram_end = time.time()
-
         if len(self.pdf) == 1:
             ek.resize(self.pdf, ek.width(xy))
 
@@ -241,6 +238,8 @@ class ChiSquareTest:
             self._log('Failure: PDF integrates to a value greater '
                       'than 1.0: %f' % self.pdf_sum)
             self.fail = True
+
+        self.histogram_end = time.time()
 
     def run(self, significance_level=0.01, test_count=1, quiet=False):
         """
