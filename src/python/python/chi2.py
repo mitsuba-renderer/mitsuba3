@@ -574,8 +574,8 @@ def EmitterAdapter(emitter_type, extra):
         n = ek.width(sample)
         plugin = instantiate(args)
         si = ek.zero(Interaction3f)
-        di, w = plugin.sample_direction(si, sample)
-        return di.d
+        ds, w = plugin.sample_direction(si, sample)
+        return ds.d
 
     def pdf_functor(wo, *args):
         n = ek.width(wo)
