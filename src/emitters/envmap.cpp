@@ -468,6 +468,11 @@ public:
             }
 
             m_warp = Warp(luminance.get(), res);
+
+            if constexpr (ek::is_jit_array_v<Float>)
+                m_data.array() = ek::migrate(data, ek::is_cuda_array_v<Float>
+                                                       ? AllocType::Device
+                                                       : AllocType::HostAsync);
         }
     }
 
