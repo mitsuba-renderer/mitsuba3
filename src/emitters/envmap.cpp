@@ -137,6 +137,30 @@ public:
 
         ScalarFloat theta_scale = 1.f / (bitmap->size().y() - 1) * ek::Pi<Float>;
 
+        for (size_t y = 0; y < bitmap->size().y(); ++y) {
+            ScalarFloat sin_theta = ek::sin(y * theta_scale);
+
+            for (size_t x = 0; x < bitmap->size().x(); ++x) {
+                ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+                ScalarFloat lum = mitsuba::luminance(rgb);
+
+                ScalarVector4f coeff;
+                if constexpr (is_monochromatic_v<Spectrum>) {
+                    coeff = ScalarVector4f(lum, lum, lum, 1.f);
+                } else if constexpr (is_rgb_v<Spectrum>) {
+                    coeff = ek::concat(rgb, ek::Array<ScalarFloat, 1>(1.f));
+                } else {
+                    static_assert(is_spectral_v<Spectrum>);
+                    /* Evaluate the spectral upsampling model. This requires a
+                       reflectance value (colors in [0, 1]) which is accomplished here by
+                       scaling. We use a color where the highest component is 50%,
+                       which generally yields a fairly smooth spectrum. */
+                    ScalarFloat scale = ek::hmax(rgb) * 2.f;
+                    ScalarColor3f rgb_norm = rgb / ek::max(1e-8f, scale);
+                    coeff = ek::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
+                                       ek::Array<ScalarFloat, 1>(scale));
+                }
+
         // If bitmap contains non-spectral data
         if (bitmap->pixel_format() != Bitmap::PixelFormat::MultiChannel){
             for (size_t y = 0; y < bitmap->size().y(); ++y) {
@@ -444,11 +468,6 @@ public:
             }
 
             m_warp = Warp(luminance.get(), res);
-
-            if constexpr (ek::is_jit_array_v<Float>)
-                m_data.array() = ek::migrate(data, ek::is_cuda_array_v<Float>
-                                                       ? AllocType::Device
-                                                       : AllocType::HostAsync);
         }
     }
 
