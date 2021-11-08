@@ -198,7 +198,8 @@ public:
         Float inv_sin_theta = ek::safe_rsqrt(ek::sqr(d.x()) + ek::sqr(d.z()));
         pdf *= inv_sin_theta * ek::InvTwoPi<Float> * ek::InvPi<Float>;
 
-        Vector3f d_global = m_to_world.value().transform_affine(d);
+        // Unlike \ref sample_direction, ray goes from the envmap toward the scene
+        Vector3f d_global = m_to_world.value().transform_affine(-d);
 
         // Compute ray origin
         Vector3f perpendicular_offset =
