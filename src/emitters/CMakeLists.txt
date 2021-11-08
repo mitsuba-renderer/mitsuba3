@@ -8,3 +8,5 @@ add_plugin(directional     directional.cpp)
 add_plugin(directionalarea directionalarea.cpp)
 add_plugin(spot            spot.cpp)
 add_plugin(projector       projector.cpp)
+
+add_plugin(sky             sky.cpp sunsky/skymodel.cpp)

@@ -74,11 +74,26 @@ public:
            about the scene and default to the unit bounding sphere. */
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
-        FileResolver *fs = Thread::thread()->file_resolver();
-        fs::path file_path = fs->resolve(props.string("filename"));
-        m_filename = file_path.filename().string();
+        ref<Bitmap> bitmap;
+        // Enabled internal readin of bitmaps
+        if(props.has_property("bitmap")) {
+            bitmap = (Bitmap*) props.pointer("bitmap");
+            m_filename = "internal";
+        } 
+        else {
+            FileResolver *fs = Thread::thread()->file_resolver();
+            fs::path file_path = fs->resolve(props.string("filename"));
 
-        ref<Bitmap> bitmap = new Bitmap(file_path);
+            bitmap = new Bitmap(file_path);
+
+            m_filename = file_path.filename().string();
+        }
+
+        // FileResolver *fs = Thread::thread()->file_resolver();
+        // fs::path file_path = fs->resolve(props.string("filename"));
+        // m_filename = file_path.filename().string();
+
+        // ref<Bitmap> bitmap = new Bitmap(file_path);
         if (bitmap->width() < 2 || bitmap->height() < 3)
             Throw("\"%s\": the environment map resolution must be at "
                   "least 2x3 pixels", m_filename);
