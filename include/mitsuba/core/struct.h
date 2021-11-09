@@ -312,13 +312,7 @@ NAMESPACE_END(detail)
 
 template <typename T> constexpr Struct::Type struct_type_v = detail::struct_type<T>::value;
 
-constexpr uint32_t operator |(Struct::Flags f1, Struct::Flags f2) { return (uint32_t) f1 | (uint32_t) f2; }
-constexpr uint32_t operator |(uint32_t f1, Struct::Flags f2)      { return f1 | (uint32_t) f2; }
-constexpr uint32_t operator &(Struct::Flags f1, Struct::Flags f2) { return (uint32_t) f1 & (uint32_t) f2; }
-constexpr uint32_t operator &(uint32_t f1, Struct::Flags f2)      { return f1 & (uint32_t) f2; }
-constexpr uint32_t operator ~(Struct::Flags f1)                   { return ~(uint32_t) f1; }
-constexpr uint32_t operator +(Struct::Flags e)                    { return (uint32_t) e; }
-constexpr bool has_flag(uint32_t flags, Struct::Flags f)          { return (flags & (uint32_t) f) != 0; }
+MTS_DECLARE_ENUM_OPERATORS(Struct::Flags)
 
 /**
  * \brief This class solves the any-to-any problem: effiently converting from

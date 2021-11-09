@@ -302,4 +302,32 @@ extern "C" {
     typedef struct RTCSceneTy* RTCScene;
     typedef struct RTCGeometryTy* RTCGeometry;
 #endif
+
+// =============================================================
+//! @{ \name Helper macros
+// =============================================================
+
+#define MTS_DECLARE_ENUM_OPERATORS(name)                                       \
+    constexpr uint32_t operator|(name f1, name f2) {                           \
+        return (uint32_t) f1 | (uint32_t) f2;                                  \
+    }                                                                          \
+    constexpr uint32_t operator|(uint32_t f1, name f2) {                       \
+        return f1 | (uint32_t) f2;                                             \
+    }                                                                          \
+    constexpr uint32_t operator&(name f1, name f2) {                           \
+        return (uint32_t) f1 & (uint32_t) f2;                                  \
+    }                                                                          \
+    constexpr uint32_t operator&(uint32_t f1, name f2) {                       \
+        return f1 & (uint32_t) f2;                                             \
+    }                                                                          \
+    constexpr uint32_t operator~(name f1) { return ~(uint32_t) f1; }           \
+    constexpr uint32_t operator+(name e) { return (uint32_t) e; }              \
+    template <typename UInt32>                                                 \
+    constexpr auto has_flag(UInt32 flags, name f) {                            \
+        return enoki::neq(flags & (uint32_t) f, 0u);                           \
+    }
+
+//! @}
+// =============================================================
+
 };
