@@ -120,6 +120,15 @@ public:
     std::tuple<MediumInteraction3f, Float, Float, Mask>
     prepare_interaction_sampling(const Ray3f &ray, Mask active) const;
 
+    /**
+     * Pre-computes quantities needed for a DDA traversal of the given grid.
+     *
+     * Returns (initial t, tmax, tdelta).
+     */
+    std::tuple<Float, Vector3f, Vector3f>
+    prepare_dda_traversal(const Volume *majorant_grid, const Ray3f &ray,
+                          Float mint, Float maxt, Mask active) const;
+
     /// Return the phase function of this medium
     MTS_INLINE const PhaseFunction *phase_function() const {
         return m_phase_function.get();

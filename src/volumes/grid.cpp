@@ -636,6 +636,8 @@ public:
             << "  bbox = " << string::indent(m_bbox) << "," << std::endl
             << "  dimensions = " << resolution() << "," << std::endl
             << "  max = " << m_max << "," << std::endl
+            << "  filter_type = " << (std::underlying_type_t<FilterType>) m_filter_type << "," << std::endl
+            << "  wrap_mode = " << (std::underlying_type_t<WrapMode>) m_wrap_mode << "," << std::endl
             << "  channels = " << m_data.shape()[3] << std::endl
             << "]";
         return oss.str();

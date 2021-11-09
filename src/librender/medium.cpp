@@ -50,33 +50,11 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
         // 1. Prepare for DDA traversal
         // Adapted from: https://github.com/francisengelmann/fast_voxel_traversal/blob/9664f0bde1943e69dbd1942f95efc31901fbbd42/main.cpp
         // TODO: allow precomputing all this (but be careful when ray origin is updated)
-        Vector3f voxel_size = m_majorant_grid->voxel_size();
+        auto [dda_t, dda_tmax, dda_tdelta] = prepare_dda_traversal(
+            m_majorant_grid.get(), ray, mint, maxt, active);
 
-        // Current ray parameter throughout DDA traversal
-        Float dda_t = mint;
-
-        // The id of the first and last voxels hit by the ray
-        Vector3i current_voxel(ek::floor(ray(mint) / voxel_size));
-        Vector3i last_voxel(ek::floor(ray(maxt) / voxel_size));
-        // Increment (in number of voxels) to take at each step
-        Vector3i step = ek::select(ray.d >= 0, 1, -1);
-
-        // Distance along the ray to the next voxel border from the current position
-        Vector3f next_voxel_boundary = (current_voxel + step) * voxel_size;
-        next_voxel_boundary += ek::select(ek::neq(current_voxel, last_voxel) & (ray.d < 0),
-                                          voxel_size, 0);
-
-        // Value of ray parameter until next intersection with voxel-border along each axis
-        auto ray_nonzero = ek::neq(ray.d, 0);
-        Vector3f dda_tmax =
-            ek::select(ray_nonzero, (next_voxel_boundary - ray.o) / ray.d,
-                       ek::Infinity<Float>);
-
-        // How far along the ray we must move for the horizontal component to equal the width of a voxel
-        Vector3f dda_tdelta = ek::select(
-            ray_nonzero, step * voxel_size / ray.d, ek::Infinity<Float>);
-
-        // 2. Traverse the medium with DDA until we reach the desired optical depth.
+        // 2. Traverse the medium with DDA until we reach the desired
+        // optical depth.
         Mask active_dda = active;
         Mask reached = false;
         Float tau_acc = 0.f;
@@ -94,7 +72,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
                 tmax_update[k] = ek::select(ek::eq(dda_tmax[k], t_next), dda_tdelta[k], 0);
             }
 
-            // Lookup & accumulate majorant in current cell.
+            // Lookup and accumulate majorant in current cell.
             ek::masked(mi.t, active_dda) = 0.5f * (dda_t + t_next);
             ek::masked(mi.p, active_dda) = ray(mi.t);
             // TODO: avoid this vcall, could lookup directly from the array
@@ -105,11 +83,11 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
             // For rays that will stop within this cell, figure out
             // the precise `t` parameter where `desired_tau` is reached.
             Float t_precise = dda_t + (desired_tau - tau_acc) / majorant;
-            reached |= active_dda & (t_precise < maxt) & (tau_next >= desired_tau);
+            reached |= active_dda && (t_precise < maxt) && (tau_next >= desired_tau);
             ek::masked(dda_t, active_dda) = ek::select(reached, t_precise, t_next);
 
             // Prepare for next iteration
-            active_dda &= ~reached & (t_next < maxt);
+            active_dda &= !reached && (t_next < maxt);
             ek::masked(dda_tmax, active_dda) = dda_tmax + tmax_update;
             ek::masked(tau_acc, active_dda) = tau_next;
         }
@@ -203,16 +181,10 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
                                                 UInt32 channel,
                                                 Mask _active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
-    if (m_majorant_grid)
-        NotImplementedError("sample_interaction_drt with majorant supergrid");
 
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
     const Mask did_traverse = active;
-
-    // Get global majorant
-    // TODO: update to support DDA-based sampling (majorant supergrid).
-    auto combined_extinction = get_combined_extinction(mi, active);
-    Float m = extract_channel(combined_extinction, channel);
+    const bool has_supergrid = (bool) m_majorant_grid;
 
     // Sample proportional to transmittance only using reservoir sampling
     MediumInteraction3f mi_sub = mi;
@@ -224,39 +196,142 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     Float sampling_weight = ek::NaN<Float>;
 
     ek::Loop<Mask> loop("Medium::sample_interaction_drt");
-    loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
-             running_t, mi_sub, transmittance);
+    Float global_majorant;
+    Float dda_t, desired_tau, tau_acc;
+    Vector3f dda_tmax, dda_tdelta;
+    Mask needs_new_target;
+    if (has_supergrid) {
+        // Prepare for DDA traversal
+        std::tie(dda_t, dda_tmax, dda_tdelta) = prepare_dda_traversal(
+            m_majorant_grid.get(), ray, mint, maxt, active);
+        desired_tau = 0.f;
+        tau_acc = 0.f;
+        needs_new_target = true;
+        global_majorant = ek::NaN<Float>;
+
+        loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
+                 running_t, mi_sub, transmittance, dda_t, dda_tmax,
+                 needs_new_target, desired_tau, tau_acc);
+    } else {
+        // Get global majorant
+        global_majorant =
+            extract_channel(get_combined_extinction(mi, active), channel);
+
+        loop.put(active, acc_weight, sampled_t, sampled_t_step, sampling_weight,
+                 running_t, mi_sub, transmittance);
+    }
+
     sampler->loop_register(loop);
     loop.init();
     while (loop(ek::detach(active))) {
-        Float dt = -ek::log(1 - sampler->next_1d(active)) / m;
+        // --- Mixed DRT / DDA loop:
+        // - If the majorant is spatially varying, one iteration of the loop
+        //   will both progress traversal of the majorant supergrid with DDA
+        //   and update the running (t, weight) results of DRT sampling.
+        //   The latter update only happens when a valid free-flight distance
+        //   has been sampled with DDA.
+        //   Moreover, we must be extra-careful because DRT allows sampling with
+        //   replacement, so updates keep taking place throughout traversal.
+        // - If the majorant is constant over the whole volume, there's
+        //   no need to perform DDA, we can sample a distance in closed form.
+
+        Float dt, local_majorant;
+        Mask active_drt;
+        if (has_supergrid) {
+            ek::masked(desired_tau, active && needs_new_target) =
+                -ek::log(1 - sampler->next_1d(active));
+            ek::masked(tau_acc, active && needs_new_target) = 0.f;
+
+            // -- One step of DDA
+            // Only some of the lanes will reach `desired_tau` at this iteration
+            // and be able to proceed with a DRT step.
+            Mask active_dda = active;
+
+            // Figure out which axis we hit first.
+            // `dda_t_next` is the ray's `t` parameter when hitting that axis.
+            Float dda_t_next = ek::hmin(dda_tmax);
+            // TODO: this selection scheme looks dangerous in case of exact equality
+            //       with more than one component.
+            Vector3f tmax_update;
+            for (size_t k = 0; k < 3; ++k) {
+                tmax_update[k] = ek::select(ek::eq(dda_tmax[k], dda_t_next),
+                                            dda_tdelta[k], 0);
+            }
+
+            // Lookup and accumulate majorant in current cell.
+            ek::masked(mi_sub.t, active_dda) = 0.5f * (dda_t + dda_t_next);
+            ek::masked(mi_sub.p, active_dda) = ray(mi_sub.t);
+            Float majorant = m_majorant_grid->eval_1(mi_sub, active_dda);
+            Float tau_next = tau_acc + majorant * (dda_t_next - dda_t);
+
+            // For rays that will stop within this cell, figure out
+            // the precise `t` parameter where `desired_tau` is reached.
+            Float t_precise = dda_t + (desired_tau - tau_acc) / majorant;
+            Mask reached = active_dda && (t_precise < maxt) && (tau_next >= desired_tau);
+            Mask escaped = active_dda && (dda_t_next >= maxt);
+
+            // Ensure that `dt` breaks out in case of escape, rather than "just reaching" maxt
+            ek::masked(dda_t, active_dda) = ek::select(
+                reached, t_precise,
+                ek::select(escaped, ek::Infinity<Float>, dda_t_next));
+
+            // It's important that DRT can run on the last DDA step,
+            // even if it fails to reach `desired_tau`. The DRT step
+            // taken will be clamped to the bounds of the medium.
+            active_drt = active && (reached || escaped);
+
+            // Prepare for next DDA iteration. Lanes that reached their
+            // target optical depth did *not* move to the next cell yet.
+            ek::masked(dda_tmax, active_dda && !reached) = dda_tmax + tmax_update;
+            ek::masked(tau_acc, active_dda && !reached) = tau_next;
+            // -- DDA step done.
+
+            // We'll need to sample a new `desired_tau` in these lanes
+            // at the next iteration.
+            needs_new_target = active_drt;
+            // Output the step needed to reach `desired_tau`, as determined by DDA.
+            // If DDA didn't reach `desired_tau` in this iteration, none of the lanes
+            // should receive updates below.
+            dt = ek::select(active_drt, dda_t - running_t, ek::NaN<Float>);
+            local_majorant = ek::select(active_drt, majorant, ek::NaN<Float>);
+        } else {
+            // Closed form free-flight distance sampling
+            local_majorant = global_majorant;
+            dt = -ek::log(1 - sampler->next_1d(active)) / local_majorant;
+            active_drt = active;
+        }
         Float dt_clamped = ek::min(dt, maxt - running_t);
 
         // Reservoir sampling with replacement
         Float current_weight = transmittance * dt_clamped;
-        acc_weight += current_weight;
+        ek::masked(acc_weight, active_drt) = acc_weight + current_weight;
 
-        // Note: this will always trigger at the first step
-        Mask did_interact =
-            (sampler->next_1d(active) * acc_weight) < current_weight;
-        // Adopt step with replacement
-        ek::masked(sampled_t, active & did_interact) = running_t;
-        ek::masked(sampled_t_step, active & did_interact) = dt_clamped;
-        ek::masked(sampling_weight, active) = acc_weight;
+        /* Note: this should always trigger at the first step */ {
+            Mask did_interact =
+                active_drt &
+                ((sampler->next_1d(active) * acc_weight) < current_weight);
+            // Adopt step with replacement
+            ek::masked(sampled_t, did_interact) = running_t;
+            ek::masked(sampled_t_step, did_interact) = dt_clamped;
+        }
+        ek::masked(sampling_weight, active_drt) = acc_weight;
 
-        // Continue stepping
-        running_t += dt;
+        // Continue DRT stepping
+        ek::masked(running_t, active_drt) = running_t + dt;
 
         // Recall that replacement is possible in this loop.
-        active &= (running_t < maxt);
+        ek::masked(active, active_drt) = active && (running_t < maxt);
+        active_drt &= active;
+
         // The transmittance update below will only be used in
         // subsequent loop iterations, for lanes that are still valid.
-        ek::masked(mi_sub.t, active) = running_t;
-        ek::masked(mi_sub.p, active) = ray(running_t);
+        ek::masked(mi_sub.t, active_drt) = running_t;
+        ek::masked(mi_sub.p, active_drt) = ray(running_t);
         auto [_1, _2, current_sigma_t] =
-            get_scattering_coefficients(mi_sub, active);
-        Float s = extract_channel(current_sigma_t, channel);
-        transmittance *= (1.f - (s / m));
+            get_scattering_coefficients(mi_sub, active_drt);
+        ek::masked(transmittance, active_drt) =
+            transmittance * (1.f - (extract_channel(current_sigma_t, channel) /
+                                    local_majorant));
     }
     sampled_t = sampled_t + sampler->next_1d(did_traverse) * sampled_t_step;
 
@@ -317,8 +392,8 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
         Mask did_interact =
             (sampler->next_1d(active) * acc_weight) < current_weight;
         // Adopt step with replacement
-        ek::masked(sampled_t, active & did_interact) = running_t;
-        ek::masked(sampled_t_step, active & did_interact) = dt_clamped;
+        ek::masked(sampled_t, active && did_interact) = running_t;
+        ek::masked(sampled_t_step, active && did_interact) = dt_clamped;
         ek::masked(sampling_weight, active) = acc_weight;
 
         // Continue stepping
@@ -387,6 +462,42 @@ Medium<Float, Spectrum>::prepare_interaction_sampling(const Ray3f &ray,
     mi.mint = mint;
 
     return std::make_tuple(mi, mint, maxt, active);
+}
+
+MTS_VARIANT
+MTS_INLINE
+std::tuple<Float, typename Medium<Float, Spectrum>::Vector3f,
+           typename Medium<Float, Spectrum>::Vector3f>
+Medium<Float, Spectrum>::prepare_dda_traversal(const Volume *majorant_grid,
+                                               const Ray3f &ray, Float mint,
+                                               Float maxt, Mask /*active*/) const {
+    Vector3f voxel_size = majorant_grid->voxel_size();
+
+    // Current ray parameter throughout DDA traversal
+    Float dda_t = mint;
+
+    // The id of the first and last voxels hit by the ray
+    Vector3i current_voxel(ek::floor(ray(mint) / voxel_size));
+    Vector3i last_voxel(ek::floor(ray(maxt) / voxel_size));
+    // Increment (in number of voxels) to take at each step
+    Vector3i step = ek::select(ray.d >= 0, 1, -1);
+
+    // Distance along the ray to the next voxel border from the current position
+    Vector3f next_voxel_boundary = (current_voxel + step) * voxel_size;
+    next_voxel_boundary += ek::select(ek::neq(current_voxel, last_voxel) && (ray.d < 0),
+                                        voxel_size, 0);
+
+    // Value of ray parameter until next intersection with voxel-border along each axis
+    auto ray_nonzero = ek::neq(ray.d, 0);
+    Vector3f dda_tmax =
+        ek::select(ray_nonzero, (next_voxel_boundary - ray.o) / ray.d,
+                    ek::Infinity<Float>);
+
+    // How far along the ray we must move for the horizontal component to equal the width of a voxel
+    Vector3f dda_tdelta = ek::select(
+        ray_nonzero, step * voxel_size / ray.d, ek::Infinity<Float>);
+
+    return { dda_t, dda_tmax, dda_tdelta };
 }
 
 MTS_VARIANT
