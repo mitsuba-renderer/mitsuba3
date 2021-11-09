@@ -289,6 +289,7 @@ public:
         if (props.has_property("max_value")) {
             m_fixed_max = true;
             m_max       = props.get<ScalarFloat>("max_value");
+            Throw("This feature should probably not be used until more correctness checks are in place");
         }
         // In the context of an optimization, we might want to keep the majorant
         // fixed to an initial value computed from the reference data, for convenience.

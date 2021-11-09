@@ -162,7 +162,6 @@ public:
 
     MTS_DECLARE_CLASS()
 protected:
-    Medium();
     Medium(const Properties &props);
     virtual ~Medium();
 
@@ -174,6 +173,10 @@ protected:
 
     size_t m_majorant_resolution_factor;
     ref<Volume> m_majorant_grid;
+    /* Factor to apply to the majorant, helps ensure that we are not using
+     * a majorant that is exactly equal to the max density, which can be
+     * problematic for Path Replay. */
+    ScalarFloat m_majorant_factor;
 
     /// Identifier (if available)
     std::string m_id;

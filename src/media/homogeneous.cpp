@@ -107,7 +107,9 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function, m_majorant_grid)
+    MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
+                    m_phase_function, m_majorant_resolution_factor,
+                    m_majorant_grid, m_majorant_factor)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -119,7 +121,7 @@ public:
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
-        if (props.has_property("majorant_resolution_factor") || m_majorant_grid)
+        if (m_majorant_resolution_factor > 0 || m_majorant_grid)
             Throw("Not supoprted: majorant grid for a homogeneous medium.");
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
@@ -137,7 +139,7 @@ public:
     get_combined_extinction(const MediumInteraction3f &mi,
                             Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
-        UnpolarizedSpectrum majorant = ek::max(1e-6f, eval_sigmat(mi, active));
+        UnpolarizedSpectrum majorant = ek::max(1e-6f, m_majorant_factor * eval_sigmat(mi, active));
         return majorant & active;
     }
 

@@ -7,11 +7,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-MTS_VARIANT Medium<Float, Spectrum>::Medium()
-    : m_is_homogeneous(false), m_has_spectral_extinction(true),
-      m_majorant_resolution_factor(0), m_majorant_grid(nullptr) {}
-
-MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(props.id()) {
+MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props)
+    : m_majorant_grid(nullptr), m_id(props.id()) {
 
     for (auto &[name, obj] : props.objects(false)) {
         auto *phase = dynamic_cast<PhaseFunction *>(obj.get());
@@ -27,6 +24,9 @@ MTS_VARIANT Medium<Float, Spectrum>::Medium(const Properties &props) : m_id(prop
         m_phase_function =
             PluginManager::instance()->create_object<PhaseFunction>(Properties("isotropic"));
     }
+
+    m_majorant_factor = props.get<ScalarFloat>("majorant_factor", 1.01);
+    m_majorant_resolution_factor = props.get<size_t>("majorant_resolution_factor", 0);
 
     m_sample_emitters = props.get<bool>("sample_emitters", true);
     ek::set_attr(this, "use_emitter_sampling", m_sample_emitters);

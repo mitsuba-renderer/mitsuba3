@@ -110,7 +110,8 @@ template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MTS_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function, m_majorant_grid, m_majorant_resolution_factor)
+                    m_phase_function, m_majorant_grid,
+                    m_majorant_resolution_factor, m_majorant_factor)
     MTS_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
@@ -124,15 +125,15 @@ public:
             props.get<bool>("has_spectral_extinction", true);
         m_scale = scale;
 
-        m_majorant_resolution_factor = props.size_("majorant_resolution_factor", 0);
         update_majorant_supergrid();
         if (m_majorant_resolution_factor > 0) {
             Log(Info, "Using majorant supergrid with resolution %s", m_majorant_grid->resolution());
             m_max_density = ek::NaN<Float>;
         } else {
             m_max_density =
-                ek::opaque<Float>(ek::max(1e-6f, scale * m_sigmat->max()));
-            Log(Info, "Heterogeneous max density: %s", m_max_density);
+                ek::opaque<Float>(ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
+            Log(Info, "Heterogeneous medium will use majorant: %s (majorant factor: %s)",
+                m_max_density, m_majorant_factor);
         }
 
         ek::set_attr(this, "is_homogeneous", m_is_homogeneous);
@@ -193,7 +194,7 @@ public:
 
         // Build a majorant grid, with the scale factor baked-in for convenience
         TensorXf majorants =
-            m_sigmat->local_majorants(m_majorant_resolution_factor, scalar_scale());
+            m_sigmat->local_majorants(m_majorant_resolution_factor, m_majorant_factor * scalar_scale());
         Properties props("gridvolume");
         props.set_string("filter_type", "nearest");
         props.set_transform("to_world", m_sigmat->world_transform());
@@ -212,7 +213,7 @@ public:
         } else {
             ScalarFloat scale = scalar_scale();
             m_max_density = ek::opaque<Float>(
-                ek::max(1e-6f, scale * m_sigmat->max()));
+                ek::max(1e-6f, m_majorant_factor * scale * m_sigmat->max()));
         }
     }
 
@@ -237,10 +238,14 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
-            << "  albedo = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << std::endl
-            << "  emission = " << string::indent(m_emission) << std::endl
-            << "  scale = " << string::indent(m_scale) << std::endl
+            << "  albedo          = " << string::indent(m_albedo) << std::endl
+            << "  sigma_t         = " << string::indent(m_sigmat) << std::endl
+            << "  emission        = " << string::indent(m_emission) << std::endl
+            << "  scale           = " << string::indent(m_scale) << std::endl
+            << "  max_density     = " << string::indent(m_max_density) << std::endl
+            << "  majorant_factor = " << string::indent(m_majorant_factor) << std::endl
+            << "  majorant_resolution_factor = " << string::indent(m_majorant_resolution_factor) << std::endl
+            << "  majorant_grid   = " << string::indent(m_majorant_grid) << std::endl
             << "]";
         return oss.str();
     }
