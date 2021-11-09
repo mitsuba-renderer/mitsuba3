@@ -177,7 +177,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
-        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+        if (hit_flags & (uint32_t) RayFlags::Coherent)
             context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
         PreliminaryIntersection3f pi = ek::zero<PreliminaryIntersection3f>();
@@ -230,7 +230,7 @@ Scene<Float, Spectrum>::ray_intersect_preliminary_cpu(const Ray3f &ray,
         void *scene_ptr = (void *) s.accel,
              *func_ptr = nullptr;
 
-        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+        if (hit_flags & (uint32_t) RayFlags::Coherent)
             func_ptr = (void *) embree_func_wrapper<false, true>;
         else
             func_ptr = (void *) embree_func_wrapper<false, false>;
@@ -318,7 +318,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
 
         RTCIntersectContext context;
         rtcInitIntersectContext(&context);
-        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+        if (hit_flags & (uint32_t) RayFlags::Coherent)
             context.flags = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
 
         RTCRay ray2 = {};
@@ -345,7 +345,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
         void *scene_ptr = (void *) s.accel,
              *func_ptr  = nullptr;
 
-        if (hit_flags & (uint32_t) HitComputeFlags::Coherent)
+        if (hit_flags & (uint32_t) RayFlags::Coherent)
             func_ptr = (void *) embree_func_wrapper<true, true>;
         else
             func_ptr = (void *) embree_func_wrapper<true, false>;
@@ -387,7 +387,7 @@ Scene<Float, Spectrum>::ray_test_cpu(const Ray3f &ray, uint32_t hit_flags,
 MTS_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray,
                                                 Mask active) const {
-    return ray_intersect_cpu(ray, +HitComputeFlags::All, active);
+    return ray_intersect_cpu(ray, +RayFlags::All, active);
 }
 
 NAMESPACE_END(mitsuba)

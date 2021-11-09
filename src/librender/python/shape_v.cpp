@@ -53,7 +53,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                Mask active) {
                 return shape->compute_surface_interaction(ray, pi, hit_flags, 0, active);
             },
-            "ray"_a, "pi"_a, "hit_flags"_a = +HitComputeFlags::All,
+            "ray"_a, "pi"_a, "hit_flags"_a = +RayFlags::All,
             "active"_a = true, D(Shape, compute_surface_interaction))
        .def("eval_attribute",
             [](Ptr shape, const std::string &name,
@@ -87,7 +87,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray, uint32_t flags, const Mask &active) {
                 return shape->ray_intersect(ray, flags, active);
             },
-            "ray"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
+            "ray"_a, "hit_flags"_a = +RayFlags::All, "active"_a = true,
             D(Shape, ray_intersect))
        .def("ray_test",
             [](Ptr shape, const Ray3f &ray, const Mask &active) {
@@ -174,7 +174,7 @@ MTS_PY_EXPORT(Shape) {
              "index"_a, "ray"_a, "active"_a = true,
              D(Mesh, ray_intersect_triangle))
         .def("eval_parameterization", &Mesh::eval_parameterization,
-             "uv"_a, "hit_flags"_a = +HitComputeFlags::All, "active"_a = true,
+             "uv"_a, "hit_flags"_a = +RayFlags::All, "active"_a = true,
              D(Mesh, eval_parameterization));
 
     MTS_PY_REGISTER_OBJECT("register_mesh", Mesh)

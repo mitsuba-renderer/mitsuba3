@@ -201,7 +201,7 @@ public:
         bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();
@@ -215,8 +215,8 @@ public:
         Float dist = ek::dot(m_to_world.value().translation() - p, m_frame.n);
         si.p = p + dist * m_frame.n;
 
-        if (likely(has_flag(hit_flags, HitComputeFlags::UV) ||
-                   has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+        if (likely(has_flag(hit_flags, RayFlags::UV) ||
+                   has_flag(hit_flags, RayFlags::dPdUV))) {
             Float r = ek::norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
                   inv_r = ek::rcp(r);
 
@@ -224,7 +224,7 @@ public:
             ek::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
-            if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+            if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
                 Float cos_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
                       sin_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
 

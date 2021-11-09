@@ -606,7 +606,7 @@
 
 .. autoclass:: mitsuba.render.Film
 
-.. autoclass:: mitsuba.render.HitComputeFlags
+.. autoclass:: mitsuba.render.RayFlags
 
 .. autoclass:: mitsuba.render.ImageBlock
 

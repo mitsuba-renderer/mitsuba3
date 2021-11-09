@@ -215,7 +215,7 @@ public:
         bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();

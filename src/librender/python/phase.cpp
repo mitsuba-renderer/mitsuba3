@@ -12,5 +12,5 @@ MTS_PY_EXPORT(PhaseFunctionExtras) {
         .def_value(PhaseFunctionFlags, Anisotropic)
         .def_value(PhaseFunctionFlags, Microflake);
 
-    MTS_PY_DECLARE_ENUM_OPERATORS(HitComputeFlags, e)
+    MTS_PY_DECLARE_ENUM_OPERATORS(RayFlags, e)
 }

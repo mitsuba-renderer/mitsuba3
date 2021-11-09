@@ -474,7 +474,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
  * It also specifies whether the \ref SurfaceInteraction should be differentiable with
  * respect to the shapes parameters.
  */
-enum class HitComputeFlags : uint32_t {
+enum class RayFlags : uint32_t {
 
     // =============================================================
     //             Surface interaction compute flags
@@ -529,7 +529,7 @@ enum class HitComputeFlags : uint32_t {
     AllNonDifferentiable = UV | dPdUV | ShadingFrame | NonDifferentiable,
 };
 
-MTS_DECLARE_ENUM_OPERATORS(HitComputeFlags)
+MTS_DECLARE_ENUM_OPERATORS(RayFlags)
 
 // -----------------------------------------------------------------------------
 
@@ -648,7 +648,7 @@ struct PreliminaryIntersection {
             si.time        = ray.time;
             si.wavelengths = ray.wavelengths;
 
-            if (has_flag(hit_flags, HitComputeFlags::ShadingFrame))
+            if (has_flag(hit_flags, RayFlags::ShadingFrame))
                 si.initialize_sh_frame();
 
             // Incident direction in local coordinates

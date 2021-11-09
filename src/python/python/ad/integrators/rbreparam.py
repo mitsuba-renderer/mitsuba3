@@ -158,7 +158,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
            emission_weight: mitsuba.core.Float=None,
            active_: mitsuba.core.Mask=True):
         from mitsuba.core import Spectrum, Float, Mask, UInt32, Ray3f, Loop
-        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag, HitComputeFlags
+        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag, RayFlags
         from mitsuba.python.ad import reparameterize_ray
 
         is_primal = mode is None
@@ -188,7 +188,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         loop.init()
         while loop(active):
             # Attach incoming direction (reparameterization from the previous bounce)
-            si = pi.compute_surface_interaction(ray, HitComputeFlags.All, active)
+            si = pi.compute_surface_interaction(ray, RayFlags.All, active)
             reparam_d, _ = reparam(ray, active)
             si.wi = -ek.select(active & si.is_valid(), si.to_local(reparam_d), reparam_d)
 
@@ -231,7 +231,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                 active &= bs.pdf > 0.0
                 ray = ek.detach(si.spawn_ray(si.to_world(bs.wo)))
                 pi_bsdf = scene.ray_intersect_preliminary(ray, active)
-                si_bsdf = pi_bsdf.compute_surface_interaction(ray, HitComputeFlags.All, active)
+                si_bsdf = pi_bsdf.compute_surface_interaction(ray, RayFlags.All, active)
 
             # Compute MIS weight for the BSDF sampling
             ds = DirectionSample3f(scene, si_bsdf, ek.detach(si))

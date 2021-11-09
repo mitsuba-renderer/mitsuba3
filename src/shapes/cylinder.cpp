@@ -383,7 +383,7 @@ public:
         bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();
@@ -416,8 +416,8 @@ public:
 
         si.sh_frame.n = si.n;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
-            has_flag(hit_flags, HitComputeFlags::dNGdUV)) {
+        if (has_flag(hit_flags, RayFlags::dNSdUV) ||
+            has_flag(hit_flags, RayFlags::dNGdUV)) {
             si.dn_du = si.dp_du / (m_radius.value() * (m_flip_normals ? -1.f : 1.f));
             si.dn_dv = Vector3f(0.f);
         }

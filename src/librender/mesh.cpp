@@ -610,7 +610,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
 
     // Re-compute the distance traveled to the surface interaction hit point (might be sticky)
-    if (!has_flag(hit_flags, HitComputeFlags::Sticky))
+    if (!has_flag(hit_flags, RayFlags::Sticky))
         si.t = ek::select(active, pi.t, ek::Infinity<Float>);
     else
         si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d),
@@ -623,15 +623,15 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.uv = Point2f(b1, b2);
     std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
     if (has_vertex_texcoords() &&
-        likely(has_flag(hit_flags, HitComputeFlags::UV) ||
-               has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+        likely(has_flag(hit_flags, RayFlags::UV) ||
+               has_flag(hit_flags, RayFlags::dPdUV))) {
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
 
         si.uv = ek::fmadd(uv2, b2, ek::fmadd(uv1, b1, uv0 * b0));
 
-        if (likely(has_flag(hit_flags, HitComputeFlags::dPdUV))) {
+        if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 
@@ -647,8 +647,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     // Shading normal (if available)
     if (has_vertex_normals() &&
-        likely(has_flag(hit_flags, HitComputeFlags::ShadingFrame) ||
-               has_flag(hit_flags, HitComputeFlags::dNSdUV))) {
+        likely(has_flag(hit_flags, RayFlags::ShadingFrame) ||
+               has_flag(hit_flags, RayFlags::dNSdUV))) {
         Normal3f n0 = vertex_normal(fi[0], active),
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
@@ -660,7 +660,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
         si.sh_frame.n = n;
 
-        if (has_flag(hit_flags, HitComputeFlags::dNSdUV)) {
+        if (has_flag(hit_flags, RayFlags::dNSdUV)) {
             /* Now compute the derivative of "normalize(u*n1 + v*n2 + (1-u-v)*n0)"
                with respect to [u, v] in the local triangle parameterization.
 

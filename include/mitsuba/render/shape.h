@@ -183,7 +183,7 @@ public:
      */
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              PreliminaryIntersection3f pi,
-                                                             uint32_t hit_flags = +HitComputeFlags::All,
+                                                             uint32_t hit_flags = +RayFlags::All,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
@@ -200,7 +200,7 @@ public:
      *     Describe how the detailed information should be computed
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
-                                       uint32_t hit_flags = +HitComputeFlags::All,
+                                       uint32_t hit_flags = +RayFlags::All,
                                        Mask active = true) const;
 
     //! @}
@@ -363,7 +363,7 @@ public:
      * The default implementation throws.
      */
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t hit_flags = +HitComputeFlags::All,
+                                                       uint32_t hit_flags = +RayFlags::All,
                                                        Mask active = true) const;
 
     //! @}

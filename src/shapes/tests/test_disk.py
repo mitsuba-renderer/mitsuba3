@@ -36,7 +36,7 @@ def test02_bbox(variant_scalar_rgb):
 
 def test03_ray_intersect(variant_scalar_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, Transform4f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     for r in [1, 3, 5]:
         for translate in [Vector3f([0.0, 0.0, 0.0]),
@@ -66,7 +66,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                         ray = Ray3f(o=[x, y, -10], d=[0, 0, 1],
                                     time=0.0, wavelengths=[])
 
-                        si = s.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV, True)
+                        si = s.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
                         ray_u = Ray3f(ray)
                         ray_v = Ray3f(ray)
                         eps = 1e-4

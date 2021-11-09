@@ -50,7 +50,7 @@ def test02_bbox(variant_scalar_rgb):
 
 def test03_ray_intersect(variant_scalar_rgb):
     from mitsuba.core import xml, Ray3f, Transform4f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     for r in [1, 2, 4]:
         for l in [1, 5]:
@@ -72,7 +72,7 @@ def test03_ray_intersect(variant_scalar_rgb):
                     ray = Ray3f(o=[x, -10, z], d=[0, 1, 0],
                                 time=0.0, wavelengths=[])
                     si_found = s.ray_test(ray)
-                    si = s.ray_intersect(ray, HitComputeFlags.All | HitComputeFlags.dNSdUV, True)
+                    si = s.ray_intersect(ray, RayFlags.All | RayFlags.dNSdUV, True)
 
                     assert si_found == si.is_valid()
                     assert si_found == ek.allclose(si.p[0]**2 + si.p[1]**2, r**2)
