@@ -12,7 +12,7 @@ def sample_warp_field(scene: mitsuba.render.Scene,
                       active: mitsuba.core.Mask):
     from mitsuba.core import Frame3f, Ray3f
     from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     # Sample auxiliary direction from vMF
     offset = square_to_von_mises_fisher(sampler.next_2d(active), kappa)
@@ -22,7 +22,7 @@ def sample_warp_field(scene: mitsuba.render.Scene,
     aux_ray = Ray3f(ray)
     aux_ray.d = omega
 
-    si = scene.ray_intersect(aux_ray, HitComputeFlags.Sticky, active)
+    si = scene.ray_intersect(aux_ray, RayFlags.Sticky, active)
     # shading_normal = ek.normalize(si.p) # TODO
     # hit = active & ek.detach(si.is_valid()) & (ek.dot(omega, shading_normal) > 1e-3)
     hit = active & ek.detach(si.is_valid())

@@ -175,7 +175,7 @@ public:
                                      Mask active = true) const override;
 
     virtual SurfaceInteraction3f eval_parameterization(const Point2f &uv,
-                                                       uint32_t hit_flags = +HitComputeFlags::All,
+                                                       uint32_t hit_flags = +RayFlags::All,
                                                        Mask active = true) const override;
 
     /** \brief Ray-triangle intersection test

@@ -387,16 +387,16 @@ public:
         bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
 
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
+        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
             pi = ray_intersect_preliminary(ray, active);
 
         active &= pi.is_valid();
 
         // Fields requirement dependencies
-        bool need_dn_duv = has_flag(hit_flags, HitComputeFlags::dNSdUV) ||
-                           has_flag(hit_flags, HitComputeFlags::dNGdUV);
-        bool need_dp_duv = has_flag(hit_flags, HitComputeFlags::dPdUV) || need_dn_duv;
-        bool need_uv     = has_flag(hit_flags, HitComputeFlags::UV) || need_dp_duv;
+        bool need_dn_duv = has_flag(hit_flags, RayFlags::dNSdUV) ||
+                           has_flag(hit_flags, RayFlags::dNGdUV);
+        bool need_dp_duv = has_flag(hit_flags, RayFlags::dPdUV) || need_dn_duv;
+        bool need_uv     = has_flag(hit_flags, RayFlags::UV) || need_dp_duv;
 
         // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();

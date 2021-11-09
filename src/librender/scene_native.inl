@@ -202,7 +202,7 @@ Scene<Float, Spectrum>::ray_intersect_naive_cpu(const Ray3f &ray, Mask active) c
     PreliminaryIntersection3f pi =
         kdtree->template ray_intersect_naive<false>(ray, active);
 
-    return pi.compute_surface_interaction(ray, +HitComputeFlags::All, active);
+    return pi.compute_surface_interaction(ray, +RayFlags::All, active);
 }
 
 MTS_VARIANT typename Scene<Float, Spectrum>::Mask

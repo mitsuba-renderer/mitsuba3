@@ -2904,7 +2904,7 @@ Returns the warped sample and associated probability density.)doc";
 
 static const char *__doc_mitsuba_Hierarchical2D_to_string = R"doc()doc";
 
-static const char *__doc_mitsuba_HitComputeFlags =
+static const char *__doc_mitsuba_RayFlags =
 R"doc(This list of flags is used to determine which members of
 SurfaceInteraction should be computed when calling
 compute_surface_interaction().
@@ -2912,33 +2912,33 @@ compute_surface_interaction().
 It also specifies whether the SurfaceInteraction should be
 differentiable with respect to the shapes parameters.)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_All = R"doc(Compute all fields of the surface interaction data structure (default))doc";
+static const char *__doc_mitsuba_RayFlags_All = R"doc(Compute all fields of the surface interaction data structure (default))doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_AllNonDifferentiable =
+static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable =
 R"doc(Compute all fields of the surface interaction data structure in a non
 differentiable way)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_Coherent = R"doc(Inform Embree that these rays are coherent (for primary rays))doc";
+static const char *__doc_mitsuba_RayFlags_Coherent = R"doc(Inform Embree that these rays are coherent (for primary rays))doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_Minimal = R"doc(Compute position and geometric normal)doc";
+static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute position and geometric normal)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_NonDifferentiable = R"doc(Force computed fields to not be be differentiable)doc";
+static const char *__doc_mitsuba_RayFlags_None = R"doc(No flags set)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_None = R"doc(No flags set)doc";
+static const char *__doc_mitsuba_RayFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";
+static const char *__doc_mitsuba_RayFlags_AttachShape =
+R"doc(Derivatives of the SurfaceInteraction fields will follow the shape's motion)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_Sticky =
-R"doc(Derivatives of the SurfaceInteraction members will follow the shape's
-motion)doc";
+static const char *__doc_mitsuba_RayFlags_NonDifferentiable =
+R"doc(Derivatives of the SurfaceInteraction fields will follow the ray's motion)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_UV = R"doc(Compute UV coordinates)doc";
+static const char *__doc_mitsuba_RayFlags_UV = R"doc(Compute UV coordinates)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_dNGdUV = R"doc(Compute the geometric normal partials wrt. the UV coordinates)doc";
+static const char *__doc_mitsuba_RayFlags_dNGdUV = R"doc(Compute the geometric normal partials wrt. the UV coordinates)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_dNSdUV = R"doc(Compute the shading normal partials wrt. the UV coordinates)doc";
+static const char *__doc_mitsuba_RayFlags_dNSdUV = R"doc(Compute the shading normal partials wrt. the UV coordinates)doc";
 
-static const char *__doc_mitsuba_HitComputeFlags_dPdUV = R"doc(Compute position partials wrt. UV coordinates)doc";
+static const char *__doc_mitsuba_RayFlags_dPdUV = R"doc(Compute position partials wrt. UV coordinates)doc";
 
 static const char *__doc_mitsuba_IOREntry = R"doc()doc";
 

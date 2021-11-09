@@ -257,7 +257,7 @@ def test09_eval_parameterization(variants_all_rgb):
 @fresolver_append_path
 def test10_ray_intersect_preliminary(variants_all_rgb):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     scene = xml.load_string('''
         <scene version="2.0.0">
@@ -337,7 +337,7 @@ else:
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Ray3f, Vector3f, UInt32
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
@@ -367,7 +367,7 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
 
     # si should not be attached if flags says so
     ek.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray, HitComputeFlags.NonDifferentiable)
+    si = pi.compute_surface_interaction(ray, RayFlags.NonDifferentiable)
     print(si.p.x.index_ad())
     assert not ek.grad_enabled(si.p)
     assert not ek.grad_enabled(si.n)
@@ -687,7 +687,7 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
     from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
@@ -733,7 +733,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.p should follow
     apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.Sticky)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
     ek.forward(diff_vector.x)
     assert ek.allclose(ek.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
@@ -746,14 +746,14 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
     apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.Sticky)
     ek.forward(diff_vector.x)
     assert ek.allclose(ek.grad(si.uv), [0.0, 0.0], atol=1e-5)
 
     # TODO fix this!
     # If the vertices are shifted along x-axis, sticky si.t should follow
     # apply_transformation(lambda v : Transform4f.translate(v))
-    # si = pi.compute_surface_interaction(ray, HitComputeFlags.All | HitComputeFlags.Sticky)
+    # si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.Sticky)
     # ek.forward(diff_vector.y)
     # assert ek.allclose(ek.grad(si.t), 10.0, atol=1e-5)
 
@@ -766,7 +766,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
-    from mitsuba.render import HitComputeFlags
+    from mitsuba.render import RayFlags
     from mitsuba.python.util import traverse
 
     # Set enoki JIT flags
@@ -830,7 +830,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     ek.set_label(ray, 'ray')
 
     # Intersect rays against objects in the scene
-    si = scene.ray_intersect(ray, HitComputeFlags.Sticky, True)
+    si = scene.ray_intersect(ray, RayFlags.Sticky, True)
     ek.set_label(si, 'si')
 
     # print(ek.graphviz_str(Float(1)))
