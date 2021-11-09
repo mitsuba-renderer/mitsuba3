@@ -262,7 +262,7 @@ def test04_vcall_autodiff_bsdf_single_inst_and_masking(variants_all_ad_rgb, eval
         loss_grad = Float(1)
 
     ek.set_grad(loss, loss_grad)
-    ek.enqueue(ek.ADMode.Reverse, loss)
+    ek.enqueue(ek.ADMode.Backward, loss)
     ek.traverse(Float, ek.ADFlag.ClearVertices)
 
     # Check gradients
@@ -367,7 +367,7 @@ def test05_vcall_autodiff_bsdf(variants_all_ad_rgb, mode, eval_grad, N, jit_flag
             loss_grad = Float(1)
 
         ek.set_grad(loss, loss_grad)
-        ek.enqueue(ek.ADMode.Reverse, loss)
+        ek.enqueue(ek.ADMode.Backward, loss)
         ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         # Check gradients
