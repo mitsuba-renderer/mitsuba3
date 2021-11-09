@@ -20,8 +20,8 @@ public:
 
     /// Returns the medium's majorant used for delta tracking
     virtual UnpolarizedSpectrum
-    get_combined_extinction(const MediumInteraction3f &mi,
-                            Mask active = true) const = 0;
+    get_combined_extinction(const MediumInteraction3f &mi, Mask active = true,
+                            bool global_only = false) const = 0;
 
     /**
      * Returns the medium's albedo, independently of other quantities.

@@ -207,8 +207,9 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
     const Mask did_traverse = active;
 
-    // Get majorant
-    auto combined_extinction = get_combined_extinction(mi, active);
+    // Get global majorant
+    // TODO: update to support DDA-based sampling (majorant supergrid).
+    auto combined_extinction = get_combined_extinction(mi, active, true);
     Float m = extract_channel(combined_extinction, channel);
 
     // Sample proportional to transmittance only using reservoir sampling
@@ -275,8 +276,9 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
 
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
 
-    // Get majorant
-    auto combined_extinction = get_combined_extinction(mi, active);
+    // Get global majorant
+    // TODO: update to support DDA-based sampling (majorant supergrid).
+    auto combined_extinction = get_combined_extinction(mi, active, true);
     Float m = extract_channel(combined_extinction, channel);
     // TODO: need to tweak this?
     Float control           = 0.5f * m;

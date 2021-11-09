@@ -16,8 +16,12 @@ public:
         PYBIND11_OVERRIDE_PURE(Return, Medium, intersect_aabb, ray);
     }
 
-    UnpolarizedSpectrum get_combined_extinction(const MediumInteraction3f &mi, Mask active = true) const override {
-        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium, get_combined_extinction, mi, active);
+    UnpolarizedSpectrum
+    get_combined_extinction(const MediumInteraction3f &mi, Mask active = true,
+                            bool global_only = false) const override {
+        PYBIND11_OVERRIDE_PURE(UnpolarizedSpectrum, Medium,
+                               get_combined_extinction, mi, active,
+                               global_only);
     }
 
     UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi, Mask active = true) const override {
@@ -59,9 +63,9 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             [](Ptr ptr) { return ptr->has_spectral_extinction(); },
             D(Medium, has_spectral_extinction))
        .def("get_combined_extinction",
-            [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
-                return ptr->get_combined_extinction(mi, active); },
-            "mi"_a, "active"_a=true,
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active, bool global_only) {
+                return ptr->get_combined_extinction(mi, active, global_only); },
+            "mi"_a, "active"_a=true, "global_only"_a = false,
             D(Medium, get_combined_extinction))
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
