@@ -2,7 +2,7 @@
 #include <mitsuba/python/python.h>
 
 MTS_PY_EXPORT(HitComputeFlags) {
-    py::enum_<HitComputeFlags>(m, "HitComputeFlags", py::arithmetic())
+    auto e = py::enum_<HitComputeFlags>(m, "HitComputeFlags", py::arithmetic())
         .def_value(HitComputeFlags, None)
         .def_value(HitComputeFlags, Minimal)
         .def_value(HitComputeFlags, UV)
@@ -14,15 +14,7 @@ MTS_PY_EXPORT(HitComputeFlags) {
         .def_value(HitComputeFlags, Sticky)
         .def_value(HitComputeFlags, Coherent)
         .def_value(HitComputeFlags, All)
-        .def_value(HitComputeFlags, AllNonDifferentiable)
-        .def(py::self == py::self)
-        .def(py::self | py::self)
-        .def(int() | py::self)
-        .def(py::self & py::self)
-        .def(int() & py::self)
-        .def(+py::self)
-        .def(~py::self)
-        .def("__pos__", [](const HitComputeFlags &f) {
-            return static_cast<uint32_t>(f);
-        }, py::is_operator());
+        .def_value(HitComputeFlags, AllNonDifferentiable);
+
+        MTS_PY_DECLARE_ENUM_OPERATORS(HitComputeFlags, e)
 }

@@ -233,3 +233,14 @@ template <typename Array> void bind_enoki_ptr_array(py::class_<Array> &cls) {
     }                                                 \
     else
 
+#define MTS_PY_DECLARE_ENUM_OPERATORS(Type, m)        \
+    m.def(py::self == py::self)                       \
+     .def(py::self | py::self)                        \
+     .def(int() | py::self)                           \
+     .def(py::self &py::self)                         \
+     .def(int() & py::self)                           \
+     .def(+py::self)                                  \
+     .def(~py::self)                                  \
+     .def("__pos__", [](const Type &f) {              \
+            return static_cast<uint32_t>(f);          \
+        }, py::is_operator());

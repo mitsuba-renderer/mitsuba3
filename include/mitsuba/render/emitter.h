@@ -47,16 +47,7 @@ enum class EmitterFlags : uint32_t {
     Delta        = DeltaPosition | DeltaDirection,
 };
 
-constexpr uint32_t operator |(EmitterFlags f1, EmitterFlags f2)  { return (uint32_t) f1 | (uint32_t) f2; }
-constexpr uint32_t operator |(uint32_t f1, EmitterFlags f2)      { return f1 | (uint32_t) f2; }
-constexpr uint32_t operator &(EmitterFlags f1, EmitterFlags f2)  { return (uint32_t) f1 & (uint32_t) f2; }
-constexpr uint32_t operator &(uint32_t f1, EmitterFlags f2)      { return f1 & (uint32_t) f2; }
-constexpr uint32_t operator ~(EmitterFlags f1)                   { return ~(uint32_t) f1; }
-constexpr uint32_t operator +(EmitterFlags e)                    { return (uint32_t) e; }
-template <typename UInt32>
-constexpr auto has_flag(UInt32 flags, EmitterFlags f)            { return ek::neq(flags & (uint32_t) f, 0u); }
-
-
+MTS_DECLARE_ENUM_OPERATORS(EmitterFlags)
 
 template <typename Float, typename Spectrum>
 class MTS_EXPORT_RENDER Emitter : public Endpoint<Float, Spectrum> {

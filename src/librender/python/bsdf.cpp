@@ -8,7 +8,7 @@ MTS_PY_EXPORT(BSDFContext) {
         .def_value(TransportMode, Radiance)
         .def_value(TransportMode, Importance);
 
-    py::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags))
+    auto e = py::enum_<BSDFFlags>(m, "BSDFFlags", D(BSDFFlags))
         .def_value(BSDFFlags, None)
         .def_value(BSDFFlags, Null)
         .def_value(BSDFFlags, DiffuseReflection)
@@ -29,17 +29,9 @@ MTS_PY_EXPORT(BSDFContext) {
         .def_value(BSDFFlags, Smooth)
         .def_value(BSDFFlags, Delta)
         .def_value(BSDFFlags, Delta1D)
-        .def_value(BSDFFlags, All)
-        .def(py::self == py::self)
-        .def(py::self | py::self)
-        .def(int() | py::self)
-        .def(py::self & py::self)
-        .def(int() & py::self)
-        .def(+py::self)
-        .def(~py::self)
-        .def("__pos__", [](const BSDFFlags &f) {
-            return static_cast<uint32_t>(f);
-        }, py::is_operator());
+        .def_value(BSDFFlags, All);
+
+    MTS_PY_DECLARE_ENUM_OPERATORS(BSDFFlags, e)
 
     py::class_<BSDFContext>(m, "BSDFContext", D(BSDFContext))
         .def(py::init<TransportMode>(),
