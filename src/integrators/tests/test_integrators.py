@@ -60,11 +60,11 @@ class Config:
         def create_scene():
             return xml.load_dict(self.scene_dict)
         self.scene = create_scene()
-
         self.params = traverse(self.scene)
-        self.params.keep([self.key])
 
-        self.initial_state = type(self.params[self.key])(self.params[self.key])
+        if hasattr(self, 'key'):
+            self.params.keep([self.key])
+            self.initial_state = type(self.params[self.key])(self.params[self.key])
 
     def update(self, theta):
         """This method update the scene parameter associated to this config"""
@@ -334,6 +334,87 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfig):
         }
 
 
+# Translate textured plane
+class TranslateTexturedPlaneConfig(TranslateShapeConfig):
+    def __init__(self) -> None:
+        super().__init__()
+        self.name = 'translate_textured_plane'
+        self.key = 'plane.vertex_positions'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'bsdf': {
+                    'type': 'diffuse',
+                    'reflectance' : {
+                        'type': 'bitmap',
+                        # 'filename' : 'resources/data/common/textures/flower.bmp'
+                        'filename' : 'resources/data/common/textures/museum.exr'
+                    }
+                }
+            },
+            'light': { 'type': 'constant' }
+        }
+        self.res = 256
+
+
+# Translate occluder casting shadow on itself
+class TranslateSelfShadowAreaLightConfig(Config):
+    def __init__(self) -> None:
+        super().__init__()
+        self.res = 64
+        self.name = 'translate_self_shadow_arealight'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+            },
+            'occluder': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/rectangle.obj',
+                'face_normals': True,
+                # 'to_world': T.rotate([0, 1, 0], 45) * T.scale(0.5),
+                # 'to_world': T.translate([2.0, 0.0, 2.0]) * T.scale(0.25),
+                'to_world': T.translate([-1, 0, 0.5]) * T.rotate([0, 1, 0], 90) * T.scale(1.0),
+            },
+            'light': {
+                'type': 'obj',
+                'filename': 'resources/data/common/meshes/sphere.obj',
+                'emitter': {
+                    'type': 'area',
+                    # 'radiance': {'type': 'rgb', 'value': [100.0, 100.0, 100.0]}
+                    'radiance': {'type': 'rgb', 'value': [1.0, 1.0, 1.0]}
+                },
+                # 'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.025)
+                'to_world': T.translate([4.0, 0.0, 4.0]) * T.scale(0.5)
+            },
+            # 'light2': { 'type': 'constant', 'radiance': 0.001 },
+        }
+        self.error_mean_threshold = 0.6
+        self.error_max_threshold = 6.0
+        self.spp = 4024
+
+    def initialize(self):
+        from mitsuba.core import Vector3f
+        super().initialize()
+        self.params.keep(['plane.vertex_positions', 'occluder.vertex_positions'])
+        # self.params.keep(['plane.vertex_positions'])
+        # self.params.keep(['occluder.vertex_positions'])
+        self.initial_state_0 = ek.unravel(Vector3f, self.params['plane.vertex_positions'])
+        self.initial_state_1 = ek.unravel(Vector3f, self.params['occluder.vertex_positions'])
+
+    def update(self, theta):
+        from mitsuba.core import Vector3f
+        self.params['plane.vertex_positions']    = ek.ravel(self.initial_state_0 + Vector3f(theta, 0.0, 0.0))
+        self.params['occluder.vertex_positions'] = ek.ravel(self.initial_state_1 + Vector3f(theta, 0.0, 0.0))
+        self.params.update()
+        ek.eval()
+
+
+
 # -------------------------------------------------------------------
 #                           Unit tests
 # -------------------------------------------------------------------
@@ -345,6 +426,7 @@ BASIC_CONFIGS = [
     DirectlyVisibleAreaLightRadianceConfig,
     PointLightIntensityConfig,
     ConstantEmitterRadianceConfig,
+    TranslateTexturedPlaneConfig,
 ]
 
 REPARAM_CONFIGS = [
@@ -352,6 +434,7 @@ REPARAM_CONFIGS = [
     TranslateSphereEmitterOnBlackConfig,
     ScaleSphereEmitterOnBlackConfig,
     TranslateOccluderAreaLightConfig,
+    TranslateSelfShadowAreaLightConfig,
 ]
 
 # List of integrators to test (also indicates whether it handles discontinuities)
