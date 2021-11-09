@@ -125,12 +125,17 @@ public:
         return m_phase_function.get();
     }
 
+    /// Returns a reference to the majorant supegrid, if any
+    MTS_INLINE ref<Volume> majorant_grid() const {
+        return m_majorant_grid;
+    }
+
     /// Return true if a majorant supergrid is available.
     MTS_INLINE bool has_majorant_grid() const {
         return (bool) m_majorant_grid;
     }
 
-    /// Return the majorant grid, if any
+    /// Return the size of a voxel in the majorant grid, if any
     MTS_INLINE Vector3f majorant_grid_voxel_size() const {
         if (m_majorant_grid)
             return m_majorant_grid->voxel_size();

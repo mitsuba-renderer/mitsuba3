@@ -127,6 +127,7 @@ MTS_PY_EXPORT(Medium) {
 
     auto medium = py::class_<Medium, PyMedium, Object, ref<Medium>>(m, "Medium", D(Medium))
             .def(py::init<const Properties &>())
+            .def_method(Medium, majorant_grid)
             .def_method(Medium, has_majorant_grid)
             .def_method(Medium, majorant_grid_voxel_size)
             .def_method(Medium, id)

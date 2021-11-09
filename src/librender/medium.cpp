@@ -203,13 +203,15 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
                                                 UInt32 channel,
                                                 Mask _active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
+    if (m_majorant_grid)
+        NotImplementedError("sample_interaction_drt with majorant supergrid");
 
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
     const Mask did_traverse = active;
 
     // Get global majorant
     // TODO: update to support DDA-based sampling (majorant supergrid).
-    auto combined_extinction = get_combined_extinction(mi, active, true);
+    auto combined_extinction = get_combined_extinction(mi, active);
     Float m = extract_channel(combined_extinction, channel);
 
     // Sample proportional to transmittance only using reservoir sampling
@@ -245,14 +247,16 @@ Medium<Float, Spectrum>::sample_interaction_drt(const Ray3f &ray,
         // Continue stepping
         running_t += dt;
 
+        // Recall that replacement is possible in this loop.
+        active &= (running_t < maxt);
+        // The transmittance update below will only be used in
+        // subsequent loop iterations, for lanes that are still valid.
         ek::masked(mi_sub.t, active) = running_t;
         ek::masked(mi_sub.p, active) = ray(running_t);
         auto [_1, _2, current_sigma_t] =
             get_scattering_coefficients(mi_sub, active);
         Float s = extract_channel(current_sigma_t, channel);
         transmittance *= (1.f - (s / m));
-        // Recall that replacement is possible in this loop.
-        active &= (running_t < maxt);
     }
     sampled_t = sampled_t + sampler->next_1d(did_traverse) * sampled_t_step;
 
@@ -273,12 +277,14 @@ Medium<Float, Spectrum>::sample_interaction_drrt(const Ray3f &ray,
                                                  Sampler *sampler,
                                                  UInt32 channel, Mask _active) const {
     MTS_MASKED_FUNCTION(ProfilerPhase::MediumSample, _active);
+    if (m_majorant_grid)
+        NotImplementedError("sample_interaction_drrt with majorant supergrid");
 
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
 
     // Get global majorant
     // TODO: update to support DDA-based sampling (majorant supergrid).
-    auto combined_extinction = get_combined_extinction(mi, active, true);
+    auto combined_extinction = get_combined_extinction(mi, active);
     Float m = extract_channel(combined_extinction, channel);
     // TODO: need to tweak this?
     Float control           = 0.5f * m;

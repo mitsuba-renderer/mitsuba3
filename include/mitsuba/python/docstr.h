@@ -3669,6 +3669,8 @@ at a given MediumInteraction mi)doc";
 
 static const char *__doc_mitsuba_Medium_has_spectral_extinction = R"doc(Returns whether this medium has a spectrally varying extinction)doc";
 
+static const char *__doc_mitsuba_Medium_majorant_grid = R"doc(Returns a reference to the majorant supegrid, if any.)doc";
+
 static const char *__doc_mitsuba_Medium_has_majorant_grid = R"doc(Return true if a majorant supergrid is available.)doc";
 
 static const char *__doc_mitsuba_Medium_majorant_grid_voxel_size = R"doc(Return the majorant grid, if any)doc";
@@ -8437,6 +8439,8 @@ Parameter ``stream``:
 static const char *__doc_mitsuba_Volume_Volume = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_bbox = R"doc(Returns the bounding box of the volume)doc";
+
+static const char *__doc_mitsuba_Volume_voxel_size = R"doc(If applicable, returns the dimensions of one grid cell in world space.)doc";
 
 static const char *__doc_mitsuba_Volume_class = R"doc()doc";
 
