@@ -95,22 +95,21 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
             }
 
             // Lookup & accumulate majorant in current cell.
-            Mask valid = active & (t_next < maxt);
             ek::masked(mi.t, active_dda) = 0.5f * (dda_t + t_next);
             ek::masked(mi.p, active_dda) = ray(mi.t);
             // TODO: avoid this vcall, could lookup directly from the array
             // of floats (but we still need to account for the bbox, etc).
-            Float majorant = m_majorant_grid->eval_1(mi, valid);
+            Float majorant = m_majorant_grid->eval_1(mi, active_dda);
             Float tau_next = tau_acc + majorant * (t_next - dda_t);
 
             // For rays that will stop within this cell, figure out
             // the precise `t` parameter where `desired_tau` is reached.
-            reached |= valid & (tau_next >= desired_tau);
             Float t_precise = dda_t + (desired_tau - tau_acc) / majorant;
+            reached |= active_dda & (t_precise < maxt) & (tau_next >= desired_tau);
             ek::masked(dda_t, active_dda) = ek::select(reached, t_precise, t_next);
 
             // Prepare for next iteration
-            active_dda &= ~reached & valid;
+            active_dda &= ~reached & (t_next < maxt);
             ek::masked(dda_tmax, active_dda) = dda_tmax + tmax_update;
             ek::masked(tau_acc, active_dda) = tau_next;
         }
