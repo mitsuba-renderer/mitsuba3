@@ -98,7 +98,7 @@ private:
     Point3f offset_p(const Vector3f &d) const {
         Float mag = (1.f + ek::hmax(ek::abs(p))) * math::RayEpsilon<Float>;
         mag *= ek::select(ek::dot(n, d) >= 0.f, 1.f, -1.f);
-        return p + mag * n;
+        return p + ek::detach(mag * n);
     }
 };
 
