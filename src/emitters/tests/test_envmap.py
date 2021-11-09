@@ -76,7 +76,7 @@ def test02_sampling_weights(variants_vec_backends_once_rgb):
 
     # Test the sample_ray() interface
     ray, w = emitter.sample_ray(0, 0, sample, sample_2)
-    si.wi = -ray.d
-    ds.d = ray.d
+    si.wi = ray.d
+    ds.d = -ray.d
     w2 = emitter.eval(si) / emitter.pdf_direction(si, ds) * ek.Pi
-    assert ek.allclose(w, w2, rtol=1e-3)
+    assert ek.allclose(w2, w, rtol=1e-3)
