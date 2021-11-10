@@ -34,8 +34,6 @@ public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_to_world)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
-    static const int SPECTRUM_SAMPLES = 3;//TODO: to be changed in Spectral mode
-
     SkyEmitter(const Properties &props): Base(props) {
 
         m_scale = props.get<float>("scale", 1.0f);
@@ -47,12 +45,21 @@ public:
         m_extend = props.get<bool>("extend", false);
         m_albedo = props.get<ScalarColor3f>("albedo", ScalarColor3f(0.2f));
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
+
+        m_spectral = props.get<bool>("is_spectral", false);
+
+        //TODO: temp setting count for bucket.
+        if (m_spectral){
+            m_channels = 11;
+        }else{
+            m_channels = 3;
+        }
         
         if (m_turbidity < 1 || m_turbidity > 10)
              Log(Error, "The turbidity parameter must be in the range[1,10]!");
         if (m_stretch < 1 || m_stretch > 2)
              Log(Error, "The stretch parameter must be in the range [1,2]!");
-        for (size_t i=0; i<m_albedo.Size; ++i) {
+        for (size_t i=0; i < m_albedo.Size; ++i) {
              if (m_albedo[i] < 0 || m_albedo[i] > 1)
                  Log(Error, "The albedo parameter must be in the range [0,1]!");
          }
@@ -63,26 +70,26 @@ public:
             Log(Error, "The sun is below the horizon -- this is not supported by the sky model.");
         }
 
-        if (SPECTRUM_SAMPLES == 3){
-            for (int i = 0; i < SPECTRUM_SAMPLES; ++i){
+        if (!m_spectral){
+            for (size_t i = 0; i < m_channels; ++i){
+                // m_state[i] = arhosek_rgb_skymodelstate_alloc_init
+                // ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
                 m_state[i] = arhosek_rgb_skymodelstate_alloc_init
-                ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
-
+                ((double)sun_elevation, (double)m_turbidity, (double)m_albedo[i]);
             }
         }
-            
         else {
-            for (int i = 0; i < SPECTRUM_SAMPLES; ++i){
+            for (size_t i = 0; i < m_channels; ++i){
                 m_state[i] = arhosekskymodelstate_alloc_init
                 ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
-
             }
+            
         }
-
+        std::cout << m_spectral << std::endl;
     }
 
     ~SkyEmitter(){
-        for (size_t i = 0; i < SPECTRUM_SAMPLES; ++i){
+        for (size_t i = 0; i < m_channels; ++i){
             arhosekskymodelstate_free(m_state[i]);
         }
     }
@@ -138,10 +145,19 @@ public:
         ScalarFloat gamma = ek::safe_acos(cos_gamma);
 
         Spectrum result;
-        for (size_t i = 0; i < SPECTRUM_SAMPLES; i++) {
-            result[i] = (Float) (arhosek_tristim_skymodel_radiance(
-                m_state[i], (double)theta, (double)gamma, i) / 106.856980); // (sum of Spectrum::CIE_Y)
-            
+        if (!m_spectral){
+            for (size_t i = 0; i < m_channels; i++) {
+                result[i] = (Float) (arhosek_tristim_skymodel_radiance(
+                    m_state[i], (double)theta, (double)gamma, i) / 106.856980); // (sum of Spectrum::CIE_Y)
+            }
+        }else{ 
+            for (size_t i = 0; i < m_channels; i++) {
+                int j = (int) i;
+                int wave_l = 320 + j * 40;
+                result[i] = (Float) (arhosekskymodel_radiance(
+                    m_state[i], (double)theta, (double)gamma, wave_l + 20.) / 106.856980); // (sum of Spectrum::CIE_Y)
+            }
+
         }
 
         result = max(result, 0.f);
@@ -199,8 +215,13 @@ protected:
     bool m_extend;
     /// Ground albedo
     ScalarColor3f m_albedo;
+    /// temp variable for sample count
+    unsigned int m_channels;
     /// State vector for the sky model
-    ArHosekSkyModelState *m_state[SPECTRUM_SAMPLES];
+    ArHosekSkyModelState *m_state[11];
+    /// Flag indicating whether a spectral sky is rendered
+    bool m_spectral;
+    
 
 
 };
