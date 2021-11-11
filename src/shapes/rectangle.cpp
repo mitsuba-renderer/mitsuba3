@@ -206,26 +206,28 @@ public:
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
-                                                     uint32_t hit_flags,
+                                                     const PreliminaryIntersection3f &pi,
+                                                     uint32_t /*hit_flags*/,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
-
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
-            pi = ray_intersect_preliminary(ray, active);
+        Float t = pi.t;
+        Point2f prim_uv = pi.prim_uv;
+        if constexpr (ek::is_diff_array_v<Float>) {
+            PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
+            prim_uv = ek::replace_grad(prim_uv, pi_d.prim_uv);
+            t = ek::replace_grad(t, pi_d.t);
+        }
 
-        active &= pi.is_valid();
+        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+        si.t = ek::select(active, t, ek::Infinity<Float>);
 
         // Re-project onto the rectangle to improve accuracy
-        Point3f p = ray(pi.t);
+        Point3f p = ray(t);
         Float dist = ek::dot(m_to_world.value().translation() - p, m_frame.n);
         si.p = p + dist * m_frame.n;
 
@@ -233,8 +235,8 @@ public:
         si.sh_frame.n = m_frame.n;
         si.dp_du      = m_frame.s;
         si.dp_dv      = m_frame.t;
-        si.uv         = Point2f(ek::fmadd(pi.prim_uv.x(), 0.5f, 0.5f),
-                                ek::fmadd(pi.prim_uv.y(), 0.5f, 0.5f));
+        si.uv         = Point2f(ek::fmadd(prim_uv.x(), 0.5f, 0.5f),
+                                ek::fmadd(prim_uv.y(), 0.5f, 0.5f));
 
         si.dn_du = si.dn_dv = ek::zero<Vector3f>();
         si.shape    = this;

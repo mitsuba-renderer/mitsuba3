@@ -182,7 +182,7 @@ public:
      *      A data structure containing the detailed information
      */
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                             PreliminaryIntersection3f pi,
+                                                             const PreliminaryIntersection3f &pi,
                                                              uint32_t hit_flags = +RayFlags::All,
                                                              uint32_t recursion_depth = 0,
                                                              Mask active = true) const;

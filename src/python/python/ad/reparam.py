@@ -22,7 +22,7 @@ def sample_warp_field(scene: mitsuba.render.Scene,
     aux_ray = Ray3f(ray)
     aux_ray.d = omega
 
-    si = scene.ray_intersect(aux_ray, RayFlags.Sticky, active)
+    si = scene.ray_intersect(aux_ray, RayFlags.FollowShape, active)
     # shading_normal = ek.normalize(si.p) # TODO
     # hit = active & ek.detach(si.is_valid()) & (ek.dot(omega, shading_normal) > 1e-3)
     hit = active & ek.detach(si.is_valid())
@@ -120,8 +120,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             div_V_theta = (grad_divergence_lhs - ek.dot(V_theta, dZ)) / Z
 
             # Ignore inactive lanes
-            V_theta[~self.active] = 0.0
-            div_V_theta[~self.active] = 0.0
+            V_theta     = ek.select(self.active, V_theta, 0.0)
+            div_V_theta = ek.select(self.active, div_V_theta, 0.0)
 
             self.set_grad_out((V_theta, div_V_theta))
 
@@ -131,8 +131,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             grad_direction, grad_divergence = self.grad_out()
 
             # Ignore inactive lanes
-            grad_direction[~self.active] = 0.0
-            grad_divergence[~self.active] = 0.0
+            grad_direction  = ek.select(self.active, grad_direction, 0.0)
+            grad_divergence = ek.select(self.active, grad_divergence, 0.0)
 
             with ek.suspend_grad():
                 # We need to trace the auxiliary rays a first time to compute the
@@ -165,7 +165,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
 
             ek.set_grad(direction, grad_direction)
             ek.set_grad(divergence, grad_divergence)
-            ek.enqueue(ek.ADMode.Reverse, direction, divergence)
+            ek.enqueue(ek.ADMode.Backward, direction, divergence)
             ek.traverse(Float)
 
             grad_V       = ek.grad(V)
@@ -181,7 +181,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 # print(ek.graphviz_str(Float(1)))
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
-                ek.enqueue(ek.ADMode.Reverse, V_i, div_V_1_i)
+                ek.enqueue(ek.ADMode.Backward, V_i, div_V_1_i)
                 ek.traverse(Float, ek.ADFlag.ClearVertices)
                 it = it + 1
 

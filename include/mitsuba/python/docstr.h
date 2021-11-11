@@ -2915,8 +2915,7 @@ differentiable with respect to the shapes parameters.)doc";
 static const char *__doc_mitsuba_RayFlags_All = R"doc(Compute all fields of the surface interaction data structure (default))doc";
 
 static const char *__doc_mitsuba_RayFlags_AllNonDifferentiable =
-R"doc(Compute all fields of the surface interaction data structure in a non
-differentiable way)doc";
+R"doc(Compute all fields of the surface interaction ignoring shape's motion)doc";
 
 static const char *__doc_mitsuba_RayFlags_Coherent = R"doc(Inform Embree that these rays are coherent (for primary rays))doc";
 
@@ -2926,11 +2925,11 @@ static const char *__doc_mitsuba_RayFlags_None = R"doc(No flags set)doc";
 
 static const char *__doc_mitsuba_RayFlags_ShadingFrame = R"doc(Compute shading normal and shading frame)doc";
 
-static const char *__doc_mitsuba_RayFlags_AttachShape =
-R"doc(Derivatives of the SurfaceInteraction fields will follow the shape's motion)doc";
+static const char *__doc_mitsuba_RayFlags_FollowShape =
+R"doc(Derivatives of the SurfaceInteraction fields follow shape's motion)doc";
 
-static const char *__doc_mitsuba_RayFlags_NonDifferentiable =
-R"doc(Derivatives of the SurfaceInteraction fields will follow the ray's motion)doc";
+static const char *__doc_mitsuba_RayFlags_DetachShape =
+R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
 
 static const char *__doc_mitsuba_RayFlags_UV = R"doc(Compute UV coordinates)doc";
 

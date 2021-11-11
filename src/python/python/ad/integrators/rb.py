@@ -65,7 +65,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
         grad = Spectrum(block.read(pos)) * weight / spp
 
-        self.Li(ek.ADMode.Reverse, scene, sampler, ray, params=params, grad=grad)
+        self.Li(ek.ADMode.Backward, scene, sampler, ray, params=params, grad=grad)
 
     def sample(self, scene, sampler, ray, medium, active):
         return *self.Li(None, scene, sampler, ray), []
@@ -81,13 +81,13 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
            emission_weight: mitsuba.core.Float=None,
            active_: mitsuba.core.Mask=True):
         from mitsuba.core import Spectrum, Float, Mask, UInt32, Loop, Ray3f
-        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
+        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag, RayFlags
 
         is_primal = mode is None
 
         ray = Ray3f(ray)
-        si = scene.ray_intersect(ray, active_)
-        valid_ray = active_ & si.is_valid()
+        pi = scene.ray_intersect_preliminary(ray, active_)
+        valid_ray = active_ & pi.is_valid()
 
         # Initialize loop variables
         result     = Spectrum(0.0)
@@ -99,14 +99,15 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
         depth_i = UInt32(depth)
         loop = Loop("RBPLoop" + '_recursive_li' if is_primal else '')
-        loop.put(lambda:(depth_i, active, ray, emission_weight, throughput, si, result))
+        loop.put(lambda:(depth_i, active, ray, emission_weight, throughput, pi, result))
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
+            si = pi.compute_surface_interaction(ray, RayFlags.All, active)
+
             # ---------------------- Direct emission ----------------------
 
-            emitter = si.emitter(scene, active)
-            emitter_val = ek.select(active, emitter.eval(si, active), 0.0)
+            emitter_val = si.emitter(scene, active).eval(si, active)
             accum = emitter_val * throughput * emission_weight
 
             active &= si.is_valid()
@@ -127,8 +128,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
             mis = ek.select(ds.delta, 1.0, mis_weight(ds.pdf, bsdf_pdf))
 
-            accum += ek.select(active_e, bsdf_val *
-                               throughput * mis * emitter_val, 0.0)
+            accum += ek.select(active_e, bsdf_val * throughput * mis * emitter_val, 0.0)
 
             # ---------------------- BSDF sampling ----------------------
 
@@ -137,15 +137,16 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                                               sampler.next_2d(active), active)
                 active &= bs.pdf > 0.0
                 ray = si.spawn_ray(si.to_world(bs.wo))
-                si_bsdf = scene.ray_intersect(ray, active)
+
+            pi_bsdf = scene.ray_intersect_preliminary(ray, active)
+            si_bsdf = pi_bsdf.compute_surface_interaction(ray, RayFlags.All, active)
 
             # Compute MIS weight for the BSDF sampling
             ds = DirectionSample3f(scene, si_bsdf, si)
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-            active_b = active & ek.neq(ds.emitter, None) & ~delta
-            emitter_pdf = scene.pdf_emitter_direction(si, ds, active_b)
-            emission_weight = ek.select(active_b, mis_weight(bs.pdf, emitter_pdf), 1.0)
+            emitter_pdf = scene.pdf_emitter_direction(si, ds, ~delta)
+            emission_weight = ek.select(delta, 1.0, mis_weight(bs.pdf, emitter_pdf))
 
             if not is_primal:
                 with ek.suspend_grad():
@@ -155,12 +156,12 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                                      emission_weight=emission_weight,
                                      active_=active)[0]
                     else:
-                        li = ds.emitter.eval(si_bsdf, active_b) * emission_weight
+                        li = ds.emitter.eval(si_bsdf, ~delta) * emission_weight
 
                 bsdf_eval = bsdf.eval(ctx, si, bs.wo, active)
                 accum += ek.select(active, bsdf_eval * throughput * li / bs.pdf, 0.0)
 
-            if mode is ek.ADMode.Reverse:
+            if mode is ek.ADMode.Backward:
                 ek.backward(accum * grad, ek.ADFlag.ClearVertices)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
@@ -171,7 +172,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ------------------- Recurse to the next bounce -------------------
 
-            si = si_bsdf
+            pi = pi_bsdf
             throughput *= bsdf_weight
 
             depth_i += UInt32(1)

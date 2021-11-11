@@ -151,7 +151,7 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
 
         ek.set_grad(d, grad_direction)
         ek.set_grad(div, grad_divergence)
-        ek.enqueue(ek.ADMode.Reverse, d, div)
+        ek.enqueue(ek.ADMode.Backward, d, div)
         ek.traverse(Float, ek.ADFlag.ClearVertices)
 
         res_grad += ek.unravel(Vector3f, ek.grad(params[key]))

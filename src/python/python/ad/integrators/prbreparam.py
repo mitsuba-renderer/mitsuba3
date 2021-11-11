@@ -130,7 +130,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         # Replay light paths by using the same seed and accumulate gradients
         # This uses the result from the first pass to compute gradients
-        self.Li(ek.ADMode.Reverse, scene, sampler, ray,
+        self.Li(ek.ADMode.Backward, scene, sampler, ray,
                 params=params, grad=grad, primal_result=Spectrum(Li))
         sampler.schedule_state()
         ek.eval()
@@ -154,7 +154,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         ek.set_grad(Li_attached, image_adj)
         ek.set_grad(reparam_div, ek.hsum(grad * Li))
-        ek.enqueue(ek.ADMode.Reverse, Li_attached, reparam_div)
+        ek.enqueue(ek.ADMode.Backward, Li_attached, reparam_div)
         ek.traverse(Float)
 
         Log(LogLevel.Info, 'rendering finished. (took %s)' %
@@ -210,8 +210,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            emitter = si.emitter(scene, active)
-            emitter_val = ek.select(active, emitter.eval(si, active), 0.0)
+            emitter_val = si.emitter(scene, active).eval(si, active)
             accum = emitter_val * throughput * emission_weight
 
             active &= si.is_valid()
@@ -260,9 +259,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
             ds = DirectionSample3f(scene, si_bsdf, si)
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-            active_b = active & ek.neq(ds.emitter, None) & ~delta
-            emitter_pdf = scene.pdf_emitter_direction(si, ds, active_b)
-            emission_weight = ek.select(active_b, mis_weight(bs.pdf, emitter_pdf), 1.0)
+            emitter_pdf = scene.pdf_emitter_direction(si, ds, ~delta)
+            emission_weight = ek.select(delta, 1.0, mis_weight(bs.pdf, emitter_pdf))
 
             # Backpropagate gradients related to the current bounce
             if not is_primal:
@@ -272,7 +270,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                 contrib = bsdf_eval * primal_result / ek.max(1e-8, ek.detach(bsdf_eval))
                 accum += ek.select(active, contrib + reparam_div * ek.detach(contrib), 0.0)
 
-            if mode is ek.ADMode.Reverse:
+            if mode is ek.ADMode.Backward:
                 ek.backward(accum * grad, ek.ADFlag.ClearVertices)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)

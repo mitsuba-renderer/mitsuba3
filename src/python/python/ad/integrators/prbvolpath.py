@@ -137,7 +137,7 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
             active &= (sampler.next_1d(active) < q) | ~perform_rr
             throughput[perform_rr] = throughput * ek.rcp(q)
 
-            active_medium = active & ek.neq(medium, None)
+            active_medium = active & ek.neq(medium, None) # TODO this is not necessary
             active_surface = active & ~active_medium
 
             # Handle medium sampling and potential medium escape

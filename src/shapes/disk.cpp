@@ -192,41 +192,43 @@ public:
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
+                                                     const PreliminaryIntersection3f &pi,
                                                      uint32_t hit_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
-
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
-            pi = ray_intersect_preliminary(ray, active);
+        Float t = pi.t;
+        Point2f prim_uv = pi.prim_uv;
+        if constexpr (ek::is_diff_array_v<Float>) {
+            PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, active);
+            prim_uv = ek::replace_grad(prim_uv, pi_d.prim_uv);
+            t = ek::replace_grad(t, pi_d.t);
+        }
 
-        active &= pi.is_valid();
+        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+        si.t = ek::select(active, t, ek::Infinity<Float>);
 
         // Re-project onto the disk to improve accuracy
-        Point3f p = ray(pi.t);
+        Point3f p = ray(t);
         Float dist = ek::dot(m_to_world.value().translation() - p, m_frame.n);
         si.p = p + dist * m_frame.n;
 
         if (likely(has_flag(hit_flags, RayFlags::UV) ||
                    has_flag(hit_flags, RayFlags::dPdUV))) {
-            Float r = ek::norm(Point2f(pi.prim_uv.x(), pi.prim_uv.y())),
+            Float r = ek::norm(Point2f(prim_uv.x(), prim_uv.y())),
                   inv_r = ek::rcp(r);
 
-            Float v = ek::atan2(pi.prim_uv.y(), pi.prim_uv.x()) * ek::InvTwoPi<Float>;
+            Float v = ek::atan2(prim_uv.y(), prim_uv.x()) * ek::InvTwoPi<Float>;
             ek::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
             if (likely(has_flag(hit_flags, RayFlags::dPdUV))) {
-                Float cos_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.x() * inv_r, 1.f),
-                      sin_phi = ek::select(ek::neq(r, 0.f), pi.prim_uv.y() * inv_r, 0.f);
+                Float cos_phi = ek::select(ek::neq(r, 0.f), prim_uv.x() * inv_r, 1.f),
+                      sin_phi = ek::select(ek::neq(r, 0.f), prim_uv.y() * inv_r, 0.f);
 
                 si.dp_du = m_to_world.value() * Vector3f( cos_phi, sin_phi, 0.f);
                 si.dp_dv = m_to_world.value() * Vector3f(-sin_phi, cos_phi, 0.f);
