@@ -11178,7 +11178,7 @@
 
         Force computed fields to not be be differentiable
 
-    .. py:data:: Sticky
+    .. py:data:: FollowShape
 
         Derivatives of the SurfaceInteraction members will follow the shape's
         motion

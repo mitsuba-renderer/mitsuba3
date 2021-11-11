@@ -378,19 +378,18 @@ public:
     }
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
+                                                     const PreliminaryIntersection3f &pi,
                                                      uint32_t hit_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
+        // Recompute ray intersection to get differentiable t
+        Float t = pi.t;
+        if constexpr (ek::is_diff_array_v<Float>)
+            t = ek::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
-        // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
-            pi = ray_intersect_preliminary(ray, active);
-
-        active &= pi.is_valid();
+        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
         // Fields requirement dependencies
         bool need_dn_duv = has_flag(hit_flags, RayFlags::dNSdUV) ||
@@ -398,11 +397,10 @@ public:
         bool need_dp_duv = has_flag(hit_flags, RayFlags::dPdUV) || need_dn_duv;
         bool need_uv     = has_flag(hit_flags, RayFlags::UV) || need_dp_duv;
 
-        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+        si.t = ek::select(active, t, ek::Infinity<Float>);
 
-        si.sh_frame.n = ek::normalize(ray(pi.t) - m_center.value());
+        si.sh_frame.n = ek::normalize(ray(t) - m_center.value());
 
         // Re-project onto the sphere to improve accuracy
         si.p = ek::fmadd(si.sh_frame.n, m_radius.value(), m_center.value());

@@ -374,25 +374,22 @@ public:
     MTS_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     PreliminaryIntersection3f pi,
+                                                     const PreliminaryIntersection3f &pi,
                                                      uint32_t hit_flags,
                                                      uint32_t /*recursion_depth*/,
                                                      Mask active) const override {
         MTS_MASK_ARGUMENT(active);
 
-        bool differentiable = ek::grad_enabled(ray) || parameters_grad_enabled();
-
         // Recompute ray intersection to get differentiable prim_uv and t
-        if (differentiable && !has_flag(hit_flags, RayFlags::NonDifferentiable))
-            pi = ray_intersect_preliminary(ray, active);
+        Float t = pi.t;
+        if constexpr (ek::is_diff_array_v<Float>)
+            t = ek::replace_grad(t, ray_intersect_preliminary(ray, active).t);
 
-        active &= pi.is_valid();
+        // TODO handle RayFlags::FollowShape and RayFlags::DetachShape
 
-        // TODO handle sticky derivatives
         SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
-
-        si.p = ray(pi.t);
+        si.t = ek::select(active, t, ek::Infinity<Float>);
+        si.p = ray(t);
 
         Vector3f local = m_to_object.value().transform_affine(si.p);
 

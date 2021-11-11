@@ -570,36 +570,45 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
-                                                   PreliminaryIntersection3f pi,
+                                                   const PreliminaryIntersection3f &pi,
                                                    uint32_t hit_flags,
                                                    uint32_t /*recursion_depth*/,
                                                    Mask active) const {
     MTS_MASK_ARGUMENT(active);
 
-    bool differentiable =
-        ek::grad_enabled(m_vertex_positions) || ek::grad_enabled(ray);
-
-    // Recompute ray intersection to get differentiable prim_uv and t
-    if (differentiable && !has_flag(hit_flags, HitComputeFlags::NonDifferentiable))
-        pi = ray_intersect_triangle(pi.prim_index, ray, active);
-
-    active &= pi.is_valid();
-
-    Float b1, b2;
-    if (!has_flag(hit_flags, HitComputeFlags::Sticky)) {
-        b1 = pi.prim_uv.x();
-        b2 = pi.prim_uv.y();
-    } else {
-        b1 = ek::detach(pi.prim_uv.x());
-        b2 = ek::detach(pi.prim_uv.y());
-    }
-    Float b0 = 1.f - b1 - b2;
-
     auto fi = face_indices(pi.prim_index, active);
+
+    if (has_flag(hit_flags, RayFlags::DetachShape) &&
+        has_flag(hit_flags, RayFlags::FollowShape))
+        Throw("Invalid combination of RayFlags: DetachShape | FollowShape");
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
             p2 = vertex_position(fi[2], active);
+
+    Float t = pi.t;
+    Point2f prim_uv = pi.prim_uv;
+    if constexpr (ek::is_diff_array_v<Float>) {
+        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+            p0 = ek::detach<true>(p0);
+            p1 = ek::detach<true>(p1);
+            p2 = ek::detach<true>(p2);
+        }
+
+        auto [t_d, prim_uv_d, hit] = moeller_trumbore(ray, p0, p1, p2, active);
+        prim_uv = ek::replace_grad(prim_uv, prim_uv_d);
+        t = ek::replace_grad(t, t_d);
+    }
+
+    Float b1, b2;
+    if (!has_flag(hit_flags, RayFlags::FollowShape)) {
+        b1 = prim_uv.x();
+        b2 = prim_uv.y();
+    } else {
+        b1 = ek::detach(prim_uv.x());
+        b2 = ek::detach(prim_uv.y());
+    }
+    Float b0 = 1.f - b1 - b2;
 
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
@@ -610,8 +619,8 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.p = p0 * b0 + p1 * b1 + p2 * b2;
 
     // Re-compute the distance traveled to the surface interaction hit point (might be sticky)
-    if (!has_flag(hit_flags, RayFlags::Sticky))
-        si.t = ek::select(active, pi.t, ek::Infinity<Float>);
+    if (!has_flag(hit_flags, RayFlags::FollowShape))
+        si.t = ek::select(active, t, ek::Infinity<Float>);
     else
         si.t = ek::select(active, ek::norm(si.p - ray.o) / ek::norm(ray.d),
                           ek::Infinity<Float>);
@@ -628,6 +637,12 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         Point2f uv0 = vertex_texcoord(fi[0], active),
                 uv1 = vertex_texcoord(fi[1], active),
                 uv2 = vertex_texcoord(fi[2], active);
+
+        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+            uv0 = ek::detach<true>(uv0);
+            uv1 = ek::detach<true>(uv1);
+            uv2 = ek::detach<true>(uv2);
+        }
 
         si.uv = ek::fmadd(uv2, b2, ek::fmadd(uv1, b1, uv0 * b0));
 
@@ -653,6 +668,11 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                  n1 = vertex_normal(fi[1], active),
                  n2 = vertex_normal(fi[2], active);
 
+        if (has_flag(hit_flags, RayFlags::DetachShape)) {
+            n0 = ek::detach<true>(n0);
+            n1 = ek::detach<true>(n1);
+            n2 = ek::detach<true>(n2);
+        }
 
         Normal3f n = ek::fmadd(n2, b2, ek::fmadd(n1, b1, n0 * b0));
         Float il = ek::rsqrt(ek::squared_norm(n));
@@ -667,7 +687,6 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                Since d/du [f(u)/|f(u)|] = [d/du f(u)]/|f(u)|
                    - f(u)/|f(u)|^3 <f(u), d/du f(u)>, this results in
             */
-
             si.dn_du = (n1 - n0) * il;
             si.dn_dv = (n2 - n0) * il;
 

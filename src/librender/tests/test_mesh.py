@@ -336,7 +336,7 @@ else:
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import xml, Ray3f, Vector3f
     from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
@@ -364,13 +364,14 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
     si = pi.compute_surface_interaction(ray)
     assert ek.grad_enabled(si.t)
     assert ek.grad_enabled(si.p)
+    assert not ek.grad_enabled(si.n) # Face normal doesn't depend on ray
 
-    # si should not be attached if flags says so
+    # si should be attached if ray is attached (even when we pass RayFlags.DetachShape)
     ek.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray, RayFlags.NonDifferentiable)
-    print(si.p.x.index_ad())
-    assert not ek.grad_enabled(si.p)
-    assert not ek.grad_enabled(si.n)
+    si = pi.compute_surface_interaction(ray, RayFlags.DetachShape)
+    assert ek.grad_enabled(si.p)
+    assert ek.grad_enabled(si.uv)
+    assert not ek.grad_enabled(si.n) # Face normal doesn't depend on ray
 
     # si should be attached if shape parameters are attached
     params = traverse(scene)
@@ -733,7 +734,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.p should follow
     apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.Sticky)
+    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     p = si.p + Float(0.001) # Ensure p is a AD leaf node
     ek.forward(diff_vector.x)
     assert ek.allclose(ek.grad(p), [1.0, 0.0, 0.0], atol=1e-5)
@@ -746,14 +747,14 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 
     # If the vertices are shifted along x-axis, sticky si.uv shouldn't move
     apply_transformation(lambda v : Transform4f.translate(v))
-    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.Sticky)
+    si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     ek.forward(diff_vector.x)
     assert ek.allclose(ek.grad(si.uv), [0.0, 0.0], atol=1e-5)
 
     # TODO fix this!
     # If the vertices are shifted along x-axis, sticky si.t should follow
     # apply_transformation(lambda v : Transform4f.translate(v))
-    # si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.Sticky)
+    # si = pi.compute_surface_interaction(ray, RayFlags.All | RayFlags.FollowShape)
     # ek.forward(diff_vector.y)
     # assert ek.allclose(ek.grad(si.t), 10.0, atol=1e-5)
 
@@ -830,7 +831,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
     ek.set_label(ray, 'ray')
 
     # Intersect rays against objects in the scene
-    si = scene.ray_intersect(ray, RayFlags.Sticky, True)
+    si = scene.ray_intersect(ray, RayFlags.FollowShape, True)
     ek.set_label(si, 'si')
 
     # print(ek.graphviz_str(Float(1)))

@@ -505,11 +505,11 @@ enum class RayFlags : uint32_t {
     //!              Differentiability compute flags
     // =============================================================
 
-    /// Force computed fields to not be be differentiable
-    NonDifferentiable     = 0x00040,
+    /// Derivatives of the SurfaceInteraction fields follow shape's motion
+    FollowShape      = 0x00040,
 
-    /// Derivatives of the SurfaceInteraction members will follow the shape's motion
-    Sticky                = 0x00080,
+    /// Derivatives of the SurfaceInteraction fields ignore shape's motion
+    DetachShape      = 0x00080,
 
     // =============================================================
     //!                      Miscellaneous
@@ -525,8 +525,8 @@ enum class RayFlags : uint32_t {
     /// Compute all fields of the surface interaction data structure (default)
     All = UV | dPdUV | ShadingFrame,
 
-    /// Compute all fields of the surface interaction data structure in a non differentiable way
-    AllNonDifferentiable = UV | dPdUV | ShadingFrame | NonDifferentiable,
+    /// Compute all fields of the surface interaction ignoring shape's motion
+    AllNonDifferentiable = All | DetachShape,
 };
 
 MTS_DECLARE_ENUM_OPERATORS(RayFlags)

@@ -74,7 +74,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
         # Replay light paths by using the same seed and accumulate gradients
         # This uses the result from the first pass to compute gradients
-        self.Li(ek.ADMode.Reverse, scene, sampler, ray,
+        self.Li(ek.ADMode.Backward, scene, sampler, ray,
                 params=params, grad=grad, primal_result=primal_result)
 
     def sample(self, scene, sampler, ray, medium, active):
@@ -92,13 +92,13 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
            primal_result: mitsuba.core.Spectrum=None):
 
         from mitsuba.core import Spectrum, Float, Mask, UInt32, Loop, Ray3f
-        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag
+        from mitsuba.render import DirectionSample3f, BSDFContext, BSDFFlags, has_flag, RayFlags
 
         is_primal = mode is None
 
         ray = Ray3f(ray)
-        si = scene.ray_intersect(ray, active_)
-        valid_ray = active_ & si.is_valid()
+        pi = scene.ray_intersect_preliminary(ray, active_)
+        valid_ray = active_ & pi.is_valid()
 
         result = Spectrum(0.0)
         if is_primal:
@@ -110,14 +110,15 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
         depth_i = UInt32(depth)
         loop = Loop("Path Replay Backpropagation main loop" + '' if is_primal else ' - adjoint')
-        loop.put(lambda: (depth_i, active, ray, emission_weight, throughput, si, result, primal_result))
+        loop.put(lambda: (depth_i, active, ray, emission_weight, throughput, pi, result, primal_result))
         sampler.loop_register(loop)
         loop.init()
         while loop(active):
+            si = pi.compute_surface_interaction(ray, RayFlags.All, active)
+
             # ---------------------- Direct emission ----------------------
 
-            emitter = si.emitter(scene, active)
-            emitter_val = ek.select(active, emitter.eval(si, active), 0.0)
+            emitter_val = si.emitter(scene, active).eval(si, active)
             accum = emitter_val * throughput * emission_weight
 
             active &= si.is_valid()
@@ -152,22 +153,23 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                                               sampler.next_2d(active), active)
                 active &= bs.pdf > 0.0
                 ray = si.spawn_ray(si.to_world(bs.wo))
-                si_bsdf = scene.ray_intersect(ray, active)
+
+            pi_bsdf = scene.ray_intersect_preliminary(ray, active)
+            si_bsdf = pi_bsdf.compute_surface_interaction(ray, RayFlags.All, active)
 
             # Compute MIS weight for the BSDF sampling
             ds = DirectionSample3f(scene, si_bsdf, si)
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-            active_b = active & ek.neq(ds.emitter, None) & ~delta
-            emitter_pdf = scene.pdf_emitter_direction(si, ds, active_b)
-            emission_weight = ek.select(active_b, mis_weight(bs.pdf, emitter_pdf), 1.0)
+            emitter_pdf = scene.pdf_emitter_direction(si, ds, ~delta)
+            emission_weight = ek.select(delta, 1.0, mis_weight(bs.pdf, emitter_pdf))
 
             # Backpropagate gradients related to the current bounce
             if not is_primal:
                 bsdf_eval = bsdf.eval(ctx, si, bs.wo, active)
                 accum += ek.select(active, bsdf_eval * primal_result / ek.max(1e-8, ek.detach(bsdf_eval)), 0.0)
 
-            if mode is ek.ADMode.Reverse:
+            if mode is ek.ADMode.Backward:
                 ek.backward(accum * grad, ek.ADFlag.ClearVertices)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
@@ -176,7 +178,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
             else:
                 result += accum
 
-            si = si_bsdf
+            pi = pi_bsdf
             throughput *= bsdf_weight
 
             depth_i += UInt32(1)

@@ -113,7 +113,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         grad = Spectrum(block.read(pos)) * weight / spp
 
         # Backpropagate trough Li term
-        self.Li(ek.ADMode.Reverse, scene, sampler, ray, params=params, grad=grad)
+        self.Li(ek.ADMode.Backward, scene, sampler, ray, params=params, grad=grad)
         sampler.schedule_state()
         ek.eval()
 
@@ -141,7 +141,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         ek.set_grad(Li_attached, image_adj)
         ek.set_grad(reparam_div, ek.hsum(grad * Li))
-        ek.enqueue(ek.ADMode.Reverse, Li_attached, reparam_div)
+        ek.enqueue(ek.ADMode.Backward, Li_attached, reparam_div)
         ek.traverse(Float)
 
     def sample(self, scene, sampler, ray, medium, active):
@@ -194,8 +194,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            emitter = si.emitter(scene, active)
-            emitter_val = ek.select(active, emitter.eval(si, active), 0.0)
+            emitter_val = si.emitter(scene, active).eval(si, active)
             accum = emitter_val * throughput * emission_weight
 
             active &= si.is_valid()
@@ -237,9 +236,8 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
             ds = DirectionSample3f(scene, si_bsdf, ek.detach(si))
             ds.emitter = si_bsdf.emitter(scene, active)
             delta = has_flag(bs.sampled_type, BSDFFlags.Delta)
-            active_b = active & ek.neq(ds.emitter, None) & ~delta
-            emitter_pdf = scene.pdf_emitter_direction(ek.detach(si), ds, active_b)
-            emission_weight = ek.select(active_b, mis_weight(bs.pdf, emitter_pdf), 1.0)
+            emitter_pdf = scene.pdf_emitter_direction(ek.detach(si), ds, ~delta)
+            emission_weight = ek.select(delta, 1.0, mis_weight(bs.pdf, emitter_pdf))
 
             if not is_primal:
                 with ek.suspend_grad():
@@ -249,7 +247,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                                      emission_weight=emission_weight,
                                      active_=active)[0]
                     else:
-                        li = ds.emitter.eval(si_bsdf, active_b) * emission_weight
+                        li = ds.emitter.eval(si_bsdf, ~delta) * emission_weight
 
                 reparam_d, reparam_div = reparam(ray, active)
                 bsdf_eval = bsdf.eval(ctx, si, si.to_local(reparam_d), active)
@@ -257,7 +255,7 @@ class RBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                 contrib = bsdf_eval * throughput * li / bs.pdf
                 accum += ek.select(active, contrib + reparam_div * ek.detach(contrib), 0.0)
 
-            if mode is ek.ADMode.Reverse:
+            if mode is ek.ADMode.Backward:
                 ek.backward(accum * grad, ek.ADFlag.ClearVertices)
             elif mode is ek.ADMode.Forward:
                 ek.enqueue(ek.ADMode.Forward, params)
