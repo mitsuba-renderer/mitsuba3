@@ -64,7 +64,12 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         if spp > 0:
             sampler.set_sample_count(spp)
         spp = sampler.sample_count()
-        sampler.seed(seed, ek.hprod(sensor.film().crop_size()) * spp)
+
+        film_size = sensor.film().crop_size()
+        if sensor.film().has_high_quality_edges():
+            film_size += 2 * rfilter.border_size()
+
+        sampler.seed(seed, ek.hprod(film_size) * spp)
 
         ray, weight, pos, _ = sample_sensor_rays(sensor)
 

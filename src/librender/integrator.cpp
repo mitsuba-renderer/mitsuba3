@@ -75,6 +75,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
     ref<Film> film = sensor->film();
     ScalarVector2i film_size = film->crop_size();
+    if (film->has_high_quality_edges())
+        film_size += 2 * film->reconstruction_filter()->border_size();
 
     size_t total_spp        = sensor->sampler()->sample_count();
     size_t samples_per_pass = (m_samples_per_pass == (size_t) -1)
@@ -115,7 +117,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             m_block_size = block_size;
         }
 
-        Spiral spiral(film, m_block_size, n_passes);
+        Spiral spiral(film_size, film->crop_offset(), m_block_size, n_passes);
 
         ThreadEnvironment env;
         ref<ProgressReporter> progress = new ProgressReporter("Rendering");
@@ -135,13 +137,20 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 ref<ImageBlock> block = new ImageBlock(
                     m_block_size, channels.size(),
                     film->reconstruction_filter(),
-                    /* warn_negative */ !has_aovs && !is_spectral_v<Spectrum>);
+                    !has_aovs && !is_spectral_v<Spectrum> /* warn_negative */,
+                    std::is_scalar_v<Float> /* warn_invalid */,
+                    true /* border */,
+                    false /* normalize */);
                 std::unique_ptr<Float[]> aovs(new Float[channels.size()]);
 
                 // For each block
                 for (auto i = range.begin(); i != range.end() && !should_stop(); ++i) {
                     auto [offset, size, block_id] = spiral.next_block();
                     Assert(ek::hprod(size) != 0);
+
+                    if (film->has_high_quality_edges())
+                        offset -= film->reconstruction_filter()->border_size();
+
                     block->set_size(size);
                     block->set_offset(offset);
 
@@ -175,7 +184,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         if (samples_per_pass != 1)
             idx /= (uint32_t) samples_per_pass;
 
-        ref<ImageBlock> block = new ImageBlock(film_size, channels.size(),
+        ref<ImageBlock> block = new ImageBlock(film->crop_size(),
+                                               channels.size(),
                                                film->reconstruction_filter(),
                                                false /* warn_negative */,
                                                false /* warn_invalid */,
@@ -186,6 +196,9 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         Vector2f pos = Vector2f(Float(idx % uint32_t(film_size[0])),
                                 Float(idx / uint32_t(film_size[0])));
         std::vector<Float> aovs(channels.size());
+
+        if (film->has_high_quality_edges())
+            pos -= film->reconstruction_filter()->border_size();
 
         Timer timer;
         for (size_t i = 0; i < n_passes; i++) {
@@ -321,16 +334,9 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     Float wavelength_sample = sampler->next_1d(active);
 
     const Film *film = sensor->film();
-    ScalarVector2i size   = film->crop_size();
-    ScalarVector2i offset = film->crop_offset();
 
-    if (film->has_high_quality_edges()) {
-        uint32_t border_size = film->reconstruction_filter()->border_size();
-        position_sample -= border_size;
-        position_sample *= Vector2f(size + 2 * border_size) / size;
-    }
-
-    Vector2f adjusted_position = (position_sample - offset) / size;
+    Vector2f adjusted_position =
+        (position_sample - film->crop_offset()) / film->crop_size();
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
         time, wavelength_sample, adjusted_position, aperture_sample);

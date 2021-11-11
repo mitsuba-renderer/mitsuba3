@@ -30,10 +30,6 @@ public:
     /// Create a new spiral generator for the given size, offset into a larger frame, and block size
     Spiral(Vector2i size, Vector2i offset, size_t block_size, size_t passes = 1);
 
-    template <typename Film>
-    Spiral(const Film &film, size_t block_size, size_t passes = 1)
-        : Spiral(film->crop_size(), film->crop_offset(), block_size, passes) {}
-
     /// Return the maximum block size
     size_t max_block_size() const { return m_block_size; }
 
