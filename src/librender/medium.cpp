@@ -43,7 +43,7 @@ Medium<Float, Spectrum>::sample_interaction(const Ray3f &ray, Float sample,
 
     auto [mi, mint, maxt, active] = prepare_interaction_sampling(ray, _active);
 
-    Float desired_tau = -ek::log(1 - sample);
+    const Float desired_tau = -ek::log(1 - sample);
     Float sampled_t;
     if (m_majorant_grid) {
         // --- Spatially-variying majorant (supergrid).

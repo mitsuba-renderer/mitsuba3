@@ -165,17 +165,19 @@ public:
                 active_medium &= mi.is_valid();
 
                 // Handle null and real scatter events
+                const Float majorant = index_spectrum(mi.combined_extinction, channel);
                 Mask null_scatter =
                     sampler->next_1d(active_medium) >=
-                    (index_spectrum(mi.sigma_t, channel) /
-                     index_spectrum(mi.combined_extinction, channel));
+                    ek::select(ek::neq(majorant, 0),
+                               index_spectrum(mi.sigma_t, channel) / majorant,
+                               0);
 
                 act_null_scatter |= null_scatter && active_medium;
                 act_medium_scatter |= !act_null_scatter && active_medium;
 
                 if (ek::any_or<true>(is_spectral && act_null_scatter))
                     ek::masked(throughput, is_spectral && act_null_scatter) *=
-                        mi.sigma_n * index_spectrum(mi.combined_extinction, channel) /
+                        mi.sigma_n * majorant /
                         index_spectrum(mi.sigma_n, channel);
 
                 ek::masked(depth, act_medium_scatter) += 1;
@@ -194,7 +196,9 @@ public:
             if (ek::any_or<true>(act_medium_scatter)) {
                 if (ek::any_or<true>(is_spectral))
                     ek::masked(throughput, is_spectral && act_medium_scatter) *=
-                        mi.sigma_s * index_spectrum(mi.combined_extinction, channel) / index_spectrum(mi.sigma_t, channel);
+                        mi.sigma_s *
+                        index_spectrum(mi.combined_extinction, channel) /
+                        index_spectrum(mi.sigma_t, channel);
                 if (ek::any_or<true>(not_spectral))
                     ek::masked(throughput, not_spectral && act_medium_scatter) *= mi.sigma_s / mi.sigma_t;
 
@@ -381,7 +385,9 @@ public:
                     if (ek::any_or<true>(is_spectral))
                         ek::masked(transmittance, is_spectral) *= mi.sigma_n;
                     if (ek::any_or<true>(not_spectral))
-                        ek::masked(transmittance, not_spectral) *= mi.sigma_n / mi.combined_extinction;
+                        ek::masked(transmittance, not_spectral) *=
+                            ek::select(ek::neq(mi.combined_extinction, 0),
+                                       mi.sigma_n / mi.combined_extinction, 0);
                 }
             }
 
