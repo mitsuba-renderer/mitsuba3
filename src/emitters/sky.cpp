@@ -18,6 +18,10 @@
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/qmc.h>
 #include <mitsuba/core/vector.h>
+#include <mitsuba/render/texture.h>
+#include <mitsuba/core/distr_1d.h>
+#include <string>
+#include <fstream>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -34,6 +38,10 @@ public:
     MTS_IMPORT_BASE(Emitter, m_flags, m_to_world)
     MTS_IMPORT_TYPES(Scene, Shape, Texture)
 
+    using DiscreteSpectrum = mitsuba::Spectrum<ScalarFloat, 11>;
+
+    using SkyPixelFormat = std::conditional_t<is_spectral_v<Spectrum>, DiscreteSpectrum, ScalarColor3f>;
+
     SkyEmitter(const Properties &props): Base(props) {
 
         m_scale = props.get<float>("scale", 1.0f);
@@ -46,15 +54,6 @@ public:
         m_albedo = props.get<ScalarColor3f>("albedo", ScalarColor3f(0.2f));
         m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
 
-        m_spectral = props.get<bool>("is_spectral", false);
-
-        //TODO: temp setting count for bucket.
-        if (m_spectral){
-            m_channels = 11;
-        }else{
-            m_channels = 3;
-        }
-        
         if (m_turbidity < 1 || m_turbidity > 10)
              Log(Error, "The turbidity parameter must be in the range[1,10]!");
         if (m_stretch < 1 || m_stretch > 2)
@@ -70,22 +69,18 @@ public:
             Log(Error, "The sun is below the horizon -- this is not supported by the sky model.");
         }
 
-        if (!m_spectral){
+        if constexpr (is_spectral_v<Spectrum>){
             for (size_t i = 0; i < m_channels; ++i){
-                // m_state[i] = arhosek_rgb_skymodelstate_alloc_init
-                // ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
-                m_state[i] = arhosek_rgb_skymodelstate_alloc_init
-                ((double)sun_elevation, (double)m_turbidity, (double)m_albedo[i]);
+                m_state[i] = arhosekskymodelstate_alloc_init
+                ((double)sun_elevation, (double)m_turbidity, (double)luminance<Float>(m_albedo));
             }
         }
         else {
             for (size_t i = 0; i < m_channels; ++i){
-                m_state[i] = arhosekskymodelstate_alloc_init
+                m_state[i] = arhosek_rgb_skymodelstate_alloc_init
                 ((double)m_turbidity, (double)m_albedo[i], (double)sun_elevation);
             }
-            
         }
-        std::cout << m_spectral << std::endl;
     }
 
     ~SkyEmitter(){
@@ -96,23 +91,49 @@ public:
 
 
     std::vector<ref<Object>> expand() const override {
-        ref<Bitmap> bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
+        ref<Bitmap> bitmap;
+        if constexpr (!is_spectral_v<Spectrum>){
+            bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2));
-
+        }else{
+            const std::vector<std::string> channel_names = {"320nm", "360nm", 
+            "400nm", "440nm", "480nm", "520nm", "560nm", "600nm", "640nm", 
+            "680nm", "720nm"};
+            bitmap = new Bitmap(Bitmap::PixelFormat::MultiChannel, Struct::Type::Float32, 
+            ScalarVector2i(m_resolution, m_resolution / 2), channel_names.size(), channel_names);
+        }
+        
         ScalarPoint2f factor((2 * enoki::Pi<Float>) / bitmap->width(), 
             enoki::Pi<Float> / bitmap->height());
 
-        for (size_t y = 0; y < bitmap->height(); ++y) {
-            ScalarFloat theta = (y + .5f) * factor.y();
-            Spectrum *target = (Spectrum *) bitmap->data() + y * bitmap->width();
+        if constexpr (!is_spectral_v<Spectrum>){
+            for (size_t y = 0; y < bitmap->height(); ++y) {
+                ScalarFloat theta = (y + .5f) * factor.y();
+                SkyPixelFormat *target = (SkyPixelFormat *) bitmap->data() + y * bitmap->width();
 
-            for (size_t x = 0; x < bitmap->width(); ++x) {
-                ScalarFloat phi = (x + .5f) * factor.x();
+                for (size_t x = 0; x < bitmap->width(); ++x) {
+                    ScalarFloat phi = (x + .5f) * factor.x();
+                    SkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi));
+                    *target++ = sky_rad;
 
-                *target++ = get_sky_radiance(SphericalCoordinates(theta, phi));
+                }
+            }
+        } else{
+            for (size_t y = 0; y < bitmap->height(); ++y) {
+                ScalarFloat theta = (y + .5f) * factor.y();
+                float *target = (float *) bitmap->data() + (y * bitmap->width()) * SkyPixelFormat::Size;
 
+                for (size_t x = 0; x < bitmap->width(); ++x) {
+                    ScalarFloat phi = (x + .5f) * factor.x();
+                    SkyPixelFormat sky_rad = get_sky_radiance(SphericalCoordinates(theta, phi)); 
+                    for (size_t i = 0; i < SkyPixelFormat::Size; ++i)
+                        *target++ = float(sky_rad[i]);
+                }
             }
         }
+
+        // FileStream *fs = new FileStream("sky.exr", FileStream::ETruncReadWrite);
+        // bitmap->write(fs, Bitmap::FileFormat::OpenEXR);
 
         bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
         Properties props("envmap");
@@ -120,19 +141,15 @@ public:
         props.set_pointer("bitmap", (uint8_t *) bitmap.get());
         ref<Object> texture = PluginManager::instance()->create_object<Base>(props).get();
 
-        FileStream *fs = new FileStream("sky.exr", FileStream::ETruncReadWrite);
-        bitmap->write(fs, Bitmap::FileFormat::OpenEXR);
-
         return {texture};
     }
 
-    Spectrum get_sky_radiance(const SphericalCoordinates coords) const {
-
+    SkyPixelFormat get_sky_radiance(const SphericalCoordinates coords) const {
         ScalarFloat theta = coords.elevation / m_stretch;
 
         if (cos(theta) <= 0) {
             if (!m_extend)
-                return Spectrum(0.0f);
+                return 0;
             else
                 theta = 0.5f * ek::Pi<Float> - 1e-4f;
         }
@@ -144,29 +161,24 @@ public:
         // Angle between the sun and the spherical coordinates in radians
         ScalarFloat gamma = ek::safe_acos(cos_gamma);
 
-        Spectrum result;
-        if (!m_spectral){
-            for (size_t i = 0; i < m_channels; i++) {
-                result[i] = (Float) (arhosek_tristim_skymodel_radiance(
-                    m_state[i], (double)theta, (double)gamma, i) / 106.856980); // (sum of Spectrum::CIE_Y)
-            }
-        }else{ 
-            for (size_t i = 0; i < m_channels; i++) {
-                int j = (int) i;
-                int wave_l = 320 + j * 40;
-                result[i] = (Float) (arhosekskymodel_radiance(
-                    m_state[i], (double)theta, (double)gamma, wave_l + 20.) / 106.856980); // (sum of Spectrum::CIE_Y)
-            }
+        SkyPixelFormat result;
 
+        for (size_t i = 0; i < SkyPixelFormat::Size; i++) {
+            if constexpr (!is_spectral_v<Spectrum>){
+                result[i] = (ScalarFloat) (arhosek_tristim_skymodel_radiance(
+                m_state[i], (double)theta, (double)gamma, i) / 106.856980); // (sum of Spectrum::CIE_Y)
+            }else{
+                int wave_l = 320 + i * 40;
+                result[i] = (ScalarFloat) (arhosekskymodel_radiance(
+                m_state[i], (double)theta, (double)gamma, wave_l) / 106.856980); // (sum of Spectrum::CIE_Y)
+            }
         }
 
         result = max(result, 0.f);
 
-        if (m_extend){
-            result *= smooth_step<Float>(0.f, 1.f, 2.f - 2.f * coords.elevation * ek::InvPi<Float>);
-        }
-        
-
+        if (m_extend)
+            result *= smooth_step<ScalarFloat>(0.f, 1.f, 2.f - 2.f * coords.elevation * ek::InvPi<Float>);
+    
         return result * m_scale;
     }
 
@@ -213,14 +225,12 @@ protected:
     ScalarFloat m_stretch;
     /// Extend to the bottom hemisphere (super-unrealistic mode)
     bool m_extend;
+    /// temp variable for sample count
+    static constexpr size_t m_channels = is_spectral_v<Spectrum> ? 11 : 3;
     /// Ground albedo
     ScalarColor3f m_albedo;
-    /// temp variable for sample count
-    unsigned int m_channels;
     /// State vector for the sky model
-    ArHosekSkyModelState *m_state[11];
-    /// Flag indicating whether a spectral sky is rendered
-    bool m_spectral;
+    ArHosekSkyModelState *m_state[m_channels];
     
 
 
