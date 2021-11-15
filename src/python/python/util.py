@@ -134,6 +134,7 @@ class SceneParameters(Mapping):
         for depth, node, keys in work_list:
             node.parameters_changed(keys)
         self.update_list.clear()
+        ek.eval()
 
     def keep(self, keys: list) -> None:
         """

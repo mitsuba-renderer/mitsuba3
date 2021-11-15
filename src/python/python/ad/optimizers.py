@@ -130,7 +130,6 @@ class Optimizer:
 
         ek.schedule(self.params)
         self.params.update()
-        ek.eval()
 
     def set_learning_rate(self, lr, key=None):
         """Set the learning rate.

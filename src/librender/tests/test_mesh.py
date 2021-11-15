@@ -864,7 +864,6 @@ def test19_update_geometry(variants_vec_rgb):
         positions_new = transform @ init_vertex_pos
         params['rect.vertex_positions'] = ek.ravel(positions_new)
         params.update()
-        ek.eval()
 
     film_size = ScalarVector2i([4, 4])
     total_sample_count = ek.hprod(film_size)
