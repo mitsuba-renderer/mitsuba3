@@ -250,4 +250,4 @@ def sample_sensor_rays(sensor):
 
 def mis_weight(a, b):
     """Compute Multiple Importance Sampling weight"""
-    return ek.detach(ek.select(a > 0.0, (a**2) / (a**2 + b**2), 0.0))
+    return ek.detach(ek.select(a > 0.0, (a**2) / (a**2 + b**2), 0.0), True)
