@@ -2,6 +2,8 @@ import enoki as ek
 import mitsuba
 from .integrator import mis_weight, sample_sensor_rays
 
+from typing import Union
+
 
 def index_spectrum(spec, idx):
     m = spec[0]
@@ -41,12 +43,12 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
     def render(self: mitsuba.render.SamplingIntegrator,
                scene: mitsuba.render.Scene,
                seed: int,
-               sensor_index: int = 0,
+               sensor: Union[int, mitsuba.render.Sensor] = 0,
                develop_film: bool = True,
                spp: int = 0) -> None:
         if not self.is_prepared:
             self.prepare(scene)
-        return super().render(scene=scene, seed=seed, sensor_index=sensor_index, develop_film=develop_film, spp=spp)
+        return super().render(scene, seed, sensor, develop_film, spp)
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                        scene: mitsuba.render.Scene,
