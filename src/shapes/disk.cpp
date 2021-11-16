@@ -245,6 +245,12 @@ public:
         return si;
     }
 
+    Float boundary_test(const Ray3f &/*ray*/,
+                        const SurfaceInteraction3f &si,
+                        Mask /*active*/) const override {
+        return ek::abs(1.f - si.uv.x());
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
