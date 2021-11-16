@@ -4,7 +4,6 @@ from .integrator import mis_weight, sample_sensor_rays
 
 from typing import Union
 
-
 def index_spectrum(spec, idx):
     m = spec[0]
     if mitsuba.core.is_rgb:
@@ -55,12 +54,13 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
                        params: mitsuba.python.util.SceneParameters,
                        image_adj: mitsuba.core.TensorXf,
                        seed: int,
-                       sensor_index: int = 0,
+                       sensor: Union[int, mitsuba.render.Sensor] = 0,
                        spp: int = 0) -> None:
         if not self.is_prepared:
             self.prepare(scene)
 
-        sensor = scene.sensors()[sensor_index]
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
         rfilter = sensor.film().reconstruction_filter()
         sampler = sensor.sampler()
         if spp > 0:

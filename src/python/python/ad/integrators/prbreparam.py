@@ -3,6 +3,7 @@ import enoki as ek
 import mitsuba
 from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
 
+from typing import Union
 
 class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
     """
@@ -22,7 +23,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
                        seed: int,
-                       sensor_index: int=0,
+                       sensor: Union[int, mitsuba.render.Sensor] = 0,
                        spp: int=0) -> None:
         from mitsuba.core import Float, Spectrum, Log, LogLevel, util
         from mitsuba.render import ImageBlock, Interaction3f
@@ -31,7 +32,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         Log(LogLevel.Info, 'start rendering ..')
         starting_time = time.time()
 
-        sensor = scene.sensors()[sensor_index]
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()
@@ -56,8 +58,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.eval(grad_img)
 
         # Reparameterize primary rays
-        reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, True,
-                                                    params, self.num_aux_rays,
+        reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, params,
+                                                    True, self.num_aux_rays,
                                                     self.kappa, self.power)
         it = ek.zero(Interaction3f)
         it.p = ray.o + reparam_d
@@ -97,7 +99,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
                         seed: int,
-                        sensor_index: int = 0,
+                        sensor: Union[int, mitsuba.render.Sensor] = 0,
                         spp: int = 0) -> None:
         from mitsuba.core import Float, Spectrum, Log, LogLevel
         from mitsuba.render import ImageBlock, Interaction3f
@@ -106,7 +108,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         Log(LogLevel.Info, 'start rendering ..')
         starting_time = time.time()
 
-        sensor = scene.sensors()[sensor_index]
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()
@@ -138,8 +141,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         ek.eval()
 
         # Reparameterize primary rays
-        reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, True,
-                                                    params, self.num_aux_rays,
+        reparam_d, reparam_div = reparameterize_ray(scene, sampler, ray, params,
+                                                    True, self.num_aux_rays,
                                                     self.kappa, self.power)
         it = ek.zero(Interaction3f)
         it.p = ray.o + reparam_d
@@ -183,7 +186,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
         is_primal = mode is None
 
         def reparam(ray, active):
-            return reparameterize_ray(scene, sampler, ray, active, params,
+            return reparameterize_ray(scene, sampler, ray, params, active,
                                       num_auxiliary_rays=self.num_aux_rays,
                                       kappa=self.kappa, power=self.power)
 

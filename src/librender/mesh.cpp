@@ -553,19 +553,13 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
     Normal3f n[3] = { vertex_normal(fi[0], active),
                       vertex_normal(fi[1], active),
                       vertex_normal(fi[2], active) };
-
     Normal3f normal = n[0] * w + n[1] * u + n[2] * v;
+
+    // Dot product between surface normal and the ray direction is 0 at silhouette points
     Float dp = ek::dot(normal, -ray.d);
 
-    // v1: dot product alone
-    // return dp;
-
-    // v2: squared dot product
+    // Add non-linearity by squaring the returned value
     return ek::sqr(dp);
-
-    // v3: original heuristic given in Bangaru et al. 2020
-    // Float beta = 0.01f;
-    // return (1.f - (1.f - ek::sqr(dp))) / (1.f - (1.f - beta)*(1.f - ek::sqr(dp)));
 }
 
 MTS_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f

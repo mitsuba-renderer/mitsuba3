@@ -1,15 +1,18 @@
-# TODO WIP implementation of discontinuities reparameterization helper routines
-
 import enoki as ek
 import mitsuba
 
+from typing import Tuple
 
-def sample_warp_field(scene: mitsuba.render.Scene,
-                      sampler: mitsuba.render.Sampler,
-                      ray: mitsuba.core.RayDifferential3f,
-                      kappa: float,
-                      power: float,
-                      active: mitsuba.core.Mask):
+def _sample_warp_field(scene: mitsuba.render.Scene,
+                       sampler: mitsuba.render.Sampler,
+                       ray: mitsuba.core.RayDifferential3f,
+                       kappa: float,
+                       power: float,
+                       active: mitsuba.core.Mask):
+    """
+    Sample the warp field of moving geometries by tracing an auxiliary ray and
+    computing the appropriate convolution weight using the shape's boundary-test.
+    """
     from mitsuba.core import Frame3f, Ray3f
     from mitsuba.core.warp import square_to_von_mises_fisher, square_to_von_mises_fisher_pdf
     from mitsuba.render import RayFlags
@@ -27,12 +30,12 @@ def sample_warp_field(scene: mitsuba.render.Scene,
     # hit = active & ek.detach(si.is_valid()) & (ek.dot(omega, shading_normal) > 1e-3)
     hit = active & ek.detach(si.is_valid())
 
-    # Convolve directions attached to the "sticky" position derivative: the
-    # actual computation is a bit weird here as it needs to involve both the
-    # sticky intersection, and potentially an (attached) ray origin in order
-    # to support camera translations.
+    # Compute warp field direction such that it follows the intersected shape
+    # and moves along with the ray origin.
     V_direct = ek.normalize(si.p - aux_ray.o)
-    V_direct = ek.select(hit, V_direct, ek.detach(aux_ray.d)) # Background doesn't move w.r.t. theta
+
+    # Background doesn't move w.r.t. scene parameters
+    V_direct = ek.select(hit, V_direct, ek.detach(aux_ray.d))
 
     # Compute harmonic weight while being careful of division by almost zero
     B = ek.detach(ek.select(hit, si.boundary_test(aux_ray), 1.0))
@@ -56,17 +59,43 @@ def sample_warp_field(scene: mitsuba.render.Scene,
 
 def reparameterize_ray(scene: mitsuba.render.Scene,
                        sampler: mitsuba.render.Sampler,
-                       ray_: mitsuba.core.RayDifferential3f,
-                       active_: mitsuba.core.Mask,
+                       ray: mitsuba.core.RayDifferential3f,
                        params: mitsuba.python.util.SceneParameters={},
+                       active: mitsuba.core.Mask=True,
                        num_auxiliary_rays: int=4,
                        kappa: float=1e5,
-                       power: float=3.0):
+                       power: float=3.0) -> Tuple[mitsuba.core.Vector3f, mitsuba.core.Float]:
     """
     Reparameterize given ray by "attaching" the derivatives of its direction to
     moving geometry in the scene.
 
-    TODO
+    Parameter ``scene`` (``mitsuba.render.Scene``):
+        Scene containing all shapes.
+
+    Parameter ``sampler`` (``mitsuba.render.Sampler``):
+        Sampler object used to sample auxiliary rays direction.
+
+    Parameter ``ray`` (``mitsuba.core.RayDifferential3f``):
+        Ray to be reparameterized
+
+    Parameter ``params`` (``mitsuba.python.util.SceneParameters``):
+        Scene parameters
+
+    Parameter ``active`` (``mitsuba.core.Mask``):
+        Mask specifying the active lanes
+
+    Parameter ``num_auxiliary_rays`` (``int``):
+        Number of auxiliary rays to trace when performing the convolution.
+
+    Parameter ``kappa`` (``float``):
+        Kappa parameter of the von Mises Fisher distribution used to sample the
+        auxiliary rays.
+
+    Parameter ``power`` (``float``):
+        Power value used to control the harmonic weights.
+
+    Returns → (mitsuba.core.Vector3f, mitsuba.core.Float):
+        Reparameterized ray direction and divergence value of the warp field.
     """
 
     num_auxiliary_rays = ek.opaque(mitsuba.core.UInt32, num_auxiliary_rays)
@@ -78,49 +107,51 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
         Custom Enoki operator to reparameterize rays in order to account for
         gradient discontinuities due to moving geometry in the scene.
         """
-        def eval(self, scene, params, ray, active):
+        def eval(self, scene, params, ray_, active_):
             from mitsuba.core import Float
             self.scene = scene
             self.params = params
+            self.ray = ray_
+            self.active = active_
             self.add_input(self.params)
-            self.ray = ray
-            self.active = active
             return self.ray.d, ek.zero(Float, ek.width(self.ray.d))
 
         def forward(self):
             from mitsuba.core import Float, UInt32, Vector3f, Loop
 
             # Initialize some accumulators
-            Z  = Float(0.0)
+            Z = Float(0.0)
             dZ = Vector3f(0.0)
             grad_V = Vector3f(0.0)
-            grad_divergence_lhs = Float(0.0)
+            grad_div_lhs = Float(0.0)
 
             it = UInt32(0)
             loop = Loop("Auxiliary rays")
-            loop.put(lambda:(it, Z, dZ, grad_V, grad_divergence_lhs))
+            loop.put(lambda:(it, Z, dZ, grad_V, grad_div_lhs))
             sampler.loop_register(loop)
             loop.init()
 
             while loop(it < num_auxiliary_rays):
-                Z_i, dZ_i, V_i, divergence_lhs_i = sample_warp_field(self.scene, sampler, self.ray, kappa, power, self.active)
+                Z_i, dZ_i, V_i, div_lhs_i = _sample_warp_field(self.scene, sampler, self.ray,
+                                                               kappa, power, self.active)
 
                 ek.enqueue(ek.ADMode.Forward, self.params)
                 ek.traverse(Float, ek.ADFlag.ClearEdges | ek.ADFlag.ClearInterior)
+                # TODO we don't always want the interior nodes to be cleared (e.g. ray.o)
 
-                Z  += Z_i
+                Z += Z_i
                 dZ += dZ_i
                 grad_V += ek.grad(V_i)
-                grad_divergence_lhs += ek.grad(divergence_lhs_i)
+                grad_div_lhs += ek.grad(div_lhs_i)
 
                 it = it + 1
 
             Z = ek.max(Z, 1e-8)
             V_theta  = grad_V / Z
-            div_V_theta = (grad_divergence_lhs - ek.dot(V_theta, dZ)) / Z
+            div_V_theta = (grad_div_lhs - ek.dot(V_theta, dZ)) / Z
 
             # Ignore inactive lanes
-            V_theta     = ek.select(self.active, V_theta, 0.0)
+            V_theta = ek.select(self.active, V_theta, 0.0)
             div_V_theta = ek.select(self.active, div_V_theta, 0.0)
 
             self.set_grad_out((V_theta, div_V_theta))
@@ -137,8 +168,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             with ek.suspend_grad():
                 # We need to trace the auxiliary rays a first time to compute the
                 # constants Z and dZ in order to properly weight the incoming gradients
-                Z       = Float(0.0)
-                dZ      = Vector3f(0.0)
+                Z = Float(0.0)
+                dZ = Vector3f(0.0)
                 sampler_clone = sampler.clone()
 
                 it = UInt32(0)
@@ -147,13 +178,14 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 sampler_clone.loop_register(loop)
                 loop.init()
                 while loop(it < num_auxiliary_rays):
-                    Z_i, dZ_i, _, _ = sample_warp_field(self.scene, sampler_clone, self.ray, kappa, power, self.active)
-                    Z  += Z_i
+                    Z_i, dZ_i, _, _ = _sample_warp_field(self.scene, sampler_clone, self.ray,
+                                                         kappa, power, self.active)
+                    Z += Z_i
                     dZ += dZ_i
                     it = it + 1
 
             # Un-normalized values
-            V       = ek.zero(Vector3f, ek.width(Z))
+            V = ek.zero(Vector3f, ek.width(Z))
             div_V_1 = ek.zero(Float, ek.width(Z))
             ek.enable_grad(V, div_V_1)
 
@@ -168,7 +200,7 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             ek.enqueue(ek.ADMode.Backward, direction, divergence)
             ek.traverse(Float)
 
-            grad_V       = ek.grad(V)
+            grad_V = ek.grad(V)
             grad_div_V_1 = ek.grad(div_V_1)
 
             it = UInt32(0)
@@ -177,7 +209,8 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
             sampler.loop_register(loop)
             loop.init()
             while loop(it < num_auxiliary_rays):
-                _, _, V_i, div_V_1_i = sample_warp_field(self.scene, sampler, self.ray, kappa, power, self.active)
+                _, _, V_i, div_V_1_i = _sample_warp_field(self.scene, sampler, self.ray,
+                                                          kappa, power, self.active)
                 # print(ek.graphviz_str(Float(1)))
                 ek.set_grad(V_i, grad_V)
                 ek.set_grad(div_V_1_i, grad_div_V_1)
@@ -186,6 +219,6 @@ def reparameterize_ray(scene: mitsuba.render.Scene,
                 it = it + 1
 
         def name(self):
-            return "ReparameterizeRay"
+            return "ray reparameterizer"
 
-    return ek.custom(Reparameterizer, scene, params, ray_, active_)
+    return ek.custom(Reparameterizer, scene, params, ray, active)

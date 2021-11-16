@@ -152,7 +152,22 @@ public:
      */
     virtual Mask ray_test(const Ray3f &ray, Mask active = true) const;
 
-    /// TODO add documentation
+    /**
+     * \brief Boundary-test function used in reparameterized integrators.
+     *
+     * This method basically implements a soft indicator function which returns
+     * a zero value at the silhouette of the shape from the perspective of a
+     * given ray. Everywhere else this function will return non-negative values
+     * reflecting the distance of the surface interaction to this closest point
+     * on the silhouette.
+     *
+     * \param ray
+     *     The ray defining the perspecive from which the silhouette should be
+     *     percieved.
+     * \param si
+     *     The surface interaction data structure generated when tracing the ray
+     *     against this shape.
+     */
     virtual Float boundary_test(const Ray3f &ray,
                                 const SurfaceInteraction3f &si,
                                 Mask active = true) const;

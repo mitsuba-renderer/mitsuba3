@@ -70,7 +70,7 @@ def test01_reparameterization_forward(variants_all_ad_rgb, shape, ray_o, ray_d):
     ek.set_label(theta, 'theta')
     ek.set_label(params, 'params')
 
-    d, div = reparameterize_ray(scene, sampler, ray, True, params,
+    d, div = reparameterize_ray(scene, sampler, ray, params, True,
                                 num_aux_rays, kappa, power)
 
     assert d == ray.d
@@ -141,8 +141,8 @@ def test02_reparameterization_backward_direction_gradient(variants_all_ad_rgb, r
         params.update()
         ek.eval()
 
-        d, div = reparameterize_ray(scene, sampler, ray, True,
-                                    params, num_auxiliary_rays, kappa, power)
+        d, div = reparameterize_ray(scene, sampler, ray, params, True,
+                                    num_auxiliary_rays, kappa, power)
 
         ek.set_label(d, 'd')
         ek.set_label(div, 'div')
@@ -225,7 +225,7 @@ if __name__ == '__main__':
     power = 3.0
     kappa = 1e5
 
-    d, div = reparameterize_ray(scene, sampler, rays, True, params,
+    d, div = reparameterize_ray(scene, sampler, rays, params, True,
                                 num_aux_rays, kappa, power)
     ek.set_label(d, 'd')
     ek.set_label(div, 'div')
