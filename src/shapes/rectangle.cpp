@@ -248,7 +248,7 @@ public:
     Float boundary_test(const Ray3f &/*ray*/,
                         const SurfaceInteraction3f &si,
                         Mask /*active*/) const override {
-        return ek::hmin(0.5f - ek::abs((si.uv - 0.5f)));
+        return ek::hmin(0.5f - ek::abs(si.uv - 0.5f));
     }
 
     void traverse(TraversalCallback *callback) override {

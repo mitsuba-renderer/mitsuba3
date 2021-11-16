@@ -428,6 +428,19 @@ public:
     //! @}
     // =============================================================
 
+    Float boundary_test(const Ray3f &ray,
+                        const SurfaceInteraction3f &si,
+                        Mask /*active*/) const override {
+        // Distance to cylinder edges
+        Float dist_edge = ek::dot(si.sh_frame.n, -ray.d);
+
+        // Distance to cap edges
+        Float dist_caps = 0.5f - ek::abs(si.uv.y() - 0.5f);
+
+        // Take the minimum of both distances to ensure 0.0 at silhouette.
+        return ek::min(dist_caps, dist_edge);
+    }
+
     void traverse(TraversalCallback *callback) override {
         callback->put_parameter("to_world", *m_to_world.ptr());
         Base::traverse(callback);
