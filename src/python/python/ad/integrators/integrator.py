@@ -2,6 +2,8 @@ import enoki as ek
 import mitsuba
 import mitsuba.python.util
 
+from typing import Union
+
 # -------------------------------------------------------------------
 #        Default implementation for Integrator adjoint methods
 # -------------------------------------------------------------------
@@ -10,13 +12,13 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
                         params: mitsuba.python.util.SceneParameters,
                         seed: int,
-                        sensor_index: int=0,
-                        spp: int=0) -> None:
+                        sensor: Union[int, mitsuba.render.Sensor] = 0,
+                        spp: int=0) -> mitsuba.core.TensorXf:
     """
-    Performs the adjoint phase of differentiable rendering by backpropagating
+    Performs the adjoint phase of differentiable rendering by propagating
     image gradients from the scene parameters to the film.
 
-    This method assumes params already contains some gradient.
+    This method assumes scene parameters already contains some gradient.
 
     The default implementation provided by this function relies on automatic
     differentiation, which tends to be relatively inefficient due to the need
@@ -24,7 +26,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     implementations are provided by special adjoint integrators like ``rb`` and
     ``prb``.
 
-    Parameter ``scene``:
+    Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to render
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
@@ -33,7 +35,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     Parameter ``seed` (``int``)
         Seed value for the sampler.
 
-    Parameter ``sensor_index`` (``int``):
+    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
         Optional parameter to specify which sensor to use for rendering.
 
     Parameter ``spp`` (``int``):
@@ -43,7 +45,7 @@ def render_forward_impl(self: mitsuba.render.SamplingIntegrator,
     ek.enable_grad(params)
     prev_flag = ek.flag(ek.JitFlag.LoopRecord)
     ek.set_flag(ek.JitFlag.LoopRecord, False)
-    image = self.render(scene, seed, sensor_index, spp=spp)
+    image = self.render(scene, seed, sensor, spp=spp)
     ek.enqueue(ek.ADMode.Forward, params)
     ek.traverse(mitsuba.core.Float)
     ek.set_flag(ek.JitFlag.LoopRecord, prev_flag)
@@ -55,7 +57,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
                          params: mitsuba.python.util.SceneParameters,
                          image_adj: mitsuba.core.TensorXf,
                          seed: int,
-                         sensor_index: int=0,
+                         sensor: Union[int, mitsuba.render.Sensor] = 0,
                          spp: int=0) -> None:
     """
     Performs the adjoint phase of differentiable rendering by backpropagating
@@ -67,7 +69,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     implementations are provided by special adjoint integrators like ``rb`` and
     ``prb``.
 
-    Parameter ``scene``:
+    Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to render
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
@@ -79,7 +81,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     Parameter ``seed` (``int``)
         Seed value for the sampler.
 
-    Parameter ``sensor_index`` (``int``):
+    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
         Optional parameter to specify which sensor to use for rendering.
 
     Parameter ``spp`` (``int``):
@@ -89,7 +91,7 @@ def render_backward_impl(self: mitsuba.render.SamplingIntegrator,
     ek.enable_grad(params)
     prev_flag = ek.flag(ek.JitFlag.LoopRecord)
     ek.set_flag(ek.JitFlag.LoopRecord, False)
-    image = self.render(scene, seed, sensor_index, spp=spp)
+    image = self.render(scene, seed, sensor, spp=spp)
     ek.set_grad(image, image_adj)
     ek.enqueue(ek.ADMode.Backward, image)
     ek.traverse(mitsuba.core.Float)
@@ -110,20 +112,20 @@ def render(scene: mitsuba.render.Scene,
            integrator: mitsuba.render.Integrator,
            params: mitsuba.python.util.SceneParameters,
            seed: int,
-           sensor_index: int=0,
+           sensor: Union[int, mitsuba.render.Sensor] = 0,
            spp: int=None,
            seed_adjoint:int=None,
-           spp_adjoint: int=None):
+           spp_adjoint: int=None) -> mitsuba.core.TensorXf:
     """
     This function encapsulates the full primal and adjoint rendering pipeline
     within an Enoki custom operation. This enables seemless differentiation
     using ek.backward/ek.forward, where the appropriate adjoint implementation
-    of the light transport algorithm will be executed under the hood.
+    of the light transport algorithm will be executed internally.
 
-    Parameter ``scene``:
+    Parameter ``scene`` (``mitsuba.render.Scene``):
         The scene to render
 
-    Parameter ``integrator``:
+    Parameter ``integrator`` (``mitsuba.render.Integrator``):
         The integrator object implementing the light transport algorithm
 
     Parameter ``params`` (``mitsuba.python.utils.SceneParameters``):
@@ -132,7 +134,7 @@ def render(scene: mitsuba.render.Scene,
     Parameter ``seed` (``int``)
         Seed value for the sampler.
 
-    Parameter ``sensor_index`` (``int``):
+    Parameter ``sensor`` (``int``, ``mitsuba.render.Sensor``):
         Optional parameter to specify which sensor to use for rendering.
 
     Parameter ``spp`` (``int``):
@@ -167,19 +169,18 @@ def render(scene: mitsuba.render.Scene,
             self.params = params
             self.add_input(self.params)
             with ek.suspend_grad():
-                image = self.integrator.render(
-                    self.scene, seed, sensor_index, spp=spp)
+                image = self.integrator.render(self.scene, seed, sensor, spp=spp)
             return image
 
         def forward(self):
             grad_out = self.integrator.render_forward(
-                self.scene, self.params, seed=seed_adjoint, spp=spp_adjoint)
+                self.scene, self.params, seed_adjoint, sensor, spp_adjoint)
             self.set_grad_out(grad_out)
 
         def backward(self):
             grad_out = self.grad_out()
             self.integrator.render_backward(
-                self.scene, self.params, grad_out, seed=seed_adjoint, spp=spp_adjoint)
+                self.scene, self.params, grad_out, seed, sensor, spp_adjoint)
 
         def name(self):
             return "rendering custom operation"
@@ -191,6 +192,9 @@ def render(scene: mitsuba.render.Scene,
 # -------------------------------------------------------------
 
 def prepare_sampler(sensor, seed, spp):
+    """
+    Calculate the wavefront size and seed the sampler accordingly
+    """
     film = sensor.film()
     rfilter = film.reconstruction_filter()
     sampler = sensor.sampler()
@@ -205,7 +209,9 @@ def prepare_sampler(sensor, seed, spp):
     return spp
 
 def sample_sensor_rays(sensor):
-    """Sample a 2D grid of primary rays for a given sensor"""
+    """
+    Sample a 2D grid of primary rays for a given sensor
+    """
     from mitsuba.core import Float, UInt32, Vector2f
 
     film = sensor.film()

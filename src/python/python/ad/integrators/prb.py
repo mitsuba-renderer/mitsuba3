@@ -2,6 +2,7 @@ import enoki as ek
 import mitsuba
 from .integrator import prepare_sampler, sample_sensor_rays, mis_weight
 
+from typing import Union
 
 class PRBIntegrator(mitsuba.render.SamplingIntegrator):
     """
@@ -16,11 +17,12 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                        scene: mitsuba.render.Scene,
                        params: mitsuba.python.util.SceneParameters,
                        seed: int,
-                       sensor_index: int=0,
+                       sensor: Union[int, mitsuba.render.Sensor] = 0,
                        spp: int=0) -> None:
         from mitsuba.render import ImageBlock
 
-        sensor = scene.sensors()[sensor_index]
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()
@@ -52,12 +54,13 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                         params: mitsuba.python.util.SceneParameters,
                         image_adj: mitsuba.core.TensorXf,
                         seed: int,
-                        sensor_index: int = 0,
+                        sensor: Union[int, mitsuba.render.Sensor] = 0,
                         spp: int = 0) -> None:
         from mitsuba.core import Spectrum
         from mitsuba.render import ImageBlock
 
-        sensor = scene.sensors()[sensor_index]
+        if isinstance(sensor, int):
+            sensor = scene.sensors()[sensor]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()

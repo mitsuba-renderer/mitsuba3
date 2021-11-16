@@ -321,7 +321,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Vector2f &pos,
                                                    ScalarFloat diff_scale_factor,
                                                    Mask active) const {
-    Vector2f position_sample = pos + sampler->next_2d(active);
+    Vector2f sample_pos = pos + sampler->next_2d(active);
 
     Point2f aperture_sample(.5f);
     if (sensor->needs_aperture_sample())
@@ -334,11 +334,10 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     Float wavelength_sample = sampler->next_1d(active);
 
     const Film *film = sensor->film();
-    Vector2f adjusted_position =
-        (position_sample - film->crop_offset()) / film->crop_size();
+    Vector2f adjusted_pos = (sample_pos - film->crop_offset()) / film->crop_size();
 
     auto [ray, ray_weight] = sensor->sample_ray_differential(
-        time, wavelength_sample, adjusted_position, aperture_sample);
+        time, wavelength_sample, adjusted_pos, aperture_sample);
 
     if (ray.has_differentials)
         ray.scale_differential(diff_scale_factor);
@@ -364,7 +363,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     aovs[3] = ek::select(result.second, Float(1.f), Float(0.f));
     aovs[4] = 1.f;
 
-    block->put(position_sample, aovs, active);
+    block->put(sample_pos, aovs, active);
 }
 
 MTS_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
