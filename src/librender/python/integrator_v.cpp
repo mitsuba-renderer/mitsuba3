@@ -52,15 +52,15 @@ public:
                                      Sampler *sampler,
                                      const RayDifferential3f &ray,
                                      const Medium *medium,
-                                     Float *aovs,
+                                     Float *aovs,  // this is also implicitlt returned
                                      Mask active) const override {
         py::gil_scoped_acquire gil;
-        py::function overload = py::get_overload(this, "sample");
+        py::function overload = py::get_overload(this, "sample");  // gives a python function
 
         if (overload) {
-            using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;
+            using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;  // return type
             auto [spec, mask, aovs_]
-                = overload(scene, sampler, ray, medium, active).template cast<PyReturn>();
+                = overload(scene, sampler, ray, medium, active).template cast<PyReturn>();  // call it if exist
 
             std::copy(aovs_.begin(), aovs_.end(), aovs);
             return { spec, mask };
@@ -70,7 +70,7 @@ public:
     }
 
     std::vector<std::string> aov_names() const override {
-        PYBIND11_OVERRIDE(std::vector<std::string>, SamplingIntegrator, aov_names, );
+        PYBIND11_OVERRIDE(std::vector<std::string>, SamplingIntegrator, aov_names, );  // auto get overload and call it
     }
 
     std::string to_string() const override {
@@ -78,11 +78,54 @@ public:
     }
 };
 
+/// Tramoline class for ScatteringIntegrator
+MTS_VARIANT class PyScatteringIntegrator : public ScatteringIntegrator<Float, Spectrum> {
+public:
+    MTS_IMPORT_TYPES(ScatteringIntegrator, Scene, Sensor, Sampler, ImageBlock, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+
+    PyScatteringIntegrator(const Properties &props) : ScatteringIntegrator(props) {}
+
+    TensorXf render(Scene *scene,
+                    uint32_t seed,
+                    Sensor *sensor,
+                    bool develop_film) override {
+        py::gil_scoped_acquire gil;
+        py::function overload = py::get_overload(this, "render");
+
+        if (overload) {
+            return overload(scene, seed, sensor, develop_film).template cast<TensorXf>();
+        } else {
+            return ScatteringIntegrator::render(scene, seed, sensor, develop_film);
+        }
+    }
+
+    void sample(const Scene *scene,
+                const Sensor *sensor,
+                Sampler *sampler,
+                ImageBlock *block,
+                Mask active) const override {
+        py::gil_scoped_acquire gil;
+        py::function overload = py::get_overload(this, "sample");  // gives a python function
+
+        if (overload) {
+            overload(scene, sensor, sampler, block, active);  // call it if exist
+        } else {
+            Throw("ScatteringIntegrator doesn't overload the method \"sample\"");
+        }
+    }
+
+    std::string to_string() const override {
+        PYBIND11_OVERRIDE(std::string, ScatteringIntegrator, to_string, );
+    }
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MTS_PY_EXPORT(Integrator) {
     MTS_PY_IMPORT_TYPES()
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
 
-    MTS_PY_CLASS(Integrator, Object)
+    MTS_PY_CLASS(Integrator, Object)  // this creates python interface
         .def(
             "render",
             [&](Integrator *integrator,
@@ -141,28 +184,46 @@ MTS_PY_EXPORT(Integrator) {
         .def_method(Integrator, should_stop)
         .def_method(Integrator, aov_names);
 
+        //////////////////////////////////// above: base class integrator
+
     auto sampling_integrator =
-        py::class_<SamplingIntegrator, PySamplingIntegrator, Integrator,
+        py::class_<SamplingIntegrator, PySamplingIntegrator, Integrator/*base class*/,
                     ref<SamplingIntegrator>>(m, "SamplingIntegrator", D(SamplingIntegrator))
             .def(py::init<const Properties&>());
 
-    sampling_integrator.def(
+    sampling_integrator.def(  // python interface
+        // functions the base class doesnt have
         "sample",
         [](const SamplingIntegrator *integrator, const Scene *scene, Sampler *sampler,
            const RayDifferential3f &ray, const Medium *medium, Mask active) {
             py::gil_scoped_release release;
-            std::vector<Float> aovs(integrator->aov_names().size(), 0.f);
+            std::vector<Float> aovs(integrator->aov_names().size(), 0.f);  // aov special case
             auto [spec, mask] = integrator->sample(scene, sampler, ray, medium, aovs.data(), active);
             return std::make_tuple(spec, mask, aovs);
         },
         "scene"_a, "sampler"_a, "ray"_a, "medium"_a = nullptr, "active"_a = true,
         D(SamplingIntegrator, sample));
 
-    MTS_PY_REGISTER_OBJECT("register_integrator", Integrator)
+    MTS_PY_REGISTER_OBJECT("register_integrator", Integrator)  // work same way
 
     MTS_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
 
-    MTS_PY_CLASS(ScatteringIntegrator, Integrator)
+    using PyScatteringIntegrator = PyScatteringIntegrator<Float, Spectrum>;
+    auto scattering_integrator =
+        py::class_<ScatteringIntegrator, PyScatteringIntegrator, Integrator/*base class*/,
+                    ref<ScatteringIntegrator>>(m, "ScatteringIntegrator", D(ScatteringIntegrator))
+            .def(py::init<const Properties&>());
+    scattering_integrator
+        // .def(
+        //     "sample",
+        //     [](const ScatteringIntegrator *integrator, const Scene *scene, const Sensor *sensor,
+        //        Sampler *sampler, ImageBlock *block, Mask active) {
+        //         py::gil_scoped_release release;
+        //         integrator->sample(scene, sensor, sampler, block, active);
+        //     },
+        //     "scene"_a, "sensor"_a, "sampler"_a, "block"_a, "active"_a = true,
+        //     D(ScatteringIntegrator, sample)
+        // )
         .def_method(ScatteringIntegrator, sample, "scene"_a, "sensor"_a,
-                    "sampler"_a, "block"_a, "active"_a = true);
+                    "sampler"_a, "block"_a, "active"_a = true);  // can be re-written with .def()
 }
