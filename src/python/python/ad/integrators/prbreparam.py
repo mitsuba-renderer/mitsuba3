@@ -66,6 +66,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=True)
+        block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
@@ -120,6 +121,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         # Read image gradient values per sample through the pixel filter
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
+        block.set_offset(film.crop_offset())
         grad = Spectrum(block.read(pos)) * weight / spp
 
         # Sample forward paths (not differentiable)
@@ -146,6 +148,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=True)
+        block.set_offset(film.crop_offset())
         block.clear()
         block.put(ds.uv, ray.wavelengths, Li * w_reparam)
         film.prepare(['R', 'G', 'B', 'A', 'W'])

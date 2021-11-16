@@ -19,6 +19,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
                        sensor_index: int=0,
                        spp: int=0) -> None:
         from mitsuba.render import ImageBlock
+
         sensor = scene.sensors()[sensor_index]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
@@ -34,6 +35,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=False)
+        block.set_offset(film.crop_offset())
         block.clear()
         block.put(pos, ray.wavelengths, grad_img, 1.0)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
@@ -42,7 +44,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
 
     def render_backward(self: mitsuba.render.SamplingIntegrator,
                         scene: mitsuba.render.Scene,
-                        params: mitsuba.python.util.SceneParameters,
+                        params: mitsuba.python.util.SceneParameters,\
                         image_adj: mitsuba.core.TensorXf,
                         seed: int,
                         sensor_index: int=0,
@@ -53,8 +55,10 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         """
         from mitsuba.core import Spectrum
         from mitsuba.render import ImageBlock
+
         sensor = scene.sensors()[sensor_index]
-        rfilter = sensor.film().reconstruction_filter()
+        film = sensor.film()
+        rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()
 
         # Seed the sampler and compute the number of sample per pixels
@@ -63,6 +67,7 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         ray, weight, pos, _, _ = sample_sensor_rays(sensor)
 
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
+        block.set_offset(film.crop_offset())
         grad = Spectrum(block.read(pos)) * weight / spp
 
         self.Li(ek.ADMode.Backward, scene, sampler, ray, params=params, grad=grad)

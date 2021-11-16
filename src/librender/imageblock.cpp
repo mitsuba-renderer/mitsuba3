@@ -209,13 +209,15 @@ ImageBlock<Float, Spectrum>::put(const Point2f &pos_, const Float *value, Mask a
 
 MTS_VARIANT void
 ImageBlock<Float, Spectrum>::read(const Point2f &pos_, Float *output, Mask active) {
+    // Convert to pixel coordinates within the image block
+    Point2f pos = pos_ - m_offset;
+
     if (m_border_size == 0)
-        active &= ek::all(pos_ >= 0.0) && ek::all(pos_ < m_size);
+        active &= ek::all(pos >= 0.0) && ek::all(pos < m_size);
+
+    pos += m_border_size - 0.5f;
 
     ScalarVector2i size = m_size + 2 * m_border_size;
-
-    // Convert to pixel coordinates within the image block
-    Point2f pos = pos_ - (m_offset - m_border_size + 0.5f);
 
     if (m_filter != nullptr && m_filter->radius() > 0.5f + math::RayEpsilon<Float>) {
         ScalarFloat filter_radius = m_filter->radius();

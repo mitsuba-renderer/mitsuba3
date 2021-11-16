@@ -18,8 +18,8 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                        seed: int,
                        sensor_index: int=0,
                        spp: int=0) -> None:
-        from mitsuba.core import Spectrum
         from mitsuba.render import ImageBlock
+
         sensor = scene.sensors()[sensor_index]
         film = sensor.film()
         rfilter = film.reconstruction_filter()
@@ -40,6 +40,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
 
         block = ImageBlock(film.crop_size(), channel_count=5,
                            filter=rfilter, border=False)
+        block.set_offset(film.crop_offset())
         block.clear()
         block.put(pos, ray.wavelengths, grad_img)
         film.prepare(['R', 'G', 'B', 'A', 'W'])
@@ -57,7 +58,8 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
         from mitsuba.render import ImageBlock
 
         sensor = scene.sensors()[sensor_index]
-        rfilter = sensor.film().reconstruction_filter()
+        film = sensor.film()
+        rfilter = film.reconstruction_filter()
         sampler = sensor.sampler()
 
         # Seed the sampler and compute the number of sample per pixels
@@ -70,6 +72,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
             primal_result = self.Li(None, scene, sampler.clone(), ray)[0]
 
         block = ImageBlock(ek.detach(image_adj), rfilter, normalize=True)
+        block.set_offset(film.crop_offset())
         grad = Spectrum(block.read(pos)) * weight / spp
 
         # Replay light paths by using the same seed and accumulate gradients
