@@ -1,39 +1,37 @@
 """
-This file describes a set of test scene to validate the correctness of our
-various integrators and the adjoint implementation.
+Overview
+--------
+
+This file defines a set of unit tests to assess the correctness of the
+different adjoint integrators such as `rb`, `prb`, etc... All integrators will
+be tested for their implementation of primal rendering, adjoint forward
+rendering and adjoint backward rendering.
+
+- For primal rendering, the output image will be compared to a groundtruth image
+  precomputed in the `resources/data/tests/integrators` directory.
+- Adjoint forward rendering will be compared against finite differences.
+- Adjoint backward rendering will be compared against finite differences.
+
+Those tests will be run on a set of configurations (scene description + metadata)
+also provided in this file. More tests can easily be added by creating a new
+configuration type and at it to the *_CONFIGS_LIST below.
+
+By executing this script with python directly it is possible to regenerate the
+reference data (e.g. for a new configurations). Please see the following command:
+
+``python3 test_ad_integrators.py --help``
+
 """
-import pytest
 
 import mitsuba
 import enoki as ek
 
-import os
+import pytest, sys, inspect, os, argparse
 from os.path import join, realpath, exists
-import argparse
 
 from mitsuba.python.test.util import fresolver_append_path
 
-def create_sensor(res):
-    from mitsuba.core import ScalarTransform4f as T
-    return {
-        'type': 'perspective',
-        'to_world': T.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
-        'film': {
-            'type': 'hdrfilm',
-            'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
-            # 'rfilter': { 'type': 'tent' },
-            'width': res,
-            'height': res,
-            'high_quality_edges': True,
-        }
-    }
-
 output_dir = realpath(join(os.path.dirname(__file__), '../../../resources/data/tests/integrators'))
-
-def load_image(filename):
-    import numpy as np
-    from mitsuba.core import TensorXf, Bitmap
-    return TensorXf(np.array(Bitmap(filename)))
 
 # -------------------------------------------------------------------
 #                          Test configs
@@ -42,8 +40,12 @@ def load_image(filename):
 mitsuba.set_variant('scalar_rgb')
 from mitsuba.core import ScalarTransform4f as T
 
-class Config:
-    """Base class to configure test scene and define the parameter to update"""
+class ConfigBase:
+    """
+    Base class to configure test scene and define the parameter to update
+    """
+    require_reparameterization = False
+
     def __init__(self) -> None:
         self.spp = 1024
         self.res = 32
@@ -52,10 +54,33 @@ class Config:
         self.error_max_threshold = 0.2
         self.ref_fd_epsilon = 1e-2
 
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
+                'width': self.res,
+                'height': self.res,
+                'high_quality_edges': True,
+            }
+        }
+
+        # Set the config name based on the type
+        import re
+        self.name = re.sub(r'(?<!^)(?=[A-Z])', '_', self.__class__.__name__[:-6]).lower()
+
     def initialize(self):
+        """
+        Initialize the configuration, loading the Mitsuba scene and storing a
+        copy of the scene parameters to compute gradients for.
+        """
         from mitsuba.core import xml
         from mitsuba.python.util import traverse
-        self.scene_dict['camera'] = create_sensor(res=self.res)
+
+        self.sensor_dict['film']['width'] = self.res
+        self.sensor_dict['film']['height'] = self.res
+        self.scene_dict['camera'] = self.sensor_dict
 
         @fresolver_append_path
         def create_scene():
@@ -68,17 +93,18 @@ class Config:
             self.initial_state = type(self.params[self.key])(self.params[self.key])
 
     def update(self, theta):
-        """This method update the scene parameter associated to this config"""
+        """
+        This method update the scene parameter associated to this config
+        """
         self.params[self.key] = self.initial_state + theta
         ek.set_label(self.params, 'params')
         self.params.update()
         ek.eval()
 
 # BSDF albedo of a directly visible gray plane illuminated by a constant emitter
-class DiffuseAlbedoConfig(Config):
+class DiffuseAlbedoConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'diffuse_albedo'
         self.key = 'plane.bsdf.reflectance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -94,10 +120,9 @@ class DiffuseAlbedoConfig(Config):
         }
 
 # BSDF albedo of a off camera plane blending onto a directly visible gray plane
-class DiffuseAlbedoGIConfig(Config):
+class DiffuseAlbedoGIConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'diffuse_albedo_global_illumination'
         self.key = 'green.bsdf.reflectance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -121,10 +146,9 @@ class DiffuseAlbedoGIConfig(Config):
         }
 
 # Off camera area light illuminating a gray plane
-class AreaLightRadianceConfig(Config):
+class AreaLightRadianceConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'area_light_radiance'
         self.key = 'light.emitter.radiance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -147,10 +171,9 @@ class AreaLightRadianceConfig(Config):
         }
 
 # Directly visible area light illuminating a gray plane
-class DirectlyVisibleAreaLightRadianceConfig(Config):
+class DirectlyVisibleAreaLightRadianceConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'directly_visible_area_light_radiance'
         self.key = 'light.emitter.radiance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -164,10 +187,9 @@ class DirectlyVisibleAreaLightRadianceConfig(Config):
         }
 
 # Off camera point light illuminating a gray plane
-class PointLightIntensityConfig(Config):
+class PointLightIntensityConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'point_light_intensity'
         self.key = 'light.intensity.value'
         self.scene_dict = {
             'type': 'scene',
@@ -187,10 +209,9 @@ class PointLightIntensityConfig(Config):
         }
 
 # Instensity of a constant emitter illuminating a gray rectangle
-class ConstantEmitterRadianceConfig(Config):
+class ConstantEmitterRadianceConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'constant_emitter_radiance'
         self.key = 'light.radiance.value'
         self.scene_dict = {
             'type': 'scene',
@@ -205,9 +226,44 @@ class ConstantEmitterRadianceConfig(Config):
             'light': { 'type': 'constant' }
         }
 
+# Test crop offset and crop window on the film
+class CropWindowConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'plane.bsdf.reflectance.value'
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {
+                'type': 'rectangle',
+                'bsdf': { 'type': 'diffuse' }
+            },
+            'light': { 'type': 'constant' }
+        }
+        self.res = 64
+        self.sensor_dict = {
+            'type': 'perspective',
+            'to_world': T.look_at(origin=[0, 0, 4], target=[0, 0, 0], up=[0, 1, 0]),
+            'film': {
+                'type': 'hdrfilm',
+                'rfilter': { 'type': 'gaussian', 'stddev': 0.5 },
+                'width': self.res,
+                'height': self.res,
+                'high_quality_edges': True,
+                "crop_width" : 32,
+                "crop_height" : 32,
+                "crop_offset_x" : 32,
+                "crop_offset_y" : 20,
+            }
+        }
+
+# -------------------------------------------------------------------
+#            Test configs for reparameterized integrators
+# -------------------------------------------------------------------
 
 # Translate shape base configuration
-class TranslateShapeConfig(Config):
+class TranslateShapeConfigBase(ConfigBase):
+    require_reparameterization = True
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -224,7 +280,9 @@ class TranslateShapeConfig(Config):
 
 
 # Scale shape base configuration
-class ScaleShapeConfig(Config):
+class ScaleShapeConfigBase(ConfigBase):
+    require_reparameterization = True
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -241,10 +299,9 @@ class ScaleShapeConfig(Config):
 
 
 # Translate area emitter (rectangle) on black background
-class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfig):
+class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'translate_rect_emitter_on_black'
         self.key = 'light.vertex_positions'
         self.scene_dict = {
             'type': 'scene',
@@ -265,10 +322,9 @@ class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfig):
 
 
 # Translate area emitter (sphere) on black background
-class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfig):
+class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'translate_sphere_emitter_on_black'
         self.key = 'light.vertex_positions'
         self.scene_dict = {
             'type': 'scene',
@@ -287,10 +343,9 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfig):
         self.spp = 12000
 
 # Scale area emitter (sphere) on black background
-class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfig):
+class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'scale_sphere_emitter_on_black'
         self.key = 'light.vertex_positions'
         self.scene_dict = {
             'type': 'scene',
@@ -307,10 +362,9 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfig):
         self.error_max_threshold = 5.5
 
 # Translate occluder (sphere) casting shadow on gray wall
-class TranslateOccluderAreaLightConfig(TranslateShapeConfig):
+class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'translate_occluder_arealight'
         self.key = 'occluder.vertex_positions'
         self.scene_dict = {
             'type': 'scene',
@@ -336,10 +390,9 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfig):
 
 
 # Translate textured plane
-class TranslateTexturedPlaneConfig(TranslateShapeConfig):
+class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.name = 'translate_textured_plane'
         self.key = 'plane.vertex_positions'
         self.scene_dict = {
             'type': 'scene',
@@ -366,11 +419,10 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfig):
 
 
 # Translate occluder casting shadow on itself
-class TranslateSelfShadowAreaLightConfig(Config):
+class TranslateSelfShadowAreaLightConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
         self.res = 64
-        self.name = 'translate_self_shadow_arealight'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -420,12 +472,11 @@ class TranslateSelfShadowAreaLightConfig(Config):
         ek.eval()
 
 
-
 # -------------------------------------------------------------------
-#                           Unit tests
+#                           List configs
 # -------------------------------------------------------------------
 
-BASIC_CONFIGS = [
+BASIC_CONFIGS_LIST = [
     DiffuseAlbedoConfig,
     DiffuseAlbedoGIConfig,
     AreaLightRadianceConfig,
@@ -433,9 +484,10 @@ BASIC_CONFIGS = [
     PointLightIntensityConfig,
     ConstantEmitterRadianceConfig,
     TranslateTexturedPlaneConfig,
+    CropWindowConfig,
 ]
 
-REPARAM_CONFIGS = [
+REPARAM_CONFIGS_LIST = [
     # TranslateRectangleEmitterOnBlackConfig,
     # TranslateSphereEmitterOnBlackConfig,
     # ScaleSphereEmitterOnBlackConfig,
@@ -445,7 +497,7 @@ REPARAM_CONFIGS = [
 
 # List of integrators to test (also indicates whether it handles discontinuities)
 INTEGRATORS = [
-    # ('path', False),
+    ('path', False),
     ('rb', False),
     ('prb', False),
     # ('rbreparam', True),
@@ -454,15 +506,18 @@ INTEGRATORS = [
 
 CONFIGS = []
 for integrator_name, reparam in INTEGRATORS:
-    todos = BASIC_CONFIGS + (REPARAM_CONFIGS if reparam else [])
+    todos = BASIC_CONFIGS_LIST + (REPARAM_CONFIGS_LIST if reparam else [])
     for config in todos:
         CONFIGS.append((integrator_name, config))
 
+# -------------------------------------------------------------------
+#                           Unit tests
+# -------------------------------------------------------------------
 
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import xml
+    from mitsuba.core import xml, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
     config = config()
@@ -474,8 +529,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = load_image(filename)
-
+    image_primal_ref = TensorXf(Bitmap(filename))
     image = integrator.render(config.scene, seed=0, spp=config.spp)
 
     error = ek.abs(image - image_primal_ref) / ek.max(ek.abs(image_primal_ref), 2e-2)
@@ -494,7 +548,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import xml, Float
+    from mitsuba.core import xml, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
 
     # ek.set_flag(ek.JitFlag.PrintIR, True)
@@ -510,7 +564,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     })
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = load_image(filename)
+    image_fwd_ref = TensorXf(Bitmap(filename))
 
     theta = Float(0.0)
     ek.enable_grad(theta)
@@ -546,7 +600,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
 @pytest.mark.slow
 @pytest.mark.parametrize('integrator_name, config', CONFIGS)
 def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
-    from mitsuba.core import xml, Float, TensorXf
+    from mitsuba.core import xml, Float, TensorXf, Bitmap
 
     # ek.set_flag(ek.JitFlag.LoopRecord, False)
     # ek.set_flag(ek.JitFlag.VCallRecord, False)
@@ -560,7 +614,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     })
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = load_image(filename)
+    image_fwd_ref = TensorXf(Bitmap(filename))
 
     image_adj = TensorXf(1.0, image_fwd_ref.shape)
 
@@ -590,7 +644,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
 
 @pytest.mark.slow
 def test04_render_custom_op(variants_all_ad_rgb):
-    from mitsuba.core import xml, Float
+    from mitsuba.core import xml, Float, TensorXf, Bitmap
     from mitsuba.python.util import write_bitmap
     from mitsuba.python.ad import render
 
@@ -600,10 +654,10 @@ def test04_render_custom_op(variants_all_ad_rgb):
     integrator = xml.load_dict({ 'type': 'rb' })
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
-    image_primal_ref = load_image(filename)
+    image_primal_ref = TensorXf(Bitmap(filename))
 
     filename = join(output_dir, f"test_{config.name}_image_fwd_ref.exr")
-    image_fwd_ref = load_image(filename)
+    image_fwd_ref = TensorXf(Bitmap(filename))
 
     theta = Float(0.0)
     ek.enable_grad(theta)
@@ -674,8 +728,8 @@ if __name__ == "__main__":
     Generate reference primal/forward images for all configs.
     """
     parser = argparse.ArgumentParser(prog='GenerateConfigReferenceImages')
-    parser.add_argument('--spp', default=32, type=int,
-                        help='Samples per pixel. Default value: 32')
+    parser.add_argument('--spp', default=12000, type=int,
+                        help='Samples per pixel. Default value: 12000')
     args = parser.parse_args()
 
     mitsuba.set_variant('cuda_ad_rgb')
@@ -686,7 +740,7 @@ if __name__ == "__main__":
     from mitsuba.core import xml, Float
     from mitsuba.python.util import write_bitmap
 
-    for config in BASIC_CONFIGS + REPARAM_CONFIGS:
+    for config in BASIC_CONFIGS_LIST + REPARAM_CONFIGS_LIST:
         config = config()
         print(f"name: {config.name}")
 
