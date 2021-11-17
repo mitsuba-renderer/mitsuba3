@@ -24,7 +24,7 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
                        params: mitsuba.python.util.SceneParameters,
                        seed: int,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       spp: int=0) -> None:
+                       spp: int=0) -> mitsuba.core.TensorXf:
         from mitsuba.core import Float, Spectrum, Log, LogLevel, util
         from mitsuba.render import ImageBlock, Interaction3f
         from mitsuba.python.ad import reparameterize_ray
