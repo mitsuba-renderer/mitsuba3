@@ -132,10 +132,12 @@ public:
             }
         }
 
+        if constexpr (!is_spectral_v<Spectrum>){
+            bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
+        }
         // FileStream *fs = new FileStream("sky.exr", FileStream::ETruncReadWrite);
         // bitmap->write(fs, Bitmap::FileFormat::OpenEXR);
-
-        bitmap =  bitmap->convert(Bitmap::PixelFormat::RGB, struct_type_v<Float>, false);
+        
         Properties props("envmap");
 
         props.set_pointer("bitmap", (uint8_t *) bitmap.get());
