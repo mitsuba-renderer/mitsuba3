@@ -91,7 +91,7 @@ both direct and indirect illumination.
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MTS_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
     MTS_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
@@ -125,9 +125,11 @@ public:
         Mask valid_ray = active && si.is_valid();
 
         // Account for directly visible emitter
-        EmitterPtr emitter = si.emitter(scene);
-        if (ek::any_or<true>(ek::neq(emitter, nullptr)))
-            result = emitter->eval(si, active);
+        if (!m_hide_emitters) {
+            EmitterPtr emitter = si.emitter(scene);
+            if (ek::any_or<true>(ek::neq(emitter, nullptr)))
+                result = emitter->eval(si, active);
+        }
 
         active &= si.is_valid();
         if (m_max_depth >= 0)
