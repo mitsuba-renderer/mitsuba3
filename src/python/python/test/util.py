@@ -30,7 +30,7 @@ def fresolver_append_path(func):
     # being called.
     # Source: https://stackoverflow.com/a/24439444/3792942
     caller = getframeinfo(stack()[1][0])
-    caller_path = par(caller.filename)
+    caller_path = par(os.path.realpath(caller.filename))
 
     # Heuristic to find the project's root directory
     def is_root(path):
