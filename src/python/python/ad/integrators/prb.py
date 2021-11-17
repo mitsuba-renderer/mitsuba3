@@ -18,7 +18,7 @@ class PRBIntegrator(mitsuba.render.SamplingIntegrator):
                        params: mitsuba.python.util.SceneParameters,
                        seed: int,
                        sensor: Union[int, mitsuba.render.Sensor] = 0,
-                       spp: int=0) -> None:
+                       spp: int=0) -> mitsuba.core.TensorXf:
         from mitsuba.render import ImageBlock
 
         if isinstance(sensor, int):
