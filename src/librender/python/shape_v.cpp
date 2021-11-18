@@ -15,7 +15,7 @@ MTS_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
 public:
     MTS_IMPORT_TYPES(Mesh)
     PyMesh(const Properties &props) : Mesh(props) { }
-    PyMesh(const std::string &name, size_t vertex_count, size_t face_count,
+    PyMesh(const std::string &name, uint32_t vertex_count, uint32_t face_count,
            const Properties &props = Properties(),
            bool has_vertex_normals = false, bool has_vertex_texcoords = false)
         : Mesh(name, vertex_count, face_count, props, has_vertex_normals,

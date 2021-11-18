@@ -241,11 +241,11 @@ public:
                     break;
 
                 case Type::PrimIndex:
-                    *aovs++ = si.prim_index;
+                    *aovs++ = Float(si.prim_index);
                     break;
 
                 case Type::ShapeIndex:
-                    *aovs++ = ek::reinterpret_array<UInt32>(si.shape);
+                    *aovs++ = Float(ek::reinterpret_array<UInt32>(si.shape));
                     break;
 
                 case Type::IntegratorRGBA: {
