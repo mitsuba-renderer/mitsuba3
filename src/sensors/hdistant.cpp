@@ -173,17 +173,17 @@ public:
         // Get target
         if (props.has_property("target")) {
             if (props.type("target") == Properties::Type::Array3f) {
-                m_target_type = RayTargetType::Point;
-                m_target_point = props.point3f("target");
+                m_target_type  = RayTargetType::Point;
+                m_target_point = props.get<ScalarPoint3f>("target");
             } else if (props.type("target") == Properties::Type::Object) {
                 // We assume it's a shape
-                m_target_type = RayTargetType::Shape;
+                m_target_type  = RayTargetType::Shape;
                 auto obj       = props.object("target");
                 m_target_shape = dynamic_cast<Shape *>(obj.get());
 
                 if (!m_target_shape)
-                    Throw(
-                        "Invalid parameter target, must be a Point3f or a Shape.");
+                    Throw("Invalid parameter target, must be a Point3f or a "
+                          "Shape.");
             } else {
                 Throw("Unsupported 'target' parameter type");
             }
