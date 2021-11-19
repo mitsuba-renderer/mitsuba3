@@ -30,8 +30,7 @@ Distant radiancemeter sensor (:monosp:`distant`)
    - Sensor-to-world transformation matrix.
  * - direction
    - |vector|
-   - Alternative (and exclusive) to ``to_world``. Direction orienting the
-     sensor's reference hemisphere.
+   - Alternative (and exclusive) to ``to_world``. Direction orienting the sensor.
  * - target
    - |point| or nested :paramtype:`shape` plugin
    - *Optional.* Define the ray target sampling strategy.
