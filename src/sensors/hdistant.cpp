@@ -204,7 +204,7 @@ public:
                                           const Point2f &film_sample,
                                           const Point2f &aperture_sample,
                                           Mask active) const override {
-        MTS_MASK_ARGUMENT(active);
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         Ray3f ray;
         ray.time = time;
@@ -245,60 +245,61 @@ public:
         return { ray, ray_weight & active };
     }
 
-    // Ray sampling with spectral sampling removed
-    std::pair<Vector3f, Point3f>
-    sample_ray_dir_origin(Float time, const Point2f &film_sample,
-                          const Point2f &aperture_sample, Mask active) const {
-        MTS_MASK_ARGUMENT(active);
-
-        // Sample ray direction
-        Vector3f direction = -m_to_world.value().transform_affine(
-            warp::square_to_uniform_hemisphere(film_sample));
-
-        // Sample target point and position ray origin
-        Point3f origin;
-
-        if (m_target_type == RayTargetType::Point) {
-            origin = m_target_point - 2.f * direction * m_bsphere.radius;
-        } else if (m_target_type == RayTargetType::Shape) {
-            // Use area-based sampling of shape
-            PositionSample3f ps =
-                m_target_shape->sample_position(time, aperture_sample, active);
-            origin = ps.p - 2.f * direction * m_bsphere.radius;
-        } else { // if (m_target_type == RayTargetType::None) {
-            // Sample target uniformly on bounding sphere cross section
-            Point2f offset =
-                warp::square_to_uniform_disk_concentric(aperture_sample);
-            Vector3f perp_offset = m_to_world.value().transform_affine(
-                Vector3f(offset.x(), offset.y(), 0.f));
-            origin = m_bsphere.center + perp_offset * m_bsphere.radius -
-                     direction * m_bsphere.radius;
-        }
-
-        return { direction, origin };
-    }
-
     std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
         Float time, Float wavelength_sample, const Point2f &film_sample,
         const Point2f &aperture_sample, Mask active) const override {
         MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
         RayDifferential3f ray;
-        Spectrum ray_weight;
-
-        std::tie(ray, ray_weight) = sample_ray(
-            time, wavelength_sample, film_sample, aperture_sample, active);
-
-        // Compute ray differentials
         ray.has_differentials = true;
+        ray.time = time;
 
-        Point2f film_sample_x{ film_sample.x() + m_d.x(), film_sample.y() };
-        std::tie(ray.d_x, ray.o_x) =
-            sample_ray_dir_origin(time, film_sample_x, aperture_sample, active);
+        // Sample spectrum
+        auto [wavelengths, wav_weight] =
+            sample_wavelength<Float, Spectrum>(wavelength_sample);
+        ray.wavelengths = wavelengths;
 
-        Point2f film_sample_y{ film_sample.x(), film_sample.y() + m_d.y() };
-        std::tie(ray.d_y, ray.o_y) =
-            sample_ray_dir_origin(time, film_sample_y, aperture_sample, active);
+        // Sample ray origin
+        Spectrum ray_weight = 0.f;
+
+        // Sample ray direction
+        ray.d = -m_to_world.value().transform_affine(
+            warp::square_to_uniform_hemisphere(film_sample));
+        ray.d_x = -m_to_world.value().transform_affine(
+            warp::square_to_uniform_hemisphere(
+                Point2f{ film_sample.x() + m_d.x(), film_sample.y() }));
+        ray.d_y = -m_to_world.value().transform_affine(
+            warp::square_to_uniform_hemisphere(
+                Point2f{ film_sample.x(), film_sample.y() + m_d.y() }));
+
+        // Sample target point and position ray origin
+        if (m_target_type == RayTargetType::Point) {
+            ray.o      = m_target_point - 2.f * ray.d * m_bsphere.radius;
+            ray.o_x    = m_target_point - 2.f * ray.d_x * m_bsphere.radius;
+            ray.o_y    = m_target_point - 2.f * ray.d_y * m_bsphere.radius;
+            ray_weight = wav_weight;
+        } else if (m_target_type == RayTargetType::Shape) {
+            // Use area-based sampling of shape
+            PositionSample3f ps =
+                m_target_shape->sample_position(time, aperture_sample, active);
+            ray.o      = ps.p - 2.f * ray.d * m_bsphere.radius;
+            ray.o_x    = ps.p - 2.f * ray.d_x * m_bsphere.radius;
+            ray.o_y    = ps.p - 2.f * ray.d_y * m_bsphere.radius;
+            ray_weight = wav_weight / (ps.pdf * m_target_shape->surface_area());
+        } else { // if (m_target_type == RayTargetType::None) {
+            // Sample target uniformly on bounding sphere cross section
+            Point2f offset =
+                warp::square_to_uniform_disk_concentric(aperture_sample);
+            Vector3f perp_offset = m_to_world.value().transform_affine(
+                Vector3f(offset.x(), offset.y(), 0.f));
+            ray.o = m_bsphere.center + perp_offset * m_bsphere.radius -
+                    ray.d * m_bsphere.radius;
+            ray.o_x = m_bsphere.center + perp_offset * m_bsphere.radius -
+                      ray.d_x * m_bsphere.radius;
+            ray.o_y = m_bsphere.center + perp_offset * m_bsphere.radius -
+                      ray.d_y * m_bsphere.radius;
+            ray_weight = wav_weight;
+        }
 
         return { ray, ray_weight & active };
     }
