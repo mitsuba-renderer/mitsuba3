@@ -121,15 +121,34 @@ bounding sphere. The ``target`` parameter can be set to restrict ray target
 sampling to a specific subregion of the scene. The recorded radiance is averaged
 over the targeted geometry.
 
-Ray origins are positioned outside of the scene's geometry.
+Ray origins are positioned outside of the scene's geometry, such that it is
+as if the sensor would be located at an infinite distance from the scene.
+
+By default, ray target points are sampled from the cross section of the scene's
+bounding sphere. The ``target`` parameter should be set to restrict ray target
+sampling to a specific subregion of the scene using a flat surface. The recorded
+radiance is averaged over the targeted geometry.
 
 .. warning::
 
-   If this sensor is used with a targeting strategy leading to rays not hitting
-   the scene's geometry (*e.g.* default targeting strategy), it will pick up
-   ambient emitter radiance samples (or zero values if no ambient emitter is
-   defined). Therefore, it is almost always preferrable to use a nondefault
-   targeting strategy.
+   * While setting ``target`` using any shape plugin is possible, only specific
+     configurations will produce meaningful results. This is due to ray sampling
+     method: when ``target`` is a shape, a point is sampled at its  surface,
+     then shifted along the ``-direction`` vector by the diameter of the scene's
+     bounding sphere, effectively positioning the ray origin outside of the
+     geometry. The ray's weight is set to :math:`\frac{1}{A \, p}`, where
+     :math:`A` is the shape's surface area and :math:`p` is the shape's position
+     sampling PDF value. This weight definition is irrelevant when the sampled
+     origin may corresponds to multiple points on the shape, *i.e.* when the
+     sampled ray can intersect the target shape multiple times. From this
+     follows that only flat surfaces should be used to set the ``target``
+     parameter. Typically, one will rather use a ``rectangle`` or ``disk``
+     shape.
+   * If this sensor is used with a targeting strategy leading to rays not
+     hitting the scene's geometry (*e.g.* default targeting strategy), it will
+     pick up ambient emitter radiance samples (or zero values if no ambient
+     emitter is defined). Therefore, it is almost always preferrable to use a
+     nondefault targeting strategy.
 */
 
 template <typename Float, typename Spectrum>
