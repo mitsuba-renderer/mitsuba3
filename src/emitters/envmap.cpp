@@ -11,6 +11,8 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/core/fstream.h>
 #include <enoki/struct.h>
+
+// #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/traits.h>
 #include <mitsuba/core/math.h>
 #include <enoki/matrix.h>
@@ -161,13 +163,229 @@ public:
                                         ek::Array<ScalarFloat, 1>(scale));
                     }
 
-        // If bitmap contains non-spectral data
-        if (bitmap->pixel_format() != Bitmap::PixelFormat::MultiChannel){
+                    *lum_ptr++ = lum * sin_theta;
+                    ek::store(out_ptr, coeff);
+                    in_ptr += 4;
+                    out_ptr += 4;
+                }
+                // Last column of pixels mirrors first
+                ScalarFloat temp = *(lum_ptr - bitmap->size().x());
+                *lum_ptr++ = temp;
+                ek::store(out_ptr, ek::load<ScalarVector4f>(
+                                    out_ptr - bitmap->size().x() * 4));
+                out_ptr += 4;
+            }
+        } else{ //bitmap contains spectral data
+            if (!is_spectral_v<Spectrum>)
+                Throw("Bitmap pixel format is MultiChannel but not compiled in Spectral mode");
+
+            for (size_t i = 0; i < bitmap->channel_count(); i++){
+                m_channels.push_back(std::stof(channel_names[i]));
+            }          
+
             for (size_t y = 0; y < bitmap->size().y(); ++y) {
                 ScalarFloat sin_theta = ek::sin(y * theta_scale);
-
+                
                 for (size_t x = 0; x < bitmap->size().x(); ++x) {
-                    ScalarColor3f rgb = ek::load<ScalarVector3f>(in_ptr);
+                    ScalarFloat lum = 0.f;
+
+                    for (size_t i = 0; i < m_channel_count; i++){
+                        ScalarFloat coeff = *in_ptr++;
+                        lum += mitsuba::cie1931_y(m_channels[i]) * coeff;
+                        *out_ptr++ = coeff;
+                    }
+
+                    *lum_ptr++ = lum * sin_theta;   
+                }
+                // Last column of pixels mirrors first
+                ScalarFloat temp = *(lum_ptr - bitmap->size().x());
+                *lum_ptr++ = temp;
+                float *first_col = out_ptr - bitmap->size().x() * m_channel_count;
+
+                for (size_t k = 0; k < m_channel_count; k ++ )
+                    *out_ptr++ = *(first_col + k);
+                
+            }
+        }
+
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(), m_channel_count };
+        m_data = TensorXf(bitmap_2->data(), 3, shape);
+
+        m_scale = props.get<ScalarFloat>("scale", 1.f);
+        m_warp = Warp(luminance.get(), res);
+        m_d65 = Texture::D65(1.f);
+        m_flags = EmitterFlags::Infinite | EmitterFlags::SpatiallyVarying;
+        ek::set_attr(this, "flags", m_flags);
+    }
+
+    void set_scene(const Scene *scene) override {
+        if (scene->bbox().valid()) {
+            m_bsphere = scene->bbox().bounding_sphere();
+            m_bsphere.radius =
+                ek::max(math::RayEpsilon<Float>,
+                        m_bsphere.radius * (1.f + math::RayEpsilon<Float>));
+        } else {
+            m_bsphere.center = 0.f;
+            m_bsphere.radius = math::RayEpsilon<Float>;
+        }
+    }
+
+    Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
+        Vector3f v = m_to_world.value().inverse().transform_affine(-si.wi);
+
+        // Convert to latitude-longitude texture coordinates
+        Point2f uv = Point2f(ek::atan2(v.x(), -v.z()) * ek::InvTwoPi<Float>,
+                             ek::safe_acos(v.y()) * ek::InvPi<Float>);
+
+        return depolarizer<Spectrum>(eval_spectrum(uv, si.wavelengths, active));
+    }
+
+    std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
+                                          const Point2f &sample2,
+                                          const Point2f &sample3,
+                                          Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
+
+        // 1. Sample spatial component
+        Point2f offset = warp::square_to_uniform_disk_concentric(sample2);
+
+        // 2. Sample directional component
+        auto [uv, pdf] = m_warp.sample(sample3, nullptr, active);
+        uv.x() += .5f / (m_data.shape(1) - 1);
+
+        active &= pdf > 0.f;
+
+        Float theta = uv.y() * ek::Pi<Float>,
+              phi   = uv.x() * ek::TwoPi<Float>;
+
+        Vector3f d = ek::sphdir(theta, phi);
+        d = Vector3f(d.y(), d.z(), -d.x());
+
+        Float inv_sin_theta = ek::safe_rsqrt(ek::sqr(d.x()) + ek::sqr(d.z()));
+        pdf *= inv_sin_theta * ek::InvTwoPi<Float> * ek::InvPi<Float>;
+
+        // Unlike \ref sample_direction, ray goes from the envmap toward the scene
+        Vector3f d_global = m_to_world.value().transform_affine(-d);
+
+        // Compute ray origin
+        Vector3f perpendicular_offset =
+            Frame3f(d).to_world(Vector3f(offset.x(), offset.y(), 0));
+        Point3f origin =
+            m_bsphere.center + (perpendicular_offset - d_global) * m_bsphere.radius;
+
+        // 3. Sample spectral component (weight accounts for radiance)
+        SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+        si.t    = 0.f;
+        si.time = time;
+        si.p    = origin;
+        si.uv   = uv;
+        auto [wavelengths, weight] =
+            sample_wavelengths(si, wavelength_sample, active);
+
+        ScalarFloat r2 = ek::sqr(m_bsphere.radius);
+        Ray3f ray(origin, d_global, time, wavelengths);
+        weight *= ek::Pi<Float> * r2 / pdf;
+
+        return std::make_pair(ray, weight & active);
+    }
+
+    std::pair<DirectionSample3f, Spectrum>
+    sample_direction(const Interaction3f &it, const Point2f &sample,
+                     Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
+
+        auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
+        uv.x() += .5f / (m_data.shape(1) - 1);
+        active &= pdf > 0.f;
+
+        Float theta = uv.y() * ek::Pi<Float>,
+              phi   = uv.x() * ek::TwoPi<Float>;
+
+        Vector3f d = ek::sphdir(theta, phi);
+        d = Vector3f(d.y(), d.z(), -d.x());
+
+        // Needed when the reference point is on the sensor, which is not part of the bbox
+        Float radius = ek::max(m_bsphere.radius, ek::norm(it.p - m_bsphere.center));
+        Float dist = 2.f * radius;
+
+        Float inv_sin_theta = ek::safe_rsqrt(ek::max(
+            ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+
+        d = m_to_world.value().transform_affine(d);
+
+        DirectionSample3f ds;
+        ds.p       = it.p + d * dist;
+        ds.n       = -d;
+        ds.uv      = uv;
+        ds.time    = it.time;
+        ds.pdf     = ek::select(
+            active,
+            pdf * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>))),
+            0.f
+        );
+        ds.delta   = false;
+        ds.emitter = this;
+        ds.d       = d;
+        ds.dist    = dist;
+
+        auto weight =
+            depolarizer<Spectrum>(eval_spectrum(uv, it.wavelengths, active)) /
+            ds.pdf;
+
+        return { ds, weight & active };
+    }
+
+    Float pdf_direction(const Interaction3f & /*it*/, const DirectionSample3f &ds,
+                        Mask active) const override {
+        MTS_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
+
+        Vector3f d = m_to_world.value().inverse().transform_affine(ds.d);
+
+        // Convert to latitude-longitude texture coordinates
+        Point2f uv = Point2f(ek::atan2(d.x(), -d.z()) * ek::InvTwoPi<Float>,
+                             ek::safe_acos(d.y()) * ek::InvPi<Float>);
+        uv.x() -= .5f / (m_data.shape(1) - 1u);
+        uv -= ek::floor(uv);
+
+        Float inv_sin_theta = ek::safe_rsqrt(ek::max(
+            ek::sqr(d.x()) + ek::sqr(d.z()), ek::sqr(ek::Epsilon<Float>)));
+
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * ek::sqr(ek::Pi<Float>)));
+    }
+
+    std::pair<Wavelength, Spectrum>
+    sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
+                       Mask active) const override {
+        Wavelength wavelengths;
+        UnpolarizedSpectrum weight;
+
+        if (is_spectral_v<Spectrum> && m_is_spectral) {
+            float max_wl = m_channels.back();
+            float min_wl = m_channels.front();
+            wavelengths = math::sample_shifted<Wavelength>(sample) * (max_wl- min_wl) / (m_channel_count - 1) + min_wl;
+            weight = 1 / (max_wl - min_wl);
+        } else {
+            std::tie(wavelengths, weight) = m_d65->sample_spectrum(si, math::sample_shifted<Wavelength>(sample), active);
+        }
+
+        return { wavelengths,
+                 weight * eval_spectrum(si.uv, wavelengths, active, false) };
+    }
+
+    std::pair<PositionSample3f, Float>
+    sample_position(Float /*time*/, const Point2f & /*sample*/,
+                    Mask /*active*/) const override {
+        if constexpr (ek::is_jit_array_v<Float>) {
+            /* Do not throw an exception in JIT-compiled variants. This
+               function might be invoked by Enoki's virtual function call
+               recording mechanism despite not influencing any actual
+               calculation. */
+            return { ek::zero<PositionSample3f>(), ek::NaN<Float> };
+        } else {
+            NotImplementedError("sample_position");
+        }
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -263,13 +481,14 @@ protected:
         const uint32_t width = res.x();
         UInt32 index = pos.x() + pos.y() * width;
 
-        Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
-                 v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
-                 v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
-                 v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
-
         if constexpr (!is_spectral_v<Spectrum>) {
             ENOKI_MARK_USED(wavelengths);
+
+            Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
+                     v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
+                     v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
+                     v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
+
             Vector4f v0 = ek::fmadd(w0.x(), v00, w1.x() * v10),
                      v1 = ek::fmadd(w0.x(), v01, w1.x() * v11),
                      v  = ek::fmadd(w0.y(), v0, w1.y() * v1);
@@ -281,11 +500,15 @@ protected:
 
         } else {
             
-            UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
-            UnpolarizedSpectrum result;
             //upsamping needed for non-spectral data
-            if (m_channel <= 4){
+            if (!m_is_spectral){
                 Float f0, f1, f;
+
+                UnpolarizedSpectrum s00, s10, s01, s11, s0, s1, s;
+                Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
+                         v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
+                         v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
+                         v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
 
                 s00 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v00), wavelengths);
                 s10 = srgb_model_eval<UnpolarizedSpectrum>(ek::head<3>(v10), wavelengths);
@@ -301,52 +524,44 @@ protected:
                 s   = ek::fmadd(w0.y(), s0, w1.y() * s1);
                 f   = ek::fmadd(w0.y(), f0, w1.y() * f1);
 
-                result = s * f * m_scale;
-            } else{ //spectral sky data (11-channel)
-                using DiscreteSpectrum = mitsuba::Spectrum<ScalarFloat, 11>;
-                using WavelengthIndex = enoki::Array<uint32_t, Spectrum::Size>; 
+                UnpolarizedSpectrum result = s * f * m_scale;
 
-                DiscreteSpectrum v00 = ek::gather<DiscreteSpectrum>(m_data.array(), index, active),
-                                 v10 = ek::gather<DiscreteSpectrum>(m_data.array(), index + 1, active),
-                                 v01 = ek::gather<DiscreteSpectrum>(m_data.array(), index + width, active),
-                                 v11 = ek::gather<DiscreteSpectrum>(m_data.array(), index + width + 1, active);
+                if (include_whitepoint) {
+                    SurfaceInteraction3f si = ek::zero<SurfaceInteraction3f>();
+                    si.wavelengths = wavelengths;
+                    result *= m_d65->eval(si, active);
+                }
 
-                auto interpolate_spec = [](DiscreteSpectrum v, const Wavelength &wavelengths) {
-                    float band_wavelength[11] = {320.f, 360.f, 400.f, 440.f, 
-                    480.f, 520.f, 560.f, 600.f, 640.f, 680.f, 720.f};
+                return result;
 
-                    WavelengthIndex idx = WavelengthIndex((wavelengths - 320.f) / 40.f);
+            } else{ 
+                using WavelengthIndex = ek::uint32_array_t<Wavelength>;
+                using WavelengthWeight = ek::float32_array_t<Wavelength>;
 
-                    UnpolarizedSpectrum s = 0.f;
+                float min_wl = m_channels.front();
+                float interval_wl = (m_channels.back() - min_wl) / (m_channel_count - 1);
 
-                    for (size_t i = 0; i < 4; i++){
-                        if ((idx[i] >= 10) || (idx[i] <= 0) ) {
-                            int index = ek::max(0, ek::min(idx[i], 10));
-                            s[i] = v[index];
-                        } else {
-                            s[i] = v[idx[i]] + (v[idx[i] + 1] - v[idx[i]]) * (wavelengths[i] - band_wavelength[idx[i]]) / 40.f;
-                        }
+                WavelengthIndex wl_idx = WavelengthIndex((wavelengths - min_wl) / interval_wl);
+                WavelengthWeight wl_weight = (wavelengths - (wl_idx * interval_wl) - min_wl) / interval_wl;
+
+                UnpolarizedSpectrum s[2];
+
+                for (int j = 0; j < 2; ++j) {
+                    WavelengthIndex index_combined = index * m_channel_count + clamp(wl_idx + j, 0, m_channel_count - 1);
+
+                    for (size_t i = 0; i < UnpolarizedSpectrum::Size; i++) {
+                        Float s00 = ek::gather<Float>(m_data.array(), index_combined[i], active),
+                              s10 = ek::gather<Float>(m_data.array(), index_combined[i] + m_channel_count, active),
+                              s01 = ek::gather<Float>(m_data.array(), index_combined[i] + width * m_channel_count, active),
+                              s11 = ek::gather<Float>(m_data.array(), index_combined[i] + (width + 1) * m_channel_count, active);
+
+                        Float s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
+                        Float s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
+                        s[j][i]   = ek::fmadd(w0.y(), s0, w1.y() * s1);
                     }
-                    return s;
-                };
-                s00 = interpolate_spec(v00, wavelengths);
-                s01 = interpolate_spec(v01, wavelengths);
-                s10 = interpolate_spec(v10, wavelengths);
-                s11 = interpolate_spec(v11, wavelengths);
-
-                s0  = ek::fmadd(w0.x(), s00, w1.x() * s10);
-                s1  = ek::fmadd(w0.x(), s01, w1.x() * s11);
-
-                s   = ek::fmadd(w0.y(), s0, w1.y() * s1);
-                result = s *  m_scale;
+                }
+                return (s[0] * (1 - wl_weight) + s[1] * wl_weight) * m_scale;
             }
-
-            Vector4f v00 = ek::gather<Vector4f>(m_data.array(), index, active),
-                     v10 = ek::gather<Vector4f>(m_data.array(), index + 1, active),
-                     v01 = ek::gather<Vector4f>(m_data.array(), index + width, active),
-                     v11 = ek::gather<Vector4f>(m_data.array(), index + width + 1, active);
-
-            return result;
         }
     }
 

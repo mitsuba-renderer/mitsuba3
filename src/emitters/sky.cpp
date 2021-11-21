@@ -20,8 +20,6 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/core/distr_1d.h>
-#include <string>
-#include <fstream>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -96,9 +94,9 @@ public:
             bitmap = new Bitmap(Bitmap::PixelFormat::RGBA, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2));
         }else{
-            const std::vector<std::string> channel_names = {"320nm", "360nm", 
-            "400nm", "440nm", "480nm", "520nm", "560nm", "600nm", "640nm", 
-            "680nm", "720nm"};
+            const std::vector<std::string> channel_names = {"320", "360", 
+            "400", "440", "480", "520", "560", "600", "640", 
+            "680", "720"};
             bitmap = new Bitmap(Bitmap::PixelFormat::MultiChannel, Struct::Type::Float32, 
             ScalarVector2i(m_resolution, m_resolution / 2), channel_names.size(), channel_names);
         }
@@ -168,11 +166,11 @@ public:
         for (size_t i = 0; i < SkyPixelFormat::Size; i++) {
             if constexpr (!is_spectral_v<Spectrum>){
                 result[i] = (ScalarFloat) (arhosek_tristim_skymodel_radiance(
-                m_state[i], (double)theta, (double)gamma, i) / 106.856980); // (sum of Spectrum::CIE_Y)
+                m_state[i], (double)theta, (double)gamma, i) * MTS_CIE_Y_NORMALIZATION); // (sum of Spectrum::CIE_Y)
             }else{
                 int wave_l = 320 + i * 40;
                 result[i] = (ScalarFloat) (arhosekskymodel_radiance(
-                m_state[i], (double)theta, (double)gamma, wave_l) / 106.856980); // (sum of Spectrum::CIE_Y)
+                m_state[i], (double)theta, (double)gamma, (double)wave_l) * MTS_CIE_Y_NORMALIZATION ); 
             }
         }
 
