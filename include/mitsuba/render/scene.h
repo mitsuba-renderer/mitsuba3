@@ -256,6 +256,12 @@ public:
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
+    /// Static initialization of ray-intersection acceleration data structure
+    static void static_accel_initialization();
+
+    /// Static shutdown of ray-intersection acceleration data structure
+    static void static_accel_shutdown();
+
     MTS_DECLARE_CLASS()
 protected:
     /// Virtual destructor
@@ -272,6 +278,11 @@ protected:
     /// Release the ray-intersection acceleration data structure
     void accel_release_cpu();
     void accel_release_gpu();
+
+    static void static_accel_initialization_cpu();
+    static void static_accel_initialization_gpu();
+    static void static_accel_shutdown_cpu();
+    static void static_accel_shutdown_gpu();
 
     /// Trace a ray and only return a preliminary intersection data structure
     MTS_INLINE PreliminaryIntersection3f ray_intersect_preliminary_cpu(
