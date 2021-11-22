@@ -498,13 +498,13 @@ MTS_VARIANT Float Mesh<Float, Spectrum>::boundary_test(const Ray3f &ray,
                                                        Mask active) const {
     auto fi = face_indices(si.prim_index, active);
 
-    Point3f p0 = vertex_position(fi[0], active),
-            p1 = vertex_position(fi[1], active),
-            p2 = vertex_position(fi[2], active);
+    Point3f vp0 = vertex_position(fi[0], active),
+            vp1 = vertex_position(fi[1], active),
+            vp2 = vertex_position(fi[2], active);
 
-    Vector3f rel = si.p - p0,
-             du  = p1 - p0,
-             dv  = p2 - p0;
+    Vector3f rel = si.p - vp0,
+             du  = vp1 - vp0,
+             dv  = vp2 - vp0;
 
     /* Solve a least squares problem to determine
        the UV coordinates within the current triangle */
