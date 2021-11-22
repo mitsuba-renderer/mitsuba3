@@ -376,8 +376,8 @@ MTS_VARIANT void Scene<Float, Spectrum>::accel_release_gpu() {
 MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
 MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
     Log(Debug, "Optix configuration shutdown..");
-    for (size_t i = 0; i < 8; i++) {
-        OptixConfig &config = optix_configs[i];
+    for (size_t j = 0; j < 8; j++) {
+        OptixConfig &config = optix_configs[j];
         if (config.module) {
             for (size_t i = 0; i < ProgramGroupCount; i++)
                 jit_optix_check(optixProgramGroupDestroy(config.program_groups[i]));
