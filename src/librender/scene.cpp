@@ -393,12 +393,8 @@ MTS_VARIANT typename Scene<Float, Spectrum>::Mask
 Scene<Float, Spectrum>::ray_test_gpu(const Ray3f &, uint32_t, Mask) const {
     NotImplementedError("ray_test_gpu");
 }
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() {
-    NotImplementedError("static_accel_initialization_gpu");
-}
-MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() {
-    NotImplementedError("static_accel_shutdown_gpu");
-}
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_initialization_gpu() { }
+MTS_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown_gpu() { }
 #endif
 
 MTS_IMPLEMENT_CLASS_VARIANT(Scene, Object, "scene")
