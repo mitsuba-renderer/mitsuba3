@@ -117,7 +117,8 @@ class PRBVolpathIntegrator(mitsuba.render.SamplingIntegrator):
         self.Li(scene, sampler, ray, 0, params, grad_values, sensor.medium(), True, result)
 
     def sample(self, scene, sampler, ray, medium, active):
-        return *self.Li(scene, sampler, ray, medium=medium), []
+        res, valid = self.Li(scene, sampler, ray, medium=medium, active_=active)
+        return res, valid, []
 
     def Li(self, scene, sampler, ray, depth=0, params=mitsuba.python.util.SceneParameters(),
            grad=None, medium=None, active_=True, result=None):

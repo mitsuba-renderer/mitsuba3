@@ -167,7 +167,8 @@ class PRBReparamIntegrator(mitsuba.render.SamplingIntegrator):
             mitsuba.core.util.time_string(1e3 * (time.time() - starting_time)))
 
     def sample(self, scene, sampler, ray, medium, active):
-        return *self.Li(None, scene, sampler, ray), []
+        res, valid = self.Li(None, scene, sampler, ray, active_=active)
+        return res, valid, []
 
     def Li(self: mitsuba.render.SamplingIntegrator,
            mode: ek.ADMode,

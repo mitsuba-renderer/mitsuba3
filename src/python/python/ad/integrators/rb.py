@@ -76,7 +76,8 @@ class RBIntegrator(mitsuba.render.SamplingIntegrator):
         self.Li(ek.ADMode.Backward, scene, sampler, ray, params=params, grad=grad)
 
     def sample(self, scene, sampler, ray, medium, active):
-        return *self.Li(None, scene, sampler, ray), []
+        res, valid = self.Li(None, scene, sampler, ray, active_=active)
+        return res, valid, []
 
     def Li(self: mitsuba.render.SamplingIntegrator,
            mode: ek.ADMode,
