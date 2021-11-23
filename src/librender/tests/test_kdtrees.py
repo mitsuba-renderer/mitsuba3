@@ -60,9 +60,7 @@ def test01_depth_scalar_stairs(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_depth_scalar_bunny(variant_scalar_rgb):
-    from mitsuba.core import Ray3f, BoundingBox3f
-    from mitsuba.core.xml import load_string
-    from mitsuba.render import SurfaceInteraction3f
+    from mitsuba.core import load_string, Ray3f
 
     if mitsuba.core.MTS_ENABLE_EMBREE:
         pytest.skip("EMBREE enabled")

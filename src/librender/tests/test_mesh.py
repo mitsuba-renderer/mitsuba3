@@ -33,8 +33,7 @@ def test01_create_mesh(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_ply_triangle(variant_scalar_rgb):
-    from mitsuba.core import UInt32
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import UInt32, load_string
 
     m = load_string("""
         <shape type="ply" version="0.5.0">
@@ -59,7 +58,7 @@ def test02_ply_triangle(variant_scalar_rgb):
 
 @fresolver_append_path
 def test03_ply_computed_normals(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     """Checks(automatic) vertex normal computation for a PLY file that
     doesn't have them."""
@@ -107,7 +106,7 @@ def test04_normal_weighting_scheme(variant_scalar_rgb):
 
 @fresolver_append_path
 def test05_load_simple_mesh(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     """Tests the OBJ and PLY loaders on a simple example."""
     for mesh_format in ["obj", "ply"]:
@@ -134,7 +133,7 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
     """Tests the OBJ & PLY loaders with combinations of vertex / face normals,
     presence and absence of UVs, etc.
     """
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     def test():
         shape = load_string("""
@@ -178,8 +177,7 @@ def test06_load_various_features(variant_scalar_rgb, mesh_format, features, face
 
 @fresolver_append_path
 def test07_ply_stored_attribute(variant_scalar_rgb):
-    from mitsuba.core import Vector3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     m = load_string("""
         <shape type="ply" version="0.5.0">
@@ -234,7 +232,8 @@ def test08_mesh_add_attribute(variant_scalar_rgb):
 
 @fresolver_append_path
 def test09_eval_parameterization(variants_all_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
+
     shape = load_string('''
         <shape type="obj" version="2.0.0">
             <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -256,10 +255,9 @@ def test09_eval_parameterization(variants_all_rgb):
 
 @fresolver_append_path
 def test10_ray_intersect_preliminary(variants_all_rgb):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
-    from mitsuba.render import RayFlags
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -297,8 +295,7 @@ def test10_ray_intersect_preliminary(variants_all_rgb):
 
 @fresolver_append_path
 def test11_parameters_grad_enabled(variants_all_ad_rgb):
-    from mitsuba.core.xml import load_string
-
+    from mitsuba.core import load_string
     shape = load_string('''
         <shape type="obj" version="2.0.0">
             <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -336,14 +333,14 @@ else:
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f
+    from mitsuba.core import load_string, Ray3f, Vector3f
     from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -389,13 +386,13 @@ def test12_differentiable_surface_interaction_automatic(variants_all_ad_rgb, jit
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -435,13 +432,13 @@ def test13_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb, j
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Ray3f, Vector3f, UInt32
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -469,13 +466,13 @@ def test14_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb, 
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
+    from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -548,13 +545,13 @@ def test15_differentiable_surface_interaction_params_forward(variants_all_ad_rgb
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, UInt32, Transform4f
+    from mitsuba.core import load_string, Ray3f, Vector3f
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -687,14 +684,14 @@ def test16_differentiable_surface_interaction_params_backward(variants_all_ad_rg
 @fresolver_append_path
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test17_sticky_differentiable_surface_interaction_params_forward(variants_all_ad_rgb, jit_flags):
-    from mitsuba.core import xml, Float, Ray3f, Vector3f, Point3f, Transform4f
+    from mitsuba.core import load_string, Float, Ray3f, Vector3f, Point3f, Transform4f
     from mitsuba.render import RayFlags
 
     # Set enoki JIT flags
     for k, v in jit_flags.items():
         ek.set_flag(k, v)
 
-    scene = xml.load_string('''
+    scene = load_string('''
         <scene version="2.0.0">
             <shape type="obj" id="rect">
                 <string name="filename" value="resources/data/common/meshes/rectangle.obj"/>
@@ -766,7 +763,7 @@ def test17_sticky_differentiable_surface_interaction_params_forward(variants_all
 @pytest.mark.parametrize("wall", [False, True])
 @pytest.mark.parametrize("jit_flags", jit_flags_options)
 def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
-    from mitsuba.core import xml, Thread, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
+    from mitsuba.core import load_dict, Float, UInt32, ScalarVector2i, Vector2f, Vector3f, Point3f, Transform4f, Ray3f
     from mitsuba.render import RayFlags
     from mitsuba.python.util import traverse
 
@@ -789,7 +786,7 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
             'id' : 'wall',
             'filename' : 'resources/data/common/meshes/cbox/back.obj'
         }
-    scene = xml.load_dict(scene_dict)
+    scene = load_dict(scene_dict)
 
     # Get scene parameters
     params = traverse(scene)
@@ -844,10 +841,10 @@ def test18_sticky_vcall_ad_fwd(variants_all_ad_rgb, res, wall, jit_flags):
 
 @fresolver_append_path
 def test19_update_geometry(variants_vec_rgb):
-    from mitsuba.core import xml, Transform4f, Float, UInt32, Vector2f, Point3f, Ray3f, ScalarVector2i
+    from mitsuba.core import load_dict, Transform4f, Float, UInt32, Vector2f, Point3f, Ray3f, ScalarVector2i
     from mitsuba.python.util import traverse
 
-    scene = xml.load_dict({
+    scene = load_dict({
         'type': 'scene',
         'rect': {
             'type': 'ply',
@@ -895,13 +892,13 @@ def test19_update_geometry(variants_vec_rgb):
 
 @fresolver_append_path
 def test20_write_xml(variants_all_rgb, tmp_path):
-    from mitsuba.core import xml
+    from mitsuba.core import load_dict
     from mitsuba.python.util import traverse
 
     filepath = str(tmp_path / 'test_mesh-test20_write_xml.ply')
     print(f"Output temporary file: {filepath}")
 
-    mesh = xml.load_dict({
+    mesh = load_dict({
         'type': 'ply',
         'filename': 'resources/data/tests/ply/rectangle_normals_uv.ply'
     })
@@ -915,7 +912,7 @@ def test20_write_xml(variants_all_rgb, tmp_path):
     mesh.add_attribute(buf_name, 1, [1,2,3,4])
 
     mesh.write_ply(filepath)
-    mesh_saved = xml.load_dict({
+    mesh_saved = load_dict({
         'type': 'ply',
         'filename': filepath
     })
@@ -927,9 +924,9 @@ def test20_write_xml(variants_all_rgb, tmp_path):
 
 @fresolver_append_path
 def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
-    from mitsuba.core import xml, Float, Bool, Point3f, Vector3f, Ray3f, Transform4f
+    from mitsuba.core import load_dict, Ray3f
 
-    scene = xml.load_dict({
+    scene = load_dict({
         'type': 'scene',
         'mesh': {
             'type' : 'obj',
@@ -954,9 +951,9 @@ def test21_boundary_test_sh_normal(variant_llvm_ad_rgb):
 
 @fresolver_append_path
 def test22_boundary_test_face_normal(variants_all_ad_rgb):
-    from mitsuba.core import xml, Float, Bool, Point3f, Vector3f, Ray3f, Transform4f
+    from mitsuba.core import load_dict, Ray3f
 
-    scene = xml.load_dict({
+    scene = load_dict({
         'type': 'scene',
         'mesh': {
             'type' : 'obj',

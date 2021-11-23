@@ -4,7 +4,7 @@ import pytest
 
 
 def test01_construct(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     # With default reconstruction filter
     film = load_string("""<film version="2.0.0" type="hdrfilm"></film>""")
@@ -32,7 +32,7 @@ def test01_construct(variant_scalar_rgb):
 
 
 def test02_crops(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     film = load_string("""<film version="2.0.0" type="hdrfilm">
             <integer name="width" value="32"/>
@@ -73,8 +73,7 @@ def test02_crops(variant_scalar_rgb):
 def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
     """Create a test image. Develop it to a few file format, each time reading
     it back and checking that contents are unchanged."""
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import Bitmap, Struct
+    from mitsuba.core import load_string, Bitmap, Struct
     from mitsuba.render import ImageBlock
     import numpy as np
 
@@ -141,7 +140,7 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
 @pytest.mark.parametrize('pixel_format', ['RGB', 'RGBA', 'XYZ', 'XYZA', 'luminance', 'luminance_alpha'])
 @pytest.mark.parametrize('has_aovs', [False, True])
 def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
-    from mitsuba.core import xml, Bitmap, Float, UInt32, Point2f
+    from mitsuba.core import load_dict, Bitmap, Float, UInt32, Point2f
     from mitsuba.render import ImageBlock
     import numpy as np
 
@@ -153,7 +152,7 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     else:
         output_channels = list(pixel_format) + aovs_channels
 
-    film = xml.load_dict({
+    film = load_dict({
         'type': 'hdrfilm',
         'pixel_format': pixel_format,
         'component_format': 'float32',
@@ -194,7 +193,9 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
 
 
 def test05_without_prepare(variant_scalar_rgb):
-    film = mitsuba.core.xml.load_dict({
+    from mitsuba.core import load_dict
+
+    film = load_dict({
         'type': 'hdrfilm',
         'width': 3,
         'height': 2,
@@ -206,7 +207,9 @@ def test05_without_prepare(variant_scalar_rgb):
 
 @pytest.mark.parametrize('develop', [False, True])
 def test06_empty_film(variants_all_rgb, develop):
-    film = mitsuba.core.xml.load_dict({
+    from mitsuba.core import load_dict
+
+    film = load_dict({
         'type': 'hdrfilm',
         'width': 3,
         'height': 2,

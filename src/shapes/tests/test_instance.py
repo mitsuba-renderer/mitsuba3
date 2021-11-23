@@ -6,19 +6,19 @@ from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):
-    from mitsuba.core import xml, ScalarTransform4f as T
+    from mitsuba.core import load_dict, ScalarTransform4f as T
 
     to_world = T.translate(translate) * T.rotate([0, 1, 0], angle) * T.scale(scale)
 
     shape2 = shape.copy()
     shape2['to_world'] = to_world
 
-    s = xml.load_dict({
+    s = load_dict({
         'type' : 'scene',
         'shape' : shape2
     })
 
-    s_inst = xml.load_dict({
+    s_inst = load_dict({
         'type' : 'scene',
         'group_0' : {
             'type' : 'shapegroup',
@@ -140,13 +140,13 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 
 @pytest.mark.parametrize('width', [1, 10])
 def test03_ray_intersect_instance(variants_all_rgb, width):
-    from mitsuba.core import xml, Float, Ray3f, ScalarVector3f, ScalarTransform4f as T
+    from mitsuba.core import load_dict, Ray3f, ScalarTransform4f as T
 
     """Check that we get the correct instance pointer when tracing a ray"""
 
     scalar_mode = mitsuba.variant().startswith('scalar')
 
-    scene = xml.load_dict({
+    scene = load_dict({
         'type' : 'scene',
 
         'group_0' : {

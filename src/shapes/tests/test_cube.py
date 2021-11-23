@@ -4,19 +4,19 @@ import enoki as ek
 from enoki.scalar import ArrayXf as Float
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core import xml, ScalarTransform4f
+    from mitsuba.core import load_dict
 
-    s = xml.load_dict({"type" : "cube"})
+    s = load_dict({"type" : "cube"})
     assert s is not None
     assert s.primitive_count() == 12
     assert ek.allclose(s.surface_area(), 24.0)
 
 
 def test02_bbox(variant_scalar_rgb):
-    from mitsuba.core import xml, Transform4f
+    from mitsuba.core import load_dict, Transform4f
 
     for r in [1, 2, 4]:
-        s = xml.load_dict({
+        s = load_dict({
             "type" : "cube",
             "to_world" : Transform4f.scale([r, r, r])
         })
@@ -28,13 +28,13 @@ def test02_bbox(variant_scalar_rgb):
         assert ek.allclose(b.max, [r, r, r])
 
 def test03_ray_intersect(variant_scalar_rgb):
-    from mitsuba.core import xml, Ray3f, Transform4f, Vector3f, Vector2f
+    from mitsuba.core import load_dict, Ray3f, Transform4f, Vector3f, Vector2f
 
     for scale in [Vector3f([1.0, 1.0, 1.0]), Vector3f([2.0, 1.0, 1.0]),
                     Vector3f([1.0, 2.0, 1.0])]:
         for coordsX in [-1.5, -0.9, -0.5, 0, 0.5, 0.9, 1.5]:
             for coordsY in [-1.5, -0.9, -0.5, 0, 0.5, 0.9, 1.5]:
-                s = xml.load_dict({
+                s = load_dict({
                     "type" : "scene",
                     "foo" : {
                         "type" : 'cube',
@@ -77,10 +77,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
     from mitsuba.python.test.util import check_vectorization
 
     def kernel(o):
-        from mitsuba.core import xml, ScalarTransform4f
-        from mitsuba.core import Ray3f
+        from mitsuba.core import load_dict, ScalarTransform4f, Ray3f
 
-        scene = xml.load_dict({
+        scene = load_dict({
             "type" : "scene",
             "foo" : {
                 "type" : "cube",
@@ -99,9 +98,9 @@ def test04_ray_intersect_vec(variant_scalar_rgb):
 
 
 def test05_check_normals(variant_scalar_rgb):
-    from mitsuba.core import xml, Vector3f, Ray3f
+    from mitsuba.core import load_dict, Vector3f, Ray3f
 
-    s = xml.load_dict({
+    s = load_dict({
         "type" : "scene",
         "foo" : {
             "type" : 'cube'
@@ -121,7 +120,7 @@ def test05_check_normals(variant_scalar_rgb):
         si = s.ray_intersect(ray)
         assert si.n == face[2]
 
-    ss = xml.load_dict({
+    ss = load_dict({
         "type" : "scene",
         "foo" : {
             "type" : 'cube',

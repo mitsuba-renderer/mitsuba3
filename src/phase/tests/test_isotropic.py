@@ -7,7 +7,7 @@ from enoki.scalar import ArrayXf as Float
 
 
 def test01_create(variant_scalar_rgb):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     p = load_dict({"type": "isotropic"})
     assert p is not None
@@ -15,7 +15,7 @@ def test01_create(variant_scalar_rgb):
 
 def test02_eval(variant_scalar_rgb):
     from mitsuba.render import PhaseFunctionContext, MediumInteraction3f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     p = load_dict({"type": "isotropic"})
     ctx = PhaseFunctionContext(None)

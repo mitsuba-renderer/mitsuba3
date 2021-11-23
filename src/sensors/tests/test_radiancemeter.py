@@ -5,7 +5,7 @@ import mitsuba
 
 
 def make_sensor(origin=None, direction=None, to_world=None, pixels=1):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     d = {
         "type": "radiancemeter",
@@ -28,7 +28,6 @@ def make_sensor(origin=None, direction=None, to_world=None, pixels=1):
 
 
 def test_construct(variant_scalar_rgb):
-    from mitsuba.core.xml import load_dict
     from mitsuba.core import ScalarTransform4f
 
     # Test construct from to_world
@@ -114,7 +113,7 @@ def test_sample_ray(variant_scalar_rgb, direction, origin):
 @pytest.mark.parametrize("radiance", [10**x for x in range(-3, 4)])
 def test_render(variant_scalar_rgb, radiance):
     # Test render results with a simple scene
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
     import numpy as np
 
     spp = 1

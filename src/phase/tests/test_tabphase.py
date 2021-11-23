@@ -5,7 +5,7 @@ import numpy as np
 
 
 def test_create(variant_scalar_rgb):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
 
     p = load_dict({"type": "tabphase", "values": "0.5, 1.0, 1.5"})
     assert p is not None
@@ -17,7 +17,7 @@ def test_eval(variant_scalar_rgb):
     We make sure that the values we use to initialize the plugin are such that
     the phase function has an asymmetric lobe.
     """
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
     from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
 
     # Phase function table definition
@@ -86,7 +86,7 @@ def test_chi2(variants_vec_backends_once_rgb):
 
 
 def test_traverse(variant_scalar_rgb):
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict
     from mitsuba.python.util import traverse
     from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
 

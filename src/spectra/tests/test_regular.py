@@ -8,7 +8,7 @@ import enoki as ek
 
 @pytest.fixture()
 def obj():
-    return mitsuba.core.xml.load_string('''
+    return mitsuba.core.load_string('''
         <spectrum version='2.0.0' type='regular'>
             <float name="lambda_min" value="500"/>
             <float name="lambda_max" value="600"/>

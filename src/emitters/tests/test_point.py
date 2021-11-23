@@ -16,7 +16,7 @@ spectrum_strings = {
 
 
 def create_emitter_and_spectrum(pos, s_key='d65'):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     emitter = load_string("""<emitter version='2.0.0' type='point'>
                                 <point name='position' x='{x}' y='{y}' z='{z}'/>
                                 {s}

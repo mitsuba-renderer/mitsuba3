@@ -5,7 +5,7 @@ import enoki as ek
 
 def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     bsdf = load_string("""<bsdf version="2.0.0" type="blendbsdf">
         <bsdf type="diffuse"/>
@@ -31,9 +31,8 @@ def test01_create(variant_scalar_rgb):
 
 
 def test02_eval_all(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import Frame3f, load_string
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
     weight = 0.2
 
@@ -64,9 +63,8 @@ def test02_eval_all(variant_scalar_rgb):
 
 
 def test03_eval_components(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import Frame3f, load_string
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
     weight = 0.2
 
@@ -104,9 +102,8 @@ def test03_eval_components(variant_scalar_rgb):
 
 
 def test04_sample_all(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import Frame3f, load_string
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
     weight = 0.2
 
@@ -142,9 +139,8 @@ def test04_sample_all(variant_scalar_rgb):
 
 
 def test05_sample_components(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
+    from mitsuba.core import Frame3f, load_string
     from mitsuba.render import BSDFFlags, BSDFContext, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
 
     weight = 0.2
 

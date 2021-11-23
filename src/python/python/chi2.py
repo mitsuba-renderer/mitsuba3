@@ -467,8 +467,7 @@ def SpectrumAdapter(value):
     Chi^2 test.
     """
 
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import sample_shifted, Vector1f
+    from mitsuba.core import load_string, sample_shifted, Vector1f
     from mitsuba.render import SurfaceInteraction3f
 
     def instantiate(args):
@@ -512,8 +511,7 @@ def BSDFAdapter(bsdf_type, extra, wi=[0, 0, 1], ctx=None):
     """
 
     from mitsuba.render import BSDFContext, SurfaceInteraction3f
-    from mitsuba.core import Float
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Float
 
     if ctx is None:
         ctx = BSDFContext()
@@ -561,8 +559,8 @@ def EmitterAdapter(emitter_type, extra):
     """
 
     from mitsuba.render import Interaction3f, DirectionSample3f
-    from mitsuba.core.xml import load_string
-    
+    from mitsuba.core import load_string
+
     def instantiate(args):
         xml = """<emitter version="2.0.0" type="%s">
             %s
@@ -628,8 +626,7 @@ def PhaseFunctionAdapter(phase_type, extra, wi=[0, 0, 1], ctx=None):
         Incoming direction, in local coordinates.
     """
     from mitsuba.render import MediumInteraction3f, PhaseFunctionContext
-    from mitsuba.core import Float, Frame3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Float, Frame3f
 
     if ctx is None:
         ctx = PhaseFunctionContext(None)

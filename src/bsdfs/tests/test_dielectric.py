@@ -3,7 +3,7 @@ import enoki as ek
 
 
 def example_bsdf(reflectance=0.3, transmittance=0.6):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     return load_string("""<bsdf version="2.0.0" type="dielectric">
             <spectrum name="specular_reflectance" value="{}"/>
             <spectrum name="specular_transmittance" value="{}"/>
@@ -14,7 +14,7 @@ def example_bsdf(reflectance=0.3, transmittance=0.6):
 
 def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     b = load_string("<bsdf version='2.0.0' type='dielectric'></bsdf>")
     assert b is not None

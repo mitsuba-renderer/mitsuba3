@@ -8,7 +8,7 @@ import enoki as ek
 
 @pytest.fixture()
 def obj():
-    return mitsuba.core.xml.load_string('''
+    return mitsuba.core.load_string('''
         <spectrum version='2.0.0' type='irregular'>
             <string name="wavelengths" value="500, 600, 650"/>
             <string name="values" value="1, 2, .5"/>

@@ -6,7 +6,7 @@ import mitsuba
 mitsuba.set_variant('cuda_rgb')
 
 from mitsuba.core import Float, Vector3f, Thread, xml
-from mitsuba.core.xml import load_file
+from mitsuba.core import load_file
 from mitsuba.render import (BSDF, BSDFContext, BSDFFlags,
                             DirectionSample3f, Emitter, ImageBlock,
                             SamplingIntegrator, has_flag,

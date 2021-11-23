@@ -8,9 +8,8 @@ from mitsuba.python.test.util import fresolver_append_path
 @pytest.mark.parametrize('filter_type', ['nearest', 'bilinear'])
 @pytest.mark.parametrize('wrap_mode', ['repeat', 'clamp', 'mirror'])
 def test01_sample_position(variants_vec_backends_once, filter_type, wrap_mode):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, ScalarBoundingBox2f
     from mitsuba.python.chi2 import ChiSquareTest, PlanarDomain
-    from mitsuba.core import ScalarBoundingBox2f
 
     bitmap = load_string("""
     <texture type="bitmap" version="2.0.0">
@@ -34,9 +33,8 @@ def test01_sample_position(variants_vec_backends_once, filter_type, wrap_mode):
 @fresolver_append_path
 def test02_eval_grad(variant_scalar_rgb, np_rng):
     # Tests evaluating the texture gradient under different rotation
+    from mitsuba.core import load_string, Vector2f
     from mitsuba.render import SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
-    from mitsuba.core import Vector2f
     import numpy as np
     import enoki as ek
     delta = 1e-4

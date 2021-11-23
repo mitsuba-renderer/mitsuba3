@@ -43,14 +43,12 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     py::module math   = create_submodule(m, "math"),
                spline = create_submodule(m, "spline"),
                warp   = create_submodule(m, "warp"),
-               xml    = create_submodule(m, "xml"),
                quad   = create_submodule(m, "quad");
 
     math.doc()   = "Mathematical routines, special functions, etc.";
     spline.doc() = "Functions for evaluating and sampling Catmull-Rom splines";
     warp.doc()   = "Common warping techniques that map from the unit square to other "
                    "domains, such as spheres, hemispheres, etc.";
-    xml.doc()    = "Mitsuba scene XML parser";
     quad.doc()   = "Functions for numerical quadrature";
 
     MTS_PY_IMPORT(Enoki);
@@ -87,7 +85,7 @@ PYBIND11_MODULE(MODULE_NAME, m) {
     MTS_PY_IMPORT(vector);
     MTS_PY_IMPORT_SUBMODULE(quad);
     MTS_PY_IMPORT_SUBMODULE(warp);
-    MTS_PY_IMPORT_SUBMODULE(xml);
+    MTS_PY_IMPORT(xml);
 
     py::object core_ext = py::module::import("mitsuba.core_ext");
     cast_object = (Caster) (void *)((py::capsule) core_ext.attr("cast_object"));

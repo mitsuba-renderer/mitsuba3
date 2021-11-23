@@ -4,8 +4,7 @@ import pytest
 
 import mitsuba
 mitsuba.set_variant("scalar_rgb")
-from mitsuba.core import math, warp, Bitmap, Struct
-from mitsuba.core.xml import load_string
+from mitsuba.core import load_string, warp, Struct
 from mitsuba.render import (PhaseFunction, PhaseFunctionContext, PhaseFunctionFlags,
                             MediumInteraction3f, register_phasefunction, has_flag)
 from mitsuba.python.test.util import fresolver_append_path

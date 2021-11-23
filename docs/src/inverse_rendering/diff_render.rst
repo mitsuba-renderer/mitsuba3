@@ -47,7 +47,7 @@ differentiated:
     mitsuba.set_variant('cuda_autodiff_rgb')
 
     from mitsuba.core import Thread
-    from mitsuba.core.xml import load_file
+    from mitsuba.core import load_file
     from mitsuba.python.util import traverse
 
     # Load the Cornell Box

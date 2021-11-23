@@ -4,8 +4,7 @@ import enoki as ek
 
 
 def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, aperture=0.1, focus_dist=15, near_clip=1.0):
-    from mitsuba.core.xml import load_dict
-    from mitsuba.core import ScalarTransform4f, ScalarVector3f
+    from mitsuba.core import load_dict, ScalarTransform4f
     t = [o[0] + d[0], o[1] + d[1], o[2] + d[2]]
 
     camera_dict = {

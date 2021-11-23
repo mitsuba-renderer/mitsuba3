@@ -5,8 +5,7 @@ import mitsuba
 # Set the desired mitsuba variant
 mitsuba.set_variant('scalar_rgb')
 
-from mitsuba.core import Bitmap, Struct, Thread
-from mitsuba.core.xml import load_file
+from mitsuba.core import Bitmap, Struct, Thread, load_file
 
 # Absolute or relative path to the XML file
 filename = 'path/to/my/scene.xml'

@@ -7,7 +7,7 @@ from mitsuba.python.test.util import fresolver_append_path
 
 @fresolver_append_path
 def test01_emitter_checks(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     def check_scene(xml, count, error=None):
         xml = """<scene version="2.0.0">
@@ -52,7 +52,7 @@ def test01_emitter_checks(variant_scalar_rgb):
 
 @fresolver_append_path
 def test02_shapes(variant_scalar_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     """Tests that a Shape is downcasted to a Mesh in the Scene::shapes method if possible"""
     scene = load_string("""
@@ -72,7 +72,7 @@ def test02_shapes(variant_scalar_rgb):
 
 @fresolver_append_path
 def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
     from mitsuba.python.util import traverse
 
     scene = load_string("""
@@ -108,12 +108,12 @@ def test03_shapes_parameters_grad_enabled(variant_cuda_ad_rgb):
 @fresolver_append_path
 @pytest.mark.parametrize("shadow", [True, False])
 def test04_scene_destruction_and_pending_raytracing(variants_vec_rgb, shadow):
-    from mitsuba.core import xml, ScalarTransform4f as T, Ray3f, Point3f, Vector3f
+    from mitsuba.core import load_dict, ScalarTransform4f as T, Ray3f, Point3f, Vector3f
 
     # Create and raytrace scene in a function, so that the scene object gets
     # destroyed (attempt) when leaving the function call
     def render():
-        scene = xml.load_dict({
+        scene = load_dict({
             'type': 'scene',
             'integrator': { 'type': 'path' },
             'mysensor': {

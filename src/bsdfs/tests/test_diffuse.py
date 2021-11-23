@@ -4,7 +4,7 @@ import enoki as ek
 
 def test01_create(variant_scalar_rgb):
     from mitsuba.render import BSDFFlags
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string
 
     b = load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
     assert b is not None
@@ -15,8 +15,8 @@ def test01_create(variant_scalar_rgb):
 
 def test02_eval_pdf(variant_scalar_rgb):
     from mitsuba.core import Frame3f
-    from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f
+    from mitsuba.core import load_string
 
     bsdf = load_string("<bsdf version='2.0.0' type='diffuse'></bsdf>")
 

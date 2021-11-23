@@ -30,7 +30,7 @@ the scene and enumerate its differentiable parameters:
     mitsuba.set_variant('cuda_autodiff_rgb')
 
     from mitsuba.core import Float, Thread
-    from mitsuba.core.xml import load_file
+    from mitsuba.core import load_file
     from mitsuba.python.util import traverse
     from mitsuba.python.autodiff import render, write_bitmap, Adam
 

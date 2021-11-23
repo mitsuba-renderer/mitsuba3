@@ -7,8 +7,8 @@ from mitsuba.python.test.util import fresolver_append_path
 @fresolver_append_path
 def create_test_scene(max_depth=4, emitter='area',
                       shape=None, hide_emitters=False, crop_window=None):
-    from mitsuba.core import ScalarTransform4f
-    from mitsuba.core.xml import load_dict
+    from mitsuba.core import load_dict, ScalarTransform4f
+
     integrator = {
         'type': 'ptracer',
         'samples_per_pass': 16,

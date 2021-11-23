@@ -41,9 +41,8 @@ def test02_chi2_rough(variants_vec_backends_once_rgb):
 
 
 def test03_eval_pdf(variant_scalar_rgb):
-    from mitsuba.core import Frame3f
-    from mitsuba.render import BSDFContext, BSDFFlags, SurfaceInteraction3f
-    from mitsuba.core.xml import load_string
+    from mitsuba.core import load_string, Frame3f
+    from mitsuba.render import BSDFContext, SurfaceInteraction3f
 
     bsdf = load_string("<bsdf version='2.0.0' type='roughplastic'></bsdf>")
 
